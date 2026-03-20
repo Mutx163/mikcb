@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 当前课程区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp"
+        android:background="@android:color/transparent">
+
+        <TextView
+            android:id="@+id/tv_current_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="当前课程"
+            android:textSize="12sp"
+            android:textColor="#888888" />
+
+        <TextView
+            android:id="@+id/tv_current_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="高等数学"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tv_current_location"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📍 教学楼A301"
+            android:textSize="14sp"
+            android:textColor="#CCCCCC"
+            android:layout_marginTop="8dp" />
+
+        <TextView
+            android:id="@+id/tv_current_teacher"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👨‍🏫 张教授"
+            android:textSize="14sp"
+            android:textColor="#CCCCCC"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tv_current_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⏰ 08:00 - 09:40"
+            android:textSize="14sp"
+            android:textColor="#CCCCCC"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+
+    <!-- 分隔线 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333333"
+        android:layout_marginVertical="12dp" />
+
+    <!-- 下一节课区域 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tv_next_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="下一节"
+            android:textSize="12sp"
+            android:textColor="#888888" />
+
+        <TextView
+            android:id="@+id/tv_next_info"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="大学英语 · 10:00"
+            android:textSize="16sp"
+            android:textColor="@android:color/white"
+            android:layout_marginTop="4dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,17 @@
+{
+    "dart.flutterSdkPath": null,
+    "dart.openDevTools": "flutter",
+    "editor.formatOnSave": true,
+    "[dart]": {
+        "editor.defaultFormatter": "Dart-Code.dart-code",
+        "editor.formatOnSave": true,
+        "editor.selectionHighlight": false,
+        "editor.suggestSelection": "first",
+        "editor.tabCompletion": "onlySnippets",
+        "editor.wordBasedSuggestions": "off"
+    },
+    "explorer.confirmDelete": false,
+    "files.associations": {
+        "*.proto": "protobuf"
+    }
+}

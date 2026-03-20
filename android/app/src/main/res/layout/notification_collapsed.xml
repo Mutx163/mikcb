@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="12dp"
+    android:background="@android:color/transparent">
+
+    <TextView
+        android:id="@+id/tv_course_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📚 高等数学"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@android:color/white"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:id="@+id/tv_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="08:00-09:40"
+        android:textSize="12sp"
+        android:textColor="@android:color/white"
+        android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true" />
+
+    <TextView
+        android:id="@+id/tv_course_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="教学楼A301 · 张教授"
+        android:textSize="12sp"
+        android:textColor="#CCCCCC"
+        android:layout_below="@id/tv_course_name"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="4dp" />
+
+</RelativeLayout>
