@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
@@ -10,6 +11,7 @@ import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
+import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
@@ -20,9 +22,29 @@ class TimetableScreen extends StatefulWidget {
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
-  static const double _timeColumnWidth = 44;
+  static const double _headerControlWidth = 58;
+  static const double _timeColumnWidth = 40;
+  static const int _minWeek = 1;
+  static const int _maxWeek = 20;
+  static const int _centerWeekPage = 1;
+  static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
   final List<String> _weekDays = const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+
+  late final PageController _weekPageController;
+  bool _isSyncingWeekPage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _weekPageController = PageController(initialPage: _centerWeekPage);
+  }
+
+  @override
+  void dispose() {
+    _weekPageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,48 +52,16 @@ class _TimetableScreenState extends State<TimetableScreen> {
       builder: (context, provider, child) {
         return Scaffold(
           appBar: AppBar(
-            title: const Text(
-              '课程表',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            actionsIconTheme: const IconThemeData(size: 20),
+            title: const Text('课程表'),
             actions: [
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.chevron_left),
-                onPressed: provider.currentWeek > 1
-                    ? () => provider.setCurrentWeek(provider.currentWeek - 1)
-                    : null,
-                tooltip: '上一周',
-              ),
-              TextButton(
-                onPressed: _showWeekSelector,
-                style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  minimumSize: const Size(0, 36),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-                child: Text(
-                  '第${provider.currentWeek}周',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: const Icon(Icons.chevron_right),
-                onPressed: provider.currentWeek < 20
-                    ? () => provider.setCurrentWeek(provider.currentWeek + 1)
-                    : null,
-                tooltip: '下一周',
-              ),
               PopupMenuButton<String>(
                 tooltip: '更多',
                 onSelected: _handleTopMenuAction,
                 itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'overview',
+                    child: Text('课程总览'),
+                  ),
                   PopupMenuItem(
                     value: 'test',
                     child: Text('测试通知'),
@@ -94,74 +84,142 @@ class _TimetableScreenState extends State<TimetableScreen> {
           ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Column(
-                  children: [
-                    _buildWeekDayHeader(),
-                    Expanded(
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          return _buildTimetableGrid(
-                            provider,
-                            provider.settings,
-                            constraints.maxWidth,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return _buildWeekPager(
+                        provider,
+                        provider.settings,
+                        constraints.maxWidth,
+                      );
+                    },
+                  ),
                 ),
         );
       },
     );
   }
 
-  Widget _buildWeekDayHeader() {
+  Widget _buildWeekDayHeader(
+    TimetableProvider provider,
+    int week,
+    TimetableSettings settings,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
+      height: 50,
+      padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withValues(alpha: 0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border(
+          bottom: BorderSide(color: colorScheme.outlineVariant),
+        ),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: _timeColumnWidth,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                '节次',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              ),
+            width: _headerControlWidth,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildHeaderArrow(
+                      icon: Icons.chevron_left_rounded,
+                      tooltip: '上一周',
+                      onPressed: week > _minWeek
+                          ? () => _jumpToWeek(provider, week - 1)
+                          : null,
+                    ),
+                    InkWell(
+                      onTap: _showWeekSelector,
+                      borderRadius: BorderRadius.circular(10),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                        child: Text(
+                          '$week周',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _buildHeaderArrow(
+                      icon: Icons.chevron_right_rounded,
+                      tooltip: '下一周',
+                      onPressed: week < _maxWeek
+                          ? () => _jumpToWeek(provider, week + 1)
+                          : null,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                InkWell(
+                  onTap: () => _jumpToCurrentWeek(provider),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                    child: Text(
+                      '回本周',
+                      style: TextStyle(
+                        fontSize: 8,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           ...List.generate(_weekDays.length, (index) {
-            final isToday = index + 1 == DateTime.now().weekday;
+            final dayOfWeek = index + 1;
+            final date = _dateForWeekDay(settings, week, dayOfWeek);
+            final isToday = date != null && _isSameDate(date, DateTime.now());
+
             return Expanded(
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                padding: const EdgeInsets.symmetric(vertical: 4),
                 decoration: BoxDecoration(
-                  color: isToday ? Theme.of(context).primaryColor.withValues(alpha: 0.1) : null,
                   border: Border(
                     bottom: BorderSide(
-                      color: isToday ? Theme.of(context).primaryColor : Colors.transparent,
+                      color: isToday ? colorScheme.primary : Colors.transparent,
                       width: 2,
                     ),
                   ),
                 ),
-                child: Text(
-                  _weekDays[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                    color: isToday ? Theme.of(context).primaryColor : null,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      _weekDays[index],
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
+                        color: isToday
+                            ? colorScheme.primary
+                            : colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      date == null
+                          ? ''
+                          : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                      style: TextStyle(
+                        fontSize: 8.5,
+                        color: isToday
+                            ? colorScheme.primary.withValues(alpha: 0.78)
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             );
@@ -171,68 +229,137 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
+  Widget _buildHeaderArrow({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: 14,
+          height: 14,
+          child: Icon(
+            icon,
+            size: 14,
+            color: onPressed == null
+                ? colorScheme.outline
+                : colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTimetableGrid(
     TimetableProvider provider,
     TimetableSettings settings,
     double availableWidth,
+    int week,
   ) {
     final dayWidth = (availableWidth - _timeColumnWidth) / 7;
     final sectionHeight = settings.sectionHeight;
 
-    return SingleChildScrollView(
-      child: SizedBox(
-        width: availableWidth,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: _timeColumnWidth,
-              child: Column(
-                children: List.generate(settings.sectionCount, (index) {
-                  final section = settings.sections[index];
-                  return Container(
-                    height: sectionHeight,
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade200),
+    return SizedBox(
+      key: ValueKey<int>(week),
+      width: availableWidth,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: _timeColumnWidth,
+            child: Column(
+              children: List.generate(settings.sectionCount, (index) {
+                final section = settings.sections[index];
+                return Container(
+                  height: sectionHeight,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: Colors.grey.shade200),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${index + 1}',
+                        style: TextStyle(
+                          fontSize: (settings.compactFontSize).clamp(8.0, 11.0),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${index + 1}',
-                          style: TextStyle(
-                            fontSize: settings.compactFontSize + 1,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        section.startTime,
+                        style: TextStyle(
+                          fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
+                          color: Colors.grey.shade600,
                         ),
-                        Text(
-                          section.startTime,
-                          style: TextStyle(
-                            fontSize: (settings.compactFontSize - 1).clamp(7.0, 14.0),
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ),
-            ),
-            Row(
-              children: List.generate(7, (dayIndex) {
-                final dayOfWeek = dayIndex + 1;
-                final dayCourses = provider.getCoursesForDay(dayOfWeek);
-                return SizedBox(
-                  width: dayWidth,
-                  child: _buildDayColumn(dayOfWeek, dayCourses, settings),
+                      ),
+                    ],
+                  ),
                 );
               }),
             ),
-          ],
-        ),
+          ),
+          Row(
+            children: List.generate(7, (dayIndex) {
+              final dayOfWeek = dayIndex + 1;
+              final dayCourses = _getCoursesForDay(
+                provider.courses,
+                week,
+                dayOfWeek,
+              );
+              return SizedBox(
+                width: dayWidth,
+                child: _buildDayColumn(dayOfWeek, dayCourses, settings),
+              );
+            }),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildWeekPager(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    double availableWidth,
+  ) {
+    return PageView.builder(
+      controller: _weekPageController,
+      itemCount: 3,
+      allowImplicitScrolling: true,
+      physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
+      onPageChanged: (page) => _handleWeekPageChanged(page, provider),
+      itemBuilder: (context, index) {
+        final week = _clampWeek(
+          provider.currentWeek + (index - _centerWeekPage),
+        );
+        return _buildWeekPage(provider, settings, availableWidth, week);
+      },
+    );
+  }
+
+  Widget _buildWeekPage(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    double availableWidth,
+    int week,
+  ) {
+    return Column(
+      children: [
+        _buildWeekDayHeader(provider, week, settings),
+        Expanded(
+          child: SingleChildScrollView(
+            key: PageStorageKey<String>('week-scroll-$week'),
+            child: _buildTimetableGrid(provider, settings, availableWidth, week),
+          ),
+        ),
+      ],
     );
   }
 
@@ -278,7 +405,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             child: CourseCard(
               course: course,
               isCompact: true,
-              onTap: () => _showCourseDetail(course),
+              onTap: () => _editCourse(course),
               compactTitleFontSize: settings.compactFontSize,
               compactSubtitleFontSize:
                   (settings.compactFontSize - 1).clamp(7.0, 14.0),
@@ -309,6 +436,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     showModalBottomSheet(
       context: context,
       builder: (context) {
+        final provider = context.read<TimetableProvider>();
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -327,8 +455,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   return ActionChip(
                     label: Text('第 $week 周'),
                     onPressed: () {
-                      context.read<TimetableProvider>().setCurrentWeek(week);
                       Navigator.pop(context);
+                      _jumpToWeek(provider, week);
                     },
                   );
                 }),
@@ -340,71 +468,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _showCourseDetail(Course course) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                course.name,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              _buildDetailRow(Icons.location_on, '教室', course.location),
-              _buildDetailRow(Icons.person, '教师', course.teacher),
-              _buildDetailRow(Icons.access_time, '时间', '${course.startTime} - ${course.endTime}'),
-              _buildDetailRow(Icons.calendar_today, '周次', '第${course.startWeek}-${course.endWeek}周'),
-              _buildDetailRow(Icons.view_agenda, '节次', '第${course.startSection}-${course.endSection}节'),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _editCourse(course);
-                    },
-                    icon: const Icon(Icons.edit),
-                    label: const Text('编辑'),
-                  ),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _deleteCourse(course);
-                    },
-                    icon: const Icon(Icons.delete),
-                    label: const Text('删除'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: Colors.grey),
-          const SizedBox(width: 8),
-          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
 
   Course? _findCourseForSection(List<Course> courses, int section) {
     for (final course in courses) {
@@ -413,6 +477,141 @@ class _TimetableScreenState extends State<TimetableScreen> {
       }
     }
     return null;
+  }
+
+  List<Course> _getCoursesForDay(List<Course> allCourses, int week, int dayOfWeek) {
+    return allCourses
+        .where((course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week))
+        .toList()
+      ..sort((a, b) => a.startSection.compareTo(b.startSection));
+  }
+
+  int _clampWeek(int week) {
+    if (week < _minWeek) return _minWeek;
+    if (week > _maxWeek) return _maxWeek;
+    return week;
+  }
+
+  DateTime? _dateForWeekDay(
+    TimetableSettings settings,
+    int week,
+    int dayOfWeek,
+  ) {
+    final semesterStart = settings.semesterStartDate;
+    if (semesterStart == null) {
+      return null;
+    }
+
+    final normalizedStart = DateTime(
+      semesterStart.year,
+      semesterStart.month,
+      semesterStart.day,
+    ).subtract(Duration(days: semesterStart.weekday - 1));
+
+    return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+  }
+
+  bool _isSameDate(DateTime left, DateTime right) {
+    return left.year == right.year &&
+        left.month == right.month &&
+        left.day == right.day;
+  }
+
+  Future<void> _jumpToCurrentWeek(TimetableProvider provider) async {
+    if (provider.settings.semesterStartDate == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先在课表设置里填写开学日期')),
+      );
+      return;
+    }
+
+    await provider.syncCurrentWeekWithSemesterStart();
+    await _resetWeekPager();
+    HapticFeedback.selectionClick();
+  }
+
+  Future<void> _animateToAdjacentWeek(
+    TimetableProvider provider,
+    int delta,
+  ) async {
+    if (_isSyncingWeekPage || !_weekPageController.hasClients) {
+      return;
+    }
+
+    final targetWeek = _clampWeek(provider.currentWeek + delta);
+    if (targetWeek == provider.currentWeek) {
+      return;
+    }
+
+    await _weekPageController.animateToPage(
+      delta < 0 ? _centerWeekPage - 1 : _centerWeekPage + 1,
+      duration: _weekSlideDuration,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _jumpToWeek(TimetableProvider provider, int week) async {
+    if (_isSyncingWeekPage) {
+      return;
+    }
+
+    final targetWeek = _clampWeek(week);
+    if (targetWeek == provider.currentWeek) {
+      return;
+    }
+
+    final delta = targetWeek - provider.currentWeek;
+    if (delta.abs() == 1) {
+      await _animateToAdjacentWeek(provider, delta.sign);
+      return;
+    }
+
+    await provider.setCurrentWeek(targetWeek);
+    await _resetWeekPager();
+  }
+
+  Future<void> _handleWeekPageChanged(
+    int page,
+    TimetableProvider provider,
+  ) async {
+    if (_isSyncingWeekPage || page == _centerWeekPage) {
+      return;
+    }
+
+    final targetWeek = _clampWeek(
+      provider.currentWeek + (page - _centerWeekPage),
+    );
+    if (targetWeek == provider.currentWeek) {
+      await _resetWeekPager(animated: true);
+      return;
+    }
+
+    _isSyncingWeekPage = true;
+    try {
+      HapticFeedback.selectionClick();
+      await provider.setCurrentWeek(targetWeek);
+      await _resetWeekPager();
+    } finally {
+      _isSyncingWeekPage = false;
+    }
+  }
+
+  Future<void> _resetWeekPager({bool animated = false}) async {
+    if (!_weekPageController.hasClients) {
+      return;
+    }
+
+    if (animated) {
+      await _weekPageController.animateToPage(
+        _centerWeekPage,
+        duration: _weekSlideDuration,
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+
+    _weekPageController.jumpToPage(_centerWeekPage);
   }
 
   void _navigateToAddCourse(BuildContext context) {
@@ -456,6 +655,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   void _handleTopMenuAction(String value) {
     switch (value) {
+      case 'overview':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CourseOverviewScreen()),
+        );
+        break;
       case 'test':
         _showTestOptions();
         break;
@@ -530,158 +735,102 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _deleteCourse(Course course) {
-    showDialog(
+  void _showTestOptions() async {
+    final now = DateTime.now();
+    final start = now.add(const Duration(minutes: 2));
+    final end = now.add(const Duration(minutes: 3));
+
+    String formatTime(DateTime dt) {
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    }
+
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+    final selection = provider.getTestLiveActivityCourseSelection(now: now);
+    final baseCourse = selection?.currentCourse;
+    final previewNextCourse = selection?.nextCourse;
+
+    final resolvedShortName = baseCourse == null
+        ? null
+        : provider.resolveCourseShortName(baseCourse);
+
+    final testCourse = Course(
+      id: 'test_auto_id',
+      name: baseCourse?.name ?? '智能测试模拟课',
+      shortName: resolvedShortName,
+      teacher: baseCourse?.teacher ?? '模拟教员',
+      location: baseCourse?.location ?? '虚拟教室',
+      dayOfWeek: now.weekday,
+      startSection: baseCourse?.startSection ?? 1,
+      endSection: baseCourse?.endSection ?? 2,
+      startWeek: baseCourse?.startWeek ?? 1,
+      endWeek: baseCourse?.endWeek ?? 20,
+      startTime: formatTime(start),
+      endTime: formatTime(end),
+      color: baseCourse?.color ?? '#4285F4',
+      note: '此处展示备注。可以在课程编辑页进行设置。',
+    );
+
+    final shortName = (testCourse.shortName ?? '').trim();
+    final islandName =
+        settings.liveUseShortName && shortName.isNotEmpty
+            ? shortName
+            : testCourse.name;
+
+    if (!mounted) return;
+    final shouldSend = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('确认删除'),
-          content: Text('确定要删除课程“${course.name}”吗？'),
+          title: const Text('测试通知预览'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('课程全名：${testCourse.name}'),
+              Text('课程简称：${shortName.isEmpty ? "未设置" : shortName}'),
+              Text('简称开关：${settings.liveUseShortName ? "已开启" : "已关闭"}'),
+              Text('岛区预期：$islandName'),
+            ],
+          ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, false),
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () {
-                context.read<TimetableProvider>().deleteCourse(course.id);
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('课程已删除')),
-                );
-              },
-              child: const Text('删除', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('发送'),
             ),
           ],
         );
       },
     );
-  }
 
-  void _showTestOptions() async {
-    final service = MiuiLiveActivitiesService();
-    final supportInfo = await service.checkPromotedSupport();
-
-    if (!mounted) return;
-
-    final androidVersion = supportInfo['androidVersion'] ?? 0;
-    final hasPermission = supportInfo['hasNotificationPermission'] == true;
-    final hasPromotedPermission = supportInfo['hasPromotedPermission'] == true;
-    final canPostPromoted = supportInfo['canPostPromoted'] == true;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('实时更新检查'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Android 版本: $androidVersion'),
-            Text('通知权限: ${hasPermission ? "✅" : "❌"}'),
-            Text('推广权限声明: ${hasPromotedPermission ? "✅" : "❌"}'),
-            Text('可发布推广: ${canPostPromoted ? "✅" : "❌"}'),
-            const Divider(),
-            if (!canPostPromoted && androidVersion >= 36)
-              const Text(
-                '需要在系统设置中为应用开启实时更新或推广通知。',
-                style: TextStyle(color: Colors.orange),
-              ),
-          ],
-        ),
-        actions: [
-          if (!canPostPromoted && androidVersion >= 36)
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                service.openPromotedSettings();
-              },
-              child: const Text('打开设置'),
-            ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _sendTestNotification();
-            },
-            child: const Text('继续测试'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _sendTestNotification() async {
-    final service = MiuiLiveActivitiesService();
-    final hasPermission = await service.checkNotificationPermission();
-    if (!hasPermission) {
-      final granted = await service.requestNotificationPermission();
-      if (!granted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('需要通知权限')),
-          );
-        }
-        return;
-      }
+    if (shouldSend != true || !mounted) {
+      return;
     }
 
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('5 秒后发送测试通知，请返回桌面观察效果'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    await Future.delayed(const Duration(seconds: 5));
-
-    final now = DateTime.now();
-    final startTime = now.add(const Duration(minutes: 10));
-    final endTime = startTime.add(const Duration(minutes: 45));
-    final nextStartTime = endTime.add(const Duration(minutes: 10));
-    final nextEndTime = nextStartTime.add(const Duration(minutes: 45));
-
-    final testCurrentCourse = Course(
-      id: 'test-1',
-      name: '高等数学',
-      teacher: '张老师',
-      location: '教学楼 A301',
-      dayOfWeek: 1,
-      startSection: 1,
-      endSection: 2,
-      startTime: _formatTime(startTime),
-      endTime: _formatTime(endTime),
-      color: '#2196F3',
-    );
-
-    final testNextCourse = Course(
-      id: 'test-2',
-      name: '大学英语',
-      teacher: '李老师',
-      location: '教学楼 B205',
-      dayOfWeek: 1,
-      startSection: 3,
-      endSection: 4,
-      startTime: _formatTime(nextStartTime),
-      endTime: _formatTime(nextEndTime),
-      color: '#4CAF50',
-    );
-
-    await service.startLiveUpdate(
-      testCurrentCourse,
-      testNextCourse,
-      autoDismissAfterStartMinutes: 1,
-    );
-  }
-
-  String _formatTime(DateTime time) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    return '$hour:$minute';
+    try {
+      await MiuiLiveActivitiesService().startLiveUpdate(
+        testCourse, 
+        previewNextCourse,
+        showCountdown: settings.liveShowCountdown,
+        showCourseNameInIsland: settings.liveShowCourseName,
+        showLocationInIsland: settings.liveShowLocation,
+        useShortNameInIsland: settings.liveUseShortName,
+        hidePrefixText: settings.liveHidePrefixText,
+        autoDismissAfterStartMinutes: 1,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已发射测试通知（距上课2分钟，持续1分），马上体验实机效果。')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('发送失败: $e')),
+      );
+    }
   }
 }
