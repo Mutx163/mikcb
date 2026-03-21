@@ -92,6 +92,11 @@ class StorageService {
     await _prefs?.setInt(_semesterStartKey, date.millisecondsSinceEpoch);
   }
 
+  Future<void> clearSemesterStart() async {
+    if (_prefs == null) await init();
+    await _prefs?.remove(_semesterStartKey);
+  }
+
   // 获取指定周次的课程
   Future<List<Course>> getCoursesForWeek(int week) async {
     final allCourses = await getCourses();
@@ -109,10 +114,11 @@ class StorageService {
   Future<Course?> getCurrentCourse(int week, int dayOfWeek) async {
     final todayCourses = await getTodayCourses(week, dayOfWeek);
     final now = DateTime.now();
-    final currentTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) >= 0 && 
+      if (currentTime.compareTo(course.startTime) >= 0 &&
           currentTime.compareTo(course.endTime) <= 0) {
         return course;
       }
@@ -124,8 +130,9 @@ class StorageService {
   Future<Course?> getNextCourse(int week, int dayOfWeek) async {
     final todayCourses = await getTodayCourses(week, dayOfWeek);
     final now = DateTime.now();
-    final currentTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     for (final course in todayCourses) {
       if (currentTime.compareTo(course.startTime) < 0) {
         return course;
