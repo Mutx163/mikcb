@@ -12,18 +12,43 @@ class UserGuideScreen extends StatefulWidget {
 
 class _UserGuideScreenState extends State<UserGuideScreen> {
   final MiuiLiveActivitiesService _service = MiuiLiveActivitiesService();
+  final ScrollController _scrollController = ScrollController();
 
   bool _isLoading = true;
   bool _hasNotificationPermission = false;
   bool _hasPromotedPermission = false;
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
+  bool _isNearBottom = false;
   int _androidVersion = 0;
 
   @override
   void initState() {
     super.initState();
+    _scrollController.addListener(_handleScroll);
     _refreshStatus();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_handleScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final position = _scrollController.position;
+    final nextValue = position.pixels >= position.maxScrollExtent - 48;
+    if (nextValue != _isNearBottom) {
+      setState(() {
+        _isNearBottom = nextValue;
+      });
+    }
   }
 
   Future<void> _refreshStatus() async {
@@ -37,7 +62,9 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     final isIgnoringBatteryOptimizations =
         await _service.isIgnoringBatteryOptimizations();
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _androidVersion = (promotedSupport['androidVersion'] as int?) ?? 0;
       _hasNotificationPermission =
@@ -53,18 +80,34 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
   Future<void> _runAction(Future<void> Function() action) async {
     await action();
     await Future<void>.delayed(const Duration(milliseconds: 300));
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
     await _refreshStatus();
+  }
+
+  Future<void> _scrollMore() async {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final target = (_scrollController.offset + 420).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    await _scrollController.animateTo(
+      target,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('使用引导'),
+        title: const Text('首次使用引导'),
         actions: [
           IconButton(
             tooltip: '刷新状态',
@@ -74,25 +117,144 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
         children: [
-          _buildIntroCard(theme),
+          _buildHeroCard(theme),
+          const SizedBox(height: 16),
+          _buildQuickActionsCard(theme),
+          const SizedBox(height: 16),
+          _buildStatusCard(theme),
+          const SizedBox(height: 16),
+          _buildPermissionChecklistCard(theme),
+          const SizedBox(height: 16),
+          _buildShortNameCard(theme),
           const SizedBox(height: 16),
           _buildImportGuideCard(theme),
           const SizedBox(height: 16),
-          _buildStatusCard(colorScheme),
-          const SizedBox(height: 16),
-          _buildPermissionCard(),
-          const SizedBox(height: 16),
-          _buildShortNameCard(),
-          const SizedBox(height: 16),
           _buildTipsCard(theme),
+        ],
+      ),
+      bottomNavigationBar: _buildBottomBar(theme),
+    );
+  }
+
+  Widget _buildHeroCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    final readyCount = [
+      _hasNotificationPermission,
+      _canPostPromoted,
+      _isIgnoringBatteryOptimizations,
+    ].where((item) => item).length;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.primaryContainer,
+            colorScheme.surfaceContainerHighest,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_rounded,
+                  color: colorScheme.onPrimary,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '先把这页做完，再开始用',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '首屏先授权，下面还有简称设置和导入说明，记得继续下滑。',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildHeroChip(Icons.security_rounded, '权限准备'),
+              _buildHeroChip(Icons.edit_note_rounded, '简称设置'),
+              _buildHeroChip(Icons.import_export_rounded, '导入课表'),
+              _buildHeroChip(Icons.check_circle_rounded, '$readyCount/3 已完成'),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.swipe_up_alt_rounded,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _isNearBottom
+                        ? '你已经滑到最后了，确认无误后就可以开始使用。'
+                        : '向下滑动继续，下面还有权限清单、简称设置和导入方式。',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _runAction(() async {
+                await _service.requestNotificationPermission();
+              }),
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: const Text('先申请通知权限'),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildIntroCard(ThemeData theme) {
+  Widget _buildQuickActionsCard(ThemeData theme) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -100,16 +262,51 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '超级岛完整使用建议',
+              '首屏快速设置',
               style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '想让上课提醒稳定显示，需要系统允许通知常驻、允许后台运行，并尽量关闭省电限制。'
-              '如果你希望岛区显示更干净，建议给课程设置简称，最好控制在 3 个字以内。',
+              '先把最关键的 4 个入口放在前面，不用翻到下面再找。',
               style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            GridView.count(
+              shrinkWrap: true,
+              crossAxisCount: 2,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.45,
+              children: [
+                _buildQuickActionButton(
+                  icon: Icons.notifications_outlined,
+                  title: '通知设置',
+                  subtitle: '先确保能发通知',
+                  onTap: () => _runAction(_service.openNotificationSettings),
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.star_border_rounded,
+                  title: '超级岛权限',
+                  subtitle: '检查 promoted 通知',
+                  onTap: () => _runAction(_service.openPromotedSettings),
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.play_circle_outline_rounded,
+                  title: '自启动',
+                  subtitle: '避免后台被杀',
+                  onTap: () => _runAction(_service.openAutoStartSettings),
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.battery_saver_outlined,
+                  title: '电池无限制',
+                  subtitle: '避免提醒中断',
+                  onTap: () =>
+                      _runAction(_service.openBatteryOptimizationSettings),
+                ),
+              ],
             ),
           ],
         ),
@@ -117,7 +314,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
-  Widget _buildImportGuideCard(ThemeData theme) {
+  Widget _buildStatusCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -125,42 +323,10 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '课表导入方式',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '当前版本还没有直接连接教务系统导入的能力，所以首次导入通常有两条路：',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '1. 先在 WakeUp 等课表应用里导入教务系统课程，再在它们的软件里选择“日历格式导出”，最后回到本应用导入课程。',
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '2. 直接让其他用户从本应用导出完整备份文件，你拿到后在“数据备份与迁移”里导入，就能直接恢复课程和设置。',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusCard(ColorScheme colorScheme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
               '当前状态',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 12),
             if (_isLoading)
@@ -192,6 +358,13 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                 value: _androidVersion > 0 ? 'Android $_androidVersion' : '未识别',
                 success: _androidVersion >= 13,
               ),
+              const SizedBox(height: 6),
+              Text(
+                '如果上面的项目还没全绿，继续下滑，把下面的权限清单按顺序点完。',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ],
         ),
@@ -199,50 +372,60 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
-  Widget _buildPermissionCard() {
+  Widget _buildPermissionChecklistCard(ThemeData theme) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '引导设置',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              '权限清单',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 8),
-            const Text('按顺序检查这些入口，能明显减少超级岛不显示、被系统杀后台、提醒中断的问题。'),
+            Text(
+              '按这个顺序检查，最省事，也最不容易漏。',
+              style: theme.textTheme.bodyMedium,
+            ),
             const SizedBox(height: 12),
-            _buildActionTile(
+            _buildChecklistTile(
+              step: '1',
               icon: Icons.notifications_outlined,
               title: '申请通知权限',
-              subtitle: '先确保应用可以发通知',
+              subtitle: '这是所有提醒的前提',
               onTap: () => _runAction(() async {
                 await _service.requestNotificationPermission();
               }),
             ),
-            _buildActionTile(
+            _buildChecklistTile(
+              step: '2',
               icon: Icons.tune,
               title: '打开通知设置',
               subtitle: '检查通知总开关、锁屏展示和实时通知权限',
               onTap: () => _runAction(_service.openNotificationSettings),
             ),
-            _buildActionTile(
+            _buildChecklistTile(
+              step: '3',
               icon: Icons.star_border,
               title: '打开焦点通知设置',
-              subtitle: '检查系统是否允许推广 / promoted ongoing 通知',
+              subtitle: '检查系统是否允许 promoted / 超级岛通知',
               onTap: () => _runAction(_service.openPromotedSettings),
             ),
-            _buildActionTile(
+            _buildChecklistTile(
+              step: '4',
               icon: Icons.play_circle_outline,
               title: '打开自启动设置',
               subtitle: '允许应用开机自启和后台常驻',
               onTap: () => _runAction(_service.openAutoStartSettings),
             ),
-            _buildActionTile(
+            _buildChecklistTile(
+              step: '5',
               icon: Icons.battery_saver_outlined,
               title: '打开电池策略设置',
-              subtitle: '建议将本应用改成无限制，避免上课提醒被中断',
+              subtitle: '建议改成无限制，避免上课提醒被中断',
               onTap: () => _runAction(_service.openBatteryOptimizationSettings),
             ),
           ],
@@ -251,21 +434,22 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
-  Widget _buildShortNameCard() {
+  Widget _buildShortNameCard(ThemeData theme) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               '课程简称建议',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
-              '超级岛支持显示课程简称。简称不是自动生成的，需要你在课程编辑里自己填写。'
-              '建议控制在 3 个字以内，岛区显示会更稳定，也更不容易被截断。',
+              '超级岛支持显示课程简称。简称不是自动生成的，需要你在课程编辑里自己填写。建议控制在 3 个字以内，显示会更稳定。',
             ),
             const SizedBox(height: 12),
             _buildTipLine('推荐示例', '高数 / 概率 / 数控'),
@@ -274,7 +458,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -293,6 +477,40 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
+  Widget _buildImportGuideCard(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '课表导入方式',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '当前版本还没有直接连接教务系统导入，所以首次导入通常有两条路。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            _buildNumberedLine(
+              '1',
+              '先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。',
+            ),
+            const SizedBox(height: 8),
+            _buildNumberedLine(
+              '2',
+              '如果别人已经在用本应用，也可以让对方导出完整备份文件，你直接导入就能恢复课程和设置。',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTipsCard(ThemeData theme) {
     return Card(
       child: Padding(
@@ -300,9 +518,11 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '使用建议',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            Text(
+              '最后再看这 3 条',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 12),
             Text(
@@ -325,6 +545,153 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
+  Widget _buildBottomBar(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          border: Border(
+            top: BorderSide(color: colorScheme.outlineVariant),
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                _isNearBottom ? '已经到底了，确认后就可以开始使用。' : '继续下滑，下面还有内容。',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            if (!_isNearBottom)
+              FilledButton.icon(
+                onPressed: _scrollMore,
+                icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                label: const Text('继续查看'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.check_rounded),
+                label: const Text('开始使用'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroChip(IconData icon, String text) {
+    return Chip(
+      avatar: Icon(icon, size: 16),
+      label: Text(text),
+    );
+  }
+
+  Widget _buildQuickActionButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Ink(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: colorScheme.primary),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChecklistTile({
+    required String step,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Ink(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
+                child: Text(
+                  step,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Icon(icon, color: colorScheme.primary),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildStatusTile({
     required IconData icon,
     required String title,
@@ -342,8 +709,10 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 const SizedBox(height: 2),
                 Text(value, style: TextStyle(color: color)),
               ],
@@ -351,22 +720,6 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildActionTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 
@@ -382,6 +735,26 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
           ),
         ),
         Expanded(child: Text(value)),
+      ],
+    );
+  }
+
+  Widget _buildNumberedLine(String step, String text) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: colorScheme.primaryContainer,
+          foregroundColor: colorScheme.onPrimaryContainer,
+          child: Text(
+            step,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(text)),
       ],
     );
   }

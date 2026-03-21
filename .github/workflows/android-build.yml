@@ -52,9 +52,6 @@ jobs:
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
-      - name: Build debug APK
-        run: flutter build apk --debug
-
       - name: Build release APK
         run: flutter build apk --release
 
@@ -63,14 +60,13 @@ jobs:
         run: |
           mkdir -p dist
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
-          cp build/app/outputs/flutter-apk/app-debug.apk "dist/mikcb-test-${VERSION_NAME}.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "dist/mikcb-${VERSION_NAME}.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-apks
-          path: dist/*.apk
+          name: android-release-apk
+          path: dist/mikcb-*.apk
 
       - name: Create or update GitHub release
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')

@@ -7,6 +7,7 @@ class StorageService {
   static const String _currentWeekKey = 'current_week';
   static const String _semesterStartKey = 'semester_start';
   static const String _timetableSettingsKey = 'timetable_settings';
+  static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
 
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -95,6 +96,16 @@ class StorageService {
   Future<void> clearSemesterStart() async {
     if (_prefs == null) await init();
     await _prefs?.remove(_semesterStartKey);
+  }
+
+  Future<bool> hasSeenUserGuide() async {
+    if (_prefs == null) await init();
+    return _prefs?.getBool(_hasSeenUserGuideKey) ?? false;
+  }
+
+  Future<void> setHasSeenUserGuide(bool value) async {
+    if (_prefs == null) await init();
+    await _prefs?.setBool(_hasSeenUserGuideKey, value);
   }
 
   // 获取指定周次的课程

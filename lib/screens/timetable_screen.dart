@@ -22,7 +22,7 @@ class TimetableScreen extends StatefulWidget {
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
-  static const double _headerControlWidth = 58;
+  static const double _headerControlWidth = _timeColumnWidth;
   static const double _timeColumnWidth = 40;
   static const int _minWeek = 1;
   static const int _maxWeek = 20;
@@ -155,40 +155,22 @@ class _TimetableScreenState extends State<TimetableScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildHeaderArrow(
-                      icon: Icons.chevron_left_rounded,
-                      tooltip: '上一周',
-                      onPressed: week > _minWeek
-                          ? () => _jumpToWeek(provider, week - 1)
-                          : null,
-                    ),
-                    InkWell(
-                      onTap: _showWeekSelector,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 2, vertical: 2),
-                        child: Text(
-                          '$week周',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
+                InkWell(
+                  onTap: _showWeekSelector,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    child: Text(
+                      '$week周',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
                       ),
                     ),
-                    _buildHeaderArrow(
-                      icon: Icons.chevron_right_rounded,
-                      tooltip: '下一周',
-                      onPressed: week < _maxWeek
-                          ? () => _jumpToWeek(provider, week + 1)
-                          : null,
-                    ),
-                  ],
+                  ),
                 ),
                 if (canReturnToCurrentWeek) ...[
                   const SizedBox(height: 2),
@@ -261,32 +243,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
             );
           }),
         ],
-      ),
-    );
-  }
-
-  Widget _buildHeaderArrow({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback? onPressed,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: SizedBox(
-          width: 14,
-          height: 14,
-          child: Icon(
-            icon,
-            size: 14,
-            color: onPressed == null
-                ? colorScheme.outline
-                : colorScheme.onSurfaceVariant,
-          ),
-        ),
       ),
     );
   }

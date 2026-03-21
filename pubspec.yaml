@@ -1,7 +1,7 @@
 name: university_timetable
 description: 大学课程表应用 - 支持小米超级岛
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.0.2+3
 
 environment:
   sdk: ^3.6.0
