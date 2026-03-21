@@ -66,6 +66,27 @@ flutter build apk
 
 如果你要发布到 GitHub Releases，建议把 `pubspec.yaml` 的版本号先更新，再上传对应安装包。
 
+## GitHub 自动打包
+
+仓库已经接入 GitHub Actions 自动打包：
+
+- 推送到 `main`：自动执行依赖安装、静态检查、`release APK` 构建，并上传到 Actions Artifact
+- 推送 `v*` 标签：在上面的基础上，自动创建 GitHub Release 并附带 APK
+- 手动触发：可在 Actions 页面直接运行工作流
+
+当前工作流文件在：
+
+- `.github/workflows/android-build.yml`
+
+推荐发版流程：
+
+```bash
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+这样 GitHub 会自动生成对应 Release，应用内的“检查更新”也会开始识别这个版本。
+
 ## 更新检测
 
 应用内“关于软件”页面会读取 GitHub Releases 最新版本：
@@ -93,4 +114,3 @@ flutter build apk
 - 更新日志规范
 - 截图与演示资源
 - License
-
