@@ -9,14 +9,24 @@ import '../services/miui_live_activities_service.dart';
 class LiveActivityCourseSelection {
   final Course currentCourse;
   final Course? nextCourse;
+  final LiveActivityStage stage;
 
   const LiveActivityCourseSelection({
     required this.currentCourse,
     required this.nextCourse,
+    required this.stage,
   });
 }
 
+enum LiveActivityStage {
+  beforeClass,
+  duringClass,
+  beforeEnd,
+}
+
 class TimetableProvider with ChangeNotifier {
+  static const Duration _liveEndReminderWindow = Duration(minutes: 10);
+
   final StorageService _storageService = StorageService();
   final IcsImportService _icsImportService = IcsImportService();
   final MiuiLiveActivitiesService _liveActivitiesService = MiuiLiveActivitiesService();
@@ -104,6 +114,9 @@ class TimetableProvider with ChangeNotifier {
   Future<void> setCurrentWeek(int week) async {
     _currentWeek = week;
     await _storageService.setCurrentWeek(week);
+    notifyListeners();
+    return;
+    // ignore: dead_code
     _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
     _updateLiveActivity();
@@ -146,7 +159,9 @@ class TimetableProvider with ChangeNotifier {
     if (settings.semesterStartDate != null) {
       await _storageService.setSemesterStart(settings.semesterStartDate!);
     }
+    _currentLiveCourseId = null;
     notifyListeners();
+    await _updateLiveActivity();
     return null;
   }
 
@@ -191,9 +206,26 @@ class TimetableProvider with ChangeNotifier {
     await setCurrentWeek(week < 1 ? 1 : week);
   }
 
-  List<Course> getCoursesForDay(int dayOfWeek) {
+  int _calculateWeekForDate(DateTime date) {
+    final semesterStart = _settings.semesterStartDate;
+    if (semesterStart == null) {
+      return _currentWeek;
+    }
+
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    final normalizedStart = DateTime(
+      semesterStart.year,
+      semesterStart.month,
+      semesterStart.day,
+    );
+    final week = (normalizedDate.difference(normalizedStart).inDays ~/ 7) + 1;
+    return week < 1 ? 1 : week;
+  }
+
+  List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
+    final targetWeek = week ?? _currentWeek;
     return _courses.where((course) => 
-      course.dayOfWeek == dayOfWeek && course.isInWeek(_currentWeek)
+      course.dayOfWeek == dayOfWeek && course.isInWeek(targetWeek)
     ).toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
@@ -291,9 +323,11 @@ class TimetableProvider with ChangeNotifier {
   LiveActivityCourseSelection? getLiveActivityCourseSelection({
     DateTime? now,
     bool allowUpcomingFallback = false,
+    int? week,
   }) {
     final currentTime = now ?? DateTime.now();
-    final todayCourses = getCoursesForDay(currentTime.weekday);
+    final targetWeek = week ?? _calculateWeekForDate(currentTime);
+    final todayCourses = getCoursesForDay(currentTime.weekday, week: targetWeek);
     if (todayCourses.isEmpty) return null;
 
     for (var i = 0; i < todayCourses.length; i++) {
@@ -304,17 +338,26 @@ class TimetableProvider with ChangeNotifier {
         continue;
       }
 
-      final aheadTime = startTime.subtract(const Duration(minutes: 20));
-      if (currentTime.isAfter(aheadTime) && currentTime.isBefore(endTime)) {
+      final aheadTime = startTime.subtract(
+        Duration(minutes: _settings.liveShowBeforeClassMinutes),
+      );
+      final stage = _resolveLiveActivityStage(
+        currentTime: currentTime,
+        startTime: startTime,
+        endTime: endTime,
+        aheadTime: aheadTime,
+      );
+      if (stage != null) {
         final nextCourse = i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
         return LiveActivityCourseSelection(
           currentCourse: resolveCourseDisplayName(course),
           nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+          stage: stage,
         );
       }
     }
 
-    if (!allowUpcomingFallback) {
+    if (!allowUpcomingFallback || !_settings.liveEnableBeforeClass) {
       return null;
     }
 
@@ -329,6 +372,7 @@ class TimetableProvider with ChangeNotifier {
       return LiveActivityCourseSelection(
         currentCourse: resolveCourseDisplayName(course),
         nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+        stage: LiveActivityStage.beforeClass,
       );
     }
 
@@ -339,9 +383,11 @@ class TimetableProvider with ChangeNotifier {
     DateTime? now,
   }) {
     final currentTime = now ?? DateTime.now();
+    final targetWeek = _calculateWeekForDate(currentTime);
     final immediateSelection = getLiveActivityCourseSelection(
       now: currentTime,
       allowUpcomingFallback: true,
+      week: targetWeek,
     );
     if (immediateSelection != null) {
       return immediateSelection;
@@ -353,7 +399,7 @@ class TimetableProvider with ChangeNotifier {
       currentTime.day,
     );
     final maxWeek = _courses.isEmpty
-        ? _currentWeek
+        ? targetWeek
         : _courses.map((course) => course.endWeek).reduce((a, b) => a > b ? a : b);
 
     Course? bestCourse;
@@ -361,12 +407,12 @@ class TimetableProvider with ChangeNotifier {
     int? bestWeek;
 
     for (final course in _courses) {
-      for (var week = _currentWeek; week <= maxWeek; week++) {
+      for (var week = targetWeek; week <= maxWeek; week++) {
         if (!course.isInWeek(week)) {
           continue;
         }
 
-        final dayOffset = (week - _currentWeek) * 7 + course.dayOfWeek - currentTime.weekday;
+        final dayOffset = (week - targetWeek) * 7 + course.dayOfWeek - currentTime.weekday;
         if (dayOffset < 0) {
           continue;
         }
@@ -386,14 +432,15 @@ class TimetableProvider with ChangeNotifier {
       }
     }
 
-    if (bestCourse == null || bestWeek == null) {
+    final fallbackStage = _preferredTestStage();
+    if (bestCourse == null || bestWeek == null || fallbackStage == null) {
       return null;
     }
-    final targetWeek = bestWeek;
+    final resolvedWeek = bestWeek;
 
     final sameDayCourses = _courses
         .where((course) =>
-            course.dayOfWeek == bestCourse!.dayOfWeek && course.isInWeek(targetWeek))
+            course.dayOfWeek == bestCourse!.dayOfWeek && course.isInWeek(resolvedWeek))
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
     final currentIndex = sameDayCourses.indexWhere((course) => course.id == bestCourse!.id);
@@ -404,6 +451,7 @@ class TimetableProvider with ChangeNotifier {
     return LiveActivityCourseSelection(
       currentCourse: resolveCourseDisplayName(bestCourse),
       nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+      stage: fallbackStage,
     );
   }
 
@@ -412,18 +460,28 @@ class TimetableProvider with ChangeNotifier {
     final liveCourse = selection?.currentCourse;
     
     if (liveCourse != null) {
-      if (_currentLiveCourseId == liveCourse.id) {
+      final liveActivityKey = '${liveCourse.id}:${selection!.stage.name}';
+      if (_currentLiveCourseId == liveActivityKey) {
         return; // 防抖，避免频繁唤起 Android 服务
       }
-      _currentLiveCourseId = liveCourse.id;
+      _currentLiveCourseId = liveActivityKey;
 
       final settings = _settings;
       final displayCourse = liveCourse;
-      final displayNextCourse = selection?.nextCourse;
+      final displayNextCourse = selection.nextCourse;
 
       await _liveActivitiesService.startLiveUpdate(
         displayCourse, 
         displayNextCourse,
+        stage: selection.stage.name,
+        endSecondsCountdownThreshold:
+            settings.liveEndSecondsCountdownThreshold,
+        promoteDuringClass: settings.livePromoteDuringClass,
+        showNotificationDuringClass:
+            settings.liveShowDuringClassNotification,
+        enableBeforeClass: settings.liveEnableBeforeClass,
+        enableDuringClass: settings.liveEnableDuringClass,
+        enableBeforeEnd: settings.liveEnableBeforeEnd,
         showCountdown: settings.liveShowCountdown,
         showCourseNameInIsland: settings.liveShowCourseName,
         showLocationInIsland: settings.liveShowLocation,
@@ -445,6 +503,69 @@ class TimetableProvider with ChangeNotifier {
       _currentLiveCourseId = null;
       notifyListeners();
       _updateLiveActivity();
+    }
+  }
+
+  LiveActivityStage? _resolveLiveActivityStage({
+    required DateTime currentTime,
+    required DateTime startTime,
+    required DateTime endTime,
+    required DateTime aheadTime,
+  }) {
+    if (currentTime.isBefore(aheadTime) || !currentTime.isBefore(endTime)) {
+      return null;
+    }
+
+    if (currentTime.isBefore(startTime)) {
+      return _canDisplayStage(LiveActivityStage.beforeClass)
+          ? LiveActivityStage.beforeClass
+          : null;
+    }
+
+    final endReminderStart = _resolveEndReminderStart(startTime, endTime);
+    if (!currentTime.isBefore(endReminderStart)) {
+      if (_canDisplayStage(LiveActivityStage.beforeEnd)) {
+        return LiveActivityStage.beforeEnd;
+      }
+      if (_canDisplayStage(LiveActivityStage.duringClass)) {
+        return LiveActivityStage.duringClass;
+      }
+      return null;
+    }
+
+    return _canDisplayStage(LiveActivityStage.duringClass)
+        ? LiveActivityStage.duringClass
+        : null;
+  }
+
+  DateTime _resolveEndReminderStart(DateTime startTime, DateTime endTime) {
+    final endReminderStart = endTime.subtract(_liveEndReminderWindow);
+    return endReminderStart.isBefore(startTime) ? startTime : endReminderStart;
+  }
+
+  LiveActivityStage? _preferredTestStage() {
+    if (_canDisplayStage(LiveActivityStage.beforeClass)) {
+      return LiveActivityStage.beforeClass;
+    }
+    if (_canDisplayStage(LiveActivityStage.duringClass)) {
+      return LiveActivityStage.duringClass;
+    }
+    if (_canDisplayStage(LiveActivityStage.beforeEnd)) {
+      return LiveActivityStage.beforeEnd;
+    }
+    return null;
+  }
+
+  bool _canDisplayStage(LiveActivityStage stage) {
+    switch (stage) {
+      case LiveActivityStage.beforeClass:
+        return _settings.liveEnableBeforeClass;
+      case LiveActivityStage.duringClass:
+        return _settings.liveEnableDuringClass &&
+            (_settings.livePromoteDuringClass ||
+                _settings.liveShowDuringClassNotification);
+      case LiveActivityStage.beforeEnd:
+        return _settings.liveEnableBeforeEnd;
     }
   }
 }

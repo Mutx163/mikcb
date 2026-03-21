@@ -15,6 +15,9 @@ dependencies:
   uuid: ^4.2.1
   cupertino_icons: ^1.0.8
   file_picker: ^10.3.10
+  http: ^1.2.2
+  package_info_plus: ^8.0.2
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:

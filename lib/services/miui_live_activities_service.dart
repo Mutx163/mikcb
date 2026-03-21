@@ -66,10 +66,54 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<void> openNotificationSettings() async {
+    try {
+      await _channel.invokeMethod('openNotificationSettings');
+    } catch (e) {
+      print('Failed to open notification settings: $e');
+    }
+  }
+
+  Future<void> openAutoStartSettings() async {
+    try {
+      await _channel.invokeMethod('openAutoStartSettings');
+    } catch (e) {
+      print('Failed to open auto-start settings: $e');
+    }
+  }
+
+  Future<void> openBatteryOptimizationSettings() async {
+    try {
+      await _channel.invokeMethod('openBatteryOptimizationSettings');
+    } catch (e) {
+      print('Failed to open battery optimization settings: $e');
+    }
+  }
+
+  Future<bool> isIgnoringBatteryOptimizations() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final result = await _channel.invokeMethod('isIgnoringBatteryOptimizations');
+      return result == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> startLiveUpdate(
     Course currentCourse,
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
+    String? stage,
+    int? startAtMillis,
+    int? endAtMillis,
+    int? endReminderLeadMillis,
+    int endSecondsCountdownThreshold = 60,
+    bool promoteDuringClass = true,
+    bool showNotificationDuringClass = true,
+    bool enableBeforeClass = true,
+    bool enableDuringClass = true,
+    bool enableBeforeEnd = true,
     bool showCountdown = true,
     bool showCourseNameInIsland = true,
     bool showLocationInIsland = true,
@@ -82,6 +126,16 @@ class MiuiLiveActivitiesService {
         currentCourse,
         nextCourse,
         autoDismissAfterStartMinutes: autoDismissAfterStartMinutes,
+        stage: stage,
+        startAtMillis: startAtMillis,
+        endAtMillis: endAtMillis,
+        endReminderLeadMillis: endReminderLeadMillis,
+        endSecondsCountdownThreshold: endSecondsCountdownThreshold,
+        promoteDuringClass: promoteDuringClass,
+        showNotificationDuringClass: showNotificationDuringClass,
+        enableBeforeClass: enableBeforeClass,
+        enableDuringClass: enableDuringClass,
+        enableBeforeEnd: enableBeforeEnd,
         showCountdown: showCountdown,
         showCourseNameInIsland: showCourseNameInIsland,
         showLocationInIsland: showLocationInIsland,
@@ -106,6 +160,16 @@ class MiuiLiveActivitiesService {
     Course currentCourse,
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
+    String? stage,
+    int? startAtMillis,
+    int? endAtMillis,
+    int? endReminderLeadMillis,
+    int endSecondsCountdownThreshold = 60,
+    bool promoteDuringClass = true,
+    bool showNotificationDuringClass = true,
+    bool enableBeforeClass = true,
+    bool enableDuringClass = true,
+    bool enableBeforeEnd = true,
     bool showCountdown = true,
     bool showCourseNameInIsland = true,
     bool showLocationInIsland = true,
@@ -114,6 +178,16 @@ class MiuiLiveActivitiesService {
   }) {
     final data = <String, dynamic>{
       'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
+      'stage': stage,
+      'startAtMillis': startAtMillis,
+      'endAtMillis': endAtMillis,
+      'endReminderLeadMillis': endReminderLeadMillis,
+      'endSecondsCountdownThreshold': endSecondsCountdownThreshold,
+      'promoteDuringClass': promoteDuringClass,
+      'showNotificationDuringClass': showNotificationDuringClass,
+      'enableBeforeClass': enableBeforeClass,
+      'enableDuringClass': enableDuringClass,
+      'enableBeforeEnd': enableBeforeEnd,
       'showCountdown': showCountdown,
       'islandConfig': {
         'showCourseName': showCourseNameInIsland,

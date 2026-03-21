@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "university_timetable" "\0"
+            VALUE "FileDescription", "课程表" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "university_timetable" "\0"
+            VALUE "InternalName", "课程表" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 com.example. All rights reserved." "\0"
-            VALUE "OriginalFilename", "university_timetable.exe" "\0"
-            VALUE "ProductName", "university_timetable" "\0"
+            VALUE "OriginalFilename", "课程表.exe" "\0"
+            VALUE "ProductName", "课程表" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

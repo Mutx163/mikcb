@@ -154,6 +154,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               controller: _nameController,
               decoration: const InputDecoration(
                 labelText: '课程名称',
+                helperText: '超级岛建议 3 个字以内，显示效果最好',
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.book),
               ),

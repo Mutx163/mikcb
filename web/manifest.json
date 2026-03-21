@@ -1,11 +1,11 @@
 {
-    "name": "university_timetable",
-    "short_name": "university_timetable",
+    "name": "课程表",
+    "short_name": "课表",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#2563EB",
+    "theme_color": "#2563EB",
+    "description": "开源课程表应用，支持超级岛和实时通知。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

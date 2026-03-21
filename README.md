@@ -1,16 +1,96 @@
-# university_timetable
+# mikcb
 
-A new Flutter project.
+一个面向校园场景的 Flutter 课表应用，重点支持 HyperOS / 小米超级岛实时提醒。
 
-## Getting Started
+## 项目定位
 
-This project is a starting point for a Flutter application.
+`mikcb` 不是单纯的静态课表查看器，核心目标是把“课程安排”和“实时上课状态”连起来：
 
-A few resources to get you started if this is your first Flutter project:
+- 周视图课表，支持左右滑动切周
+- 课程新增、编辑、颜色区分、课程简称
+- `.ics` 课程表导入
+- 主题色、课表背景、课程卡片颜色自定义
+- HyperOS / 小米实时通知、超级岛、焦点通知联动
+- 上课前、上课中、下课提醒三时段可独立开关
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 当前特性
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### 课表体验
+
+- 细顶栏周次切换
+- 星期栏随周次一起滑动
+- 支持回本周
+- 支持课程总览
+- 支持节次时间和课表密度自定义
+
+### 超级岛 / 实时通知
+
+- 上课前、上课中、下课提醒三时段自由组合
+- 课程简称优先显示
+- 上课前弹出时间可配置
+- 下课前秒级提醒阈值可配置
+- 上课中超级岛和通知栏通知可分别控制
+- 测试通知支持完整时序测试
+
+### 个性化
+
+- 应用主题色切换
+- 课表页面背景色切换
+- 课程卡片统一配色
+- 新应用图标和关于页
+
+## 技术栈
+
+- Flutter
+- Provider
+- SharedPreferences
+- Android Notification / Foreground Service
+- GitHub Releases 更新检测
+
+## 仓库地址
+
+- GitHub: https://github.com/Mutx163/mikcb
+
+## 本地运行
+
+```bash
+flutter pub get
+flutter run
+```
+
+## 构建
+
+```bash
+flutter build apk
+```
+
+如果你要发布到 GitHub Releases，建议把 `pubspec.yaml` 的版本号先更新，再上传对应安装包。
+
+## 更新检测
+
+应用内“关于软件”页面会读取 GitHub Releases 最新版本：
+
+- 有新版本时显示最新版本号
+- 优先跳转到 Release 里的安装包
+- 如果当前仓库还没有发布 Release，会提示未发布
+
+## 使用建议
+
+为了让超级岛和实时通知稳定工作，建议用户在系统里同时打开：
+
+- 通知权限
+- 自启动
+- 电池无限制
+- 焦点通知 / promoted ongoing 权限
+
+这些引导已经集成在应用内的“使用引导与权限”页面。
+
+## 开源说明
+
+这是一个持续迭代中的开源项目。当前仓库仍以功能推进为主，后续可以继续补：
+
+- Release 发布流程
+- 更新日志规范
+- 截图与演示资源
+- License
+
