@@ -91,7 +91,7 @@ class TimetableProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
-      print('Error loading timetable settings: $e');
+      debugPrint('Error loading timetable settings: $e');
     }
   }
 
@@ -102,7 +102,7 @@ class TimetableProvider with ChangeNotifier {
     try {
       _courses = await _storageService.getCourses();
     } catch (e) {
-      print('Error loading courses: $e');
+      debugPrint('Error loading courses: $e');
     }
 
     _isLoading = false;
@@ -114,7 +114,7 @@ class TimetableProvider with ChangeNotifier {
       _currentWeek = await _storageService.getCurrentWeek();
       notifyListeners();
     } catch (e) {
-      print('Error loading current week: $e');
+      debugPrint('Error loading current week: $e');
     }
   }
 

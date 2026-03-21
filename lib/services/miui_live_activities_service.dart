@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 
 class MiuiLiveActivitiesService {
@@ -18,7 +19,7 @@ class MiuiLiveActivitiesService {
       await _channel.invokeMethod('initialize');
       _isInitialized = true;
     } catch (e) {
-      print('Failed to initialize: $e');
+      debugPrint('Failed to initialize: $e');
     }
   }
 
@@ -62,7 +63,7 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openPromotedSettings');
     } catch (e) {
-      print('Failed to open settings: $e');
+      debugPrint('Failed to open settings: $e');
     }
   }
 
@@ -70,7 +71,7 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openNotificationSettings');
     } catch (e) {
-      print('Failed to open notification settings: $e');
+      debugPrint('Failed to open notification settings: $e');
     }
   }
 
@@ -78,7 +79,7 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openAutoStartSettings');
     } catch (e) {
-      print('Failed to open auto-start settings: $e');
+      debugPrint('Failed to open auto-start settings: $e');
     }
   }
 
@@ -86,7 +87,7 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openBatteryOptimizationSettings');
     } catch (e) {
-      print('Failed to open battery optimization settings: $e');
+      debugPrint('Failed to open battery optimization settings: $e');
     }
   }
 
@@ -150,7 +151,7 @@ class MiuiLiveActivitiesService {
       );
       await _channel.invokeMethod('startLiveUpdate', data);
     } catch (e) {
-      print('Failed to start live update: $e');
+      debugPrint('Failed to start live update: $e');
     }
   }
 
@@ -158,7 +159,7 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('stopLiveUpdate');
     } catch (e) {
-      print('Failed to stop: $e');
+      debugPrint('Failed to stop: $e');
     }
   }
 
