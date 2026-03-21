@@ -64,28 +64,68 @@ flutter run
 flutter build apk
 ```
 
-如果你要发布到 GitHub Releases，建议把 `pubspec.yaml` 的版本号先更新，再上传对应安装包。
+如果你要发布正式版，先更新 `pubspec.yaml` 的版本号，再推送到 `main`。
 
 ## GitHub 自动打包
 
-仓库已经接入 GitHub Actions 自动打包：
+仓库已经接入 GitHub Actions 自动打包和自动发版：
 
-- 推送到 `main`：自动执行依赖安装、静态检查、`release APK` 构建，并上传到 Actions Artifact
-- 推送 `v*` 标签：在上面的基础上，自动创建 GitHub Release 并附带 APK
+- 推送到 `main`：自动执行依赖安装、静态检查、`release APK` 构建，并自动创建或更新对应版本的 GitHub Release
+- 推送 `v*` 标签：仍然兼容，会按标签名创建/更新对应 Release
 - 手动触发：可在 Actions 页面直接运行工作流
 
 当前工作流文件在：
 
 - `.github/workflows/android-build.yml`
 
+当前工作流会：
+
+- 使用 `flutter build apk --release --split-per-abi`
+- 只发布 `arm64-v8a` 正式包，减小包体
+- 应用内更新检测也优先识别这个正式包
+
 推荐发版流程：
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git add .
+git commit -m "release: cut 1.0.2"
+git push origin main
 ```
 
-这样 GitHub 会自动生成对应 Release，应用内的“检查更新”也会开始识别这个版本。
+这样 GitHub 会自动生成/更新对应 Release，应用内的“检查更新”也会开始识别这个版本。
+
+## 正式签名
+
+正式版更新要保持同一套签名，不能再用 debug 签名。
+
+项目现在已经支持两种签名来源：
+
+- 本地：`android/key.properties`
+- GitHub Actions：仓库 Secrets
+
+本地模板文件：
+
+- `android/key.properties.example`
+
+本地实际文件默认不进 Git：
+
+- `android/key.properties`
+- `android/app/*.jks`
+- `android/app/*.keystore`
+
+GitHub Actions 需要配置这 4 个 Secrets：
+
+- `ANDROID_KEYSTORE_BASE64`
+- `ANDROID_KEYSTORE_PASSWORD`
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+
+其中 `ANDROID_KEYSTORE_BASE64` 需要填你的 keystore 文件 base64 内容。
+Windows 示例：
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("android/app/upload-keystore.jks"))
+```
 
 ## 更新检测
 
