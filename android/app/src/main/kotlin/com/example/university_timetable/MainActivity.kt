@@ -11,6 +11,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -304,6 +305,17 @@ class MainActivity : FlutterActivity() {
         val showNotificationDuringClass =
             data["showNotificationDuringClass"] as? Boolean ?: true
         val showCountdown = data["showCountdown"] as? Boolean ?: true
+        val progressBreakOffsetsMillis =
+            (data["progressBreakOffsetsMillis"] as? List<*>)
+                ?.mapNotNull { (it as? Number)?.toLong() }
+                ?.toLongArray()
+                ?: longArrayOf()
+        val progressMilestoneLabels =
+            (data["progressMilestoneLabels"] as? List<*>)?.mapNotNull { it as? String }
+                ?: emptyList()
+        val progressMilestoneTimeTexts =
+            (data["progressMilestoneTimeTexts"] as? List<*>)?.mapNotNull { it as? String }
+                ?: emptyList()
 
         val islandConfig = data["islandConfig"] as? java.util.Map<String, Any>
         val showCourseName = islandConfig?.get("showCourseName") as? Boolean ?: true
@@ -331,6 +343,15 @@ class MainActivity : FlutterActivity() {
         intent.putExtra("promoteDuringClass", promoteDuringClass)
         intent.putExtra("showNotificationDuringClass", showNotificationDuringClass)
         intent.putExtra("showCountdown", showCountdown)
+        intent.putExtra("progressBreakOffsetsMillis", progressBreakOffsetsMillis)
+        intent.putStringArrayListExtra(
+            "progressMilestoneLabels",
+            ArrayList(progressMilestoneLabels)
+        )
+        intent.putStringArrayListExtra(
+            "progressMilestoneTimeTexts",
+            ArrayList(progressMilestoneTimeTexts)
+        )
         intent.putExtra("showCourseNameInIsland", showCourseName)
         intent.putExtra("showLocationInIsland", showLocation)
         intent.putExtra("useShortNameInIsland", useShortName)
@@ -382,7 +403,12 @@ class LiveUpdateService : Service() {
     private var enableBeforeEnd = true
     private var promoteDuringClass = true
     private var showNotificationDuringClass = true
+    private var progressBreakOffsetsMillis = longArrayOf()
+    private var progressMilestoneLabels = emptyList<String>()
+    private var progressMilestoneTimeTexts = emptyList<String>()
     private var lastRemainingText = "-1"
+    private var lastProgressUnits = -1
+    private var lastCriticalTimeText = ""
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -414,6 +440,12 @@ class LiveUpdateService : Service() {
         promoteDuringClass = intent?.getBooleanExtra("promoteDuringClass", true) ?: true
         showNotificationDuringClass =
             intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
+        progressBreakOffsetsMillis =
+            intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
+        progressMilestoneLabels =
+            intent?.getStringArrayListExtra("progressMilestoneLabels") ?: emptyList()
+        progressMilestoneTimeTexts =
+            intent?.getStringArrayListExtra("progressMilestoneTimeTexts") ?: emptyList()
         startAtMillis =
             intent?.getLongExtra("startAtMillis", 0L)?.takeIf { it > 0L }
                 ?: buildCourseTimeMillis(startTimeText)
@@ -424,6 +456,26 @@ class LiveUpdateService : Service() {
                 ?: startAtMillis
         
         lastRemainingText = "-1" // Ensure the first tick always refreshes the notification.
+        lastProgressUnits = -1
+        lastCriticalTimeText = ""
+
+        Log.d(
+            TAG,
+            "startLiveUpdate " +
+                "courseName=$courseName, " +
+                "stage=$activityStage, " +
+                "enableBeforeClass=$enableBeforeClass, " +
+                "enableDuringClass=$enableDuringClass, " +
+                "enableBeforeEnd=$enableBeforeEnd, " +
+                "promoteDuringClass=$promoteDuringClass, " +
+                "showNotificationDuringClass=$showNotificationDuringClass, " +
+                "progressBreakOffsetsMillis=${progressBreakOffsetsMillis.joinToString(prefix = "[", postfix = "]")}, " +
+                "progressMilestoneLabels=$progressMilestoneLabels, " +
+                "progressMilestoneTimeTexts=$progressMilestoneTimeTexts, " +
+                "startAtMillis=$startAtMillis, " +
+                "endAtMillis=$endAtMillis, " +
+                "endReminderLeadMillis=$endReminderLeadMillis"
+        )
 
         // Publish once immediately so the foreground service becomes resident.
         val initialText = computeRemainingText(System.currentTimeMillis())
@@ -462,8 +514,30 @@ class LiveUpdateService : Service() {
                 }
 
                 val currentText = computeRemainingText(now)
-                if (currentText != lastRemainingText) {
+                val currentDuringClassProgress = if (stage == "duringClass") {
+                    buildDuringClassProgress(now)
+                } else {
+                    null
+                }
+                val currentProgress = currentDuringClassProgress?.progressUnits ?: -1
+                val currentCriticalTimeText = currentDuringClassProgress?.criticalTimeText ?: currentText
+                if (stage == "duringClass") {
+                    Log.d(
+                        TAG,
+                        "tick stage=$stage, currentText=$currentText, " +
+                            "progress=$currentProgress, " +
+                            "criticalTimeText=$currentCriticalTimeText, " +
+                            "elapsedMillis=${(now - startAtMillis).coerceAtLeast(0L)}, " +
+                            "remainingMillis=${(endAtMillis - now).coerceAtLeast(0L)}"
+                    )
+                }
+                if (currentText != lastRemainingText ||
+                    currentProgress != lastProgressUnits ||
+                    currentCriticalTimeText != lastCriticalTimeText
+                ) {
                     lastRemainingText = currentText
+                    lastProgressUnits = currentProgress
+                    lastCriticalTimeText = currentCriticalTimeText
                     getSystemService(NotificationManager::class.java)
                         ?.notify(NOTIFICATION_ID, buildNotification(currentText))
                 }
@@ -591,6 +665,7 @@ class LiveUpdateService : Service() {
         val isDuringClass = stage == "duringClass"
         val shouldPromote = !isDuringClass || promoteDuringClass
         val showStandardNotification = !isDuringClass || showNotificationDuringClass
+        val duringClassProgress = if (isDuringClass) buildDuringClassProgress(now) else null
 
         val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
         val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
@@ -626,16 +701,21 @@ class LiveUpdateService : Service() {
                 location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
             ).filterNotNull().joinToString("  ·  ")
         } else {
-            listOf(
-                nextName.takeIf { it.isNotBlank() }?.let { "下一节: $it" },
-                timeRangeText.takeIf { it.isNotBlank() }?.let { "本节时间: $it" }
-            ).filterNotNull().joinToString("  ·  ")
+            ""
         }
-        val summaryText = listOf(
-            location.takeIf { it.isNotBlank() },
-            teacher.takeIf { it.isNotBlank() },
-            remainingText.takeIf { it.isNotBlank() }
-        ).filterNotNull().joinToString(" · ")
+        val summaryText = if (isDuringClass && duringClassProgress != null) {
+            listOf(
+                duringClassProgress.nextMilestoneDisplayText,
+                duringClassProgress.finalDismissDisplayText,
+                location.takeIf { it.isNotBlank() }
+            ).filterNotNull().joinToString(" · ")
+        } else {
+            listOf(
+                location.takeIf { it.isNotBlank() },
+                teacher.takeIf { it.isNotBlank() },
+                remainingText.takeIf { it.isNotBlank() }
+            ).filterNotNull().joinToString(" · ")
+        }
 
         val notificationIntent = Intent(this, MainActivity::class.java).apply {
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -647,11 +727,24 @@ class LiveUpdateService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val detailStatusText = when {
+            isDuringClass && duringClassProgress != null -> null
+            remainingText.isNotBlank() && !shouldPromote -> remainingText
+            else -> null
+        }
+
         val expandedDetailText = buildString {
             append(stageTitle)
             append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
-            append("\n状态: ").append(remainingText)
+            if (isDuringClass && duringClassProgress != null) {
+                if (duringClassProgress.nextMilestoneDisplayText != null) {
+                    append("\n下一节点: ").append(duringClassProgress.nextMilestoneDisplayText)
+                }
+                append("\n整节下课: ").append(duringClassProgress.finalDismissDisplayText)
+            } else if (detailStatusText != null) {
+                append("\n状态: ").append(detailStatusText)
+            }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
             if (location.isNotBlank()) append("\n地点: ").append(location)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
@@ -659,14 +752,30 @@ class LiveUpdateService : Service() {
             if (note.isNotBlank()) append("\n备注: ").append(note)
         }
 
-        val promotedContentText = listOf(
-            remainingText.takeIf { it.isNotBlank() },
-            timeRangeText.takeIf { it.isNotBlank() },
-            location.takeIf { it.isNotBlank() },
-            teacher.takeIf { it.isNotBlank() }
-).filterNotNull().joinToString(" · ")
+        val promotedContentText = if (isDuringClass && duringClassProgress != null) {
+            listOf(
+                duringClassProgress.nextMilestoneDisplayText,
+                duringClassProgress.finalDismissDisplayText,
+                location.takeIf { it.isNotBlank() }
+            ).filterNotNull().joinToString(" · ")
+        } else {
+            listOf(
+                remainingText.takeIf { it.isNotBlank() },
+                timeRangeText.takeIf { it.isNotBlank() },
+                location.takeIf { it.isNotBlank() },
+                teacher.takeIf { it.isNotBlank() }
+            ).filterNotNull().joinToString(" · ")
+        }
         val promotedExpandedDetailText = buildString {
-            append("状态: ").append(remainingText)
+            if (isDuringClass && duringClassProgress != null) {
+                if (duringClassProgress.nextMilestoneDisplayText != null) {
+                    append("下一节点: ").append(duringClassProgress.nextMilestoneDisplayText)
+                    append("\n")
+                }
+                append("整节下课: ").append(duringClassProgress.finalDismissDisplayText)
+            } else if (detailStatusText != null) {
+                append("状态: ").append(detailStatusText)
+            }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
             if (location.isNotBlank()) append("\n地点: ").append(location)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
@@ -678,6 +787,8 @@ class LiveUpdateService : Service() {
 
         val contentText = if (!showStandardNotification) {
             ""
+        } else if (isDuringClass && duringClassProgress != null) {
+            promotedContentText
         } else if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
             remainingText
         } else {
@@ -693,10 +804,16 @@ class LiveUpdateService : Service() {
             bodyContent = if (shouldPromote) promotedContentText else contentText,
         )
 
-        val islandCriticalText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
-            remainingText
+        val islandCriticalStatusText = if (isDuringClass && duringClassProgress != null) {
+            duringClassProgress.criticalTimeText
         } else {
-            listOf(islandCourseName, islandLocation, remainingText)
+            remainingText
+        }
+
+        val islandCriticalText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
+            islandCriticalStatusText
+        } else {
+            listOf(islandCourseName, islandLocation, islandCriticalStatusText)
                 .filter { it.isNotBlank() }
                 .joinToString(" ")
         }
@@ -736,17 +853,16 @@ class LiveUpdateService : Service() {
             setOngoing(true)
             setAutoCancel(false)
             setOnlyAlertOnce(true)
-            setStyle(
-                Notification.BigTextStyle()
-                    .setBigContentTitle(notificationTitle)
-                    .bigText(notificationExpandedText)
-                    .setSummaryText(if (showStandardNotification) summaryText else "")
-            )
             setCategory(Notification.CATEGORY_PROGRESS)
             setColorized(false)
             setShowWhen(!shouldPromote)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
             setUsesChronometer(false)
+            if (isDuringClass && duringClassProgress != null) {
+                setProgress(duringClassProgress.progressMax, duringClassProgress.progressUnits, false)
+            } else {
+                setProgress(0, 0, false)
+            }
 
             if (showStandardNotification && !shouldPromote && subText.isNotBlank()) {
                 setSubText(subText)
@@ -771,6 +887,34 @@ class LiveUpdateService : Service() {
             }
         }
 
+        if (Build.VERSION.SDK_INT >= 36 && isDuringClass && duringClassProgress != null) {
+            builder.setStyle(
+                Notification.ProgressStyle()
+                    .setStyledByProgress(true)
+                    .setProgress(duringClassProgress.progressUnits)
+                    .setProgressSegments(
+                        listOf(
+                            Notification.ProgressStyle.Segment(
+                                duringClassProgress.progressMax
+                            )
+                        )
+                    )
+                    .setProgressTrackerIcon(Icon.createWithResource(this, R.drawable.ic_course))
+                    .setProgressPoints(
+                        duringClassProgress.breakPointUnits.map { point ->
+                            Notification.ProgressStyle.Point(point)
+                        }
+                    )
+            )
+        } else {
+            builder.setStyle(
+                Notification.BigTextStyle()
+                    .setBigContentTitle(notificationTitle)
+                    .bigText(notificationExpandedText)
+                    .setSummaryText(if (showStandardNotification) summaryText else "")
+            )
+        }
+
         val notification = builder.build()
         miuiFocusParam?.let { notification.extras.putString("miui.focus.param", it) }
 
@@ -779,10 +923,22 @@ class LiveUpdateService : Service() {
                 getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true
             Log.d(
                 TAG,
-                "requestPromoted=${notification.extras?.getBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, false) == true}, " +
+                "buildNotification " +
+                    "stage=$stage, " +
+                    "isUpcoming=$isUpcoming, " +
+                    "isDuringClass=$isDuringClass, " +
+                    "isEndingSoon=$isEndingSoon, " +
+                    "shouldPromote=$shouldPromote, " +
+                    "showStandardNotification=$showStandardNotification, " +
+                    "requestPromoted=${notification.extras?.getBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, false) == true}, " +
                     "hasPromotableCharacteristics=${notification.hasPromotableCharacteristics()}, " +
                     "canPostPromoted=$canPostPromoted, " +
-                    "remainingText=$remainingText"
+                    "remainingText=$remainingText, " +
+                    "progress=${duringClassProgress?.progressUnits}, " +
+                    "progressPercent=${duringClassProgress?.progressPercent}, " +
+                    "progressPoints=${duringClassProgress?.breakPointUnits}, " +
+                    "startAtMillis=$startAtMillis, " +
+                    "endAtMillis=$endAtMillis"
             )
         }
 
@@ -824,6 +980,78 @@ class LiveUpdateService : Service() {
         return when {
             totalSeconds > 60L -> "${roundedUpMinutes}分钟"
             else -> "${totalSeconds}秒"
+        }
+    }
+
+    private data class DuringClassProgress(
+        val progressMax: Int,
+        val progressUnits: Int,
+        val progressPercent: Int,
+        val nextMilestoneDisplayText: String?,
+        val finalDismissDisplayText: String,
+        val criticalTimeText: String,
+        val breakPointUnits: List<Int>,
+    )
+
+    private fun buildDuringClassProgress(now: Long): DuringClassProgress? {
+        val totalMillis = (endAtMillis - startAtMillis).coerceAtLeast(1L)
+        val elapsedMillis = (now - startAtMillis).coerceIn(0L, totalMillis)
+        val remainingMillis = (endAtMillis - now).coerceAtLeast(0L)
+        val progressMax = 1000
+        val progressUnits = ((elapsedMillis * progressMax) / totalMillis).toInt().coerceIn(0, progressMax)
+        val progressPercent = ((elapsedMillis * 100L) / totalMillis).toInt().coerceIn(0, 100)
+        val breakPointUnits = progressBreakOffsetsMillis
+            .map { offsetMillis ->
+                ((offsetMillis.coerceIn(0L, totalMillis) * progressMax) / totalMillis)
+                    .toInt()
+                    .coerceIn(1, progressMax - 1)
+            }
+            .distinct()
+            .sorted()
+        val nextMilestoneIndex =
+            progressBreakOffsetsMillis.indexOfFirst { it > elapsedMillis }.takeIf { it >= 0 }
+        val nextMilestoneLabel =
+            nextMilestoneIndex?.let { progressMilestoneLabels.getOrNull(it)?.takeIf { label -> label.isNotBlank() } }
+        val nextMilestoneRemainingText =
+            nextMilestoneIndex?.let { formatCustomDuration(progressBreakOffsetsMillis[it] - elapsedMillis) }
+        val finalDismissRemainingText = formatCustomDuration(remainingMillis)
+        val nextMilestoneDisplayText =
+            if (nextMilestoneLabel != null && nextMilestoneRemainingText != null) {
+                "$nextMilestoneLabel $nextMilestoneRemainingText"
+            } else if (nextMilestoneRemainingText != null) {
+                nextMilestoneRemainingText
+            } else {
+                null
+            }
+        val finalDismissDisplayText = "整节下课 $finalDismissRemainingText"
+        val criticalTimeText =
+            if (nextMilestoneRemainingText != null &&
+                nextMilestoneRemainingText != finalDismissRemainingText
+            ) {
+                "$nextMilestoneRemainingText / $finalDismissRemainingText"
+            } else {
+                finalDismissRemainingText
+            }
+        return DuringClassProgress(
+            progressMax = progressMax,
+            progressUnits = progressUnits,
+            progressPercent = progressPercent,
+            nextMilestoneDisplayText = nextMilestoneDisplayText,
+            finalDismissDisplayText = finalDismissDisplayText,
+            criticalTimeText = criticalTimeText,
+            breakPointUnits = breakPointUnits,
+        )
+    }
+
+    private fun formatProgressDuration(durationMillis: Long): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+
+        return when {
+            minutes > 0L && seconds > 0L -> "${minutes}分${seconds}秒"
+            minutes > 0L -> "${minutes}分钟"
+            else -> "${seconds}秒"
         }
     }
 }

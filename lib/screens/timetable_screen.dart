@@ -882,6 +882,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
 
     try {
+      provider.suspendLiveActivitySyncFor(
+        end.difference(now) + const Duration(seconds: 20),
+      );
+      final progressMilestones = provider.buildLiveProgressMilestones(
+        baseCourse,
+        startAtMillis: start.millisecondsSinceEpoch,
+        endAtMillis: end.millisecondsSinceEpoch,
+      );
+      final progressBreakOffsetsMillis = provider.buildLiveProgressBreakOffsetsMillis(
+        baseCourse,
+        startAtMillis: start.millisecondsSinceEpoch,
+        endAtMillis: end.millisecondsSinceEpoch,
+      );
       await MiuiLiveActivitiesService().startLiveUpdate(
         testCourse,
         previewNextCourse,
@@ -900,6 +913,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
         showLocationInIsland: settings.liveShowLocation,
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
+        progressBreakOffsetsMillis: progressBreakOffsetsMillis,
+        progressMilestoneLabels:
+            progressMilestones.map((milestone) => milestone['label'] as String).toList(),
+        progressMilestoneTimeTexts:
+            progressMilestones.map((milestone) => milestone['timeText'] as String).toList(),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

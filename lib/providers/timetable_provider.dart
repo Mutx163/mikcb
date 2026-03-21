@@ -41,6 +41,7 @@ class TimetableProvider with ChangeNotifier {
   bool _isLoading = false;
   Timer? _liveActivityTimer;
   String? _currentLiveCourseId;
+  DateTime? _liveActivitySuspendedUntil;
 
   List<Course> get courses => _courses;
   TimetableSettings get settings => _settings;
@@ -355,6 +356,109 @@ class TimetableProvider with ChangeNotifier {
     return DateTime(date.year, date.month, date.day, hour, minute);
   }
 
+  int? _parseClockMinutes(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
+    }
+
+    return hour * 60 + minute;
+  }
+
+  List<Map<String, dynamic>> buildLiveProgressMilestones(
+    Course course, {
+    int? startAtMillis,
+    int? endAtMillis,
+  }) {
+    if (course.sectionCount < 2) {
+      return const [];
+    }
+
+    final firstSectionIndex = course.startSection - 1;
+    final lastSectionIndex = course.endSection - 1;
+    if (firstSectionIndex < 0 || lastSectionIndex >= _settings.sections.length) {
+      return const [];
+    }
+
+    final resolvedStartAtMillis = startAtMillis;
+    final resolvedEndAtMillis = endAtMillis;
+    if (resolvedStartAtMillis == null ||
+        resolvedEndAtMillis == null ||
+        resolvedEndAtMillis <= resolvedStartAtMillis) {
+      return const [];
+    }
+
+    final sectionStartMinutes =
+        _parseClockMinutes(_settings.sections[firstSectionIndex].startTime);
+    final sectionEndMinutes =
+        _parseClockMinutes(_settings.sections[lastSectionIndex].endTime);
+    if (sectionStartMinutes == null ||
+        sectionEndMinutes == null ||
+        sectionEndMinutes <= sectionStartMinutes) {
+      return const [];
+    }
+
+    final referenceTotalMinutes = sectionEndMinutes - sectionStartMinutes;
+    final totalDurationMillis = resolvedEndAtMillis - resolvedStartAtMillis;
+    final milestones = <Map<String, dynamic>>[];
+
+    for (var sectionIndex = firstSectionIndex; sectionIndex < lastSectionIndex; sectionIndex++) {
+      final currentSection = _settings.sections[sectionIndex];
+      final nextSection = _settings.sections[sectionIndex + 1];
+      final currentEndMinutes = _parseClockMinutes(currentSection.endTime);
+      final nextStartMinutes = _parseClockMinutes(nextSection.startTime);
+      if (currentEndMinutes == null ||
+          nextStartMinutes == null ||
+          nextStartMinutes <= currentEndMinutes) {
+        continue;
+      }
+
+      final breakStartOffsetMillis =
+          (((currentEndMinutes - sectionStartMinutes) / referenceTotalMinutes) *
+                  totalDurationMillis)
+              .round()
+              .clamp(1, totalDurationMillis - 1);
+      final breakEndOffsetMillis =
+          (((nextStartMinutes - sectionStartMinutes) / referenceTotalMinutes) *
+                  totalDurationMillis)
+              .round()
+              .clamp(1, totalDurationMillis - 1);
+
+      milestones.add({
+        'offsetMillis': breakStartOffsetMillis,
+        'label': '最近下课',
+        'timeText': currentSection.endTime,
+      });
+      milestones.add({
+        'offsetMillis': breakEndOffsetMillis,
+        'label': '下节上课',
+        'timeText': nextSection.startTime,
+      });
+    }
+
+    milestones.sort((left, right) =>
+        (left['offsetMillis'] as int).compareTo(right['offsetMillis'] as int));
+    return milestones;
+  }
+
+  List<int> buildLiveProgressBreakOffsetsMillis(
+    Course course, {
+    int? startAtMillis,
+    int? endAtMillis,
+  }) {
+    return buildLiveProgressMilestones(
+      course,
+      startAtMillis: startAtMillis,
+      endAtMillis: endAtMillis,
+    ).map((milestone) => milestone['offsetMillis'] as int).toList();
+  }
+
   LiveActivityCourseSelection? getLiveActivityCourseSelection({
     DateTime? now,
     bool allowUpcomingFallback = false,
@@ -504,6 +608,14 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _updateLiveActivity() async {
+    final suspendedUntil = _liveActivitySuspendedUntil;
+    if (suspendedUntil != null) {
+      if (DateTime.now().isBefore(suspendedUntil)) {
+        return;
+      }
+      _liveActivitySuspendedUntil = null;
+    }
+
     final selection = getLiveActivityCourseSelection();
     final liveCourse = selection?.currentCourse;
 
@@ -517,6 +629,20 @@ class TimetableProvider with ChangeNotifier {
       final settings = _settings;
       final displayCourse = liveCourse;
       final displayNextCourse = selection.nextCourse;
+      final startAtMillis = _buildCourseDateTime(DateTime.now(), displayCourse.startTime)
+          ?.millisecondsSinceEpoch;
+      final endAtMillis = _buildCourseDateTime(DateTime.now(), displayCourse.endTime)
+          ?.millisecondsSinceEpoch;
+      final progressMilestones = buildLiveProgressMilestones(
+        displayCourse,
+        startAtMillis: startAtMillis,
+        endAtMillis: endAtMillis,
+      );
+      final progressBreakOffsetsMillis = buildLiveProgressBreakOffsetsMillis(
+        displayCourse,
+        startAtMillis: startAtMillis,
+        endAtMillis: endAtMillis,
+      );
 
       await _liveActivitiesService.startLiveUpdate(
         displayCourse,
@@ -533,6 +659,11 @@ class TimetableProvider with ChangeNotifier {
         showLocationInIsland: settings.liveShowLocation,
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
+        progressBreakOffsetsMillis: progressBreakOffsetsMillis,
+        progressMilestoneLabels:
+            progressMilestones.map((milestone) => milestone['label'] as String).toList(),
+        progressMilestoneTimeTexts:
+            progressMilestones.map((milestone) => milestone['timeText'] as String).toList(),
       );
     } else {
       if (_currentLiveCourseId != null) {
@@ -540,6 +671,10 @@ class TimetableProvider with ChangeNotifier {
         await _liveActivitiesService.stopLiveUpdate();
       }
     }
+  }
+
+  void suspendLiveActivitySyncFor(Duration duration) {
+    _liveActivitySuspendedUntil = DateTime.now().add(duration);
   }
 
   void updateCurrentDayOfWeek() {
