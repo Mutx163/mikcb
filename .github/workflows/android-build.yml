@@ -53,14 +53,14 @@ jobs:
         run: flutter analyze --no-fatal-infos
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --split-per-abi
 
       - name: Prepare artifact
         shell: bash
         run: |
           mkdir -p dist
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
-          cp build/app/outputs/flutter-apk/app-release.apk "dist/mikcb-${VERSION_NAME}.apk"
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
@@ -76,7 +76,7 @@ jobs:
           RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
           VERSION_NAME: ${{ steps.meta.outputs.version_name }}
         run: |
-          RELEASE_APK="dist/mikcb-${VERSION_NAME}.apk"
+          RELEASE_APK="dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "${RELEASE_APK}" --clobber
             gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --latest
