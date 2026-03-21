@@ -1,4 +1,4 @@
-package com.example.university_timetable
+﻿package com.example.university_timetable
 
 import android.Manifest
 import android.app.Notification
@@ -7,14 +7,17 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
 import androidx.core.app.ActivityCompat
@@ -22,6 +25,7 @@ import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import org.json.JSONObject
 import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
@@ -57,8 +61,22 @@ class MainActivity : FlutterActivity() {
                     }
 
                     "checkPromotedSupport" -> result.success(checkPromotedSupport())
+                    "isIgnoringBatteryOptimizations" ->
+                        result.success(isIgnoringBatteryOptimizations())
+                    "openNotificationSettings" -> {
+                        openNotificationSettings()
+                        result.success(true)
+                    }
                     "openPromotedSettings" -> {
                         openPromotedSettings()
+                        result.success(true)
+                    }
+                    "openAutoStartSettings" -> {
+                        openAutoStartSettings()
+                        result.success(true)
+                    }
+                    "openBatteryOptimizationSettings" -> {
+                        openBatteryOptimizationSettings()
                         result.success(true)
                     }
 
@@ -124,6 +142,27 @@ class MainActivity : FlutterActivity() {
         )
     }
 
+    private fun isIgnoringBatteryOptimizations(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true
+        }
+        val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+        return powerManager?.isIgnoringBatteryOptimizations(packageName) == true
+    }
+
+    private fun openNotificationSettings() {
+        try {
+            startActivity(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                }
+            )
+        } catch (e: Exception) {
+            Log.w("MainActivity", "Failed to open notification settings", e)
+            openAppDetailsSettings()
+        }
+    }
+
     private fun openPromotedSettings() {
         if (Build.VERSION.SDK_INT >= 36) {
             try {
@@ -138,14 +177,72 @@ class MainActivity : FlutterActivity() {
             }
         }
 
+        openNotificationSettings()
+    }
+
+    private fun openAutoStartSettings() {
+        val intents = listOf(
+            Intent().apply {
+                component = ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                )
+            },
+            Intent().apply {
+                component = ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                )
+                putExtra("extra_pkgname", packageName)
+            }
+        )
+
+        for (intent in intents) {
+            try {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                return
+            } catch (_: Exception) {
+                // Try the next Xiaomi-specific screen.
+            }
+        }
+
+        openAppDetailsSettings()
+    }
+
+    private fun openBatteryOptimizationSettings() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:$packageName")
+                    }
+                )
+                return
+            } catch (_: Exception) {
+                // Fallback below.
+            }
+
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                return
+            } catch (_: Exception) {
+                // Fallback below.
+            }
+        }
+
+        openAppDetailsSettings()
+    }
+
+    private fun openAppDetailsSettings() {
         try {
             startActivity(
-                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                    putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = Uri.parse("package:$packageName")
                 }
             )
         } catch (e: Exception) {
-            Log.w("MainActivity", "Failed to open notification settings", e)
+            Log.w("MainActivity", "Failed to open app details settings", e)
         }
     }
 
@@ -178,7 +275,7 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "课程实时更新",
+                "课程表实时更新",
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
                 description = "显示当前课程进度"
@@ -193,6 +290,19 @@ class MainActivity : FlutterActivity() {
         val next = data["nextCourse"] as? Map<String, Any>
         val autoDismissAfterStartMinutes =
             (data["autoDismissAfterStartMinutes"] as? Number)?.toInt() ?: 0
+        val stage = data["stage"] as? String ?: ""
+        val startAtMillis = (data["startAtMillis"] as? Number)?.toLong() ?: 0L
+        val endAtMillis = (data["endAtMillis"] as? Number)?.toLong() ?: 0L
+        val endReminderLeadMillis =
+            (data["endReminderLeadMillis"] as? Number)?.toLong() ?: 600_000L
+        val endSecondsCountdownThreshold =
+            (data["endSecondsCountdownThreshold"] as? Number)?.toInt() ?: 60
+        val enableBeforeClass = data["enableBeforeClass"] as? Boolean ?: true
+        val enableDuringClass = data["enableDuringClass"] as? Boolean ?: true
+        val enableBeforeEnd = data["enableBeforeEnd"] as? Boolean ?: true
+        val promoteDuringClass = data["promoteDuringClass"] as? Boolean ?: true
+        val showNotificationDuringClass =
+            data["showNotificationDuringClass"] as? Boolean ?: true
         val showCountdown = data["showCountdown"] as? Boolean ?: true
 
         val islandConfig = data["islandConfig"] as? java.util.Map<String, Any>
@@ -210,6 +320,16 @@ class MainActivity : FlutterActivity() {
         intent.putExtra("endTime", current?.get("endTime") as? String ?: "")
         intent.putExtra("nextName", next?.get("name") as? String ?: "")
         intent.putExtra("autoDismissAfterStartMinutes", autoDismissAfterStartMinutes)
+        intent.putExtra("stage", stage)
+        intent.putExtra("startAtMillis", startAtMillis)
+        intent.putExtra("endAtMillis", endAtMillis)
+        intent.putExtra("endReminderLeadMillis", endReminderLeadMillis)
+        intent.putExtra("endSecondsCountdownThreshold", endSecondsCountdownThreshold)
+        intent.putExtra("enableBeforeClass", enableBeforeClass)
+        intent.putExtra("enableDuringClass", enableDuringClass)
+        intent.putExtra("enableBeforeEnd", enableBeforeEnd)
+        intent.putExtra("promoteDuringClass", promoteDuringClass)
+        intent.putExtra("showNotificationDuringClass", showNotificationDuringClass)
         intent.putExtra("showCountdown", showCountdown)
         intent.putExtra("showCourseNameInIsland", showCourseName)
         intent.putExtra("showLocationInIsland", showLocation)
@@ -247,6 +367,8 @@ class LiveUpdateService : Service() {
     private var endTimeText = ""
     private var nextName = ""
     private var autoDismissAfterStartMinutes = 0
+    private var activityStage = ""
+    private var endSecondsCountdownThreshold = 60
     private var showCountdown = true
     private var showCourseNameInIsland = true
     private var showLocationInIsland = true
@@ -254,6 +376,12 @@ class LiveUpdateService : Service() {
     private var hidePrefixText = false
     private var startAtMillis = 0L
     private var endAtMillis = 0L
+    private var endReminderLeadMillis = 600_000L
+    private var enableBeforeClass = true
+    private var enableDuringClass = true
+    private var enableBeforeEnd = true
+    private var promoteDuringClass = true
+    private var showNotificationDuringClass = true
     private var lastRemainingText = "-1"
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -268,17 +396,36 @@ class LiveUpdateService : Service() {
         endTimeText = intent?.getStringExtra("endTime").orEmpty()
         nextName = intent?.getStringExtra("nextName").orEmpty()
         autoDismissAfterStartMinutes = intent?.getIntExtra("autoDismissAfterStartMinutes", 0) ?: 0
+        activityStage = intent?.getStringExtra("stage").orEmpty()
+        endSecondsCountdownThreshold =
+            intent?.getIntExtra("endSecondsCountdownThreshold", 60) ?: 60
         showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
         showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
         showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
         useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
         hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
-        startAtMillis = buildCourseTimeMillis(startTimeText) ?: System.currentTimeMillis()
-        endAtMillis = buildCourseTimeMillis(endTimeText) ?: startAtMillis
+        endReminderLeadMillis =
+            intent?.getLongExtra("endReminderLeadMillis", 600_000L)
+                ?.coerceAtLeast(0L)
+                ?: 600_000L
+        enableBeforeClass = intent?.getBooleanExtra("enableBeforeClass", true) ?: true
+        enableDuringClass = intent?.getBooleanExtra("enableDuringClass", true) ?: true
+        enableBeforeEnd = intent?.getBooleanExtra("enableBeforeEnd", true) ?: true
+        promoteDuringClass = intent?.getBooleanExtra("promoteDuringClass", true) ?: true
+        showNotificationDuringClass =
+            intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
+        startAtMillis =
+            intent?.getLongExtra("startAtMillis", 0L)?.takeIf { it > 0L }
+                ?: buildCourseTimeMillis(startTimeText)
+                ?: System.currentTimeMillis()
+        endAtMillis =
+            intent?.getLongExtra("endAtMillis", 0L)?.takeIf { it > 0L }
+                ?: buildCourseTimeMillis(endTimeText)
+                ?: startAtMillis
         
-        lastRemainingText = "-1" // 确保第一刷通过
+        lastRemainingText = "-1" // Ensure the first tick always refreshes the notification.
 
-        // 在这里进行一次初始推送，使服务启动为常驻
+        // Publish once immediately so the foreground service becomes resident.
         val initialText = computeRemainingText(System.currentTimeMillis())
         lastRemainingText = initialText
         startForeground(NOTIFICATION_ID, buildNotification(initialText))
@@ -296,6 +443,7 @@ class LiveUpdateService : Service() {
         ticker = object : Runnable {
             override fun run() {
                 val now = System.currentTimeMillis()
+                val stage = resolveStage(now)
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
                 ) {
@@ -303,7 +451,12 @@ class LiveUpdateService : Service() {
                     return
                 }
 
-                if (now >= endAtMillis + 30_000L) { // 下课后 30 秒自动退场（特别是对无后续或者测试课的安全回收）
+                if (stage == null) {
+                    stopAndRemoveNotification()
+                    return
+                }
+
+                if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
                     stopAndRemoveNotification()
                     return
                 }
@@ -315,7 +468,7 @@ class LiveUpdateService : Service() {
                         ?.notify(NOTIFICATION_ID, buildNotification(currentText))
                 }
                 
-                // 心跳频率视乎倒数是否只变了分钟还是在 60秒内，但为稳妥都留有1秒钟来捕捉下一分钟跳变的时刻，而不会发生通知风暴。
+                // Keep a 1s heartbeat so countdowns and stage transitions update on time.
                 handler.postDelayed(this, 1000L)
             }
         }
@@ -328,29 +481,116 @@ class LiveUpdateService : Service() {
     }
 
     private fun computeRemainingText(now: Long): String {
-        val isUpcoming = now < startAtMillis
+        val stage = resolveStage(now)
         val timeUntilEnd = endAtMillis - now
 
-        val prefixTextStart = if (hidePrefixText) "" else "距上课 "
-        val prefixTextEnd = if (hidePrefixText) "" else "距下课 "
+        val prefixTextStart = if (hidePrefixText) "" else "距上课"
+        val prefixTextEnd = if (hidePrefixText) "" else "距下课"
 
         return if (!showCountdown) {
             ""
-        } else if (isUpcoming) {
-            "${prefixTextStart}${formatCustomDuration(startAtMillis - now)}"
-        } else if (timeUntilEnd in 1..600_000L) {
-            "${prefixTextEnd}${formatCustomDuration(timeUntilEnd)}"
         } else {
-            "上课中"
+            when (stage) {
+                "beforeClass" -> "${prefixTextStart}${formatCustomDuration(startAtMillis - now)}"
+                "beforeEnd" -> {
+                    if (timeUntilEnd <= endSecondsCountdownThreshold * 1000L) {
+                        "${prefixTextEnd}${(timeUntilEnd / 1000L).coerceAtLeast(0L)}秒"
+                    } else {
+                        "${prefixTextEnd}${formatCustomDuration(timeUntilEnd)}"
+                    }
+                }
+                "duringClass" -> "上课中"
+                else -> ""
+            }
+        }
+    }
+
+    private fun resolveStage(now: Long): String? {
+        if (now >= endAtMillis) {
+            return null
+        }
+
+        val endReminderStart = maxOf(startAtMillis, endAtMillis - endReminderLeadMillis)
+        return when {
+            now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
+            now >= endReminderStart && enableBeforeEnd -> "beforeEnd"
+            now < endReminderStart && enableDuringClass -> "duringClass"
+            now >= startAtMillis && enableBeforeEnd && endReminderStart <= startAtMillis -> "beforeEnd"
+            else -> null
+        }
+    }
+
+    private fun isXiaomiFamilyDevice(): Boolean {
+        val brand = Build.BRAND.lowercase()
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        return manufacturer.contains("xiaomi") ||
+            brand.contains("xiaomi") ||
+            brand.contains("redmi") ||
+            brand.contains("poco")
+    }
+
+    private fun buildMiuiFocusParam(
+        title: String,
+        remainingText: String,
+        timeRangeText: String,
+        bodyContent: String,
+    ): String? {
+        if (!isXiaomiFamilyDevice()) {
+            return null
+        }
+
+        return try {
+            val extraInfo = JSONObject().apply {
+                if (location.isNotBlank()) put("location", location)
+                if (teacher.isNotBlank()) put("teacher", teacher)
+                if (timeRangeText.isNotBlank()) put("time", timeRangeText)
+                if (nextName.isNotBlank()) put("nextCourse", nextName)
+            }
+
+            val paramV2 = JSONObject().apply {
+                put("protocol", 1)
+                put("updatable", true)
+                put("enableFloat", true)
+                put("ticker", title)
+                put(
+                    "baseInfo",
+                    JSONObject().apply {
+                        put("title", title)
+                        put("content", bodyContent.ifBlank { remainingText })
+                        put("type", 2)
+                    }
+                )
+                if (remainingText.isNotBlank()) {
+                    put(
+                        "hintInfo",
+                        JSONObject().apply {
+                            put("type", 1)
+                            put("title", remainingText)
+                        }
+                    )
+                }
+                if (extraInfo.length() > 0) {
+                    put("extraInfo", extraInfo)
+                }
+            }
+
+            JSONObject().apply {
+                put("param_v2", paramV2)
+            }.toString()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to build miui.focus.param", e)
+            null
         }
     }
 
     private fun buildNotification(remainingText: String): Notification {
         val now = System.currentTimeMillis()
-        val isUpcoming = now < startAtMillis
-        val timeUntilEnd = endAtMillis - now
-        val isEndingSoon = !isUpcoming && timeUntilEnd in 1..600_000L
-        val shouldPromote = isUpcoming || isEndingSoon
+        val stage = resolveStage(now)
+        val isUpcoming = stage == "beforeClass"
+        val isEndingSoon = stage == "beforeEnd"
+        val isDuringClass = stage == "duringClass"
+        val shouldPromote = !isDuringClass || promoteDuringClass
+        val showStandardNotification = !isDuringClass || showNotificationDuringClass
 
         val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
         val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
@@ -359,8 +599,16 @@ class LiveUpdateService : Service() {
         } else ""
         val islandLocation = if (showLocationInIsland) location else ""
 
-        val titlePrefix = if (isUpcoming) "即将上课" else "正在上课"
-        val title = if (isUpcoming) "即将上课: $shortCourseName" else shortCourseName
+        val stageTitle = when (stage) {
+            "beforeClass" -> "即将上课"
+            "beforeEnd" -> "下课提醒"
+            else -> "上课中"
+        }
+        val title = when (stage) {
+            "beforeClass" -> "即将上课: $shortCourseName"
+            "beforeEnd" -> "下课提醒: $shortCourseName"
+            else -> shortCourseName
+        }
         val shortNameLabel = shortCourseNameRaw.takeIf { it.isNotBlank() && it != courseName }
         val timeRangeText = if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {
             "$startTimeText - $endTimeText".trim()
@@ -370,6 +618,11 @@ class LiveUpdateService : Service() {
         val subText = if (isUpcoming) {
             listOf(
                 timeRangeText.takeIf { it.isNotBlank() }?.let { "上课时间: $it" },
+                location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+            ).filterNotNull().joinToString("  ·  ")
+        } else if (isEndingSoon) {
+            listOf(
+                timeRangeText.takeIf { it.isNotBlank() }?.let { "下课时间: $it" },
                 location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
             ).filterNotNull().joinToString("  ·  ")
         } else {
@@ -394,19 +647,8 @@ class LiveUpdateService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val detailText = buildString {
-            append("课程: ").append(courseName)
-            append("\n状态: ").append(remainingText)
-            if (location.isNotBlank()) append("\n地点: ").append(location)
-            if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
-            if (note.isNotBlank()) append("\n备注: ").append(note)
-            if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {
-                append("\n时间: ").append(startTimeText).append(" - ").append(endTimeText)
-            }
-        }
-
         val expandedDetailText = buildString {
-            append(if (isUpcoming) "即将上课" else "正在上课")
+            append(stageTitle)
             append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
             append("\n状态: ").append(remainingText)
@@ -422,7 +664,7 @@ class LiveUpdateService : Service() {
             timeRangeText.takeIf { it.isNotBlank() },
             location.takeIf { it.isNotBlank() },
             teacher.takeIf { it.isNotBlank() }
-        ).filterNotNull().joinToString(" · ")
+).filterNotNull().joinToString(" · ")
         val promotedExpandedDetailText = buildString {
             append("状态: ").append(remainingText)
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
@@ -434,7 +676,9 @@ class LiveUpdateService : Service() {
             if (note.isNotBlank()) append("\n备注: ").append(note)
         }
 
-        val contentText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
+        val contentText = if (!showStandardNotification) {
+            ""
+        } else if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
             remainingText
         } else {
             listOf(islandCourseName, islandLocation, teacher, remainingText)
@@ -442,6 +686,13 @@ class LiveUpdateService : Service() {
                 .joinToString(" · ")
         }
             
+        val miuiFocusParam = buildMiuiFocusParam(
+            title = title,
+            remainingText = remainingText,
+            timeRangeText = timeRangeText,
+            bodyContent = if (shouldPromote) promotedContentText else contentText,
+        )
+
         val islandCriticalText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
             remainingText
         } else {
@@ -450,17 +701,36 @@ class LiveUpdateService : Service() {
                 .joinToString(" ")
         }
 
-        val iconRes = if (isUpcoming) R.drawable.ic_upcoming else if (shouldPromote) R.drawable.ic_countdown else R.drawable.ic_course
-
+        val iconRes = when (stage) {
+            "beforeClass" -> R.drawable.ic_upcoming
+            "beforeEnd" -> R.drawable.ic_countdown
+            else -> R.drawable.ic_course
+        }
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
         } else {
             Notification.Builder(this)
         }
 
+        val notificationTitle = if (showStandardNotification) title else ""
+        val notificationContentText = if (!showStandardNotification) {
+            ""
+        } else if (shouldPromote) {
+            promotedContentText
+        } else {
+            contentText
+        }
+        val notificationExpandedText = if (!showStandardNotification) {
+            ""
+        } else if (shouldPromote) {
+            promotedExpandedDetailText
+        } else {
+            expandedDetailText
+        }
+
         builder.apply {
-            setContentTitle(title)
-            setContentText(if (shouldPromote) promotedContentText else contentText)
+            setContentTitle(notificationTitle)
+            setContentText(notificationContentText)
             setSmallIcon(iconRes)
             setContentIntent(pendingIntent)
             setOngoing(true)
@@ -468,9 +738,9 @@ class LiveUpdateService : Service() {
             setOnlyAlertOnce(true)
             setStyle(
                 Notification.BigTextStyle()
-                    .setBigContentTitle(title)
-                    .bigText(if (shouldPromote) promotedExpandedDetailText else expandedDetailText)
-                    .setSummaryText(summaryText)
+                    .setBigContentTitle(notificationTitle)
+                    .bigText(notificationExpandedText)
+                    .setSummaryText(if (showStandardNotification) summaryText else "")
             )
             setCategory(Notification.CATEGORY_PROGRESS)
             setColorized(false)
@@ -478,7 +748,7 @@ class LiveUpdateService : Service() {
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
             setUsesChronometer(false)
 
-            if (!shouldPromote && subText.isNotBlank()) {
+            if (showStandardNotification && !shouldPromote && subText.isNotBlank()) {
                 setSubText(subText)
             }
 
@@ -502,6 +772,7 @@ class LiveUpdateService : Service() {
         }
 
         val notification = builder.build()
+        miuiFocusParam?.let { notification.extras.putString("miui.focus.param", it) }
 
         if (Build.VERSION.SDK_INT >= 36) {
             val canPostPromoted =
@@ -548,11 +819,11 @@ class LiveUpdateService : Service() {
 
     private fun formatCustomDuration(durationMillis: Long): String {
         val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
-        return if (totalSeconds >= 60) {
-            val minutes = totalSeconds / 60L
-            "${minutes}分钟"
-        } else {
-            "${totalSeconds}秒"
+        val roundedUpMinutes = (totalSeconds + 59L) / 60L
+
+        return when {
+            totalSeconds > 60L -> "${roundedUpMinutes}分钟"
+            else -> "${totalSeconds}秒"
         }
     }
 }

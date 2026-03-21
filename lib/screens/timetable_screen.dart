@@ -29,10 +29,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
   static const int _centerWeekPage = 1;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
-  final List<String> _weekDays = const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  final List<String> _weekDays = const [
+    '周一',
+    '周二',
+    '周三',
+    '周四',
+    '周五',
+    '周六',
+    '周日'
+  ];
 
   late final PageController _weekPageController;
   bool _isSyncingWeekPage = false;
+
+  Color _colorFromHex(String hexColor, Color fallback) {
+    try {
+      final normalized = hexColor.replaceFirst('#', '');
+      return Color(int.parse('FF$normalized', radix: 16));
+    } catch (_) {
+      return fallback;
+    }
+  }
 
   @override
   void initState() {
@@ -50,8 +67,15 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        final backgroundColor = _colorFromHex(
+          provider.settings.timetablePageBackgroundColor,
+          Theme.of(context).colorScheme.surface,
+        );
         return Scaffold(
+          backgroundColor: backgroundColor,
           appBar: AppBar(
+            backgroundColor: backgroundColor,
+            surfaceTintColor: backgroundColor,
             title: const Text('课程表'),
             actions: [
               PopupMenuButton<String>(
@@ -84,16 +108,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
           ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return _buildWeekPager(
-                        provider,
-                        provider.settings,
-                        constraints.maxWidth,
-                      );
-                    },
+              : Container(
+                  color: backgroundColor,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return _buildWeekPager(
+                          provider,
+                          provider.settings,
+                          constraints.maxWidth,
+                        );
+                      },
+                    ),
                   ),
                 ),
         );
@@ -107,6 +134,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     TimetableSettings settings,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final currentSemesterWeek = _resolveCurrentSemesterWeek(settings);
+    final canReturnToCurrentWeek =
+        currentSemesterWeek != null && currentSemesterWeek != week;
 
     return Container(
       height: 50,
@@ -137,7 +167,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       onTap: _showWeekSelector,
                       borderRadius: BorderRadius.circular(10),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 2, vertical: 2),
                         child: Text(
                           '$week周',
                           style: TextStyle(
@@ -157,21 +188,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                InkWell(
-                  onTap: () => _jumpToCurrentWeek(provider),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    child: Text(
-                      '回本周',
-                      style: TextStyle(
-                        fontSize: 8,
-                        color: colorScheme.onSurfaceVariant,
+                if (canReturnToCurrentWeek) ...[
+                  const SizedBox(height: 2),
+                  InkWell(
+                    onTap: () => _jumpToCurrentWeek(provider),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 1),
+                      child: Text(
+                        '回本周',
+                        style: TextStyle(
+                          fontSize: 8,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
@@ -277,13 +311,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 final section = settings.sections[index];
                 return Container(
                   height: sectionHeight,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      bottom: BorderSide(color: Colors.grey.shade200),
-                    ),
-                  ),
+                  alignment: Alignment.center,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         '${index + 1}',
@@ -295,7 +326,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       Text(
                         section.startTime,
                         style: TextStyle(
-                          fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
+                          fontSize:
+                              (settings.compactFontSize - 2).clamp(6.0, 10.0),
                           color: Colors.grey.shade600,
                         ),
                       ),
@@ -356,7 +388,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
         Expanded(
           child: SingleChildScrollView(
             key: PageStorageKey<String>('week-scroll-$week'),
-            child: _buildTimetableGrid(provider, settings, availableWidth, week),
+            child:
+                _buildTimetableGrid(provider, settings, availableWidth, week),
           ),
         ),
       ],
@@ -369,10 +402,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
     TimetableSettings settings,
   ) {
     final sectionHeight = settings.sectionHeight;
+    final colorScheme = Theme.of(context).colorScheme;
+    final columnBackground = colorScheme.surfaceContainerLowest.withValues(
+      alpha: 0.45,
+    );
+    final overrideCardColor = settings.timetableUseUnifiedCardColor
+        ? settings.timetableUnifiedCardColor
+        : null;
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
-    for (var sectionIndex = 0; sectionIndex < settings.sectionCount; sectionIndex++) {
+    for (var sectionIndex = 0;
+        sectionIndex < settings.sectionCount;
+        sectionIndex++) {
       final section = sectionIndex + 1;
       final course = _findCourseForSection(courses, section);
 
@@ -384,13 +426,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
           height: sectionHeight,
           child: GestureDetector(
             onTap: () => _addCourseAt(dayOfWeek, section),
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.grey.shade200),
-                ),
-              ),
-            ),
+            child: const SizedBox.expand(),
           ),
         ),
       );
@@ -404,6 +440,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             height: course.sectionCount * sectionHeight - 4,
             child: CourseCard(
               course: course,
+              overrideColorHex: overrideCardColor,
               isCompact: true,
               onTap: () => _editCourse(course),
               compactTitleFontSize: settings.compactFontSize,
@@ -419,11 +456,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return Container(
       height: settings.sectionCount * sectionHeight,
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: Colors.grey.shade200),
-        ),
+        color: columnBackground,
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Stack(
+        clipBehavior: Clip.antiAlias,
         children: [
           ...gridLines,
           ...courseCards,
@@ -468,8 +505,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-
-
   Course? _findCourseForSection(List<Course> courses, int section) {
     for (final course in courses) {
       if (section >= course.startSection && section <= course.endSection) {
@@ -479,9 +514,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return null;
   }
 
-  List<Course> _getCoursesForDay(List<Course> allCourses, int week, int dayOfWeek) {
+  List<Course> _getCoursesForDay(
+      List<Course> allCourses, int week, int dayOfWeek) {
     return allCourses
-        .where((course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week))
+        .where(
+            (course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week))
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
@@ -509,6 +546,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
     ).subtract(Duration(days: semesterStart.weekday - 1));
 
     return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+  }
+
+  int? _resolveCurrentSemesterWeek(TimetableSettings settings) {
+    final semesterStart = settings.semesterStartDate;
+    if (semesterStart == null) {
+      return null;
+    }
+
+    final normalizedNow = DateTime.now();
+    final normalizedToday = DateTime(
+      normalizedNow.year,
+      normalizedNow.month,
+      normalizedNow.day,
+    );
+    final normalizedStart = DateTime(
+      semesterStart.year,
+      semesterStart.month,
+      semesterStart.day,
+    );
+    final week = (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
+    return _clampWeek(week < 1 ? 1 : week);
   }
 
   bool _isSameDate(DateTime left, DateTime right) {
@@ -722,23 +780,26 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
 
     final content = utf8.decode(bytes, allowMalformed: true);
-    final importedCount = await context.read<TimetableProvider>().importWakeUpCalendar(
-          content,
-          replaceExisting: replaceExisting,
-        );
+    final importedCount =
+        await context.read<TimetableProvider>().importWakeUpCalendar(
+              content,
+              replaceExisting: replaceExisting,
+            );
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(importedCount > 0 ? '已导入 $importedCount 条课程' : '未识别到可导入课程'),
+        content:
+            Text(importedCount > 0 ? '已导入 $importedCount 条课程' : '未识别到可导入课程'),
       ),
     );
   }
 
   void _showTestOptions() async {
     final now = DateTime.now();
-    final start = now.add(const Duration(minutes: 2));
-    final end = now.add(const Duration(minutes: 3));
+    const beforeClassDuration = Duration(seconds: 90);
+    const duringClassDuration = Duration(seconds: 30);
+    const beforeEndDuration = Duration(seconds: 60);
 
     String formatTime(DateTime dt) {
       return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -747,35 +808,94 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
     final selection = provider.getTestLiveActivityCourseSelection(now: now);
-    final baseCourse = selection?.currentCourse;
-    final previewNextCourse = selection?.nextCourse;
+    if (selection == null) {
+      final hasEnabledStage = settings.liveEnableBeforeClass ||
+          settings.liveEnableDuringClass ||
+          settings.liveEnableBeforeEnd;
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(hasEnabledStage ? '当前没有可测试的课程' : '请先开启至少一个超级岛时段'),
+        ),
+      );
+      return;
+    }
 
-    final resolvedShortName = baseCourse == null
-        ? null
-        : provider.resolveCourseShortName(baseCourse);
+    final enableBeforeClass = settings.liveEnableBeforeClass;
+    final enableDuringClass = settings.liveEnableDuringClass;
+    final enableBeforeEnd = settings.liveEnableBeforeEnd;
+
+    late final DateTime start;
+    late final DateTime end;
+    late final Duration endReminderLead;
+    late final LiveActivityStage initialStage;
+    late final String flowSummary;
+
+    if (enableBeforeClass) {
+      initialStage = LiveActivityStage.beforeClass;
+      start = now.add(beforeClassDuration);
+      if (enableDuringClass && enableBeforeEnd) {
+        end = start.add(duringClassDuration + beforeEndDuration);
+        endReminderLead = beforeEndDuration;
+        flowSummary = '上课前 1分30秒 → 上课中 30秒 → 下课提醒 60秒';
+      } else if (enableDuringClass) {
+        end = start.add(const Duration(seconds: 90));
+        endReminderLead = Duration.zero;
+        flowSummary = '上课前 1分30秒 → 上课中 1分30秒';
+      } else if (enableBeforeEnd) {
+        end = start.add(beforeEndDuration);
+        endReminderLead = beforeEndDuration;
+        flowSummary = '上课前 1分30秒 → 下课提醒 60秒';
+      } else {
+        end = start;
+        endReminderLead = Duration.zero;
+        flowSummary = '仅测试上课前 1分30秒';
+      }
+    } else if (enableDuringClass) {
+      initialStage = LiveActivityStage.duringClass;
+      start = now;
+      if (enableBeforeEnd) {
+        end = start.add(duringClassDuration + beforeEndDuration);
+        endReminderLead = beforeEndDuration;
+        flowSummary = '上课中 30秒 → 下课提醒 60秒';
+      } else {
+        end = start.add(const Duration(seconds: 90));
+        endReminderLead = Duration.zero;
+        flowSummary = '仅测试上课中 1分30秒';
+      }
+    } else {
+      initialStage = LiveActivityStage.beforeEnd;
+      start = now;
+      end = start.add(beforeEndDuration);
+      endReminderLead = beforeEndDuration;
+      flowSummary = '仅测试下课提醒 60秒';
+    }
+
+    final baseCourse = selection.currentCourse;
+    final previewNextCourse = selection.nextCourse;
+    final resolvedShortName = provider.resolveCourseShortName(baseCourse);
 
     final testCourse = Course(
       id: 'test_auto_id',
-      name: baseCourse?.name ?? '智能测试模拟课',
+      name: baseCourse.name,
       shortName: resolvedShortName,
-      teacher: baseCourse?.teacher ?? '模拟教员',
-      location: baseCourse?.location ?? '虚拟教室',
+      teacher: baseCourse.teacher,
+      location: baseCourse.location,
       dayOfWeek: now.weekday,
-      startSection: baseCourse?.startSection ?? 1,
-      endSection: baseCourse?.endSection ?? 2,
-      startWeek: baseCourse?.startWeek ?? 1,
-      endWeek: baseCourse?.endWeek ?? 20,
+      startSection: baseCourse.startSection,
+      endSection: baseCourse.endSection,
+      startWeek: baseCourse.startWeek,
+      endWeek: baseCourse.endWeek,
       startTime: formatTime(start),
       endTime: formatTime(end),
-      color: baseCourse?.color ?? '#4285F4',
-      note: '此处展示备注。可以在课程编辑页进行设置。',
+      color: baseCourse.color,
+      note: '此处显示备注。可以在课程编辑页进行设置。',
     );
 
     final shortName = (testCourse.shortName ?? '').trim();
-    final islandName =
-        settings.liveUseShortName && shortName.isNotEmpty
-            ? shortName
-            : testCourse.name;
+    final islandName = settings.liveUseShortName && shortName.isNotEmpty
+        ? shortName
+        : testCourse.name;
 
     if (!mounted) return;
     final shouldSend = await showDialog<bool>(
@@ -789,6 +909,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             children: [
               Text('课程全名：${testCourse.name}'),
               Text('课程简称：${shortName.isEmpty ? "未设置" : shortName}'),
+              Text('测试流程：$flowSummary'),
               Text('简称开关：${settings.liveUseShortName ? "已开启" : "已关闭"}'),
               Text('岛区预期：$islandName'),
             ],
@@ -813,18 +934,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
     try {
       await MiuiLiveActivitiesService().startLiveUpdate(
-        testCourse, 
+        testCourse,
         previewNextCourse,
+        stage: initialStage.name,
+        startAtMillis: start.millisecondsSinceEpoch,
+        endAtMillis: end.millisecondsSinceEpoch,
+        endReminderLeadMillis: endReminderLead.inMilliseconds,
+        endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
+        promoteDuringClass: settings.livePromoteDuringClass,
+        showNotificationDuringClass: settings.liveShowDuringClassNotification,
+        enableBeforeClass: enableBeforeClass,
+        enableDuringClass: enableDuringClass,
+        enableBeforeEnd: enableBeforeEnd,
         showCountdown: settings.liveShowCountdown,
         showCourseNameInIsland: settings.liveShowCourseName,
         showLocationInIsland: settings.liveShowLocation,
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
-        autoDismissAfterStartMinutes: 1,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已发射测试通知（距上课2分钟，持续1分），马上体验实机效果。')),
+        SnackBar(content: Text('已发送测试通知：$flowSummary')),
       );
     } catch (e) {
       if (!mounted) return;

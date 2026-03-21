@@ -8,6 +8,7 @@ class CourseCard extends StatelessWidget {
   final double compactTitleFontSize;
   final double compactSubtitleFontSize;
   final double compactVerticalPadding;
+  final String? overrideColorHex;
 
   const CourseCard({
     Key? key,
@@ -17,6 +18,7 @@ class CourseCard extends StatelessWidget {
     this.compactTitleFontSize = 9,
     this.compactSubtitleFontSize = 8,
     this.compactVerticalPadding = 6,
+    this.overrideColorHex,
   }) : super(key: key);
 
   Color _parseColor(String colorString) {
@@ -26,12 +28,12 @@ class CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _parseColor(course.color);
-    
+    final color = _parseColor(overrideColorHex ?? course.color);
+
     if (isCompact) {
       return _buildCompactCard(context, color);
     }
-    
+
     return _buildFullCard(context, color);
   }
 
@@ -76,7 +78,8 @@ class CourseCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -94,7 +97,8 @@ class CourseCard extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  const Icon(Icons.location_on, size: 16, color: Colors.white70),
+                  const Icon(Icons.location_on,
+                      size: 16, color: Colors.white70),
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
@@ -130,7 +134,8 @@ class CourseCard extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(Icons.access_time, size: 16, color: Colors.white70),
+                  const Icon(Icons.access_time,
+                      size: 16, color: Colors.white70),
                   const SizedBox(width: 4),
                   Text(
                     '${course.startTime} - ${course.endTime}',
@@ -155,45 +160,46 @@ class CourseCard extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(8),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            color.withOpacity(0.9),
-            color.withOpacity(0.7),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              color.withOpacity(0.9),
+              color.withOpacity(0.7),
+            ],
+          ),
+        ),
+        padding: EdgeInsets.symmetric(
+            horizontal: 4, vertical: compactVerticalPadding),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              course.name,
+              style: TextStyle(
+                fontSize: compactTitleFontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                height: 1.15,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              course.location,
+              style: TextStyle(
+                fontSize: compactSubtitleFontSize,
+                color: Colors.white70,
+                height: 1.1,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: 4, vertical: compactVerticalPadding),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            course.name,
-            style: TextStyle(
-              fontSize: compactTitleFontSize,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-              height: 1.15,
-            ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 2),
-          Text(
-            course.location,
-            style: TextStyle(
-              fontSize: compactSubtitleFontSize,
-              color: Colors.white70,
-              height: 1.1,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
       ),
     );
   }

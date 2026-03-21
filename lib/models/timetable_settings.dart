@@ -44,9 +44,19 @@ class TimetableSettings {
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
+  final bool liveEnableBeforeClass;
+  final bool liveEnableDuringClass;
+  final bool liveEnableBeforeEnd;
+  final bool livePromoteDuringClass;
+  final bool liveShowDuringClassNotification;
   final bool liveUseShortName;
   final bool liveHidePrefixText;
+  final int liveShowBeforeClassMinutes;
+  final int liveEndSecondsCountdownThreshold;
   final String themeSeedColor;
+  final String timetablePageBackgroundColor;
+  final bool timetableUseUnifiedCardColor;
+  final String timetableUnifiedCardColor;
 
   const TimetableSettings({
     required this.sections,
@@ -56,9 +66,19 @@ class TimetableSettings {
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
+    this.liveEnableBeforeClass = true,
+    this.liveEnableDuringClass = true,
+    this.liveEnableBeforeEnd = true,
+    this.livePromoteDuringClass = true,
+    this.liveShowDuringClassNotification = true,
     this.liveUseShortName = true,
     this.liveHidePrefixText = false,
+    this.liveShowBeforeClassMinutes = 20,
+    this.liveEndSecondsCountdownThreshold = 60,
     this.themeSeedColor = '#2563EB',
+    this.timetablePageBackgroundColor = '#F8FAFC',
+    this.timetableUseUnifiedCardColor = false,
+    this.timetableUnifiedCardColor = '#2563EB',
   });
 
   factory TimetableSettings.defaults() {
@@ -81,9 +101,19 @@ class TimetableSettings {
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
+      liveEnableBeforeClass: true,
+      liveEnableDuringClass: true,
+      liveEnableBeforeEnd: true,
+      livePromoteDuringClass: true,
+      liveShowDuringClassNotification: true,
       liveUseShortName: true,
       liveHidePrefixText: false,
+      liveShowBeforeClassMinutes: 20,
+      liveEndSecondsCountdownThreshold: 60,
       themeSeedColor: '#2563EB',
+      timetablePageBackgroundColor: '#F8FAFC',
+      timetableUseUnifiedCardColor: false,
+      timetableUnifiedCardColor: '#2563EB',
     );
   }
 
@@ -96,9 +126,19 @@ class TimetableSettings {
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
+      'liveEnableBeforeClass': liveEnableBeforeClass,
+      'liveEnableDuringClass': liveEnableDuringClass,
+      'liveEnableBeforeEnd': liveEnableBeforeEnd,
+      'livePromoteDuringClass': livePromoteDuringClass,
+      'liveShowDuringClassNotification': liveShowDuringClassNotification,
       'liveUseShortName': liveUseShortName,
       'liveHidePrefixText': liveHidePrefixText,
+      'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
+      'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
       'themeSeedColor': themeSeedColor,
+      'timetablePageBackgroundColor': timetablePageBackgroundColor,
+      'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
+      'timetableUnifiedCardColor': timetableUnifiedCardColor,
     };
   }
 
@@ -122,9 +162,26 @@ class TimetableSettings {
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
+      liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
+      liveEnableDuringClass: json['liveEnableDuringClass'] as bool? ?? true,
+      liveEnableBeforeEnd: json['liveEnableBeforeEnd'] as bool? ?? true,
+      livePromoteDuringClass:
+          json['livePromoteDuringClass'] as bool? ?? true,
+      liveShowDuringClassNotification:
+          json['liveShowDuringClassNotification'] as bool? ?? true,
       liveUseShortName: json['liveUseShortName'] as bool? ?? true,
       liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? false,
+      liveShowBeforeClassMinutes:
+          (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
+      liveEndSecondsCountdownThreshold:
+          (json['liveEndSecondsCountdownThreshold'] as num?)?.toInt() ?? 60,
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
+      timetablePageBackgroundColor:
+          json['timetablePageBackgroundColor'] as String? ?? '#F8FAFC',
+      timetableUseUnifiedCardColor:
+          json['timetableUseUnifiedCardColor'] as bool? ?? false,
+      timetableUnifiedCardColor:
+          json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
     );
   }
 
@@ -144,9 +201,19 @@ class TimetableSettings {
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
+    bool? liveEnableBeforeClass,
+    bool? liveEnableDuringClass,
+    bool? liveEnableBeforeEnd,
+    bool? livePromoteDuringClass,
+    bool? liveShowDuringClassNotification,
     bool? liveUseShortName,
     bool? liveHidePrefixText,
+    int? liveShowBeforeClassMinutes,
+    int? liveEndSecondsCountdownThreshold,
     String? themeSeedColor,
+    String? timetablePageBackgroundColor,
+    bool? timetableUseUnifiedCardColor,
+    String? timetableUnifiedCardColor,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -156,9 +223,30 @@ class TimetableSettings {
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
+      liveEnableBeforeClass:
+          liveEnableBeforeClass ?? this.liveEnableBeforeClass,
+      liveEnableDuringClass:
+          liveEnableDuringClass ?? this.liveEnableDuringClass,
+      liveEnableBeforeEnd: liveEnableBeforeEnd ?? this.liveEnableBeforeEnd,
+      livePromoteDuringClass:
+          livePromoteDuringClass ?? this.livePromoteDuringClass,
+      liveShowDuringClassNotification:
+          liveShowDuringClassNotification ??
+          this.liveShowDuringClassNotification,
       liveUseShortName: liveUseShortName ?? this.liveUseShortName,
       liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
+      liveShowBeforeClassMinutes:
+          liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
+      liveEndSecondsCountdownThreshold:
+          liveEndSecondsCountdownThreshold ??
+          this.liveEndSecondsCountdownThreshold,
       themeSeedColor: themeSeedColor ?? this.themeSeedColor,
+      timetablePageBackgroundColor:
+          timetablePageBackgroundColor ?? this.timetablePageBackgroundColor,
+      timetableUseUnifiedCardColor:
+          timetableUseUnifiedCardColor ?? this.timetableUseUnifiedCardColor,
+      timetableUnifiedCardColor:
+          timetableUnifiedCardColor ?? this.timetableUnifiedCardColor,
     );
   }
 
