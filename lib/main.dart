@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
                   color: colorScheme.onSurface,
                 ),
               ),
-              cardTheme: CardTheme(
+              cardTheme: CardThemeData(
                 elevation: 0,
                 margin: EdgeInsets.zero,
                 color: colorScheme.surface,
@@ -61,7 +61,8 @@ class MyApp extends StatelessWidget {
               snackBarTheme: SnackBarThemeData(
                 behavior: SnackBarBehavior.floating,
                 backgroundColor: colorScheme.inverseSurface,
-                contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+                contentTextStyle:
+                    TextStyle(color: colorScheme.onInverseSurface),
               ),
               chipTheme: ChipThemeData(
                 shape: RoundedRectangleBorder(
