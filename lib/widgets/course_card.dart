@@ -11,7 +11,7 @@ class CourseCard extends StatelessWidget {
   final String? overrideColorHex;
 
   const CourseCard({
-    Key? key,
+    super.key,
     required this.course,
     this.onTap,
     this.isCompact = false,
@@ -19,7 +19,7 @@ class CourseCard extends StatelessWidget {
     this.compactSubtitleFontSize = 8,
     this.compactVerticalPadding = 6,
     this.overrideColorHex,
-  }) : super(key: key);
+  });
 
   Color _parseColor(String colorString) {
     final hexColor = colorString.replaceFirst('#', '');
@@ -54,8 +54,8 @@ class CourseCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                color.withOpacity(0.9),
-                color.withOpacity(0.7),
+                color.withValues(alpha: 0.9),
+                color.withValues(alpha: 0.7),
               ],
             ),
           ),
@@ -81,7 +81,7 @@ class CourseCard extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -164,8 +164,8 @@ class CourseCard extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              color.withOpacity(0.9),
-              color.withOpacity(0.7),
+              color.withValues(alpha: 0.9),
+              color.withValues(alpha: 0.7),
             ],
           ),
         ),
