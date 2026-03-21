@@ -26,7 +26,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
   static const double _timeColumnWidth = 40;
   static const int _minWeek = 1;
   static const int _maxWeek = 20;
-  static const int _centerWeekPage = 1;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
   final List<String> _weekDays = const [
@@ -54,7 +53,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
-    _weekPageController = PageController(initialPage: _centerWeekPage);
+    final initialWeek = context.read<TimetableProvider>().currentWeek;
+    _weekPageController = PageController(
+      initialPage: _clampWeek(initialWeek) - 1,
+    );
   }
 
   @override
@@ -363,14 +365,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ) {
     return PageView.builder(
       controller: _weekPageController,
-      itemCount: 3,
+      itemCount: _maxWeek,
       allowImplicitScrolling: true,
       physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
       onPageChanged: (page) => _handleWeekPageChanged(page, provider),
       itemBuilder: (context, index) {
-        final week = _clampWeek(
-          provider.currentWeek + (index - _centerWeekPage),
-        );
+        final week = index + 1;
         return _buildWeekPage(provider, settings, availableWidth, week);
       },
     );
@@ -585,7 +585,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
 
     await provider.syncCurrentWeekWithSemesterStart();
-    await _resetWeekPager();
+    if (_weekPageController.hasClients) {
+      await _weekPageController.animateToPage(
+        provider.currentWeek - 1,
+        duration: _weekSlideDuration,
+        curve: Curves.easeOutCubic,
+      );
+    }
     HapticFeedback.selectionClick();
   }
 
@@ -603,7 +609,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
 
     await _weekPageController.animateToPage(
-      delta < 0 ? _centerWeekPage - 1 : _centerWeekPage + 1,
+      targetWeek - 1,
       duration: _weekSlideDuration,
       curve: Curves.easeOutCubic,
     );
@@ -625,23 +631,28 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    await provider.setCurrentWeek(targetWeek);
-    await _resetWeekPager();
+    if (!_weekPageController.hasClients) {
+      await provider.setCurrentWeek(targetWeek);
+      return;
+    }
+
+    await _weekPageController.animateToPage(
+      targetWeek - 1,
+      duration: const Duration(milliseconds: 360),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   Future<void> _handleWeekPageChanged(
     int page,
     TimetableProvider provider,
   ) async {
-    if (_isSyncingWeekPage || page == _centerWeekPage) {
+    if (_isSyncingWeekPage) {
       return;
     }
 
-    final targetWeek = _clampWeek(
-      provider.currentWeek + (page - _centerWeekPage),
-    );
+    final targetWeek = _clampWeek(page + 1);
     if (targetWeek == provider.currentWeek) {
-      await _resetWeekPager(animated: true);
       return;
     }
 
@@ -649,27 +660,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     try {
       HapticFeedback.selectionClick();
       await provider.setCurrentWeek(targetWeek);
-      await _resetWeekPager();
     } finally {
       _isSyncingWeekPage = false;
     }
-  }
-
-  Future<void> _resetWeekPager({bool animated = false}) async {
-    if (!_weekPageController.hasClients) {
-      return;
-    }
-
-    if (animated) {
-      await _weekPageController.animateToPage(
-        _centerWeekPage,
-        duration: _weekSlideDuration,
-        curve: Curves.easeOutCubic,
-      );
-      return;
-    }
-
-    _weekPageController.jumpToPage(_centerWeekPage);
   }
 
   void _navigateToAddCourse(BuildContext context) {

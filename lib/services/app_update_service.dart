@@ -115,6 +115,13 @@ class AppUpdateService {
 
     for (final asset in normalizedAssets) {
       final name = (asset['name'] as String?)?.toLowerCase() ?? '';
+      if (name.endsWith('.apk') && !name.contains('debug')) {
+        return asset['browser_download_url'] as String?;
+      }
+    }
+
+    for (final asset in normalizedAssets) {
+      final name = (asset['name'] as String?)?.toLowerCase() ?? '';
       if (name.endsWith('.apk')) {
         return asset['browser_download_url'] as String?;
       }
