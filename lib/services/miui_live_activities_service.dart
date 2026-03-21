@@ -119,6 +119,9 @@ class MiuiLiveActivitiesService {
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
     bool hidePrefixText = false,
+    List<int> progressBreakOffsetsMillis = const [],
+    List<String> progressMilestoneLabels = const [],
+    List<String> progressMilestoneTimeTexts = const [],
   }) async {
     await initialize();
     try {
@@ -141,6 +144,9 @@ class MiuiLiveActivitiesService {
         showLocationInIsland: showLocationInIsland,
         useShortNameInIsland: useShortNameInIsland,
         hidePrefixText: hidePrefixText,
+        progressBreakOffsetsMillis: progressBreakOffsetsMillis,
+        progressMilestoneLabels: progressMilestoneLabels,
+        progressMilestoneTimeTexts: progressMilestoneTimeTexts,
       );
       await _channel.invokeMethod('startLiveUpdate', data);
     } catch (e) {
@@ -175,6 +181,9 @@ class MiuiLiveActivitiesService {
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
     bool hidePrefixText = false,
+    List<int> progressBreakOffsetsMillis = const [],
+    List<String> progressMilestoneLabels = const [],
+    List<String> progressMilestoneTimeTexts = const [],
   }) {
     final data = <String, dynamic>{
       'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
@@ -189,6 +198,9 @@ class MiuiLiveActivitiesService {
       'enableDuringClass': enableDuringClass,
       'enableBeforeEnd': enableBeforeEnd,
       'showCountdown': showCountdown,
+      'progressBreakOffsetsMillis': progressBreakOffsetsMillis,
+      'progressMilestoneLabels': progressMilestoneLabels,
+      'progressMilestoneTimeTexts': progressMilestoneTimeTexts,
       'islandConfig': {
         'showCourseName': showCourseNameInIsland,
         'showLocation': showLocationInIsland,
