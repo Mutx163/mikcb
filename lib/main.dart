@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/timetable_provider.dart';
+import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
+import 'services/storage_service.dart';
 
 Color _colorFromHex(String hexColor) {
   final normalized = hexColor.replaceFirst('#', '');
@@ -71,10 +73,55 @@ class MyApp extends StatelessWidget {
                 side: BorderSide(color: colorScheme.outlineVariant),
               ),
             ),
-            home: const TimetableScreen(),
+            home: const AppEntryScreen(),
           );
         },
       ),
     );
+  }
+}
+
+class AppEntryScreen extends StatefulWidget {
+  const AppEntryScreen({super.key});
+
+  @override
+  State<AppEntryScreen> createState() => _AppEntryScreenState();
+}
+
+class _AppEntryScreenState extends State<AppEntryScreen> {
+  final StorageService _storageService = StorageService();
+  bool _hasScheduledGuide = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleFirstLaunchGuide();
+  }
+
+  Future<void> _scheduleFirstLaunchGuide() async {
+    final hasSeenGuide = await _storageService.hasSeenUserGuide();
+    if (hasSeenGuide || _hasScheduledGuide || !mounted) {
+      return;
+    }
+
+    _hasScheduledGuide = true;
+    await _storageService.setHasSeenUserGuide(true);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => const UserGuideScreen(),
+          fullscreenDialog: true,
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const TimetableScreen();
   }
 }
