@@ -41,12 +41,24 @@ class TimetableSettings {
   final double sectionHeight;
   final double compactFontSize;
   final DateTime? semesterStartDate;
+  final bool liveShowCourseName;
+  final bool liveShowLocation;
+  final bool liveShowCountdown;
+  final bool liveUseShortName;
+  final bool liveHidePrefixText;
+  final String themeSeedColor;
 
   const TimetableSettings({
     required this.sections,
     this.sectionHeight = 68,
     this.compactFontSize = 9,
     this.semesterStartDate,
+    this.liveShowCourseName = true,
+    this.liveShowLocation = true,
+    this.liveShowCountdown = true,
+    this.liveUseShortName = true,
+    this.liveHidePrefixText = false,
+    this.themeSeedColor = '#2563EB',
   });
 
   factory TimetableSettings.defaults() {
@@ -66,6 +78,12 @@ class TimetableSettings {
       sectionHeight: 68,
       compactFontSize: 9,
       semesterStartDate: null,
+      liveShowCourseName: true,
+      liveShowLocation: true,
+      liveShowCountdown: true,
+      liveUseShortName: true,
+      liveHidePrefixText: false,
+      themeSeedColor: '#2563EB',
     );
   }
 
@@ -75,6 +93,12 @@ class TimetableSettings {
       'sectionHeight': sectionHeight,
       'compactFontSize': compactFontSize,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
+      'liveShowCourseName': liveShowCourseName,
+      'liveShowLocation': liveShowLocation,
+      'liveShowCountdown': liveShowCountdown,
+      'liveUseShortName': liveUseShortName,
+      'liveHidePrefixText': liveHidePrefixText,
+      'themeSeedColor': themeSeedColor,
     };
   }
 
@@ -95,6 +119,12 @@ class TimetableSettings {
               (json['semesterStartDate'] as num).toInt(),
             )
           : null,
+      liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
+      liveShowLocation: json['liveShowLocation'] as bool? ?? true,
+      liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
+      liveUseShortName: json['liveUseShortName'] as bool? ?? true,
+      liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? false,
+      themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
     );
   }
 
@@ -111,12 +141,24 @@ class TimetableSettings {
     double? sectionHeight,
     double? compactFontSize,
     DateTime? semesterStartDate,
+    bool? liveShowCourseName,
+    bool? liveShowLocation,
+    bool? liveShowCountdown,
+    bool? liveUseShortName,
+    bool? liveHidePrefixText,
+    String? themeSeedColor,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
       sectionHeight: sectionHeight ?? this.sectionHeight,
       compactFontSize: compactFontSize ?? this.compactFontSize,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
+      liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
+      liveShowLocation: liveShowLocation ?? this.liveShowLocation,
+      liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
+      liveUseShortName: liveUseShortName ?? this.liveUseShortName,
+      liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
+      themeSeedColor: themeSeedColor ?? this.themeSeedColor,
     );
   }
 

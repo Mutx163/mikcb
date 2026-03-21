@@ -3,6 +3,7 @@ import 'dart:convert';
 class Course {
   final String id;
   final String name;
+  final String? shortName;
   final String teacher;
   final String location;
   final int dayOfWeek; // 1-7, Monday-Sunday
@@ -15,10 +16,12 @@ class Course {
   final int endWeek; // 结束周次
   final bool isOddWeek; // 是否单周
   final bool isEvenWeek; // 是否双周
+  final String? note; // 备注/备忘录
 
   Course({
     required this.id,
     required this.name,
+    this.shortName,
     required this.teacher,
     required this.location,
     required this.dayOfWeek,
@@ -31,12 +34,14 @@ class Course {
     this.endWeek = 16,
     this.isOddWeek = false,
     this.isEvenWeek = false,
+    this.note,
   });
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
+      'shortName': shortName,
       'teacher': teacher,
       'location': location,
       'dayOfWeek': dayOfWeek,
@@ -49,6 +54,7 @@ class Course {
       'endWeek': endWeek,
       'isOddWeek': isOddWeek,
       'isEvenWeek': isEvenWeek,
+      'note': note,
     };
   }
 
@@ -56,6 +62,7 @@ class Course {
     return Course(
       id: json['id'] as String,
       name: json['name'] as String,
+      shortName: json['shortName'] as String?,
       teacher: json['teacher'] as String,
       location: json['location'] as String,
       dayOfWeek: json['dayOfWeek'] as int,
@@ -68,6 +75,7 @@ class Course {
       endWeek: json['endWeek'] as int? ?? 16,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
+      note: json['note'] as String?,
     );
   }
 
@@ -80,6 +88,7 @@ class Course {
   Course copyWith({
     String? id,
     String? name,
+    String? shortName,
     String? teacher,
     String? location,
     int? dayOfWeek,
@@ -92,10 +101,12 @@ class Course {
     int? endWeek,
     bool? isOddWeek,
     bool? isEvenWeek,
+    String? note,
   }) {
     return Course(
       id: id ?? this.id,
       name: name ?? this.name,
+      shortName: shortName ?? this.shortName,
       teacher: teacher ?? this.teacher,
       location: location ?? this.location,
       dayOfWeek: dayOfWeek ?? this.dayOfWeek,
@@ -108,6 +119,7 @@ class Course {
       endWeek: endWeek ?? this.endWeek,
       isOddWeek: isOddWeek ?? this.isOddWeek,
       isEvenWeek: isEvenWeek ?? this.isEvenWeek,
+      note: note ?? this.note,
     );
   }
 

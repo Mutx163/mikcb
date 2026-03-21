@@ -24,8 +24,10 @@ class AddCourseScreen extends StatefulWidget {
 class _AddCourseScreenState extends State<AddCourseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _shortNameController = TextEditingController();
   final _teacherController = TextEditingController();
   final _locationController = TextEditingController();
+  final _noteController = TextEditingController();
 
   int _selectedDayOfWeek = 1;
   int _startSection = 1;
@@ -64,8 +66,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _shortNameController.dispose();
     _teacherController.dispose();
     _locationController.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -80,9 +84,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         actions: [
           TextButton(
             onPressed: () => _saveCourse(settings),
-            child: const Text(
+            child: Text(
               '保存',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
           ),
         ],
@@ -107,8 +111,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   void _loadCourseData(Course course) {
     _nameController.text = course.name;
+    _shortNameController.text = course.shortName ?? '';
     _teacherController.text = course.teacher;
     _locationController.text = course.location;
+    _noteController.text = course.note ?? '';
     _selectedDayOfWeek = course.dayOfWeek;
     _startSection = course.startSection;
     _endSection = course.endSection;
@@ -160,6 +166,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 16),
             TextFormField(
+              controller: _shortNameController,
+              decoration: const InputDecoration(
+                labelText: '课程简称 (可选)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.short_text),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
               controller: _teacherController,
               decoration: const InputDecoration(
                 labelText: '授课教师',
@@ -175,6 +190,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
               ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _noteController,
+              decoration: const InputDecoration(
+                labelText: '备注 (可选)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.note_alt),
+              ),
+              maxLines: null,
             ),
           ],
         ),
@@ -428,6 +453,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final course = Course(
       id: widget.course?.id ?? const Uuid().v4(),
       name: _nameController.text,
+      shortName: _shortNameController.text.isEmpty ? null : _shortNameController.text,
       teacher: _teacherController.text,
       location: _locationController.text,
       dayOfWeek: _selectedDayOfWeek,
@@ -440,6 +466,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       endWeek: _endWeek,
       isOddWeek: _isOddWeek,
       isEvenWeek: _isEvenWeek,
+      note: _noteController.text.isEmpty ? null : _noteController.text,
     );
 
     final provider = context.read<TimetableProvider>();

@@ -70,6 +70,11 @@ class MiuiLiveActivitiesService {
     Course currentCourse,
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
+    bool showCountdown = true,
+    bool showCourseNameInIsland = true,
+    bool showLocationInIsland = true,
+    bool useShortNameInIsland = true,
+    bool hidePrefixText = false,
   }) async {
     await initialize();
     try {
@@ -77,6 +82,11 @@ class MiuiLiveActivitiesService {
         currentCourse,
         nextCourse,
         autoDismissAfterStartMinutes: autoDismissAfterStartMinutes,
+        showCountdown: showCountdown,
+        showCourseNameInIsland: showCourseNameInIsland,
+        showLocationInIsland: showLocationInIsland,
+        useShortNameInIsland: useShortNameInIsland,
+        hidePrefixText: hidePrefixText,
       );
       await _channel.invokeMethod('startLiveUpdate', data);
     } catch (e) {
@@ -96,22 +106,38 @@ class MiuiLiveActivitiesService {
     Course currentCourse,
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
+    bool showCountdown = true,
+    bool showCourseNameInIsland = true,
+    bool showLocationInIsland = true,
+    bool useShortNameInIsland = true,
+    bool hidePrefixText = false,
   }) {
     final data = <String, dynamic>{
+      'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
+      'showCountdown': showCountdown,
+      'islandConfig': {
+        'showCourseName': showCourseNameInIsland,
+        'showLocation': showLocationInIsland,
+        'useShortName': useShortNameInIsland,
+        'hidePrefixText': hidePrefixText,
+      },
       'currentCourse': {
         'name': currentCourse.name,
+        'shortName': currentCourse.shortName,
         'teacher': currentCourse.teacher,
         'location': currentCourse.location,
+        'note': currentCourse.note,
         'startTime': currentCourse.startTime,
         'endTime': currentCourse.endTime,
       },
-      'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
     };
     if (nextCourse != null) {
       data['nextCourse'] = {
         'name': nextCourse.name,
+        'shortName': nextCourse.shortName,
         'teacher': nextCourse.teacher,
         'location': nextCourse.location,
+        'note': nextCourse.note,
         'startTime': nextCourse.startTime,
         'endTime': nextCourse.endTime,
       };

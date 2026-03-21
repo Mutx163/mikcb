@@ -1,9 +1,20 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../services/storage_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
+
+class LiveActivityCourseSelection {
+  final Course currentCourse;
+  final Course? nextCourse;
+
+  const LiveActivityCourseSelection({
+    required this.currentCourse,
+    required this.nextCourse,
+  });
+}
 
 class TimetableProvider with ChangeNotifier {
   final StorageService _storageService = StorageService();
@@ -15,6 +26,8 @@ class TimetableProvider with ChangeNotifier {
   int _currentWeek = 1;
   int _currentDayOfWeek = DateTime.now().weekday;
   bool _isLoading = false;
+  Timer? _liveActivityTimer;
+  String? _currentLiveCourseId;
 
   List<Course> get courses => _courses;
   TimetableSettings get settings => _settings;
@@ -35,7 +48,21 @@ class TimetableProvider with ChangeNotifier {
     await loadSettings();
     await loadCourses();
     await loadCurrentWeek();
-    _startLiveActivityIfAvailable();
+    _startLiveActivityTick();
+  }
+
+  void _startLiveActivityTick() {
+    _liveActivityTimer?.cancel();
+    _updateLiveActivity();
+    _liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      _updateLiveActivity();
+    });
+  }
+
+  @override
+  void dispose() {
+    _liveActivityTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> loadSettings() async {
@@ -77,6 +104,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> setCurrentWeek(int week) async {
     _currentWeek = week;
     await _storageService.setCurrentWeek(week);
+    _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
     _updateLiveActivity();
   }
@@ -84,6 +112,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> addCourse(Course course) async {
     await _storageService.addCourse(course);
     _courses.add(course);
+    _currentLiveCourseId = null;
     notifyListeners();
     _updateLiveActivity();
   }
@@ -93,6 +122,7 @@ class TimetableProvider with ChangeNotifier {
     final index = _courses.indexWhere((c) => c.id == course.id);
     if (index != -1) {
       _courses[index] = course;
+      _currentLiveCourseId = null;
       notifyListeners();
       _updateLiveActivity();
     }
@@ -101,6 +131,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> deleteCourse(String courseId) async {
     await _storageService.deleteCourse(courseId);
     _courses.removeWhere((c) => c.id == courseId);
+    _currentLiveCourseId = null;
     notifyListeners();
     _updateLiveActivity();
   }
@@ -137,6 +168,7 @@ class TimetableProvider with ChangeNotifier {
     await _storageService.setSemesterStart(result.semesterStart);
     _settings = _settings.copyWith(semesterStartDate: result.semesterStart);
     await _storageService.saveTimetableSettings(_settings);
+    _currentLiveCourseId = null;
     notifyListeners();
     await _updateLiveActivity();
     return result.courses.length;
@@ -197,23 +229,212 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
-  Future<void> _startLiveActivityIfAvailable() async {
-    final currentCourse = getCurrentCourse();
-    final nextCourse = getNextCourse();
-    
-    if (currentCourse != null) {
-      await _liveActivitiesService.startLiveUpdate(currentCourse, nextCourse);
+  String? _normalizeShortName(String? shortName) {
+    final value = shortName?.trim();
+    if (value == null || value.isEmpty) {
+      return null;
     }
+    return value;
+  }
+
+  String? resolveCourseShortName(Course course) {
+    final directShortName = _normalizeShortName(course.shortName);
+    if (directShortName != null) {
+      return directShortName;
+    }
+
+    final normalizedName = course.name.trim();
+    if (normalizedName.isEmpty) {
+      return null;
+    }
+
+    for (final candidate in _courses) {
+      if (candidate.id == course.id) {
+        continue;
+      }
+      if (candidate.name.trim() != normalizedName) {
+        continue;
+      }
+
+      final fallbackShortName = _normalizeShortName(candidate.shortName);
+      if (fallbackShortName != null) {
+        return fallbackShortName;
+      }
+    }
+
+    return null;
+  }
+
+  Course resolveCourseDisplayName(Course course) {
+    final resolvedShortName = resolveCourseShortName(course);
+    if (resolvedShortName == null || resolvedShortName == course.shortName) {
+      return course;
+    }
+    return course.copyWith(shortName: resolvedShortName);
+  }
+
+  DateTime? _buildCourseDateTime(DateTime date, String courseTime) {
+    final parts = courseTime.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
+    }
+
+    return DateTime(date.year, date.month, date.day, hour, minute);
+  }
+
+  LiveActivityCourseSelection? getLiveActivityCourseSelection({
+    DateTime? now,
+    bool allowUpcomingFallback = false,
+  }) {
+    final currentTime = now ?? DateTime.now();
+    final todayCourses = getCoursesForDay(currentTime.weekday);
+    if (todayCourses.isEmpty) return null;
+
+    for (var i = 0; i < todayCourses.length; i++) {
+      final course = todayCourses[i];
+      final startTime = _buildCourseDateTime(currentTime, course.startTime);
+      final endTime = _buildCourseDateTime(currentTime, course.endTime);
+      if (startTime == null || endTime == null) {
+        continue;
+      }
+
+      final aheadTime = startTime.subtract(const Duration(minutes: 20));
+      if (currentTime.isAfter(aheadTime) && currentTime.isBefore(endTime)) {
+        final nextCourse = i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+        return LiveActivityCourseSelection(
+          currentCourse: resolveCourseDisplayName(course),
+          nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+        );
+      }
+    }
+
+    if (!allowUpcomingFallback) {
+      return null;
+    }
+
+    for (var i = 0; i < todayCourses.length; i++) {
+      final course = todayCourses[i];
+      final startTime = _buildCourseDateTime(currentTime, course.startTime);
+      if (startTime == null || !startTime.isAfter(currentTime)) {
+        continue;
+      }
+
+      final nextCourse = i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+      return LiveActivityCourseSelection(
+        currentCourse: resolveCourseDisplayName(course),
+        nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+      );
+    }
+
+    return null;
+  }
+
+  LiveActivityCourseSelection? getTestLiveActivityCourseSelection({
+    DateTime? now,
+  }) {
+    final currentTime = now ?? DateTime.now();
+    final immediateSelection = getLiveActivityCourseSelection(
+      now: currentTime,
+      allowUpcomingFallback: true,
+    );
+    if (immediateSelection != null) {
+      return immediateSelection;
+    }
+
+    final today = DateTime(
+      currentTime.year,
+      currentTime.month,
+      currentTime.day,
+    );
+    final maxWeek = _courses.isEmpty
+        ? _currentWeek
+        : _courses.map((course) => course.endWeek).reduce((a, b) => a > b ? a : b);
+
+    Course? bestCourse;
+    DateTime? bestStartTime;
+    int? bestWeek;
+
+    for (final course in _courses) {
+      for (var week = _currentWeek; week <= maxWeek; week++) {
+        if (!course.isInWeek(week)) {
+          continue;
+        }
+
+        final dayOffset = (week - _currentWeek) * 7 + course.dayOfWeek - currentTime.weekday;
+        if (dayOffset < 0) {
+          continue;
+        }
+
+        final candidateDate = today.add(Duration(days: dayOffset));
+        final candidateStart = _buildCourseDateTime(candidateDate, course.startTime);
+        if (candidateStart == null || !candidateStart.isAfter(currentTime)) {
+          continue;
+        }
+
+        if (bestStartTime == null || candidateStart.isBefore(bestStartTime)) {
+          bestCourse = course;
+          bestStartTime = candidateStart;
+          bestWeek = week;
+        }
+        break;
+      }
+    }
+
+    if (bestCourse == null || bestWeek == null) {
+      return null;
+    }
+    final targetWeek = bestWeek;
+
+    final sameDayCourses = _courses
+        .where((course) =>
+            course.dayOfWeek == bestCourse!.dayOfWeek && course.isInWeek(targetWeek))
+        .toList()
+      ..sort((a, b) => a.startSection.compareTo(b.startSection));
+    final currentIndex = sameDayCourses.indexWhere((course) => course.id == bestCourse!.id);
+    final nextCourse = currentIndex != -1 && currentIndex + 1 < sameDayCourses.length
+        ? sameDayCourses[currentIndex + 1]
+        : null;
+
+    return LiveActivityCourseSelection(
+      currentCourse: resolveCourseDisplayName(bestCourse),
+      nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+    );
   }
 
   Future<void> _updateLiveActivity() async {
-    final currentCourse = getCurrentCourse();
-    final nextCourse = getNextCourse();
+    final selection = getLiveActivityCourseSelection();
+    final liveCourse = selection?.currentCourse;
     
-    if (currentCourse != null) {
-      await _liveActivitiesService.startLiveUpdate(currentCourse, nextCourse);
+    if (liveCourse != null) {
+      if (_currentLiveCourseId == liveCourse.id) {
+        return; // 防抖，避免频繁唤起 Android 服务
+      }
+      _currentLiveCourseId = liveCourse.id;
+
+      final settings = _settings;
+      final displayCourse = liveCourse;
+      final displayNextCourse = selection?.nextCourse;
+
+      await _liveActivitiesService.startLiveUpdate(
+        displayCourse, 
+        displayNextCourse,
+        showCountdown: settings.liveShowCountdown,
+        showCourseNameInIsland: settings.liveShowCourseName,
+        showLocationInIsland: settings.liveShowLocation,
+        useShortNameInIsland: settings.liveUseShortName,
+        hidePrefixText: settings.liveHidePrefixText,
+      );
     } else {
-      await _liveActivitiesService.stopLiveUpdate();
+      if (_currentLiveCourseId != null) {
+        _currentLiveCourseId = null;
+        await _liveActivitiesService.stopLiveUpdate();
+      }
     }
   }
 
@@ -221,6 +442,7 @@ class TimetableProvider with ChangeNotifier {
     final newDay = DateTime.now().weekday;
     if (newDay != _currentDayOfWeek) {
       _currentDayOfWeek = newDay;
+      _currentLiveCourseId = null;
       notifyListeners();
       _updateLiveActivity();
     }

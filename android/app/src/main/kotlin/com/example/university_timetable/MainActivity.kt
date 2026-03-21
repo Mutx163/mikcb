@@ -193,14 +193,28 @@ class MainActivity : FlutterActivity() {
         val next = data["nextCourse"] as? Map<String, Any>
         val autoDismissAfterStartMinutes =
             (data["autoDismissAfterStartMinutes"] as? Number)?.toInt() ?: 0
+        val showCountdown = data["showCountdown"] as? Boolean ?: true
+
+        val islandConfig = data["islandConfig"] as? java.util.Map<String, Any>
+        val showCourseName = islandConfig?.get("showCourseName") as? Boolean ?: true
+        val showLocation = islandConfig?.get("showLocation") as? Boolean ?: true
+        val useShortName = islandConfig?.get("useShortName") as? Boolean ?: false
+        val hidePrefixText = islandConfig?.get("hidePrefixText") as? Boolean ?: false
 
         intent.putExtra("courseName", current?.get("name") as? String ?: "")
+        intent.putExtra("shortName", current?.get("shortName") as? String ?: "")
         intent.putExtra("location", current?.get("location") as? String ?: "")
         intent.putExtra("teacher", current?.get("teacher") as? String ?: "")
+        intent.putExtra("note", current?.get("note") as? String ?: "")
         intent.putExtra("startTime", current?.get("startTime") as? String ?: "")
         intent.putExtra("endTime", current?.get("endTime") as? String ?: "")
         intent.putExtra("nextName", next?.get("name") as? String ?: "")
         intent.putExtra("autoDismissAfterStartMinutes", autoDismissAfterStartMinutes)
+        intent.putExtra("showCountdown", showCountdown)
+        intent.putExtra("showCourseNameInIsland", showCourseName)
+        intent.putExtra("showLocationInIsland", showLocation)
+        intent.putExtra("useShortNameInIsland", useShortName)
+        intent.putExtra("hidePrefixText", hidePrefixText)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             startForegroundService(intent)
@@ -225,29 +239,49 @@ class LiveUpdateService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var ticker: Runnable? = null
     private var courseName = ""
+    private var shortCourseNameRaw = ""
     private var location = ""
     private var teacher = ""
+    private var note = ""
     private var startTimeText = ""
     private var endTimeText = ""
     private var nextName = ""
     private var autoDismissAfterStartMinutes = 0
+    private var showCountdown = true
+    private var showCourseNameInIsland = true
+    private var showLocationInIsland = true
+    private var useShortNameInIsland = false
+    private var hidePrefixText = false
     private var startAtMillis = 0L
     private var endAtMillis = 0L
+    private var lastRemainingText = "-1"
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        courseName = intent?.getStringExtra("courseName").orEmpty().ifBlank { "暂无课程" }
+        courseName = intent?.getStringExtra("courseName").orEmpty()
+        shortCourseNameRaw = intent?.getStringExtra("shortName").orEmpty()
         location = intent?.getStringExtra("location").orEmpty()
         teacher = intent?.getStringExtra("teacher").orEmpty()
+        note = intent?.getStringExtra("note").orEmpty()
         startTimeText = intent?.getStringExtra("startTime").orEmpty()
         endTimeText = intent?.getStringExtra("endTime").orEmpty()
         nextName = intent?.getStringExtra("nextName").orEmpty()
         autoDismissAfterStartMinutes = intent?.getIntExtra("autoDismissAfterStartMinutes", 0) ?: 0
+        showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
+        showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
+        showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
+        useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
+        hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
         startAtMillis = buildCourseTimeMillis(startTimeText) ?: System.currentTimeMillis()
         endAtMillis = buildCourseTimeMillis(endTimeText) ?: startAtMillis
+        
+        lastRemainingText = "-1" // 确保第一刷通过
 
-        startForeground(NOTIFICATION_ID, buildNotification())
+        // 在这里进行一次初始推送，使服务启动为常驻
+        val initialText = computeRemainingText(System.currentTimeMillis())
+        lastRemainingText = initialText
+        startForeground(NOTIFICATION_ID, buildNotification(initialText))
         startTicker()
         return START_STICKY
     }
@@ -269,8 +303,19 @@ class LiveUpdateService : Service() {
                     return
                 }
 
-                getSystemService(NotificationManager::class.java)
-                    ?.notify(NOTIFICATION_ID, buildNotification())
+                if (now >= endAtMillis + 30_000L) { // 下课后 30 秒自动退场（特别是对无后续或者测试课的安全回收）
+                    stopAndRemoveNotification()
+                    return
+                }
+
+                val currentText = computeRemainingText(now)
+                if (currentText != lastRemainingText) {
+                    lastRemainingText = currentText
+                    getSystemService(NotificationManager::class.java)
+                        ?.notify(NOTIFICATION_ID, buildNotification(currentText))
+                }
+                
+                // 心跳频率视乎倒数是否只变了分钟还是在 60秒内，但为稳妥都留有1秒钟来捕捉下一分钟跳变的时刻，而不会发生通知风暴。
                 handler.postDelayed(this, 1000L)
             }
         }
@@ -282,19 +327,62 @@ class LiveUpdateService : Service() {
         ticker = null
     }
 
-    private fun buildNotification(): Notification {
+    private fun computeRemainingText(now: Long): String {
+        val isUpcoming = now < startAtMillis
+        val timeUntilEnd = endAtMillis - now
+
+        val prefixTextStart = if (hidePrefixText) "" else "距上课 "
+        val prefixTextEnd = if (hidePrefixText) "" else "距下课 "
+
+        return if (!showCountdown) {
+            ""
+        } else if (isUpcoming) {
+            "${prefixTextStart}${formatCustomDuration(startAtMillis - now)}"
+        } else if (timeUntilEnd in 1..600_000L) {
+            "${prefixTextEnd}${formatCustomDuration(timeUntilEnd)}"
+        } else {
+            "上课中"
+        }
+    }
+
+    private fun buildNotification(remainingText: String): Notification {
         val now = System.currentTimeMillis()
         val isUpcoming = now < startAtMillis
-        val remainingText = if (isUpcoming) {
-            "距上课 ${formatDuration(startAtMillis - now)}"
+        val timeUntilEnd = endAtMillis - now
+        val isEndingSoon = !isUpcoming && timeUntilEnd in 1..600_000L
+        val shouldPromote = isUpcoming || isEndingSoon
+
+        val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
+        val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
+        val islandCourseName = if (showCourseNameInIsland) {
+            if (nameToUse.length > 5) nameToUse.substring(0, 5) else nameToUse
+        } else ""
+        val islandLocation = if (showLocationInIsland) location else ""
+
+        val titlePrefix = if (isUpcoming) "即将上课" else "正在上课"
+        val title = if (isUpcoming) "即将上课: $shortCourseName" else shortCourseName
+        val shortNameLabel = shortCourseNameRaw.takeIf { it.isNotBlank() && it != courseName }
+        val timeRangeText = if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {
+            "$startTimeText - $endTimeText".trim()
         } else {
-            "距下课 ${formatDuration((endAtMillis - now).coerceAtLeast(0L))}"
+            ""
         }
-        val title = if (isUpcoming) {
-            "即将上课: $courseName"
+        val subText = if (isUpcoming) {
+            listOf(
+                timeRangeText.takeIf { it.isNotBlank() }?.let { "上课时间: $it" },
+                location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+            ).filterNotNull().joinToString("  ·  ")
         } else {
-            "正在上课: $courseName"
+            listOf(
+                nextName.takeIf { it.isNotBlank() }?.let { "下一节: $it" },
+                timeRangeText.takeIf { it.isNotBlank() }?.let { "本节时间: $it" }
+            ).filterNotNull().joinToString("  ·  ")
         }
+        val summaryText = listOf(
+            location.takeIf { it.isNotBlank() },
+            teacher.takeIf { it.isNotBlank() },
+            remainingText.takeIf { it.isNotBlank() }
+        ).filterNotNull().joinToString(" · ")
 
         val notificationIntent = Intent(this, MainActivity::class.java).apply {
             this.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -308,17 +396,61 @@ class LiveUpdateService : Service() {
 
         val detailText = buildString {
             append("课程: ").append(courseName)
-            append("\n").append(remainingText)
+            append("\n状态: ").append(remainingText)
             if (location.isNotBlank()) append("\n地点: ").append(location)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
+            if (note.isNotBlank()) append("\n备注: ").append(note)
             if (startTimeText.isNotBlank() || endTimeText.isNotBlank()) {
                 append("\n时间: ").append(startTimeText).append(" - ").append(endTimeText)
             }
         }
 
-        val contentText = listOf(location, remainingText)
-            .filter { it.isNotBlank() }
-            .joinToString(" · ")
+        val expandedDetailText = buildString {
+            append(if (isUpcoming) "即将上课" else "正在上课")
+            append("\n课程: ").append(courseName)
+            if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
+            append("\n状态: ").append(remainingText)
+            if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
+            if (location.isNotBlank()) append("\n地点: ").append(location)
+            if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
+            if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
+            if (note.isNotBlank()) append("\n备注: ").append(note)
+        }
+
+        val promotedContentText = listOf(
+            remainingText.takeIf { it.isNotBlank() },
+            timeRangeText.takeIf { it.isNotBlank() },
+            location.takeIf { it.isNotBlank() },
+            teacher.takeIf { it.isNotBlank() }
+        ).filterNotNull().joinToString(" · ")
+        val promotedExpandedDetailText = buildString {
+            append("状态: ").append(remainingText)
+            if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
+            if (location.isNotBlank()) append("\n地点: ").append(location)
+            if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
+            append("\n课程: ").append(courseName)
+            if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
+            if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
+            if (note.isNotBlank()) append("\n备注: ").append(note)
+        }
+
+        val contentText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
+            remainingText
+        } else {
+            listOf(islandCourseName, islandLocation, teacher, remainingText)
+                .filter { it.isNotBlank() }
+                .joinToString(" · ")
+        }
+            
+        val islandCriticalText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
+            remainingText
+        } else {
+            listOf(islandCourseName, islandLocation, remainingText)
+                .filter { it.isNotBlank() }
+                .joinToString(" ")
+        }
+
+        val iconRes = if (isUpcoming) R.drawable.ic_upcoming else if (shouldPromote) R.drawable.ic_countdown else R.drawable.ic_course
 
         val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, CHANNEL_ID)
@@ -328,30 +460,44 @@ class LiveUpdateService : Service() {
 
         builder.apply {
             setContentTitle(title)
-            setContentText(contentText)
-            setSmallIcon(R.drawable.ic_course)
+            setContentText(if (shouldPromote) promotedContentText else contentText)
+            setSmallIcon(iconRes)
             setContentIntent(pendingIntent)
             setOngoing(true)
             setAutoCancel(false)
             setOnlyAlertOnce(true)
-            setStyle(Notification.BigTextStyle().bigText(detailText))
+            setStyle(
+                Notification.BigTextStyle()
+                    .setBigContentTitle(title)
+                    .bigText(if (shouldPromote) promotedExpandedDetailText else expandedDetailText)
+                    .setSummaryText(summaryText)
+            )
             setCategory(Notification.CATEGORY_PROGRESS)
             setColorized(false)
-            setShowWhen(true)
+            setShowWhen(!shouldPromote)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
             setUsesChronometer(false)
 
-            if (!isUpcoming && nextName.isNotBlank()) {
-                setSubText("下一节: $nextName")
+            if (!shouldPromote && subText.isNotBlank()) {
+                setSubText(subText)
             }
 
             if (Build.VERSION.SDK_INT >= 36) {
-                setShortCriticalText(remainingText)
-                setExtras(
-                    Bundle().apply {
-                        putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
-                    }
-                )
+                if (shouldPromote) {
+                    setShortCriticalText(islandCriticalText)
+                    setExtras(
+                        Bundle().apply {
+                            putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, true)
+                        }
+                    )
+                } else {
+                    setShortCriticalText("")
+                    setExtras(
+                        Bundle().apply {
+                            putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, false)
+                        }
+                    )
+                }
             }
         }
 
@@ -400,16 +546,13 @@ class LiveUpdateService : Service() {
         }.timeInMillis
     }
 
-    private fun formatDuration(durationMillis: Long): String {
+    private fun formatCustomDuration(durationMillis: Long): String {
         val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
-        val hours = totalSeconds / 3600L
-        val minutes = (totalSeconds % 3600L) / 60L
-        val seconds = totalSeconds % 60L
-
-        return if (hours > 0) {
-            String.format("%02d:%02d:%02d", hours, minutes, seconds)
+        return if (totalSeconds >= 60) {
+            val minutes = totalSeconds / 60L
+            "${minutes}分钟"
         } else {
-            String.format("%02d:%02d", minutes, seconds)
+            "${totalSeconds}秒"
         }
     }
 }
