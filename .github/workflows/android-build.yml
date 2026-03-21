@@ -34,6 +34,21 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Read app version
+        id: meta
+        shell: bash
+        run: |
+          APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          VERSION_NAME="${APP_VERSION%%+*}"
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+          else
+            RELEASE_TAG="v${VERSION_NAME}"
+          fi
+          echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
+          echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
@@ -47,11 +62,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            VERSION_NAME="${GITHUB_REF#refs/tags/}"
-          else
-            VERSION_NAME="main-${GITHUB_SHA::7}"
-          fi
+          VERSION_NAME="${{ steps.meta.outputs.version_name }}"
           cp build/app/outputs/flutter-apk/app-debug.apk "dist/mikcb-test-${VERSION_NAME}.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "dist/mikcb-${VERSION_NAME}.apk"
 
@@ -61,9 +72,22 @@ jobs:
           name: android-apks
           path: dist/*.apk
 
-      - name: Create GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/mikcb-*.apk
-          generate_release_notes: true
+      - name: Create or update GitHub release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
+          VERSION_NAME: ${{ steps.meta.outputs.version_name }}
+        run: |
+          RELEASE_APK="dist/mikcb-${VERSION_NAME}.apk"
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${RELEASE_APK}" --clobber
+            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --latest
+          else
+            gh release create "${RELEASE_TAG}" "${RELEASE_APK}" \
+              --title "${RELEASE_TAG}" \
+              --notes "Automated release for ${RELEASE_TAG}" \
+              --target "${GITHUB_SHA}" \
+              --latest
+          fi
