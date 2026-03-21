@@ -17,6 +17,7 @@ dependencies:
   file_picker: ^10.3.10
   http: ^1.2.2
   package_info_plus: ^8.0.2
+  share_plus: ^10.1.2
   url_launcher: ^6.3.1
 
 dev_dependencies:

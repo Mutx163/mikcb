@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import 'about_screen.dart';
+import 'data_transfer_screen.dart';
 import 'user_guide_screen.dart';
 
 class TimetableSettingsScreen extends StatelessWidget {
@@ -77,6 +78,20 @@ class TimetableSettingsScreen extends StatelessWidget {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const _LayoutSettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    _SettingsEntryTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: '数据备份与迁移',
+                      subtitle: '导出完整课表文件，给别人直接导入使用',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const DataTransferScreen(),
                           ),
                         );
                       },

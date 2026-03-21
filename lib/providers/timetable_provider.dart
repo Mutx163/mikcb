@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../services/data_transfer_service.dart';
 import '../services/storage_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
@@ -29,7 +30,9 @@ class TimetableProvider with ChangeNotifier {
 
   final StorageService _storageService = StorageService();
   final IcsImportService _icsImportService = IcsImportService();
-  final MiuiLiveActivitiesService _liveActivitiesService = MiuiLiveActivitiesService();
+  final MiuiLiveActivitiesService _liveActivitiesService =
+      MiuiLiveActivitiesService();
+  final DataTransferService _dataTransferService = DataTransferService();
 
   List<Course> _courses = [];
   TimetableSettings _settings = TimetableSettings.defaults();
@@ -45,9 +48,12 @@ class TimetableProvider with ChangeNotifier {
   int get currentDayOfWeek => _currentDayOfWeek;
   bool get isLoading => _isLoading;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
+  DataTransferService get dataTransferService => _dataTransferService;
   int get maxUsedSection => _courses.isEmpty
       ? 1
-      : _courses.map((course) => course.endSection).reduce((a, b) => a > b ? a : b);
+      : _courses
+          .map((course) => course.endSection)
+          .reduce((a, b) => a > b ? a : b);
 
   TimetableProvider() {
     _init();
@@ -174,9 +180,8 @@ class TimetableProvider with ChangeNotifier {
       return 0;
     }
 
-    final mergedCourses = replaceExisting
-        ? result.courses
-        : [..._courses, ...result.courses];
+    final mergedCourses =
+        replaceExisting ? result.courses : [..._courses, ...result.courses];
 
     _courses = mergedCourses;
     await _storageService.saveCourses(_courses);
@@ -187,6 +192,33 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
     await _updateLiveActivity();
     return result.courses.length;
+  }
+
+  Future<String?> importAppDataBackup(String content) async {
+    try {
+      final backup = _dataTransferService.parseBackupJson(content);
+      _courses = backup.courses;
+      _settings = backup.settings;
+      _currentWeek = backup.currentWeek;
+
+      await _storageService.saveCourses(_courses);
+      await _storageService.saveTimetableSettings(_settings);
+      await _storageService.setCurrentWeek(_currentWeek);
+      if (_settings.semesterStartDate != null) {
+        await _storageService.setSemesterStart(_settings.semesterStartDate!);
+      } else {
+        await _storageService.clearSemesterStart();
+      }
+
+      _currentLiveCourseId = null;
+      notifyListeners();
+      await _updateLiveActivity();
+      return null;
+    } on FormatException catch (e) {
+      return e.message;
+    } catch (_) {
+      return '导入失败，文件内容无法识别';
+    }
   }
 
   Future<void> syncCurrentWeekWithSemesterStart() async {
@@ -224,9 +256,10 @@ class TimetableProvider with ChangeNotifier {
 
   List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
     final targetWeek = week ?? _currentWeek;
-    return _courses.where((course) => 
-      course.dayOfWeek == dayOfWeek && course.isInWeek(targetWeek)
-    ).toList()
+    return _courses
+        .where((course) =>
+            course.dayOfWeek == dayOfWeek && course.isInWeek(targetWeek))
+        .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
@@ -237,10 +270,11 @@ class TimetableProvider with ChangeNotifier {
   Course? getCurrentCourse() {
     final todayCourses = getTodayCourses();
     final now = DateTime.now();
-    final currentTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     for (final course in todayCourses) {
-      if (currentTime.compareTo(course.startTime) >= 0 && 
+      if (currentTime.compareTo(course.startTime) >= 0 &&
           currentTime.compareTo(course.endTime) <= 0) {
         return course;
       }
@@ -251,8 +285,9 @@ class TimetableProvider with ChangeNotifier {
   Course? getNextCourse() {
     final todayCourses = getTodayCourses();
     final now = DateTime.now();
-    final currentTime = '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    
+    final currentTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+
     for (final course in todayCourses) {
       if (currentTime.compareTo(course.startTime) < 0) {
         return course;
@@ -327,7 +362,8 @@ class TimetableProvider with ChangeNotifier {
   }) {
     final currentTime = now ?? DateTime.now();
     final targetWeek = week ?? _calculateWeekForDate(currentTime);
-    final todayCourses = getCoursesForDay(currentTime.weekday, week: targetWeek);
+    final todayCourses =
+        getCoursesForDay(currentTime.weekday, week: targetWeek);
     if (todayCourses.isEmpty) return null;
 
     for (var i = 0; i < todayCourses.length; i++) {
@@ -348,10 +384,12 @@ class TimetableProvider with ChangeNotifier {
         aheadTime: aheadTime,
       );
       if (stage != null) {
-        final nextCourse = i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+        final nextCourse =
+            i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
         return LiveActivityCourseSelection(
           currentCourse: resolveCourseDisplayName(course),
-          nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+          nextCourse:
+              nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
           stage: stage,
         );
       }
@@ -368,10 +406,12 @@ class TimetableProvider with ChangeNotifier {
         continue;
       }
 
-      final nextCourse = i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+      final nextCourse =
+          i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
       return LiveActivityCourseSelection(
         currentCourse: resolveCourseDisplayName(course),
-        nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+        nextCourse:
+            nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
         stage: LiveActivityStage.beforeClass,
       );
     }
@@ -400,7 +440,9 @@ class TimetableProvider with ChangeNotifier {
     );
     final maxWeek = _courses.isEmpty
         ? targetWeek
-        : _courses.map((course) => course.endWeek).reduce((a, b) => a > b ? a : b);
+        : _courses
+            .map((course) => course.endWeek)
+            .reduce((a, b) => a > b ? a : b);
 
     Course? bestCourse;
     DateTime? bestStartTime;
@@ -412,13 +454,15 @@ class TimetableProvider with ChangeNotifier {
           continue;
         }
 
-        final dayOffset = (week - targetWeek) * 7 + course.dayOfWeek - currentTime.weekday;
+        final dayOffset =
+            (week - targetWeek) * 7 + course.dayOfWeek - currentTime.weekday;
         if (dayOffset < 0) {
           continue;
         }
 
         final candidateDate = today.add(Duration(days: dayOffset));
-        final candidateStart = _buildCourseDateTime(candidateDate, course.startTime);
+        final candidateStart =
+            _buildCourseDateTime(candidateDate, course.startTime);
         if (candidateStart == null || !candidateStart.isAfter(currentTime)) {
           continue;
         }
@@ -440,17 +484,21 @@ class TimetableProvider with ChangeNotifier {
 
     final sameDayCourses = _courses
         .where((course) =>
-            course.dayOfWeek == bestCourse!.dayOfWeek && course.isInWeek(resolvedWeek))
+            course.dayOfWeek == bestCourse!.dayOfWeek &&
+            course.isInWeek(resolvedWeek))
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
-    final currentIndex = sameDayCourses.indexWhere((course) => course.id == bestCourse!.id);
-    final nextCourse = currentIndex != -1 && currentIndex + 1 < sameDayCourses.length
-        ? sameDayCourses[currentIndex + 1]
-        : null;
+    final currentIndex =
+        sameDayCourses.indexWhere((course) => course.id == bestCourse!.id);
+    final nextCourse =
+        currentIndex != -1 && currentIndex + 1 < sameDayCourses.length
+            ? sameDayCourses[currentIndex + 1]
+            : null;
 
     return LiveActivityCourseSelection(
       currentCourse: resolveCourseDisplayName(bestCourse),
-      nextCourse: nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+      nextCourse:
+          nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
       stage: fallbackStage,
     );
   }
@@ -458,7 +506,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> _updateLiveActivity() async {
     final selection = getLiveActivityCourseSelection();
     final liveCourse = selection?.currentCourse;
-    
+
     if (liveCourse != null) {
       final liveActivityKey = '${liveCourse.id}:${selection!.stage.name}';
       if (_currentLiveCourseId == liveActivityKey) {
@@ -471,14 +519,12 @@ class TimetableProvider with ChangeNotifier {
       final displayNextCourse = selection.nextCourse;
 
       await _liveActivitiesService.startLiveUpdate(
-        displayCourse, 
+        displayCourse,
         displayNextCourse,
         stage: selection.stage.name,
-        endSecondsCountdownThreshold:
-            settings.liveEndSecondsCountdownThreshold,
+        endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
         promoteDuringClass: settings.livePromoteDuringClass,
-        showNotificationDuringClass:
-            settings.liveShowDuringClassNotification,
+        showNotificationDuringClass: settings.liveShowDuringClassNotification,
         enableBeforeClass: settings.liveEnableBeforeClass,
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,

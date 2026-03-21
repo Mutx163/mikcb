@@ -32,7 +32,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     });
 
     final promotedSupport = await _service.checkPromotedSupport();
-    final hasNotificationPermission = await _service.checkNotificationPermission();
+    final hasNotificationPermission =
+        await _service.checkNotificationPermission();
     final isIgnoringBatteryOptimizations =
         await _service.isIgnoringBatteryOptimizations();
 
@@ -41,7 +42,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
       _androidVersion = (promotedSupport['androidVersion'] as int?) ?? 0;
       _hasNotificationPermission =
           promotedSupport['hasNotificationPermission'] == true ||
-          hasNotificationPermission;
+              hasNotificationPermission;
       _hasPromotedPermission = promotedSupport['hasPromotedPermission'] == true;
       _canPostPromoted = promotedSupport['canPostPromoted'] == true;
       _isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations;
@@ -77,6 +78,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
         children: [
           _buildIntroCard(theme),
           const SizedBox(height: 16),
+          _buildImportGuideCard(theme),
+          const SizedBox(height: 16),
           _buildStatusCard(colorScheme),
           const SizedBox(height: 16),
           _buildPermissionCard(),
@@ -106,6 +109,40 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             Text(
               '想让上课提醒稳定显示，需要系统允许通知常驻、允许后台运行，并尽量关闭省电限制。'
               '如果你希望岛区显示更干净，建议给课程设置简称，最好控制在 3 个字以内。',
+              style: theme.textTheme.bodyMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportGuideCard(ThemeData theme) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '课表导入方式',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '当前版本还没有直接连接教务系统导入的能力，所以首次导入通常有两条路：',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '1. 先在 WakeUp 等课表应用里导入教务系统课程，再在它们的软件里选择“日历格式导出”，最后回到本应用导入课程。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '2. 直接让其他用户从本应用导出完整备份文件，你拿到后在“数据备份与迁移”里导入，就能直接恢复课程和设置。',
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -305,7 +342,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                Text(title,
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 2),
                 Text(value, style: TextStyle(color: color)),
               ],
