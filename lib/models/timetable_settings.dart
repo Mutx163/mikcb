@@ -1,5 +1,29 @@
 import 'dart:convert';
 
+enum AppUpdateDownloadSource {
+  original,
+  mirror,
+}
+
+extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
+  String get value => switch (this) {
+        AppUpdateDownloadSource.original => 'original',
+        AppUpdateDownloadSource.mirror => 'mirror',
+      };
+
+  String get label => switch (this) {
+        AppUpdateDownloadSource.original => '原版下载',
+        AppUpdateDownloadSource.mirror => '镜像下载',
+      };
+
+  static AppUpdateDownloadSource fromValue(String? value) {
+    return AppUpdateDownloadSource.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => AppUpdateDownloadSource.original,
+    );
+  }
+}
+
 class SectionTime {
   final String startTime;
   final String endTime;
@@ -58,6 +82,8 @@ class TimetableSettings {
   final String timetablePageBackgroundColor;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
+  final String appUpdateDownloadSource;
+  final String appUpdateMirrorUrlPrefix;
 
   const TimetableSettings({
     required this.sections,
@@ -81,6 +107,8 @@ class TimetableSettings {
     this.timetablePageBackgroundColor = '#F8FAFC',
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
+    this.appUpdateDownloadSource = 'original',
+    this.appUpdateMirrorUrlPrefix = 'https://ghfast.top/',
   });
 
   factory TimetableSettings.defaults() {
@@ -117,6 +145,8 @@ class TimetableSettings {
       timetablePageBackgroundColor: '#F8FAFC',
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
+      appUpdateDownloadSource: 'original',
+      appUpdateMirrorUrlPrefix: 'https://ghfast.top/',
     );
   }
 
@@ -143,6 +173,8 @@ class TimetableSettings {
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
+      'appUpdateDownloadSource': appUpdateDownloadSource,
+      'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
     };
   }
 
@@ -154,7 +186,8 @@ class TimetableSettings {
 
     return TimetableSettings(
       sections: rawSections
-          .map((item) => SectionTime.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map((item) =>
+              SectionTime.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
@@ -169,8 +202,7 @@ class TimetableSettings {
       liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
       liveEnableDuringClass: json['liveEnableDuringClass'] as bool? ?? true,
       liveEnableBeforeEnd: json['liveEnableBeforeEnd'] as bool? ?? true,
-      livePromoteDuringClass:
-          json['livePromoteDuringClass'] as bool? ?? true,
+      livePromoteDuringClass: json['livePromoteDuringClass'] as bool? ?? true,
       liveShowDuringClassNotification:
           json['liveShowDuringClassNotification'] as bool? ?? true,
       liveUseShortName: json['liveUseShortName'] as bool? ?? true,
@@ -188,6 +220,10 @@ class TimetableSettings {
           json['timetableUseUnifiedCardColor'] as bool? ?? false,
       timetableUnifiedCardColor:
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
+      appUpdateDownloadSource:
+          json['appUpdateDownloadSource'] as String? ?? 'original',
+      appUpdateMirrorUrlPrefix:
+          json['appUpdateMirrorUrlPrefix'] as String? ?? 'https://ghfast.top/',
     );
   }
 
@@ -221,6 +257,8 @@ class TimetableSettings {
     String? timetablePageBackgroundColor,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
+    String? appUpdateDownloadSource,
+    String? appUpdateMirrorUrlPrefix,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -237,8 +275,7 @@ class TimetableSettings {
       liveEnableBeforeEnd: liveEnableBeforeEnd ?? this.liveEnableBeforeEnd,
       livePromoteDuringClass:
           livePromoteDuringClass ?? this.livePromoteDuringClass,
-      liveShowDuringClassNotification:
-          liveShowDuringClassNotification ??
+      liveShowDuringClassNotification: liveShowDuringClassNotification ??
           this.liveShowDuringClassNotification,
       liveUseShortName: liveUseShortName ?? this.liveUseShortName,
       liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
@@ -246,8 +283,7 @@ class TimetableSettings {
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:
           liveClassReminderStartMinutes ?? this.liveClassReminderStartMinutes,
-      liveEndSecondsCountdownThreshold:
-          liveEndSecondsCountdownThreshold ??
+      liveEndSecondsCountdownThreshold: liveEndSecondsCountdownThreshold ??
           this.liveEndSecondsCountdownThreshold,
       themeSeedColor: themeSeedColor ?? this.themeSeedColor,
       timetablePageBackgroundColor:
@@ -256,6 +292,10 @@ class TimetableSettings {
           timetableUseUnifiedCardColor ?? this.timetableUseUnifiedCardColor,
       timetableUnifiedCardColor:
           timetableUnifiedCardColor ?? this.timetableUnifiedCardColor,
+      appUpdateDownloadSource:
+          appUpdateDownloadSource ?? this.appUpdateDownloadSource,
+      appUpdateMirrorUrlPrefix:
+          appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
     );
   }
 

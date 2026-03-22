@@ -5,6 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../models/timetable_settings.dart';
+
 class AppReleaseInfo {
   final String version;
   final String title;
@@ -43,6 +45,7 @@ class AppUpdateService {
   static const String repositoryUrl = 'https://github.com/Mutx163/mikcb';
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
+  static const String defaultMirrorUrlPrefix = 'https://ghfast.top/';
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -117,20 +120,20 @@ class AppUpdateService {
     try {
       final tempDir = await getTemporaryDirectory();
       final savePath = '${tempDir.path}/mikcb_update.apk';
-      
+
       final client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
-      
+
       if (response.statusCode != 200) {
         return '下载失败（HTTP ${response.statusCode}）';
       }
-      
+
       final total = response.contentLength;
       int downloaded = 0;
       final file = File(savePath);
       final sink = file.openWrite();
-      
+
       await for (final chunk in response) {
         sink.add(chunk);
         downloaded += chunk.length;
@@ -138,10 +141,10 @@ class AppUpdateService {
           onProgress(downloaded / total);
         }
       }
-      
+
       await sink.close();
       client.close();
-      
+
       final result = await OpenFilex.open(savePath);
       if (result.type != ResultType.done) {
         return '打开安装包失败: ${result.message}';
@@ -150,6 +153,24 @@ class AppUpdateService {
     } catch (e) {
       return '下载或安装过程中出现错误: $e';
     }
+  }
+
+  String buildDownloadUrl({
+    required String originalUrl,
+    required AppUpdateDownloadSource source,
+    required String mirrorUrlPrefix,
+  }) {
+    if (source != AppUpdateDownloadSource.mirror) {
+      return originalUrl;
+    }
+
+    final normalizedPrefix = mirrorUrlPrefix.trim();
+    if (normalizedPrefix.isEmpty) {
+      return originalUrl;
+    }
+
+    final separator = normalizedPrefix.endsWith('/') ? '' : '/';
+    return '$normalizedPrefix$separator$originalUrl';
   }
 
   String? _pickDownloadUrl(List<dynamic> assets) {

@@ -40,6 +40,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   late final PageController _weekPageController;
   bool _isSyncingWeekPage = false;
+  int? _pendingSyncedWeek;
 
   Color _colorFromHex(String hexColor, Color fallback) {
     try {
@@ -69,6 +70,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        _syncWeekPageWithProvider(provider.currentWeek);
         final backgroundColor = _colorFromHex(
           provider.settings.timetablePageBackgroundColor,
           Theme.of(context).colorScheme.surface,
@@ -621,6 +623,33 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
   }
 
+  void _syncWeekPageWithProvider(int week) {
+    if (_isSyncingWeekPage) {
+      return;
+    }
+
+    final targetPage = _clampWeek(week) - 1;
+    if (_pendingSyncedWeek == targetPage) {
+      return;
+    }
+    _pendingSyncedWeek = targetPage;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pendingSyncedWeek = null;
+      if (!mounted || !_weekPageController.hasClients) {
+        return;
+      }
+
+      final currentPage =
+          _weekPageController.page?.round() ?? _weekPageController.initialPage;
+      if (currentPage == targetPage) {
+        return;
+      }
+
+      _weekPageController.jumpToPage(targetPage);
+    });
+  }
+
   void _navigateToAddCourse(BuildContext context) {
     Navigator.push(
       context,
@@ -891,7 +920,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
         startAtMillis: start.millisecondsSinceEpoch,
         endAtMillis: end.millisecondsSinceEpoch,
       );
-      final progressBreakOffsetsMillis = provider.buildLiveProgressBreakOffsetsMillis(
+      final progressBreakOffsetsMillis =
+          provider.buildLiveProgressBreakOffsetsMillis(
         baseCourse,
         startAtMillis: start.millisecondsSinceEpoch,
         endAtMillis: end.millisecondsSinceEpoch,
@@ -915,10 +945,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
-        progressMilestoneLabels:
-            progressMilestones.map((milestone) => milestone['label'] as String).toList(),
-        progressMilestoneTimeTexts:
-            progressMilestones.map((milestone) => milestone['timeText'] as String).toList(),
+        progressMilestoneLabels: progressMilestones
+            .map((milestone) => milestone['label'] as String)
+            .toList(),
+        progressMilestoneTimeTexts: progressMilestones
+            .map((milestone) => milestone['timeText'] as String)
+            .toList(),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

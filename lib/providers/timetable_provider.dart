@@ -64,7 +64,11 @@ class TimetableProvider with ChangeNotifier {
     await _storageService.init();
     await loadSettings();
     await loadCourses();
-    await loadCurrentWeek();
+    if (_settings.semesterStartDate != null) {
+      await syncCurrentWeekWithSemesterStart();
+    } else {
+      await loadCurrentWeek();
+    }
     _startLiveActivityTick();
   }
 
@@ -121,12 +125,9 @@ class TimetableProvider with ChangeNotifier {
   Future<void> setCurrentWeek(int week) async {
     _currentWeek = week;
     await _storageService.setCurrentWeek(week);
-    notifyListeners();
-    return;
-    // ignore: dead_code
     _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
-    _updateLiveActivity();
+    await _updateLiveActivity();
   }
 
   Future<void> addCourse(Course course) async {
@@ -382,7 +383,8 @@ class TimetableProvider with ChangeNotifier {
 
     final firstSectionIndex = course.startSection - 1;
     final lastSectionIndex = course.endSection - 1;
-    if (firstSectionIndex < 0 || lastSectionIndex >= _settings.sections.length) {
+    if (firstSectionIndex < 0 ||
+        lastSectionIndex >= _settings.sections.length) {
       return const [];
     }
 
@@ -408,7 +410,9 @@ class TimetableProvider with ChangeNotifier {
     final totalDurationMillis = resolvedEndAtMillis - resolvedStartAtMillis;
     final milestones = <Map<String, dynamic>>[];
 
-    for (var sectionIndex = firstSectionIndex; sectionIndex < lastSectionIndex; sectionIndex++) {
+    for (var sectionIndex = firstSectionIndex;
+        sectionIndex < lastSectionIndex;
+        sectionIndex++) {
       final currentSection = _settings.sections[sectionIndex];
       final nextSection = _settings.sections[sectionIndex + 1];
       final currentEndMinutes = _parseClockMinutes(currentSection.endTime);
@@ -460,10 +464,11 @@ class TimetableProvider with ChangeNotifier {
   }
 
   String _resolveRealTime(Course course, bool isStart) {
-    final sectionIndex = (isStart ? course.startSection : course.endSection) - 1;
+    final sectionIndex =
+        (isStart ? course.startSection : course.endSection) - 1;
     if (sectionIndex >= 0 && sectionIndex < _settings.sections.length) {
-      return isStart 
-          ? _settings.sections[sectionIndex].startTime 
+      return isStart
+          ? _settings.sections[sectionIndex].startTime
           : _settings.sections[sectionIndex].endTime;
     }
     return isStart ? course.startTime : course.endTime;
@@ -482,8 +487,10 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
-      final endTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, false));
+      final startTime =
+          _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
+      final endTime =
+          _buildCourseDateTime(currentTime, _resolveRealTime(course, false));
       if (startTime == null || endTime == null) {
         continue;
       }
@@ -515,7 +522,8 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
+      final startTime =
+          _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
       if (startTime == null || !startTime.isAfter(currentTime)) {
         continue;
       }
@@ -632,8 +640,11 @@ class TimetableProvider with ChangeNotifier {
     if (liveCourse != null) {
       final settings = _settings;
       final nextCourse = selection!.nextCourse;
-      final nextCourseKey = nextCourse != null ? '${nextCourse.id}:${nextCourse.name}:${nextCourse.startSection}' : 'null';
-      final liveActivityKey = '${liveCourse.id}:${selection.stage.name}:${liveCourse.name}:${liveCourse.startSection}:${liveCourse.endSection}:${liveCourse.location}:${liveCourse.teacher}:$nextCourseKey:${settings.hashCode}';
+      final nextCourseKey = nextCourse != null
+          ? '${nextCourse.id}:${nextCourse.name}:${nextCourse.startSection}'
+          : 'null';
+      final liveActivityKey =
+          '${liveCourse.id}:${selection.stage.name}:${liveCourse.name}:${liveCourse.startSection}:${liveCourse.endSection}:${liveCourse.location}:${liveCourse.teacher}:$nextCourseKey:${settings.hashCode}';
       if (_currentLiveCourseId == liveActivityKey) {
         return; // 防抖，避免频繁唤起 Android 服务
       }
@@ -649,9 +660,11 @@ class TimetableProvider with ChangeNotifier {
               startTime: _resolveRealTime(selection.nextCourse!, true),
               endTime: _resolveRealTime(selection.nextCourse!, false),
             );
-      final startAtMillis = _buildCourseDateTime(DateTime.now(), _resolveRealTime(displayCourse, true))
+      final startAtMillis = _buildCourseDateTime(
+              DateTime.now(), _resolveRealTime(displayCourse, true))
           ?.millisecondsSinceEpoch;
-      final endAtMillis = _buildCourseDateTime(DateTime.now(), _resolveRealTime(displayCourse, false))
+      final endAtMillis = _buildCourseDateTime(
+              DateTime.now(), _resolveRealTime(displayCourse, false))
           ?.millisecondsSinceEpoch;
       final progressMilestones = buildLiveProgressMilestones(
         displayCourse,
@@ -680,10 +693,12 @@ class TimetableProvider with ChangeNotifier {
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
-        progressMilestoneLabels:
-            progressMilestones.map((milestone) => milestone['label'] as String).toList(),
-        progressMilestoneTimeTexts:
-            progressMilestones.map((milestone) => milestone['timeText'] as String).toList(),
+        progressMilestoneLabels: progressMilestones
+            .map((milestone) => milestone['label'] as String)
+            .toList(),
+        progressMilestoneTimeTexts: progressMilestones
+            .map((milestone) => milestone['timeText'] as String)
+            .toList(),
       );
     } else {
       if (_currentLiveCourseId != null) {
@@ -727,7 +742,7 @@ class TimetableProvider with ChangeNotifier {
     final reminderStartTime = startMinutes == 0
         ? startTime
         : endTime.subtract(Duration(minutes: startMinutes));
-        
+
     if (currentTime.isBefore(reminderStartTime)) {
       return null;
     }
