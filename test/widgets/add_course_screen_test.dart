@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
-import 'package:university_timetable/screens/timetable_screen.dart';
+import 'package:university_timetable/screens/add_course_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -12,33 +13,35 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('home screen keeps timetable management in overflow menu only',
-      (tester) async {
+  testWidgets('editing course shows delete action', (tester) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
     );
     await provider.initialize();
-    final defaultProfileId = provider.activeProfileId!;
-    await provider.createProfile(name: '秋季课表');
-    await provider.switchProfile(defaultProfileId);
+
+    final course = Course(
+      id: 'course-1',
+      name: '高等数学',
+      teacher: '张老师',
+      location: 'A101',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+    );
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+        child: MaterialApp(
+          home: AddCourseScreen(course: course),
         ),
       ),
     );
     await tester.pumpAndSettle();
 
-    expect(find.byIcon(Icons.swap_horiz_rounded), findsNothing);
-
-    await tester.tap(find.byTooltip('更多'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('课表管理'), findsOneWidget);
-    expect(find.text('课程总览'), findsOneWidget);
+    expect(find.byTooltip('删除课程'), findsOneWidget);
   });
 }

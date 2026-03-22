@@ -755,6 +755,9 @@ class TimetableProvider with ChangeNotifier {
 
   Future<String?> importAppDataBackup(String content) async {
     try {
+      if (_dataTransferService.isFullBackupJson(content)) {
+        return await importFullAppDataBackup(content);
+      }
       final backup = _dataTransferService.parseBackupJson(content);
       final resolvedSettings = await _resolveSettingsAgainstTimeSchemes(
         backup.settings,
@@ -791,6 +794,9 @@ class TimetableProvider with ChangeNotifier {
     String? profileName,
   }) async {
     try {
+      if (_dataTransferService.isFullBackupJson(content)) {
+        return '这是全部数据备份，请使用“覆盖当前课表”方式导入';
+      }
       final backup = _dataTransferService.parseBackupJson(content);
       final nextName = (profileName ?? backup.profileName ?? '导入课表').trim();
       final resolvedSettings = await _resolveSettingsAgainstTimeSchemes(
@@ -826,6 +832,44 @@ class TimetableProvider with ChangeNotifier {
           'created_profile': 1,
         },
       );
+      await _updateLiveActivity();
+      return null;
+    } on FormatException catch (e) {
+      return e.message;
+    } catch (_) {
+      return '导入失败，文件内容无法识别';
+    }
+  }
+
+  Future<String?> importFullAppDataBackup(String content) async {
+    try {
+      final backup = _dataTransferService.parseFullBackupJson(content);
+      if (backup.profiles.isEmpty) {
+        return '备份文件中没有可恢复的课表';
+      }
+
+      _timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
+      _profiles = backup.profiles
+          .map(
+            (profile) => profile.copyWith(
+              settings: _normalizeSettingsWithTimeScheme(profile.settings),
+            ),
+          )
+          .toList();
+      _activeProfileId = backup.activeProfileId != null &&
+              _profiles.any((profile) => profile.id == backup.activeProfileId)
+          ? backup.activeProfileId
+          : _profiles.first.id;
+
+      await _storageService.saveTimeSchemes(_timeSchemes);
+      await _storageService.saveProfiles(_profiles);
+      if (_activeProfileId != null) {
+        await _storageService.setActiveProfileId(_activeProfileId!);
+      }
+
+      _applyProfileState(_profiles.firstWhere((profile) => profile.id == _activeProfileId));
+      _currentLiveCourseId = null;
+      notifyListeners();
       await _updateLiveActivity();
       return null;
     } on FormatException catch (e) {

@@ -172,6 +172,49 @@ void main() {
     expect(provider.courseConflictMapForWeek(2).containsKey('odd-course'), isFalse);
   });
 
+  test('same slot on different non-overlapping weeks is not conflict', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourse(
+      Course(
+        id: 'course-first-half',
+        name: '大学体育',
+        teacher: '张老师',
+        location: '操场',
+        dayOfWeek: 3,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+        startWeek: 1,
+        endWeek: 8,
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-second-half',
+        name: '大学体育',
+        teacher: '李老师',
+        location: '体育馆',
+        dayOfWeek: 3,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+        startWeek: 9,
+        endWeek: 16,
+      ),
+    );
+
+    expect(provider.courseConflictMap, isEmpty);
+    expect(provider.courseConflictMapForWeek(5), isEmpty);
+    expect(provider.courseConflictMapForWeek(12), isEmpty);
+  });
+
   test('applying a time scheme updates active profile sections', () async {
     final provider = TimetableProvider(
       autoInitialize: false,

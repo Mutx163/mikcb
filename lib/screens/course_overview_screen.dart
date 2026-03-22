@@ -105,13 +105,44 @@ class CourseOverviewScreen extends StatelessWidget {
                               style: const TextStyle(color: Colors.white),
                             ),
                           ),
-                          title: Text(
-                            '$name$shortNameDisplay',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  '$name$shortNameDisplay',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              if (groupConflictCount > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .errorContainer,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    '冲突 $groupConflictCount 节',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onErrorContainer,
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           subtitle: Text(
                             groupConflictCount > 0
-                                ? '共排课 ${group.length} 节 · 冲突 $groupConflictCount 节'
+                                ? '共排课 ${group.length} 节 · 展开查看冲突详情'
                                 : '共排课 ${group.length} 节',
                           ),
                           children: group.map((course) {
@@ -121,37 +152,8 @@ class CourseOverviewScreen extends StatelessWidget {
 
                             return ListTile(
                               isThreeLine: conflicts.isNotEmpty,
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节',
-                                    ),
-                                  ),
-                                  if (conflicts.isNotEmpty)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .errorContainer,
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                      child: Text(
-                                        '冲突',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w700,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onErrorContainer,
-                                        ),
-                                      ),
-                                    ),
-                                ],
+                              title: Text(
+                                '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节',
                               ),
                               subtitle: Text(
                                 conflicts.isEmpty
@@ -209,7 +211,14 @@ class CourseOverviewScreen extends StatelessWidget {
 
   String _buildConflictSummary(List<Course> conflicts) {
     final labels = conflicts
-        .map((course) => '${course.name}(星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)')
+        .map((course) {
+          final weekMode = course.isOddWeek
+              ? ' 单周'
+              : course.isEvenWeek
+                  ? ' 双周'
+                  : '';
+          return '${course.name}(第${course.startWeek}-${course.endWeek}周$weekMode 星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)';
+        })
         .toSet()
         .toList();
     return labels.join('、');

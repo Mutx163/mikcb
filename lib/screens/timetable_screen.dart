@@ -4,20 +4,28 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
+import 'about_screen.dart';
 import 'course_overview_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
-  const TimetableScreen({super.key});
+  final bool enableUpdateCheck;
+
+  const TimetableScreen({
+    super.key,
+    this.enableUpdateCheck = true,
+  });
 
   @override
   State<TimetableScreen> createState() => _TimetableScreenState();
@@ -42,6 +50,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   late final PageController _weekPageController;
   bool _isSyncingWeekPage = false;
   int? _pendingSyncedWeek;
+  final AppUpdateService _updateService = AppUpdateService();
+  bool _hasAvailableUpdate = false;
 
   Color _colorFromHex(String hexColor, Color fallback) {
     try {
@@ -60,6 +70,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     _weekPageController = PageController(
       initialPage: _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
+    if (widget.enableUpdateCheck) {
+      _checkForAppUpdate();
+    }
   }
 
   @override
@@ -91,6 +104,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 tooltip: '更多',
                 onSelected: _handleTopMenuAction,
                 itemBuilder: (context) => [
+                  if (_hasAvailableUpdate)
+                    const PopupMenuItem(
+                      value: 'update',
+                      child: Text('软件有更新'),
+                    ),
                   const PopupMenuItem(
                     value: 'profiles',
                     child: Text('课表管理'),
@@ -728,8 +746,21 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
+  void _openAbout() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/about'),
+        builder: (context) => const AboutScreen(),
+      ),
+    );
+  }
+
   void _handleTopMenuAction(String value) {
     switch (value) {
+      case 'update':
+        _openAbout();
+        break;
       case 'profiles':
         _openProfiles();
         break;
@@ -754,6 +785,23 @@ class _TimetableScreenState extends State<TimetableScreen> {
       case 'add':
         _navigateToAddCourse(context);
         break;
+    }
+  }
+
+  Future<void> _checkForAppUpdate() async {
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final result = await _updateService.checkForUpdates(
+        currentVersion: packageInfo.version,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _hasAvailableUpdate = result.hasUpdate;
+      });
+    } catch (_) {
+      // Ignore update check failures on home screen; About page provides details.
     }
   }
 
