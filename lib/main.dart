@@ -23,7 +23,7 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  String get _appTitle => kReleaseMode ? '大学课程表' : '大学课程表测试';
+  String get _appTitle => kReleaseMode ? '轻屿课表' : '轻屿课表测试';
 
   @override
   Widget build(BuildContext context) {

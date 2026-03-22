@@ -45,7 +45,7 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders = [appLabel: "课程表"]
+        manifestPlaceholders = [appLabel: "轻屿课表"]
     }
 
     signingConfigs {
@@ -63,10 +63,10 @@ android {
         debug {
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
-            manifestPlaceholders = [appLabel: "课程表测试"]
+            manifestPlaceholders = [appLabel: "轻屿课表测试"]
         }
         release {
-            manifestPlaceholders = [appLabel: "课程表"]
+            manifestPlaceholders = [appLabel: "轻屿课表"]
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.release
             } else {

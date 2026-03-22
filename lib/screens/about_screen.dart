@@ -94,7 +94,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '课程表',
+                    '轻屿课表',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
