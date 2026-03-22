@@ -968,17 +968,22 @@ class LiveUpdateService : Service() {
         val totalMillis = (endAtMillis - startAtMillis).coerceAtLeast(1L)
         val elapsedMillis = (now - startAtMillis).coerceIn(0L, totalMillis)
         val remainingMillis = (endAtMillis - now).coerceAtLeast(0L)
-        val progressMax = 1000
-        val progressUnits = ((elapsedMillis * progressMax) / totalMillis).toInt().coerceIn(0, progressMax)
-        val progressPercent = ((elapsedMillis * 100L) / totalMillis).toInt().coerceIn(0, 100)
-        val breakPointUnits = progressBreakOffsetsMillis
-            .map { offsetMillis ->
-                ((offsetMillis.coerceIn(0L, totalMillis) * progressMax) / totalMillis)
-                    .toInt()
-                    .coerceIn(1, progressMax - 1)
-            }
-            .distinct()
-            .sorted()
+        val progressStepMillis = 60_000L
+        val progressMax = ((totalMillis / progressStepMillis).toInt()).coerceAtLeast(1)
+        val progressUnits =
+            ((elapsedMillis / progressStepMillis).toInt()).coerceIn(0, progressMax)
+        val progressPercent = ((progressUnits * 100L) / progressMax).toInt().coerceIn(0, 100)
+        val breakPointUnits = if (progressMax <= 1) {
+            emptyList()
+        } else {
+            progressBreakOffsetsMillis
+                .map { offsetMillis ->
+                    ((offsetMillis.coerceIn(0L, totalMillis) / progressStepMillis).toInt())
+                        .coerceIn(1, progressMax - 1)
+                }
+                .distinct()
+                .sorted()
+        }
         val nextMilestoneIndex =
             progressBreakOffsetsMillis.indexOfFirst { it > elapsedMillis }.takeIf { it >= 0 }
         val nextMilestoneLabel =
