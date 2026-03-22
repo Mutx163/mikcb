@@ -17,6 +17,8 @@ class _AboutScreenState extends State<AboutScreen> {
   final AppUpdateService _updateService = AppUpdateService();
   PackageInfo? _packageInfo;
   Future<AppUpdateCheckResult>? _updateFuture;
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
 
   @override
   void initState() {
@@ -298,36 +300,62 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: result.hasRelease
-                              ? () => _openUrl(
-                                    release?.downloadUrl ?? release?.releaseUrl,
-                                  )
-                              : null,
-                          icon: Icon(
-                            defaultTargetPlatform == TargetPlatform.android
-                                ? Icons.download_rounded
-                                : Icons.open_in_new_rounded,
+                    if (_isDownloading)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text(
+                            '正在下载更新: ${(_downloadProgress * 100).toStringAsFixed(1)}%',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          label: Text(
-                            release?.downloadUrl != null
-                                ? '下载更新'
-                                : '查看 Release',
+                          const SizedBox(height: 8),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: _downloadProgress,
+                              minHeight: 8,
+                            ),
                           ),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: result.hasRelease
-                              ? () => _openUrl(release?.releaseUrl)
-                              : null,
-                          icon: const Icon(Icons.new_releases_outlined),
-                          label: const Text('Release 页面'),
-                        ),
-                      ],
-                    ),
+                        ],
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: result.hasRelease
+                                ? () {
+                                    if (release?.downloadUrl != null && defaultTargetPlatform == TargetPlatform.android) {
+                                      _downloadAndInstall(release!.downloadUrl!);
+                                    } else {
+                                      _openUrl(release?.downloadUrl ?? release?.releaseUrl);
+                                    }
+                                  }
+                                : null,
+                            icon: Icon(
+                              defaultTargetPlatform == TargetPlatform.android
+                                  ? Icons.download_rounded
+                                  : Icons.open_in_new_rounded,
+                            ),
+                            label: Text(
+                              release?.downloadUrl != null
+                                  ? '应用内下载'
+                                  : '查看 Release',
+                            ),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: result.hasRelease
+                                ? () => _openUrl(release?.releaseUrl)
+                                : null,
+                            icon: const Icon(Icons.new_releases_outlined),
+                            label: const Text('Release 页面'),
+                          ),
+                        ],
+                      ),
                   ],
                 );
               },
@@ -375,6 +403,33 @@ class _AboutScreenState extends State<AboutScreen> {
         currentVersion: _packageInfo!.version,
       );
     });
+  }
+
+  Future<void> _downloadAndInstall(String url) async {
+    setState(() {
+      _isDownloading = true;
+      _downloadProgress = 0.0;
+    });
+
+    final error = await _updateService.downloadAndInstallUpdate(url, (progress) {
+      if (mounted) {
+        setState(() {
+          _downloadProgress = progress;
+        });
+      }
+    });
+
+    if (!mounted) return;
+
+    setState(() {
+      _isDownloading = false;
+    });
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+    }
   }
 
   String _formatDateTime(DateTime dateTime) {

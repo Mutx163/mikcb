@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AppReleaseInfo {
   final String version;
@@ -104,6 +107,48 @@ class AppUpdateService {
         currentVersion: currentVersion,
         message: '网络异常，暂时无法检查更新。',
       );
+    }
+  }
+
+  Future<String?> downloadAndInstallUpdate(
+    String url,
+    void Function(double) onProgress,
+  ) async {
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final savePath = '${tempDir.path}/mikcb_update.apk';
+      
+      final client = HttpClient();
+      final request = await client.getUrl(Uri.parse(url));
+      final response = await request.close();
+      
+      if (response.statusCode != 200) {
+        return '下载失败（HTTP ${response.statusCode}）';
+      }
+      
+      final total = response.contentLength;
+      int downloaded = 0;
+      final file = File(savePath);
+      final sink = file.openWrite();
+      
+      await for (final chunk in response) {
+        sink.add(chunk);
+        downloaded += chunk.length;
+        if (total != -1) {
+          onProgress(downloaded / total);
+        }
+      }
+      
+      await sink.close();
+      client.close();
+      
+      final result = await OpenFilex.open(savePath);
+      if (result.type != ResultType.done) {
+        return '打开安装包失败: ${result.message}';
+      }
+      return null;
+    } catch (e) {
+      return '下载或安装过程中出现错误: $e';
     }
   }
 

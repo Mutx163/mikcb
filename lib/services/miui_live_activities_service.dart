@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import '../models/course.dart';
+import '../models/timetable_settings.dart';
 
 class MiuiLiveActivitiesService {
   static const MethodChannel _channel = MethodChannel('com.example.university_timetable/miui_live');
@@ -106,6 +108,7 @@ class MiuiLiveActivitiesService {
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
     String? stage,
+    int beforeClassLeadMillis = 0,
     int? startAtMillis,
     int? endAtMillis,
     int? endReminderLeadMillis,
@@ -131,6 +134,7 @@ class MiuiLiveActivitiesService {
         nextCourse,
         autoDismissAfterStartMinutes: autoDismissAfterStartMinutes,
         stage: stage,
+        beforeClassLeadMillis: beforeClassLeadMillis,
         startAtMillis: startAtMillis,
         endAtMillis: endAtMillis,
         endReminderLeadMillis: endReminderLeadMillis,
@@ -168,6 +172,7 @@ class MiuiLiveActivitiesService {
     Course? nextCourse, {
     int autoDismissAfterStartMinutes = 0,
     String? stage,
+    int beforeClassLeadMillis = 0,
     int? startAtMillis,
     int? endAtMillis,
     int? endReminderLeadMillis,
@@ -189,6 +194,7 @@ class MiuiLiveActivitiesService {
     final data = <String, dynamic>{
       'autoDismissAfterStartMinutes': autoDismissAfterStartMinutes,
       'stage': stage,
+      'beforeClassLeadMillis': beforeClassLeadMillis,
       'startAtMillis': startAtMillis,
       'endAtMillis': endAtMillis,
       'endReminderLeadMillis': endReminderLeadMillis,
@@ -230,5 +236,36 @@ class MiuiLiveActivitiesService {
       };
     }
     return data;
+  }
+
+  Future<void> syncScheduleSnapshot({
+    required List<Course> courses,
+    required TimetableSettings settings,
+    required int currentWeek,
+    DateTime? semesterStartDate,
+    required int endReminderLeadMillis,
+  }) async {
+    await initialize();
+    try {
+      final snapshotJson = jsonEncode({
+        'currentWeek': currentWeek,
+        'semesterStartMillis': semesterStartDate?.millisecondsSinceEpoch,
+        'endReminderLeadMillis': endReminderLeadMillis,
+        'courses': courses.map((course) => course.toJson()).toList(),
+        'settings': settings.toJson(),
+      });
+      await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
+    } catch (e) {
+      debugPrint('Failed to sync schedule snapshot: $e');
+    }
+  }
+
+  Future<void> clearScheduleSnapshot() async {
+    await initialize();
+    try {
+      await _channel.invokeMethod('clearScheduleSnapshot');
+    } catch (e) {
+      debugPrint('Failed to clear schedule snapshot: $e');
+    }
   }
 }
