@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
@@ -92,5 +94,35 @@ void main() {
 
     expect(restoredScheme.id, 'winter');
     expect(restoredScheme.sections.single.displayText, '08:30-09:15');
+  });
+
+  test('migrates existing profiles to hide prefix text by default', () async {
+    final legacySettings = TimetableSettings.defaults().copyWith(
+      liveHidePrefixText: false,
+    );
+    final profileJson = [
+      {
+        'id': 'profile-1',
+        'name': '默认课表',
+        'courses': [],
+        'settings': legacySettings.toJson(),
+        'currentWeek': 1,
+        'createdAt': DateTime(2026, 3, 22, 8).toIso8601String(),
+        'lastUsedAt': DateTime(2026, 3, 22, 8).toIso8601String(),
+      }
+    ];
+
+    SharedPreferences.setMockInitialValues({
+      'timetable_profiles': jsonEncode(profileJson),
+      'active_timetable_profile_id': 'profile-1',
+      'time_schemes': jsonEncode([]),
+    });
+
+    final storage = StorageService();
+    await storage.init();
+
+    final profiles = await storage.getProfiles();
+
+    expect(profiles.single.settings.liveHidePrefixText, isTrue);
   });
 }

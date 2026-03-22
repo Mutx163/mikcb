@@ -7,10 +7,12 @@ void main() {
 
     expect(settings.semesterWeekCount, 20);
     expect(settings.showConflictBadgeOnTimetable, isTrue);
+    expect(settings.liveHidePrefixText, isTrue);
 
     final restored = TimetableSettings.fromJson(settings.toJson());
     expect(restored.semesterWeekCount, 20);
     expect(restored.showConflictBadgeOnTimetable, isTrue);
+    expect(restored.liveHidePrefixText, isTrue);
   });
 
   test('available weeks follow configured semester week count', () {

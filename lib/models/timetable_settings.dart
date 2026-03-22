@@ -105,7 +105,7 @@ class TimetableSettings {
     this.livePromoteDuringClass = true,
     this.liveShowDuringClassNotification = true,
     this.liveUseShortName = true,
-    this.liveHidePrefixText = false,
+    this.liveHidePrefixText = true,
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
@@ -146,7 +146,7 @@ class TimetableSettings {
       livePromoteDuringClass: true,
       liveShowDuringClassNotification: true,
       liveUseShortName: true,
-      liveHidePrefixText: false,
+      liveHidePrefixText: true,
       liveShowBeforeClassMinutes: 20,
       liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
@@ -222,7 +222,7 @@ class TimetableSettings {
       liveShowDuringClassNotification:
           json['liveShowDuringClassNotification'] as bool? ?? true,
       liveUseShortName: json['liveUseShortName'] as bool? ?? true,
-      liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? false,
+      liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? true,
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:

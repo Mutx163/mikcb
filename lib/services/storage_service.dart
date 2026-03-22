@@ -15,6 +15,8 @@ class StorageService {
   static const String _activeProfileIdKey = 'active_timetable_profile_id';
   static const String _timeSchemesKey = 'time_schemes';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
+  static const String _hidePrefixDefaultMigrationKey =
+      'did_migrate_live_hide_prefix_default';
 
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -163,6 +165,7 @@ class StorageService {
     if (_prefs == null) await init();
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
+    await _migrateHidePrefixDefault();
     final profilesJson = _prefs?.getString(_profilesKey);
     if (profilesJson == null || profilesJson.isEmpty) {
       return const [];
@@ -186,6 +189,7 @@ class StorageService {
     if (_prefs == null) await init();
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
+    await _migrateHidePrefixDefault();
     return _prefs?.getString(_activeProfileIdKey);
   }
 
@@ -331,5 +335,33 @@ class StorageService {
     return jsonEncode(
       sections.map((section) => section.toJson()).toList(),
     );
+  }
+
+  Future<void> _migrateHidePrefixDefault() async {
+    if (_prefs?.getBool(_hidePrefixDefaultMigrationKey) == true) {
+      return;
+    }
+
+    final rawProfiles = _prefs?.getString(_profilesKey);
+    if (rawProfiles == null || rawProfiles.isEmpty) {
+      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
+      return;
+    }
+
+    final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
+        .map((item) =>
+            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+
+    final migratedProfiles = profiles
+        .map(
+          (profile) => profile.copyWith(
+            settings: profile.settings.copyWith(liveHidePrefixText: true),
+          ),
+        )
+        .toList();
+
+    await saveProfiles(migratedProfiles);
+    await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
   }
 }
