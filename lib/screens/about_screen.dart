@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/timetable_settings.dart';
+import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -43,6 +46,7 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final settings = context.watch<TimetableProvider>().settings;
     final versionText = _packageInfo == null
         ? '读取中'
         : '${_packageInfo!.version} (${_packageInfo!.buildNumber})';
@@ -111,7 +115,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          _buildUpdateCard(theme),
+          _buildUpdateCard(theme, settings),
           const SizedBox(height: 16),
           Card(
             child: Padding(
@@ -207,8 +211,12 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildUpdateCard(ThemeData theme) {
+  Widget _buildUpdateCard(ThemeData theme, TimetableSettings settings) {
     final colorScheme = theme.colorScheme;
+    final downloadSource = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -256,6 +264,25 @@ class _AboutScreenState extends State<AboutScreen> {
                 final updateColor = result.hasUpdate
                     ? colorScheme.primary
                     : colorScheme.onSurfaceVariant;
+                final originalDownloadUrl = release?.downloadUrl;
+                final effectiveDownloadUrl = originalDownloadUrl == null
+                    ? null
+                    : _updateService.buildDownloadUrl(
+                        originalUrl: originalDownloadUrl,
+                        source: downloadSource,
+                        mirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+                      );
+                final isAndroid =
+                    defaultTargetPlatform == TargetPlatform.android;
+                final primaryButtonLabel = effectiveDownloadUrl == null
+                    ? '查看 Release'
+                    : isAndroid
+                        ? downloadSource == AppUpdateDownloadSource.mirror
+                            ? '应用内下载（镜像）'
+                            : '应用内下载'
+                        : downloadSource == AppUpdateDownloadSource.mirror
+                            ? '打开镜像下载'
+                            : '打开下载地址';
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -300,6 +327,76 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                     ],
                     const SizedBox(height: 12),
+                    Text(
+                      '下载源',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SegmentedButton<AppUpdateDownloadSource>(
+                      segments: AppUpdateDownloadSource.values
+                          .map(
+                            (item) => ButtonSegment<AppUpdateDownloadSource>(
+                              value: item,
+                              label: Text(item.label),
+                            ),
+                          )
+                          .toList(),
+                      selected: {downloadSource},
+                      onSelectionChanged: (selection) {
+                        final nextSource = selection.first;
+                        _updateDownloadSource(nextSource);
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '镜像前缀',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            settings.appUpdateMirrorUrlPrefix,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilledButton.tonalIcon(
+                                onPressed: _editMirrorUrlPrefix,
+                                icon: const Icon(Icons.edit_outlined),
+                                label: const Text('修改镜像源'),
+                              ),
+                              if (downloadSource ==
+                                  AppUpdateDownloadSource.mirror)
+                                Text(
+                                  effectiveDownloadUrl ?? '',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     if (_isDownloading)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -329,23 +426,21 @@ class _AboutScreenState extends State<AboutScreen> {
                           FilledButton.icon(
                             onPressed: result.hasRelease
                                 ? () {
-                                    if (release?.downloadUrl != null && defaultTargetPlatform == TargetPlatform.android) {
-                                      _downloadAndInstall(release!.downloadUrl!);
+                                    if (effectiveDownloadUrl != null &&
+                                        isAndroid) {
+                                      _downloadAndInstall(effectiveDownloadUrl);
                                     } else {
-                                      _openUrl(release?.downloadUrl ?? release?.releaseUrl);
+                                      _openUrl(effectiveDownloadUrl ??
+                                          release?.releaseUrl);
                                     }
                                   }
                                 : null,
                             icon: Icon(
-                              defaultTargetPlatform == TargetPlatform.android
+                              isAndroid
                                   ? Icons.download_rounded
                                   : Icons.open_in_new_rounded,
                             ),
-                            label: Text(
-                              release?.downloadUrl != null
-                                  ? '应用内下载'
-                                  : '查看 Release',
-                            ),
+                            label: Text(primaryButtonLabel),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: result.hasRelease
@@ -405,13 +500,91 @@ class _AboutScreenState extends State<AboutScreen> {
     });
   }
 
+  Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateDownloadSource: source.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _editMirrorUrlPrefix() async {
+    final provider = context.read<TimetableProvider>();
+    final controller = TextEditingController(
+      text: provider.settings.appUpdateMirrorUrlPrefix,
+    );
+    final result = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('设置镜像源'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              labelText: '镜像前缀',
+              hintText: 'https://ghfast.top/',
+            ),
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop(controller.text.trim());
+              },
+              child: const Text('保存'),
+            ),
+          ],
+        );
+      },
+    );
+    controller.dispose();
+
+    if (result == null || !mounted) {
+      return;
+    }
+
+    final normalizedPrefix = _normalizeMirrorUrlPrefix(result);
+    if (normalizedPrefix == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('镜像源格式不正确，请输入完整的 http 或 https 地址')),
+      );
+      return;
+    }
+
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorUrlPrefix: normalizedPrefix,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message ?? '镜像源已保存')),
+    );
+  }
+
   Future<void> _downloadAndInstall(String url) async {
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0.0;
     });
 
-    final error = await _updateService.downloadAndInstallUpdate(url, (progress) {
+    final error =
+        await _updateService.downloadAndInstallUpdate(url, (progress) {
       if (mounted) {
         setState(() {
           _downloadProgress = progress;
@@ -447,6 +620,21 @@ class _AboutScreenState extends State<AboutScreen> {
       return compact;
     }
     return '${compact.substring(0, 220)}...';
+  }
+
+  String? _normalizeMirrorUrlPrefix(String input) {
+    final value = input.trim();
+    if (value.isEmpty) {
+      return null;
+    }
+
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return null;
+    }
+
+    final base = value.endsWith('/') ? value : '$value/';
+    return base;
   }
 }
 

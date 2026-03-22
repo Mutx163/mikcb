@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/timetable_provider.dart';
@@ -36,6 +37,15 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: '大学课程表',
             debugShowCheckedModeBanner: false,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('zh', 'CN'),
+              Locale('en', 'US'),
+            ],
             theme: ThemeData(
               useMaterial3: true,
               colorScheme: colorScheme,
