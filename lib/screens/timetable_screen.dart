@@ -80,7 +80,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
           appBar: AppBar(
             backgroundColor: backgroundColor,
             surfaceTintColor: backgroundColor,
-            title: const Text('课程表'),
+            title: const Text('轻屿课表'),
             actions: [
               PopupMenuButton<String>(
                 tooltip: '更多',
