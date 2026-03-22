@@ -463,6 +463,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
+                      settings: const RouteSettings(name: '/courses/overview'),
                       builder: (_) => const CourseOverviewScreen(),
                     ),
                   );

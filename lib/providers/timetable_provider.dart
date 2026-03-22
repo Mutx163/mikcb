@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../services/app_analytics.dart';
 import '../services/data_transfer_service.dart';
 import '../services/storage_service.dart';
 import '../services/ics_import_service.dart';
@@ -33,6 +34,7 @@ class TimetableProvider with ChangeNotifier {
   final MiuiLiveActivitiesService _liveActivitiesService =
       MiuiLiveActivitiesService();
   final DataTransferService _dataTransferService = DataTransferService();
+  final AppAnalytics _analytics = AppAnalytics.instance;
 
   List<Course> _courses = [];
   TimetableSettings _settings = TimetableSettings.defaults();
@@ -135,6 +137,14 @@ class TimetableProvider with ChangeNotifier {
     _courses.add(course);
     _currentLiveCourseId = null;
     notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_created',
+      parameters: {
+        'day_of_week': course.dayOfWeek,
+        'section_count': course.sectionCount,
+        'has_short_name': course.shortName?.isNotEmpty == true ? 1 : 0,
+      },
+    );
     _updateLiveActivity();
   }
 
@@ -145,6 +155,14 @@ class TimetableProvider with ChangeNotifier {
       _courses[index] = course;
       _currentLiveCourseId = null;
       notifyListeners();
+      _analytics.logEventLater(
+        name: 'course_updated',
+        parameters: {
+          'day_of_week': course.dayOfWeek,
+          'section_count': course.sectionCount,
+          'has_short_name': course.shortName?.isNotEmpty == true ? 1 : 0,
+        },
+      );
       _updateLiveActivity();
     }
   }
@@ -154,6 +172,12 @@ class TimetableProvider with ChangeNotifier {
     _courses.removeWhere((c) => c.id == courseId);
     _currentLiveCourseId = null;
     notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_deleted',
+      parameters: {
+        'remaining_course_count': _courses.length,
+      },
+    );
     _updateLiveActivity();
   }
 
@@ -192,6 +216,13 @@ class TimetableProvider with ChangeNotifier {
     await _storageService.saveTimetableSettings(_settings);
     _currentLiveCourseId = null;
     notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_imported',
+      parameters: {
+        'imported_course_count': result.courses.length,
+        'replace_existing': replaceExisting ? 1 : 0,
+      },
+    );
     await _updateLiveActivity();
     return result.courses.length;
   }
@@ -214,6 +245,13 @@ class TimetableProvider with ChangeNotifier {
 
       _currentLiveCourseId = null;
       notifyListeners();
+      _analytics.logEventLater(
+        name: 'backup_imported',
+        parameters: {
+          'course_count': _courses.length,
+          'current_week': _currentWeek,
+        },
+      );
       await _updateLiveActivity();
       return null;
     } on FormatException catch (e) {

@@ -654,6 +654,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/course/create'),
         builder: (context) => const AddCourseScreen(),
       ),
     );
@@ -663,6 +664,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/course/create'),
         builder: (context) => AddCourseScreen(
           initialDayOfWeek: dayOfWeek,
           initialStartSection: section,
@@ -675,6 +677,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/course/edit'),
         builder: (context) => AddCourseScreen(course: course),
       ),
     );
@@ -684,6 +687,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
+        settings: const RouteSettings(name: '/settings'),
         builder: (context) => const TimetableSettingsScreen(),
       ),
     );
@@ -694,7 +698,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
       case 'overview':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const CourseOverviewScreen()),
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/courses/overview'),
+            builder: (context) => const CourseOverviewScreen(),
+          ),
         );
         break;
       case 'test':

@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/app_analytics.dart';
 import '../services/app_update_service.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   final AppUpdateService _updateService = AppUpdateService();
+  final AppAnalytics _analytics = AppAnalytics.instance;
   PackageInfo? _packageInfo;
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
@@ -462,6 +464,7 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _openRepository() async {
+    _analytics.logEventLater(name: 'repository_opened');
     final uri = Uri.tryParse(AppUpdateService.repositoryUrl);
     if (uri == null) {
       return;
@@ -493,6 +496,7 @@ class _AboutScreenState extends State<AboutScreen> {
     if (_packageInfo == null) {
       return;
     }
+    _analytics.logEventLater(name: 'update_check_requested');
     setState(() {
       _updateFuture = _updateService.checkForUpdates(
         currentVersion: _packageInfo!.version,
@@ -513,6 +517,13 @@ class _AboutScreenState extends State<AboutScreen> {
     if (message != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
+      );
+    } else {
+      _analytics.logEventLater(
+        name: 'update_source_changed',
+        parameters: {
+          'source': source.value,
+        },
       );
     }
   }
@@ -575,9 +586,11 @@ class _AboutScreenState extends State<AboutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message ?? '镜像源已保存')),
     );
+    _analytics.logEventLater(name: 'update_mirror_saved');
   }
 
   Future<void> _downloadAndInstall(String url) async {
+    _analytics.logEventLater(name: 'update_download_started');
     setState(() {
       _isDownloading = true;
       _downloadProgress = 0.0;
@@ -599,10 +612,14 @@ class _AboutScreenState extends State<AboutScreen> {
     });
 
     if (error != null) {
+      _analytics.logEventLater(name: 'update_download_failed');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error)),
       );
+      return;
     }
+
+    _analytics.logEventLater(name: 'update_download_completed');
   }
 
   String _formatDateTime(DateTime dateTime) {

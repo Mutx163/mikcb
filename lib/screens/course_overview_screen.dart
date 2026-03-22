@@ -10,7 +10,7 @@ class CourseOverviewScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final courses = context.watch<TimetableProvider>().courses;
-    
+
     // Group courses by name
     final Map<String, List<Course>> groupedCourses = {};
     for (var course in courses) {
@@ -28,7 +28,10 @@ class CourseOverviewScreen extends StatelessWidget {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddCourseScreen()),
+                MaterialPageRoute(
+                  settings: const RouteSettings(name: '/course/create'),
+                  builder: (_) => const AddCourseScreen(),
+                ),
               );
             },
           )
@@ -41,29 +44,37 @@ class CourseOverviewScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final name = courseNames[index];
                 final group = groupedCourses[name]!;
-                
+
                 // Assume all instances of the same course likely share the same color and shortName layout
                 final representativeCourse = group.first;
-                final shortNameDisplay = (representativeCourse.shortName != null && representativeCourse.shortName!.isNotEmpty)
-                    ? ' (${representativeCourse.shortName})'
-                    : '';
+                final shortNameDisplay =
+                    (representativeCourse.shortName != null &&
+                            representativeCourse.shortName!.isNotEmpty)
+                        ? ' (${representativeCourse.shortName})'
+                        : '';
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ExpansionTile(
                     leading: CircleAvatar(
-                      backgroundColor: Color(int.parse('FF${representativeCourse.color.replaceAll('#', '')}', radix: 16)),
+                      backgroundColor: Color(int.parse(
+                          'FF${representativeCourse.color.replaceAll('#', '')}',
+                          radix: 16)),
                       child: Text(
                         representativeCourse.name.substring(0, 1),
                         style: const TextStyle(color: Colors.white),
                       ),
                     ),
-                    title: Text('$name$shortNameDisplay', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    title: Text('$name$shortNameDisplay',
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text('共排课 ${group.length} 节'),
                     children: group.map((course) {
                       return ListTile(
-                        title: Text('时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节'),
-                        subtitle: Text('第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'),
+                        title: Text(
+                            '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节'),
+                        subtitle: Text(
+                            '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -72,7 +83,12 @@ class CourseOverviewScreen extends StatelessWidget {
                               onPressed: () {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => AddCourseScreen(course: course)),
+                                  MaterialPageRoute(
+                                    settings: const RouteSettings(
+                                        name: '/course/edit'),
+                                    builder: (_) =>
+                                        AddCourseScreen(course: course),
+                                  ),
                                 );
                               },
                             ),
@@ -85,7 +101,11 @@ class CourseOverviewScreen extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => AddCourseScreen(course: course)),
+                            MaterialPageRoute(
+                              settings:
+                                  const RouteSettings(name: '/course/edit'),
+                              builder: (_) => AddCourseScreen(course: course),
+                            ),
                           );
                         },
                       );
@@ -99,24 +119,23 @@ class CourseOverviewScreen extends StatelessWidget {
 
   void _confirmDelete(BuildContext context, Course course) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除课程“${course.name}”吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<TimetableProvider>().deleteCourse(course.id);
-              Navigator.pop(ctx);
-            },
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      )
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: const Text('确认删除'),
+              content: Text('确定要删除课程“${course.name}”吗？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    context.read<TimetableProvider>().deleteCourse(course.id);
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('删除', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ));
   }
 }
