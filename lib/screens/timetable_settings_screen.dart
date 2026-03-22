@@ -5,6 +5,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
+import 'time_scheme_management_screen.dart';
 import 'user_guide_screen.dart';
 
 class TimetableSettingsScreen extends StatelessWidget {
@@ -884,22 +885,21 @@ class _LayoutSettingsScreen extends StatefulWidget {
 
 class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   late TimetableSettings _draft;
-  late List<SectionTime> _sections;
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
-    _sections = List<SectionTime>.from(_draft.sections);
   }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<TimetableProvider>();
+    final activeScheme = provider.activeTimeScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('布局与节次'),
+        title: const Text('布局与时间模板'),
         actions: [
           TextButton(
             onPressed: _save,
@@ -960,52 +960,74 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    '节次时间',
+                    '时间模板',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '当前课表最多已使用到第 ${provider.maxUsedSection} 节，保存时不能少于这个数量。',
+                    activeScheme == null
+                        ? '当前课表还没有绑定时间模板。'
+                        : '当前课表使用的是“${activeScheme.name}”，切换模板会直接影响首页时间显示和课程创建时间。',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _sections.length >= 20 ? null : _addSection,
-                        icon: const Icon(Icons.add),
-                        label: const Text('新增一节'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed:
-                            _sections.length <= 1 ? null : _removeSection,
-                        icon: const Icon(Icons.remove),
-                        label: const Text('删除末节'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: _resetSections,
-                        icon: const Icon(Icons.restart_alt),
-                        label: const Text('恢复默认'),
-                      ),
-                    ],
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.schedule_rounded),
+                    title: Text(activeScheme?.name ?? '未选择时间模板'),
+                    subtitle: Text(
+                      activeScheme == null
+                          ? '进入模板管理后选择一套作息时间。'
+                          : '共 ${activeScheme.sectionCount} 节 · ${activeScheme.sections.first.displayText}${activeScheme.sectionCount > 1 ? ' 起' : ''}',
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: _openTimeSchemeManagement,
                   ),
-                  const SizedBox(height: 12),
-                  ...List.generate(_sections.length, (index) {
-                    final section = _sections[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('第 ${index + 1} 节'),
-                      subtitle:
-                          Text('${section.startTime} - ${section.endTime}'),
-                      trailing: IconButton(
-                        tooltip: '编辑时间',
-                        onPressed: () => _editSectionTime(index),
-                        icon: const Icon(Icons.edit_outlined),
-                      ),
-                    );
-                  }),
+                  if (activeScheme != null) ...[
+                    const SizedBox(height: 8),
+                    ...List.generate(activeScheme.sections.length, (index) {
+                      final section = activeScheme.sections[index];
+                      return ListTile(
+                        dense: true,
+                        contentPadding: EdgeInsets.zero,
+                        title: Text('第 ${index + 1} 节'),
+                        trailing: Text(section.displayText),
+                      );
+                    }),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: SwitchListTile(
+              title: const Text('首页显示冲突小胶囊'),
+              subtitle: const Text('关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'),
+              value: _draft.showConflictBadgeOnTimetable,
+              onChanged: (value) {
+                setState(() {
+                  _draft = _draft.copyWith(showConflictBadgeOnTimetable: value);
+                });
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '说明',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '时间模板是全局共享的。如果你想只改当前课表的时间，先在模板管理里复制一套模板，再应用到当前课表。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),
@@ -1015,53 +1037,28 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  Future<void> _editSectionTime(int index) async {
-    final start = await showTimePicker(
-      context: context,
-      initialTime: _parseTimeOfDay(_sections[index].startTime),
+  Future<void> _openTimeSchemeManagement() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const TimeSchemeManagementScreen(),
+      ),
     );
-    if (start == null || !mounted) {
+    if (!mounted) {
       return;
     }
-
-    final end = await showTimePicker(
-      context: context,
-      initialTime: _parseTimeOfDay(_sections[index].endTime),
-    );
-    if (end == null || !mounted) {
-      return;
-    }
-
     setState(() {
-      _sections[index] = SectionTime(
-        startTime: _formatTimeOfDay(start),
-        endTime: _formatTimeOfDay(end),
-      );
-    });
-  }
-
-  void _addSection() {
-    setState(() {
-      _sections.add(_buildNextSection(_sections.last));
-    });
-  }
-
-  void _removeSection() {
-    setState(() {
-      _sections.removeLast();
-    });
-  }
-
-  void _resetSections() {
-    setState(() {
-      _sections = List<SectionTime>.from(TimetableSettings.defaults().sections);
+      _draft = context.read<TimetableProvider>().settings;
     });
   }
 
   Future<void> _save() async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      _draft.copyWith(sections: List<SectionTime>.from(_sections)),
+      _draft.copyWith(
+        activeTimeSchemeId: provider.settings.activeTimeSchemeId,
+        sections: List<SectionTime>.from(provider.settings.sections),
+      ),
     );
     if (!mounted) {
       return;
@@ -1229,33 +1226,4 @@ Color _colorFromHex(String hexColor) {
 
 String _formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-}
-
-TimeOfDay _parseTimeOfDay(String value) {
-  final parts = value.split(':');
-  return TimeOfDay(
-    hour: int.parse(parts[0]),
-    minute: int.parse(parts[1]),
-  );
-}
-
-String _formatTimeOfDay(TimeOfDay time) {
-  return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-}
-
-SectionTime _buildNextSection(SectionTime last) {
-  final end = _parseTimeOfDay(last.endTime);
-  final startMinutes = end.hour * 60 + end.minute + 10;
-  final endMinutes = startMinutes + 45;
-  return SectionTime(
-    startTime: _minutesToTime(startMinutes),
-    endTime: _minutesToTime(endMinutes),
-  );
-}
-
-String _minutesToTime(int minutes) {
-  final normalized = minutes % (24 * 60);
-  final hour = normalized ~/ 60;
-  final minute = normalized % 60;
-  return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 }

@@ -9,7 +9,10 @@ class CourseOverviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final courses = context.watch<TimetableProvider>().courses;
+    final provider = context.watch<TimetableProvider>();
+    final courses = provider.courses;
+    final conflictMap = provider.courseConflictMap;
+    final conflictingCourseCount = conflictMap.length;
 
     // Group courses by name
     final Map<String, List<Course>> groupedCourses = {};
@@ -39,82 +42,177 @@ class CourseOverviewScreen extends StatelessWidget {
       ),
       body: courseNames.isEmpty
           ? const Center(child: Text('长按课表或点击右上角添加课程'))
-          : ListView.builder(
-              itemCount: courseNames.length,
-              itemBuilder: (context, index) {
-                final name = courseNames[index];
-                final group = groupedCourses[name]!;
-
-                // Assume all instances of the same course likely share the same color and shortName layout
-                final representativeCourse = group.first;
-                final shortNameDisplay =
-                    (representativeCourse.shortName != null &&
-                            representativeCourse.shortName!.isNotEmpty)
-                        ? ' (${representativeCourse.shortName})'
-                        : '';
-
-                return Card(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ExpansionTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Color(int.parse(
-                          'FF${representativeCourse.color.replaceAll('#', '')}',
-                          radix: 16)),
-                      child: Text(
-                        representativeCourse.name.substring(0, 1),
-                        style: const TextStyle(color: Colors.white),
-                      ),
+          : Column(
+              children: [
+                if (conflictingCourseCount > 0)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.errorContainer,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    title: Text('$name$shortNameDisplay',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('共排课 ${group.length} 节'),
-                    children: group.map((course) {
-                      return ListTile(
-                        title: Text(
-                            '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节'),
-                        subtitle: Text(
-                            '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () {
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Theme.of(context).colorScheme.onErrorContainer,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '检测到 $conflictingCourseCount 门排课存在实际冲突，课程列表已标记冲突项。',
+                            style: TextStyle(
+                              color:
+                                  Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: courseNames.length,
+                    itemBuilder: (context, index) {
+                      final name = courseNames[index];
+                      final group = groupedCourses[name]!;
+
+                      final representativeCourse = group.first;
+                      final shortNameDisplay =
+                          (representativeCourse.shortName != null &&
+                                  representativeCourse.shortName!.isNotEmpty)
+                              ? ' (${representativeCourse.shortName})'
+                              : '';
+                      final groupConflictCount = group
+                          .where((course) => conflictMap.containsKey(course.id))
+                          .length;
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: ExpansionTile(
+                          leading: CircleAvatar(
+                            backgroundColor: Color(int.parse(
+                                'FF${representativeCourse.color.replaceAll('#', '')}',
+                                radix: 16)),
+                            child: Text(
+                              representativeCourse.name.substring(0, 1),
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          title: Text(
+                            '$name$shortNameDisplay',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            groupConflictCount > 0
+                                ? '共排课 ${group.length} 节 · 冲突 $groupConflictCount 节'
+                                : '共排课 ${group.length} 节',
+                          ),
+                          children: group.map((course) {
+                            final conflicts = conflictMap[course.id] ?? const [];
+                            final conflictSummary =
+                                _buildConflictSummary(conflicts);
+
+                            return ListTile(
+                              isThreeLine: conflicts.isNotEmpty,
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节',
+                                    ),
+                                  ),
+                                  if (conflicts.isNotEmpty)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .errorContainer,
+                                        borderRadius: BorderRadius.circular(999),
+                                      ),
+                                      child: Text(
+                                        '冲突',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onErrorContainer,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle: Text(
+                                conflicts.isEmpty
+                                    ? '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'
+                                    : '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}\n冲突课程: $conflictSummary',
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon:
+                                        const Icon(Icons.edit, color: Colors.blue),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          settings: const RouteSettings(
+                                              name: '/course/edit'),
+                                          builder: (_) =>
+                                              AddCourseScreen(course: course),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon:
+                                        const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () =>
+                                        _confirmDelete(context, course),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    settings: const RouteSettings(
-                                        name: '/course/edit'),
+                                    settings:
+                                        const RouteSettings(name: '/course/edit'),
                                     builder: (_) =>
                                         AddCourseScreen(course: course),
                                   ),
                                 );
                               },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => _confirmDelete(context, course),
-                            ),
-                          ],
+                            );
+                          }).toList(),
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              settings:
-                                  const RouteSettings(name: '/course/edit'),
-                              builder: (_) => AddCourseScreen(course: course),
-                            ),
-                          );
-                        },
                       );
-                    }).toList(),
+                    },
                   ),
-                );
-              },
+                ),
+              ],
             ),
     );
+  }
+
+  String _buildConflictSummary(List<Course> conflicts) {
+    final labels = conflicts
+        .map((course) => '${course.name}(星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)')
+        .toSet()
+        .toList();
+    return labels.join('、');
   }
 
   void _confirmDelete(BuildContext context, Course course) {

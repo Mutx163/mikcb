@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/course.dart';
+import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 
@@ -12,6 +13,7 @@ class StorageService {
   static const String _timetableSettingsKey = 'timetable_settings';
   static const String _profilesKey = 'timetable_profiles';
   static const String _activeProfileIdKey = 'active_timetable_profile_id';
+  static const String _timeSchemesKey = 'time_schemes';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
 
   static final StorageService _instance = StorageService._internal();
@@ -160,6 +162,7 @@ class StorageService {
   Future<List<TimetableProfile>> getProfiles() async {
     if (_prefs == null) await init();
     await _ensureProfilesInitialized();
+    await _ensureTimeSchemesInitialized();
     final profilesJson = _prefs?.getString(_profilesKey);
     if (profilesJson == null || profilesJson.isEmpty) {
       return const [];
@@ -182,12 +185,34 @@ class StorageService {
   Future<String?> getActiveProfileId() async {
     if (_prefs == null) await init();
     await _ensureProfilesInitialized();
+    await _ensureTimeSchemesInitialized();
     return _prefs?.getString(_activeProfileIdKey);
   }
 
   Future<void> setActiveProfileId(String profileId) async {
     if (_prefs == null) await init();
     await _prefs?.setString(_activeProfileIdKey, profileId);
+  }
+
+  Future<List<TimeScheme>> getTimeSchemes() async {
+    if (_prefs == null) await init();
+    await _ensureProfilesInitialized();
+    await _ensureTimeSchemesInitialized();
+    final rawSchemes = _prefs?.getString(_timeSchemesKey);
+    if (rawSchemes == null || rawSchemes.isEmpty) {
+      return const [];
+    }
+
+    final decoded = jsonDecode(rawSchemes) as List<dynamic>;
+    return decoded
+        .map((item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+  }
+
+  Future<void> saveTimeSchemes(List<TimeScheme> schemes) async {
+    if (_prefs == null) await init();
+    final payload = jsonEncode(schemes.map((scheme) => scheme.toJson()).toList());
+    await _prefs?.setString(_timeSchemesKey, payload);
   }
 
   Future<void> _ensureProfilesInitialized() async {
@@ -225,5 +250,86 @@ class StorageService {
 
     await saveProfiles([migratedProfile]);
     await setActiveProfileId(migratedProfile.id);
+  }
+
+  Future<void> _ensureTimeSchemesInitialized() async {
+    final rawProfiles = _prefs?.getString(_profilesKey);
+    if (rawProfiles == null || rawProfiles.isEmpty) {
+      return;
+    }
+
+    final storedSchemesJson = _prefs?.getString(_timeSchemesKey);
+    final storedSchemes = <TimeScheme>[
+      if (storedSchemesJson != null && storedSchemesJson.isNotEmpty)
+        ...(jsonDecode(storedSchemesJson) as List<dynamic>).map(
+          (item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+        ),
+    ];
+    final schemesById = {
+      for (final scheme in storedSchemes) scheme.id: scheme,
+    };
+    final schemesBySignature = {
+      for (final scheme in storedSchemes) _sectionSignature(scheme.sections): scheme,
+    };
+
+    final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
+        .map((item) =>
+            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+
+    var hasProfileChanges = false;
+    for (var index = 0; index < profiles.length; index++) {
+      final profile = profiles[index];
+      final settings = profile.settings;
+      final signature = _sectionSignature(settings.sections);
+      final referencedSchemeId = settings.activeTimeSchemeId;
+      var resolvedScheme = referencedSchemeId == null
+          ? null
+          : schemesById[referencedSchemeId];
+
+      resolvedScheme ??= schemesBySignature[signature];
+
+      if (resolvedScheme == null) {
+        final now = DateTime.now();
+        resolvedScheme = TimeScheme(
+          id: 'scheme-${now.microsecondsSinceEpoch}-${index + 1}',
+          name: profiles.length == 1 ? '当前课表时间' : '${profile.name} 时间',
+          sections: List<SectionTime>.from(settings.sections),
+          createdAt: now,
+          updatedAt: now,
+        );
+        storedSchemes.add(resolvedScheme);
+        schemesById[resolvedScheme.id] = resolvedScheme;
+        schemesBySignature[signature] = resolvedScheme;
+      }
+
+      if (settings.activeTimeSchemeId != resolvedScheme.id ||
+          _sectionSignature(settings.sections) !=
+              _sectionSignature(resolvedScheme.sections)) {
+        profiles[index] = profile.copyWith(
+          settings: settings.copyWith(
+            activeTimeSchemeId: resolvedScheme.id,
+            sections: List<SectionTime>.from(resolvedScheme.sections),
+          ),
+        );
+        hasProfileChanges = true;
+      }
+    }
+
+    if (storedSchemesJson == null ||
+        storedSchemesJson.isEmpty ||
+        storedSchemes.length != schemesById.length ||
+        hasProfileChanges) {
+      await saveTimeSchemes(storedSchemes);
+      if (hasProfileChanges) {
+        await saveProfiles(profiles);
+      }
+    }
+  }
+
+  String _sectionSignature(List<SectionTime> sections) {
+    return jsonEncode(
+      sections.map((section) => section.toJson()).toList(),
+    );
   }
 }
