@@ -267,6 +267,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ) {
     final dayWidth = (availableWidth - _timeColumnWidth) / 7;
     final sectionHeight = settings.sectionHeight;
+    final conflictMap = settings.showConflictBadgeOnTimetable
+        ? provider.courseConflictMapForWeek(week)
+        : const <String, List<Course>>{};
 
     return SizedBox(
       key: ValueKey<int>(week),
@@ -317,7 +320,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
               );
               return SizedBox(
                 width: dayWidth,
-                child: _buildDayColumn(dayOfWeek, dayCourses, settings),
+                child: _buildDayColumn(
+                  dayOfWeek,
+                  dayCourses,
+                  settings,
+                  conflictMap,
+                ),
               );
             }),
           ),
@@ -368,6 +376,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     int dayOfWeek,
     List<Course> courses,
     TimetableSettings settings,
+    Map<String, List<Course>> conflictMap,
   ) {
     final sectionHeight = settings.sectionHeight;
     final colorScheme = Theme.of(context).colorScheme;
@@ -409,6 +418,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
             child: CourseCard(
               course: course,
               overrideColorHex: overrideCardColor,
+              topRightBadgeText:
+                  conflictMap.containsKey(course.id) ? '冲突' : null,
               isCompact: true,
               onTap: () => _editCourse(course),
               compactTitleFontSize: settings.compactFontSize,

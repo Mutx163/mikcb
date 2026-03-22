@@ -6,9 +6,11 @@ void main() {
     final settings = TimetableSettings.defaults();
 
     expect(settings.semesterWeekCount, 20);
+    expect(settings.showConflictBadgeOnTimetable, isTrue);
 
     final restored = TimetableSettings.fromJson(settings.toJson());
     expect(restored.semesterWeekCount, 20);
+    expect(restored.showConflictBadgeOnTimetable, isTrue);
   });
 
   test('available weeks follow configured semester week count', () {
@@ -17,5 +19,17 @@ void main() {
     );
 
     expect(settings.availableWeeks, List.generate(24, (index) => index + 1));
+  });
+
+  test('settings preserve active time scheme id', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      activeTimeSchemeId: 'scheme-1',
+      showConflictBadgeOnTimetable: false,
+    );
+
+    final restored = TimetableSettings.fromJson(settings.toJson());
+
+    expect(restored.activeTimeSchemeId, 'scheme-1');
+    expect(restored.showConflictBadgeOnTimetable, isFalse);
   });
 }

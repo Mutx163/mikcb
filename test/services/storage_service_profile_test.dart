@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/time_scheme.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/storage_service.dart';
 
@@ -47,6 +48,11 @@ void main() {
     expect(profiles.single.settings.semesterWeekCount, 18);
     expect(profiles.single.currentWeek, 5);
     expect(activeProfileId, profiles.single.id);
+    expect(profiles.single.settings.activeTimeSchemeId, isNotNull);
+
+    final schemes = await storage.getTimeSchemes();
+    expect(schemes, hasLength(1));
+    expect(schemes.single.name, '当前课表时间');
   });
 
   test('persists profiles and active profile id', () async {
@@ -63,5 +69,28 @@ void main() {
 
     expect(restoredProfiles.single.name, '我的课表');
     expect(restoredActiveProfileId, profile.id);
+  });
+
+  test('persists and restores global time schemes', () async {
+    final storage = StorageService();
+    await storage.init();
+
+    final scheme = TimeScheme(
+      id: 'winter',
+      name: '冬季作息',
+      sections: const [
+        SectionTime(startTime: '08:30', endTime: '09:15'),
+      ],
+      createdAt: DateTime(2026, 3, 22, 8),
+      updatedAt: DateTime(2026, 3, 22, 8, 30),
+    );
+    await storage.saveTimeSchemes([scheme]);
+
+    final restoredSchemes = await storage.getTimeSchemes();
+    final restoredScheme =
+        restoredSchemes.firstWhere((item) => item.id == 'winter');
+
+    expect(restoredScheme.id, 'winter');
+    expect(restoredScheme.sections.single.displayText, '08:30-09:15');
   });
 }

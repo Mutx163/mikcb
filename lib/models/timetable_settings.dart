@@ -62,10 +62,12 @@ class SectionTime {
 
 class TimetableSettings {
   final List<SectionTime> sections;
+  final String? activeTimeSchemeId;
   final double sectionHeight;
   final double compactFontSize;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
+  final bool showConflictBadgeOnTimetable;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -88,10 +90,12 @@ class TimetableSettings {
 
   const TimetableSettings({
     required this.sections,
+    this.activeTimeSchemeId,
     this.sectionHeight = 68,
     this.compactFontSize = 9,
     this.semesterWeekCount = 20,
     this.semesterStartDate,
+    this.showConflictBadgeOnTimetable = true,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -127,10 +131,12 @@ class TimetableSettings {
         SectionTime(startTime: '19:00', endTime: '19:45'),
         SectionTime(startTime: '19:55', endTime: '20:40'),
       ],
+      activeTimeSchemeId: null,
       sectionHeight: 68,
       compactFontSize: 9,
       semesterWeekCount: 20,
       semesterStartDate: null,
+      showConflictBadgeOnTimetable: true,
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
@@ -156,10 +162,12 @@ class TimetableSettings {
   Map<String, dynamic> toJson() {
     return {
       'sections': sections.map((section) => section.toJson()).toList(),
+      'activeTimeSchemeId': activeTimeSchemeId,
       'sectionHeight': sectionHeight,
       'compactFontSize': compactFontSize,
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
+      'showConflictBadgeOnTimetable': showConflictBadgeOnTimetable,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -193,6 +201,7 @@ class TimetableSettings {
           .map((item) =>
               SectionTime.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
+      activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
       semesterWeekCount: (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
@@ -201,6 +210,8 @@ class TimetableSettings {
               (json['semesterStartDate'] as num).toInt(),
             )
           : null,
+      showConflictBadgeOnTimetable:
+          json['showConflictBadgeOnTimetable'] as bool? ?? true,
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -242,10 +253,12 @@ class TimetableSettings {
 
   TimetableSettings copyWith({
     List<SectionTime>? sections,
+    String? activeTimeSchemeId,
     double? sectionHeight,
     double? compactFontSize,
     int? semesterWeekCount,
     DateTime? semesterStartDate,
+    bool? showConflictBadgeOnTimetable,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -268,10 +281,13 @@ class TimetableSettings {
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
+      activeTimeSchemeId: activeTimeSchemeId ?? this.activeTimeSchemeId,
       sectionHeight: sectionHeight ?? this.sectionHeight,
       compactFontSize: compactFontSize ?? this.compactFontSize,
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
+      showConflictBadgeOnTimetable:
+          showConflictBadgeOnTimetable ?? this.showConflictBadgeOnTimetable,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
