@@ -41,6 +41,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings: const RouteSettings(
+                                name: '/settings/appearance'),
                             builder: (_) => const _AppearanceSettingsScreen(),
                           ),
                         );
@@ -59,6 +61,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings:
+                                const RouteSettings(name: '/settings/live'),
                             builder: (_) => const _LiveSettingsScreen(),
                           ),
                         );
@@ -77,6 +81,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings:
+                                const RouteSettings(name: '/settings/layout'),
                             builder: (_) => const _LayoutSettingsScreen(),
                           ),
                         );
@@ -91,6 +97,8 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings: const RouteSettings(
+                                name: '/settings/data-transfer'),
                             builder: (_) => const DataTransferScreen(),
                           ),
                         );
@@ -105,6 +113,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings: const RouteSettings(name: '/user-guide'),
                             builder: (_) => const UserGuideScreen(),
                           ),
                         );
@@ -119,6 +128,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
+                            settings: const RouteSettings(name: '/about'),
                             builder: (_) => const AboutScreen(),
                           ),
                         );
@@ -593,7 +603,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('提醒启动时机'),
-                    subtitle: Text('距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒自动开启高能秒级倒数'),
+                    subtitle: Text(
+                        '距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒自动开启高能秒级倒数'),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
                       items: const [
