@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,8 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
+  String get _appTitle => kReleaseMode ? '大学课程表' : '大学课程表测试';
+
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -35,7 +38,7 @@ class MyApp extends StatelessWidget {
           );
 
           return MaterialApp(
-            title: '大学课程表',
+            title: _appTitle,
             debugShowCheckedModeBanner: false,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
