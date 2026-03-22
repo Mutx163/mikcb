@@ -7,12 +7,14 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 
 class AppDataBackup {
+  final String? profileName;
   final List<Course> courses;
   final TimetableSettings settings;
   final int currentWeek;
   final DateTime exportedAt;
 
   const AppDataBackup({
+    this.profileName,
     required this.courses,
     required this.settings,
     required this.currentWeek,
@@ -25,6 +27,7 @@ class DataTransferService {
   static const String fileExtension = 'mikcb.json';
 
   String buildBackupJson({
+    String? profileName,
     required List<Course> courses,
     required TimetableSettings settings,
     required int currentWeek,
@@ -33,6 +36,7 @@ class DataTransferService {
       'app': 'mikcb',
       'schemaVersion': schemaVersion,
       'exportedAt': DateTime.now().toIso8601String(),
+      'profileName': profileName,
       'currentWeek': currentWeek,
       'settings': settings.toJson(),
       'courses': courses.map((course) => course.toJson()).toList(),
@@ -57,6 +61,9 @@ class DataTransferService {
     }
 
     return AppDataBackup(
+      profileName: (json['profileName'] as String?)?.trim().isEmpty == true
+          ? null
+          : json['profileName'] as String?,
       courses: rawCourses,
       settings: TimetableSettings.fromJson(
         Map<String, dynamic>.from(rawSettings),
@@ -68,6 +75,7 @@ class DataTransferService {
   }
 
   Future<void> exportAndShare({
+    String? profileName,
     required List<Course> courses,
     required TimetableSettings settings,
     required int currentWeek,
@@ -78,6 +86,7 @@ class DataTransferService {
     final bytes = Uint8List.fromList(
       utf8.encode(
         buildBackupJson(
+          profileName: profileName,
           courses: courses,
           settings: settings,
           currentWeek: currentWeek,
@@ -93,8 +102,8 @@ class DataTransferService {
           name: filename,
         ),
       ],
-      text: '这是 mikcb 的完整课表备份文件，导入后可直接恢复课程和设置。',
-      subject: 'mikcb 课表备份',
+      text: '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。',
+      subject: profileName == null ? '轻屿课表备份' : '$profileName - 轻屿课表备份',
     );
   }
 }

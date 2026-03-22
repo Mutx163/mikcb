@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/course.dart';
+import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 
 class StorageService {
@@ -7,6 +10,8 @@ class StorageService {
   static const String _currentWeekKey = 'current_week';
   static const String _semesterStartKey = 'semester_start';
   static const String _timetableSettingsKey = 'timetable_settings';
+  static const String _profilesKey = 'timetable_profiles';
+  static const String _activeProfileIdKey = 'active_timetable_profile_id';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
 
   static final StorageService _instance = StorageService._internal();
@@ -150,5 +155,75 @@ class StorageService {
       }
     }
     return null;
+  }
+
+  Future<List<TimetableProfile>> getProfiles() async {
+    if (_prefs == null) await init();
+    await _ensureProfilesInitialized();
+    final profilesJson = _prefs?.getString(_profilesKey);
+    if (profilesJson == null || profilesJson.isEmpty) {
+      return const [];
+    }
+
+    final rawProfiles = jsonDecode(profilesJson) as List<dynamic>;
+    return rawProfiles
+        .map((item) =>
+            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
+        .toList();
+  }
+
+  Future<void> saveProfiles(List<TimetableProfile> profiles) async {
+    if (_prefs == null) await init();
+    final payload =
+        jsonEncode(profiles.map((profile) => profile.toJson()).toList());
+    await _prefs?.setString(_profilesKey, payload);
+  }
+
+  Future<String?> getActiveProfileId() async {
+    if (_prefs == null) await init();
+    await _ensureProfilesInitialized();
+    return _prefs?.getString(_activeProfileIdKey);
+  }
+
+  Future<void> setActiveProfileId(String profileId) async {
+    if (_prefs == null) await init();
+    await _prefs?.setString(_activeProfileIdKey, profileId);
+  }
+
+  Future<void> _ensureProfilesInitialized() async {
+    final rawProfiles = _prefs?.getString(_profilesKey);
+    if (rawProfiles != null && rawProfiles.isNotEmpty) {
+      final activeProfileId = _prefs?.getString(_activeProfileIdKey);
+      if (activeProfileId == null || activeProfileId.isEmpty) {
+        final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
+            .map((item) => TimetableProfile.fromJson(
+                Map<String, dynamic>.from(item as Map)))
+            .toList();
+        if (profiles.isNotEmpty) {
+          await setActiveProfileId(profiles.first.id);
+        }
+      }
+      return;
+    }
+
+    final now = DateTime.now();
+    final legacySettings = await getTimetableSettings();
+    final legacySemesterStart = await getSemesterStart();
+    final migratedSettings =
+        legacySemesterStart != null && legacySettings.semesterStartDate == null
+            ? legacySettings.copyWith(semesterStartDate: legacySemesterStart)
+            : legacySettings;
+    final migratedProfile = TimetableProfile(
+      id: 'profile-${now.microsecondsSinceEpoch}',
+      name: '默认课表',
+      courses: await getCourses(),
+      settings: migratedSettings,
+      currentWeek: await getCurrentWeek(),
+      createdAt: now,
+      lastUsedAt: now,
+    );
+
+    await saveProfiles([migratedProfile]);
+    await setActiveProfileId(migratedProfile.id);
   }
 }

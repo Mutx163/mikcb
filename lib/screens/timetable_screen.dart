@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +13,7 @@ import '../services/miui_live_activities_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'course_overview_screen.dart';
+import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
@@ -25,7 +27,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
   static const double _headerControlWidth = _timeColumnWidth;
   static const double _timeColumnWidth = 40;
   static const int _minWeek = 1;
-  static const int _maxWeek = 20;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
   final List<String> _weekDays = const [
@@ -54,9 +55,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
-    final initialWeek = context.read<TimetableProvider>().currentWeek;
+    final provider = context.read<TimetableProvider>();
+    final initialWeek = provider.currentWeek;
     _weekPageController = PageController(
-      initialPage: _clampWeek(initialWeek) - 1,
+      initialPage: _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
   }
 
@@ -70,7 +72,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
-        _syncWeekPageWithProvider(provider.currentWeek);
+        _syncWeekPageWithProvider(
+          provider.currentWeek,
+          provider.settings.semesterWeekCount,
+        );
         final backgroundColor = _colorFromHex(
           provider.settings.timetablePageBackgroundColor,
           Theme.of(context).colorScheme.surface,
@@ -85,24 +90,29 @@ class _TimetableScreenState extends State<TimetableScreen> {
               PopupMenuButton<String>(
                 tooltip: '更多',
                 onSelected: _handleTopMenuAction,
-                itemBuilder: (context) => const [
-                  PopupMenuItem(
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'profiles',
+                    child: Text('课表管理'),
+                  ),
+                  const PopupMenuItem(
                     value: 'overview',
                     child: Text('课程总览'),
                   ),
-                  PopupMenuItem(
-                    value: 'test',
-                    child: Text('测试通知'),
-                  ),
-                  PopupMenuItem(
+                  if (!kReleaseMode)
+                    const PopupMenuItem(
+                      value: 'test',
+                      child: Text('测试通知'),
+                    ),
+                  const PopupMenuItem(
                     value: 'import',
                     child: Text('导入课程'),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'settings',
                     child: Text('课表设置'),
                   ),
-                  PopupMenuItem(
+                  const PopupMenuItem(
                     value: 'add',
                     child: Text('添加课程'),
                   ),
@@ -323,7 +333,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ) {
     return PageView.builder(
       controller: _weekPageController,
-      itemCount: _maxWeek,
+      itemCount: settings.semesterWeekCount,
       allowImplicitScrolling: true,
       physics: const PageScrollPhysics(parent: ClampingScrollPhysics()),
       onPageChanged: (page) => _handleWeekPageChanged(page, provider),
@@ -432,6 +442,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       context: context,
       builder: (context) {
         final provider = context.read<TimetableProvider>();
+        final availableWeeks = provider.settings.availableWeeks;
         return Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -445,8 +456,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: List.generate(20, (index) {
-                  final week = index + 1;
+                children: availableWeeks.map((week) {
                   return ActionChip(
                     label: Text('第 $week 周'),
                     onPressed: () {
@@ -454,7 +464,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                       _jumpToWeek(provider, week);
                     },
                   );
-                }),
+                }).toList(),
               ),
             ],
           ),
@@ -481,9 +491,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
-  int _clampWeek(int week) {
+  int _clampWeek(int week, int maxWeek) {
     if (week < _minWeek) return _minWeek;
-    if (week > _maxWeek) return _maxWeek;
+    if (week > maxWeek) return maxWeek;
     return week;
   }
 
@@ -524,7 +534,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
       semesterStart.day,
     );
     final week = (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
-    return _clampWeek(week < 1 ? 1 : week);
+    return _clampWeek(
+      week < 1 ? 1 : week,
+      settings.semesterWeekCount,
+    );
   }
 
   bool _isSameDate(DateTime left, DateTime right) {
@@ -561,7 +574,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    final targetWeek = _clampWeek(provider.currentWeek + delta);
+    final targetWeek =
+        _clampWeek(provider.currentWeek + delta, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
     }
@@ -578,7 +592,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    final targetWeek = _clampWeek(week);
+    final targetWeek = _clampWeek(week, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
     }
@@ -609,7 +623,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    final targetWeek = _clampWeek(page + 1);
+    final targetWeek = _clampWeek(page + 1, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
     }
@@ -623,12 +637,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
   }
 
-  void _syncWeekPageWithProvider(int week) {
+  void _syncWeekPageWithProvider(int week, int maxWeek) {
     if (_isSyncingWeekPage) {
       return;
     }
 
-    final targetPage = _clampWeek(week) - 1;
+    final targetPage = _clampWeek(week, maxWeek) - 1;
     if (_pendingSyncedWeek == targetPage) {
       return;
     }
@@ -693,8 +707,21 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
+  void _openProfiles() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/profiles'),
+        builder: (context) => const TimetableProfilesScreen(),
+      ),
+    );
+  }
+
   void _handleTopMenuAction(String value) {
     switch (value) {
+      case 'profiles':
+        _openProfiles();
+        break;
       case 'overview':
         Navigator.push(
           context,

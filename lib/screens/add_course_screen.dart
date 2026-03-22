@@ -77,6 +77,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   Widget build(BuildContext context) {
     final settings = context.watch<TimetableProvider>().settings;
     _normalizeSections(settings);
+    _normalizeWeeks(settings);
 
     return Scaffold(
       appBar: AppBar(
@@ -100,7 +101,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             _buildTimeSection(settings),
             const SizedBox(height: 16),
-            _buildWeekSection(),
+            _buildWeekSection(settings),
             const SizedBox(height: 16),
             _buildColorSection(),
           ],
@@ -135,6 +136,22 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
     if (_endSection < _startSection) {
       _endSection = _startSection;
+    }
+  }
+
+  void _normalizeWeeks(TimetableSettings settings) {
+    final maxWeek = settings.semesterWeekCount;
+    if (_startWeek > maxWeek) {
+      _startWeek = maxWeek;
+    }
+    if (_endWeek > maxWeek) {
+      _endWeek = maxWeek;
+    }
+    if (_startWeek < 1) {
+      _startWeek = 1;
+    }
+    if (_endWeek < _startWeek) {
+      _endWeek = _startWeek;
     }
   }
 
@@ -305,7 +322,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildWeekSection() {
+  Widget _buildWeekSection(TimetableSettings settings) {
+    final availableWeeks = settings.availableWeeks;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -326,13 +344,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       labelText: '开始周',
                       border: OutlineInputBorder(),
                     ),
-                    items: List.generate(20, (index) {
-                      final week = index + 1;
+                    items: availableWeeks.map((week) {
                       return DropdownMenuItem(
                         value: week,
                         child: Text('第 $week 周'),
                       );
-                    }),
+                    }).toList(),
                     onChanged: (value) {
                       setState(() {
                         _startWeek = value!;
@@ -351,13 +368,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       labelText: '结束周',
                       border: OutlineInputBorder(),
                     ),
-                    items: List.generate(20, (index) {
-                      final week = index + 1;
+                    items: availableWeeks.where((week) => week >= _startWeek).map((week) {
                       return DropdownMenuItem(
                         value: week,
                         child: Text('第 $week 周'),
                       );
-                    }),
+                    }).toList(),
                     onChanged: (value) {
                       setState(() {
                         _endWeek = value!;
