@@ -50,7 +50,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                     _SettingsEntryTile(
                       icon: Icons.notifications_active_outlined,
                       title: '超级岛与通知',
-                      subtitle: '三时段、岛展示、通知栏和显示内容',
+                      subtitle: '提醒时段、岛展示、通知栏和显示内容',
                       trailing: Text(
                         _liveSettingsSummary(settings),
                         style: Theme.of(context).textTheme.bodySmall,
@@ -563,7 +563,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         children: [
           _SettingsSectionCard(
             title: '提醒时段',
-            subtitle: '三段可以自由组合，测试通知也会按这里的开关执行。',
+            subtitle: '不同设定可以自由组合，测试通知也会按这里的开关执行。',
             child: Column(
               children: [
                 SwitchListTile(
@@ -580,8 +580,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('上课中提醒'),
-                  subtitle: const Text('课程进行中持续展示'),
+                  title: const Text('启用上课及下课提醒'),
+                  subtitle: const Text('开启后，会在你设定的时间点弹出提醒，并在临近下课时进入秒级倒计时'),
                   value: _draft.liveEnableDuringClass,
                   onChanged: (value) {
                     setState(() {
@@ -589,31 +589,45 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('下课提醒'),
-                  subtitle: Text(
-                      '距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切换秒级提醒'),
-                  value: _draft.liveEnableBeforeEnd,
-                  onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveEnableBeforeEnd: value);
-                    });
-                  },
-                ),
+                if (_draft.liveEnableDuringClass) ...[
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('提醒启动时机'),
+                    subtitle: Text('距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒自动开启高能秒级倒数'),
+                    trailing: DropdownButton<int>(
+                      value: _draft.liveClassReminderStartMinutes,
+                      items: const [
+                        DropdownMenuItem(value: 0, child: Text('一上课就展示')),
+                        DropdownMenuItem(value: 5, child: Text('提前 5 分钟展示')),
+                        DropdownMenuItem(value: 10, child: Text('提前 10 分钟展示')),
+                        DropdownMenuItem(value: 15, child: Text('提前 15 分钟展示')),
+                        DropdownMenuItem(value: 20, child: Text('提前 20 分钟展示')),
+                        DropdownMenuItem(value: 30, child: Text('提前 30 分钟展示')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _draft = _draft.copyWith(
+                                liveClassReminderStartMinutes: value);
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '上课中展示方式',
-            subtitle: '只对上课中阶段生效。',
+            title: '提醒时段内展示方式',
+            subtitle: '对前面启用的提醒时段生效。',
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('上课中显示超级岛'),
-                  subtitle: const Text('关闭后上课中阶段不请求岛展示'),
+                  title: const Text('支持展示超级岛/灵动岛'),
+                  subtitle: const Text('关闭后，即便在设定的提醒时间内，也不再触发系统的灵动岛'),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) {
                     setState(() {
@@ -623,8 +637,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('上课中显示通知栏通知'),
-                  subtitle: const Text('关闭后尽量弱化普通通知内容'),
+                  title: const Text('显示通知栏常驻通知'),
+                  subtitle: const Text('关闭后尽量弱化普通通知栏的状态展现（因系统限制可能无效）'),
                   value: _draft.liveShowDuringClassNotification,
                   onChanged: (value) {
                     setState(() {
@@ -1115,13 +1129,18 @@ class _ColorDot extends StatelessWidget {
 
 String _liveSettingsSummary(TimetableSettings settings) {
   final enabledStages = <String>[];
-  if (settings.liveEnableBeforeClass) enabledStages.add('前');
-  if (settings.liveEnableDuringClass) enabledStages.add('中');
-  if (settings.liveEnableBeforeEnd) enabledStages.add('下');
+  if (settings.liveEnableBeforeClass) enabledStages.add('上课前');
+  if (settings.liveEnableDuringClass) {
+    if (settings.liveClassReminderStartMinutes == 0) {
+      enabledStages.add('上课中');
+    } else {
+      enabledStages.add('下课提醒');
+    }
+  }
   if (enabledStages.isEmpty) {
     return '已全关';
   }
-  return enabledStages.join('/');
+  return enabledStages.join(' + ');
 }
 
 Color _colorFromHex(String hexColor) {

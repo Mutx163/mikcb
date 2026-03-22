@@ -459,6 +459,16 @@ class TimetableProvider with ChangeNotifier {
     ).map((milestone) => milestone['offsetMillis'] as int).toList();
   }
 
+  String _resolveRealTime(Course course, bool isStart) {
+    final sectionIndex = (isStart ? course.startSection : course.endSection) - 1;
+    if (sectionIndex >= 0 && sectionIndex < _settings.sections.length) {
+      return isStart 
+          ? _settings.sections[sectionIndex].startTime 
+          : _settings.sections[sectionIndex].endTime;
+    }
+    return isStart ? course.startTime : course.endTime;
+  }
+
   LiveActivityCourseSelection? getLiveActivityCourseSelection({
     DateTime? now,
     bool allowUpcomingFallback = false,
@@ -472,8 +482,8 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime = _buildCourseDateTime(currentTime, course.startTime);
-      final endTime = _buildCourseDateTime(currentTime, course.endTime);
+      final startTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
+      final endTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, false));
       if (startTime == null || endTime == null) {
         continue;
       }
@@ -505,7 +515,7 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime = _buildCourseDateTime(currentTime, course.startTime);
+      final startTime = _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
       if (startTime == null || !startTime.isAfter(currentTime)) {
         continue;
       }
@@ -566,7 +576,7 @@ class TimetableProvider with ChangeNotifier {
 
         final candidateDate = today.add(Duration(days: dayOffset));
         final candidateStart =
-            _buildCourseDateTime(candidateDate, course.startTime);
+            _buildCourseDateTime(candidateDate, _resolveRealTime(course, true));
         if (candidateStart == null || !candidateStart.isAfter(currentTime)) {
           continue;
         }
@@ -620,18 +630,28 @@ class TimetableProvider with ChangeNotifier {
     final liveCourse = selection?.currentCourse;
 
     if (liveCourse != null) {
-      final liveActivityKey = '${liveCourse.id}:${selection!.stage.name}';
+      final settings = _settings;
+      final nextCourse = selection!.nextCourse;
+      final nextCourseKey = nextCourse != null ? '${nextCourse.id}:${nextCourse.name}:${nextCourse.startSection}' : 'null';
+      final liveActivityKey = '${liveCourse.id}:${selection.stage.name}:${liveCourse.name}:${liveCourse.startSection}:${liveCourse.endSection}:${liveCourse.location}:${liveCourse.teacher}:$nextCourseKey:${settings.hashCode}';
       if (_currentLiveCourseId == liveActivityKey) {
         return; // 防抖，避免频繁唤起 Android 服务
       }
       _currentLiveCourseId = liveActivityKey;
 
-      final settings = _settings;
-      final displayCourse = liveCourse;
-      final displayNextCourse = selection.nextCourse;
-      final startAtMillis = _buildCourseDateTime(DateTime.now(), displayCourse.startTime)
+      final displayCourse = liveCourse.copyWith(
+        startTime: _resolveRealTime(liveCourse, true),
+        endTime: _resolveRealTime(liveCourse, false),
+      );
+      final displayNextCourse = selection.nextCourse == null
+          ? null
+          : selection.nextCourse!.copyWith(
+              startTime: _resolveRealTime(selection.nextCourse!, true),
+              endTime: _resolveRealTime(selection.nextCourse!, false),
+            );
+      final startAtMillis = _buildCourseDateTime(DateTime.now(), _resolveRealTime(displayCourse, true))
           ?.millisecondsSinceEpoch;
-      final endAtMillis = _buildCourseDateTime(DateTime.now(), displayCourse.endTime)
+      final endAtMillis = _buildCourseDateTime(DateTime.now(), _resolveRealTime(displayCourse, false))
           ?.millisecondsSinceEpoch;
       final progressMilestones = buildLiveProgressMilestones(
         displayCourse,
@@ -703,6 +723,15 @@ class TimetableProvider with ChangeNotifier {
           : null;
     }
 
+    final startMinutes = _settings.liveClassReminderStartMinutes;
+    final reminderStartTime = startMinutes == 0
+        ? startTime
+        : endTime.subtract(Duration(minutes: startMinutes));
+        
+    if (currentTime.isBefore(reminderStartTime)) {
+      return null;
+    }
+
     final endReminderStart = _resolveEndReminderStart(startTime, endTime);
     if (!currentTime.isBefore(endReminderStart)) {
       if (_canDisplayStage(LiveActivityStage.beforeEnd)) {
@@ -746,7 +775,7 @@ class TimetableProvider with ChangeNotifier {
             (_settings.livePromoteDuringClass ||
                 _settings.liveShowDuringClassNotification);
       case LiveActivityStage.beforeEnd:
-        return _settings.liveEnableBeforeEnd;
+        return _settings.liveEnableDuringClass;
     }
   }
 }

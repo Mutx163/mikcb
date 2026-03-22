@@ -1,7 +1,7 @@
 name: university_timetable
 description: 大学课程表应用 - 支持小米超级岛
 publish_to: 'none'
-version: 1.0.4+5
+version: 1.0.5+6
 
 environment:
   sdk: ^3.6.0
@@ -19,6 +19,8 @@ dependencies:
   package_info_plus: ^8.0.2
   share_plus: ^10.1.2
   url_launcher: ^6.3.1
+  path_provider: ^2.1.5
+  open_filex: ^4.7.0
 
 dev_dependencies:
   flutter_test:

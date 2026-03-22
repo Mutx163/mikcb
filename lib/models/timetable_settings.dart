@@ -52,6 +52,7 @@ class TimetableSettings {
   final bool liveUseShortName;
   final bool liveHidePrefixText;
   final int liveShowBeforeClassMinutes;
+  final int liveClassReminderStartMinutes;
   final int liveEndSecondsCountdownThreshold;
   final String themeSeedColor;
   final String timetablePageBackgroundColor;
@@ -74,6 +75,7 @@ class TimetableSettings {
     this.liveUseShortName = true,
     this.liveHidePrefixText = false,
     this.liveShowBeforeClassMinutes = 20,
+    this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
     this.themeSeedColor = '#2563EB',
     this.timetablePageBackgroundColor = '#F8FAFC',
@@ -109,6 +111,7 @@ class TimetableSettings {
       liveUseShortName: true,
       liveHidePrefixText: false,
       liveShowBeforeClassMinutes: 20,
+      liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
       themeSeedColor: '#2563EB',
       timetablePageBackgroundColor: '#F8FAFC',
@@ -134,6 +137,7 @@ class TimetableSettings {
       'liveUseShortName': liveUseShortName,
       'liveHidePrefixText': liveHidePrefixText,
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
+      'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
       'themeSeedColor': themeSeedColor,
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
@@ -173,6 +177,8 @@ class TimetableSettings {
       liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? false,
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
+      liveClassReminderStartMinutes:
+          (json['liveClassReminderStartMinutes'] as num?)?.toInt() ?? 0,
       liveEndSecondsCountdownThreshold:
           (json['liveEndSecondsCountdownThreshold'] as num?)?.toInt() ?? 60,
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
@@ -209,6 +215,7 @@ class TimetableSettings {
     bool? liveUseShortName,
     bool? liveHidePrefixText,
     int? liveShowBeforeClassMinutes,
+    int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
     String? themeSeedColor,
     String? timetablePageBackgroundColor,
@@ -237,6 +244,8 @@ class TimetableSettings {
       liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
+      liveClassReminderStartMinutes:
+          liveClassReminderStartMinutes ?? this.liveClassReminderStartMinutes,
       liveEndSecondsCountdownThreshold:
           liveEndSecondsCountdownThreshold ??
           this.liveEndSecondsCountdownThreshold,

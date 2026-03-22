@@ -747,8 +747,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
   void _showTestOptions() async {
     final now = DateTime.now();
     const beforeClassDuration = Duration(seconds: 90);
-    const duringClassDuration = Duration(seconds: 30);
+    const totalCourseDuration = Duration(minutes: 3);
     const beforeEndDuration = Duration(seconds: 60);
+    const duringClassDuration = Duration(minutes: 2);
 
     String formatTime(DateTime dt) {
       return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
@@ -786,19 +787,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
       if (enableDuringClass && enableBeforeEnd) {
         end = start.add(duringClassDuration + beforeEndDuration);
         endReminderLead = beforeEndDuration;
-        flowSummary = '上课前 1分30秒 → 上课中 30秒 → 下课提醒 60秒';
+        flowSummary = '上课前 1分30秒 → 上课中 2分钟 → 下课提醒 60秒';
       } else if (enableDuringClass) {
-        end = start.add(const Duration(seconds: 90));
+        end = start.add(totalCourseDuration);
         endReminderLead = Duration.zero;
-        flowSummary = '上课前 1分30秒 → 上课中 1分30秒';
+        flowSummary = '上课前 1分30秒 → 上课中 3分钟';
       } else if (enableBeforeEnd) {
-        end = start.add(beforeEndDuration);
+        end = start.add(totalCourseDuration);
         endReminderLead = beforeEndDuration;
-        flowSummary = '上课前 1分30秒 → 下课提醒 60秒';
+        flowSummary = '上课前 1分30秒 → 3分钟课程 → 下课提醒 60秒';
       } else {
-        end = start;
+        end = start.add(totalCourseDuration);
         endReminderLead = Duration.zero;
-        flowSummary = '仅测试上课前 1分30秒';
+        flowSummary = '仅测试上课前 1分30秒（课程时长 3分钟）';
       }
     } else if (enableDuringClass) {
       initialStage = LiveActivityStage.duringClass;
@@ -806,18 +807,18 @@ class _TimetableScreenState extends State<TimetableScreen> {
       if (enableBeforeEnd) {
         end = start.add(duringClassDuration + beforeEndDuration);
         endReminderLead = beforeEndDuration;
-        flowSummary = '上课中 30秒 → 下课提醒 60秒';
+        flowSummary = '上课中 2分钟 → 下课提醒 60秒';
       } else {
-        end = start.add(const Duration(seconds: 90));
+        end = start.add(totalCourseDuration);
         endReminderLead = Duration.zero;
-        flowSummary = '仅测试上课中 1分30秒';
+        flowSummary = '仅测试上课中 3分钟';
       }
     } else {
       initialStage = LiveActivityStage.beforeEnd;
-      start = now;
-      end = start.add(beforeEndDuration);
+      end = now.add(beforeEndDuration);
+      start = end.subtract(totalCourseDuration);
       endReminderLead = beforeEndDuration;
-      flowSummary = '仅测试下课提醒 60秒';
+      flowSummary = '仅测试下课提醒 60秒（课程总时长 3分钟）';
     }
 
     final baseCourse = selection.currentCourse;

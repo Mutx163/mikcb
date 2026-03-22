@@ -1,6 +1,6 @@
 {
     "dart.flutterSdkPath": null,
-    "dart.openDevTools": "flutter",
+    "dart.openDevTools": "never",
     "editor.formatOnSave": true,
     "[dart]": {
         "editor.defaultFormatter": "Dart-Code.dart-code",
