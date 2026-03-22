@@ -304,10 +304,10 @@ class _AboutScreenState extends State<AboutScreen> {
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    if (release?.publishedAt != null) ...[
+                    if (release?.updatedAt != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        '发布时间：${_formatDateTime(release!.publishedAt!)}',
+                        '更新时间：${_formatDateTime(release!.updatedAt!)}',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),

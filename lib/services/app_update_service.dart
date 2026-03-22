@@ -13,7 +13,7 @@ class AppReleaseInfo {
   final String body;
   final String releaseUrl;
   final String? downloadUrl;
-  final DateTime? publishedAt;
+  final DateTime? updatedAt;
 
   const AppReleaseInfo({
     required this.version,
@@ -21,7 +21,7 @@ class AppReleaseInfo {
     required this.body,
     required this.releaseUrl,
     required this.downloadUrl,
-    required this.publishedAt,
+    required this.updatedAt,
   });
 }
 
@@ -92,7 +92,11 @@ class AppUpdateService {
         downloadUrl: _pickDownloadUrl(
           json['assets'] as List<dynamic>? ?? const [],
         ),
-        publishedAt: DateTime.tryParse((json['published_at'] as String?) ?? ''),
+        updatedAt: DateTime.tryParse(
+          (json['updated_at'] as String?) ??
+              (json['published_at'] as String?) ??
+              '',
+        )?.toLocal(),
       );
 
       final hasUpdate = _compareVersions(latestVersion, currentVersion) > 0;
