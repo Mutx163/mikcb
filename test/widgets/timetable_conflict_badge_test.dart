@@ -51,7 +51,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const MaterialApp(
-          home: TimetableScreen(),
+          home: TimetableScreen(enableUpdateCheck: false),
         ),
       ),
     );

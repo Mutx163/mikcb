@@ -83,6 +83,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       appBar: AppBar(
         title: Text(widget.course == null ? '添加课程' : '编辑课程'),
         actions: [
+          if (widget.course != null)
+            IconButton(
+              tooltip: '删除课程',
+              onPressed: _confirmDeleteCourse,
+              icon: const Icon(Icons.delete_outline_rounded),
+            ),
           TextButton(
             onPressed: () => _saveCourse(settings),
             child: Text(
@@ -107,6 +113,44 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _confirmDeleteCourse() async {
+    final course = widget.course;
+    if (course == null) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除课程'),
+        content: Text('确定删除课程“${course.name}”吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await context.read<TimetableProvider>().deleteCourse(course.id);
+    if (!mounted) {
+      return;
+    }
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('课程已删除')),
     );
   }
 

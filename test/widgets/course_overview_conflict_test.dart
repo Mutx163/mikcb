@@ -57,9 +57,64 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('检测到 2 门排课存在实际冲突'), findsOneWidget);
+    expect(find.text('冲突 1 节'), findsNWidgets(2));
+    expect(find.textContaining('展开查看冲突详情'), findsWidgets);
     await tester.tap(find.text('线性代数'));
     await tester.pumpAndSettle();
-    expect(find.text('冲突'), findsWidgets);
-    expect(find.textContaining('冲突课程:'), findsWidgets);
+    expect(find.textContaining('冲突课程:'), findsOneWidget);
+    expect(find.textContaining('第1-16周'), findsOneWidget);
+  });
+
+  testWidgets('course overview does not mark same slot on different weeks',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 2,
+        startWeek: 1,
+        endWeek: 8,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '大学英语',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 2,
+        startWeek: 9,
+        endWeek: 16,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: CourseOverviewScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('检测到'), findsNothing);
+    expect(find.textContaining('冲突 '), findsNothing);
+    expect(find.textContaining('展开查看冲突详情'), findsNothing);
   });
 }

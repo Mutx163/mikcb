@@ -45,21 +45,32 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '会导出当前课表“$activeProfileName”的课程、课表设置和当前周。接收方导入后，不需要重新手动设置。',
+                    '支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态。',
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: _isExporting ? null : _exportData,
-                      icon: _isExporting
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.ios_share_rounded),
-                      label: Text(_isExporting ? '导出中...' : '导出并分享文件'),
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.icon(
+                          onPressed: _isExporting ? null : _exportCurrentProfile,
+                          icon: _isExporting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.ios_share_rounded),
+                          label: Text(_isExporting ? '导出中...' : '导出当前课表'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _isExporting ? null : _exportFullData,
+                          icon: const Icon(Icons.storage_rounded),
+                          label: const Text('导出全部数据'),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -118,6 +129,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   const SizedBox(height: 10),
                   _buildBullet('课程数量：${provider.courses.length} 门'),
                   _buildBullet('当前课表：$activeProfileName'),
+                  _buildBullet('全部课表：${provider.profiles.length} 个'),
+                  _buildBullet('时间模板：${provider.timeSchemes.length} 套'),
                   _buildBullet('当前周：第 ${provider.currentWeek} 周'),
                   _buildBullet(
                     provider.settings.semesterStartDate == null
@@ -153,7 +166,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     );
   }
 
-  Future<void> _exportData() async {
+  Future<void> _exportCurrentProfile() async {
     final provider = context.read<TimetableProvider>();
     setState(() {
       _isExporting = true;
@@ -164,6 +177,26 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         courses: provider.courses,
         settings: provider.settings,
         currentWeek: provider.currentWeek,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isExporting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _exportFullData() async {
+    final provider = context.read<TimetableProvider>();
+    setState(() {
+      _isExporting = true;
+    });
+    try {
+      await provider.dataTransferService.exportFullBackupAndShare(
+        profiles: provider.profiles,
+        activeProfileId: provider.activeProfileId,
+        timeSchemes: provider.timeSchemes,
       );
     } finally {
       if (mounted) {
@@ -247,7 +280,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
             message ??
                 (importMode == _BackupImportMode.importAsNew
                     ? '导入成功，已创建新的课表'
-                    : '导入成功，当前课表已全部恢复'),
+                    : '导入成功，备份数据已恢复'),
           ),
         ),
       );

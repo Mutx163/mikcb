@@ -27,14 +27,17 @@ class IcsImportService {
       ..sort();
 
     final semesterStart = _startOfWeek(startDates.first);
-    final courses = <Course>[];
+    final rawCourses = <Course>[];
 
     for (final event in events) {
-      final course = _buildCourseFromEvent(event, semesterStart, courses.length);
+      final course =
+          _buildCourseFromEvent(event, semesterStart, rawCourses.length);
       if (course != null) {
-        courses.add(course);
+        rawCourses.add(course);
       }
     }
+
+    final courses = _mergeAlternatingWeekCourses(rawCourses);
 
     return IcsImportResult(
       courses: courses,
@@ -141,7 +144,11 @@ class IcsImportService {
     final teacher = descriptionLines.length >= 3
         ? descriptionLines[2]
         : _extractTeacher(event['LOCATION'] ?? '');
-    final endWeek = _parseEndWeek(event['RRULE'], semesterStart) ??
+    final endWeek = _parseEndWeek(
+          event['RRULE'],
+          semesterStart,
+          startDateTime,
+        ) ??
         _weekIndex(startDateTime, semesterStart);
 
     return Course(
@@ -162,6 +169,101 @@ class IcsImportService {
   String _cleanSummary(String summary) {
     return summary.replaceFirst(RegExp(r'\[\d+\]\[[^\]]+\]$'), '').trim();
   }
+
+  List<Course> _mergeAlternatingWeekCourses(List<Course> courses) {
+    final grouped = <String, List<Course>>{};
+    for (final course in courses) {
+      grouped.putIfAbsent(_courseMergeKey(course), () => []).add(course);
+    }
+
+    final mergedCourses = <Course>[];
+    for (final entry in grouped.entries) {
+      final mergedFlags = <String>{};
+      final group = List<Course>.from(entry.value)
+        ..sort((left, right) {
+          final weekCompare = left.startWeek.compareTo(right.startWeek);
+          if (weekCompare != 0) {
+            return weekCompare;
+          }
+          return left.id.compareTo(right.id);
+        });
+
+      for (var i = 0; i < group.length; i++) {
+        final current = group[i];
+        if (mergedFlags.contains(current.id)) {
+          continue;
+        }
+
+        final run = <Course>[current];
+        for (var j = i + 1; j < group.length; j++) {
+          final candidate = group[j];
+          if (mergedFlags.contains(candidate.id)) {
+            continue;
+          }
+          final previous = run.last;
+          if (!_isSingleWeekCourse(previous) || !_isSingleWeekCourse(candidate)) {
+            break;
+          }
+          if (candidate.startWeek - previous.startWeek != 2) {
+            break;
+          }
+          if ((candidate.startWeek % 2) != (current.startWeek % 2)) {
+            break;
+          }
+          run.add(candidate);
+        }
+
+        if (run.length >= 2 && run.every(_isSingleWeekCourse)) {
+          mergedFlags.addAll(run.map((course) => course.id));
+          mergedCourses.add(
+            current.copyWith(
+              startWeek: run.first.startWeek,
+              endWeek: run.last.endWeek,
+              isOddWeek: run.first.startWeek.isOdd,
+              isEvenWeek: run.first.startWeek.isEven,
+            ),
+          );
+          continue;
+        }
+
+        mergedFlags.add(current.id);
+        mergedCourses.add(current);
+      }
+    }
+
+    mergedCourses.sort((left, right) {
+      final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
+      if (dayCompare != 0) {
+        return dayCompare;
+      }
+      final sectionCompare = left.startSection.compareTo(right.startSection);
+      if (sectionCompare != 0) {
+        return sectionCompare;
+      }
+      return left.startWeek.compareTo(right.startWeek);
+    });
+    return mergedCourses;
+  }
+
+  String _courseMergeKey(Course course) {
+    return [
+      course.name,
+      course.teacher,
+      course.location,
+      course.dayOfWeek,
+      course.startSection,
+      course.endSection,
+      course.startTime,
+      course.endTime,
+      course.shortName ?? '',
+      course.note ?? '',
+    ].join('|');
+  }
+
+  bool _isSingleWeekCourse(Course course) =>
+      course.startWeek == course.endWeek &&
+      !course.isOddWeek &&
+      !course.isEvenWeek;
 
   String _extractLocation(String location) {
     final parts = location.trim().split(RegExp(r'\s+'));
@@ -196,18 +298,64 @@ class IcsImportService {
     return DateTime(year, month, day, hour, minute, second);
   }
 
-  int? _parseEndWeek(String? rrule, DateTime semesterStart) {
+  int? _parseEndWeek(
+    String? rrule,
+    DateTime semesterStart,
+    DateTime startDateTime,
+  ) {
     if (rrule == null) return null;
-    final untilMatch = RegExp(r'UNTIL=(\d{8})').firstMatch(rrule);
-    if (untilMatch == null) return null;
+    final untilDateTime = _parseUntilDateTime(rrule);
+    if (untilDateTime == null) return null;
 
-    final date = untilMatch.group(1)!;
-    final untilDate = DateTime(
+    final intervalWeeks = _parseWeeklyInterval(rrule);
+    final repeatDuration =
+        Duration(days: 7 * (intervalWeeks <= 0 ? 1 : intervalWeeks));
+    final difference = untilDateTime.difference(startDateTime);
+    if (difference.isNegative) {
+      return _weekIndex(startDateTime, semesterStart);
+    }
+
+    final occurrenceOffset =
+        difference.inMicroseconds ~/ repeatDuration.inMicroseconds;
+    final lastOccurrence = startDateTime.add(
+      Duration(days: repeatDuration.inDays * occurrenceOffset),
+    );
+    return _weekIndex(lastOccurrence, semesterStart);
+  }
+
+  DateTime? _parseUntilDateTime(String rrule) {
+    final dateTimeMatch =
+        RegExp(r'UNTIL=(\d{8})T(\d{6})(Z)?').firstMatch(rrule);
+    if (dateTimeMatch != null) {
+      final date = dateTimeMatch.group(1)!;
+      final time = dateTimeMatch.group(2)!;
+      final isUtc = dateTimeMatch.group(3) == 'Z';
+      final year = int.parse(date.substring(0, 4));
+      final month = int.parse(date.substring(4, 6));
+      final day = int.parse(date.substring(6, 8));
+      final hour = int.parse(time.substring(0, 2));
+      final minute = int.parse(time.substring(2, 4));
+      final second = int.parse(time.substring(4, 6));
+
+      return isUtc
+          ? DateTime.utc(year, month, day, hour, minute, second).toLocal()
+          : DateTime(year, month, day, hour, minute, second);
+    }
+
+    final dateMatch = RegExp(r'UNTIL=(\d{8})').firstMatch(rrule);
+    if (dateMatch == null) return null;
+
+    final date = dateMatch.group(1)!;
+    return DateTime(
       int.parse(date.substring(0, 4)),
       int.parse(date.substring(4, 6)),
       int.parse(date.substring(6, 8)),
     );
-    return _weekIndex(untilDate, semesterStart);
+  }
+
+  int _parseWeeklyInterval(String rrule) {
+    final match = RegExp(r'INTERVAL=(\d+)').firstMatch(rrule);
+    return match == null ? 1 : int.tryParse(match.group(1)!) ?? 1;
   }
 
   DateTime _startOfWeek(DateTime date) {
