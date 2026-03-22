@@ -22,6 +22,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   Widget build(BuildContext context) {
     final provider = context.watch<TimetableProvider>();
     final theme = Theme.of(context);
+    final activeProfileName = provider.activeProfile?.name ?? '默认课表';
 
     return Scaffold(
       appBar: AppBar(
@@ -43,8 +44,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '会导出课程、课表设置和当前周。接收方导入后，不需要重新手动设置。',
+                  Text(
+                    '会导出当前课表“$activeProfileName”的课程、课表设置和当前周。接收方导入后，不需要重新手动设置。',
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -80,7 +81,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '导入会直接覆盖当前设备上的课程和设置。建议先导出自己的备份，再执行导入。',
+                    '导入时可以选择覆盖当前课表，或直接导入为一个新课表。建议先导出自己的备份。',
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -116,6 +117,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                   ),
                   const SizedBox(height: 10),
                   _buildBullet('课程数量：${provider.courses.length} 门'),
+                  _buildBullet('当前课表：$activeProfileName'),
                   _buildBullet('当前周：第 ${provider.currentWeek} 周'),
                   _buildBullet(
                     provider.settings.semesterStartDate == null
@@ -158,6 +160,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     });
     try {
       await provider.dataTransferService.exportAndShare(
+        profileName: provider.activeProfile?.name,
         courses: provider.courses,
         settings: provider.settings,
         currentWeek: provider.currentWeek,
@@ -172,29 +175,35 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   }
 
   Future<void> _confirmAndImport() async {
-    final confirmed = await showDialog<bool>(
+    final importMode = await showDialog<_BackupImportMode>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('确认导入'),
+          title: const Text('选择导入方式'),
           content: const Text(
-            '导入会覆盖当前设备上的课程和设置。建议先导出你自己的备份。确定继续吗？',
+            '你可以覆盖当前课表，或者把备份导入成一个新的独立课表。',
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context),
               child: const Text('取消'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('继续导入'),
+              onPressed: () =>
+                  Navigator.pop(context, _BackupImportMode.replaceCurrent),
+              child: const Text('覆盖当前课表'),
+            ),
+            FilledButton.tonal(
+              onPressed: () =>
+                  Navigator.pop(context, _BackupImportMode.importAsNew),
+              child: const Text('导入为新课表'),
             ),
           ],
         );
       },
     );
 
-    if (confirmed != true || !mounted) {
+    if (importMode == null || !mounted) {
       return;
     }
 
@@ -222,14 +231,24 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         return;
       }
 
-      final message =
-          await context.read<TimetableProvider>().importAppDataBackup(content);
+      final provider = context.read<TimetableProvider>();
+      final message = switch (importMode) {
+        _BackupImportMode.replaceCurrent =>
+          await provider.importAppDataBackup(content),
+        _BackupImportMode.importAsNew =>
+          await provider.importAppDataBackupAsNewProfile(content),
+      };
       if (!mounted) {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message ?? '导入成功，课程和设置已全部恢复'),
+          content: Text(
+            message ??
+                (importMode == _BackupImportMode.importAsNew
+                    ? '导入成功，已创建新的课表'
+                    : '导入成功，当前课表已全部恢复'),
+          ),
         ),
       );
     } on FormatException catch (e) {
@@ -258,4 +277,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
+}
+
+enum _BackupImportMode {
+  replaceCurrent,
+  importAsNew,
 }

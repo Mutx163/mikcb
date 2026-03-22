@@ -24,6 +24,7 @@ class TimetableSettingsScreen extends StatelessWidget {
             children: [
               _SemesterOverviewCard(
                 currentWeek: provider.currentWeek,
+                semesterWeekCount: settings.semesterWeekCount,
                 semesterStartDate: settings.semesterStartDate,
               ),
               const SizedBox(height: 16),
@@ -158,6 +159,11 @@ class TimetableSettingsScreen extends StatelessWidget {
                             : '已设置开学日期，可用它同步当前周并驱动课表日期显示。',
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '当前学期共 ${settings.semesterWeekCount} 周。',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
                       const SizedBox(height: 12),
                       Wrap(
                         spacing: 8,
@@ -174,6 +180,11 @@ class TimetableSettingsScreen extends StatelessWidget {
                                 : () => _syncCurrentWeek(context),
                             icon: const Icon(Icons.sync_outlined),
                             label: const Text('同步当前周'),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: () => _pickSemesterWeekCount(context),
+                            icon: const Icon(Icons.view_week_outlined),
+                            label: Text('学期周数 ${settings.semesterWeekCount}'),
                           ),
                         ],
                       ),
@@ -221,14 +232,71 @@ class TimetableSettingsScreen extends StatelessWidget {
       SnackBar(content: Text('已同步到第 ${provider.currentWeek} 周')),
     );
   }
+
+  Future<void> _pickSemesterWeekCount(BuildContext context) async {
+    final provider = context.read<TimetableProvider>();
+    final currentWeekCount = provider.settings.semesterWeekCount;
+    final selected = await showModalBottomSheet<int>(
+      context: context,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              const ListTile(
+                title: Text(
+                  '选择学期周数',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                subtitle: Text('不同学校可按实际教学周数调整。'),
+              ),
+              ...List.generate(30, (index) {
+                final weekCount = index + 1;
+                return ListTile(
+                  title: Text('$weekCount 周'),
+                  trailing: weekCount == currentWeekCount
+                      ? const Icon(Icons.check_rounded)
+                      : null,
+                  onTap: () => Navigator.pop(context, weekCount),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected == null || !context.mounted || selected == currentWeekCount) {
+      return;
+    }
+
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(semesterWeekCount: selected),
+    );
+    if (message != null) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+
+    if (provider.currentWeek > selected) {
+      await provider.setCurrentWeek(selected);
+    }
+  }
 }
 
 class _SemesterOverviewCard extends StatelessWidget {
   final int currentWeek;
+  final int semesterWeekCount;
   final DateTime? semesterStartDate;
 
   const _SemesterOverviewCard({
     required this.currentWeek,
+    required this.semesterWeekCount,
     required this.semesterStartDate,
   });
 
@@ -260,7 +328,7 @@ class _SemesterOverviewCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '当前第 $currentWeek 周',
+                    '当前第 $currentWeek 周 / 共 $semesterWeekCount 周',
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),

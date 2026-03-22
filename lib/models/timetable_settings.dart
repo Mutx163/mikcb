@@ -64,6 +64,7 @@ class TimetableSettings {
   final List<SectionTime> sections;
   final double sectionHeight;
   final double compactFontSize;
+  final int semesterWeekCount;
   final DateTime? semesterStartDate;
   final bool liveShowCourseName;
   final bool liveShowLocation;
@@ -89,6 +90,7 @@ class TimetableSettings {
     required this.sections,
     this.sectionHeight = 68,
     this.compactFontSize = 9,
+    this.semesterWeekCount = 20,
     this.semesterStartDate,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
@@ -127,6 +129,7 @@ class TimetableSettings {
       ],
       sectionHeight: 68,
       compactFontSize: 9,
+      semesterWeekCount: 20,
       semesterStartDate: null,
       liveShowCourseName: true,
       liveShowLocation: true,
@@ -155,6 +158,7 @@ class TimetableSettings {
       'sections': sections.map((section) => section.toJson()).toList(),
       'sectionHeight': sectionHeight,
       'compactFontSize': compactFontSize,
+      'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
@@ -191,6 +195,7 @@ class TimetableSettings {
           .toList(),
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
+      semesterWeekCount: (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
       semesterStartDate: (json['semesterStartDate'] as num?) != null
           ? DateTime.fromMillisecondsSinceEpoch(
               (json['semesterStartDate'] as num).toInt(),
@@ -239,6 +244,7 @@ class TimetableSettings {
     List<SectionTime>? sections,
     double? sectionHeight,
     double? compactFontSize,
+    int? semesterWeekCount,
     DateTime? semesterStartDate,
     bool? liveShowCourseName,
     bool? liveShowLocation,
@@ -264,6 +270,7 @@ class TimetableSettings {
       sections: sections ?? this.sections,
       sectionHeight: sectionHeight ?? this.sectionHeight,
       compactFontSize: compactFontSize ?? this.compactFontSize,
+      semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
@@ -300,6 +307,9 @@ class TimetableSettings {
   }
 
   int get sectionCount => sections.length;
+
+  List<int> get availableWeeks =>
+      List.generate(semesterWeekCount, (index) => index + 1);
 
   SectionTime sectionAt(int section) => sections[section - 1];
 }

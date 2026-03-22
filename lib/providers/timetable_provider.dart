@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:uuid/uuid.dart';
 import '../models/course.dart';
+import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../services/app_analytics.dart';
 import '../services/data_transfer_service.dart';
@@ -29,49 +32,90 @@ enum LiveActivityStage {
 class TimetableProvider with ChangeNotifier {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
-  final StorageService _storageService = StorageService();
-  final IcsImportService _icsImportService = IcsImportService();
-  final MiuiLiveActivitiesService _liveActivitiesService =
-      MiuiLiveActivitiesService();
-  final DataTransferService _dataTransferService = DataTransferService();
-  final AppAnalytics _analytics = AppAnalytics.instance;
+  final StorageService _storageService;
+  final IcsImportService _icsImportService;
+  final MiuiLiveActivitiesService _liveActivitiesService;
+  final DataTransferService _dataTransferService;
+  final AppAnalytics _analytics;
+  final bool _enableLiveActivitySync;
 
   List<Course> _courses = [];
   TimetableSettings _settings = TimetableSettings.defaults();
   int _currentWeek = 1;
+  List<TimetableProfile> _profiles = [];
+  String? _activeProfileId;
   int _currentDayOfWeek = DateTime.now().weekday;
   bool _isLoading = false;
   Timer? _liveActivityTimer;
   String? _currentLiveCourseId;
+  bool _hasVisibleLiveUpdate = false;
+  String? _lastLiveSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
+  Future<void>? _initializationFuture;
 
   List<Course> get courses => _courses;
   TimetableSettings get settings => _settings;
   int get currentWeek => _currentWeek;
+  List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
+  String? get activeProfileId => _activeProfileId;
   int get currentDayOfWeek => _currentDayOfWeek;
   bool get isLoading => _isLoading;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
   DataTransferService get dataTransferService => _dataTransferService;
+  TimetableProfile? get activeProfile => _getProfileById(_activeProfileId);
   int get maxUsedSection => _courses.isEmpty
       ? 1
       : _courses
           .map((course) => course.endSection)
           .reduce((a, b) => a > b ? a : b);
 
-  TimetableProvider() {
-    _init();
+  TimetableProvider({
+    StorageService? storageService,
+    IcsImportService? icsImportService,
+    MiuiLiveActivitiesService? liveActivitiesService,
+    DataTransferService? dataTransferService,
+    AppAnalytics? analytics,
+    bool autoInitialize = true,
+    bool enableLiveActivitySync = true,
+  })  : _storageService = storageService ?? StorageService(),
+        _icsImportService = icsImportService ?? IcsImportService(),
+        _liveActivitiesService =
+            liveActivitiesService ?? MiuiLiveActivitiesService(),
+        _dataTransferService = dataTransferService ?? DataTransferService(),
+        _analytics = analytics ?? AppAnalytics.instance,
+        _enableLiveActivitySync = enableLiveActivitySync {
+    if (autoInitialize) {
+      unawaited(initialize());
+    }
+  }
+
+  Future<void> initialize() {
+    return _initializationFuture ??= _init();
   }
 
   Future<void> _init() async {
     await _storageService.init();
-    await loadSettings();
-    await loadCourses();
+    _profiles = await _storageService.getProfiles();
+    _activeProfileId = await _storageService.getActiveProfileId();
+    final activeProfile =
+        this.activeProfile ?? (_profiles.isEmpty ? null : _profiles.first);
+    if (activeProfile == null) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+    _applyProfileState(activeProfile);
+    if (_activeProfileId != activeProfile.id) {
+      _activeProfileId = activeProfile.id;
+      await _storageService.setActiveProfileId(activeProfile.id);
+    }
     if (_settings.semesterStartDate != null) {
       await syncCurrentWeekWithSemesterStart();
-    } else {
-      await loadCurrentWeek();
     }
-    _startLiveActivityTick();
+    if (_enableLiveActivitySync) {
+      _startLiveActivityTick();
+    }
+    notifyListeners();
   }
 
   void _startLiveActivityTick() {
@@ -88,12 +132,54 @@ class TimetableProvider with ChangeNotifier {
     super.dispose();
   }
 
+  TimetableProfile? _getProfileById(String? profileId) {
+    if (profileId == null) {
+      return null;
+    }
+    for (final profile in _profiles) {
+      if (profile.id == profileId) {
+        return profile;
+      }
+    }
+    return null;
+  }
+
+  void _applyProfileState(TimetableProfile profile) {
+    _courses = List<Course>.from(profile.courses);
+    _settings = profile.settings;
+    _currentWeek = profile.currentWeek;
+  }
+
+  Future<void> _persistActiveProfileState({
+    bool touchLastUsedAt = false,
+  }) async {
+    final activeProfile = this.activeProfile;
+    if (activeProfile == null) {
+      return;
+    }
+
+    final index = _profiles.indexWhere((profile) => profile.id == activeProfile.id);
+    if (index == -1) {
+      return;
+    }
+
+    _profiles[index] = activeProfile.copyWith(
+      courses: List<Course>.from(_courses),
+      settings: _settings,
+      currentWeek: _currentWeek,
+      lastUsedAt: touchLastUsedAt ? DateTime.now() : activeProfile.lastUsedAt,
+    );
+    await _storageService.saveProfiles(_profiles);
+    if (_activeProfileId != null) {
+      await _storageService.setActiveProfileId(_activeProfileId!);
+    }
+  }
+
   Future<void> loadSettings() async {
     try {
-      _settings = await _storageService.getTimetableSettings();
-      final semesterStart = await _storageService.getSemesterStart();
-      if (semesterStart != null && _settings.semesterStartDate == null) {
-        _settings = _settings.copyWith(semesterStartDate: semesterStart);
+      final profile = activeProfile;
+      if (profile != null) {
+        _settings = profile.settings;
       }
       notifyListeners();
     } catch (e) {
@@ -106,7 +192,10 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      _courses = await _storageService.getCourses();
+      final profile = activeProfile;
+      if (profile != null) {
+        _courses = List<Course>.from(profile.courses);
+      }
     } catch (e) {
       debugPrint('Error loading courses: $e');
     }
@@ -117,7 +206,7 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> loadCurrentWeek() async {
     try {
-      _currentWeek = await _storageService.getCurrentWeek();
+      _currentWeek = activeProfile?.currentWeek ?? 1;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading current week: $e');
@@ -126,15 +215,130 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> setCurrentWeek(int week) async {
     _currentWeek = week;
-    await _storageService.setCurrentWeek(week);
+    await _persistActiveProfileState();
     _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
     await _updateLiveActivity();
   }
 
+  Future<TimetableProfile> createProfile({
+    required String name,
+  }) async {
+    await initialize();
+    if (activeProfile != null) {
+      await _persistActiveProfileState();
+    }
+
+    final now = DateTime.now();
+    final profile = TimetableProfile(
+      id: const Uuid().v4(),
+      name: name,
+      courses: const [],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+      createdAt: now,
+      lastUsedAt: now,
+    );
+
+    _profiles.add(profile);
+    _activeProfileId = profile.id;
+    _applyProfileState(profile);
+    await _persistActiveProfileState(touchLastUsedAt: true);
+    _currentLiveCourseId = null;
+    notifyListeners();
+    await _updateLiveActivity();
+    return activeProfile!;
+  }
+
+  Future<TimetableProfile?> duplicateActiveProfile({
+    String? name,
+  }) async {
+    await initialize();
+    final source = activeProfile;
+    if (source == null) {
+      return null;
+    }
+
+    await _persistActiveProfileState();
+    final now = DateTime.now();
+    final profile = source.copyWith(
+      id: const Uuid().v4(),
+      name: name ?? '${source.name} 副本',
+      createdAt: now,
+      lastUsedAt: now,
+    );
+    _profiles.add(profile);
+    _activeProfileId = profile.id;
+    _applyProfileState(profile);
+    await _persistActiveProfileState(touchLastUsedAt: true);
+    _currentLiveCourseId = null;
+    notifyListeners();
+    await _updateLiveActivity();
+    return activeProfile;
+  }
+
+  Future<void> switchProfile(String profileId) async {
+    await initialize();
+    if (_activeProfileId == profileId) {
+      return;
+    }
+    final targetProfile = _getProfileById(profileId);
+    if (targetProfile == null) {
+      return;
+    }
+
+    await _persistActiveProfileState();
+    _activeProfileId = profileId;
+    _applyProfileState(targetProfile);
+    await _persistActiveProfileState(touchLastUsedAt: true);
+    _currentLiveCourseId = null;
+    notifyListeners();
+    await _updateLiveActivity();
+  }
+
+  Future<void> renameProfile(String profileId, String name) async {
+    await initialize();
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    if (index == -1) {
+      return;
+    }
+
+    _profiles[index] = _profiles[index].copyWith(name: name.trim());
+    await _storageService.saveProfiles(_profiles);
+    notifyListeners();
+  }
+
+  Future<bool> deleteProfile(String profileId) async {
+    await initialize();
+    if (_profiles.length <= 1) {
+      return false;
+    }
+
+    final index = _profiles.indexWhere((profile) => profile.id == profileId);
+    if (index == -1) {
+      return false;
+    }
+
+    final isActive = _profiles[index].id == _activeProfileId;
+    _profiles.removeAt(index);
+    if (isActive) {
+      final fallbackProfile = _profiles.first;
+      _activeProfileId = fallbackProfile.id;
+      _applyProfileState(fallbackProfile);
+      _currentLiveCourseId = null;
+    }
+    await _storageService.saveProfiles(_profiles);
+    if (_activeProfileId != null) {
+      await _storageService.setActiveProfileId(_activeProfileId!);
+    }
+    notifyListeners();
+    await _updateLiveActivity();
+    return true;
+  }
+
   Future<void> addCourse(Course course) async {
-    await _storageService.addCourse(course);
     _courses.add(course);
+    await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
@@ -149,10 +353,10 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> updateCourse(Course course) async {
-    await _storageService.updateCourse(course);
     final index = _courses.indexWhere((c) => c.id == course.id);
     if (index != -1) {
       _courses[index] = course;
+      await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
@@ -168,8 +372,8 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> deleteCourse(String courseId) async {
-    await _storageService.deleteCourse(courseId);
     _courses.removeWhere((c) => c.id == courseId);
+    await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
@@ -181,16 +385,34 @@ class TimetableProvider with ChangeNotifier {
     _updateLiveActivity();
   }
 
+  Future<bool> clearActiveProfileCourses() async {
+    await initialize();
+    final clearedCourseCount = _courses.length;
+    if (clearedCourseCount == 0) {
+      return false;
+    }
+
+    _courses = [];
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'courses_cleared',
+      parameters: {
+        'cleared_course_count': clearedCourseCount,
+      },
+    );
+    await _updateLiveActivity();
+    return true;
+  }
+
   Future<String?> updateTimetableSettings(TimetableSettings settings) async {
     if (settings.sectionCount < maxUsedSection) {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
     }
 
     _settings = settings;
-    await _storageService.saveTimetableSettings(settings);
-    if (settings.semesterStartDate != null) {
-      await _storageService.setSemesterStart(settings.semesterStartDate!);
-    }
+    await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     await _updateLiveActivity();
@@ -210,10 +432,8 @@ class TimetableProvider with ChangeNotifier {
         replaceExisting ? result.courses : [..._courses, ...result.courses];
 
     _courses = mergedCourses;
-    await _storageService.saveCourses(_courses);
-    await _storageService.setSemesterStart(result.semesterStart);
     _settings = _settings.copyWith(semesterStartDate: result.semesterStart);
-    await _storageService.saveTimetableSettings(_settings);
+    await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
@@ -234,15 +454,7 @@ class TimetableProvider with ChangeNotifier {
       _settings = backup.settings;
       _currentWeek = backup.currentWeek;
 
-      await _storageService.saveCourses(_courses);
-      await _storageService.saveTimetableSettings(_settings);
-      await _storageService.setCurrentWeek(_currentWeek);
-      if (_settings.semesterStartDate != null) {
-        await _storageService.setSemesterStart(_settings.semesterStartDate!);
-      } else {
-        await _storageService.clearSemesterStart();
-      }
-
+      await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
@@ -250,6 +462,47 @@ class TimetableProvider with ChangeNotifier {
         parameters: {
           'course_count': _courses.length,
           'current_week': _currentWeek,
+        },
+      );
+      await _updateLiveActivity();
+      return null;
+    } on FormatException catch (e) {
+      return e.message;
+    } catch (_) {
+      return '导入失败，文件内容无法识别';
+    }
+  }
+
+  Future<String?> importAppDataBackupAsNewProfile(
+    String content, {
+    String? profileName,
+  }) async {
+    try {
+      final backup = _dataTransferService.parseBackupJson(content);
+      final now = DateTime.now();
+      final nextProfile = TimetableProfile(
+        id: const Uuid().v4(),
+        name: (profileName ?? backup.profileName ?? '导入课表').trim(),
+        courses: backup.courses,
+        settings: backup.settings,
+        currentWeek: backup.currentWeek,
+        createdAt: now,
+        lastUsedAt: now,
+      );
+
+      await _persistActiveProfileState();
+      _profiles.add(nextProfile);
+      _activeProfileId = nextProfile.id;
+      _applyProfileState(nextProfile);
+      await _persistActiveProfileState(touchLastUsedAt: true);
+      _currentLiveCourseId = null;
+      notifyListeners();
+      _analytics.logEventLater(
+        name: 'backup_imported',
+        parameters: {
+          'course_count': _courses.length,
+          'current_week': _currentWeek,
+          'created_profile': 1,
         },
       );
       await _updateLiveActivity();
@@ -664,6 +917,12 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _updateLiveActivity() async {
+    if (!_enableLiveActivitySync) {
+      return;
+    }
+
+    await _syncLiveScheduleSnapshot();
+
     final suspendedUntil = _liveActivitySuspendedUntil;
     if (suspendedUntil != null) {
       if (DateTime.now().isBefore(suspendedUntil)) {
@@ -738,12 +997,45 @@ class TimetableProvider with ChangeNotifier {
             .map((milestone) => milestone['timeText'] as String)
             .toList(),
       );
+      _hasVisibleLiveUpdate = true;
     } else {
-      if (_currentLiveCourseId != null) {
+      if (_currentLiveCourseId != null || _hasVisibleLiveUpdate) {
         _currentLiveCourseId = null;
         await _liveActivitiesService.stopLiveUpdate();
+        _hasVisibleLiveUpdate = false;
       }
     }
+  }
+
+  Future<void> _syncLiveScheduleSnapshot() async {
+    final activeProfile = this.activeProfile;
+    if (activeProfile == null || _courses.isEmpty) {
+      if (_lastLiveSnapshotSignature != null) {
+        _lastLiveSnapshotSignature = null;
+        await _liveActivitiesService.clearScheduleSnapshot();
+      }
+      return;
+    }
+
+    final snapshotSignature = jsonEncode({
+      'profileId': activeProfile.id,
+      'currentWeek': _currentWeek,
+      'semesterStartDate': _settings.semesterStartDate?.millisecondsSinceEpoch,
+      'settings': _settings.toJson(),
+      'courses': _courses.map((course) => course.toJson()).toList(),
+    });
+    if (_lastLiveSnapshotSignature == snapshotSignature) {
+      return;
+    }
+
+    _lastLiveSnapshotSignature = snapshotSignature;
+    await _liveActivitiesService.syncScheduleSnapshot(
+      courses: _courses,
+      settings: _settings,
+      currentWeek: _currentWeek,
+      semesterStartDate: _settings.semesterStartDate,
+      endReminderLeadMillis: _liveEndReminderWindow.inMilliseconds,
+    );
   }
 
   void suspendLiveActivitySyncFor(Duration duration) {
