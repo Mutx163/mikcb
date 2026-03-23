@@ -84,6 +84,8 @@ class _AboutScreenState extends State<AboutScreen> {
                       child: Image.asset(
                         'assets/branding/launcher_icon.png',
                         fit: BoxFit.cover,
+                        cacheWidth: 168,
+                        cacheHeight: 168,
                         errorBuilder: (context, error, stackTrace) {
                           return Icon(
                             Icons.calendar_view_week_rounded,
@@ -292,23 +294,42 @@ class _AboutScreenState extends State<AboutScreen> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      result.message ?? '',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: updateColor,
-                        fontWeight: FontWeight.w700,
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: updateColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        result.message ?? '',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: updateColor,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text('当前版本：${result.currentVersion}'),
-                    Text(
-                      '最新版本：${release?.version ?? '未发布'}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _buildInfoChip(
+                          theme,
+                          label: '当前版本',
+                          value: result.currentVersion,
+                        ),
+                        _buildInfoChip(
+                          theme,
+                          label: '最新版本',
+                          value: release?.version ?? '未发布',
+                        ),
+                      ],
                     ),
                     if (release?.updatedAt != null) ...[
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Text(
                         '更新时间：${_formatDateTime(release!.updatedAt!)}',
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -316,47 +337,95 @@ class _AboutScreenState extends State<AboutScreen> {
                         ),
                       ),
                     ],
-                    if ((release?.body ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '本次更新日志',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              height: 220,
-                              child: Scrollbar(
-                                thumbVisibility: true,
-                                child: SingleChildScrollView(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: SelectableText(
-                                    release!.body.trim(),
-                                    style: theme.textTheme.bodyMedium,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                    const SizedBox(height: 16),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
                         ),
                       ),
-                    ],
-                    const SizedBox(height: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '下载方式',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            isAndroid
+                                ? '支持应用内直接下载，也可以跳转到 Release 页面。'
+                                : '当前平台不支持应用内安装，会直接打开下载地址。',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.icon(
+                                  onPressed: result.hasRelease
+                                      ? () {
+                                          if (effectiveDownloadUrl != null &&
+                                              isAndroid) {
+                                            _downloadAndInstall(
+                                                effectiveDownloadUrl);
+                                          } else {
+                                            _openUrl(effectiveDownloadUrl ??
+                                                release?.releaseUrl);
+                                          }
+                                        }
+                                      : null,
+                                  icon: Icon(
+                                    isAndroid
+                                        ? Icons.download_rounded
+                                        : Icons.open_in_new_rounded,
+                                  ),
+                                  label: Text(primaryButtonLabel),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: FilledButton.tonalIcon(
+                                  onPressed: result.hasRelease
+                                      ? () => _openUrl(release?.releaseUrl)
+                                      : null,
+                                  icon: const Icon(
+                                    Icons.new_releases_outlined,
+                                  ),
+                                  label: const Text('打开 Release 页面'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text(
                       '下载源',
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '原版直接使用 GitHub 地址；镜像会在原地址前加你设置的镜像前缀。',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -378,22 +447,27 @@ class _AboutScreenState extends State<AboutScreen> {
                     const SizedBox(height: 12),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.5,
+                          ),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '镜像前缀',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
+                            '镜像源设置',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
+                          const SizedBox(height: 8),
+                          SelectableText(
                             settings.appUpdateMirrorUrlPrefix,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               fontWeight: FontWeight.w600,
@@ -409,74 +483,111 @@ class _AboutScreenState extends State<AboutScreen> {
                                 icon: const Icon(Icons.edit_outlined),
                                 label: const Text('修改镜像源'),
                               ),
-                              if (downloadSource ==
-                                  AppUpdateDownloadSource.mirror)
-                                Text(
-                                  effectiveDownloadUrl ?? '',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
                             ],
                           ),
+                          if (downloadSource ==
+                                  AppUpdateDownloadSource.mirror &&
+                              (effectiveDownloadUrl ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              '当前镜像下载地址',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: SelectableText(
+                                effectiveDownloadUrl!,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    if (_isDownloading)
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Text(
-                            '正在下载更新: ${(_downloadProgress * 100).toStringAsFixed(1)}%',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w600,
+                    if (_isDownloading) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Text(
+                              '正在下载更新: ${(_downloadProgress * 100).toStringAsFixed(1)}%',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: _downloadProgress,
-                              minHeight: 8,
+                            const SizedBox(height: 8),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: _downloadProgress,
+                                minHeight: 8,
+                              ),
                             ),
-                          ),
-                        ],
-                      )
-                    else
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilledButton.icon(
-                            onPressed: result.hasRelease
-                                ? () {
-                                    if (effectiveDownloadUrl != null &&
-                                        isAndroid) {
-                                      _downloadAndInstall(effectiveDownloadUrl);
-                                    } else {
-                                      _openUrl(effectiveDownloadUrl ??
-                                          release?.releaseUrl);
-                                    }
-                                  }
-                                : null,
-                            icon: Icon(
-                              isAndroid
-                                  ? Icons.download_rounded
-                                  : Icons.open_in_new_rounded,
-                            ),
-                            label: Text(primaryButtonLabel),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: result.hasRelease
-                                ? () => _openUrl(release?.releaseUrl)
-                                : null,
-                            icon: const Icon(Icons.new_releases_outlined),
-                            label: const Text('Release 页面'),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                    ],
+                    if ((release?.body ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: colorScheme.outlineVariant.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '本次更新日志',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '向下滚动可以查看完整日志。',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            SizedBox(
+                              height: 240,
+                              child: SingleChildScrollView(
+                                padding: const EdgeInsets.only(right: 4),
+                                child: Text(
+                                  release!.body.trim(),
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 );
               },
@@ -653,6 +764,40 @@ class _AboutScreenState extends State<AboutScreen> {
     final hour = dateTime.hour.toString().padLeft(2, '0');
     final minute = dateTime.minute.toString().padLeft(2, '0');
     return '$year-$month-$day $hour:$minute';
+  }
+
+  Widget _buildInfoChip(
+    ThemeData theme, {
+    required String label,
+    required String value,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String? _normalizeMirrorUrlPrefix(String input) {

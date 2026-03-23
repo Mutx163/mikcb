@@ -138,12 +138,13 @@ class IcsImportService {
 
     final startSection = int.parse(sectionMatch.group(1)!);
     final endSection = int.parse(sectionMatch.group(2)!);
-    final location = descriptionLines.length >= 2
+    final hasStructuredLocation = descriptionLines.length >= 2;
+    final rawLocation = hasStructuredLocation
         ? descriptionLines[1]
         : (event['LOCATION'] ?? '');
     final teacher = descriptionLines.length >= 3
         ? descriptionLines[2]
-        : _extractTeacher(event['LOCATION'] ?? '');
+        : _extractTeacherFromCombinedLocation(event['LOCATION'] ?? '');
     final endWeek = _parseEndWeek(
           event['RRULE'],
           semesterStart,
@@ -155,7 +156,9 @@ class IcsImportService {
       id: 'ics-${startDateTime.millisecondsSinceEpoch}-$index',
       name: _cleanSummary(summary),
       teacher: teacher,
-      location: _extractLocation(location),
+      location: hasStructuredLocation
+          ? rawLocation.trim()
+          : _extractLocationFromCombinedField(rawLocation),
       dayOfWeek: startDateTime.weekday,
       startSection: startSection,
       endSection: endSection,
@@ -265,7 +268,7 @@ class IcsImportService {
       !course.isOddWeek &&
       !course.isEvenWeek;
 
-  String _extractLocation(String location) {
+  String _extractLocationFromCombinedField(String location) {
     final parts = location.trim().split(RegExp(r'\s+'));
     if (parts.length <= 1) {
       return location.trim();
@@ -273,7 +276,7 @@ class IcsImportService {
     return parts.sublist(0, parts.length - 1).join(' ');
   }
 
-  String _extractTeacher(String location) {
+  String _extractTeacherFromCombinedLocation(String location) {
     final parts = location.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty) {
       return '';

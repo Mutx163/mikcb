@@ -5,8 +5,37 @@ import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 
-class TimeSchemeManagementScreen extends StatelessWidget {
-  const TimeSchemeManagementScreen({super.key});
+class TimeSchemeManagementScreen extends StatefulWidget {
+  final String? initialEditSchemeId;
+
+  const TimeSchemeManagementScreen({
+    super.key,
+    this.initialEditSchemeId,
+  });
+
+  @override
+  State<TimeSchemeManagementScreen> createState() =>
+      _TimeSchemeManagementScreenState();
+}
+
+class _TimeSchemeManagementScreenState
+    extends State<TimeSchemeManagementScreen> {
+  bool _didOpenInitialEditor = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didOpenInitialEditor || widget.initialEditSchemeId == null) {
+      return;
+    }
+    _didOpenInitialEditor = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _openEditor(widget.initialEditSchemeId!);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +63,17 @@ class TimeSchemeManagementScreen extends StatelessWidget {
               final scheme = schemes[index];
               final isActive = scheme.id == activeSchemeId;
               final usageCount = provider.profiles
-                  .where((profile) => profile.settings.activeTimeSchemeId == scheme.id)
+                  .where((profile) =>
+                      profile.settings.activeTimeSchemeId == scheme.id)
                   .length;
 
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
                     child: Icon(
-                      isActive ? Icons.schedule_rounded : Icons.access_time_rounded,
+                      isActive
+                          ? Icons.schedule_rounded
+                          : Icons.access_time_rounded,
                     ),
                   ),
                   title: Text(
@@ -64,14 +96,7 @@ class TimeSchemeManagementScreen extends StatelessWidget {
                           }
                           break;
                         case 'edit':
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => _TimeSchemeEditorScreen(
-                                schemeId: scheme.id,
-                              ),
-                            ),
-                          );
+                          await _openEditor(scheme.id);
                           break;
                         case 'rename':
                           await _renameScheme(context, scheme);
@@ -114,13 +139,26 @@ class TimeSchemeManagementScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  onTap: isActive ? null : () => provider.applyTimeScheme(scheme.id),
+                  onTap: isActive
+                      ? null
+                      : () => provider.applyTimeScheme(scheme.id),
                 ),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openEditor(String schemeId) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _TimeSchemeEditorScreen(
+          schemeId: schemeId,
+        ),
+      ),
     );
   }
 
@@ -161,12 +199,7 @@ class TimeSchemeManagementScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => _TimeSchemeEditorScreen(schemeId: scheme.id),
-      ),
-    );
+    await _openEditor(scheme.id);
   }
 
   Future<void> _renameScheme(BuildContext context, TimeScheme scheme) async {
@@ -193,7 +226,10 @@ class TimeSchemeManagementScreen extends StatelessWidget {
       ),
     );
 
-    if (!context.mounted || name == null || name.isEmpty || name == scheme.name) {
+    if (!context.mounted ||
+        name == null ||
+        name.isEmpty ||
+        name == scheme.name) {
       return;
     }
 
@@ -249,7 +285,8 @@ class _TimeSchemeEditorScreen extends StatefulWidget {
   const _TimeSchemeEditorScreen({required this.schemeId});
 
   @override
-  State<_TimeSchemeEditorScreen> createState() => _TimeSchemeEditorScreenState();
+  State<_TimeSchemeEditorScreen> createState() =>
+      _TimeSchemeEditorScreenState();
 }
 
 class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
@@ -273,7 +310,8 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   void initState() {
     super.initState();
     final provider = context.read<TimetableProvider>();
-    final scheme = provider.timeSchemes.firstWhere((item) => item.id == widget.schemeId);
+    final scheme =
+        provider.timeSchemes.firstWhere((item) => item.id == widget.schemeId);
     _nameController = TextEditingController(text: scheme.name);
     _sections = List<SectionTime>.from(scheme.sections);
   }
@@ -363,7 +401,8 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                         label: const Text('新增一节'),
                       ),
                       FilledButton.tonalIcon(
-                        onPressed: _sections.length <= 1 ? null : _removeSection,
+                        onPressed:
+                            _sections.length <= 1 ? null : _removeSection,
                         icon: const Icon(Icons.remove),
                         label: const Text('删除末节'),
                       ),
@@ -380,7 +419,8 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                     return ListTile(
                       contentPadding: EdgeInsets.zero,
                       title: Text('第 ${index + 1} 节'),
-                      subtitle: Text('${section.startTime} - ${section.endTime}'),
+                      subtitle:
+                          Text('${section.startTime} - ${section.endTime}'),
                       trailing: IconButton(
                         tooltip: '编辑时间',
                         onPressed: () => _editSectionTime(index),
@@ -829,7 +869,8 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
     }
 
     final breakOverrideRules = _breakOverrides
-        .where((item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
+        .where(
+            (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
         .map(
           (item) => BreakOverrideRule(
             afterSection: item.afterSection,
