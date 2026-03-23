@@ -74,7 +74,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                     _SettingsEntryTile(
                       icon: Icons.view_week_outlined,
                       title: '布局与节次',
-                      subtitle: '节次时间、行高、紧凑字号',
+                      subtitle: '节次时间、行高、时间列、周末显示与卡片布局',
                       trailing: Text(
                         '${settings.sectionCount} 节',
                         style: Theme.of(context).textTheme.bodySmall,
@@ -642,14 +642,14 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         children: [
           _SettingsSectionCard(
             title: '提醒时段',
-            subtitle: '不同设定可以自由组合，测试通知也会按这里的开关执行。',
+            subtitle: '不同提醒时段可以自由组合；这里的开关互不替代。',
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('上课前提醒'),
                   subtitle:
-                      Text('在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出'),
+                      Text('在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出；不受下面“课中 / 临近下课提醒”开关影响'),
                   value: _draft.liveEnableBeforeClass,
                   onChanged: (value) {
                     setState(() {
@@ -659,8 +659,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('启用上课及下课提醒'),
-                  subtitle: const Text('开启后，会在你设定的时间点弹出提醒，并在临近下课时进入秒级倒计时'),
+                  title: const Text('启用课中 / 临近下课提醒'),
+                  subtitle: const Text('只影响上课后到下课前的提醒，不影响“上课前提醒”开关'),
                   value: _draft.liveEnableDuringClass,
                   onChanged: (value) {
                     setState(() {
@@ -673,7 +673,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     contentPadding: EdgeInsets.zero,
                     title: const Text('提醒启动时机'),
                     subtitle: Text(
-                        '距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒自动开启高能秒级倒数'),
+                        _draft.liveClassReminderStartMinutes == 0
+                            ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                            : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
                       items: const [
@@ -707,7 +709,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('支持展示超级岛/灵动岛'),
-                  subtitle: const Text('关闭后，即便在设定的提醒时间内，也不再触发系统的灵动岛'),
+                  subtitle: const Text('关闭后不会再尝试触发系统超级岛；该能力需 HyperOS 3.0.300 及以上支持'),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) {
                     setState(() {
@@ -930,6 +932,52 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       setState(() {
                         _draft = _draft.copyWith(
                           timetableAutoFitSectionHeight: value,
+                        );
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('隐藏周六周日'),
+                    subtitle: const Text('开启后首页只显示周一到周五，剩余列宽会自动铺满。'),
+                    value: _draft.timetableHideWeekends,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(timetableHideWeekends: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('启用应用内震动反馈'),
+                    subtitle: const Text('关闭后，页码切换等交互不再触发轻微震动。'),
+                    value: _draft.enableHaptics,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(enableHaptics: value);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<SectionTimeDisplayMode>(
+                    value: _draft.timetableSectionTimeDisplayMode,
+                    decoration: const InputDecoration(
+                      labelText: '首页时间列显示',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: SectionTimeDisplayMode.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          timetableSectionTimeDisplayMode: value,
                         );
                       });
                     },

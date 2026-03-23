@@ -17,6 +17,12 @@ void main() {
     expect(settings.courseCardShowDescription, isFalse);
     expect(settings.timetableAutoFitSectionHeight, isFalse);
     expect(
+      settings.timetableSectionTimeDisplayMode,
+      SectionTimeDisplayMode.startAndEnd,
+    );
+    expect(settings.timetableHideWeekends, isFalse);
+    expect(settings.enableHaptics, isTrue);
+    expect(
       settings.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
     );
@@ -37,6 +43,12 @@ void main() {
     expect(restored.courseCardShowWeeks, isFalse);
     expect(restored.courseCardShowDescription, isFalse);
     expect(restored.timetableAutoFitSectionHeight, isFalse);
+    expect(
+      restored.timetableSectionTimeDisplayMode,
+      SectionTimeDisplayMode.startAndEnd,
+    );
+    expect(restored.timetableHideWeekends, isFalse);
+    expect(restored.enableHaptics, isTrue);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -65,6 +77,9 @@ void main() {
       courseCardShowWeeks: true,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
+      timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
+      timetableHideWeekends: true,
+      enableHaptics: false,
     );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
@@ -75,6 +90,12 @@ void main() {
     expect(restored.courseCardShowTime, isTrue);
     expect(restored.courseCardShowTimeLabels, isFalse);
     expect(restored.courseCardShowWeeks, isTrue);
+    expect(
+      restored.timetableSectionTimeDisplayMode,
+      SectionTimeDisplayMode.startAndEnd,
+    );
+    expect(restored.timetableHideWeekends, isTrue);
+    expect(restored.enableHaptics, isFalse);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.spaceEvenly,

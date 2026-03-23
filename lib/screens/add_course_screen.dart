@@ -52,6 +52,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     '#607D8B',
   ];
 
+  Color _parseColor(String colorHex) {
+    return Color(
+      int.parse('FF${colorHex.replaceFirst('#', '')}', radix: 16),
+    );
+  }
+
+  String _toHex(Color color) {
+    final red = (color.r * 255).round().clamp(0, 255);
+    final green = (color.g * 255).round().clamp(0, 255);
+    final blue = (color.b * 255).round().clamp(0, 255);
+    final value = (red << 16) | (green << 8) | blue;
+    return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -537,10 +551,141 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: _showCustomColorPicker,
+              icon: const Icon(Icons.palette_outlined),
+              label: const Text('调色盘自定义颜色'),
+            ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _showCustomColorPicker() async {
+    var selected = _parseColor(_selectedColor);
+    final hexController = TextEditingController(text: _selectedColor);
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            void updateFromColor(Color color) {
+              selected = color;
+              hexController.text = _toHex(color);
+            }
+
+            void updateFromHex(String value) {
+              final normalized = value.trim().toUpperCase();
+              final match = RegExp(r'^#?[0-9A-F]{6}$').firstMatch(normalized);
+              if (match == null) {
+                return;
+              }
+              final withHash =
+                  normalized.startsWith('#') ? normalized : '#$normalized';
+              updateFromColor(_parseColor(withHash));
+            }
+
+            final hsv = HSVColor.fromColor(selected);
+            return AlertDialog(
+              title: const Text('调色盘'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        color: selected,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: hexController,
+                      decoration: const InputDecoration(
+                        labelText: '颜色 Hex',
+                        hintText: '#2563EB',
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          updateFromHex(value);
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Text('色相 ${hsv.hue.round()}'),
+                    Slider(
+                      value: hsv.hue,
+                      min: 0,
+                      max: 360,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          updateFromColor(
+                            hsv.withHue(value).toColor(),
+                          );
+                        });
+                      },
+                    ),
+                    Text('饱和度 ${(hsv.saturation * 100).round()}%'),
+                    Slider(
+                      value: hsv.saturation,
+                      min: 0,
+                      max: 1,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          updateFromColor(
+                            hsv.withSaturation(value).toColor(),
+                          );
+                        });
+                      },
+                    ),
+                    Text('明度 ${(hsv.value * 100).round()}%'),
+                    Slider(
+                      value: hsv.value,
+                      min: 0,
+                      max: 1,
+                      onChanged: (value) {
+                        setDialogState(() {
+                          updateFromColor(
+                            hsv.withValue(value).toColor(),
+                          );
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, _toHex(selected)),
+                  child: const Text('使用这个颜色'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    hexController.dispose();
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      _selectedColor = result;
+    });
   }
 
   void _saveCourse(TimetableSettings settings) {
