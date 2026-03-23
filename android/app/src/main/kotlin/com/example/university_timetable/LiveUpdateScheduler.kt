@@ -60,6 +60,7 @@ private data class NativeLiveSettings(
     val liveShowDuringClassNotification: Boolean,
     val liveUseShortName: Boolean,
     val liveHidePrefixText: Boolean,
+    val liveDuringClassTimeDisplayMode: String,
     val liveShowBeforeClassMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
 )
@@ -108,6 +109,7 @@ private data class LiveUpdatePayload(
     val showLocationInIsland: Boolean,
     val useShortNameInIsland: Boolean,
     val hidePrefixText: Boolean,
+    val duringClassTimeDisplayMode: String,
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
@@ -188,6 +190,8 @@ object LiveUpdateScheduler {
             showLocationInIsland = islandConfig["showLocation"] as? Boolean ?: true,
             useShortNameInIsland = islandConfig["useShortName"] as? Boolean ?: false,
             hidePrefixText = islandConfig["hidePrefixText"] as? Boolean ?: false,
+            duringClassTimeDisplayMode =
+                islandConfig["duringClassTimeDisplayMode"] as? String ?: "nearest",
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
@@ -245,6 +249,8 @@ object LiveUpdateScheduler {
                 settingsJson.optBoolean("liveShowDuringClassNotification", true),
             liveUseShortName = settingsJson.optBoolean("liveUseShortName", true),
             liveHidePrefixText = settingsJson.optBoolean("liveHidePrefixText", false),
+            liveDuringClassTimeDisplayMode =
+                settingsJson.optString("liveDuringClassTimeDisplayMode", "nearest"),
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveEndSecondsCountdownThreshold =
                 settingsJson.optInt("liveEndSecondsCountdownThreshold", 60),
@@ -324,6 +330,7 @@ object LiveUpdateScheduler {
             putExtra("showLocationInIsland", payload.showLocationInIsland)
             putExtra("useShortNameInIsland", payload.useShortNameInIsland)
             putExtra("hidePrefixText", payload.hidePrefixText)
+            putExtra("duringClassTimeDisplayMode", payload.duringClassTimeDisplayMode)
         }
     }
 
@@ -474,6 +481,8 @@ object LiveUpdateScheduler {
             showLocationInIsland = snapshot.settings.liveShowLocation,
             useShortNameInIsland = snapshot.settings.liveUseShortName,
             hidePrefixText = snapshot.settings.liveHidePrefixText,
+            duringClassTimeDisplayMode =
+                snapshot.settings.liveDuringClassTimeDisplayMode,
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,

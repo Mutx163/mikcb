@@ -11,6 +11,11 @@ enum SectionTimeDisplayMode {
   startAndEnd,
 }
 
+enum LiveDuringClassTimeDisplayMode {
+  nearest,
+  total,
+}
+
 extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
   String get value => switch (this) {
         SectionTimeDisplayMode.hidden => 'hidden',
@@ -28,6 +33,25 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
     return SectionTimeDisplayMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => SectionTimeDisplayMode.startAndEnd,
+    );
+  }
+}
+
+extension LiveDuringClassTimeDisplayModeX on LiveDuringClassTimeDisplayMode {
+  String get value => switch (this) {
+        LiveDuringClassTimeDisplayMode.nearest => 'nearest',
+        LiveDuringClassTimeDisplayMode.total => 'total',
+      };
+
+  String get label => switch (this) {
+        LiveDuringClassTimeDisplayMode.nearest => '最近时间',
+        LiveDuringClassTimeDisplayMode.total => '总时间',
+      };
+
+  static LiveDuringClassTimeDisplayMode fromValue(String? value) {
+    return LiveDuringClassTimeDisplayMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => LiveDuringClassTimeDisplayMode.nearest,
     );
   }
 }
@@ -175,6 +199,7 @@ class TimetableSettings {
   final bool liveShowDuringClassNotification;
   final bool liveUseShortName;
   final bool liveHidePrefixText;
+  final LiveDuringClassTimeDisplayMode liveDuringClassTimeDisplayMode;
   final int liveShowBeforeClassMinutes;
   final int liveClassReminderStartMinutes;
   final int liveEndSecondsCountdownThreshold;
@@ -216,6 +241,8 @@ class TimetableSettings {
     this.liveShowDuringClassNotification = true,
     this.liveUseShortName = true,
     this.liveHidePrefixText = true,
+    this.liveDuringClassTimeDisplayMode =
+        LiveDuringClassTimeDisplayMode.nearest,
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
@@ -270,6 +297,7 @@ class TimetableSettings {
       liveShowDuringClassNotification: true,
       liveUseShortName: true,
       liveHidePrefixText: true,
+      liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
       liveShowBeforeClassMinutes: 20,
       liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
@@ -314,6 +342,7 @@ class TimetableSettings {
       'liveShowDuringClassNotification': liveShowDuringClassNotification,
       'liveUseShortName': liveUseShortName,
       'liveHidePrefixText': liveHidePrefixText,
+      'liveDuringClassTimeDisplayMode': liveDuringClassTimeDisplayMode.value,
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
@@ -381,6 +410,8 @@ class TimetableSettings {
           json['liveShowDuringClassNotification'] as bool? ?? true,
       liveUseShortName: json['liveUseShortName'] as bool? ?? true,
       liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? true,
+      liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
+          json['liveDuringClassTimeDisplayMode'] as String?),
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -440,6 +471,7 @@ class TimetableSettings {
     bool? liveShowDuringClassNotification,
     bool? liveUseShortName,
     bool? liveHidePrefixText,
+    LiveDuringClassTimeDisplayMode? liveDuringClassTimeDisplayMode,
     int? liveShowBeforeClassMinutes,
     int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
@@ -476,8 +508,8 @@ class TimetableSettings {
           courseCardVerticalAlign ?? this.courseCardVerticalAlign,
       courseCardHorizontalAlign:
           courseCardHorizontalAlign ?? this.courseCardHorizontalAlign,
-      timetableSectionTimeDisplayMode:
-          timetableSectionTimeDisplayMode ?? this.timetableSectionTimeDisplayMode,
+      timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
+          this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:
           timetableHideWeekends ?? this.timetableHideWeekends,
       enableHaptics: enableHaptics ?? this.enableHaptics,
@@ -495,6 +527,8 @@ class TimetableSettings {
           this.liveShowDuringClassNotification,
       liveUseShortName: liveUseShortName ?? this.liveUseShortName,
       liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
+      liveDuringClassTimeDisplayMode:
+          liveDuringClassTimeDisplayMode ?? this.liveDuringClassTimeDisplayMode,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:

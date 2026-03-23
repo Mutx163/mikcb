@@ -79,7 +79,8 @@ class TimetableProvider with ChangeNotifier {
   DateTime? get semesterStartDate => _settings.semesterStartDate;
   DataTransferService get dataTransferService => _dataTransferService;
   TimetableProfile? get activeProfile => _getProfileById(_activeProfileId);
-  TimeScheme? get activeTimeScheme => _getTimeSchemeById(_settings.activeTimeSchemeId);
+  TimeScheme? get activeTimeScheme =>
+      _getTimeSchemeById(_settings.activeTimeSchemeId);
   int get maxUsedSection => _courses.isEmpty
       ? 1
       : _courses
@@ -183,13 +184,14 @@ class TimetableProvider with ChangeNotifier {
     _currentWeek = profile.currentWeek;
   }
 
-  TimetableSettings _normalizeSettingsWithTimeScheme(TimetableSettings settings) {
+  TimetableSettings _normalizeSettingsWithTimeScheme(
+      TimetableSettings settings) {
     final scheme = _getTimeSchemeById(settings.activeTimeSchemeId);
     if (scheme == null) {
       return settings;
     }
-    final hasSameSections =
-        _sectionSignature(settings.sections) == _sectionSignature(scheme.sections);
+    final hasSameSections = _sectionSignature(settings.sections) ==
+        _sectionSignature(scheme.sections);
     if (hasSameSections) {
       return settings;
     }
@@ -231,7 +233,8 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
-    final index = _profiles.indexWhere((profile) => profile.id == activeProfile.id);
+    final index =
+        _profiles.indexWhere((profile) => profile.id == activeProfile.id);
     if (index == -1) {
       return;
     }
@@ -427,7 +430,8 @@ class TimetableProvider with ChangeNotifier {
     return updated;
   }
 
-  Future<TimeScheme?> duplicateTimeScheme(String schemeId, {String? name}) async {
+  Future<TimeScheme?> duplicateTimeScheme(String schemeId,
+      {String? name}) async {
     await initialize();
     final source = _getTimeSchemeById(schemeId);
     if (source == null) {
@@ -645,7 +649,9 @@ class TimetableProvider with ChangeNotifier {
   Future<void> addCourse(Course course) async {
     final normalizedCourse = _normalizeCourse(course);
     final existingSharedCourse = _courses.cast<Course?>().firstWhere(
-          (item) => item != null && _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
+          (item) =>
+              item != null &&
+              _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
           orElse: () => null,
         );
     final preparedCourse = existingSharedCourse == null
@@ -696,7 +702,8 @@ class TimetableProvider with ChangeNotifier {
         parameters: {
           'day_of_week': normalizedCourse.dayOfWeek,
           'section_count': normalizedCourse.sectionCount,
-          'has_short_name': normalizedCourse.shortName?.isNotEmpty == true ? 1 : 0,
+          'has_short_name':
+              normalizedCourse.shortName?.isNotEmpty == true ? 1 : 0,
         },
       );
       _updateLiveActivity();
@@ -751,6 +758,87 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
+  int previewWakeUpImportRequiredSectionCount(
+    String content, {
+    required bool replaceExisting,
+  }) {
+    final result = _icsImportService.parseWakeUpSchedule(content);
+    if (result.courses.isEmpty) {
+      return _settings.sectionCount;
+    }
+
+    final mergedCourses =
+        replaceExisting ? result.courses : [..._courses, ...result.courses];
+    return mergedCourses
+        .map((course) => course.endSection)
+        .reduce((left, right) => left > right ? left : right);
+  }
+
+  Future<String?> ensureSectionCapacityForImport(
+      int requiredSectionCount) async {
+    await initialize();
+    if (requiredSectionCount <= _settings.sectionCount) {
+      return null;
+    }
+
+    final expandedSections = _buildExpandedSections(
+      _settings.sections,
+      requiredSectionCount,
+    );
+    final currentScheme = activeTimeScheme;
+
+    if (currentScheme == null) {
+      _settings = _settings.copyWith(sections: expandedSections);
+      _courses = _syncCoursesWithSections(
+        List<Course>.from(_courses),
+        expandedSections,
+      );
+      await _persistActiveProfileState();
+      _currentLiveCourseId = null;
+      notifyListeners();
+      await _updateLiveActivity();
+      return null;
+    }
+
+    final usageCount = _profiles
+        .where((profile) =>
+            profile.settings.activeTimeSchemeId == currentScheme.id)
+        .length;
+
+    if (usageCount <= 1) {
+      return updateTimeScheme(
+        schemeId: currentScheme.id,
+        name: currentScheme.name,
+        sections: expandedSections,
+      );
+    }
+
+    final now = DateTime.now();
+    final duplicatedScheme = currentScheme.copyWith(
+      id: const Uuid().v4(),
+      name: '${currentScheme.name}（导入补齐）',
+      sections: expandedSections,
+      createdAt: now,
+      updatedAt: now,
+    );
+    _timeSchemes.add(duplicatedScheme);
+    await _persistTimeSchemes();
+
+    _settings = _settings.copyWith(
+      activeTimeSchemeId: duplicatedScheme.id,
+      sections: expandedSections,
+    );
+    _courses = _syncCoursesWithSections(
+      List<Course>.from(_courses),
+      expandedSections,
+    );
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    await _updateLiveActivity();
+    return null;
+  }
+
   Future<int> importWakeUpCalendar(
     String content, {
     required bool replaceExisting,
@@ -777,6 +865,76 @@ class TimetableProvider with ChangeNotifier {
     );
     await _updateLiveActivity();
     return result.courses.length;
+  }
+
+  List<SectionTime> _buildExpandedSections(
+    List<SectionTime> sections,
+    int requiredSectionCount,
+  ) {
+    final expanded = sections.isEmpty
+        ? List<SectionTime>.from(TimetableSettings.defaults().sections)
+        : List<SectionTime>.from(sections);
+
+    final defaultDuration = _inferSectionDurationMinutes(expanded);
+    final defaultBreak = _inferBreakDurationMinutes(expanded);
+    while (expanded.length < requiredSectionCount) {
+      final last = expanded.last;
+      final lastEndMinutes = _parseClockToMinutes(last.endTime);
+      final nextStartMinutes = lastEndMinutes + defaultBreak;
+      final nextEndMinutes = nextStartMinutes + defaultDuration;
+      expanded.add(
+        SectionTime(
+          startTime: _formatClockMinutes(nextStartMinutes),
+          endTime: _formatClockMinutes(nextEndMinutes),
+        ),
+      );
+    }
+    return expanded;
+  }
+
+  int _inferSectionDurationMinutes(List<SectionTime> sections) {
+    for (var index = sections.length - 1; index >= 0; index--) {
+      final start = _parseClockToMinutes(sections[index].startTime);
+      final end = _parseClockToMinutes(sections[index].endTime);
+      final duration = end - start;
+      if (duration > 0) {
+        return duration;
+      }
+    }
+    return 45;
+  }
+
+  int _inferBreakDurationMinutes(List<SectionTime> sections) {
+    if (sections.length < 2) {
+      return 10;
+    }
+
+    for (var index = sections.length - 1; index > 0; index--) {
+      final previousEnd = _parseClockToMinutes(sections[index - 1].endTime);
+      final currentStart = _parseClockToMinutes(sections[index].startTime);
+      final gap = currentStart - previousEnd;
+      if (gap > 0) {
+        return gap;
+      }
+    }
+    return 10;
+  }
+
+  int _parseClockToMinutes(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return 0;
+    }
+    final hour = int.tryParse(parts[0]) ?? 0;
+    final minute = int.tryParse(parts[1]) ?? 0;
+    return hour * 60 + minute;
+  }
+
+  String _formatClockMinutes(int minutes) {
+    final normalized = minutes % (24 * 60);
+    final hour = normalized ~/ 60;
+    final minute = normalized % 60;
+    return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
   }
 
   Future<String?> importAppDataBackup(String content) async {
@@ -893,7 +1051,8 @@ class TimetableProvider with ChangeNotifier {
         await _storageService.setActiveProfileId(_activeProfileId!);
       }
 
-      _applyProfileState(_profiles.firstWhere((profile) => profile.id == _activeProfileId));
+      _applyProfileState(
+          _profiles.firstWhere((profile) => profile.id == _activeProfileId));
       _currentLiveCourseId = null;
       notifyListeners();
       await _updateLiveActivity();
@@ -1003,7 +1162,8 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  String _sharedCourseKey(Course course) => _sharedCourseKeyFromName(course.name);
+  String _sharedCourseKey(Course course) =>
+      _sharedCourseKeyFromName(course.name);
 
   String _sharedCourseKeyFromName(String name) => name.trim().toLowerCase();
 
@@ -1465,6 +1625,7 @@ class TimetableProvider with ChangeNotifier {
         showLocationInIsland: settings.liveShowLocation,
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
+        duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestones
             .map((milestone) => milestone['label'] as String)

@@ -23,6 +23,10 @@ void main() {
     expect(settings.timetableHideWeekends, isFalse);
     expect(settings.enableHaptics, isTrue);
     expect(
+      settings.liveDuringClassTimeDisplayMode,
+      LiveDuringClassTimeDisplayMode.nearest,
+    );
+    expect(
       settings.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
     );
@@ -49,6 +53,10 @@ void main() {
     );
     expect(restored.timetableHideWeekends, isFalse);
     expect(restored.enableHaptics, isTrue);
+    expect(
+      restored.liveDuringClassTimeDisplayMode,
+      LiveDuringClassTimeDisplayMode.nearest,
+    );
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -80,6 +88,7 @@ void main() {
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: true,
       enableHaptics: false,
+      liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
     );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
@@ -96,6 +105,10 @@ void main() {
     );
     expect(restored.timetableHideWeekends, isTrue);
     expect(restored.enableHaptics, isFalse);
+    expect(
+      restored.liveDuringClassTimeDisplayMode,
+      LiveDuringClassTimeDisplayMode.total,
+    );
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.spaceEvenly,
