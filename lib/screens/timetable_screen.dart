@@ -11,7 +11,6 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
-import '../services/miui_live_activities_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'about_screen.dart';
@@ -103,39 +102,75 @@ class _TimetableScreenState extends State<TimetableScreen> {
             actions: [
               PopupMenuButton<String>(
                 tooltip: '更多',
+                icon: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    const Icon(Icons.more_vert_rounded),
+                    if (_hasAvailableUpdate)
+                      Positioned(
+                        right: -1,
+                        top: -1,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: backgroundColor,
+                              width: 1.5,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 onSelected: _handleTopMenuAction,
-                itemBuilder: (context) => [
-                  if (_hasAvailableUpdate)
+                itemBuilder: (context) {
+                  final colorScheme = Theme.of(context).colorScheme;
+                  return [
+                    if (_hasAvailableUpdate)
+                      PopupMenuItem(
+                        value: 'update',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.system_update_rounded,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '软件有更新',
+                              style: TextStyle(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     const PopupMenuItem(
-                      value: 'update',
-                      child: Text('软件有更新'),
+                      value: 'profiles',
+                      child: Text('课表管理'),
                     ),
-                  const PopupMenuItem(
-                    value: 'profiles',
-                    child: Text('课表管理'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'overview',
-                    child: Text('课程总览'),
-                  ),
-                  if (!kReleaseMode)
                     const PopupMenuItem(
-                      value: 'test',
-                      child: Text('测试通知'),
+                      value: 'overview',
+                      child: Text('课程总览'),
                     ),
-                  const PopupMenuItem(
-                    value: 'import',
-                    child: Text('导入课程'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'settings',
-                    child: Text('课表设置'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'add',
-                    child: Text('添加课程'),
-                  ),
-                ],
+                    const PopupMenuItem(
+                      value: 'import',
+                      child: Text('导入课程'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'settings',
+                      child: Text('课表设置'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'add',
+                      child: Text('添加课程'),
+                    ),
+                  ];
+                },
               ),
             ],
           ),
@@ -484,8 +519,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Future<void> _showWeekSelector() async {
     final provider = context.read<TimetableProvider>();
     final availableWeeks = provider.settings.availableWeeks;
-    final currentSemesterWeek =
-        _resolveCurrentSemesterWeek(provider.settings);
+    final currentSemesterWeek = _resolveCurrentSemesterWeek(provider.settings);
     final selectedWeek = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
@@ -533,8 +567,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                               : colorScheme.onSurface,
                           side: isCurrentSemesterWeek
                               ? BorderSide(
-                                  color:
-                                      colorScheme.primary.withValues(alpha: 0.45),
+                                  color: colorScheme.primary
+                                      .withValues(alpha: 0.45),
                                 )
                               : BorderSide(
                                   color: colorScheme.outlineVariant,
@@ -886,9 +920,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
           ),
         );
         break;
-      case 'test':
-        _showTestOptions();
-        break;
       case 'import':
         _importCalendarFile();
         break;
@@ -902,6 +933,16 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Future<void> _checkForAppUpdate() async {
+    if (!kReleaseMode) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _hasAvailableUpdate = true;
+      });
+      return;
+    }
+
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final result = await _updateService.checkForUpdates(
@@ -964,209 +1005,70 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
 
     final content = utf8.decode(bytes, allowMalformed: true);
-    final importedCount =
-        await context.read<TimetableProvider>().importWakeUpCalendar(
-              content,
-              replaceExisting: replaceExisting,
-            );
+    final provider = context.read<TimetableProvider>();
+    final requiredSectionCount =
+        provider.previewWakeUpImportRequiredSectionCount(
+      content,
+      replaceExisting: replaceExisting,
+    );
+    var sectionCapacityExpanded = false;
+    if (requiredSectionCount > provider.settings.sectionCount) {
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('时间模板节次不足'),
+            content: Text(
+              '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入课表需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('自动补齐并导入'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldContinue != true || !mounted) {
+        return;
+      }
+
+      final ensureMessage =
+          await provider.ensureSectionCapacityForImport(requiredSectionCount);
+      if (ensureMessage != null) {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ensureMessage)),
+        );
+        return;
+      }
+      sectionCapacityExpanded = true;
+    }
+
+    final importedCount = await provider.importWakeUpCalendar(
+      content,
+      replaceExisting: replaceExisting,
+    );
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Text(importedCount > 0 ? '已导入 $importedCount 条课程' : '未识别到可导入课程'),
+        content: Text(
+          importedCount > 0
+              ? sectionCapacityExpanded
+                  ? '已自动补齐到第 $requiredSectionCount 节，并导入 $importedCount 条课程'
+                  : '已导入 $importedCount 条课程'
+              : '未识别到可导入课程',
+        ),
       ),
     );
-  }
-
-  void _showTestOptions() async {
-    final now = DateTime.now();
-    const beforeClassDuration = Duration(seconds: 90);
-    const totalCourseDuration = Duration(minutes: 3);
-    const beforeEndDuration = Duration(seconds: 60);
-    const duringClassDuration = Duration(minutes: 2);
-
-    String formatTime(DateTime dt) {
-      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    }
-
-    final provider = context.read<TimetableProvider>();
-    final settings = provider.settings;
-    final selection = provider.getTestLiveActivityCourseSelection(now: now);
-    if (selection == null) {
-      final hasEnabledStage = settings.liveEnableBeforeClass ||
-          settings.liveEnableDuringClass ||
-          settings.liveEnableBeforeEnd;
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(hasEnabledStage ? '当前没有可测试的课程' : '请先开启至少一个超级岛时段'),
-        ),
-      );
-      return;
-    }
-
-    final enableBeforeClass = settings.liveEnableBeforeClass;
-    final enableDuringClass = settings.liveEnableDuringClass;
-    final enableBeforeEnd = settings.liveEnableBeforeEnd;
-
-    late final DateTime start;
-    late final DateTime end;
-    late final Duration endReminderLead;
-    late final LiveActivityStage initialStage;
-    late final String flowSummary;
-
-    if (enableBeforeClass) {
-      initialStage = LiveActivityStage.beforeClass;
-      start = now.add(beforeClassDuration);
-      if (enableDuringClass && enableBeforeEnd) {
-        end = start.add(duringClassDuration + beforeEndDuration);
-        endReminderLead = beforeEndDuration;
-        flowSummary = '上课前 1分30秒 → 上课中 2分钟 → 下课提醒 60秒';
-      } else if (enableDuringClass) {
-        end = start.add(totalCourseDuration);
-        endReminderLead = Duration.zero;
-        flowSummary = '上课前 1分30秒 → 上课中 3分钟';
-      } else if (enableBeforeEnd) {
-        end = start.add(totalCourseDuration);
-        endReminderLead = beforeEndDuration;
-        flowSummary = '上课前 1分30秒 → 3分钟课程 → 下课提醒 60秒';
-      } else {
-        end = start.add(totalCourseDuration);
-        endReminderLead = Duration.zero;
-        flowSummary = '仅测试上课前 1分30秒（课程时长 3分钟）';
-      }
-    } else if (enableDuringClass) {
-      initialStage = LiveActivityStage.duringClass;
-      start = now;
-      if (enableBeforeEnd) {
-        end = start.add(duringClassDuration + beforeEndDuration);
-        endReminderLead = beforeEndDuration;
-        flowSummary = '上课中 2分钟 → 下课提醒 60秒';
-      } else {
-        end = start.add(totalCourseDuration);
-        endReminderLead = Duration.zero;
-        flowSummary = '仅测试上课中 3分钟';
-      }
-    } else {
-      initialStage = LiveActivityStage.beforeEnd;
-      end = now.add(beforeEndDuration);
-      start = end.subtract(totalCourseDuration);
-      endReminderLead = beforeEndDuration;
-      flowSummary = '仅测试下课提醒 60秒（课程总时长 3分钟）';
-    }
-
-    final baseCourse = selection.currentCourse;
-    final previewNextCourse = selection.nextCourse;
-    final resolvedShortName = provider.resolveCourseShortName(baseCourse);
-
-    final testCourse = Course(
-      id: 'test_auto_id',
-      name: baseCourse.name,
-      shortName: resolvedShortName,
-      teacher: baseCourse.teacher,
-      location: baseCourse.location,
-      dayOfWeek: now.weekday,
-      startSection: baseCourse.startSection,
-      endSection: baseCourse.endSection,
-      startWeek: baseCourse.startWeek,
-      endWeek: baseCourse.endWeek,
-      startTime: formatTime(start),
-      endTime: formatTime(end),
-      color: baseCourse.color,
-      note: '此处显示备注。可以在课程编辑页进行设置。',
-    );
-
-    final shortName = (testCourse.shortName ?? '').trim();
-    final islandName = settings.liveUseShortName && shortName.isNotEmpty
-        ? shortName
-        : testCourse.name;
-
-    if (!mounted) return;
-    final shouldSend = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('测试通知预览'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('课程全名：${testCourse.name}'),
-              Text('课程简称：${shortName.isEmpty ? "未设置" : shortName}'),
-              Text('测试流程：$flowSummary'),
-              Text('简称开关：${settings.liveUseShortName ? "已开启" : "已关闭"}'),
-              Text('岛区预期：$islandName'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('发送'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (shouldSend != true || !mounted) {
-      return;
-    }
-
-    try {
-      provider.suspendLiveActivitySyncFor(
-        end.difference(now) + const Duration(seconds: 20),
-      );
-      final progressMilestones = provider.buildLiveProgressMilestones(
-        baseCourse,
-        startAtMillis: start.millisecondsSinceEpoch,
-        endAtMillis: end.millisecondsSinceEpoch,
-      );
-      final progressBreakOffsetsMillis =
-          provider.buildLiveProgressBreakOffsetsMillis(
-        baseCourse,
-        startAtMillis: start.millisecondsSinceEpoch,
-        endAtMillis: end.millisecondsSinceEpoch,
-      );
-      await MiuiLiveActivitiesService().startLiveUpdate(
-        testCourse,
-        previewNextCourse,
-        stage: initialStage.name,
-        startAtMillis: start.millisecondsSinceEpoch,
-        endAtMillis: end.millisecondsSinceEpoch,
-        endReminderLeadMillis: endReminderLead.inMilliseconds,
-        endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
-        promoteDuringClass: settings.livePromoteDuringClass,
-        showNotificationDuringClass: settings.liveShowDuringClassNotification,
-        enableBeforeClass: enableBeforeClass,
-        enableDuringClass: enableDuringClass,
-        enableBeforeEnd: enableBeforeEnd,
-        showCountdown: settings.liveShowCountdown,
-        showCourseNameInIsland: settings.liveShowCourseName,
-        showLocationInIsland: settings.liveShowLocation,
-        useShortNameInIsland: settings.liveUseShortName,
-        hidePrefixText: settings.liveHidePrefixText,
-        progressBreakOffsetsMillis: progressBreakOffsetsMillis,
-        progressMilestoneLabels: progressMilestones
-            .map((milestone) => milestone['label'] as String)
-            .toList(),
-        progressMilestoneTimeTexts: progressMilestones
-            .map((milestone) => milestone['timeText'] as String)
-            .toList(),
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已发送测试通知：$flowSummary')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发送失败: $e')),
-      );
-    }
   }
 }

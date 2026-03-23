@@ -160,19 +160,26 @@ void main() {
     expect(conflictMap.containsKey('odd-course'), isTrue);
     expect(conflictMap.containsKey('all-course'), isTrue);
     expect(conflictMap.containsKey('even-course'), isTrue);
-    expect(conflictMap['odd-course']!.map((course) => course.id), ['all-course']);
-    expect(conflictMap['even-course']!.map((course) => course.id), ['all-course']);
+    expect(
+        conflictMap['odd-course']!.map((course) => course.id), ['all-course']);
+    expect(
+        conflictMap['even-course']!.map((course) => course.id), ['all-course']);
     expect(
       conflictMap['all-course']!.map((course) => course.id).toSet(),
       {'odd-course', 'even-course'},
     );
-    expect(provider.courseConflictMapForWeek(1).containsKey('odd-course'), isTrue);
-    expect(provider.courseConflictMapForWeek(2).containsKey('even-course'), isTrue);
-    expect(provider.courseConflictMapForWeek(1).containsKey('even-course'), isFalse);
-    expect(provider.courseConflictMapForWeek(2).containsKey('odd-course'), isFalse);
+    expect(
+        provider.courseConflictMapForWeek(1).containsKey('odd-course'), isTrue);
+    expect(provider.courseConflictMapForWeek(2).containsKey('even-course'),
+        isTrue);
+    expect(provider.courseConflictMapForWeek(1).containsKey('even-course'),
+        isFalse);
+    expect(provider.courseConflictMapForWeek(2).containsKey('odd-course'),
+        isFalse);
   });
 
-  test('same slot on different non-overlapping weeks is not conflict', () async {
+  test('same slot on different non-overlapping weeks is not conflict',
+      () async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -283,6 +290,36 @@ void main() {
     expect(provider.settings.sectionAt(2).displayText, '08:35-09:20');
   });
 
+  test('ensuring import section capacity duplicates shared active scheme',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final originalProfileId = provider.activeProfile!.id;
+    final originalSchemeId = provider.activeTimeScheme!.id;
+    final originalSchemeName = provider.activeTimeScheme!.name;
+
+    await provider.createProfile(name: '第二课表');
+    expect(provider.activeTimeScheme?.id, originalSchemeId);
+
+    await provider.switchProfile(originalProfileId);
+    final message = await provider.ensureSectionCapacityForImport(11);
+
+    expect(message, isNull);
+    expect(provider.settings.sectionCount, 11);
+    expect(provider.activeTimeScheme?.id, isNot(originalSchemeId));
+    expect(provider.activeTimeScheme?.name, '$originalSchemeName（导入补齐）');
+
+    final secondProfile = provider.profiles.firstWhere(
+      (profile) => profile.name == '第二课表',
+    );
+    expect(secondProfile.settings.activeTimeSchemeId, originalSchemeId);
+    expect(secondProfile.settings.sectionCount, 10);
+  });
+
   test('editing one course syncs shared fields to same-name courses', () async {
     final provider = TimetableProvider(
       autoInitialize: false,
@@ -351,6 +388,7 @@ void main() {
       syncedCourses.map((course) => course.description).toSet(),
       {'课程简介'},
     );
-    expect(syncedCourses.map((course) => course.location).toSet(), {'A101', 'B202'});
+    expect(syncedCourses.map((course) => course.location).toSet(),
+        {'A101', 'B202'});
   });
 }

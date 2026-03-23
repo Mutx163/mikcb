@@ -117,4 +117,28 @@ END:VCALENDAR
     expect(course.isOddWeek, isFalse);
     expect(course.isEvenWeek, isTrue);
   });
+
+  test('keeps full campus and classroom text when description provides location',
+      () {
+    const content = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//YZune//WakeUpSchedule//EN
+BEGIN:VEVENT
+SUMMARY:进阶通用英语(S1110026)
+DTSTART;TZID=/Asia/Shanghai:20260302T082000
+DTEND;TZID=/Asia/Shanghai:20260302T095500
+RRULE:FREQ=WEEKLY;UNTIL=20260308T160000Z;INTERVAL=1
+LOCATION:奉贤校区 一教C104 白玮玮(讲师)(主讲)
+DESCRIPTION:第1 - 2节\\n奉贤校区 一教C104\\n白玮玮(讲师)(主讲)
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final result = IcsImportService().parseWakeUpSchedule(content);
+    final course = result.courses.single;
+
+    expect(course.location, '奉贤校区 一教C104');
+    expect(course.teacher, '白玮玮(讲师)(主讲)');
+  });
 }
