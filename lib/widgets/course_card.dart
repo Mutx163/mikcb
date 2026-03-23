@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
 
 import '../models/course.dart';
+import '../models/timetable_settings.dart';
 
 class CourseCard extends StatelessWidget {
   final Course course;
   final VoidCallback? onTap;
   final bool isCompact;
+  final bool showName;
+  final bool showTeacher;
+  final bool showLocation;
+  final bool showTime;
+  final bool showTimeLabels;
+  final bool showWeeks;
+  final bool showDescription;
+  final CourseCardVerticalAlign verticalAlign;
+  final CourseCardHorizontalAlign horizontalAlign;
   final double compactTitleFontSize;
   final double compactSubtitleFontSize;
   final double compactVerticalPadding;
@@ -17,6 +27,15 @@ class CourseCard extends StatelessWidget {
     required this.course,
     this.onTap,
     this.isCompact = false,
+    this.showName = true,
+    this.showTeacher = true,
+    this.showLocation = true,
+    this.showTime = false,
+    this.showTimeLabels = true,
+    this.showWeeks = false,
+    this.showDescription = false,
+    this.verticalAlign = CourseCardVerticalAlign.center,
+    this.horizontalAlign = CourseCardHorizontalAlign.center,
     this.compactTitleFontSize = 9,
     this.compactSubtitleFontSize = 8,
     this.compactVerticalPadding = 6,
@@ -41,6 +60,10 @@ class CourseCard extends StatelessWidget {
   }
 
   Widget _buildFullCard(Color color) {
+    final detailLines = _buildDetailLines();
+    final titleAlignment = _contentAlignment;
+    final titleTextAlign = _textAlign;
+
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       elevation: 2,
@@ -69,91 +92,49 @@ class CourseCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            course.name,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '第${course.startSection}-${course.endSection}节',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.white,
+                    if (showName)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              course.name,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: titleTextAlign,
+                              softWrap: true,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(Icons.location_on,
-                            size: 16, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            course.location,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
+                          if (showName)
+                            Align(
+                              alignment: titleAlignment,
+                              child: Container(
+                                margin: const EdgeInsets.only(left: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '第${course.startSection}-${course.endSection}节',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.person, size: 16, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            course.teacher,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.access_time,
-                            size: 16, color: Colors.white70),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${course.startTime} - ${course.endTime}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    if (showName && detailLines.isNotEmpty)
+                      const SizedBox(height: 8),
+                    ...detailLines,
                   ],
                 ),
               ),
@@ -171,6 +152,10 @@ class CourseCard extends StatelessWidget {
   }
 
   Widget _buildCompactCard(Color color) {
+    final textLines = _buildCompactTextLines();
+    final crossAxisAlignment = _crossAxisAlignment;
+    final textAlign = _textAlign;
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox.expand(
@@ -195,31 +180,62 @@ class CourseCard extends StatelessWidget {
                 vertical: compactVerticalPadding,
               ),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    course.name,
-                    style: TextStyle(
-                      fontSize: compactTitleFontSize,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      height: 1.15,
+                  Expanded(
+                    child: ClipRect(
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final content = Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: crossAxisAlignment,
+                            children: [
+                              for (var i = 0; i < textLines.length; i++) ...[
+                                if (i > 0) const SizedBox(height: 2),
+                                Text(
+                                  textLines[i].text,
+                                  style: textLines[i].style,
+                                  textAlign: textAlign,
+                                  softWrap: true,
+                                ),
+                              ],
+                            ],
+                          );
+
+                          if (verticalAlign ==
+                              CourseCardVerticalAlign.spaceEvenly) {
+                            return SizedBox(
+                              width: constraints.maxWidth,
+                              height: constraints.maxHeight,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                crossAxisAlignment: crossAxisAlignment,
+                                children: [
+                                  for (final line in textLines)
+                                    Text(
+                                      line.text,
+                                      style: line.style,
+                                      textAlign: textAlign,
+                                      softWrap: true,
+                                    ),
+                                ],
+                              ),
+                            );
+                          }
+
+                          return Align(
+                            alignment: _verticalContentAlignment,
+                            child: OverflowBox(
+                              alignment: _verticalContentAlignment,
+                              minWidth: constraints.maxWidth,
+                              maxWidth: constraints.maxWidth,
+                              minHeight: 0,
+                              maxHeight: double.infinity,
+                              child: content,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    course.location,
-                    style: TextStyle(
-                      fontSize: compactSubtitleFontSize,
-                      color: Colors.white70,
-                      height: 1.1,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -260,4 +276,220 @@ class CourseCard extends StatelessWidget {
       ),
     );
   }
+
+  List<Widget> _buildDetailLines() {
+    final lines = <Widget>[];
+    if (showTeacher && course.teacher.trim().isNotEmpty) {
+      lines.add(_buildDetailRow(Icons.person, course.teacher));
+    }
+    if (showLocation && course.location.trim().isNotEmpty) {
+      if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
+      lines.add(_buildDetailRow(Icons.location_on, course.location));
+    }
+    if (showTime) {
+      if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
+      lines.add(
+        _buildDetailRow(
+          Icons.access_time,
+          _buildTimeText(isCompact: false),
+        ),
+      );
+    }
+    if (showWeeks) {
+      if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
+      lines.add(
+        _buildDetailRow(
+          Icons.date_range_rounded,
+          _buildWeekText(),
+        ),
+      );
+    }
+    if (showDescription &&
+        (course.description?.trim().isNotEmpty ?? false)) {
+      if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
+      lines.add(_buildDetailRow(Icons.notes_rounded, course.description!.trim()));
+    }
+    return lines;
+  }
+
+  Widget _buildDetailRow(IconData icon, String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 16, color: Colors.white70),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 13,
+              color: Colors.white70,
+              height: 1.15,
+            ),
+            softWrap: true,
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<_CompactTextLine> _buildCompactTextLines() {
+    final lines = <_CompactTextLine>[];
+    if (showName) {
+      lines.add(
+        _CompactTextLine(
+          text: course.name,
+          flex: 4,
+          style: TextStyle(
+            fontSize: compactTitleFontSize,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            height: 1.15,
+          ),
+        ),
+      );
+    }
+    if (showTeacher && course.teacher.trim().isNotEmpty) {
+      lines.add(
+        _CompactTextLine(
+          text: course.teacher.trim(),
+          flex: 2,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    if (showLocation && course.location.trim().isNotEmpty) {
+      lines.add(
+        _CompactTextLine(
+          text: course.location.trim(),
+          flex: 2,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    if (showTime) {
+      lines.addAll([
+        _CompactTextLine(
+          text: showTimeLabels ? '上课 ${course.startTime}' : course.startTime,
+          flex: 2,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+        _CompactTextLine(
+          text: showTimeLabels ? '下课 ${course.endTime}' : course.endTime,
+          flex: 2,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+      ]);
+    }
+    if (showWeeks) {
+      lines.add(
+        _CompactTextLine(
+          text: _buildWeekText(),
+          flex: 2,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    if (showDescription &&
+        (course.description?.trim().isNotEmpty ?? false)) {
+      lines.add(
+        _CompactTextLine(
+          text: course.description!.trim(),
+          flex: 3,
+          style: TextStyle(
+            fontSize: compactSubtitleFontSize,
+            color: Colors.white70,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    return lines.isEmpty
+        ? [
+            _CompactTextLine(
+              text: course.name,
+              flex: 1,
+              style: TextStyle(
+                fontSize: compactTitleFontSize,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                height: 1.15,
+              ),
+            ),
+          ]
+        : lines;
+  }
+
+  String _buildWeekText() {
+    final mode = course.isOddWeek
+        ? ' 单周'
+        : course.isEvenWeek
+            ? ' 双周'
+            : '';
+    return '第${course.startWeek}-${course.endWeek}周$mode';
+  }
+
+  String _buildTimeText({required bool isCompact}) {
+    final start = showTimeLabels ? '上课 ${course.startTime}' : course.startTime;
+    final end = showTimeLabels ? '下课 ${course.endTime}' : course.endTime;
+    return isCompact ? '$start\n$end' : '$start\n$end';
+  }
+
+  Alignment get _verticalContentAlignment => switch (verticalAlign) {
+        CourseCardVerticalAlign.top => Alignment.topCenter,
+        CourseCardVerticalAlign.center => Alignment.center,
+        CourseCardVerticalAlign.bottom => Alignment.bottomCenter,
+        CourseCardVerticalAlign.spaceEvenly => Alignment.center,
+      };
+
+  CrossAxisAlignment get _crossAxisAlignment => switch (horizontalAlign) {
+        CourseCardHorizontalAlign.left => CrossAxisAlignment.start,
+        CourseCardHorizontalAlign.center => CrossAxisAlignment.center,
+        CourseCardHorizontalAlign.right => CrossAxisAlignment.end,
+      };
+
+  Alignment get _contentAlignment => switch (horizontalAlign) {
+        CourseCardHorizontalAlign.left => Alignment.centerLeft,
+        CourseCardHorizontalAlign.center => Alignment.center,
+        CourseCardHorizontalAlign.right => Alignment.centerRight,
+      };
+
+  TextAlign get _textAlign => switch (horizontalAlign) {
+        CourseCardHorizontalAlign.left => TextAlign.left,
+        CourseCardHorizontalAlign.center => TextAlign.center,
+        CourseCardHorizontalAlign.right => TextAlign.right,
+      };
+
+}
+
+class _CompactTextLine {
+  final String text;
+  final int flex;
+  final TextStyle style;
+
+  const _CompactTextLine({
+    required this.text,
+    required this.flex,
+    required this.style,
+  });
 }

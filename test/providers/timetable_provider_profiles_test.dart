@@ -282,4 +282,75 @@ void main() {
     expect(provider.settings.sectionCount, 2);
     expect(provider.settings.sectionAt(2).displayText, '08:35-09:20');
   });
+
+  test('editing one course syncs shared fields to same-name courses', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '机械设计',
+        shortName: '机设',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '机械设计',
+        teacher: '张老师',
+        location: 'B202',
+        dayOfWeek: 3,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+
+    await provider.updateCourse(
+      Course(
+        id: 'course-a',
+        name: '机械设计基础',
+        shortName: '机设基',
+        teacher: '李老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        courseNature: CourseNature.elective,
+        description: '课程简介',
+        color: '#FF9800',
+      ),
+      previousSharedName: '机械设计',
+    );
+
+    final syncedCourses =
+        provider.courses.where((course) => course.name == '机械设计基础').toList();
+
+    expect(syncedCourses, hasLength(2));
+    expect(syncedCourses.map((course) => course.teacher).toSet(), {'李老师'});
+    expect(syncedCourses.map((course) => course.shortName).toSet(), {'机设基'});
+    expect(
+      syncedCourses.map((course) => course.courseNature).toSet(),
+      {CourseNature.elective},
+    );
+    expect(
+      syncedCourses.map((course) => course.description).toSet(),
+      {'课程简介'},
+    );
+    expect(syncedCourses.map((course) => course.location).toSet(), {'A101', 'B202'});
+  });
 }

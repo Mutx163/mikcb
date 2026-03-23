@@ -150,6 +150,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                           provider,
                           provider.settings,
                           constraints.maxWidth,
+                          constraints.maxHeight,
                         );
                       },
                     ),
@@ -282,9 +283,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     TimetableSettings settings,
     double availableWidth,
     int week,
+    double sectionHeight,
   ) {
     final dayWidth = (availableWidth - _timeColumnWidth) / 7;
-    final sectionHeight = settings.sectionHeight;
     final conflictMap = settings.showConflictBadgeOnTimetable
         ? provider.courseConflictMapForWeek(week)
         : const <String, List<Course>>{};
@@ -343,6 +344,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   dayCourses,
                   settings,
                   conflictMap,
+                  sectionHeight,
                 ),
               );
             }),
@@ -353,9 +355,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Widget _buildWeekPager(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    double availableWidth,
+      TimetableProvider provider,
+      TimetableSettings settings,
+      double availableWidth,
+      double availableHeight,
   ) {
     return PageView.builder(
       controller: _weekPageController,
@@ -365,7 +368,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
       onPageChanged: (page) => _handleWeekPageChanged(page, provider),
       itemBuilder: (context, index) {
         final week = index + 1;
-        return _buildWeekPage(provider, settings, availableWidth, week);
+        return _buildWeekPage(
+          provider,
+          settings,
+          availableWidth,
+          availableHeight,
+          week,
+        );
       },
     );
   }
@@ -374,17 +383,33 @@ class _TimetableScreenState extends State<TimetableScreen> {
     TimetableProvider provider,
     TimetableSettings settings,
     double availableWidth,
+    double availableHeight,
     int week,
   ) {
+    final bodyAvailableHeight =
+        (availableHeight - 50).clamp(0.0, double.infinity);
+    final sectionHeight = settings.timetableAutoFitSectionHeight &&
+            settings.sectionCount > 0
+        ? bodyAvailableHeight / settings.sectionCount
+        : settings.sectionHeight;
+    final grid = _buildTimetableGrid(
+      provider,
+      settings,
+      availableWidth,
+      week,
+      sectionHeight,
+    );
+
     return Column(
       children: [
         _buildWeekDayHeader(provider, week, settings),
         Expanded(
-          child: SingleChildScrollView(
-            key: PageStorageKey<String>('week-scroll-$week'),
-            child:
-                _buildTimetableGrid(provider, settings, availableWidth, week),
-          ),
+          child: settings.timetableAutoFitSectionHeight
+              ? grid
+              : SingleChildScrollView(
+                  key: PageStorageKey<String>('week-scroll-$week'),
+                  child: grid,
+                ),
         ),
       ],
     );
@@ -395,8 +420,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
     List<Course> courses,
     TimetableSettings settings,
     Map<String, List<Course>> conflictMap,
+    double sectionHeight,
   ) {
-    final sectionHeight = settings.sectionHeight;
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
       alpha: 0.45,
@@ -439,11 +464,20 @@ class _TimetableScreenState extends State<TimetableScreen> {
               topRightBadgeText:
                   conflictMap.containsKey(course.id) ? '冲突' : null,
               isCompact: true,
+              showName: settings.courseCardShowName,
+              showTeacher: settings.courseCardShowTeacher,
+              showLocation: settings.courseCardShowLocation,
+              showTime: settings.courseCardShowTime,
+              showTimeLabels: settings.courseCardShowTimeLabels,
+              showWeeks: settings.courseCardShowWeeks,
+              showDescription: settings.courseCardShowDescription,
+              verticalAlign: settings.courseCardVerticalAlign,
+              horizontalAlign: settings.courseCardHorizontalAlign,
               onTap: () => _editCourse(course),
               compactTitleFontSize: settings.compactFontSize,
               compactSubtitleFontSize:
                   (settings.compactFontSize - 1).clamp(7.0, 14.0),
-              compactVerticalPadding: settings.sectionHeight < 64 ? 4 : 6,
+              compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
             ),
           ),
         );
