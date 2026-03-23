@@ -26,6 +26,13 @@ void main() {
       settings.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.nearest,
     );
+    expect(settings.liveEnableMiuiIslandLabelImage, isFalse);
+    expect(settings.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
+    expect(
+      settings.liveMiuiIslandLabelContent,
+      MiuiIslandLabelContent.courseName,
+    );
+    expect(settings.liveMiuiIslandLabelFontSize, 14);
     expect(
       settings.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -57,6 +64,13 @@ void main() {
       restored.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.nearest,
     );
+    expect(restored.liveEnableMiuiIslandLabelImage, isFalse);
+    expect(restored.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
+    expect(
+      restored.liveMiuiIslandLabelContent,
+      MiuiIslandLabelContent.courseName,
+    );
+    expect(restored.liveMiuiIslandLabelFontSize, 14);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -89,6 +103,10 @@ void main() {
       timetableHideWeekends: true,
       enableHaptics: false,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
+      liveEnableMiuiIslandLabelImage: true,
+      liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
+      liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
+      liveMiuiIslandLabelFontSize: 18,
     );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
@@ -109,6 +127,16 @@ void main() {
       restored.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.total,
     );
+    expect(restored.liveEnableMiuiIslandLabelImage, isTrue);
+    expect(
+      restored.liveMiuiIslandLabelStyle,
+      MiuiIslandLabelStyle.iconAndText,
+    );
+    expect(
+      restored.liveMiuiIslandLabelContent,
+      MiuiIslandLabelContent.courseNameAndLocation,
+    );
+    expect(restored.liveMiuiIslandLabelFontSize, 18);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.spaceEvenly,

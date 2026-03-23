@@ -1023,6 +1023,89 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('小米岛左侧文字图标'),
+                  subtitle: const Text('实验性功能。仅小米手机样式生效，会把课程名生成到左侧图标位。'),
+                  value: _draft.liveEnableMiuiIslandLabelImage,
+                  onChanged: (value) {
+                    setState(() {
+                      _draft = _draft.copyWith(
+                        liveEnableMiuiIslandLabelImage: value,
+                      );
+                    });
+                  },
+                ),
+                if (_draft.liveEnableMiuiIslandLabelImage) ...[
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<MiuiIslandLabelContent>(
+                    value: _draft.liveMiuiIslandLabelContent,
+                    decoration: const InputDecoration(
+                      labelText: '左侧文字内容',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MiuiIslandLabelContent.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          liveMiuiIslandLabelContent: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<MiuiIslandLabelStyle>(
+                    value: _draft.liveMiuiIslandLabelStyle,
+                    decoration: const InputDecoration(
+                      labelText: '左侧图标样式',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MiuiIslandLabelStyle.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          liveMiuiIslandLabelStyle: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '左侧文字大小 ${_draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0)}',
+                  ),
+                  Slider(
+                    value: _draft.liveMiuiIslandLabelFontSize,
+                    min: 10,
+                    max: 32,
+                    divisions: 22,
+                    label:
+                        _draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0),
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          liveMiuiIslandLabelFontSize: value,
+                        );
+                      });
+                    },
+                  ),
+                ],
               ],
             ),
           ),
@@ -1206,6 +1289,10 @@ Future<void> _showTestOptions(BuildContext context) async {
       useShortNameInIsland: settings.liveUseShortName,
       hidePrefixText: settings.liveHidePrefixText,
       duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
+      enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
+      miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
+      miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
+      miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
       progressMilestoneLabels: progressMilestones
           .map((milestone) => milestone['label'] as String)

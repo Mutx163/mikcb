@@ -129,6 +129,11 @@ class MiuiLiveActivitiesService {
     bool hidePrefixText = false,
     LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode =
         LiveDuringClassTimeDisplayMode.nearest,
+    bool enableMiuiIslandLabelImage = false,
+    MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
+    MiuiIslandLabelContent miuiIslandLabelContent =
+        MiuiIslandLabelContent.courseName,
+    double miuiIslandLabelFontSize = 14,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -156,6 +161,10 @@ class MiuiLiveActivitiesService {
         useShortNameInIsland: useShortNameInIsland,
         hidePrefixText: hidePrefixText,
         duringClassTimeDisplayMode: duringClassTimeDisplayMode,
+        enableMiuiIslandLabelImage: enableMiuiIslandLabelImage,
+        miuiIslandLabelStyle: miuiIslandLabelStyle,
+        miuiIslandLabelContent: miuiIslandLabelContent,
+        miuiIslandLabelFontSize: miuiIslandLabelFontSize,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestoneLabels,
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
@@ -196,6 +205,11 @@ class MiuiLiveActivitiesService {
     bool hidePrefixText = false,
     LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode =
         LiveDuringClassTimeDisplayMode.nearest,
+    bool enableMiuiIslandLabelImage = false,
+    MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
+    MiuiIslandLabelContent miuiIslandLabelContent =
+        MiuiIslandLabelContent.courseName,
+    double miuiIslandLabelFontSize = 14,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -223,6 +237,10 @@ class MiuiLiveActivitiesService {
         'useShortName': useShortNameInIsland,
         'hidePrefixText': hidePrefixText,
         'duringClassTimeDisplayMode': duringClassTimeDisplayMode.value,
+        'enableMiuiIslandLabelImage': enableMiuiIslandLabelImage,
+        'miuiIslandLabelStyle': miuiIslandLabelStyle.value,
+        'miuiIslandLabelContent': miuiIslandLabelContent.value,
+        'miuiIslandLabelFontSize': miuiIslandLabelFontSize,
       },
       'currentCourse': {
         'name': currentCourse.name,

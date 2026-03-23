@@ -1581,6 +1581,10 @@ class TimetableProvider with ChangeNotifier {
       if (_currentLiveCourseId == liveActivityKey) {
         return; // 防抖，避免频繁唤起 Android 服务
       }
+      if (_hasVisibleLiveUpdate) {
+        await _liveActivitiesService.stopLiveUpdate();
+        _hasVisibleLiveUpdate = false;
+      }
       _currentLiveCourseId = liveActivityKey;
 
       final displayCourse = liveCourse.copyWith(
@@ -1626,6 +1630,10 @@ class TimetableProvider with ChangeNotifier {
         useShortNameInIsland: settings.liveUseShortName,
         hidePrefixText: settings.liveHidePrefixText,
         duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
+        enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
+        miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
+        miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
+        miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestones
             .map((milestone) => milestone['label'] as String)
