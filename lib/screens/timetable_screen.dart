@@ -68,7 +68,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
     _weekPageController = PageController(
-      initialPage: _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
+      initialPage:
+          _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate();
@@ -286,8 +287,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     double sectionHeight,
   ) {
     final visibleDays = _visibleDayNumbers(settings);
-    final dayWidth =
-        (availableWidth - _timeColumnWidth) / visibleDays.length;
+    final dayWidth = (availableWidth - _timeColumnWidth) / visibleDays.length;
     final conflictMap = settings.showConflictBadgeOnTimetable
         ? provider.courseConflictMapForWeek(week)
         : const <String, List<Course>>{};
@@ -336,10 +336,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Widget _buildWeekPager(
-      TimetableProvider provider,
-      TimetableSettings settings,
-      double availableWidth,
-      double availableHeight,
+    TimetableProvider provider,
+    TimetableSettings settings,
+    double availableWidth,
+    double availableHeight,
   ) {
     return PageView.builder(
       controller: _weekPageController,
@@ -369,10 +369,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ) {
     final bodyAvailableHeight =
         (availableHeight - 50).clamp(0.0, double.infinity);
-    final sectionHeight = settings.timetableAutoFitSectionHeight &&
-            settings.sectionCount > 0
-        ? bodyAvailableHeight / settings.sectionCount
-        : settings.sectionHeight;
+    final sectionHeight =
+        settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
+            ? bodyAvailableHeight / settings.sectionCount
+            : settings.sectionHeight;
     final grid = _buildTimetableGrid(
       provider,
       settings,
@@ -481,40 +481,92 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _showWeekSelector() {
-    showModalBottomSheet(
+  Future<void> _showWeekSelector() async {
+    final provider = context.read<TimetableProvider>();
+    final availableWeeks = provider.settings.availableWeeks;
+    final currentSemesterWeek =
+        _resolveCurrentSemesterWeek(provider.settings);
+    final selectedWeek = await showModalBottomSheet<int>(
       context: context,
-      builder: (context) {
-        final provider = context.read<TimetableProvider>();
-        final availableWeeks = provider.settings.availableWeeks;
-        return Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '选择周次',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: availableWeeks.map((week) {
-                  return ActionChip(
-                    label: Text('第 $week 周'),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _jumpToWeek(provider, week);
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '选择周次',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '共 ${availableWeeks.length} 周',
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 320,
+                  child: GridView.builder(
+                    itemCount: availableWeeks.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 2.1,
+                    ),
+                    itemBuilder: (gridContext, index) {
+                      final week = availableWeeks[index];
+                      final isCurrentSemesterWeek = week == currentSemesterWeek;
+                      final colorScheme = Theme.of(gridContext).colorScheme;
+                      return FilledButton.tonal(
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          backgroundColor: isCurrentSemesterWeek
+                              ? colorScheme.primary.withValues(alpha: 0.12)
+                              : colorScheme.surfaceContainerLowest,
+                          foregroundColor: isCurrentSemesterWeek
+                              ? colorScheme.primary
+                              : colorScheme.onSurface,
+                          side: isCurrentSemesterWeek
+                              ? BorderSide(
+                                  color:
+                                      colorScheme.primary.withValues(alpha: 0.45),
+                                )
+                              : BorderSide(
+                                  color: colorScheme.outlineVariant,
+                                ),
+                        ),
+                        onPressed: () => Navigator.of(sheetContext).pop(week),
+                        child: Text(
+                          '第 $week 周',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontWeight: isCurrentSemesterWeek
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      );
                     },
-                  );
-                }).toList(),
-              ),
-            ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
+
+    if (!mounted || selectedWeek == null) {
+      return;
+    }
+
+    await _jumpToWeek(provider, selectedWeek);
   }
 
   Course? _findCourseForSection(List<Course> courses, int section) {
@@ -618,8 +670,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    final targetWeek =
-        _clampWeek(provider.currentWeek + delta, provider.settings.semesterWeekCount);
+    final targetWeek = _clampWeek(
+        provider.currentWeek + delta, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
     }
@@ -667,7 +719,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
       return;
     }
 
-    final targetWeek = _clampWeek(page + 1, provider.settings.semesterWeekCount);
+    final targetWeek =
+        _clampWeek(page + 1, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
     }
