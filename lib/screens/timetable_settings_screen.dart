@@ -72,6 +72,19 @@ class TimetableSettingsScreen extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     _SettingsEntryTile(
+                      icon: Icons.schedule_rounded,
+                      title: '时间模板',
+                      subtitle: settings.activeTimeSchemeId == null
+                          ? '给当前课表快速切换一套节次时间'
+                          : '当前：${provider.activeTimeScheme?.name ?? "未选择"}',
+                      trailing: Text(
+                        '${provider.activeTimeScheme?.sectionCount ?? settings.sectionCount} 节',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      onTap: () => _openTimeSchemeQuickSwitcher(context),
+                    ),
+                    const Divider(height: 1),
+                    _SettingsEntryTile(
                       icon: Icons.view_week_outlined,
                       title: '布局与节次',
                       subtitle: '节次时间、行高、时间列、周末显示与卡片布局',
@@ -287,6 +300,107 @@ class TimetableSettingsScreen extends StatelessWidget {
     if (provider.currentWeek > selected) {
       await provider.setCurrentWeek(selected);
     }
+  }
+
+  Future<void> _openTimeSchemeQuickSwitcher(BuildContext context) async {
+    final provider = context.read<TimetableProvider>();
+    final activeSchemeId = provider.activeTimeScheme?.id;
+    final selectedSchemeId = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final sheetProvider = sheetContext.watch<TimetableProvider>();
+        final schemes = sheetProvider.timeSchemes;
+        final currentSchemeId = sheetProvider.activeTimeScheme?.id;
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '时间模板',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '直接给当前课表切换作息时间；更复杂的编辑、复制和新建在管理页里。',
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 420),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: schemes.length + 1,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (listContext, index) {
+                      if (index == schemes.length) {
+                        return ListTile(
+                          leading: const Icon(Icons.tune_rounded),
+                          title: const Text('管理时间模板'),
+                          subtitle: const Text('新建、复制、编辑节次与删除模板'),
+                          trailing: const Icon(Icons.chevron_right_rounded),
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop('__manage__'),
+                        );
+                      }
+
+                      final scheme = schemes[index];
+                      final isCurrent = scheme.id == currentSchemeId;
+                      return ListTile(
+                        leading: Icon(
+                          isCurrent
+                              ? Icons.check_circle_rounded
+                              : Icons.schedule_outlined,
+                        ),
+                        title: Text(scheme.name),
+                        subtitle: Text(
+                          '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
+                        ),
+                        trailing: isCurrent
+                            ? const Text('当前')
+                            : const Icon(Icons.chevron_right_rounded),
+                        onTap: () => Navigator.of(sheetContext).pop(scheme.id),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!context.mounted || selectedSchemeId == null) {
+      return;
+    }
+
+    if (selectedSchemeId == '__manage__') {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const TimeSchemeManagementScreen(),
+        ),
+      );
+      return;
+    }
+
+    if (selectedSchemeId == activeSchemeId) {
+      return;
+    }
+
+    await provider.applyTimeScheme(selectedSchemeId);
+    if (!context.mounted) {
+      return;
+    }
+    final nextScheme = provider.activeTimeScheme;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已应用时间模板：${nextScheme?.name ?? "未命名模板"}')),
+    );
   }
 }
 
@@ -648,8 +762,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('上课前提醒'),
-                  subtitle:
-                      Text('在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出；不受下面“课中 / 临近下课提醒”开关影响'),
+                  subtitle: Text(
+                      '在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出；不受下面“课中 / 临近下课提醒”开关影响'),
                   value: _draft.liveEnableBeforeClass,
                   onChanged: (value) {
                     setState(() {
@@ -672,10 +786,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('提醒启动时机'),
-                    subtitle: Text(
-                        _draft.liveClassReminderStartMinutes == 0
-                            ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                            : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'),
+                    subtitle: Text(_draft.liveClassReminderStartMinutes == 0
+                        ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                        : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
                       items: const [
@@ -709,7 +822,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('支持展示超级岛/灵动岛'),
-                  subtitle: const Text('关闭后不会再尝试触发系统超级岛；该能力需 HyperOS 3.0.300 及以上支持'),
+                  subtitle:
+                      const Text('关闭后不会再尝试触发系统超级岛；该能力需 HyperOS 3.0.300 及以上支持'),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) {
                     setState(() {

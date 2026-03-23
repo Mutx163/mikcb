@@ -69,14 +69,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     width: 84,
                     height: 84,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF2563EB),
-                          Color(0xFF0891B2),
-                        ],
-                      ),
+                      color: colorScheme.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -86,10 +79,19 @@ class _AboutScreenState extends State<AboutScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.calendar_view_week_rounded,
-                      color: Colors.white,
-                      size: 42,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24),
+                      child: Image.asset(
+                        'assets/branding/launcher_icon.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.calendar_view_week_rounded,
+                            color: colorScheme.primary,
+                            size: 42,
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -133,7 +135,8 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
-                  const _AboutBullet(text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示'),
+                  const _AboutBullet(
+                      text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示'),
                   const _AboutBullet(text: '支持主题色、课表背景和卡片样式自定义'),
                 ],
               ),
@@ -322,9 +325,30 @@ class _AboutScreenState extends State<AboutScreen> {
                           color: colorScheme.surfaceContainerLowest,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Text(
-                          _trimReleaseBody(release!.body),
-                          style: theme.textTheme.bodyMedium,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '本次更新日志',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 220,
+                              child: Scrollbar(
+                                thumbVisibility: true,
+                                child: SingleChildScrollView(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: SelectableText(
+                                    release!.body.trim(),
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
@@ -629,14 +653,6 @@ class _AboutScreenState extends State<AboutScreen> {
     final hour = dateTime.hour.toString().padLeft(2, '0');
     final minute = dateTime.minute.toString().padLeft(2, '0');
     return '$year-$month-$day $hour:$minute';
-  }
-
-  String _trimReleaseBody(String body) {
-    final compact = body.trim();
-    if (compact.length <= 220) {
-      return compact;
-    }
-    return '${compact.substring(0, 220)}...';
   }
 
   String? _normalizeMirrorUrlPrefix(String input) {
