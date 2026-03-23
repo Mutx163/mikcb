@@ -921,6 +921,20 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('自动充满屏幕高度'),
+                    subtitle: const Text('开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'),
+                    value: _draft.timetableAutoFitSectionHeight,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          timetableAutoFitSectionHeight: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   Text('课表行高 ${_draft.sectionHeight.toStringAsFixed(0)}'),
                   Slider(
                     value: _draft.sectionHeight,
@@ -928,11 +942,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     max: 92,
                     divisions: 11,
                     label: _draft.sectionHeight.toStringAsFixed(0),
-                    onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(sectionHeight: value);
-                      });
-                    },
+                    onChanged: _draft.timetableAutoFitSectionHeight
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _draft = _draft.copyWith(sectionHeight: value);
+                            });
+                          },
                   ),
                   const SizedBox(height: 8),
                   Text('紧凑字号 ${_draft.compactFontSize.toStringAsFixed(1)}'),
@@ -945,6 +961,154 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     onChanged: (value) {
                       setState(() {
                         _draft = _draft.copyWith(compactFontSize: value);
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '课程卡片显示',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '默认显示课程名、老师和教室；其他信息可按课表自由开关组合。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示课程名'),
+                    value: _draft.courseCardShowName,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(courseCardShowName: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示老师'),
+                    value: _draft.courseCardShowTeacher,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(courseCardShowTeacher: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示教室'),
+                    value: _draft.courseCardShowLocation,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(courseCardShowLocation: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示时间'),
+                    value: _draft.courseCardShowTime,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(courseCardShowTime: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示上课/下课字样'),
+                    subtitle: const Text('关闭后仅显示时间点，不显示“上课”“下课”文字。'),
+                    value: _draft.courseCardShowTimeLabels,
+                    onChanged: _draft.courseCardShowTime
+                        ? (value) {
+                            setState(() {
+                              _draft = _draft.copyWith(
+                                courseCardShowTimeLabels: value,
+                              );
+                            });
+                          }
+                        : null,
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示周数'),
+                    subtitle: const Text('例如第 1-16 周、单双周'),
+                    value: _draft.courseCardShowWeeks,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(courseCardShowWeeks: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示课程简介'),
+                    subtitle: const Text('默认关闭，空间不足时会最先被压缩'),
+                    value: _draft.courseCardShowDescription,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          courseCardShowDescription: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<CourseCardVerticalAlign>(
+                    value: _draft.courseCardVerticalAlign,
+                    decoration: const InputDecoration(
+                      labelText: '垂直排版',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: CourseCardVerticalAlign.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          courseCardVerticalAlign: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<CourseCardHorizontalAlign>(
+                    value: _draft.courseCardHorizontalAlign,
+                    decoration: const InputDecoration(
+                      labelText: '水平排版',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: CourseCardHorizontalAlign.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          courseCardHorizontalAlign: value,
+                        );
                       });
                     },
                   ),

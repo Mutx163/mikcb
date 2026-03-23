@@ -27,7 +27,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   final _shortNameController = TextEditingController();
   final _teacherController = TextEditingController();
   final _locationController = TextEditingController();
-  final _noteController = TextEditingController();
+  final _descriptionController = TextEditingController();
 
   int _selectedDayOfWeek = 1;
   int _startSection = 1;
@@ -36,6 +36,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   int _endWeek = 16;
   bool _isOddWeek = false;
   bool _isEvenWeek = false;
+  CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
 
   final List<String> _weekDays = const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
@@ -69,7 +70,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _shortNameController.dispose();
     _teacherController.dispose();
     _locationController.dispose();
-    _noteController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -159,7 +160,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _shortNameController.text = course.shortName ?? '';
     _teacherController.text = course.teacher;
     _locationController.text = course.location;
-    _noteController.text = course.note ?? '';
+    _descriptionController.text = course.description ?? course.note ?? '';
     _selectedDayOfWeek = course.dayOfWeek;
     _startSection = course.startSection;
     _endSection = course.endSection;
@@ -167,6 +168,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _endWeek = course.endWeek;
     _isOddWeek = course.isOddWeek;
     _isEvenWeek = course.isEvenWeek;
+    _courseNature = course.courseNature;
     _selectedColor = course.color;
   }
 
@@ -207,8 +209,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '基本信息',
+              '共享信息',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '课程名、简称、老师、课程简介、课程性质和颜色会同步到同名课程的其他排课。',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -245,21 +252,37 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _locationController,
+            DropdownButtonFormField<CourseNature>(
+              value: _courseNature,
               decoration: const InputDecoration(
-                labelText: '上课地点',
+                labelText: '课程性质',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
+                prefixIcon: Icon(Icons.bookmark_added_outlined),
               ),
+              items: CourseNature.values
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item,
+                      child: Text(item.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _courseNature = value;
+                });
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
-              controller: _noteController,
+              controller: _descriptionController,
               decoration: const InputDecoration(
-                labelText: '备注 (可选)',
+                labelText: '课程简介 (可选)',
                 border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.note_alt),
+                prefixIcon: Icon(Icons.notes_rounded),
               ),
               maxLines: null,
             ),
@@ -281,8 +304,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              '上课时间',
+              '当前排课',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '这里的星期、节次、教室、周次和单双周只影响当前这一条排课。',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
@@ -359,6 +387,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             Text(
               '时间: $startTime - $endTime',
               style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _locationController,
+              decoration: const InputDecoration(
+                labelText: '上课地点',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on),
+              ),
             ),
           ],
         ),
@@ -527,14 +564,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       endWeek: _endWeek,
       isOddWeek: _isOddWeek,
       isEvenWeek: _isEvenWeek,
-      note: _noteController.text.isEmpty ? null : _noteController.text,
+      courseNature: _courseNature,
+      description: _descriptionController.text.isEmpty
+          ? null
+          : _descriptionController.text,
     );
 
     final provider = context.read<TimetableProvider>();
     if (widget.course == null) {
       provider.addCourse(course);
     } else {
-      provider.updateCourse(course);
+      provider.updateCourse(
+        course,
+        previousSharedName: widget.course!.name,
+      );
     }
 
     Navigator.pop(context);

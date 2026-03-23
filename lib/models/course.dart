@@ -1,5 +1,29 @@
 import 'dart:convert';
 
+enum CourseNature {
+  required,
+  elective,
+}
+
+extension CourseNatureX on CourseNature {
+  String get value => switch (this) {
+        CourseNature.required => 'required',
+        CourseNature.elective => 'elective',
+      };
+
+  String get label => switch (this) {
+        CourseNature.required => '必修',
+        CourseNature.elective => '选修',
+      };
+
+  static CourseNature fromValue(String? value) {
+    return CourseNature.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => CourseNature.required,
+    );
+  }
+}
+
 class Course {
   final String id;
   final String name;
@@ -16,6 +40,8 @@ class Course {
   final int endWeek; // 结束周次
   final bool isOddWeek; // 是否单周
   final bool isEvenWeek; // 是否双周
+  final CourseNature courseNature; // 课程性质
+  final String? description; // 课程简介（同名课程共享）
   final String? note; // 备注/备忘录
 
   Course({
@@ -34,6 +60,8 @@ class Course {
     this.endWeek = 16,
     this.isOddWeek = false,
     this.isEvenWeek = false,
+    this.courseNature = CourseNature.required,
+    this.description,
     this.note,
   });
 
@@ -54,6 +82,8 @@ class Course {
       'endWeek': endWeek,
       'isOddWeek': isOddWeek,
       'isEvenWeek': isEvenWeek,
+      'courseNature': courseNature.value,
+      'description': description,
       'note': note,
     };
   }
@@ -75,6 +105,8 @@ class Course {
       endWeek: json['endWeek'] as int? ?? 16,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
+      courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
+      description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
     );
   }
@@ -101,6 +133,8 @@ class Course {
     int? endWeek,
     bool? isOddWeek,
     bool? isEvenWeek,
+    CourseNature? courseNature,
+    String? description,
     String? note,
   }) {
     return Course(
@@ -119,6 +153,8 @@ class Course {
       endWeek: endWeek ?? this.endWeek,
       isOddWeek: isOddWeek ?? this.isOddWeek,
       isEvenWeek: isEvenWeek ?? this.isEvenWeek,
+      courseNature: courseNature ?? this.courseNature,
+      description: description ?? this.description,
       note: note ?? this.note,
     );
   }

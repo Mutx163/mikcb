@@ -643,34 +643,60 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> addCourse(Course course) async {
-    _courses.add(course);
+    final normalizedCourse = _normalizeCourse(course);
+    final existingSharedCourse = _courses.cast<Course?>().firstWhere(
+          (item) => item != null && _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
+          orElse: () => null,
+        );
+    final preparedCourse = existingSharedCourse == null
+        ? normalizedCourse
+        : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
+
+    _courses.add(preparedCourse);
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
       name: 'course_created',
       parameters: {
-        'day_of_week': course.dayOfWeek,
-        'section_count': course.sectionCount,
-        'has_short_name': course.shortName?.isNotEmpty == true ? 1 : 0,
+        'day_of_week': preparedCourse.dayOfWeek,
+        'section_count': preparedCourse.sectionCount,
+        'has_short_name': preparedCourse.shortName?.isNotEmpty == true ? 1 : 0,
       },
     );
     _updateLiveActivity();
   }
 
-  Future<void> updateCourse(Course course) async {
+  Future<void> updateCourse(Course course, {String? previousSharedName}) async {
     final index = _courses.indexWhere((c) => c.id == course.id);
     if (index != -1) {
-      _courses[index] = course;
+      final normalizedCourse = _normalizeCourse(course);
+      final originalCourse = _courses[index];
+      final previousKey =
+          _sharedCourseKeyFromName(previousSharedName ?? originalCourse.name);
+      final newKey = _sharedCourseKey(normalizedCourse);
+
+      _courses[index] = normalizedCourse;
+      for (var i = 0; i < _courses.length; i++) {
+        if (i == index) {
+          continue;
+        }
+        final current = _courses[i];
+        final currentKey = _sharedCourseKey(current);
+        if (currentKey == previousKey || currentKey == newKey) {
+          _courses[i] = _applySharedCourseFields(current, normalizedCourse);
+        }
+      }
+
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
       notifyListeners();
       _analytics.logEventLater(
         name: 'course_updated',
         parameters: {
-          'day_of_week': course.dayOfWeek,
-          'section_count': course.sectionCount,
-          'has_short_name': course.shortName?.isNotEmpty == true ? 1 : 0,
+          'day_of_week': normalizedCourse.dayOfWeek,
+          'section_count': normalizedCourse.sectionCount,
+          'has_short_name': normalizedCourse.shortName?.isNotEmpty == true ? 1 : 0,
         },
       );
       _updateLiveActivity();
@@ -950,6 +976,36 @@ class TimetableProvider with ChangeNotifier {
 
     return false;
   }
+
+  Course _normalizeCourse(Course course) {
+    return course.copyWith(
+      name: course.name.trim(),
+      shortName: course.shortName?.trim().isEmpty == true
+          ? null
+          : course.shortName?.trim(),
+      teacher: course.teacher.trim(),
+      location: course.location.trim(),
+      description: course.description?.trim().isEmpty == true
+          ? null
+          : course.description?.trim(),
+      note: course.note?.trim().isEmpty == true ? null : course.note?.trim(),
+    );
+  }
+
+  Course _applySharedCourseFields(Course target, Course source) {
+    return target.copyWith(
+      name: source.name,
+      shortName: source.shortName,
+      teacher: source.teacher,
+      color: source.color,
+      courseNature: source.courseNature,
+      description: source.description,
+    );
+  }
+
+  String _sharedCourseKey(Course course) => _sharedCourseKeyFromName(course.name);
+
+  String _sharedCourseKeyFromName(String name) => name.trim().toLowerCase();
 
   int _calculateWeekForDate(DateTime date) {
     final semesterStart = _settings.semesterStartDate;

@@ -5,6 +5,63 @@ enum AppUpdateDownloadSource {
   mirror,
 }
 
+enum CourseCardVerticalAlign {
+  top,
+  center,
+  bottom,
+  spaceEvenly,
+}
+
+extension CourseCardVerticalAlignX on CourseCardVerticalAlign {
+  String get value => switch (this) {
+        CourseCardVerticalAlign.top => 'top',
+        CourseCardVerticalAlign.center => 'center',
+        CourseCardVerticalAlign.bottom => 'bottom',
+        CourseCardVerticalAlign.spaceEvenly => 'space_evenly',
+      };
+
+  String get label => switch (this) {
+        CourseCardVerticalAlign.top => '顶部对齐',
+        CourseCardVerticalAlign.center => '垂直居中',
+        CourseCardVerticalAlign.bottom => '底部对齐',
+        CourseCardVerticalAlign.spaceEvenly => '上下均布',
+      };
+
+  static CourseCardVerticalAlign fromValue(String? value) {
+    return CourseCardVerticalAlign.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => CourseCardVerticalAlign.center,
+    );
+  }
+}
+
+enum CourseCardHorizontalAlign {
+  left,
+  center,
+  right,
+}
+
+extension CourseCardHorizontalAlignX on CourseCardHorizontalAlign {
+  String get value => switch (this) {
+        CourseCardHorizontalAlign.left => 'left',
+        CourseCardHorizontalAlign.center => 'center',
+        CourseCardHorizontalAlign.right => 'right',
+      };
+
+  String get label => switch (this) {
+        CourseCardHorizontalAlign.left => '居左',
+        CourseCardHorizontalAlign.center => '居中',
+        CourseCardHorizontalAlign.right => '居右',
+      };
+
+  static CourseCardHorizontalAlign fromValue(String? value) {
+    return CourseCardHorizontalAlign.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => CourseCardHorizontalAlign.center,
+    );
+  }
+}
+
 extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   String get value => switch (this) {
         AppUpdateDownloadSource.original => 'original',
@@ -65,9 +122,19 @@ class TimetableSettings {
   final String? activeTimeSchemeId;
   final double sectionHeight;
   final double compactFontSize;
+  final bool timetableAutoFitSectionHeight;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
   final bool showConflictBadgeOnTimetable;
+  final bool courseCardShowName;
+  final bool courseCardShowTeacher;
+  final bool courseCardShowLocation;
+  final bool courseCardShowTime;
+  final bool courseCardShowTimeLabels;
+  final bool courseCardShowWeeks;
+  final bool courseCardShowDescription;
+  final CourseCardVerticalAlign courseCardVerticalAlign;
+  final CourseCardHorizontalAlign courseCardHorizontalAlign;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -93,9 +160,19 @@ class TimetableSettings {
     this.activeTimeSchemeId,
     this.sectionHeight = 68,
     this.compactFontSize = 9,
+    this.timetableAutoFitSectionHeight = false,
     this.semesterWeekCount = 20,
     this.semesterStartDate,
     this.showConflictBadgeOnTimetable = true,
+    this.courseCardShowName = true,
+    this.courseCardShowTeacher = true,
+    this.courseCardShowLocation = true,
+    this.courseCardShowTime = false,
+    this.courseCardShowTimeLabels = true,
+    this.courseCardShowWeeks = false,
+    this.courseCardShowDescription = false,
+    this.courseCardVerticalAlign = CourseCardVerticalAlign.center,
+    this.courseCardHorizontalAlign = CourseCardHorizontalAlign.center,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -134,9 +211,19 @@ class TimetableSettings {
       activeTimeSchemeId: null,
       sectionHeight: 68,
       compactFontSize: 9,
+      timetableAutoFitSectionHeight: false,
       semesterWeekCount: 20,
       semesterStartDate: null,
       showConflictBadgeOnTimetable: true,
+      courseCardShowName: true,
+      courseCardShowTeacher: true,
+      courseCardShowLocation: true,
+      courseCardShowTime: false,
+      courseCardShowTimeLabels: true,
+      courseCardShowWeeks: false,
+      courseCardShowDescription: false,
+      courseCardVerticalAlign: CourseCardVerticalAlign.center,
+      courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
@@ -165,9 +252,19 @@ class TimetableSettings {
       'activeTimeSchemeId': activeTimeSchemeId,
       'sectionHeight': sectionHeight,
       'compactFontSize': compactFontSize,
+      'timetableAutoFitSectionHeight': timetableAutoFitSectionHeight,
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
       'showConflictBadgeOnTimetable': showConflictBadgeOnTimetable,
+      'courseCardShowName': courseCardShowName,
+      'courseCardShowTeacher': courseCardShowTeacher,
+      'courseCardShowLocation': courseCardShowLocation,
+      'courseCardShowTime': courseCardShowTime,
+      'courseCardShowTimeLabels': courseCardShowTimeLabels,
+      'courseCardShowWeeks': courseCardShowWeeks,
+      'courseCardShowDescription': courseCardShowDescription,
+      'courseCardVerticalAlign': courseCardVerticalAlign.value,
+      'courseCardHorizontalAlign': courseCardHorizontalAlign.value,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -204,6 +301,8 @@ class TimetableSettings {
       activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
       compactFontSize: (json['compactFontSize'] as num?)?.toDouble() ?? 9,
+      timetableAutoFitSectionHeight:
+          json['timetableAutoFitSectionHeight'] as bool? ?? false,
       semesterWeekCount: (json['semesterWeekCount'] as num?)?.toInt() ?? 20,
       semesterStartDate: (json['semesterStartDate'] as num?) != null
           ? DateTime.fromMillisecondsSinceEpoch(
@@ -212,6 +311,21 @@ class TimetableSettings {
           : null,
       showConflictBadgeOnTimetable:
           json['showConflictBadgeOnTimetable'] as bool? ?? true,
+      courseCardShowName: json['courseCardShowName'] as bool? ?? true,
+      courseCardShowTeacher: json['courseCardShowTeacher'] as bool? ?? true,
+      courseCardShowLocation: json['courseCardShowLocation'] as bool? ?? true,
+      courseCardShowTime: json['courseCardShowTime'] as bool? ?? false,
+      courseCardShowTimeLabels:
+          json['courseCardShowTimeLabels'] as bool? ?? true,
+      courseCardShowWeeks: json['courseCardShowWeeks'] as bool? ?? false,
+      courseCardShowDescription:
+          json['courseCardShowDescription'] as bool? ?? false,
+      courseCardVerticalAlign: CourseCardVerticalAlignX.fromValue(
+        json['courseCardVerticalAlign'] as String?,
+      ),
+      courseCardHorizontalAlign: CourseCardHorizontalAlignX.fromValue(
+        json['courseCardHorizontalAlign'] as String?,
+      ),
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -256,9 +370,19 @@ class TimetableSettings {
     String? activeTimeSchemeId,
     double? sectionHeight,
     double? compactFontSize,
+    bool? timetableAutoFitSectionHeight,
     int? semesterWeekCount,
     DateTime? semesterStartDate,
     bool? showConflictBadgeOnTimetable,
+    bool? courseCardShowName,
+    bool? courseCardShowTeacher,
+    bool? courseCardShowLocation,
+    bool? courseCardShowTime,
+    bool? courseCardShowTimeLabels,
+    bool? courseCardShowWeeks,
+    bool? courseCardShowDescription,
+    CourseCardVerticalAlign? courseCardVerticalAlign,
+    CourseCardHorizontalAlign? courseCardHorizontalAlign,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -284,10 +408,27 @@ class TimetableSettings {
       activeTimeSchemeId: activeTimeSchemeId ?? this.activeTimeSchemeId,
       sectionHeight: sectionHeight ?? this.sectionHeight,
       compactFontSize: compactFontSize ?? this.compactFontSize,
+      timetableAutoFitSectionHeight:
+          timetableAutoFitSectionHeight ?? this.timetableAutoFitSectionHeight,
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
       showConflictBadgeOnTimetable:
           showConflictBadgeOnTimetable ?? this.showConflictBadgeOnTimetable,
+      courseCardShowName: courseCardShowName ?? this.courseCardShowName,
+      courseCardShowTeacher:
+          courseCardShowTeacher ?? this.courseCardShowTeacher,
+      courseCardShowLocation:
+          courseCardShowLocation ?? this.courseCardShowLocation,
+      courseCardShowTime: courseCardShowTime ?? this.courseCardShowTime,
+      courseCardShowTimeLabels:
+          courseCardShowTimeLabels ?? this.courseCardShowTimeLabels,
+      courseCardShowWeeks: courseCardShowWeeks ?? this.courseCardShowWeeks,
+      courseCardShowDescription:
+          courseCardShowDescription ?? this.courseCardShowDescription,
+      courseCardVerticalAlign:
+          courseCardVerticalAlign ?? this.courseCardVerticalAlign,
+      courseCardHorizontalAlign:
+          courseCardHorizontalAlign ?? this.courseCardHorizontalAlign,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
