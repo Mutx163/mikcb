@@ -7,9 +7,11 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 
 class MiuiLiveActivitiesService {
-  static const MethodChannel _channel = MethodChannel('com.example.university_timetable/miui_live');
-  
-  static final MiuiLiveActivitiesService _instance = MiuiLiveActivitiesService._internal();
+  static const MethodChannel _channel =
+      MethodChannel('com.example.university_timetable/miui_live');
+
+  static final MiuiLiveActivitiesService _instance =
+      MiuiLiveActivitiesService._internal();
   factory MiuiLiveActivitiesService() => _instance;
   MiuiLiveActivitiesService._internal();
 
@@ -28,7 +30,8 @@ class MiuiLiveActivitiesService {
   Future<bool> requestNotificationPermission() async {
     if (!Platform.isAndroid) return true;
     try {
-      final result = await _channel.invokeMethod('requestNotificationPermission');
+      final result =
+          await _channel.invokeMethod('requestNotificationPermission');
       return result == true;
     } catch (e) {
       return false;
@@ -96,7 +99,8 @@ class MiuiLiveActivitiesService {
   Future<bool> isIgnoringBatteryOptimizations() async {
     if (!Platform.isAndroid) return true;
     try {
-      final result = await _channel.invokeMethod('isIgnoringBatteryOptimizations');
+      final result =
+          await _channel.invokeMethod('isIgnoringBatteryOptimizations');
       return result == true;
     } catch (e) {
       return false;
@@ -123,6 +127,8 @@ class MiuiLiveActivitiesService {
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
     bool hidePrefixText = false,
+    LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode =
+        LiveDuringClassTimeDisplayMode.nearest,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -149,6 +155,7 @@ class MiuiLiveActivitiesService {
         showLocationInIsland: showLocationInIsland,
         useShortNameInIsland: useShortNameInIsland,
         hidePrefixText: hidePrefixText,
+        duringClassTimeDisplayMode: duringClassTimeDisplayMode,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestoneLabels,
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
@@ -187,6 +194,8 @@ class MiuiLiveActivitiesService {
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
     bool hidePrefixText = false,
+    LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode =
+        LiveDuringClassTimeDisplayMode.nearest,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -213,6 +222,7 @@ class MiuiLiveActivitiesService {
         'showLocation': showLocationInIsland,
         'useShortName': useShortNameInIsland,
         'hidePrefixText': hidePrefixText,
+        'duringClassTimeDisplayMode': duringClassTimeDisplayMode.value,
       },
       'currentCourse': {
         'name': currentCourse.name,

@@ -339,6 +339,7 @@ class LiveUpdateService : Service() {
     private var showLocationInIsland = true
     private var useShortNameInIsland = false
     private var hidePrefixText = false
+    private var duringClassTimeDisplayMode = "nearest"
     private var startAtMillis = 0L
     private var endAtMillis = 0L
     private var endReminderLeadMillis = 600_000L
@@ -374,6 +375,8 @@ class LiveUpdateService : Service() {
         showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
         useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
         hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
+        duringClassTimeDisplayMode =
+            intent?.getStringExtra("duringClassTimeDisplayMode") ?: "nearest"
         endReminderLeadMillis =
             intent?.getLongExtra("endReminderLeadMillis", 600_000L)
                 ?.coerceAtLeast(0L)
@@ -724,8 +727,7 @@ class LiveUpdateService : Service() {
 
         val promotedContentText = if (isDuringClass && duringClassProgress != null) {
             listOf(
-                duringClassProgress.nextMilestoneDisplayText,
-                duringClassProgress.finalDismissDisplayText,
+                duringClassProgress.compactDisplayText,
                 location.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
@@ -960,6 +962,7 @@ class LiveUpdateService : Service() {
         val progressPercent: Int,
         val nextMilestoneDisplayText: String?,
         val finalDismissDisplayText: String,
+        val compactDisplayText: String,
         val criticalTimeText: String,
         val breakPointUnits: List<Int>,
     )
@@ -1000,20 +1003,23 @@ class LiveUpdateService : Service() {
                 null
             }
         val finalDismissDisplayText = "整节下课 $finalDismissRemainingText"
-        val criticalTimeText =
-            if (nextMilestoneRemainingText != null &&
-                nextMilestoneRemainingText != finalDismissRemainingText
-            ) {
-                "$nextMilestoneRemainingText / $finalDismissRemainingText"
-            } else {
-                finalDismissRemainingText
-            }
+        val compactDisplayText = if (duringClassTimeDisplayMode == "total") {
+            finalDismissDisplayText
+        } else {
+            nextMilestoneDisplayText ?: finalDismissDisplayText
+        }
+        val criticalTimeText = if (duringClassTimeDisplayMode == "total") {
+            finalDismissRemainingText
+        } else {
+            nextMilestoneRemainingText ?: finalDismissRemainingText
+        }
         return DuringClassProgress(
             progressMax = progressMax,
             progressUnits = progressUnits,
             progressPercent = progressPercent,
             nextMilestoneDisplayText = nextMilestoneDisplayText,
             finalDismissDisplayText = finalDismissDisplayText,
+            compactDisplayText = compactDisplayText,
             criticalTimeText = criticalTimeText,
             breakPointUnits = breakPointUnits,
         )

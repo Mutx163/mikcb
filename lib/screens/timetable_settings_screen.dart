@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/miui_live_activities_service.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 import 'time_scheme_management_screen.dart';
@@ -308,67 +310,79 @@ class TimetableSettingsScreen extends StatelessWidget {
     final selectedSchemeId = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) {
         final sheetProvider = sheetContext.watch<TimetableProvider>();
         final schemes = sheetProvider.timeSchemes;
         final currentSchemeId = sheetProvider.activeTimeScheme?.id;
+        final maxSheetHeight = MediaQuery.sizeOf(sheetContext).height * 0.72;
 
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '时间模板',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '直接给当前课表切换作息时间；更复杂的编辑、复制和新建在管理页里。',
-                  style: Theme.of(sheetContext).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 12),
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxHeight: 420),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    itemCount: schemes.length + 1,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
-                    itemBuilder: (listContext, index) {
-                      if (index == schemes.length) {
-                        return ListTile(
-                          leading: const Icon(Icons.tune_rounded),
-                          title: const Text('管理时间模板'),
-                          subtitle: const Text('新建、复制、编辑节次与删除模板'),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () =>
-                              Navigator.of(sheetContext).pop('__manage__'),
-                        );
-                      }
-
-                      final scheme = schemes[index];
-                      final isCurrent = scheme.id == currentSchemeId;
-                      return ListTile(
-                        leading: Icon(
-                          isCurrent
-                              ? Icons.check_circle_rounded
-                              : Icons.schedule_outlined,
-                        ),
-                        title: Text(scheme.name),
-                        subtitle: Text(
-                          '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
-                        ),
-                        trailing: isCurrent
-                            ? const Text('当前')
-                            : const Icon(Icons.chevron_right_rounded),
-                        onTap: () => Navigator.of(sheetContext).pop(scheme.id),
-                      );
-                    },
+          child: SizedBox(
+            height: maxSheetHeight,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '时间模板',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '直接给当前课表切换作息时间；更复杂的编辑、复制和新建在管理页里。',
+                    style: Theme.of(sheetContext).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  if (currentSchemeId != null) ...[
+                    FilledButton.tonalIcon(
+                      onPressed: () =>
+                          Navigator.of(sheetContext).pop('__edit_current__'),
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('编辑当前模板'),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  Expanded(
+                    child: ListView.separated(
+                      itemCount: schemes.length + 1,
+                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      itemBuilder: (listContext, index) {
+                        if (index == schemes.length) {
+                          return ListTile(
+                            leading: const Icon(Icons.tune_rounded),
+                            title: const Text('管理时间模板'),
+                            subtitle: const Text('新建、复制、编辑节次与删除模板'),
+                            trailing: const Icon(Icons.chevron_right_rounded),
+                            onTap: () =>
+                                Navigator.of(sheetContext).pop('__manage__'),
+                          );
+                        }
+
+                        final scheme = schemes[index];
+                        final isCurrent = scheme.id == currentSchemeId;
+                        return ListTile(
+                          leading: Icon(
+                            isCurrent
+                                ? Icons.check_circle_rounded
+                                : Icons.schedule_outlined,
+                          ),
+                          title: Text(scheme.name),
+                          subtitle: Text(
+                            '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
+                          ),
+                          trailing: isCurrent
+                              ? const Text('当前')
+                              : const Icon(Icons.chevron_right_rounded),
+                          onTap: () =>
+                              Navigator.of(sheetContext).pop(scheme.id),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -384,6 +398,22 @@ class TimetableSettingsScreen extends StatelessWidget {
         context,
         MaterialPageRoute(
           builder: (_) => const TimeSchemeManagementScreen(),
+        ),
+      );
+      return;
+    }
+
+    if (selectedSchemeId == '__edit_current__') {
+      final currentSchemeId = provider.activeTimeScheme?.id;
+      if (currentSchemeId == null) {
+        return;
+      }
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => TimeSchemeManagementScreen(
+            initialEditSchemeId: currentSchemeId,
+          ),
         ),
       );
       return;
@@ -968,7 +998,58 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
+                  value: _draft.liveDuringClassTimeDisplayMode,
+                  decoration: const InputDecoration(
+                    labelText: '上课中紧凑提醒时间',
+                    helperText: '只影响超级岛/紧凑提醒，展开内容保持完整',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: LiveDuringClassTimeDisplayMode.values
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _draft = _draft.copyWith(
+                        liveDuringClassTimeDisplayMode: value,
+                      );
+                    });
+                  },
+                ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '测试通知',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '用于验证超级岛、通知栏和课程简称等显示效果。正式版也会保留这个入口。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.tonalIcon(
+                    onPressed: () => _showTestOptions(context),
+                    icon: const Icon(Icons.science_outlined),
+                    label: const Text('发送测试通知'),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -992,6 +1073,159 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   }
 }
 
+Future<void> _showTestOptions(BuildContext context) async {
+  final now = DateTime.now();
+  const totalCourseDuration = Duration(minutes: 3);
+  const beforeEndDuration = Duration(seconds: 60);
+  const duringClassDuration = Duration(minutes: 2);
+
+  String formatTime(DateTime dt) {
+    return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  }
+
+  final provider = context.read<TimetableProvider>();
+  final settings = provider.settings;
+  final selection = provider.getTestLiveActivityCourseSelection(now: now);
+  if (selection == null) {
+    final hasEnabledStage = settings.liveEnableBeforeClass ||
+        settings.liveEnableDuringClass ||
+        settings.liveEnableBeforeEnd;
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(hasEnabledStage ? '当前没有可测试的课程' : '请先开启至少一个超级岛时段'),
+      ),
+    );
+    return;
+  }
+
+  final enableBeforeClass = settings.liveEnableBeforeClass;
+  final enableDuringClass = settings.liveEnableDuringClass;
+  final enableBeforeEnd = settings.liveEnableBeforeEnd;
+
+  late final DateTime start;
+  late final DateTime end;
+  late final Duration endReminderLead;
+  late final LiveActivityStage initialStage;
+  late final String flowSummary;
+
+  if (enableBeforeClass) {
+    initialStage = LiveActivityStage.beforeClass;
+    start = now;
+    if (enableDuringClass && enableBeforeEnd) {
+      end = start.add(duringClassDuration + beforeEndDuration);
+      endReminderLead = beforeEndDuration;
+      flowSummary = '立即显示上课前提醒 → 上课中 2分钟 → 下课提醒 60秒';
+    } else if (enableDuringClass) {
+      end = start.add(totalCourseDuration);
+      endReminderLead = Duration.zero;
+      flowSummary = '立即显示上课前提醒 → 上课中 3分钟';
+    } else if (enableBeforeEnd) {
+      end = start.add(totalCourseDuration);
+      endReminderLead = beforeEndDuration;
+      flowSummary = '立即显示上课前提醒 → 3分钟课程 → 下课提醒 60秒';
+    } else {
+      end = start.add(totalCourseDuration);
+      endReminderLead = Duration.zero;
+      flowSummary = '仅测试立即显示的上课前提醒（课程时长 3分钟）';
+    }
+  } else if (enableDuringClass) {
+    initialStage = LiveActivityStage.duringClass;
+    start = now;
+    if (enableBeforeEnd) {
+      end = start.add(duringClassDuration + beforeEndDuration);
+      endReminderLead = beforeEndDuration;
+      flowSummary = '上课中 2分钟 → 下课提醒 60秒';
+    } else {
+      end = start.add(totalCourseDuration);
+      endReminderLead = Duration.zero;
+      flowSummary = '仅测试上课中 3分钟';
+    }
+  } else {
+    initialStage = LiveActivityStage.beforeEnd;
+    end = now.add(beforeEndDuration);
+    start = end.subtract(totalCourseDuration);
+    endReminderLead = beforeEndDuration;
+    flowSummary = '仅测试下课提醒 60秒（课程总时长 3分钟）';
+  }
+
+  final baseCourse = selection.currentCourse;
+  final previewNextCourse = selection.nextCourse;
+  final resolvedShortName = provider.resolveCourseShortName(baseCourse);
+
+  final testCourse = Course(
+    id: 'test_auto_id',
+    name: baseCourse.name,
+    shortName: resolvedShortName,
+    teacher: baseCourse.teacher,
+    location: baseCourse.location,
+    dayOfWeek: now.weekday,
+    startSection: baseCourse.startSection,
+    endSection: baseCourse.endSection,
+    startWeek: baseCourse.startWeek,
+    endWeek: baseCourse.endWeek,
+    startTime: formatTime(start),
+    endTime: formatTime(end),
+    color: baseCourse.color,
+    note: '此处显示备注。可以在课程编辑页进行设置。',
+  );
+
+  if (!context.mounted) return;
+
+  try {
+    provider.suspendLiveActivitySyncFor(
+      end.difference(now) + const Duration(seconds: 20),
+    );
+    final progressMilestones = provider.buildLiveProgressMilestones(
+      baseCourse,
+      startAtMillis: start.millisecondsSinceEpoch,
+      endAtMillis: end.millisecondsSinceEpoch,
+    );
+    final progressBreakOffsetsMillis =
+        provider.buildLiveProgressBreakOffsetsMillis(
+      baseCourse,
+      startAtMillis: start.millisecondsSinceEpoch,
+      endAtMillis: end.millisecondsSinceEpoch,
+    );
+    await MiuiLiveActivitiesService().startLiveUpdate(
+      testCourse,
+      previewNextCourse,
+      stage: initialStage.name,
+      startAtMillis: start.millisecondsSinceEpoch,
+      endAtMillis: end.millisecondsSinceEpoch,
+      endReminderLeadMillis: endReminderLead.inMilliseconds,
+      endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
+      promoteDuringClass: settings.livePromoteDuringClass,
+      showNotificationDuringClass: settings.liveShowDuringClassNotification,
+      enableBeforeClass: enableBeforeClass,
+      enableDuringClass: enableDuringClass,
+      enableBeforeEnd: enableBeforeEnd,
+      showCountdown: settings.liveShowCountdown,
+      showCourseNameInIsland: settings.liveShowCourseName,
+      showLocationInIsland: settings.liveShowLocation,
+      useShortNameInIsland: settings.liveUseShortName,
+      hidePrefixText: settings.liveHidePrefixText,
+      duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
+      progressBreakOffsetsMillis: progressBreakOffsetsMillis,
+      progressMilestoneLabels: progressMilestones
+          .map((milestone) => milestone['label'] as String)
+          .toList(),
+      progressMilestoneTimeTexts: progressMilestones
+          .map((milestone) => milestone['timeText'] as String)
+          .toList(),
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已发送测试通知：$flowSummary')),
+    );
+  } catch (e) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('发送失败: $e')),
+    );
+  }
+}
+
 class _LayoutSettingsScreen extends StatefulWidget {
   const _LayoutSettingsScreen();
 
@@ -1010,12 +1244,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<TimetableProvider>();
-    final activeScheme = provider.activeTimeScheme;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('布局与时间模板'),
+        title: const Text('布局与节次'),
         actions: [
           TextButton(
             onPressed: _save,
@@ -1278,54 +1509,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '时间模板',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    activeScheme == null
-                        ? '当前课表还没有绑定时间模板。'
-                        : '当前课表使用的是“${activeScheme.name}”，切换模板会直接影响首页时间显示和课程创建时间。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.schedule_rounded),
-                    title: Text(activeScheme?.name ?? '未选择时间模板'),
-                    subtitle: Text(
-                      activeScheme == null
-                          ? '进入模板管理后选择一套作息时间。'
-                          : '共 ${activeScheme.sectionCount} 节 · ${activeScheme.sections.first.displayText}${activeScheme.sectionCount > 1 ? ' 起' : ''}',
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: _openTimeSchemeManagement,
-                  ),
-                  if (activeScheme != null) ...[
-                    const SizedBox(height: 8),
-                    ...List.generate(activeScheme.sections.length, (index) {
-                      final section = activeScheme.sections[index];
-                      return ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Text('第 ${index + 1} 节'),
-                        trailing: Text(section.displayText),
-                      );
-                    }),
-                  ],
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Card(
             child: SwitchListTile(
               title: const Text('首页显示冲突小胶囊'),
@@ -1351,7 +1534,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '时间模板是全局共享的。如果你想只改当前课表的时间，先在模板管理里复制一套模板，再应用到当前课表。',
+                    '时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -1361,21 +1544,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _openTimeSchemeManagement() async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const TimeSchemeManagementScreen(),
-      ),
-    );
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _draft = context.read<TimetableProvider>().settings;
-    });
   }
 
   Future<void> _save() async {
