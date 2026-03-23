@@ -11,6 +11,10 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -20,7 +24,10 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import android.text.TextPaint
+import android.text.TextUtils
 import android.util.Log
+import android.util.TypedValue
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
@@ -340,6 +347,10 @@ class LiveUpdateService : Service() {
     private var useShortNameInIsland = false
     private var hidePrefixText = false
     private var duringClassTimeDisplayMode = "nearest"
+    private var enableMiuiIslandLabelImage = false
+    private var miuiIslandLabelStyle = "text_only"
+    private var miuiIslandLabelContent = "course_name"
+    private var miuiIslandLabelFontSize = 14f
     private var startAtMillis = 0L
     private var endAtMillis = 0L
     private var endReminderLeadMillis = 600_000L
@@ -354,6 +365,8 @@ class LiveUpdateService : Service() {
     private var lastRemainingText = "-1"
     private var lastProgressUnits = -1
     private var lastCriticalTimeText = ""
+    private var cachedIslandBitmapKey: String? = null
+    private var cachedIslandBitmap: Bitmap? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -377,6 +390,13 @@ class LiveUpdateService : Service() {
         hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
         duringClassTimeDisplayMode =
             intent?.getStringExtra("duringClassTimeDisplayMode") ?: "nearest"
+        enableMiuiIslandLabelImage =
+            intent?.getBooleanExtra("enableMiuiIslandLabelImage", false) ?: false
+        miuiIslandLabelStyle = intent?.getStringExtra("miuiIslandLabelStyle") ?: "text_only"
+        miuiIslandLabelContent =
+            intent?.getStringExtra("miuiIslandLabelContent") ?: "course_name"
+        miuiIslandLabelFontSize =
+            intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
         endReminderLeadMillis =
             intent?.getLongExtra("endReminderLeadMillis", 600_000L)
                 ?.coerceAtLeast(0L)
@@ -574,6 +594,131 @@ class LiveUpdateService : Service() {
             brand.contains("poco")
     }
 
+    private fun dp(value: Float): Float =
+        TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, value, resources.displayMetrics)
+
+    private fun sp(value: Float): Float =
+        TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, value, resources.displayMetrics)
+
+    private fun resolveIslandLabelBitmap(text: String): Bitmap? {
+        if (!enableMiuiIslandLabelImage || !isXiaomiFamilyDevice() || text.isBlank()) {
+            return null
+        }
+
+        val cacheKey = listOf(
+            text,
+            miuiIslandLabelStyle,
+            miuiIslandLabelFontSize.toString(),
+        ).joinToString("|")
+        if (cacheKey == cachedIslandBitmapKey && cachedIslandBitmap != null) {
+            return cachedIslandBitmap
+        }
+
+        val bitmap = buildIslandLabelBitmap(
+            text = text,
+            includeAppIcon = miuiIslandLabelStyle == "icon_and_text",
+            fontSizeSp = miuiIslandLabelFontSize,
+        )
+        cachedIslandBitmapKey = cacheKey
+        cachedIslandBitmap = bitmap
+        return bitmap
+    }
+
+    private fun buildIslandLabelBitmap(
+        text: String,
+        includeAppIcon: Boolean,
+        fontSizeSp: Float,
+    ): Bitmap? {
+        val resolvedFontSizeSp = fontSizeSp.coerceIn(10f, 32f)
+        val renderScale = 2f
+        val baseTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFFFFF.toInt()
+            textSize = sp(resolvedFontSizeSp)
+            isFakeBoldText = true
+            isSubpixelText = true
+            isLinearText = true
+        }
+        val iconSizeDp = if (includeAppIcon) 24f else 0f
+        val iconGapDp = if (includeAppIcon) 3f else 0f
+        val horizontalPaddingDp = if (includeAppIcon) 3f else 2f
+        val verticalPaddingDp = 0.5f
+        val maxWidthDp = if (includeAppIcon) 132f else 112f
+        val maxTextWidthPx = dp(
+            maxWidthDp - horizontalPaddingDp * 2f - iconSizeDp - iconGapDp
+        ).coerceAtLeast(dp(28f))
+
+        var fittedSizeSp = resolvedFontSizeSp
+        while (fittedSizeSp > 8f) {
+            baseTextPaint.textSize = sp(fittedSizeSp)
+            if (baseTextPaint.measureText(text) <= maxTextWidthPx) {
+                break
+            }
+            fittedSizeSp -= 1f
+        }
+
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xFFFFFFFF.toInt()
+            textSize = sp(fittedSizeSp) * renderScale
+            isFakeBoldText = true
+            isSubpixelText = true
+            isLinearText = true
+            setShadowLayer(dp(0.75f) * renderScale, 0f, dp(0.25f) * renderScale, 0x44000000)
+        }
+
+        val displayText = if (baseTextPaint.measureText(text) <= maxTextWidthPx) {
+            text
+        } else {
+            TextUtils.ellipsize(
+                text,
+                baseTextPaint,
+                maxTextWidthPx,
+                TextUtils.TruncateAt.END
+            ).toString()
+        }
+
+        val glyphBounds = Rect()
+        textPaint.getTextBounds(displayText, 0, displayText.length, glyphBounds)
+        val textWidthPx = textPaint.measureText(displayText)
+        val textHeightPx = glyphBounds.height().toFloat().coerceAtLeast(sp(10f) * renderScale)
+        val iconSizePx = (dp(iconSizeDp) * renderScale).toInt()
+        val iconGapPx = dp(iconGapDp) * renderScale
+        val horizontalPaddingPx = dp(horizontalPaddingDp) * renderScale
+        val verticalPaddingPx = dp(verticalPaddingDp) * renderScale
+
+        val width = (
+            horizontalPaddingPx * 2f +
+                textWidthPx +
+                if (includeAppIcon) iconSizePx + iconGapPx else 0f
+            ).toInt().coerceAtLeast((dp(20f) * renderScale).toInt())
+        val height = (
+            verticalPaddingPx * 2f + maxOf(textHeightPx, iconSizePx.toFloat())
+            ).toInt().coerceAtLeast((sp(12f) * renderScale).toInt())
+        if (width <= 0 || height <= 0) {
+            return null
+        }
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        var textStartX = horizontalPaddingPx
+        val centerY = height / 2f
+
+        if (includeAppIcon) {
+            val appIcon = packageManager.getApplicationIcon(packageName)
+            val iconTop = ((height - iconSizePx) / 2f).toInt()
+            appIcon.setBounds(
+                horizontalPaddingPx.toInt(),
+                iconTop,
+                horizontalPaddingPx.toInt() + iconSizePx,
+                iconTop + iconSizePx
+            )
+            appIcon.draw(canvas)
+            textStartX += iconSizePx + iconGapPx
+        }
+        val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f
+        canvas.drawText(displayText, textStartX, baseline, textPaint)
+        return bitmap
+    }
+
     private fun buildMiuiFocusParam(
         title: String,
         remainingText: String,
@@ -644,6 +789,15 @@ class LiveUpdateService : Service() {
             if (nameToUse.length > 5) nameToUse.substring(0, 5) else nameToUse
         } else ""
         val islandLocation = if (showLocationInIsland) location else ""
+        val miuiIslandLabelText = when (miuiIslandLabelContent) {
+            "location" -> location
+            "course_name_and_location" -> listOf(
+                nameToUse.takeIf { it.isNotBlank() },
+                location.takeIf { it.isNotBlank() }
+            ).filterNotNull().joinToString(" ")
+            else -> nameToUse
+        }
+        val miuiIslandLabelBitmap = resolveIslandLabelBitmap(miuiIslandLabelText)
 
         val stageTitle = when (stage) {
             "beforeClass" -> "即将上课"
@@ -820,7 +974,12 @@ class LiveUpdateService : Service() {
         builder.apply {
             setContentTitle(notificationTitle)
             setContentText(notificationContentText)
-            setSmallIcon(iconRes)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && miuiIslandLabelBitmap != null) {
+                setSmallIcon(Icon.createWithBitmap(miuiIslandLabelBitmap))
+            } else {
+                setSmallIcon(iconRes)
+            }
+            miuiIslandLabelBitmap?.let { setLargeIcon(it) }
             setContentIntent(pendingIntent)
             setOngoing(true)
             setAutoCancel(false)
@@ -871,7 +1030,10 @@ class LiveUpdateService : Service() {
                             )
                         )
                     )
-                    .setProgressTrackerIcon(Icon.createWithResource(this, R.drawable.ic_course))
+                    .setProgressTrackerIcon(
+                        miuiIslandLabelBitmap?.let { Icon.createWithBitmap(it) }
+                            ?: Icon.createWithResource(this, R.drawable.ic_course)
+                    )
                     .setProgressPoints(
                         duringClassProgress.breakPointUnits.map { point ->
                             Notification.ProgressStyle.Point(point)

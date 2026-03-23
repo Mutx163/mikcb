@@ -61,6 +61,10 @@ private data class NativeLiveSettings(
     val liveUseShortName: Boolean,
     val liveHidePrefixText: Boolean,
     val liveDuringClassTimeDisplayMode: String,
+    val liveEnableMiuiIslandLabelImage: Boolean,
+    val liveMiuiIslandLabelStyle: String,
+    val liveMiuiIslandLabelContent: String,
+    val liveMiuiIslandLabelFontSize: Float,
     val liveShowBeforeClassMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
 )
@@ -110,6 +114,10 @@ private data class LiveUpdatePayload(
     val useShortNameInIsland: Boolean,
     val hidePrefixText: Boolean,
     val duringClassTimeDisplayMode: String,
+    val enableMiuiIslandLabelImage: Boolean,
+    val miuiIslandLabelStyle: String,
+    val miuiIslandLabelContent: String,
+    val miuiIslandLabelFontSize: Float,
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
@@ -192,6 +200,14 @@ object LiveUpdateScheduler {
             hidePrefixText = islandConfig["hidePrefixText"] as? Boolean ?: false,
             duringClassTimeDisplayMode =
                 islandConfig["duringClassTimeDisplayMode"] as? String ?: "nearest",
+            enableMiuiIslandLabelImage =
+                islandConfig["enableMiuiIslandLabelImage"] as? Boolean ?: false,
+            miuiIslandLabelStyle =
+                islandConfig["miuiIslandLabelStyle"] as? String ?: "text_only",
+            miuiIslandLabelContent =
+                islandConfig["miuiIslandLabelContent"] as? String ?: "course_name",
+            miuiIslandLabelFontSize =
+                (islandConfig["miuiIslandLabelFontSize"] as? Number)?.toFloat() ?: 14f,
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
@@ -251,6 +267,14 @@ object LiveUpdateScheduler {
             liveHidePrefixText = settingsJson.optBoolean("liveHidePrefixText", false),
             liveDuringClassTimeDisplayMode =
                 settingsJson.optString("liveDuringClassTimeDisplayMode", "nearest"),
+            liveEnableMiuiIslandLabelImage =
+                settingsJson.optBoolean("liveEnableMiuiIslandLabelImage", false),
+            liveMiuiIslandLabelStyle =
+                settingsJson.optString("liveMiuiIslandLabelStyle", "text_only"),
+            liveMiuiIslandLabelContent =
+                settingsJson.optString("liveMiuiIslandLabelContent", "course_name"),
+            liveMiuiIslandLabelFontSize =
+                settingsJson.optDouble("liveMiuiIslandLabelFontSize", 14.0).toFloat(),
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveEndSecondsCountdownThreshold =
                 settingsJson.optInt("liveEndSecondsCountdownThreshold", 60),
@@ -331,6 +355,10 @@ object LiveUpdateScheduler {
             putExtra("useShortNameInIsland", payload.useShortNameInIsland)
             putExtra("hidePrefixText", payload.hidePrefixText)
             putExtra("duringClassTimeDisplayMode", payload.duringClassTimeDisplayMode)
+            putExtra("enableMiuiIslandLabelImage", payload.enableMiuiIslandLabelImage)
+            putExtra("miuiIslandLabelStyle", payload.miuiIslandLabelStyle)
+            putExtra("miuiIslandLabelContent", payload.miuiIslandLabelContent)
+            putExtra("miuiIslandLabelFontSize", payload.miuiIslandLabelFontSize)
         }
     }
 
@@ -483,6 +511,14 @@ object LiveUpdateScheduler {
             hidePrefixText = snapshot.settings.liveHidePrefixText,
             duringClassTimeDisplayMode =
                 snapshot.settings.liveDuringClassTimeDisplayMode,
+            enableMiuiIslandLabelImage =
+                snapshot.settings.liveEnableMiuiIslandLabelImage,
+            miuiIslandLabelStyle =
+                snapshot.settings.liveMiuiIslandLabelStyle,
+            miuiIslandLabelContent =
+                snapshot.settings.liveMiuiIslandLabelContent,
+            miuiIslandLabelFontSize =
+                snapshot.settings.liveMiuiIslandLabelFontSize.toFloat(),
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
