@@ -170,6 +170,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final currentSemesterWeek = _resolveCurrentSemesterWeek(settings);
     final canReturnToCurrentWeek =
         currentSemesterWeek != null && currentSemesterWeek != week;
+    final visibleDays = _visibleDayNumbers(settings);
 
     return Container(
       height: 50,
@@ -224,8 +225,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
               ],
             ),
           ),
-          ...List.generate(_weekDays.length, (index) {
-            final dayOfWeek = index + 1;
+          ...visibleDays.map((dayOfWeek) {
             final date = _dateForWeekDay(settings, week, dayOfWeek);
             final isToday = date != null && _isSameDate(date, DateTime.now());
 
@@ -246,7 +246,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _weekDays[index],
+                      _weekDays[dayOfWeek - 1],
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 10,
@@ -285,7 +285,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     int week,
     double sectionHeight,
   ) {
-    final dayWidth = (availableWidth - _timeColumnWidth) / 7;
+    final visibleDays = _visibleDayNumbers(settings);
+    final dayWidth =
+        (availableWidth - _timeColumnWidth) / visibleDays.length;
     final conflictMap = settings.showConflictBadgeOnTimetable
         ? provider.courseConflictMapForWeek(week)
         : const <String, List<Course>>{};
@@ -304,34 +306,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 return Container(
                   height: sectionHeight,
                   alignment: Alignment.center,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        '${index + 1}',
-                        style: TextStyle(
-                          fontSize: (settings.compactFontSize).clamp(8.0, 11.0),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        section.startTime,
-                        style: TextStyle(
-                          fontSize:
-                              (settings.compactFontSize - 2).clamp(6.0, 10.0),
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
+                  child: _buildSectionTimeCell(index + 1, section, settings),
                 );
               }),
             ),
           ),
           Row(
-            children: List.generate(7, (dayIndex) {
-              final dayOfWeek = dayIndex + 1;
+            children: visibleDays.map((dayOfWeek) {
               final dayCourses = _getCoursesForDay(
                 provider.courses,
                 week,
@@ -347,7 +328,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   sectionHeight,
                 ),
               );
-            }),
+            }).toList(),
           ),
         ],
       ),
@@ -626,7 +607,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         curve: Curves.easeOutCubic,
       );
     }
-    HapticFeedback.selectionClick();
+    _maybeSelectionClick(provider.settings);
   }
 
   Future<void> _animateToAdjacentWeek(
@@ -693,7 +674,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
     _isSyncingWeekPage = true;
     try {
-      HapticFeedback.selectionClick();
+      _maybeSelectionClick(provider.settings);
       await provider.setCurrentWeek(targetWeek);
     } finally {
       _isSyncingWeekPage = false;
@@ -768,6 +749,51 @@ class _TimetableScreenState extends State<TimetableScreen> {
         builder: (context) => const TimetableSettingsScreen(),
       ),
     );
+  }
+
+  Widget _buildSectionTimeCell(
+    int sectionNumber,
+    SectionTime section,
+    TimetableSettings settings,
+  ) {
+    final compactTextStyle = TextStyle(
+      fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
+      color: Colors.grey.shade600,
+      height: 1.05,
+    );
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$sectionNumber',
+          style: TextStyle(
+            fontSize: settings.compactFontSize.clamp(8.0, 11.0),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (settings.timetableSectionTimeDisplayMode !=
+            SectionTimeDisplayMode.hidden)
+          Text(section.startTime, style: compactTextStyle),
+        if (settings.timetableSectionTimeDisplayMode ==
+            SectionTimeDisplayMode.startAndEnd)
+          Text(section.endTime, style: compactTextStyle),
+      ],
+    );
+  }
+
+  List<int> _visibleDayNumbers(TimetableSettings settings) {
+    return settings.timetableHideWeekends
+        ? const [1, 2, 3, 4, 5]
+        : const [1, 2, 3, 4, 5, 6, 7];
+  }
+
+  void _maybeSelectionClick(TimetableSettings settings) {
+    if (!settings.enableHaptics) {
+      return;
+    }
+    HapticFeedback.selectionClick();
   }
 
   void _openProfiles() {

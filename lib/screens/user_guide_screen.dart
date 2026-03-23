@@ -190,7 +190,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '首屏先授权，下面还有简称设置和导入说明，记得继续下滑。',
+                      '首屏先授权。下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑。',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -206,6 +206,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             runSpacing: 8,
             children: [
               _buildHeroChip(Icons.security_rounded, '权限准备'),
+              _buildHeroChip(Icons.system_update_alt_rounded, 'HyperOS 3.0.300+'),
               _buildHeroChip(Icons.edit_note_rounded, '简称设置'),
               _buildHeroChip(Icons.import_export_rounded, '导入课表'),
               _buildHeroChip(Icons.check_circle_rounded, '$readyCount/3 已完成'),
@@ -229,7 +230,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                   child: Text(
                     _isNearBottom
                         ? '你已经滑到最后了，确认无误后就可以开始使用。'
-                        : '向下滑动继续，下面还有权限清单、简称设置和导入方式。',
+                        : '向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式。',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -358,9 +359,15 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                 value: _androidVersion > 0 ? 'Android $_androidVersion' : '未识别',
                 success: _androidVersion >= 13,
               ),
+              _buildStatusTile(
+                icon: Icons.star_border_rounded,
+                title: '超级岛系统支持',
+                value: '需 HyperOS 3.0.300 及以上',
+                success: _canPostPromoted,
+              ),
               const SizedBox(height: 6),
               Text(
-                '如果上面的项目还没全绿，继续下滑，把下面的权限清单按顺序点完。',
+                '如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完。',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -411,7 +418,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
               step: '3',
               icon: Icons.star_border,
               title: '打开焦点通知设置',
-              subtitle: '检查系统是否允许 promoted / 超级岛通知',
+              subtitle: 'HyperOS 3.0.300 及以上再检查 promoted / 超级岛通知',
               onTap: () => _runAction(_service.openPromotedSettings),
             ),
             _buildChecklistTile(
@@ -527,17 +534,17 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             ),
             const SizedBox(height: 12),
             Text(
-              '1. 先在设置页调整“上课前弹出”和“下课前数秒提醒”的阈值。',
+              '1. HyperOS 3.0.300 及以上才支持超级岛；如果系统版本不够，应用仍可正常发普通提醒。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '2. 完成系统权限设置后，再用测试通知验证展示效果。',
+              '2. 先在设置页调整“上课前弹出”和“课中 / 临近下课提醒”的阈值。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '3. 如果岛区还是偶尔消失，优先检查系统是否回收后台，通常是自启动或省电策略没有放开。',
+              '3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。',
               style: theme.textTheme.bodyMedium,
             ),
           ],

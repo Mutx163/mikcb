@@ -108,7 +108,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '一个面向课表查看、课程管理和超级岛实时提醒的开源项目。',
+                    '一个面向课表查看、课程管理和实时提醒的开源项目。HyperOS 3.0.300 起支持超级岛展示。',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -133,7 +133,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 10),
                   const _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
-                  const _AboutBullet(text: '支持小米 / HyperOS 超级岛与实时通知'),
+                  const _AboutBullet(text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示'),
                   const _AboutBullet(text: '支持主题色、课表背景和卡片样式自定义'),
                 ],
               ),

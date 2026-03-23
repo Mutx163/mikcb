@@ -5,6 +5,33 @@ enum AppUpdateDownloadSource {
   mirror,
 }
 
+enum SectionTimeDisplayMode {
+  hidden,
+  startOnly,
+  startAndEnd,
+}
+
+extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
+  String get value => switch (this) {
+        SectionTimeDisplayMode.hidden => 'hidden',
+        SectionTimeDisplayMode.startOnly => 'start_only',
+        SectionTimeDisplayMode.startAndEnd => 'start_and_end',
+      };
+
+  String get label => switch (this) {
+        SectionTimeDisplayMode.hidden => '不显示',
+        SectionTimeDisplayMode.startOnly => '仅显示上课时间',
+        SectionTimeDisplayMode.startAndEnd => '显示上下课时间',
+      };
+
+  static SectionTimeDisplayMode fromValue(String? value) {
+    return SectionTimeDisplayMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => SectionTimeDisplayMode.startAndEnd,
+    );
+  }
+}
+
 enum CourseCardVerticalAlign {
   top,
   center,
@@ -135,6 +162,9 @@ class TimetableSettings {
   final bool courseCardShowDescription;
   final CourseCardVerticalAlign courseCardVerticalAlign;
   final CourseCardHorizontalAlign courseCardHorizontalAlign;
+  final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
+  final bool timetableHideWeekends;
+  final bool enableHaptics;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -173,6 +203,9 @@ class TimetableSettings {
     this.courseCardShowDescription = false,
     this.courseCardVerticalAlign = CourseCardVerticalAlign.center,
     this.courseCardHorizontalAlign = CourseCardHorizontalAlign.center,
+    this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
+    this.timetableHideWeekends = false,
+    this.enableHaptics = true,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -224,6 +257,9 @@ class TimetableSettings {
       courseCardShowDescription: false,
       courseCardVerticalAlign: CourseCardVerticalAlign.center,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
+      timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
+      timetableHideWeekends: false,
+      enableHaptics: true,
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
@@ -265,6 +301,9 @@ class TimetableSettings {
       'courseCardShowDescription': courseCardShowDescription,
       'courseCardVerticalAlign': courseCardVerticalAlign.value,
       'courseCardHorizontalAlign': courseCardHorizontalAlign.value,
+      'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
+      'timetableHideWeekends': timetableHideWeekends,
+      'enableHaptics': enableHaptics,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -326,6 +365,11 @@ class TimetableSettings {
       courseCardHorizontalAlign: CourseCardHorizontalAlignX.fromValue(
         json['courseCardHorizontalAlign'] as String?,
       ),
+      timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
+        json['timetableSectionTimeDisplayMode'] as String?,
+      ),
+      timetableHideWeekends: json['timetableHideWeekends'] as bool? ?? false,
+      enableHaptics: json['enableHaptics'] as bool? ?? true,
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -383,6 +427,9 @@ class TimetableSettings {
     bool? courseCardShowDescription,
     CourseCardVerticalAlign? courseCardVerticalAlign,
     CourseCardHorizontalAlign? courseCardHorizontalAlign,
+    SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
+    bool? timetableHideWeekends,
+    bool? enableHaptics,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -429,6 +476,11 @@ class TimetableSettings {
           courseCardVerticalAlign ?? this.courseCardVerticalAlign,
       courseCardHorizontalAlign:
           courseCardHorizontalAlign ?? this.courseCardHorizontalAlign,
+      timetableSectionTimeDisplayMode:
+          timetableSectionTimeDisplayMode ?? this.timetableSectionTimeDisplayMode,
+      timetableHideWeekends:
+          timetableHideWeekends ?? this.timetableHideWeekends,
+      enableHaptics: enableHaptics ?? this.enableHaptics,
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
