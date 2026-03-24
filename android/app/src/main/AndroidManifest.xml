@@ -57,6 +57,67 @@
                 <action android:name="com.example.university_timetable.ACTION_TRIGGER_LIVE_UPDATE"/>
             </intent-filter>
         </receiver>
+
+        <receiver
+            android:name=".TodayCompactWidgetProvider"
+            android:label="@string/widget_today_compact_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_compact_info" />
+        </receiver>
+
+        <receiver
+            android:name=".TodayMiniListWidgetProvider"
+            android:label="@string/widget_today_mini_list_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_mini_list_info" />
+        </receiver>
+
+        <receiver
+            android:name=".TodayMediumWidgetProvider"
+            android:label="@string/widget_today_medium_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_medium_info" />
+        </receiver>
+
+        <receiver
+            android:name=".TodayLargeWidgetProvider"
+            android:label="@string/widget_today_large_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_today_large_info" />
+        </receiver>
+
+        <receiver
+            android:name=".HomeWidgetRefreshReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
             
         <meta-data
             android:name="flutterEmbedding"

@@ -16,6 +16,9 @@ void main() {
     expect(settings.courseCardShowWeeks, isFalse);
     expect(settings.courseCardShowDescription, isFalse);
     expect(settings.timetableAutoFitSectionHeight, isFalse);
+    expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.glass);
+    expect(settings.widgetShowLocation, isTrue);
+    expect(settings.widgetShowCountdown, isTrue);
     expect(
       settings.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -59,6 +62,9 @@ void main() {
     expect(restored.courseCardShowWeeks, isFalse);
     expect(restored.courseCardShowDescription, isFalse);
     expect(restored.timetableAutoFitSectionHeight, isFalse);
+    expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.glass);
+    expect(restored.widgetShowLocation, isTrue);
+    expect(restored.widgetShowCountdown, isTrue);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -107,6 +113,9 @@ void main() {
       courseCardShowTime: true,
       courseCardShowTimeLabels: false,
       courseCardShowWeeks: true,
+      widgetBackgroundStyle: WidgetBackgroundStyle.gradient,
+      widgetShowLocation: false,
+      widgetShowCountdown: false,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
@@ -129,6 +138,9 @@ void main() {
     expect(restored.courseCardShowTime, isTrue);
     expect(restored.courseCardShowTimeLabels, isFalse);
     expect(restored.courseCardShowWeeks, isTrue);
+    expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.gradient);
+    expect(restored.widgetShowLocation, isFalse);
+    expect(restored.widgetShowCountdown, isFalse);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,

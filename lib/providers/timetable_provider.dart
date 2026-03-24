@@ -8,6 +8,8 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../services/app_analytics.dart';
 import '../services/data_transfer_service.dart';
+import '../services/home_widget_service.dart';
+import '../services/home_widget_snapshot_service.dart';
 import '../services/storage_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
@@ -47,6 +49,8 @@ class TimetableProvider with ChangeNotifier {
   final IcsImportService _icsImportService;
   final MiuiLiveActivitiesService _liveActivitiesService;
   final DataTransferService _dataTransferService;
+  final HomeWidgetService _homeWidgetService;
+  final HomeWidgetSnapshotService _homeWidgetSnapshotService;
   final AppAnalytics _analytics;
   final bool _enableLiveActivitySync;
 
@@ -62,6 +66,7 @@ class TimetableProvider with ChangeNotifier {
   String? _currentLiveCourseId;
   bool _hasVisibleLiveUpdate = false;
   String? _lastLiveSnapshotSignature;
+  String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
   Future<void>? _initializationFuture;
 
@@ -92,6 +97,8 @@ class TimetableProvider with ChangeNotifier {
     IcsImportService? icsImportService,
     MiuiLiveActivitiesService? liveActivitiesService,
     DataTransferService? dataTransferService,
+    HomeWidgetService? homeWidgetService,
+    HomeWidgetSnapshotService? homeWidgetSnapshotService,
     AppAnalytics? analytics,
     bool autoInitialize = true,
     bool enableLiveActivitySync = true,
@@ -100,6 +107,9 @@ class TimetableProvider with ChangeNotifier {
         _liveActivitiesService =
             liveActivitiesService ?? MiuiLiveActivitiesService(),
         _dataTransferService = dataTransferService ?? DataTransferService(),
+        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
+        _homeWidgetSnapshotService =
+            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
         _analytics = analytics ?? AppAnalytics.instance,
         _enableLiveActivitySync = enableLiveActivitySync {
     if (autoInitialize) {
@@ -131,6 +141,7 @@ class TimetableProvider with ChangeNotifier {
     if (_settings.semesterStartDate != null) {
       await syncCurrentWeekWithSemesterStart();
     }
+    await _syncHomeWidgetSnapshot();
     if (_enableLiveActivitySync) {
       _startLiveActivityTick();
     }
@@ -1556,7 +1567,32 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  HomeWidgetSnapshot? buildHomeWidgetSnapshot({
+    DateTime? now,
+  }) {
+    final profile = activeProfile;
+    if (profile == null) {
+      return null;
+    }
+
+    final currentTime = now ?? DateTime.now();
+    final targetWeek = _calculateWeekForDate(currentTime);
+    final todayCourses = getCoursesForDay(currentTime.weekday, week: targetWeek)
+        .map(resolveCourseDisplayName)
+        .toList(growable: false);
+
+    return _homeWidgetSnapshotService.build(
+      profileId: profile.id,
+      profileName: profile.name,
+      currentWeek: targetWeek,
+      settings: _settings,
+      todayCourses: todayCourses,
+      now: currentTime,
+    );
+  }
+
   Future<void> _updateLiveActivity() async {
+    await _syncHomeWidgetSnapshot();
     if (!_enableLiveActivitySync) {
       return;
     }
@@ -1687,6 +1723,29 @@ class TimetableProvider with ChangeNotifier {
       semesterStartDate: _settings.semesterStartDate,
       endReminderLeadMillis: _liveEndReminderWindow.inMilliseconds,
     );
+  }
+
+  Future<void> _syncHomeWidgetSnapshot() async {
+    final now = DateTime.now();
+    final snapshot = buildHomeWidgetSnapshot();
+    if (snapshot == null) {
+      if (_lastHomeWidgetSnapshotSignature != null) {
+        _lastHomeWidgetSnapshotSignature = null;
+        await _homeWidgetService.clearSnapshot();
+      }
+      return;
+    }
+
+    final snapshotSignature = jsonEncode(snapshot.toJson());
+    if (_lastHomeWidgetSnapshotSignature != snapshotSignature) {
+      _lastHomeWidgetSnapshotSignature = snapshotSignature;
+      await _homeWidgetService.syncSnapshot(snapshot);
+    }
+    final triggerAtMillis = _homeWidgetSnapshotService.buildRefreshTriggers(
+      todayCourses: getCoursesForDay(now.weekday, week: snapshot.currentWeek),
+      now: now,
+    );
+    await _homeWidgetService.scheduleRefresh(triggerAtMillis);
   }
 
   void suspendLiveActivitySyncFor(Duration duration) {

@@ -41,6 +41,7 @@ class MainActivity : FlutterActivity() {
     companion object {
         private const val METHOD_CHANNEL = "com.example.university_timetable/miui_live"
         private const val UMENG_CHANNEL = "com.example.university_timetable/umeng_analytics"
+        private const val HOME_WIDGET_CHANNEL = "com.example.university_timetable/home_widget"
         private const val CHANNEL_ID = "live_update_channel"
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
@@ -146,6 +147,40 @@ class MainActivity : FlutterActivity() {
                             }
                         }
                         result.success(true)
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HOME_WIDGET_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "syncSnapshot" -> {
+                        val data = call.arguments as? Map<String, Any?>
+                        if (data != null) {
+                            HomeWidgetStorage.syncSnapshot(applicationContext, data)
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Missing widget snapshot", null)
+                        }
+                    }
+                    "clearSnapshot" -> {
+                        HomeWidgetStorage.clearSnapshot(applicationContext)
+                        result.success(true)
+                    }
+                    "scheduleRefresh" -> {
+                        val payload = call.arguments as? Map<String, Any?>
+                        val triggerAtMillis = payload
+                            ?.get("triggerAtMillis") as? List<*>
+                        if (triggerAtMillis != null) {
+                            HomeWidgetStorage.scheduleRefresh(
+                                applicationContext,
+                                triggerAtMillis.mapNotNull { (it as? Number)?.toLong() }
+                            )
+                            result.success(true)
+                        } else {
+                            result.error("INVALID_ARGUMENTS", "Missing widget refresh times", null)
+                        }
                     }
                     else -> result.notImplemented()
                 }

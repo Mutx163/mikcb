@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_compact_name">今日课程主卡 2×2</string>
+    <string name="widget_today_mini_list_name">今日课程迷你列表 2×2</string>
+    <string name="widget_today_medium_name">今日课程概览 2×4</string>
+    <string name="widget_today_large_name">今日课程列表 4×4</string>
+</resources>
