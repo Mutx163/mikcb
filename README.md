@@ -35,7 +35,7 @@
 - Flutter
 - Provider
 - SharedPreferences
-- Firebase Analytics
+- 友盟移动统计 / U-APM
 - Android Notification / Foreground Service
 - GitHub Actions
 - GitHub Releases
@@ -94,7 +94,7 @@ flutter build apk --release --split-per-abi
 - 仓库展示图和演示资源
 - 更新日志规范
 - 更多导入方式
-- 更完整的数据统计与质量监控
+- 继续补强稳定性与使用体验
 
 ## 仓库地址
 
