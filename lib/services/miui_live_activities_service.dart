@@ -134,6 +134,9 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelContent miuiIslandLabelContent =
         MiuiIslandLabelContent.courseName,
     double miuiIslandLabelFontSize = 14,
+    MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
+        MiuiIslandExpandedIconMode.appIcon,
+    String? miuiIslandExpandedIconPath,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -165,6 +168,8 @@ class MiuiLiveActivitiesService {
         miuiIslandLabelStyle: miuiIslandLabelStyle,
         miuiIslandLabelContent: miuiIslandLabelContent,
         miuiIslandLabelFontSize: miuiIslandLabelFontSize,
+        miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
+        miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestoneLabels,
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
@@ -210,6 +215,9 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelContent miuiIslandLabelContent =
         MiuiIslandLabelContent.courseName,
     double miuiIslandLabelFontSize = 14,
+    MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
+        MiuiIslandExpandedIconMode.appIcon,
+    String? miuiIslandExpandedIconPath,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -241,6 +249,8 @@ class MiuiLiveActivitiesService {
         'miuiIslandLabelStyle': miuiIslandLabelStyle.value,
         'miuiIslandLabelContent': miuiIslandLabelContent.value,
         'miuiIslandLabelFontSize': miuiIslandLabelFontSize,
+        'miuiIslandExpandedIconMode': miuiIslandExpandedIconMode.value,
+        'miuiIslandExpandedIconPath': miuiIslandExpandedIconPath,
       },
       'currentCourse': {
         'name': currentCourse.name,

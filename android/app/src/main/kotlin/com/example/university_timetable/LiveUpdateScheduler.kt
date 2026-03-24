@@ -65,6 +65,8 @@ private data class NativeLiveSettings(
     val liveMiuiIslandLabelStyle: String,
     val liveMiuiIslandLabelContent: String,
     val liveMiuiIslandLabelFontSize: Float,
+    val liveMiuiIslandExpandedIconMode: String,
+    val liveMiuiIslandExpandedIconPath: String?,
     val liveShowBeforeClassMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
 )
@@ -118,6 +120,8 @@ private data class LiveUpdatePayload(
     val miuiIslandLabelStyle: String,
     val miuiIslandLabelContent: String,
     val miuiIslandLabelFontSize: Float,
+    val miuiIslandExpandedIconMode: String,
+    val miuiIslandExpandedIconPath: String?,
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
@@ -208,6 +212,10 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandLabelContent"] as? String ?: "course_name",
             miuiIslandLabelFontSize =
                 (islandConfig["miuiIslandLabelFontSize"] as? Number)?.toFloat() ?: 14f,
+            miuiIslandExpandedIconMode =
+                islandConfig["miuiIslandExpandedIconMode"] as? String ?: "app_icon",
+            miuiIslandExpandedIconPath =
+                islandConfig["miuiIslandExpandedIconPath"] as? String,
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
@@ -275,6 +283,10 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveMiuiIslandLabelContent", "course_name"),
             liveMiuiIslandLabelFontSize =
                 settingsJson.optDouble("liveMiuiIslandLabelFontSize", 14.0).toFloat(),
+            liveMiuiIslandExpandedIconMode =
+                settingsJson.optString("liveMiuiIslandExpandedIconMode", "app_icon"),
+            liveMiuiIslandExpandedIconPath =
+                settingsJson.optString("liveMiuiIslandExpandedIconPath").takeIf { it.isNotBlank() },
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveEndSecondsCountdownThreshold =
                 settingsJson.optInt("liveEndSecondsCountdownThreshold", 60),
@@ -359,6 +371,8 @@ object LiveUpdateScheduler {
             putExtra("miuiIslandLabelStyle", payload.miuiIslandLabelStyle)
             putExtra("miuiIslandLabelContent", payload.miuiIslandLabelContent)
             putExtra("miuiIslandLabelFontSize", payload.miuiIslandLabelFontSize)
+            putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
+            putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
         }
     }
 
@@ -519,6 +533,10 @@ object LiveUpdateScheduler {
                 snapshot.settings.liveMiuiIslandLabelContent,
             miuiIslandLabelFontSize =
                 snapshot.settings.liveMiuiIslandLabelFontSize.toFloat(),
+            miuiIslandExpandedIconMode =
+                snapshot.settings.liveMiuiIslandExpandedIconMode,
+            miuiIslandExpandedIconPath =
+                snapshot.settings.liveMiuiIslandExpandedIconPath,
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
