@@ -27,6 +27,12 @@ enum MiuiIslandLabelContent {
   courseNameAndLocation,
 }
 
+enum MiuiIslandExpandedIconMode {
+  appIcon,
+  customImage,
+  hidden,
+}
+
 extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
   String get value => switch (this) {
         SectionTimeDisplayMode.hidden => 'hidden',
@@ -104,6 +110,27 @@ extension MiuiIslandLabelContentX on MiuiIslandLabelContent {
     return MiuiIslandLabelContent.values.firstWhere(
       (item) => item.value == value,
       orElse: () => MiuiIslandLabelContent.courseName,
+    );
+  }
+}
+
+extension MiuiIslandExpandedIconModeX on MiuiIslandExpandedIconMode {
+  String get value => switch (this) {
+        MiuiIslandExpandedIconMode.appIcon => 'app_icon',
+        MiuiIslandExpandedIconMode.customImage => 'custom_image',
+        MiuiIslandExpandedIconMode.hidden => 'hidden',
+      };
+
+  String get label => switch (this) {
+        MiuiIslandExpandedIconMode.appIcon => '应用图标',
+        MiuiIslandExpandedIconMode.customImage => '自定义图片',
+        MiuiIslandExpandedIconMode.hidden => '不显示',
+      };
+
+  static MiuiIslandExpandedIconMode fromValue(String? value) {
+    return MiuiIslandExpandedIconMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => MiuiIslandExpandedIconMode.appIcon,
     );
   }
 }
@@ -256,6 +283,8 @@ class TimetableSettings {
   final MiuiIslandLabelStyle liveMiuiIslandLabelStyle;
   final MiuiIslandLabelContent liveMiuiIslandLabelContent;
   final double liveMiuiIslandLabelFontSize;
+  final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
+  final String? liveMiuiIslandExpandedIconPath;
   final int liveShowBeforeClassMinutes;
   final int liveClassReminderStartMinutes;
   final int liveEndSecondsCountdownThreshold;
@@ -303,6 +332,8 @@ class TimetableSettings {
     this.liveMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     this.liveMiuiIslandLabelContent = MiuiIslandLabelContent.courseName,
     this.liveMiuiIslandLabelFontSize = 14,
+    this.liveMiuiIslandExpandedIconMode = MiuiIslandExpandedIconMode.appIcon,
+    this.liveMiuiIslandExpandedIconPath,
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
@@ -362,6 +393,8 @@ class TimetableSettings {
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
       liveMiuiIslandLabelFontSize: 14,
+      liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
+      liveMiuiIslandExpandedIconPath: null,
       liveShowBeforeClassMinutes: 20,
       liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
@@ -411,6 +444,8 @@ class TimetableSettings {
       'liveMiuiIslandLabelStyle': liveMiuiIslandLabelStyle.value,
       'liveMiuiIslandLabelContent': liveMiuiIslandLabelContent.value,
       'liveMiuiIslandLabelFontSize': liveMiuiIslandLabelFontSize,
+      'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
+      'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
@@ -490,6 +525,11 @@ class TimetableSettings {
       ),
       liveMiuiIslandLabelFontSize:
           (json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14,
+      liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
+        json['liveMiuiIslandExpandedIconMode'] as String?,
+      ),
+      liveMiuiIslandExpandedIconPath:
+          json['liveMiuiIslandExpandedIconPath'] as String?,
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -554,6 +594,9 @@ class TimetableSettings {
     MiuiIslandLabelStyle? liveMiuiIslandLabelStyle,
     MiuiIslandLabelContent? liveMiuiIslandLabelContent,
     double? liveMiuiIslandLabelFontSize,
+    MiuiIslandExpandedIconMode? liveMiuiIslandExpandedIconMode,
+    String? liveMiuiIslandExpandedIconPath,
+    bool clearLiveMiuiIslandExpandedIconPath = false,
     int? liveShowBeforeClassMinutes,
     int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
@@ -619,6 +662,12 @@ class TimetableSettings {
           liveMiuiIslandLabelContent ?? this.liveMiuiIslandLabelContent,
       liveMiuiIslandLabelFontSize:
           liveMiuiIslandLabelFontSize ?? this.liveMiuiIslandLabelFontSize,
+      liveMiuiIslandExpandedIconMode:
+          liveMiuiIslandExpandedIconMode ?? this.liveMiuiIslandExpandedIconMode,
+      liveMiuiIslandExpandedIconPath: clearLiveMiuiIslandExpandedIconPath
+          ? null
+          : liveMiuiIslandExpandedIconPath ??
+              this.liveMiuiIslandExpandedIconPath,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:

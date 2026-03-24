@@ -1638,6 +1638,8 @@ class TimetableProvider with ChangeNotifier {
         miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
         miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
         miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
+        miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
+        miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestones
             .map((milestone) => milestone['label'] as String)

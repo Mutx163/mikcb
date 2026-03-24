@@ -12,6 +12,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
@@ -380,6 +381,8 @@ class LiveUpdateService : Service() {
     private var miuiIslandLabelStyle = "text_only"
     private var miuiIslandLabelContent = "course_name"
     private var miuiIslandLabelFontSize = 14f
+    private var miuiIslandExpandedIconMode = "app_icon"
+    private var miuiIslandExpandedIconPath: String? = null
     private var startAtMillis = 0L
     private var endAtMillis = 0L
     private var endReminderLeadMillis = 600_000L
@@ -426,6 +429,10 @@ class LiveUpdateService : Service() {
             intent?.getStringExtra("miuiIslandLabelContent") ?: "course_name"
         miuiIslandLabelFontSize =
             intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
+        miuiIslandExpandedIconMode =
+            intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
+        miuiIslandExpandedIconPath =
+            intent?.getStringExtra("miuiIslandExpandedIconPath")?.takeIf { it.isNotBlank() }
         endReminderLeadMillis =
             intent?.getLongExtra("endReminderLeadMillis", 600_000L)
                 ?.coerceAtLeast(0L)
@@ -804,6 +811,41 @@ class LiveUpdateService : Service() {
         }
     }
 
+    private fun resolveExpandedLargeIcon(): Icon? {
+        return when (miuiIslandExpandedIconMode) {
+            "hidden" -> null
+            "custom_image" -> {
+                val path = miuiIslandExpandedIconPath ?: return null
+                decodeExpandedIconBitmap(path)?.let(Icon::createWithBitmap)
+            }
+            else -> Icon.createWithResource(this, R.mipmap.ic_launcher)
+        }
+    }
+
+    private fun decodeExpandedIconBitmap(path: String): Bitmap? {
+        val source = BitmapFactory.decodeFile(path) ?: return null
+        val side = minOf(source.width, source.height)
+        if (side <= 0) {
+            source.recycle()
+            return null
+        }
+        val offsetX = ((source.width - side) / 2).coerceAtLeast(0)
+        val offsetY = ((source.height - side) / 2).coerceAtLeast(0)
+        val cropped = Bitmap.createBitmap(source, offsetX, offsetY, side, side)
+        if (cropped != source) {
+            source.recycle()
+        }
+        val targetSize = dp(56f).toInt().coerceAtLeast(96)
+        if (cropped.width == targetSize && cropped.height == targetSize) {
+            return cropped
+        }
+        val scaled = Bitmap.createScaledBitmap(cropped, targetSize, targetSize, true)
+        if (scaled != cropped) {
+            cropped.recycle()
+        }
+        return scaled
+    }
+
     private fun buildNotification(remainingText: String): Notification {
         val now = System.currentTimeMillis()
         val stage = resolveStage(now)
@@ -1011,7 +1053,7 @@ class LiveUpdateService : Service() {
                 setSmallIcon(iconRes)
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                setLargeIcon(Icon.createWithResource(this@LiveUpdateService, R.mipmap.ic_launcher))
+                resolveExpandedLargeIcon()?.let(::setLargeIcon)
             }
             setContentIntent(pendingIntent)
             setOngoing(true)

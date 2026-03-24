@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
@@ -737,6 +741,15 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   }
 
   Future<void> _save() async {
+    if (_draft.liveMiuiIslandExpandedIconMode ==
+            MiuiIslandExpandedIconMode.customImage &&
+        (_draft.liveMiuiIslandExpandedIconPath == null ||
+            _draft.liveMiuiIslandExpandedIconPath!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请先为展开态大图标选择一张图片')),
+      );
+      return;
+    }
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(_draft);
     if (!mounted) {
@@ -762,6 +775,7 @@ class _LiveSettingsScreen extends StatefulWidget {
 class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   static const List<int> _beforeClassMinutesOptions = [1, 5, 10, 15, 20, 30];
   static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
+  static const String _miuiExpandedIconDirName = 'miui_expanded_icons';
 
   late TimetableSettings _draft;
 
@@ -1108,6 +1122,72 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     },
                   ),
                 ],
+                const SizedBox(height: 12),
+                DropdownButtonFormField<MiuiIslandExpandedIconMode>(
+                  value: _draft.liveMiuiIslandExpandedIconMode,
+                  decoration: const InputDecoration(
+                    labelText: '展开态大图标',
+                    helperText: '只影响展开通知视图，不会把左侧文字图带进去。',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: MiuiIslandExpandedIconMode.values
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    setState(() {
+                      _draft = _draft.copyWith(
+                        liveMiuiIslandExpandedIconMode: value,
+                        clearLiveMiuiIslandExpandedIconPath:
+                            value != MiuiIslandExpandedIconMode.customImage,
+                      );
+                    });
+                  },
+                ),
+                if (_draft.liveMiuiIslandExpandedIconMode ==
+                    MiuiIslandExpandedIconMode.customImage) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.tonalIcon(
+                          onPressed: _pickMiuiExpandedIconImage,
+                          icon: const Icon(Icons.image_outlined),
+                          label: Text(
+                            _draft.liveMiuiIslandExpandedIconPath == null
+                                ? '选择图片'
+                                : '更换图片',
+                          ),
+                        ),
+                      ),
+                      if (_draft.liveMiuiIslandExpandedIconPath != null) ...[
+                        const SizedBox(width: 12),
+                        IconButton.outlined(
+                          onPressed: () {
+                            setState(() {
+                              _draft = _draft.copyWith(
+                                clearLiveMiuiIslandExpandedIconPath: true,
+                              );
+                            });
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                          tooltip: '移除图片',
+                        ),
+                      ],
+                    ],
+                  ),
+                  if (_draft.liveMiuiIslandExpandedIconPath != null) ...[
+                    const SizedBox(height: 12),
+                    _MiuiExpandedIconPreview(
+                      imagePath: _draft.liveMiuiIslandExpandedIconPath!,
+                    ),
+                  ],
+                ],
               ],
             ),
           ),
@@ -1166,6 +1246,73 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     );
   }
 
+  Future<void> _pickMiuiExpandedIconImage() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (!mounted || result == null || result.files.isEmpty) {
+      return;
+    }
+
+    final file = result.files.single;
+    final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
+    if (bytes == null || bytes.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法读取所选图片')),
+      );
+      return;
+    }
+
+    final extension = _resolvePickedImageExtension(file);
+    final targetDirectory = await getApplicationDocumentsDirectory();
+    final iconsDirectory = Directory(
+      '${targetDirectory.path}${Platform.pathSeparator}$_miuiExpandedIconDirName',
+    );
+    if (!await iconsDirectory.exists()) {
+      await iconsDirectory.create(recursive: true);
+    }
+
+    final targetPath =
+        '${iconsDirectory.path}${Platform.pathSeparator}expanded_icon.$extension';
+    await File(targetPath).writeAsBytes(bytes, flush: true);
+    if (!mounted) return;
+    setState(() {
+      _draft = _draft.copyWith(
+        liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
+        liveMiuiIslandExpandedIconPath: targetPath,
+      );
+    });
+  }
+
+  Future<List<int>?> _readPickedFileBytes(String? path) async {
+    if (path == null || path.isEmpty) {
+      return null;
+    }
+    final file = File(path);
+    if (!await file.exists()) {
+      return null;
+    }
+    return file.readAsBytes();
+  }
+
+  String _resolvePickedImageExtension(PlatformFile file) {
+    final extension = file.extension?.toLowerCase();
+    if (extension != null && extension.isNotEmpty) {
+      return extension;
+    }
+    final path = file.path;
+    if (path == null || path.isEmpty) {
+      return 'png';
+    }
+    final dotIndex = path.lastIndexOf('.');
+    if (dotIndex == -1 || dotIndex == path.length - 1) {
+      return 'png';
+    }
+    return path.substring(dotIndex + 1).toLowerCase();
+  }
+
   Future<void> _save() async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(_draft);
@@ -1179,6 +1326,67 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
       return;
     }
     Navigator.pop(context);
+  }
+}
+
+class _MiuiExpandedIconPreview extends StatelessWidget {
+  const _MiuiExpandedIconPreview({
+    required this.imagePath,
+  });
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = File(imagePath);
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Theme.of(context).dividerColor),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: file.existsSync()
+                ? Image.file(
+                    file,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    width: 56,
+                    height: 56,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    alignment: Alignment.center,
+                    child: const Icon(Icons.broken_image_outlined),
+                  ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '当前展开态图片',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  imagePath,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1287,6 +1495,8 @@ Future<void> _showTestOptions(BuildContext context) async {
       miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
       miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
       miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
+      miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
+      miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
       progressMilestoneLabels: progressMilestones
           .map((milestone) => milestone['label'] as String)
