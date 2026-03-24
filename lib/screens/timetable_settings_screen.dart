@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -5,6 +6,7 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/umeng_analytics_service.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 import 'time_scheme_management_screen.dart';
@@ -1131,6 +1133,30 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     icon: const Icon(Icons.science_outlined),
                     label: const Text('发送测试通知'),
                   ),
+                  if (!kReleaseMode) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报。',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: () => _triggerUmengTestCrash(context),
+                          icon: const Icon(Icons.warning_amber_rounded),
+                          label: const Text('崩溃测试'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: () => _triggerUmengTestAnr(context),
+                          icon: const Icon(Icons.hourglass_bottom_rounded),
+                          label: const Text('异常卡顿测试'),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -1154,6 +1180,27 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     }
     Navigator.pop(context);
   }
+}
+
+Future<void> _triggerUmengTestCrash(BuildContext context) async {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('即将触发友盟 U-APM 测试崩溃，请重新打开应用查看后台是否收到上报')),
+  );
+  await Future<void>.delayed(const Duration(milliseconds: 300));
+  await UmengAnalyticsService.triggerTestCrash();
+}
+
+Future<void> _triggerUmengTestAnr(BuildContext context) async {
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台'),
+      duration: Duration(seconds: 4),
+    ),
+  );
+  await Future<void>.delayed(const Duration(milliseconds: 300));
+  await UmengAnalyticsService.triggerTestAnr();
 }
 
 Future<void> _showTestOptions(BuildContext context) async {

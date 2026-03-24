@@ -10,6 +10,7 @@ import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
 import 'services/app_analytics.dart';
 import 'services/storage_service.dart';
+import 'services/umeng_analytics_service.dart';
 
 Color _colorFromHex(String hexColor) {
   final normalized = hexColor.replaceFirst('#', '');
@@ -109,34 +110,80 @@ class AppEntryScreen extends StatefulWidget {
 class _AppEntryScreenState extends State<AppEntryScreen> {
   final StorageService _storageService = StorageService();
   bool _hasScheduledGuide = false;
+  bool _startupHandled = false;
 
   @override
   void initState() {
     super.initState();
-    _scheduleFirstLaunchGuide();
+    _handleStartupFlows();
   }
 
-  Future<void> _scheduleFirstLaunchGuide() async {
+  Future<void> _handleStartupFlows() async {
+    if (_startupHandled) {
+      return;
+    }
+    _startupHandled = true;
+
+    final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
-    if (hasSeenGuide || _hasScheduledGuide || !mounted) {
+
+    if (hasAcceptedPrivacy && hasSeenGuide) {
+      await UmengAnalyticsService.initializeIfNeeded();
+      return;
+    }
+
+    if (_hasScheduledGuide || !mounted) {
       return;
     }
 
     _hasScheduledGuide = true;
-    await _storageService.setHasSeenUserGuide(true);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          settings: const RouteSettings(name: '/user-guide'),
-          builder: (_) => const UserGuideScreen(),
-          fullscreenDialog: true,
+      unawaited(
+        _openGuide(
+          requirePrivacyConsent: !hasAcceptedPrivacy,
+          initialPrivacyChecked: hasAcceptedPrivacy,
+          markGuideSeenAfterExit: !hasSeenGuide,
         ),
       );
     });
+  }
+
+  Future<void> _openGuide({
+    required bool requirePrivacyConsent,
+    required bool initialPrivacyChecked,
+    required bool markGuideSeenAfterExit,
+  }) async {
+    final accepted = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/user-guide'),
+        builder: (_) => UserGuideScreen(
+          requirePrivacyConsent: requirePrivacyConsent,
+          initialPrivacyChecked: initialPrivacyChecked,
+        ),
+        fullscreenDialog: true,
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (requirePrivacyConsent) {
+      if (accepted == true) {
+        await _storageService.setAcceptedPrivacyPolicy(true);
+        await UmengAnalyticsService.initializeIfNeeded();
+      } else {
+        return;
+      }
+    }
+
+    if (markGuideSeenAfterExit) {
+      await _storageService.setHasSeenUserGuide(true);
+    }
   }
 
   @override

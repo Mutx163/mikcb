@@ -15,6 +15,7 @@ class StorageService {
   static const String _activeProfileIdKey = 'active_timetable_profile_id';
   static const String _timeSchemesKey = 'time_schemes';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
+  static const String _acceptedPrivacyPolicyKey = 'accepted_privacy_policy';
   static const String _hidePrefixDefaultMigrationKey =
       'did_migrate_live_hide_prefix_default';
 
@@ -117,6 +118,16 @@ class StorageService {
     await _prefs?.setBool(_hasSeenUserGuideKey, value);
   }
 
+  Future<bool> hasAcceptedPrivacyPolicy() async {
+    if (_prefs == null) await init();
+    return _prefs?.getBool(_acceptedPrivacyPolicyKey) ?? false;
+  }
+
+  Future<void> setAcceptedPrivacyPolicy(bool value) async {
+    if (_prefs == null) await init();
+    await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+  }
+
   // 获取指定周次的课程
   Future<List<Course>> getCoursesForWeek(int week) async {
     final allCourses = await getCourses();
@@ -209,13 +220,15 @@ class StorageService {
 
     final decoded = jsonDecode(rawSchemes) as List<dynamic>;
     return decoded
-        .map((item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
   }
 
   Future<void> saveTimeSchemes(List<TimeScheme> schemes) async {
     if (_prefs == null) await init();
-    final payload = jsonEncode(schemes.map((scheme) => scheme.toJson()).toList());
+    final payload =
+        jsonEncode(schemes.map((scheme) => scheme.toJson()).toList());
     await _prefs?.setString(_timeSchemesKey, payload);
   }
 
@@ -273,7 +286,8 @@ class StorageService {
       for (final scheme in storedSchemes) scheme.id: scheme,
     };
     final schemesBySignature = {
-      for (final scheme in storedSchemes) _sectionSignature(scheme.sections): scheme,
+      for (final scheme in storedSchemes)
+        _sectionSignature(scheme.sections): scheme,
     };
 
     final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
@@ -287,9 +301,8 @@ class StorageService {
       final settings = profile.settings;
       final signature = _sectionSignature(settings.sections);
       final referencedSchemeId = settings.activeTimeSchemeId;
-      var resolvedScheme = referencedSchemeId == null
-          ? null
-          : schemesById[referencedSchemeId];
+      var resolvedScheme =
+          referencedSchemeId == null ? null : schemesById[referencedSchemeId];
 
       resolvedScheme ??= schemesBySignature[signature];
 
