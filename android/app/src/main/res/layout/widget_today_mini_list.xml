@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -38,10 +38,10 @@
         android:id="@+id/widget_mini_empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
+        android:layout_marginTop="10dp"
         android:maxLines="2"
         android:text="今日无课"
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textStyle="bold"
         android:visibility="gone" />
 
@@ -49,16 +49,18 @@
         android:id="@+id/widget_mini_row_1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:padding="8dp"
+        android:layout_marginTop="10dp"
+        android:padding="4dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/widget_mini_row_1_time"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="08:00"
-            android:textSize="10sp" />
+            android:textSize="9sp" />
 
         <TextView
             android:id="@+id/widget_mini_row_1_title"
@@ -66,7 +68,7 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:text="高等数学"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -74,16 +76,18 @@
         android:id="@+id/widget_mini_row_2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:padding="8dp"
+        android:layout_marginTop="6dp"
+        android:padding="4dp"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/widget_mini_row_2_time"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="10:10"
-            android:textSize="10sp" />
+            android:textSize="9sp" />
 
         <TextView
             android:id="@+id/widget_mini_row_2_title"
@@ -91,8 +95,46 @@
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:text="大学英语"
-            android:textSize="12sp"
+            android:textSize="11sp"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/widget_mini_row_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:padding="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/widget_mini_row_3_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:text="13:30"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/widget_mini_row_3_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:text="程序设计"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/widget_mini_more"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="还有 2 节"
+        android:textSize="9sp"
+        android:visibility="gone" />
 
 </LinearLayout>

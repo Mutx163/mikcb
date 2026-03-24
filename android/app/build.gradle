@@ -21,6 +21,7 @@ def releaseKeyPassword =
         keystoreProperties.getProperty("keyPassword") ?: System.getenv("ANDROID_KEY_PASSWORD")
 def hasReleaseSigning =
         releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def overrideVersionName = project.findProperty("OVERRIDE_VERSION_NAME") ?: System.getenv("OVERRIDE_VERSION_NAME")
 
 android {
     namespace = "com.example.university_timetable"
@@ -45,7 +46,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        versionName = overrideVersionName ?: flutter.versionName
         buildConfigField "String", "UMENG_APP_KEY", "\"69c1fd8f9a7f3764889fba4f\""
         buildConfigField "String", "UMENG_CHANNEL", "\"official\""
         manifestPlaceholders = [
