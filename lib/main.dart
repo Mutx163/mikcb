@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'providers/timetable_provider.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
-import 'services/app_analytics.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
 
@@ -19,7 +18,6 @@ Color _colorFromHex(String hexColor) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await AppAnalytics.instance.initialize();
   runApp(const MyApp());
 }
 
@@ -45,7 +43,6 @@ class MyApp extends StatelessWidget {
           return MaterialApp(
             title: _appTitle,
             debugShowCheckedModeBanner: false,
-            navigatorObservers: AppAnalytics.instance.navigatorObservers,
             localizationsDelegates: const [
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
