@@ -39,6 +39,7 @@ import java.util.Calendar
 class MainActivity : FlutterActivity() {
     companion object {
         private const val METHOD_CHANNEL = "com.example.university_timetable/miui_live"
+        private const val UMENG_CHANNEL = "com.example.university_timetable/umeng_analytics"
         private const val CHANNEL_ID = "live_update_channel"
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
@@ -117,6 +118,34 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, UMENG_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "initializeIfNeeded" -> {
+                        val initialized = UmengApplication.initializeAnalyticsIfNeeded(applicationContext)
+                        result.success(initialized)
+                    }
+                    "triggerTestCrash" -> {
+                        UmengApplication.initializeAnalyticsIfNeeded(applicationContext)
+                        Handler(Looper.getMainLooper()).post {
+                            throw RuntimeException("Manual Umeng U-APM test crash")
+                        }
+                        result.success(true)
+                    }
+                    "triggerTestAnr" -> {
+                        UmengApplication.initializeAnalyticsIfNeeded(applicationContext)
+                        Handler(Looper.getMainLooper()).post {
+                            try {
+                                Thread.sleep(30000L)
+                            } catch (_: InterruptedException) {
+                            }
+                        }
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }

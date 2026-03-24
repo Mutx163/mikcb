@@ -4,7 +4,14 @@ import '../services/miui_live_activities_service.dart';
 import 'course_overview_screen.dart';
 
 class UserGuideScreen extends StatefulWidget {
-  const UserGuideScreen({super.key});
+  final bool requirePrivacyConsent;
+  final bool initialPrivacyChecked;
+
+  const UserGuideScreen({
+    super.key,
+    this.requirePrivacyConsent = false,
+    this.initialPrivacyChecked = false,
+  });
 
   @override
   State<UserGuideScreen> createState() => _UserGuideScreenState();
@@ -20,11 +27,13 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
   bool _isNearBottom = false;
+  late bool _privacyChecked;
   int _androidVersion = 0;
 
   @override
   void initState() {
     super.initState();
+    _privacyChecked = widget.initialPrivacyChecked;
     _scrollController.addListener(_handleScroll);
     _refreshStatus();
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
@@ -105,38 +114,45 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('首次使用引导'),
-        actions: [
-          IconButton(
-            tooltip: '刷新状态',
-            onPressed: _refreshStatus,
-            icon: const Icon(Icons.refresh),
+    return PopScope(
+        canPop: !widget.requirePrivacyConsent,
+        child: Scaffold(
+          appBar: AppBar(
+            automaticallyImplyLeading: !widget.requirePrivacyConsent,
+            title: const Text('首次使用引导'),
+            actions: [
+              IconButton(
+                tooltip: '刷新状态',
+                onPressed: _refreshStatus,
+                icon: const Icon(Icons.refresh),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: ListView(
-        controller: _scrollController,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-        children: [
-          _buildHeroCard(theme),
-          const SizedBox(height: 16),
-          _buildQuickActionsCard(theme),
-          const SizedBox(height: 16),
-          _buildStatusCard(theme),
-          const SizedBox(height: 16),
-          _buildPermissionChecklistCard(theme),
-          const SizedBox(height: 16),
-          _buildShortNameCard(theme),
-          const SizedBox(height: 16),
-          _buildImportGuideCard(theme),
-          const SizedBox(height: 16),
-          _buildTipsCard(theme),
-        ],
-      ),
-      bottomNavigationBar: _buildBottomBar(theme),
-    );
+          body: ListView(
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+            children: [
+              _buildHeroCard(theme),
+              const SizedBox(height: 16),
+              _buildQuickActionsCard(theme),
+              const SizedBox(height: 16),
+              _buildStatusCard(theme),
+              const SizedBox(height: 16),
+              _buildPermissionChecklistCard(theme),
+              const SizedBox(height: 16),
+              _buildShortNameCard(theme),
+              const SizedBox(height: 16),
+              _buildImportGuideCard(theme),
+              if (widget.requirePrivacyConsent) ...[
+                const SizedBox(height: 16),
+                _buildPrivacyConsentCard(theme),
+              ],
+              const SizedBox(height: 16),
+              _buildTipsCard(theme),
+            ],
+          ),
+          bottomNavigationBar: _buildBottomBar(theme),
+        ));
   }
 
   Widget _buildHeroCard(ThemeData theme) {
@@ -206,7 +222,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             runSpacing: 8,
             children: [
               _buildHeroChip(Icons.security_rounded, '权限准备'),
-              _buildHeroChip(Icons.system_update_alt_rounded, 'HyperOS 3.0.300+'),
+              _buildHeroChip(
+                  Icons.system_update_alt_rounded, 'HyperOS 3.0.300+'),
               _buildHeroChip(Icons.edit_note_rounded, '简称设置'),
               _buildHeroChip(Icons.import_export_rounded, '导入课表'),
               _buildHeroChip(Icons.check_circle_rounded, '$readyCount/3 已完成'),
@@ -553,11 +570,79 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     );
   }
 
+  Widget _buildPrivacyConsentCard(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '隐私与数据说明',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              '本应用主体功能按本地运行方式设计，课表、时间模板、课程记录和大部分设置默认保存在你的设备本地。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '只有在你主动使用检查更新、下载更新、导入导出等联网功能，或你勾选同意后初始化友盟相关 SDK 时，应用才会与外部服务发生数据交互。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控以及高级运营分析相关能力；只有在你勾选同意后，这些 SDK 才会正式初始化。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '按友盟官方说明，这些 SDK 可能处理的信息包括：设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态、设备标识，以及高级运营分析依赖库涉及的应用列表和地理位置相关信息。',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '你勾选同意后，代表你已阅读并同意上述友盟相关说明。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '友盟隐私政策：https://www.umeng.com/page/policy',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomBar(ThemeData theme) {
     final colorScheme = theme.colorScheme;
     return SafeArea(
       top: false,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 112),
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
@@ -565,29 +650,80 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             top: BorderSide(color: colorScheme.outlineVariant),
           ),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              child: Text(
-                _isNearBottom ? '已经到底了，确认后就可以开始使用。' : '继续下滑，下面还有内容。',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+            if (widget.requirePrivacyConsent) ...[
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _privacyChecked = !_privacyChecked;
+                  });
+                },
+                borderRadius: BorderRadius.circular(14),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: _privacyChecked,
+                        onChanged: (value) {
+                          setState(() {
+                            _privacyChecked = value ?? false;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Text(
+                          '我已阅读并同意友盟相关隐私说明',
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 8),
+            ],
+            Row(
+              children: [
+                if (widget.requirePrivacyConsent)
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('退出应用'),
+                  ),
+                if (widget.requirePrivacyConsent) const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.requirePrivacyConsent
+                        ? '请先滑到底部阅读说明，并勾选同意后开始使用。'
+                        : '继续下滑查看完整引导内容。',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                if (!_isNearBottom)
+                  FilledButton.icon(
+                    onPressed: _scrollMore,
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    label: const Text('继续查看'),
+                  )
+                else
+                  FilledButton.icon(
+                    onPressed: widget.requirePrivacyConsent
+                        ? (_privacyChecked
+                            ? () => Navigator.of(context).pop(true)
+                            : null)
+                        : () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.check_rounded),
+                    label: Text(
+                      widget.requirePrivacyConsent ? '同意并开始使用' : '开始使用',
+                    ),
+                  ),
+              ],
             ),
-            const SizedBox(width: 12),
-            if (!_isNearBottom)
-              FilledButton.icon(
-                onPressed: _scrollMore,
-                icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                label: const Text('继续查看'),
-              )
-            else
-              FilledButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.check_rounded),
-                label: const Text('开始使用'),
-              ),
           ],
         ),
       ),
