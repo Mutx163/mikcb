@@ -667,7 +667,7 @@ class LiveUpdateService : Service() {
         includeAppIcon: Boolean,
         fontSizeSp: Float,
     ): Bitmap? {
-        val resolvedFontSizeSp = fontSizeSp.coerceIn(10f, 32f)
+        val resolvedFontSizeSp = fontSizeSp.coerceIn(1f, 32f)
         val renderScale = 2f
         val baseTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
             color = 0xFFFFFFFF.toInt()
@@ -686,7 +686,7 @@ class LiveUpdateService : Service() {
         ).coerceAtLeast(dp(28f))
 
         var fittedSizeSp = resolvedFontSizeSp
-        while (fittedSizeSp > 8f) {
+        while (fittedSizeSp > 1f) {
             baseTextPaint.textSize = sp(fittedSizeSp)
             if (baseTextPaint.measureText(text) <= maxTextWidthPx) {
                 break
@@ -717,7 +717,7 @@ class LiveUpdateService : Service() {
         val glyphBounds = Rect()
         textPaint.getTextBounds(displayText, 0, displayText.length, glyphBounds)
         val textWidthPx = textPaint.measureText(displayText)
-        val textHeightPx = glyphBounds.height().toFloat().coerceAtLeast(sp(10f) * renderScale)
+        val textHeightPx = glyphBounds.height().toFloat().coerceAtLeast(sp(1f) * renderScale)
         val iconSizePx = (dp(iconSizeDp) * renderScale).toInt()
         val iconGapPx = dp(iconGapDp) * renderScale
         val horizontalPaddingPx = dp(horizontalPaddingDp) * renderScale
@@ -730,7 +730,7 @@ class LiveUpdateService : Service() {
             ).toInt().coerceAtLeast((dp(20f) * renderScale).toInt())
         val height = (
             verticalPaddingPx * 2f + maxOf(textHeightPx, iconSizePx.toFloat())
-            ).toInt().coerceAtLeast((sp(12f) * renderScale).toInt())
+            ).toInt().coerceAtLeast((sp(1f) * renderScale).toInt())
         if (width <= 0 || height <= 0) {
             return null
         }

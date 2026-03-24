@@ -1108,9 +1108,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   ),
                   Slider(
                     value: _draft.liveMiuiIslandLabelFontSize,
-                    min: 10,
+                    min: 1,
                     max: 32,
-                    divisions: 22,
+                    divisions: 31,
                     label:
                         _draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0),
                     onChanged: (value) {
