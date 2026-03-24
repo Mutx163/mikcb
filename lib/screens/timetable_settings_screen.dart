@@ -1205,6 +1205,7 @@ Future<void> _triggerUmengTestAnr(BuildContext context) async {
 
 Future<void> _showTestOptions(BuildContext context) async {
   final now = DateTime.now();
+  const beforeClassLead = Duration(seconds: 8);
   const totalCourseDuration = Duration(minutes: 3);
 
   String formatTime(DateTime dt) {
@@ -1221,7 +1222,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     return;
   }
   final settings = provider.settings;
-  final start = now;
+  final start = now.add(beforeClassLead);
   final end = start.add(totalCourseDuration);
 
   final baseCourse = selection.currentCourse;
@@ -1266,6 +1267,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       testCourse,
       previewNextCourse,
       stage: LiveActivityStage.beforeClass.name,
+      beforeClassLeadMillis: beforeClassLead.inMilliseconds,
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
       endReminderLeadMillis: 0,
@@ -1295,7 +1297,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已发送上课提醒测试通知')),
+      const SnackBar(content: Text('已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段')),
     );
   } catch (e) {
     if (!context.mounted) return;
