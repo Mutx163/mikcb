@@ -57,6 +57,8 @@ class _AboutScreenState extends State<AboutScreen> {
       appBar: AppBar(
         title: const Text('关于软件'),
       ),
+      bottomNavigationBar:
+          _isDownloading ? _buildDownloadProgressBar(theme) : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -512,37 +514,6 @@ class _AboutScreenState extends State<AboutScreen> {
                         ],
                       ),
                     ),
-                    if (_isDownloading) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              '正在下载更新: ${(_downloadProgress * 100).toStringAsFixed(1)}%',
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: _downloadProgress,
-                                minHeight: 8,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                     if ((release?.body ?? '').isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Container(
@@ -813,6 +784,52 @@ class _AboutScreenState extends State<AboutScreen> {
 
     final base = value.endsWith('/') ? value : '$value/';
     return base;
+  }
+
+  Widget _buildDownloadProgressBar(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '正在下载更新 ${(_downloadProgress * 100).toStringAsFixed(1)}%',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: _downloadProgress,
+                minHeight: 8,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
