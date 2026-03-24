@@ -530,7 +530,9 @@ class LiveUpdateService : Service() {
     }
 
     private fun stopTicker() {
-        ticker?.let(handler::removeCallbacks)
+        ticker?.let { runnable ->
+            handler.removeCallbacks(runnable)
+        }
         ticker = null
     }
 

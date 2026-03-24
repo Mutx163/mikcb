@@ -290,6 +290,33 @@ void main() {
     expect(provider.settings.sectionAt(2).displayText, '08:35-09:20');
   });
 
+  test('updating a time scheme rejects cross-midnight sections', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final scheme = await provider.createTimeScheme(
+      name: '夜间作息',
+      sections: const [
+        SectionTime(startTime: '20:00', endTime: '20:45'),
+      ],
+      applyToActiveProfile: true,
+    );
+
+    final message = await provider.updateTimeScheme(
+      schemeId: scheme.id,
+      name: '夜间作息',
+      sections: const [
+        SectionTime(startTime: '23:30', endTime: '00:15'),
+      ],
+    );
+
+    expect(message, contains('跨 0 点课程'));
+    expect(provider.settings.sectionAt(1).displayText, '20:00-20:45');
+  });
+
   test('ensuring import section capacity duplicates shared active scheme',
       () async {
     final provider = TimetableProvider(

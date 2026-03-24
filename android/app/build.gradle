@@ -30,6 +30,10 @@ android {
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -67,6 +71,7 @@ android {
         }
         release {
             manifestPlaceholders = [appLabel: "轻屿课表"]
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.release
             } else {
@@ -80,4 +85,7 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
 }
