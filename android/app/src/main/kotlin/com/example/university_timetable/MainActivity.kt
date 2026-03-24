@@ -1010,7 +1010,9 @@ class LiveUpdateService : Service() {
             } else {
                 setSmallIcon(iconRes)
             }
-            miuiIslandLabelBitmap?.let { setLargeIcon(it) }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                setLargeIcon(Icon.createWithResource(this@LiveUpdateService, R.mipmap.ic_launcher))
+            }
             setContentIntent(pendingIntent)
             setOngoing(true)
             setAutoCancel(false)
@@ -1062,8 +1064,7 @@ class LiveUpdateService : Service() {
                         )
                     )
                     .setProgressTrackerIcon(
-                        miuiIslandLabelBitmap?.let { Icon.createWithBitmap(it) }
-                            ?: Icon.createWithResource(this, R.drawable.ic_course)
+                        Icon.createWithResource(this, R.mipmap.ic_launcher)
                     )
                     .setProgressPoints(
                         duringClassProgress.breakPointUnits.map { point ->
