@@ -5,6 +5,12 @@ enum AppUpdateDownloadSource {
   mirror,
 }
 
+enum WidgetBackgroundStyle {
+  glass,
+  solid,
+  gradient,
+}
+
 enum SectionTimeDisplayMode {
   hidden,
   startOnly,
@@ -50,6 +56,27 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
     return SectionTimeDisplayMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => SectionTimeDisplayMode.startAndEnd,
+    );
+  }
+}
+
+extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
+  String get value => switch (this) {
+        WidgetBackgroundStyle.glass => 'glass',
+        WidgetBackgroundStyle.solid => 'solid',
+        WidgetBackgroundStyle.gradient => 'gradient',
+      };
+
+  String get label => switch (this) {
+        WidgetBackgroundStyle.glass => '半透明玻璃感',
+        WidgetBackgroundStyle.solid => '纯色卡片',
+        WidgetBackgroundStyle.gradient => '渐变卡片',
+      };
+
+  static WidgetBackgroundStyle fromValue(String? value) {
+    return WidgetBackgroundStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => WidgetBackgroundStyle.glass,
     );
   }
 }
@@ -265,6 +292,9 @@ class TimetableSettings {
   final bool courseCardShowDescription;
   final CourseCardVerticalAlign courseCardVerticalAlign;
   final CourseCardHorizontalAlign courseCardHorizontalAlign;
+  final WidgetBackgroundStyle widgetBackgroundStyle;
+  final bool widgetShowLocation;
+  final bool widgetShowCountdown;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
@@ -313,6 +343,9 @@ class TimetableSettings {
     this.courseCardShowDescription = false,
     this.courseCardVerticalAlign = CourseCardVerticalAlign.center,
     this.courseCardHorizontalAlign = CourseCardHorizontalAlign.center,
+    this.widgetBackgroundStyle = WidgetBackgroundStyle.glass,
+    this.widgetShowLocation = true,
+    this.widgetShowCountdown = true,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
@@ -375,6 +408,9 @@ class TimetableSettings {
       courseCardShowDescription: false,
       courseCardVerticalAlign: CourseCardVerticalAlign.center,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
+      widgetBackgroundStyle: WidgetBackgroundStyle.glass,
+      widgetShowLocation: true,
+      widgetShowCountdown: true,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
@@ -426,6 +462,9 @@ class TimetableSettings {
       'courseCardShowDescription': courseCardShowDescription,
       'courseCardVerticalAlign': courseCardVerticalAlign.value,
       'courseCardHorizontalAlign': courseCardHorizontalAlign.value,
+      'widgetBackgroundStyle': widgetBackgroundStyle.value,
+      'widgetShowLocation': widgetShowLocation,
+      'widgetShowCountdown': widgetShowCountdown,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
@@ -497,6 +536,11 @@ class TimetableSettings {
       courseCardHorizontalAlign: CourseCardHorizontalAlignX.fromValue(
         json['courseCardHorizontalAlign'] as String?,
       ),
+      widgetBackgroundStyle: WidgetBackgroundStyleX.fromValue(
+        json['widgetBackgroundStyle'] as String?,
+      ),
+      widgetShowLocation: json['widgetShowLocation'] as bool? ?? true,
+      widgetShowCountdown: json['widgetShowCountdown'] as bool? ?? true,
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
       ),
@@ -576,6 +620,9 @@ class TimetableSettings {
     bool? courseCardShowDescription,
     CourseCardVerticalAlign? courseCardVerticalAlign,
     CourseCardHorizontalAlign? courseCardHorizontalAlign,
+    WidgetBackgroundStyle? widgetBackgroundStyle,
+    bool? widgetShowLocation,
+    bool? widgetShowCountdown,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
@@ -633,6 +680,10 @@ class TimetableSettings {
           courseCardVerticalAlign ?? this.courseCardVerticalAlign,
       courseCardHorizontalAlign:
           courseCardHorizontalAlign ?? this.courseCardHorizontalAlign,
+      widgetBackgroundStyle:
+          widgetBackgroundStyle ?? this.widgetBackgroundStyle,
+      widgetShowLocation: widgetShowLocation ?? this.widgetShowLocation,
+      widgetShowCountdown: widgetShowCountdown ?? this.widgetShowCountdown,
       timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:

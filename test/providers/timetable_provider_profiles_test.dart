@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/home_widget_snapshot_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -417,5 +418,80 @@ void main() {
     );
     expect(syncedCourses.map((course) => course.location).toSet(),
         {'A101', 'B202'});
+  });
+
+  test('home widget snapshot highlights the next course before class',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: DateTime(2026, 3, 23),
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-next',
+        name: '操作系统',
+        shortName: '操作系统',
+        teacher: '张老师',
+        location: 'A203',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+
+    final snapshot = provider.buildHomeWidgetSnapshot(
+      now: DateTime(2026, 3, 24, 7, 30),
+    );
+
+    expect(snapshot, isNotNull);
+    expect(snapshot!.state, HomeWidgetSnapshotState.upcoming);
+    expect(snapshot.currentWeek, 1);
+    expect(snapshot.highlightedCourse?.name, '操作系统');
+    expect(snapshot.nextCourse?.name, '操作系统');
+    expect(snapshot.todayCourses, hasLength(1));
+  });
+
+  test('home widget snapshot returns no course state on empty day', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: DateTime(2026, 3, 23),
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-mon',
+        name: '编译原理',
+        teacher: '李老师',
+        location: 'B104',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+
+    final snapshot = provider.buildHomeWidgetSnapshot(
+      now: DateTime(2026, 3, 24, 10, 00),
+    );
+
+    expect(snapshot, isNotNull);
+    expect(snapshot!.state, HomeWidgetSnapshotState.noCourse);
+    expect(snapshot.highlightedCourse, isNull);
+    expect(snapshot.nextCourse, isNull);
+    expect(snapshot.todayCourses, isEmpty);
   });
 }

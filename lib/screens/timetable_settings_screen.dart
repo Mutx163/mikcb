@@ -113,6 +113,26 @@ class TimetableSettingsScreen extends StatelessWidget {
                     ),
                     const Divider(height: 1),
                     _SettingsEntryTile(
+                      icon: Icons.widgets_outlined,
+                      title: '桌面小组件',
+                      subtitle: '今日课程卡片、小组件背景与显示信息',
+                      trailing: Text(
+                        settings.widgetBackgroundStyle.label,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(
+                                name: '/settings/home-widget'),
+                            builder: (_) => const _HomeWidgetSettingsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const Divider(height: 1),
+                    _SettingsEntryTile(
                       icon: Icons.swap_horiz_rounded,
                       title: '数据备份与迁移',
                       subtitle: '导出完整课表文件，给别人直接导入使用',
@@ -1522,6 +1542,143 @@ class _LayoutSettingsScreen extends StatefulWidget {
 
   @override
   State<_LayoutSettingsScreen> createState() => _LayoutSettingsScreenState();
+}
+
+class _HomeWidgetSettingsScreen extends StatefulWidget {
+  const _HomeWidgetSettingsScreen();
+
+  @override
+  State<_HomeWidgetSettingsScreen> createState() =>
+      _HomeWidgetSettingsScreenState();
+}
+
+class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
+  late TimetableSettings _draft;
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = context.read<TimetableProvider>().settings;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('桌面小组件'),
+        actions: [
+          TextButton(
+            onPressed: _save,
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '今日课程组件',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '首批支持 2×2、2×4、4×4 三种尺寸。点击小组件会直接打开首页，课程开始和结束时会主动刷新。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<WidgetBackgroundStyle>(
+                    value: _draft.widgetBackgroundStyle,
+                    decoration: const InputDecoration(
+                      labelText: '背景样式',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: WidgetBackgroundStyle.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(widgetBackgroundStyle: value);
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示地点'),
+                    subtitle: const Text('关闭后，小组件次级信息会优先显示周次和课程数量。'),
+                    value: _draft.widgetShowLocation,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(widgetShowLocation: value);
+                      });
+                    },
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('显示倒计时'),
+                    subtitle: const Text('先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。'),
+                    value: _draft.widgetShowCountdown,
+                    onChanged: (value) {
+                      setState(() {
+                        _draft = _draft.copyWith(widgetShowCountdown: value);
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '说明',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '小组件目前优先展示今日课程。无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _save() async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(_draft);
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    Navigator.pop(context);
+  }
 }
 
 class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {

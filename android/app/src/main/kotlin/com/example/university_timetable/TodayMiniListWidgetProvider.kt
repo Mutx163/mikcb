@@ -1,0 +1,149 @@
+package com.example.university_timetable
+
+import android.appwidget.AppWidgetManager
+import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.view.View
+import android.widget.RemoteViews
+
+class TodayMiniListWidgetProvider : AppWidgetProvider() {
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetIds: IntArray,
+    ) {
+        appWidgetIds.forEach { appWidgetId ->
+            updateWidget(context, appWidgetManager, appWidgetId)
+        }
+    }
+
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE) {
+            updateAll(context)
+        }
+    }
+
+    companion object {
+        fun updateAll(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(
+                ComponentName(context, TodayMiniListWidgetProvider::class.java)
+            )
+            ids.forEach { appWidgetId ->
+                updateWidget(context, manager, appWidgetId)
+            }
+        }
+
+        private fun updateWidget(
+            context: Context,
+            appWidgetManager: AppWidgetManager,
+            appWidgetId: Int,
+        ) {
+            val views = RemoteViews(context.packageName, R.layout.widget_today_mini_list)
+            val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val style = snapshot?.backgroundStyle ?: "glass"
+            val primaryColor = TodayWidgetSupport.primaryTextColor(style)
+            val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
+
+            views.setInt(
+                R.id.widget_mini_root,
+                "setBackgroundResource",
+                TodayWidgetSupport.backgroundRes(style)
+            )
+            views.setTextColor(R.id.widget_mini_heading, secondaryColor)
+            views.setTextColor(R.id.widget_mini_week, secondaryColor)
+            views.setTextColor(R.id.widget_mini_empty, secondaryColor)
+            views.setInt(
+                R.id.widget_mini_heading,
+                "setBackgroundResource",
+                TodayWidgetSupport.statusBackgroundRes(snapshot?.state ?: "no_course", style)
+            )
+
+            if (snapshot == null) {
+                views.setTextViewText(R.id.widget_mini_heading, "今日课程")
+                views.setTextViewText(R.id.widget_mini_week, "轻屿课表")
+                views.setViewVisibility(R.id.widget_mini_empty, View.VISIBLE)
+                views.setTextViewText(R.id.widget_mini_empty, "打开应用后同步")
+                bindRow(views, 0, null, primaryColor, secondaryColor, false, style)
+                bindRow(views, 1, null, primaryColor, secondaryColor, false, style)
+            } else {
+                views.setTextViewText(R.id.widget_mini_heading, "今日课程")
+                views.setTextViewText(R.id.widget_mini_week, "第${snapshot.currentWeek}周")
+                val rows = snapshot.todayCourses.take(2)
+                val emptyText = when {
+                    rows.isNotEmpty() -> ""
+                    snapshot.state == "completed" -> "今天课程已结束"
+                    else -> "今日无课"
+                }
+                views.setViewVisibility(
+                    R.id.widget_mini_empty,
+                    if (emptyText.isBlank()) View.GONE else View.VISIBLE
+                )
+                views.setTextViewText(R.id.widget_mini_empty, emptyText)
+                val highlightedId =
+                    if (snapshot.state == "ongoing") snapshot.highlightedCourse?.id else null
+                bindRow(
+                    views,
+                    0,
+                    rows.getOrNull(0),
+                    primaryColor,
+                    secondaryColor,
+                    rows.getOrNull(0)?.id == highlightedId,
+                    style
+                )
+                bindRow(
+                    views,
+                    1,
+                    rows.getOrNull(1),
+                    primaryColor,
+                    secondaryColor,
+                    rows.getOrNull(1)?.id == highlightedId,
+                    style
+                )
+            }
+
+            views.setOnClickPendingIntent(
+                R.id.widget_mini_root,
+                TodayWidgetSupport.buildLaunchPendingIntent(context, 15000 + appWidgetId)
+            )
+            appWidgetManager.updateAppWidget(appWidgetId, views)
+        }
+
+        private fun bindRow(
+            views: RemoteViews,
+            index: Int,
+            course: TodayWidgetCourseInfo?,
+            primaryColor: Int,
+            secondaryColor: Int,
+            isHighlighted: Boolean,
+            style: String,
+        ) {
+            val rowIds = arrayOf(
+                Triple(R.id.widget_mini_row_1, R.id.widget_mini_row_1_time, R.id.widget_mini_row_1_title),
+                Triple(R.id.widget_mini_row_2, R.id.widget_mini_row_2_time, R.id.widget_mini_row_2_title),
+            )
+            val (rowId, timeId, titleId) = rowIds[index]
+            if (course == null) {
+                views.setViewVisibility(rowId, View.GONE)
+                return
+            }
+            views.setViewVisibility(rowId, View.VISIBLE)
+            views.setInt(
+                rowId,
+                "setBackgroundResource",
+                when {
+                    !isHighlighted -> android.R.color.transparent
+                    style == "gradient" -> R.drawable.widget_row_highlight_light
+                    else -> R.drawable.widget_row_highlight
+                }
+            )
+            views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
+            views.setTextColor(titleId, primaryColor)
+            views.setTextViewText(timeId, course.startTime)
+            views.setTextViewText(titleId, course.name)
+        }
+    }
+}
