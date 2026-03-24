@@ -39,13 +39,14 @@ jobs:
         shell: bash
         run: |
           APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
-          VERSION_NAME="${APP_VERSION%%+*}"
-          RELEASE_NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
           if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
             RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+            VERSION_NAME="${RELEASE_TAG#v}"
           else
+            VERSION_NAME="${APP_VERSION%%+*}"
             RELEASE_TAG="v${VERSION_NAME}"
           fi
+          RELEASE_NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
@@ -75,6 +76,7 @@ jobs:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          OVERRIDE_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
         run: flutter build apk --release --split-per-abi
 
       - name: Prepare artifact
@@ -91,7 +93,7 @@ jobs:
           path: dist/mikcb-*.apk
 
       - name: Create or update GitHub release
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}

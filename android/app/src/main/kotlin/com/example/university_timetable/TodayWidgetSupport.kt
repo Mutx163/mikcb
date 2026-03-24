@@ -124,6 +124,16 @@ object TodayWidgetSupport {
         }
     }
 
+    fun compactMetaText(snapshot: TodayWidgetSnapshotInfo): String {
+        val highlighted = snapshot.highlightedCourse
+        return when {
+            highlighted == null -> heroTimeText(snapshot)
+            snapshot.showLocation && highlighted.location.isNotBlank() ->
+                "${heroTimeText(snapshot)}\n${highlighted.location}"
+            else -> heroTimeText(snapshot)
+        }
+    }
+
     fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
         return if (snapshot.todayCourses.isNotEmpty()) {
             "${snapshot.profileName} · 今日 ${snapshot.todayCourses.size} 节"

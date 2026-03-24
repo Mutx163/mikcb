@@ -757,15 +757,25 @@ class LiveUpdateService : Service() {
         val iconGapPx = dp(iconGapDp) * renderScale
         val horizontalPaddingPx = dp(horizontalPaddingDp) * renderScale
         val verticalPaddingPx = dp(verticalPaddingDp) * renderScale
+        val textOnlyMinWidthPx = dp(54f) * renderScale
+        val textOnlyMinHeightPx = dp(18f) * renderScale
 
-        val width = (
+        val contentWidth = (
             horizontalPaddingPx * 2f +
                 textWidthPx +
                 if (includeAppIcon) iconSizePx + iconGapPx else 0f
-            ).toInt().coerceAtLeast((dp(20f) * renderScale).toInt())
-        val height = (
+            )
+        val width = maxOf(
+            contentWidth,
+            if (includeAppIcon) dp(20f) * renderScale else textOnlyMinWidthPx
+        ).toInt()
+        val contentHeight = (
             verticalPaddingPx * 2f + maxOf(textHeightPx, iconSizePx.toFloat())
-            ).toInt().coerceAtLeast((sp(1f) * renderScale).toInt())
+            )
+        val height = maxOf(
+            contentHeight,
+            if (includeAppIcon) sp(1f) * renderScale else textOnlyMinHeightPx
+        ).toInt()
         if (width <= 0 || height <= 0) {
             return null
         }
@@ -786,6 +796,8 @@ class LiveUpdateService : Service() {
             )
             appIcon.draw(canvas)
             textStartX += iconSizePx + iconGapPx
+        } else {
+            textStartX = ((width - textWidthPx) / 2f).coerceAtLeast(horizontalPaddingPx)
         }
         val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f
         canvas.drawText(displayText, textStartX, baseline, textPaint)

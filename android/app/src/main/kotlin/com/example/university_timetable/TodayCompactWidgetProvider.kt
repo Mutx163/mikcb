@@ -69,7 +69,7 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                     snapshot == null -> "点击打开首页"
                     state == "no_course" -> "留一点时间给自己"
                     state == "completed" -> "今天课程已经结束"
-                    else -> TodayWidgetSupport.heroTimeText(snapshot)
+                    else -> TodayWidgetSupport.compactMetaText(snapshot)
                 }
             )
             views.setTextColor(R.id.widget_status, secondaryTextColor)

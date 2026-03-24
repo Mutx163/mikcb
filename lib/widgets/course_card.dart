@@ -203,34 +203,39 @@ class CourseCard extends StatelessWidget {
 
                           if (verticalAlign ==
                               CourseCardVerticalAlign.spaceEvenly) {
-                            return SizedBox(
-                              width: constraints.maxWidth,
-                              height: constraints.maxHeight,
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                crossAxisAlignment: crossAxisAlignment,
-                                children: [
-                                  for (final line in textLines)
-                                    Text(
-                                      line.text,
-                                      style: line.style,
-                                      textAlign: textAlign,
-                                      softWrap: true,
-                                    ),
-                                ],
+                            return FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: constraints.maxWidth,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceEvenly,
+                                  crossAxisAlignment: crossAxisAlignment,
+                                  children: [
+                                    for (final line in textLines)
+                                      Text(
+                                        line.text,
+                                        style: line.style,
+                                        textAlign: textAlign,
+                                        softWrap: true,
+                                      ),
+                                  ],
+                                ),
                               ),
                             );
                           }
 
                           return Align(
                             alignment: _verticalContentAlignment,
-                            child: OverflowBox(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
                               alignment: _verticalContentAlignment,
-                              minWidth: constraints.maxWidth,
-                              maxWidth: constraints.maxWidth,
-                              minHeight: 0,
-                              maxHeight: double.infinity,
-                              child: content,
+                              child: SizedBox(
+                                width: constraints.maxWidth,
+                                child: content,
+                              ),
                             ),
                           );
                         },

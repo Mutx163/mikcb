@@ -56,6 +56,7 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_mini_heading, secondaryColor)
             views.setTextColor(R.id.widget_mini_week, secondaryColor)
             views.setTextColor(R.id.widget_mini_empty, secondaryColor)
+            views.setTextColor(R.id.widget_mini_more, secondaryColor)
             views.setInt(
                 R.id.widget_mini_heading,
                 "setBackgroundResource",
@@ -66,13 +67,15 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_mini_heading, "今日课程")
                 views.setTextViewText(R.id.widget_mini_week, "轻屿课表")
                 views.setViewVisibility(R.id.widget_mini_empty, View.VISIBLE)
+                views.setViewVisibility(R.id.widget_mini_more, View.GONE)
                 views.setTextViewText(R.id.widget_mini_empty, "打开应用后同步")
                 bindRow(views, 0, null, primaryColor, secondaryColor, false, style)
                 bindRow(views, 1, null, primaryColor, secondaryColor, false, style)
+                bindRow(views, 2, null, primaryColor, secondaryColor, false, style)
             } else {
                 views.setTextViewText(R.id.widget_mini_heading, "今日课程")
                 views.setTextViewText(R.id.widget_mini_week, "第${snapshot.currentWeek}周")
-                val rows = snapshot.todayCourses.take(2)
+                val rows = snapshot.todayCourses.take(3)
                 val emptyText = when {
                     rows.isNotEmpty() -> ""
                     snapshot.state == "completed" -> "今天课程已结束"
@@ -83,6 +86,12 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_mini_empty, emptyText)
+                val remainingCount = (snapshot.todayCourses.size - rows.size).coerceAtLeast(0)
+                views.setViewVisibility(
+                    R.id.widget_mini_more,
+                    if (remainingCount > 0) View.VISIBLE else View.GONE
+                )
+                views.setTextViewText(R.id.widget_mini_more, "还有 $remainingCount 节")
                 val highlightedId =
                     if (snapshot.state == "ongoing") snapshot.highlightedCourse?.id else null
                 bindRow(
@@ -101,6 +110,15 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     primaryColor,
                     secondaryColor,
                     rows.getOrNull(1)?.id == highlightedId,
+                    style
+                )
+                bindRow(
+                    views,
+                    2,
+                    rows.getOrNull(2),
+                    primaryColor,
+                    secondaryColor,
+                    rows.getOrNull(2)?.id == highlightedId,
                     style
                 )
             }
@@ -124,6 +142,7 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             val rowIds = arrayOf(
                 Triple(R.id.widget_mini_row_1, R.id.widget_mini_row_1_time, R.id.widget_mini_row_1_title),
                 Triple(R.id.widget_mini_row_2, R.id.widget_mini_row_2_time, R.id.widget_mini_row_2_title),
+                Triple(R.id.widget_mini_row_3, R.id.widget_mini_row_3_time, R.id.widget_mini_row_3_title),
             )
             val (rowId, timeId, titleId) = rowIds[index]
             if (course == null) {
@@ -142,7 +161,14 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             )
             views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
             views.setTextColor(titleId, primaryColor)
-            views.setTextViewText(timeId, course.startTime)
+            views.setTextViewText(
+                timeId,
+                if (course.location.isNotBlank()) {
+                    "${course.startTime} · ${course.location}"
+                } else {
+                    course.startTime
+                }
+            )
             views.setTextViewText(titleId, course.name)
         }
     }
