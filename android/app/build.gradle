@@ -101,4 +101,5 @@ dependencies {
     implementation 'com.umeng.umsdk:asms:1.8.0'
     implementation 'com.umeng.umsdk:apm:1.5.2'
     implementation 'com.umeng.umsdk:uyumao:1.1.2'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
 }
