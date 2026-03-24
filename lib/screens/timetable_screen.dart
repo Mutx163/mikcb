@@ -15,6 +15,7 @@ import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'about_screen.dart';
 import 'course_overview_screen.dart';
+import 'feedback_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -165,6 +166,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     const PopupMenuItem(
                       value: 'settings',
                       child: Text('课表设置'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'feedback',
+                      child: Text('问题反馈'),
                     ),
                     const PopupMenuItem(
                       value: 'add',
@@ -930,6 +935,15 @@ class _TimetableScreenState extends State<TimetableScreen> {
         break;
       case 'settings':
         _openSettings();
+        break;
+      case 'feedback':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/feedback'),
+            builder: (context) => const FeedbackScreen(),
+          ),
+        );
         break;
       case 'add':
         _navigateToAddCourse(context);
