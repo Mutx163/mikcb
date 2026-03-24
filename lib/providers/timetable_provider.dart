@@ -458,6 +458,10 @@ class TimetableProvider with ChangeNotifier {
     required List<SectionTime> sections,
   }) async {
     await initialize();
+    final validationMessage = validateSectionTimes(sections);
+    if (validationMessage != null) {
+      return validationMessage;
+    }
     if (sections.length < maxUsedSection &&
         _settings.activeTimeSchemeId == schemeId) {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';

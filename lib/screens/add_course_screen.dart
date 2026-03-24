@@ -39,7 +39,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
 
-  final List<String> _weekDays = const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  final List<String> _weekDays = const [
+    '周一',
+    '周二',
+    '周三',
+    '周四',
+    '周五',
+    '周六',
+    '周日'
+  ];
   final List<String> _colors = const [
     '#2196F3',
     '#4CAF50',
@@ -307,7 +315,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Widget _buildTimeSection(TimetableSettings settings) {
-    final sectionNumbers = List.generate(settings.sectionCount, (index) => index + 1);
+    final sectionNumbers =
+        List.generate(settings.sectionCount, (index) => index + 1);
     final startTime = settings.sectionAt(_startSection).startTime;
     final endTime = settings.sectionAt(_endSection).endTime;
 
@@ -463,7 +472,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       labelText: '结束周',
                       border: OutlineInputBorder(),
                     ),
-                    items: availableWeeks.where((week) => week >= _startWeek).map((week) {
+                    items: availableWeeks
+                        .where((week) => week >= _startWeek)
+                        .map((week) {
                       return DropdownMenuItem(
                         value: week,
                         child: Text('第 $week 周'),
@@ -542,11 +553,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Color(int.parse('FF${color.replaceFirst('#', '')}', radix: 16)),
+                      color: Color(int.parse('FF${color.replaceFirst('#', '')}',
+                          radix: 16)),
                       borderRadius: BorderRadius.circular(8),
-                      border: isSelected ? Border.all(color: Colors.black, width: 3) : null,
+                      border: isSelected
+                          ? Border.all(color: Colors.black, width: 3)
+                          : null,
                     ),
-                    child: isSelected ? const Icon(Icons.check, color: Colors.white) : null,
+                    child: isSelected
+                        ? const Icon(Icons.check, color: Colors.white)
+                        : null,
                   ),
                 );
               }).toList(),
@@ -688,15 +704,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
-  void _saveCourse(TimetableSettings settings) {
+  Future<void> _saveCourse(TimetableSettings settings) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
+    final provider = context.read<TimetableProvider>();
+    FocusScope.of(context).unfocus();
+    await Future<void>.delayed(const Duration(milliseconds: 16));
+
     final course = Course(
       id: widget.course?.id ?? const Uuid().v4(),
       name: _nameController.text,
-      shortName: _shortNameController.text.isEmpty ? null : _shortNameController.text,
+      shortName:
+          _shortNameController.text.isEmpty ? null : _shortNameController.text,
       teacher: _teacherController.text,
       location: _locationController.text,
       dayOfWeek: _selectedDayOfWeek,
@@ -715,16 +736,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           : _descriptionController.text,
     );
 
-    final provider = context.read<TimetableProvider>();
     if (widget.course == null) {
-      provider.addCourse(course);
+      await provider.addCourse(course);
     } else {
-      provider.updateCourse(
+      await provider.updateCourse(
         course,
         previousSharedName: widget.course!.name,
       );
     }
 
+    if (!mounted) {
+      return;
+    }
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(widget.course == null ? '课程添加成功' : '课程更新成功')),

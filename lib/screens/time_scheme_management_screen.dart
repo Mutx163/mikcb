@@ -454,11 +454,33 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       return;
     }
 
-    setState(() {
-      _sections[index] = SectionTime(
-        startTime: _formatTimeOfDay(start),
-        endTime: _formatTimeOfDay(end),
+    final editedSection = SectionTime(
+      startTime: _formatTimeOfDay(start),
+      endTime: _formatTimeOfDay(end),
+    );
+    final startMinutes = _parseTimeMinutes(editedSection.startTime);
+    final endMinutes = _parseTimeMinutes(editedSection.endTime);
+    if (endMinutes <= startMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('结束时间必须晚于开始时间，暂不支持跨 0 点课程'),
+        ),
       );
+      return;
+    }
+
+    final nextSections = List<SectionTime>.from(_sections);
+    nextSections[index] = editedSection;
+    final validationMessage = validateSectionTimes(nextSections);
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationMessage)),
+      );
+      return;
+    }
+
+    setState(() {
+      _sections[index] = editedSection;
     });
   }
 
@@ -546,6 +568,11 @@ TimeOfDay _parseTimeOfDay(String value) {
 
 String _formatTimeOfDay(TimeOfDay time) {
   return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+}
+
+int _parseTimeMinutes(String value) {
+  final parts = value.split(':');
+  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
 }
 
 SectionTime _buildNextSection(SectionTime last) {

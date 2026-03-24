@@ -67,4 +67,35 @@ void main() {
       '10:05-10:50',
     ]);
   });
+
+  test('quick section builder rejects schedules that cross midnight', () {
+    expect(
+      () => buildQuickSectionTimes(
+        morningCount: 1,
+        afternoonCount: 0,
+        eveningCount: 0,
+        morningStartTime: '23:30',
+        afternoonStartTime: null,
+        eveningStartTime: null,
+        classDurationMinutes: 45,
+        breakDurationMinutes: 10,
+      ),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('跨 0 点课程'),
+        ),
+      ),
+    );
+  });
+
+  test('section validation rejects end time before start time', () {
+    expect(
+      validateSectionTimes(const [
+        SectionTime(startTime: '23:30', endTime: '00:15'),
+      ]),
+      contains('跨 0 点课程'),
+    );
+  });
 }

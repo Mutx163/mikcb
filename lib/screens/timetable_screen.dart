@@ -94,6 +94,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
           Theme.of(context).colorScheme.surface,
         );
         return Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: backgroundColor,
           appBar: AppBar(
             backgroundColor: backgroundColor,
@@ -176,19 +177,23 @@ class _TimetableScreenState extends State<TimetableScreen> {
           ),
           body: provider.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Container(
-                  color: backgroundColor,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        return _buildWeekPager(
-                          provider,
-                          provider.settings,
-                          constraints.maxWidth,
-                          constraints.maxHeight,
-                        );
-                      },
+              : MediaQuery.removeViewInsets(
+                  context: context,
+                  removeBottom: true,
+                  child: Container(
+                    color: backgroundColor,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return _buildWeekPager(
+                            provider,
+                            provider.settings,
+                            constraints.maxWidth,
+                            constraints.maxHeight,
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

@@ -80,6 +80,31 @@ class BreakOverrideRule {
   });
 }
 
+String? validateSectionTimes(List<SectionTime> sections) {
+  if (sections.isEmpty) {
+    return '至少需要保留一节课的时间';
+  }
+
+  var previousEndMinutes = -1;
+  for (var index = 0; index < sections.length; index++) {
+    final section = sections[index];
+    final startMinutes = _clockMinutes(section.startTime);
+    final endMinutes = _clockMinutes(section.endTime);
+
+    if (endMinutes <= startMinutes) {
+      return '第 ${index + 1} 节结束时间必须晚于开始时间，暂不支持跨 0 点课程';
+    }
+
+    if (previousEndMinutes >= 0 && startMinutes < previousEndMinutes) {
+      return '第 ${index + 1} 节开始时间不能早于上一节的结束时间';
+    }
+
+    previousEndMinutes = endMinutes;
+  }
+
+  return null;
+}
+
 List<SectionTime> buildQuickSectionTimes({
   required int morningCount,
   required int afternoonCount,
@@ -94,7 +119,8 @@ List<SectionTime> buildQuickSectionTimes({
   final sections = <SectionTime>[];
   var sectionNumber = 1;
   final overrides = {
-    for (final rule in breakOverrideRules) rule.afterSection: rule.breakDurationMinutes,
+    for (final rule in breakOverrideRules)
+      rule.afterSection: rule.breakDurationMinutes,
   };
 
   void appendPeriod({
@@ -111,14 +137,18 @@ List<SectionTime> buildQuickSectionTimes({
     var currentStartMinutes = _clockMinutes(startTime);
     for (var index = 0; index < count; index++) {
       final currentEndMinutes = currentStartMinutes + classDurationMinutes;
+      if (currentEndMinutes > 24 * 60) {
+        throw FormatException(
+          '第 $sectionNumber 节会跨到次日，当前暂不支持跨 0 点课程',
+        );
+      }
       sections.add(
         SectionTime(
           startTime: _minutesToClock(currentStartMinutes),
           endTime: _minutesToClock(currentEndMinutes),
         ),
       );
-      final breakMinutes =
-          overrides[sectionNumber] ?? breakDurationMinutes;
+      final breakMinutes = overrides[sectionNumber] ?? breakDurationMinutes;
       currentStartMinutes = currentEndMinutes + breakMinutes;
       sectionNumber += 1;
     }
@@ -137,6 +167,11 @@ List<SectionTime> buildQuickSectionTimes({
 
   if (sections.isEmpty) {
     throw const FormatException('至少需要设置一个时段的节次数');
+  }
+
+  final validationMessage = validateSectionTimes(sections);
+  if (validationMessage != null) {
+    throw FormatException(validationMessage);
   }
 
   return sections;

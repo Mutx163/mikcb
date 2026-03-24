@@ -1159,78 +1159,23 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
 Future<void> _showTestOptions(BuildContext context) async {
   final now = DateTime.now();
   const totalCourseDuration = Duration(minutes: 3);
-  const beforeEndDuration = Duration(seconds: 60);
-  const duringClassDuration = Duration(minutes: 2);
 
   String formatTime(DateTime dt) {
     return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 
   final provider = context.read<TimetableProvider>();
-  final settings = provider.settings;
   final selection = provider.getTestLiveActivityCourseSelection(now: now);
   if (selection == null) {
-    final hasEnabledStage = settings.liveEnableBeforeClass ||
-        settings.liveEnableDuringClass ||
-        settings.liveEnableBeforeEnd;
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(hasEnabledStage ? '当前没有可测试的课程' : '请先开启至少一个超级岛时段'),
-      ),
+      const SnackBar(content: Text('当前没有可测试的课程')),
     );
     return;
   }
-
-  final enableBeforeClass = settings.liveEnableBeforeClass;
-  final enableDuringClass = settings.liveEnableDuringClass;
-  final enableBeforeEnd = settings.liveEnableBeforeEnd;
-
-  late final DateTime start;
-  late final DateTime end;
-  late final Duration endReminderLead;
-  late final LiveActivityStage initialStage;
-  late final String flowSummary;
-
-  if (enableBeforeClass) {
-    initialStage = LiveActivityStage.beforeClass;
-    start = now;
-    if (enableDuringClass && enableBeforeEnd) {
-      end = start.add(duringClassDuration + beforeEndDuration);
-      endReminderLead = beforeEndDuration;
-      flowSummary = '立即显示上课前提醒 → 上课中 2分钟 → 下课提醒 60秒';
-    } else if (enableDuringClass) {
-      end = start.add(totalCourseDuration);
-      endReminderLead = Duration.zero;
-      flowSummary = '立即显示上课前提醒 → 上课中 3分钟';
-    } else if (enableBeforeEnd) {
-      end = start.add(totalCourseDuration);
-      endReminderLead = beforeEndDuration;
-      flowSummary = '立即显示上课前提醒 → 3分钟课程 → 下课提醒 60秒';
-    } else {
-      end = start.add(totalCourseDuration);
-      endReminderLead = Duration.zero;
-      flowSummary = '仅测试立即显示的上课前提醒（课程时长 3分钟）';
-    }
-  } else if (enableDuringClass) {
-    initialStage = LiveActivityStage.duringClass;
-    start = now;
-    if (enableBeforeEnd) {
-      end = start.add(duringClassDuration + beforeEndDuration);
-      endReminderLead = beforeEndDuration;
-      flowSummary = '上课中 2分钟 → 下课提醒 60秒';
-    } else {
-      end = start.add(totalCourseDuration);
-      endReminderLead = Duration.zero;
-      flowSummary = '仅测试上课中 3分钟';
-    }
-  } else {
-    initialStage = LiveActivityStage.beforeEnd;
-    end = now.add(beforeEndDuration);
-    start = end.subtract(totalCourseDuration);
-    endReminderLead = beforeEndDuration;
-    flowSummary = '仅测试下课提醒 60秒（课程总时长 3分钟）';
-  }
+  final settings = provider.settings;
+  final start = now;
+  final end = start.add(totalCourseDuration);
 
   final baseCourse = selection.currentCourse;
   final previewNextCourse = selection.nextCourse;
@@ -1273,16 +1218,16 @@ Future<void> _showTestOptions(BuildContext context) async {
     await MiuiLiveActivitiesService().startLiveUpdate(
       testCourse,
       previewNextCourse,
-      stage: initialStage.name,
+      stage: LiveActivityStage.beforeClass.name,
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
-      endReminderLeadMillis: endReminderLead.inMilliseconds,
+      endReminderLeadMillis: 0,
       endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
       promoteDuringClass: settings.livePromoteDuringClass,
       showNotificationDuringClass: settings.liveShowDuringClassNotification,
-      enableBeforeClass: enableBeforeClass,
-      enableDuringClass: enableDuringClass,
-      enableBeforeEnd: enableBeforeEnd,
+      enableBeforeClass: true,
+      enableDuringClass: false,
+      enableBeforeEnd: false,
       showCountdown: settings.liveShowCountdown,
       showCourseNameInIsland: settings.liveShowCourseName,
       showLocationInIsland: settings.liveShowLocation,
@@ -1303,7 +1248,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已发送测试通知：$flowSummary')),
+      const SnackBar(content: Text('已发送上课提醒测试通知')),
     );
   } catch (e) {
     if (!context.mounted) return;
