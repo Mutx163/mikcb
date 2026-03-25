@@ -8,6 +8,8 @@ class UmengAnalyticsService {
       MethodChannel('com.example.university_timetable/umeng_analytics');
 
   static bool _initialized = false;
+  static final Map<String, DateTime> _lastReportAt = {};
+  static const Duration _reportThrottleWindow = Duration(minutes: 2);
 
   static Future<void> initializeIfNeeded() async {
     if (_initialized || defaultTargetPlatform != TargetPlatform.android) {
@@ -21,6 +23,70 @@ class UmengAnalyticsService {
       // Ignore when the platform implementation is unavailable.
     } catch (_) {
       // Keep startup resilient even if analytics init fails.
+    }
+  }
+
+  static Future<void> reportUnhandledError(
+    Object error,
+    StackTrace stackTrace, {
+    String category = 'flutter_unhandled_exception',
+  }) async {
+    if (!_initialized || defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    await _reportCustomLog(
+      category: category,
+      message: error.toString(),
+      stackTrace: stackTrace.toString(),
+      dedupeKey: '$category:${error.runtimeType}',
+    );
+  }
+
+  static Future<void> reportDiagnostic(
+    String category,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+    String? dedupeKey,
+  }) async {
+    if (!_initialized || defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    await _reportCustomLog(
+      category: category,
+      message: message,
+      stackTrace: stackTrace?.toString(),
+      error: error?.toString(),
+      dedupeKey: dedupeKey ?? '$category:$message',
+    );
+  }
+
+  static Future<void> _reportCustomLog({
+    required String category,
+    required String message,
+    String? stackTrace,
+    String? error,
+    required String dedupeKey,
+  }) async {
+    final now = DateTime.now();
+    final lastAt = _lastReportAt[dedupeKey];
+    if (lastAt != null && now.difference(lastAt) < _reportThrottleWindow) {
+      return;
+    }
+    _lastReportAt[dedupeKey] = now;
+
+    try {
+      await _channel.invokeMethod<void>('reportCustomLog', {
+        'category': category,
+        'message': message,
+        'error': error,
+        'stackTrace': stackTrace,
+        'dedupeKey': dedupeKey,
+      });
+    } on MissingPluginException {
+      // Ignore when the platform implementation is unavailable.
+    } catch (_) {
+      // Diagnostics should never affect the app flow.
     }
   }
 

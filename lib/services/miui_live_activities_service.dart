@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import 'umeng_analytics_service.dart';
 
 class MiuiLiveActivitiesService {
   static const MethodChannel _channel =
@@ -22,7 +23,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('initialize');
       _isInitialized = true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_flutter_initialize_failed',
+        'Failed to initialize MIUI live activities channel',
+        error: e,
+        stackTrace: stackTrace,
+      );
       debugPrint('Failed to initialize: $e');
     }
   }
@@ -195,7 +202,13 @@ class MiuiLiveActivitiesService {
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
       );
       await _channel.invokeMethod('startLiveUpdate', data);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_start_failed',
+        'Failed to start live update from Flutter',
+        error: e,
+        stackTrace: stackTrace,
+      );
       debugPrint('Failed to start live update: $e');
     }
   }
@@ -203,7 +216,13 @@ class MiuiLiveActivitiesService {
   Future<void> stopLiveUpdate() async {
     try {
       await _channel.invokeMethod('stopLiveUpdate');
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_stop_failed',
+        'Failed to stop live update from Flutter',
+        error: e,
+        stackTrace: stackTrace,
+      );
       debugPrint('Failed to stop: $e');
     }
   }
@@ -323,7 +342,13 @@ class MiuiLiveActivitiesService {
         'settings': settings.toJson(),
       });
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_snapshot_sync_failed',
+        'Failed to sync live update schedule snapshot',
+        error: e,
+        stackTrace: stackTrace,
+      );
       debugPrint('Failed to sync schedule snapshot: $e');
     }
   }
@@ -332,7 +357,13 @@ class MiuiLiveActivitiesService {
     await initialize();
     try {
       await _channel.invokeMethod('clearScheduleSnapshot');
-    } catch (e) {
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_snapshot_clear_failed',
+        'Failed to clear live update schedule snapshot',
+        error: e,
+        stackTrace: stackTrace,
+      );
       debugPrint('Failed to clear schedule snapshot: $e');
     }
   }
