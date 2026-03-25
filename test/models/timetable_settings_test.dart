@@ -44,6 +44,8 @@ void main() {
       MiuiIslandLabelFontWeight.bold,
     );
     expect(settings.liveMiuiIslandLabelFontSize, 14);
+    expect(settings.liveMiuiIslandLabelOffsetX, 0);
+    expect(settings.liveMiuiIslandLabelOffsetY, 0);
     expect(
       settings.liveMiuiIslandExpandedIconMode,
       MiuiIslandExpandedIconMode.appIcon,
@@ -99,6 +101,8 @@ void main() {
       MiuiIslandLabelFontWeight.bold,
     );
     expect(restored.liveMiuiIslandLabelFontSize, 14);
+    expect(restored.liveMiuiIslandLabelOffsetX, 0);
+    expect(restored.liveMiuiIslandLabelOffsetY, 0);
     expect(
       restored.liveMiuiIslandExpandedIconMode,
       MiuiIslandExpandedIconMode.appIcon,
@@ -149,6 +153,8 @@ void main() {
       liveMiuiIslandLabelFontColor: '#FDE68A',
       liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.medium,
       liveMiuiIslandLabelFontSize: 18,
+      liveMiuiIslandLabelOffsetX: 6,
+      liveMiuiIslandLabelOffsetY: -3,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
       liveMiuiIslandExpandedIconPath: '/tmp/expanded.png',
       appUpdateIncludePrerelease: true,
@@ -193,6 +199,8 @@ void main() {
       MiuiIslandLabelFontWeight.medium,
     );
     expect(restored.liveMiuiIslandLabelFontSize, 18);
+    expect(restored.liveMiuiIslandLabelOffsetX, 6);
+    expect(restored.liveMiuiIslandLabelOffsetY, -3);
     expect(
       restored.liveMiuiIslandExpandedIconMode,
       MiuiIslandExpandedIconMode.customImage,

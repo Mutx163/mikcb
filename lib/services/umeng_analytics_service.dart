@@ -138,6 +138,21 @@ class UmengAnalyticsService {
     }
   }
 
+  static Future<bool> clearLiveDiagnostics() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return false;
+    }
+    try {
+      final result =
+          await _channel.invokeMethod<bool>('clearLiveDiagnostics');
+      return result ?? false;
+    } on MissingPluginException {
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   static Future<void> triggerTestCrash() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;

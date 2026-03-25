@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -11,6 +13,7 @@ Future<void> showTimeSchemeBottomSheet(
 }) async {
   await showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     showDragHandle: true,
     isScrollControlled: true,
     builder: (_) => _TimeSchemeBottomSheet(
@@ -34,6 +37,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   String? _editingSchemeId;
   TextEditingController? _nameController;
   List<SectionTime> _sections = [];
+  Timer? _autoSaveTimer;
   _QuickGeneratePreset _lastQuickGeneratePreset = const _QuickGeneratePreset(
     morningCount: 4,
     afternoonCount: 4,
@@ -63,6 +67,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   @override
   void dispose() {
+    _autoSaveTimer?.cancel();
     _nameController?.dispose();
     super.dispose();
   }
@@ -218,10 +223,6 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                 '编辑时间模板',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
-            ),
-            TextButton(
-              onPressed: _save,
-              child: const Text('保存'),
             ),
           ],
         ),
@@ -389,7 +390,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final provider = context.read<TimetableProvider>();
     final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
     _nameController?.dispose();
-    _nameController = TextEditingController(text: scheme.name);
+    _nameController = TextEditingController(text: scheme.name)
+      ..addListener(_scheduleAutoSave);
     setState(() {
       _editingSchemeId = schemeId;
       _sections = List<SectionTime>.from(scheme.sections);
@@ -397,6 +399,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   void _stopEditing() {
+    _autoSaveTimer?.cancel();
     _nameController?.dispose();
     _nameController = null;
     setState(() {
@@ -421,6 +424,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('新建时间模板'),
         content: TextField(
@@ -461,6 +465,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final controller = TextEditingController(text: scheme.name);
     final name = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('重命名时间模板'),
         content: TextField(
@@ -497,6 +502,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   Future<void> _deleteScheme(TimeScheme scheme) async {
     final confirmed = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: const Text('删除时间模板'),
         content: Text('确定删除“${scheme.name}”吗？正在被课表或课程使用的模板不能删除。'),
@@ -538,6 +544,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   ) async {
     await showDialog<void>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: Text('“${scheme.name}”的使用情况'),
         content: SizedBox(
@@ -588,19 +595,21 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   ) {
     final profileNames = <String>[];
     final courseReferences = <String>[];
+    final usages = provider.getTimeSchemeCourseUsages(schemeId);
 
     for (final profile in provider.profiles) {
       if (profile.settings.activeTimeSchemeId == schemeId) {
         profileNames.add(profile.name);
       }
-      for (final course in profile.courses) {
-        if (course.timeSchemeIdOverride != schemeId) {
-          continue;
-        }
-        courseReferences.add(
-          '${profile.name} · ${course.name}（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节）',
-        );
-      }
+    }
+
+    for (final usage in usages) {
+      final course = usage.course;
+      final usageType = usage.usesOverride ? '副时间表' : '主时间表';
+      courseReferences.add(
+        '${usage.profileName} · ${course.name}'
+        '（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节，$usageType）',
+      );
     }
 
     return _TimeSchemeUsageInfo(
@@ -647,6 +656,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   Future<void> _editSectionTime(int index) async {
     final start = await showTimePicker(
       context: context,
+      useRootNavigator: true,
       initialTime: _parseTimeOfDay(_sections[index].startTime),
     );
     if (start == null || !mounted) {
@@ -655,6 +665,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
     final end = await showTimePicker(
       context: context,
+      useRootNavigator: true,
       initialTime: _parseTimeOfDay(_sections[index].endTime),
     );
     if (end == null || !mounted) {
@@ -689,29 +700,34 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     setState(() {
       _sections[index] = editedSection;
     });
+    _scheduleAutoSave();
   }
 
   void _addSection() {
     setState(() {
       _sections.add(_buildNextSection(_sections.last));
     });
+    _scheduleAutoSave();
   }
 
   void _removeSection() {
     setState(() {
       _sections.removeLast();
     });
+    _scheduleAutoSave();
   }
 
   void _resetSections() {
     setState(() {
       _sections = List<SectionTime>.from(TimetableSettings.defaults().sections);
     });
+    _scheduleAutoSave();
   }
 
   Future<void> _openQuickGenerate() async {
     final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => _QuickGenerateDialog(
         initialPreset: _lastQuickGeneratePreset,
       ),
@@ -736,6 +752,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         _lastQuickGeneratePreset = preset;
         _sections = sections;
       });
+      _scheduleAutoSave();
     } on FormatException catch (error) {
       if (!mounted) {
         return;
@@ -746,29 +763,57 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
   }
 
-  Future<void> _save() async {
+  void _scheduleAutoSave() {
+    _autoSaveTimer?.cancel();
+    _autoSaveTimer = Timer(
+      const Duration(milliseconds: 300),
+      () => unawaited(_persistEditingScheme()),
+    );
+  }
+
+  Future<void> _persistEditingScheme() async {
     final schemeId = _editingSchemeId;
     if (schemeId == null || _nameController == null) {
       return;
     }
+    final trimmedName = _nameController!.text.trim();
+    if (trimmedName.isEmpty) {
+      final provider = context.read<TimetableProvider>();
+      final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      _nameController!
+        ..removeListener(_scheduleAutoSave)
+        ..text = scheme.name
+        ..selection = TextSelection.collapsed(offset: scheme.name.length)
+        ..addListener(_scheduleAutoSave);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('时间模板名称不能为空')),
+      );
+      return;
+    }
+    final provider = context.read<TimetableProvider>();
     final message = await context.read<TimetableProvider>().updateTimeScheme(
           schemeId: schemeId,
-          name: _nameController!.text.trim(),
+          name: trimmedName,
           sections: _sections,
         );
     if (!mounted) {
       return;
     }
     if (message != null) {
+      final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      _nameController!
+        ..removeListener(_scheduleAutoSave)
+        ..text = scheme.name
+        ..selection = TextSelection.collapsed(offset: scheme.name.length)
+        ..addListener(_scheduleAutoSave);
+      setState(() {
+        _sections = List<SectionTime>.from(scheme.sections);
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
       return;
     }
-    _stopEditing();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已保存时间模板')),
-    );
   }
 }
 

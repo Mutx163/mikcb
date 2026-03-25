@@ -626,13 +626,21 @@ class _AboutScreenState extends State<AboutScreen> {
                   const Text('打开后会在本地持续记录超级岛关键日志，仅用于排查“该弹不弹”等问题。'),
             ),
             if (settings.liveEnableLocalDiagnostics)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: FilledButton.tonalIcon(
-                  onPressed: _exportLiveDiagnostics,
-                  icon: const Icon(Icons.ios_share_rounded),
-                  label: const Text('导出超级岛诊断日志'),
-                ),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: _exportLiveDiagnostics,
+                    icon: const Icon(Icons.ios_share_rounded),
+                    label: const Text('导出超级岛诊断日志'),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: _clearLiveDiagnostics,
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: const Text('清空并重新收集'),
+                  ),
+                ],
               ),
           ],
         ),
@@ -745,6 +753,20 @@ class _AboutScreenState extends State<AboutScreen> {
       [XFile(path)],
       text: '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。',
       subject: '轻屿课表 - 超级岛诊断日志',
+    );
+  }
+
+  Future<void> _clearLiveDiagnostics() async {
+    final cleared = await MiuiLiveActivitiesService().clearLiveDiagnostics();
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cleared ? '已清空超级岛诊断日志，后续会重新开始收集' : '清空超级岛诊断日志失败',
+        ),
+      ),
     );
   }
 
