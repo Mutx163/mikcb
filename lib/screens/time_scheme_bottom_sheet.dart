@@ -127,10 +127,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
             itemBuilder: (context, index) {
               final scheme = schemes[index];
               final isCurrent = scheme.id == currentSchemeId;
-              final usageCount = provider.profiles
-                  .where((profile) =>
-                      profile.settings.activeTimeSchemeId == scheme.id)
-                  .length;
+              final usage = _buildUsageInfo(provider, scheme.id);
 
               return Card(
                 child: ListTile(
@@ -146,17 +143,24 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  subtitle: Text(
-                    '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''} · 被 $usageCount 个课表使用',
+                  subtitle: _buildUsageSubtitle(
+                    context,
+                    scheme: scheme,
+                    usage: usage,
                   ),
                   trailing: PopupMenuButton<String>(
                     onSelected: (value) => _handleSchemeMenu(
                       context,
                       scheme,
-                      usageCount,
+                      usage,
                       value,
                     ),
                     itemBuilder: (context) => [
+                      if (!usage.isUnused)
+                        const PopupMenuItem(
+                          value: 'usage',
+                          child: Text('查看使用情况'),
+                        ),
                       if (!isCurrent)
                         const PopupMenuItem(
                           value: 'apply',
@@ -176,7 +180,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                       ),
                       PopupMenuItem(
                         value: 'delete',
-                        enabled: usageCount == 0,
+                        enabled: usage.isUnused,
                         child: const Text('删除'),
                       ),
                     ],
@@ -196,6 +200,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final schemeId = _editingSchemeId!;
     final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
     final isActive = provider.activeTimeScheme?.id == schemeId;
+    final usage = _buildUsageInfo(provider, schemeId);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,10 +250,23 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           labelText: '模板名称',
                         ),
                       ),
-                      if (isActive) ...[
+                      if (isActive || usage.courseCount > 0) ...[
                         const SizedBox(height: 8),
                         Text(
-                          '当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表。',
+                          isActive && usage.courseCount > 0
+                              ? '当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程。'
+                              : isActive
+                                  ? '当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表。'
+                                  : '有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程。',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                      if (usage.courseReferencePreview != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          usage.courseReferencePreview!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -336,12 +354,15 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   Future<void> _handleSchemeMenu(
     BuildContext context,
     TimeScheme scheme,
-    int usageCount,
+    _TimeSchemeUsageInfo usage,
     String value,
   ) async {
     switch (value) {
       case 'apply':
         await _applyScheme(scheme.id);
+        break;
+      case 'usage':
+        _showUsageDetails(scheme, usage);
         break;
       case 'edit':
         _beginEditing(scheme.id);
@@ -357,7 +378,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         );
         break;
       case 'delete':
-        if (usageCount == 0) {
+        if (usage.isUnused) {
           await _deleteScheme(scheme);
         }
         break;
@@ -478,7 +499,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('删除时间模板'),
-        content: Text('确定删除“${scheme.name}”吗？正在使用中的模板不能删除。'),
+        content: Text('确定删除“${scheme.name}”吗？正在被课表或课程使用的模板不能删除。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -504,9 +525,123 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(deleted ? '已删除时间模板：${scheme.name}' : '该模板正在被课表使用'),
+        content: Text(
+          deleted ? '已删除时间模板：${scheme.name}' : '该模板正在被课表或课程使用',
+        ),
       ),
     );
+  }
+
+  Future<void> _showUsageDetails(
+    TimeScheme scheme,
+    _TimeSchemeUsageInfo usage,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('“${scheme.name}”的使用情况'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('课表使用：${usage.profileCount} 个'),
+                if (usage.profileNames.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...usage.profileNames.map(
+                    (name) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text('• $name'),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Text('课程引用：${usage.courseCount} 节'),
+                if (usage.courseReferences.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  ...usage.courseReferences.map(
+                    (reference) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text('• $reference'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('关闭'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  _TimeSchemeUsageInfo _buildUsageInfo(
+    TimetableProvider provider,
+    String schemeId,
+  ) {
+    final profileNames = <String>[];
+    final courseReferences = <String>[];
+
+    for (final profile in provider.profiles) {
+      if (profile.settings.activeTimeSchemeId == schemeId) {
+        profileNames.add(profile.name);
+      }
+      for (final course in profile.courses) {
+        if (course.timeSchemeIdOverride != schemeId) {
+          continue;
+        }
+        courseReferences.add(
+          '${profile.name} · ${course.name}（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节）',
+        );
+      }
+    }
+
+    return _TimeSchemeUsageInfo(
+      profileNames: profileNames,
+      courseReferences: courseReferences,
+    );
+  }
+
+  Widget _buildUsageSubtitle(
+    BuildContext context, {
+    required TimeScheme scheme,
+    required _TimeSchemeUsageInfo usage,
+  }) {
+    final summary =
+        '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''} · ${usage.profileCount} 个课表 · ${usage.courseCount} 节课程';
+    final preview = usage.courseReferencePreview;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(summary),
+        if (preview != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            preview,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+      ],
+    );
+  }
+
+  String _weekdayLabel(int dayOfWeek) {
+    const labels = ['一', '二', '三', '四', '五', '六', '日'];
+    if (dayOfWeek < 1 || dayOfWeek > 7) {
+      return dayOfWeek.toString();
+    }
+    return labels[dayOfWeek - 1];
   }
 
   Future<void> _editSectionTime(int index) async {
@@ -693,6 +828,30 @@ class _QuickGeneratePreset {
     required this.breakDurationMinutes,
     required this.breakOverrideRules,
   });
+}
+
+class _TimeSchemeUsageInfo {
+  final List<String> profileNames;
+  final List<String> courseReferences;
+
+  const _TimeSchemeUsageInfo({
+    required this.profileNames,
+    required this.courseReferences,
+  });
+
+  int get profileCount => profileNames.length;
+  int get courseCount => courseReferences.length;
+  bool get isUnused => profileCount == 0 && courseCount == 0;
+
+  String? get courseReferencePreview {
+    if (courseReferences.isEmpty) {
+      return null;
+    }
+    if (courseReferences.length == 1) {
+      return '课程引用：${courseReferences.first}';
+    }
+    return '课程引用：${courseReferences.take(2).join('；')} 等 $courseCount 节课程';
+  }
 }
 
 class _QuickGenerateDialog extends StatefulWidget {
