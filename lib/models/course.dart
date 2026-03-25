@@ -43,6 +43,7 @@ class Course {
   final CourseNature courseNature; // 课程性质
   final String? description; // 课程简介（同名课程共享）
   final String? note; // 备注/备忘录
+  final String? timeSchemeIdOverride; // 课程级时间模板覆盖
 
   Course({
     required this.id,
@@ -63,6 +64,7 @@ class Course {
     this.courseNature = CourseNature.required,
     this.description,
     this.note,
+    this.timeSchemeIdOverride,
   });
 
   Map<String, dynamic> toJson() {
@@ -85,6 +87,7 @@ class Course {
       'courseNature': courseNature.value,
       'description': description,
       'note': note,
+      'timeSchemeIdOverride': timeSchemeIdOverride,
     };
   }
 
@@ -108,6 +111,7 @@ class Course {
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
       description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
+      timeSchemeIdOverride: json['timeSchemeIdOverride'] as String?,
     );
   }
 
@@ -136,6 +140,7 @@ class Course {
     CourseNature? courseNature,
     String? description,
     String? note,
+    String? timeSchemeIdOverride,
   }) {
     return Course(
       id: id ?? this.id,
@@ -156,6 +161,7 @@ class Course {
       courseNature: courseNature ?? this.courseNature,
       description: description ?? this.description,
       note: note ?? this.note,
+      timeSchemeIdOverride: timeSchemeIdOverride ?? this.timeSchemeIdOverride,
     );
   }
 

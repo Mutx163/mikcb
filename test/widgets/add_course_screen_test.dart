@@ -40,7 +40,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     expect(find.byTooltip('删除课程'), findsOneWidget);
   });
