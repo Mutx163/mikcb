@@ -13,7 +13,7 @@ import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
-import 'time_scheme_management_screen.dart';
+import 'time_scheme_bottom_sheet.dart';
 import 'user_guide_screen.dart';
 
 class TimetableSettingsScreen extends StatelessWidget {
@@ -283,132 +283,7 @@ class TimetableSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _openTimeSchemeQuickSwitcher(BuildContext context) async {
-    final provider = context.read<TimetableProvider>();
-    final activeSchemeId = provider.activeTimeScheme?.id;
-    final selectedSchemeId = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final sheetProvider = sheetContext.watch<TimetableProvider>();
-        final schemes = sheetProvider.timeSchemes;
-        final currentSchemeId = sheetProvider.activeTimeScheme?.id;
-        final maxSheetHeight = MediaQuery.sizeOf(sheetContext).height * 0.72;
-
-        return SafeArea(
-          child: SizedBox(
-            height: maxSheetHeight,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '时间模板',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '直接给当前课表切换作息时间；更复杂的编辑、复制和新建在管理页里。',
-                    style: Theme.of(sheetContext).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  if (currentSchemeId != null) ...[
-                    FilledButton.tonalIcon(
-                      onPressed: () =>
-                          Navigator.of(sheetContext).pop('__edit_current__'),
-                      icon: const Icon(Icons.edit_outlined),
-                      label: const Text('编辑当前模板'),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: schemes.length + 1,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (listContext, index) {
-                        if (index == schemes.length) {
-                          return ListTile(
-                            leading: const Icon(Icons.tune_rounded),
-                            title: const Text('管理时间模板'),
-                            subtitle: const Text('新建、复制、编辑节次与删除模板'),
-                            trailing: const Icon(Icons.chevron_right_rounded),
-                            onTap: () =>
-                                Navigator.of(sheetContext).pop('__manage__'),
-                          );
-                        }
-
-                        final scheme = schemes[index];
-                        final isCurrent = scheme.id == currentSchemeId;
-                        return ListTile(
-                          leading: Icon(
-                            isCurrent
-                                ? Icons.check_circle_rounded
-                                : Icons.schedule_outlined,
-                          ),
-                          title: Text(scheme.name),
-                          subtitle: Text(
-                            '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
-                          ),
-                          trailing: isCurrent
-                              ? const Text('当前')
-                              : const Icon(Icons.chevron_right_rounded),
-                          onTap: () =>
-                              Navigator.of(sheetContext).pop(scheme.id),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (!context.mounted || selectedSchemeId == null) {
-      return;
-    }
-
-    if (selectedSchemeId == '__manage__') {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const TimeSchemeManagementScreen(),
-        ),
-      );
-      return;
-    }
-
-    if (selectedSchemeId == '__edit_current__') {
-      final currentSchemeId = provider.activeTimeScheme?.id;
-      if (currentSchemeId == null) {
-        return;
-      }
-      await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TimeSchemeManagementScreen(
-            initialEditSchemeId: currentSchemeId,
-          ),
-        ),
-      );
-      return;
-    }
-
-    if (selectedSchemeId == activeSchemeId) {
-      return;
-    }
-
-    await provider.applyTimeScheme(selectedSchemeId);
-    if (!context.mounted) {
-      return;
-    }
-    final nextScheme = provider.activeTimeScheme;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已应用时间模板：${nextScheme?.name ?? "未命名模板"}')),
-    );
+    await showTimeSchemeBottomSheet(context);
   }
 }
 
@@ -442,11 +317,14 @@ class _SemesterOverviewCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Image.asset(
-                  'assets/branding/launcher_icon.png',
-                  width: 44,
-                  height: 44,
-                  fit: BoxFit.contain,
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/branding/launcher_icon.png',
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -777,6 +655,14 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   static const List<int> _beforeClassMinutesOptions = [1, 5, 10, 15, 20, 30];
   static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
   static const String _miuiExpandedIconDirName = 'miui_expanded_icons';
+  static const List<String> _miuiLabelTextColors = [
+    '#FFFFFF',
+    '#E2E8F0',
+    '#BFDBFE',
+    '#A7F3D0',
+    '#FDE68A',
+    '#F9A8D4',
+  ];
 
   late TimetableSettings _draft;
 
@@ -878,6 +764,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
+                Text(
+                  '返回桌面后，超级岛可能需要约 30 秒才会自动出现，这是系统拉起和状态收敛的延迟。',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 12),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   title: const Text('显示通知栏常驻通知'),
@@ -1134,6 +1025,82 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         );
                       });
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<MiuiIslandLabelFontWeight>(
+                    value: _draft.liveMiuiIslandLabelFontWeight,
+                    decoration: const InputDecoration(
+                      labelText: '左侧文字粗细',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MiuiIslandLabelFontWeight.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          liveMiuiIslandLabelFontWeight: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<MiuiIslandLabelRenderQuality>(
+                    value: _draft.liveMiuiIslandLabelRenderQuality,
+                    decoration: const InputDecoration(
+                      labelText: '左侧文字清晰度',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: MiuiIslandLabelRenderQuality.values
+                        .map(
+                          (value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _draft = _draft.copyWith(
+                          liveMiuiIslandLabelRenderQuality: value,
+                        );
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '左侧文字颜色',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: _miuiLabelTextColors
+                        .map(
+                          (color) => _SelectableColorChip(
+                            colorHex: color,
+                            selected:
+                                _draft.liveMiuiIslandLabelFontColor == color,
+                            onTap: () {
+                              setState(() {
+                                _draft = _draft.copyWith(
+                                  liveMiuiIslandLabelFontColor: color,
+                                );
+                              });
+                            },
+                          ),
+                        )
+                        .toList(),
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -1514,6 +1481,10 @@ Future<void> _showTestOptions(BuildContext context) async {
       enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
       miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
       miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
+      miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
+      miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
+      miuiIslandLabelRenderQuality:
+          settings.liveMiuiIslandLabelRenderQuality,
       miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
       miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
@@ -2095,6 +2066,9 @@ class _SelectableColorChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _colorFromHex(colorHex);
+    final outlineColor = selected
+        ? Theme.of(context).colorScheme.onSurface
+        : Theme.of(context).dividerColor.withValues(alpha: 0.72);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -2106,10 +2080,8 @@ class _SelectableColorChip extends StatelessWidget {
           color: color,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.onSurface
-                : Colors.transparent,
-            width: 2,
+            color: outlineColor,
+            width: selected ? 2 : 1,
           ),
           boxShadow: [
             BoxShadow(

@@ -16,7 +16,7 @@ void main() {
     expect(settings.courseCardShowWeeks, isFalse);
     expect(settings.courseCardShowDescription, isFalse);
     expect(settings.timetableAutoFitSectionHeight, isFalse);
-    expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.glass);
+    expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(settings.widgetShowLocation, isTrue);
     expect(settings.widgetShowCountdown, isTrue);
     expect(
@@ -35,6 +35,11 @@ void main() {
     expect(
       settings.liveMiuiIslandLabelContent,
       MiuiIslandLabelContent.courseName,
+    );
+    expect(settings.liveMiuiIslandLabelFontColor, '#FFFFFF');
+    expect(
+      settings.liveMiuiIslandLabelFontWeight,
+      MiuiIslandLabelFontWeight.bold,
     );
     expect(settings.liveMiuiIslandLabelFontSize, 14);
     expect(
@@ -63,7 +68,7 @@ void main() {
     expect(restored.courseCardShowWeeks, isFalse);
     expect(restored.courseCardShowDescription, isFalse);
     expect(restored.timetableAutoFitSectionHeight, isFalse);
-    expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.glass);
+    expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(restored.widgetShowLocation, isTrue);
     expect(restored.widgetShowCountdown, isTrue);
     expect(
@@ -82,6 +87,11 @@ void main() {
     expect(
       restored.liveMiuiIslandLabelContent,
       MiuiIslandLabelContent.courseName,
+    );
+    expect(restored.liveMiuiIslandLabelFontColor, '#FFFFFF');
+    expect(
+      restored.liveMiuiIslandLabelFontWeight,
+      MiuiIslandLabelFontWeight.bold,
     );
     expect(restored.liveMiuiIslandLabelFontSize, 14);
     expect(
@@ -128,6 +138,8 @@ void main() {
       liveHideFromRecents: true,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
+      liveMiuiIslandLabelFontColor: '#FDE68A',
+      liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.medium,
       liveMiuiIslandLabelFontSize: 18,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
       liveMiuiIslandExpandedIconPath: '/tmp/expanded.png',
@@ -163,6 +175,11 @@ void main() {
     expect(
       restored.liveMiuiIslandLabelContent,
       MiuiIslandLabelContent.courseNameAndLocation,
+    );
+    expect(restored.liveMiuiIslandLabelFontColor, '#FDE68A');
+    expect(
+      restored.liveMiuiIslandLabelFontWeight,
+      MiuiIslandLabelFontWeight.medium,
     );
     expect(restored.liveMiuiIslandLabelFontSize, 18);
     expect(

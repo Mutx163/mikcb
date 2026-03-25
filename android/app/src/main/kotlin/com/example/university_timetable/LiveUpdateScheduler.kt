@@ -64,6 +64,9 @@ private data class NativeLiveSettings(
     val liveEnableMiuiIslandLabelImage: Boolean,
     val liveMiuiIslandLabelStyle: String,
     val liveMiuiIslandLabelContent: String,
+    val liveMiuiIslandLabelFontColor: String,
+    val liveMiuiIslandLabelFontWeight: String,
+    val liveMiuiIslandLabelRenderQuality: String,
     val liveMiuiIslandLabelFontSize: Float,
     val liveMiuiIslandExpandedIconMode: String,
     val liveMiuiIslandExpandedIconPath: String?,
@@ -121,6 +124,9 @@ private data class LiveUpdatePayload(
     val enableMiuiIslandLabelImage: Boolean,
     val miuiIslandLabelStyle: String,
     val miuiIslandLabelContent: String,
+    val miuiIslandLabelFontColor: String,
+    val miuiIslandLabelFontWeight: String,
+    val miuiIslandLabelRenderQuality: String,
     val miuiIslandLabelFontSize: Float,
     val miuiIslandExpandedIconMode: String,
     val miuiIslandExpandedIconPath: String?,
@@ -214,6 +220,12 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandLabelStyle"] as? String ?: "text_only",
             miuiIslandLabelContent =
                 islandConfig["miuiIslandLabelContent"] as? String ?: "course_name",
+            miuiIslandLabelFontColor =
+                islandConfig["miuiIslandLabelFontColor"] as? String ?: "#FFFFFF",
+            miuiIslandLabelFontWeight =
+                islandConfig["miuiIslandLabelFontWeight"] as? String ?: "bold",
+            miuiIslandLabelRenderQuality =
+                islandConfig["miuiIslandLabelRenderQuality"] as? String ?: "standard",
             miuiIslandLabelFontSize =
                 (islandConfig["miuiIslandLabelFontSize"] as? Number)?.toFloat() ?: 14f,
             miuiIslandExpandedIconMode =
@@ -285,6 +297,12 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveMiuiIslandLabelStyle", "text_only"),
             liveMiuiIslandLabelContent =
                 settingsJson.optString("liveMiuiIslandLabelContent", "course_name"),
+            liveMiuiIslandLabelFontColor =
+                settingsJson.optString("liveMiuiIslandLabelFontColor", "#FFFFFF"),
+            liveMiuiIslandLabelFontWeight =
+                settingsJson.optString("liveMiuiIslandLabelFontWeight", "bold"),
+            liveMiuiIslandLabelRenderQuality =
+                settingsJson.optString("liveMiuiIslandLabelRenderQuality", "standard"),
             liveMiuiIslandLabelFontSize =
                 settingsJson.optDouble("liveMiuiIslandLabelFontSize", 14.0).toFloat(),
             liveMiuiIslandExpandedIconMode =
@@ -377,6 +395,9 @@ object LiveUpdateScheduler {
             putExtra("enableMiuiIslandLabelImage", payload.enableMiuiIslandLabelImage)
             putExtra("miuiIslandLabelStyle", payload.miuiIslandLabelStyle)
             putExtra("miuiIslandLabelContent", payload.miuiIslandLabelContent)
+            putExtra("miuiIslandLabelFontColor", payload.miuiIslandLabelFontColor)
+            putExtra("miuiIslandLabelFontWeight", payload.miuiIslandLabelFontWeight)
+            putExtra("miuiIslandLabelRenderQuality", payload.miuiIslandLabelRenderQuality)
             putExtra("miuiIslandLabelFontSize", payload.miuiIslandLabelFontSize)
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
@@ -540,6 +561,12 @@ object LiveUpdateScheduler {
                 snapshot.settings.liveMiuiIslandLabelStyle,
             miuiIslandLabelContent =
                 snapshot.settings.liveMiuiIslandLabelContent,
+            miuiIslandLabelFontColor =
+                snapshot.settings.liveMiuiIslandLabelFontColor,
+            miuiIslandLabelFontWeight =
+                snapshot.settings.liveMiuiIslandLabelFontWeight,
+            miuiIslandLabelRenderQuality =
+                snapshot.settings.liveMiuiIslandLabelRenderQuality,
             miuiIslandLabelFontSize =
                 snapshot.settings.liveMiuiIslandLabelFontSize.toFloat(),
             miuiIslandExpandedIconMode =
