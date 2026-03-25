@@ -53,6 +53,7 @@ private data class NativeLiveSettings(
     val liveShowCourseName: Boolean,
     val liveShowLocation: Boolean,
     val liveShowCountdown: Boolean,
+    val liveShowStageText: Boolean,
     val liveEnableBeforeClass: Boolean,
     val liveEnableDuringClass: Boolean,
     val liveEnableBeforeEnd: Boolean,
@@ -116,6 +117,7 @@ private data class LiveUpdatePayload(
     val promoteDuringClass: Boolean,
     val showNotificationDuringClass: Boolean,
     val showCountdown: Boolean,
+    val showStageText: Boolean,
     val showCourseNameInIsland: Boolean,
     val showLocationInIsland: Boolean,
     val useShortNameInIsland: Boolean,
@@ -147,6 +149,14 @@ object LiveUpdateScheduler {
             .edit()
             .putString(KEY_SNAPSHOT_JSON, snapshotJson)
             .apply()
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_snapshot_synced",
+            message = "Live update schedule snapshot synced",
+            extras = mapOf(
+                "snapshotLength" to snapshotJson.length
+            )
+        )
         reschedule(context, allowImmediateStart = false)
     }
 
@@ -155,10 +165,20 @@ object LiveUpdateScheduler {
             .edit()
             .remove(KEY_SNAPSHOT_JSON)
             .apply()
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_snapshot_cleared",
+            message = "Live update schedule snapshot cleared",
+        )
         cancelScheduledAlarm(context)
     }
 
     fun handleAlarm(context: Context) {
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_alarm_triggered",
+            message = "Alarm triggered live update reschedule",
+        )
         reschedule(context, allowImmediateStart = true)
     }
 
@@ -167,6 +187,11 @@ object LiveUpdateScheduler {
     }
 
     fun onLiveUpdateStopped(context: Context) {
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_scheduler_resume",
+            message = "Scheduler resumed after live update stop",
+        )
         reschedule(context, allowImmediateStart = false)
     }
 
@@ -208,6 +233,7 @@ object LiveUpdateScheduler {
             showNotificationDuringClass =
                 data["showNotificationDuringClass"] as? Boolean ?: true,
             showCountdown = data["showCountdown"] as? Boolean ?: true,
+            showStageText = data["showStageText"] as? Boolean ?: true,
             showCourseNameInIsland = islandConfig["showCourseName"] as? Boolean ?: true,
             showLocationInIsland = islandConfig["showLocation"] as? Boolean ?: true,
             useShortNameInIsland = islandConfig["useShortName"] as? Boolean ?: false,
@@ -245,11 +271,30 @@ object LiveUpdateScheduler {
         val now = System.currentTimeMillis()
         val activeSelection = findActiveSelection(snapshot, now)
         if (allowImmediateStart && activeSelection != null) {
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_reschedule_active",
+                message = "Reschedule found active selection and started immediately",
+                extras = mapOf(
+                    "courseName" to activeSelection.currentCourse.name,
+                    "stage" to activeSelection.stage,
+                )
+            )
             startForegroundService(context, selectionToPayload(snapshot, activeSelection))
             return true
         }
 
         val nextSelection = findNextSelection(snapshot, now) ?: return false
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_reschedule_scheduled",
+            message = "Reschedule scheduled next live update trigger",
+            extras = mapOf(
+                "courseName" to nextSelection.currentCourse.name,
+                "stage" to nextSelection.stage,
+                "triggerAtMillis" to nextSelection.triggerAtMillis,
+            )
+        )
         scheduleAlarm(context, nextSelection.triggerAtMillis)
         return false
     }
@@ -288,6 +333,7 @@ object LiveUpdateScheduler {
             liveShowCourseName = settingsJson.optBoolean("liveShowCourseName", true),
             liveShowLocation = settingsJson.optBoolean("liveShowLocation", true),
             liveShowCountdown = settingsJson.optBoolean("liveShowCountdown", true),
+            liveShowStageText = settingsJson.optBoolean("liveShowStageText", true),
             liveEnableBeforeClass = settingsJson.optBoolean("liveEnableBeforeClass", true),
             liveEnableDuringClass = settingsJson.optBoolean("liveEnableDuringClass", true),
             liveEnableBeforeEnd = settingsJson.optBoolean("liveEnableBeforeEnd", true),
@@ -385,6 +431,7 @@ object LiveUpdateScheduler {
                 payload.showNotificationDuringClass
             )
             putExtra("showCountdown", payload.showCountdown)
+            putExtra("showStageText", payload.showStageText)
             putExtra("progressBreakOffsetsMillis", payload.progressBreakOffsetsMillis)
             putStringArrayListExtra(
                 "progressMilestoneLabels",
@@ -556,6 +603,7 @@ object LiveUpdateScheduler {
             showNotificationDuringClass =
                 snapshot.settings.liveShowDuringClassNotification,
             showCountdown = snapshot.settings.liveShowCountdown,
+            showStageText = snapshot.settings.liveShowStageText,
             showCourseNameInIsland = snapshot.settings.liveShowCourseName,
             showLocationInIsland = snapshot.settings.liveShowLocation,
             useShortNameInIsland = snapshot.settings.liveUseShortName,

@@ -7,8 +7,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
-import com.umeng.umcrash.UMCrash
 import org.json.JSONObject
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 object UmengDiagnosticReporter {
@@ -20,10 +20,38 @@ object UmengDiagnosticReporter {
     private const val NATIVE_PREFS_NAME = "native_runtime_prefs"
     private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
     private const val KEY_LAST_TASK_REMOVED_AT = "last_task_removed_at"
+    private const val KEY_LIVE_DIAGNOSTICS_ENABLED = "live_diagnostics_enabled"
     private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
         "android.permission.POST_PROMOTED_NOTIFICATIONS"
+    private const val MAX_LOG_BYTES = 256 * 1024L
 
     private val lastReportedAt = ConcurrentHashMap<String, Long>()
+
+    fun record(
+        context: Context,
+        category: String,
+        message: String,
+        extras: Map<String, Any?> = emptyMap(),
+    ) {
+        if (!isLiveDiagnosticsEnabled(context) || !hasPrivacyConsent(context)) {
+            return
+        }
+        try {
+            val payload = buildString {
+                appendLine("category=$category")
+                appendLine("message=$message")
+                if (extras.isNotEmpty()) {
+                    appendLine("extras=")
+                    extras.forEach { (key, value) ->
+                        appendLine("  $key=${value ?: "null"}")
+                    }
+                }
+            }.trim()
+            appendToLocalFile(context, payload)
+        } catch (error: Exception) {
+            Log.w(TAG, "Failed to persist local diagnostic event", error)
+        }
+    }
 
     fun report(
         context: Context,
@@ -34,11 +62,7 @@ object UmengDiagnosticReporter {
         dedupeKey: String = category,
         extras: Map<String, Any?> = emptyMap(),
     ) {
-        if (!hasPrivacyConsent(context)) {
-            return
-        }
-        UmengApplication.initializeAnalyticsIfNeeded(context.applicationContext)
-        if (!UmengApplication.isAnalyticsInitialized()) {
+        if (!isLiveDiagnosticsEnabled(context) || !hasPrivacyConsent(context)) {
             return
         }
         if (shouldThrottle(dedupeKey)) {
@@ -72,10 +96,64 @@ object UmengDiagnosticReporter {
                 }
             }.trim()
 
-            UMCrash.generateCustomLog(payload, category.take(64))
+            appendToLocalFile(context, payload)
         } catch (error: Exception) {
-            Log.w(TAG, "Failed to upload Umeng diagnostic log", error)
+            Log.w(TAG, "Failed to persist local diagnostic log", error)
         }
+    }
+
+    fun setLiveDiagnosticsEnabled(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, enabled)
+            .apply()
+        if (enabled) {
+            appendToLocalFile(
+                context = context,
+                payload = buildString {
+                    appendLine("category=diagnostics_enabled")
+                    appendLine("message=Live diagnostics logging enabled")
+                }.trim()
+            )
+        }
+    }
+
+    fun exportLiveDiagnosticsFile(context: Context): String? {
+        if (!isLiveDiagnosticsEnabled(context)) {
+            return null
+        }
+        return runCatching {
+            val source = diagnosticLogFile(context)
+            if (!source.exists()) {
+                appendToLocalFile(
+                    context = context,
+                    payload = buildString {
+                        appendLine("category=diagnostics_bootstrap")
+                        appendLine("message=Export requested before any explicit diagnostic events were recorded")
+                    }.trim()
+                )
+            }
+            val exportDir = File(context.cacheDir, "exports").apply { mkdirs() }
+            val exportFile = File(
+                exportDir,
+                "mikcb-live-diagnostics-${System.currentTimeMillis()}.log"
+            )
+            val header = buildString {
+                appendLine("轻屿课表 - 超级岛诊断日志")
+                appendLine("exportedAt=${System.currentTimeMillis()}")
+                buildDiagnosticContext(context).forEach { (key, value) ->
+                    appendLine("$key=${value ?: "null"}")
+                }
+                appendLine("----")
+            }
+            exportFile.writeText(header + diagnosticLogFile(context).readText())
+            exportFile.absolutePath
+        }.getOrNull()
+    }
+
+    fun isLiveDiagnosticsEnabled(context: Context): Boolean {
+        return context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, false)
     }
 
     private fun hasPrivacyConsent(context: Context): Boolean {
@@ -91,6 +169,27 @@ object UmengDiagnosticReporter {
         }
         lastReportedAt[dedupeKey] = now
         return false
+    }
+
+    private fun appendToLocalFile(context: Context, payload: String) {
+        val file = diagnosticLogFile(context)
+        file.parentFile?.mkdirs()
+        if (file.exists() && file.length() > MAX_LOG_BYTES) {
+            val existing = file.readText()
+            val retained = existing.takeLast((MAX_LOG_BYTES / 2).toInt())
+            file.writeText(retained)
+        }
+        file.appendText(
+            buildString {
+                appendLine("time=${System.currentTimeMillis()}")
+                appendLine(payload)
+                appendLine()
+            }
+        )
+    }
+
+    private fun diagnosticLogFile(context: Context): File {
+        return File(context.filesDir, "logs/live_update_diagnostics.log")
     }
 
     private fun buildDiagnosticContext(context: Context): Map<String, Any?> {
@@ -114,8 +213,10 @@ object UmengDiagnosticReporter {
             "canPostPromotedNotifications" to canPostPromotedNotifications(context),
             "ignoringBatteryOptimizations" to isIgnoringBatteryOptimizations(context),
             "hideFromRecentsEnabled" to nativePrefs.getBoolean(KEY_HIDE_FROM_RECENTS, false),
-            "taskRemovedRecently" to lastTaskRemovedAt > 0L &&
-                System.currentTimeMillis() - lastTaskRemovedAt < 10 * 60 * 1000L,
+            "taskRemovedRecently" to (
+                lastTaskRemovedAt > 0L &&
+                    System.currentTimeMillis() - lastTaskRemovedAt < 10 * 60 * 1000L
+                ),
             "lastTaskRemovedAt" to lastTaskRemovedAt.takeIf { it > 0L },
             "processImportance" to resolveProcessImportance(context),
             "autoStartStatus" to "unknown",
@@ -125,6 +226,7 @@ object UmengDiagnosticReporter {
             "livePromoteDuringClass" to settings?.optBoolean("livePromoteDuringClass"),
             "liveShowDuringClassNotification" to settings?.optBoolean("liveShowDuringClassNotification"),
             "liveShowCountdown" to settings?.optBoolean("liveShowCountdown"),
+            "liveShowStageText" to settings?.optBoolean("liveShowStageText"),
             "liveShowCourseName" to settings?.optBoolean("liveShowCourseName"),
             "liveShowLocation" to settings?.optBoolean("liveShowLocation"),
             "liveUseShortName" to settings?.optBoolean("liveUseShortName"),

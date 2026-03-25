@@ -352,6 +352,7 @@ class TimetableSettings {
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
+  final bool liveShowStageText;
   final bool liveEnableBeforeClass;
   final bool liveEnableDuringClass;
   final bool liveEnableBeforeEnd;
@@ -362,6 +363,7 @@ class TimetableSettings {
   final LiveDuringClassTimeDisplayMode liveDuringClassTimeDisplayMode;
   final bool liveEnableMiuiIslandLabelImage;
   final bool liveHideFromRecents;
+  final bool liveEnableLocalDiagnostics;
   final MiuiIslandLabelStyle liveMiuiIslandLabelStyle;
   final MiuiIslandLabelContent liveMiuiIslandLabelContent;
   final String liveMiuiIslandLabelFontColor;
@@ -408,6 +410,7 @@ class TimetableSettings {
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
+    this.liveShowStageText = true,
     this.liveEnableBeforeClass = true,
     this.liveEnableDuringClass = true,
     this.liveEnableBeforeEnd = true,
@@ -419,6 +422,7 @@ class TimetableSettings {
         LiveDuringClassTimeDisplayMode.nearest,
     this.liveEnableMiuiIslandLabelImage = false,
     this.liveHideFromRecents = false,
+    this.liveEnableLocalDiagnostics = false,
     this.liveMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     this.liveMiuiIslandLabelContent = MiuiIslandLabelContent.courseName,
     this.liveMiuiIslandLabelFontColor = '#FFFFFF',
@@ -479,6 +483,7 @@ class TimetableSettings {
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
+      liveShowStageText: true,
       liveEnableBeforeClass: true,
       liveEnableDuringClass: true,
       liveEnableBeforeEnd: true,
@@ -489,6 +494,7 @@ class TimetableSettings {
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
       liveEnableMiuiIslandLabelImage: false,
       liveHideFromRecents: false,
+      liveEnableLocalDiagnostics: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
       liveMiuiIslandLabelFontColor: '#FFFFFF',
@@ -539,6 +545,7 @@ class TimetableSettings {
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
+      'liveShowStageText': liveShowStageText,
       'liveEnableBeforeClass': liveEnableBeforeClass,
       'liveEnableDuringClass': liveEnableDuringClass,
       'liveEnableBeforeEnd': liveEnableBeforeEnd,
@@ -549,6 +556,7 @@ class TimetableSettings {
       'liveDuringClassTimeDisplayMode': liveDuringClassTimeDisplayMode.value,
       'liveEnableMiuiIslandLabelImage': liveEnableMiuiIslandLabelImage,
       'liveHideFromRecents': liveHideFromRecents,
+      'liveEnableLocalDiagnostics': liveEnableLocalDiagnostics,
       'liveMiuiIslandLabelStyle': liveMiuiIslandLabelStyle.value,
       'liveMiuiIslandLabelContent': liveMiuiIslandLabelContent.value,
       'liveMiuiIslandLabelFontColor': liveMiuiIslandLabelFontColor,
@@ -623,6 +631,7 @@ class TimetableSettings {
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
+      liveShowStageText: json['liveShowStageText'] as bool? ?? true,
       liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
       liveEnableDuringClass: json['liveEnableDuringClass'] as bool? ?? true,
       liveEnableBeforeEnd: json['liveEnableBeforeEnd'] as bool? ?? true,
@@ -636,6 +645,8 @@ class TimetableSettings {
       liveEnableMiuiIslandLabelImage:
           json['liveEnableMiuiIslandLabelImage'] as bool? ?? false,
       liveHideFromRecents: json['liveHideFromRecents'] as bool? ?? false,
+      liveEnableLocalDiagnostics:
+          json['liveEnableLocalDiagnostics'] as bool? ?? false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyleX.fromValue(
         json['liveMiuiIslandLabelStyle'] as String?,
       ),
@@ -715,6 +726,7 @@ class TimetableSettings {
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
+    bool? liveShowStageText,
     bool? liveEnableBeforeClass,
     bool? liveEnableDuringClass,
     bool? liveEnableBeforeEnd,
@@ -725,6 +737,7 @@ class TimetableSettings {
     LiveDuringClassTimeDisplayMode? liveDuringClassTimeDisplayMode,
     bool? liveEnableMiuiIslandLabelImage,
     bool? liveHideFromRecents,
+    bool? liveEnableLocalDiagnostics,
     MiuiIslandLabelStyle? liveMiuiIslandLabelStyle,
     MiuiIslandLabelContent? liveMiuiIslandLabelContent,
     String? liveMiuiIslandLabelFontColor,
@@ -783,6 +796,7 @@ class TimetableSettings {
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
+      liveShowStageText: liveShowStageText ?? this.liveShowStageText,
       liveEnableBeforeClass:
           liveEnableBeforeClass ?? this.liveEnableBeforeClass,
       liveEnableDuringClass:
@@ -800,6 +814,8 @@ class TimetableSettings {
           liveEnableMiuiIslandLabelImage ?? this.liveEnableMiuiIslandLabelImage,
       liveHideFromRecents:
           liveHideFromRecents ?? this.liveHideFromRecents,
+      liveEnableLocalDiagnostics:
+          liveEnableLocalDiagnostics ?? this.liveEnableLocalDiagnostics,
       liveMiuiIslandLabelStyle:
           liveMiuiIslandLabelStyle ?? this.liveMiuiIslandLabelStyle,
       liveMiuiIslandLabelContent:

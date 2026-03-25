@@ -201,6 +201,9 @@ class TimetableProvider with ChangeNotifier {
     await _liveActivitiesService.setHideFromRecents(
       _settings.liveHideFromRecents,
     );
+    await _liveActivitiesService.setLiveDiagnosticsEnabled(
+      _settings.liveEnableLocalDiagnostics,
+    );
   }
 
   TimetableSettings _normalizeSettingsWithTimeScheme(
@@ -1799,6 +1802,7 @@ class TimetableProvider with ChangeNotifier {
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,
         showCountdown: settings.liveShowCountdown,
+        showStageText: settings.liveShowStageText,
         showCourseNameInIsland: settings.liveShowCourseName,
         showLocationInIsland: settings.liveShowLocation,
         useShortNameInIsland: settings.liveUseShortName,

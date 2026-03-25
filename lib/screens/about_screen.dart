@@ -3,12 +3,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
 import '../services/app_update_service.dart';
+import '../services/miui_live_activities_service.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -598,7 +600,7 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '默认只检测正式版。需要帮忙测试时，可以在这里打开预发布版本检测。',
+              '默认只检测正式版。需要帮忙测试时，可以在这里打开预发布版本检测，或开启超级岛诊断日志并导出给开发者。',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -613,6 +615,25 @@ class _AboutScreenState extends State<AboutScreen> {
               title: const Text('检测预发布版本'),
               subtitle: const Text('打开后会把 GitHub 预发布版本也纳入更新检查。'),
             ),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: settings.liveEnableLocalDiagnostics,
+              onChanged: _packageInfo == null
+                  ? null
+                  : (value) => _updateLiveDiagnosticsPreference(value),
+              title: const Text('超级岛诊断日志'),
+              subtitle:
+                  const Text('打开后会在本地持续记录超级岛关键日志，仅用于排查“该弹不弹”等问题。'),
+            ),
+            if (settings.liveEnableLocalDiagnostics)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton.tonalIcon(
+                  onPressed: _exportLiveDiagnostics,
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: const Text('导出超级岛诊断日志'),
+                ),
+              ),
           ],
         ),
       ),
@@ -683,6 +704,48 @@ class _AboutScreenState extends State<AboutScreen> {
       parameters: {'enabled': value},
     );
     _refreshUpdate();
+  }
+
+  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableLocalDiagnostics: value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value ? '已开启超级岛诊断日志' : '已关闭超级岛诊断日志'),
+      ),
+    );
+  }
+
+  Future<void> _exportLiveDiagnostics() async {
+    final path = await MiuiLiveActivitiesService().exportLiveDiagnosticsFile();
+    if (!mounted) {
+      return;
+    }
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('还没有可导出的超级岛诊断日志')),
+      );
+      return;
+    }
+
+    await Share.shareXFiles(
+      [XFile(path)],
+      text: '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。',
+      subject: '轻屿课表 - 超级岛诊断日志',
+    );
   }
 
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {

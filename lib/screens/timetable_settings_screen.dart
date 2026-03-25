@@ -910,6 +910,17 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  title: const Text('显示阶段状态文案'),
+                  subtitle: const Text('关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”'),
+                  value: _draft.liveShowStageText,
+                  onChanged: (value) {
+                    setState(() {
+                      _draft = _draft.copyWith(liveShowStageText: value);
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
                   title: const Text('隐藏前缀文案'),
                   subtitle: const Text('例如隐藏“即将上课”这类前缀'),
                   value: _draft.liveHidePrefixText,
@@ -1405,9 +1416,24 @@ Future<void> _showTestOptions(BuildContext context) async {
   await provider.initialize();
   final liveService = MiuiLiveActivitiesService();
   await liveService.initialize();
+  await liveService.recordDiagnosticEvent(
+    'live_update_test_requested',
+    'User requested manual live island test notification',
+    extras: {
+      'from': 'settings_screen',
+      'currentWeek': provider.currentWeek,
+    },
+  );
 
   final selection = provider.getTestLiveActivityCourseSelection(now: now);
   if (selection == null) {
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_no_selection',
+      'Manual live island test found no eligible course',
+      extras: {
+        'weekday': now.weekday,
+      },
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('当前没有可测试的课程')),
@@ -1421,6 +1447,15 @@ Future<void> _showTestOptions(BuildContext context) async {
   final baseCourse = selection.currentCourse;
   final previewNextCourse = selection.nextCourse;
   final resolvedShortName = provider.resolveCourseShortName(baseCourse);
+  await liveService.recordDiagnosticEvent(
+    'live_update_test_selection_ready',
+    'Manual live island test resolved target course',
+    extras: {
+      'courseName': baseCourse.name,
+      'stage': selection.stage.name,
+      'hasNextCourse': previewNextCourse != null,
+    },
+  );
 
   final testCourse = Course(
     id: 'test_auto_id',
@@ -1445,6 +1480,15 @@ Future<void> _showTestOptions(BuildContext context) async {
     provider.suspendLiveActivitySyncFor(
       end.difference(now) + const Duration(seconds: 20),
     );
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_suspend_sync',
+      'Temporarily suspended scheduled live update sync for manual test',
+      extras: {
+        'untilMillis': end
+            .add(const Duration(seconds: 20))
+            .millisecondsSinceEpoch,
+      },
+    );
     await liveService.stopLiveUpdate();
     await Future<void>.delayed(const Duration(milliseconds: 150));
     final progressMilestones = provider.buildLiveProgressMilestones(
@@ -1457,6 +1501,16 @@ Future<void> _showTestOptions(BuildContext context) async {
       baseCourse,
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
+    );
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_starting',
+      'Manual live island test is starting native live update',
+      extras: {
+        'courseName': testCourse.name,
+        'startAtMillis': start.millisecondsSinceEpoch,
+        'endAtMillis': end.millisecondsSinceEpoch,
+        'milestoneCount': progressMilestones.length,
+      },
     );
     await liveService.startLiveUpdate(
       testCourse,
@@ -1473,6 +1527,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       enableDuringClass: false,
       enableBeforeEnd: false,
       showCountdown: settings.liveShowCountdown,
+      showStageText: settings.liveShowStageText,
       showCourseNameInIsland: settings.liveShowCourseName,
       showLocationInIsland: settings.liveShowLocation,
       useShortNameInIsland: settings.liveUseShortName,
@@ -1496,11 +1551,26 @@ Future<void> _showTestOptions(BuildContext context) async {
           .map((milestone) => milestone['timeText'] as String)
           .toList(),
     );
+    await liveService.recordDiagnosticEvent(
+      'live_update_test_started',
+      'Manual live island test successfully requested native live update',
+      extras: {
+        'courseName': testCourse.name,
+        'stage': LiveActivityStage.beforeClass.name,
+      },
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段')),
     );
-  } catch (e) {
+  } catch (e, stackTrace) {
+    await UmengAnalyticsService.reportDiagnostic(
+      'live_update_test_failed',
+      'Manual live island test failed before native island appeared',
+      error: e,
+      stackTrace: stackTrace,
+      dedupeKey: 'live_update_test_failed',
+    );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('发送失败: $e')),
