@@ -109,11 +109,11 @@ jobs:
           fi
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "${RELEASE_APK}" --clobber
-            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --latest "${RELEASE_NOTES_OPTION[@]}"
+            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --prerelease "${RELEASE_NOTES_OPTION[@]}"
           else
             gh release create "${RELEASE_TAG}" "${RELEASE_APK}" \
               --title "${RELEASE_TAG}" \
+              --prerelease \
               "${RELEASE_NOTES_OPTION[@]}" \
-              --target "${GITHUB_SHA}" \
-              --latest
+              --target "${GITHUB_SHA}"
           fi

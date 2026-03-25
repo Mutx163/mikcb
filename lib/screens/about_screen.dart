@@ -32,6 +32,8 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _loadPackageInfo() async {
+    final includePrerelease =
+        context.read<TimetableProvider>().settings.appUpdateIncludePrerelease;
     final info = await PackageInfo.fromPlatform();
     if (!mounted) {
       return;
@@ -40,6 +42,7 @@ class _AboutScreenState extends State<AboutScreen> {
       _packageInfo = info;
       _updateFuture = _updateService.checkForUpdates(
         currentVersion: info.version,
+        includePrerelease: includePrerelease,
       );
     });
   }
@@ -215,6 +218,8 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildTesterOptionsCard(theme, settings),
         ],
       ),
     );
@@ -328,6 +333,12 @@ class _AboutScreenState extends State<AboutScreen> {
                           label: '最新版本',
                           value: release?.version ?? '未发布',
                         ),
+                        if (release?.isPrerelease == true)
+                          _buildInfoChip(
+                            theme,
+                            label: '发布类型',
+                            value: '预发布',
+                          ),
                       ],
                     ),
                     if (release?.updatedAt != null) ...[
@@ -569,6 +580,45 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
+  Widget _buildTesterOptionsCard(
+    ThemeData theme,
+    TimetableSettings settings,
+  ) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '测试者选项',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '默认只检测正式版。需要帮忙测试时，可以在这里打开预发布版本检测。',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: settings.appUpdateIncludePrerelease,
+              onChanged: _packageInfo == null
+                  ? null
+                  : (value) => _updatePrereleasePreference(value),
+              title: const Text('检测预发布版本'),
+              subtitle: const Text('打开后会把 GitHub 预发布版本也纳入更新检查。'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _openRepository() async {
     _analytics.logEventLater(name: 'repository_opened');
     final uri = Uri.tryParse(AppUpdateService.repositoryUrl);
@@ -606,8 +656,33 @@ class _AboutScreenState extends State<AboutScreen> {
     setState(() {
       _updateFuture = _updateService.checkForUpdates(
         currentVersion: _packageInfo!.version,
+        includePrerelease:
+            context.read<TimetableProvider>().settings.appUpdateIncludePrerelease,
       );
     });
+  }
+
+  Future<void> _updatePrereleasePreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateIncludePrerelease: value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    _analytics.logEventLater(
+      name: 'update_prerelease_toggled',
+      parameters: {'enabled': value},
+    );
+    _refreshUpdate();
   }
 
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
