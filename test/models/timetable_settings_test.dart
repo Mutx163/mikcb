@@ -30,6 +30,7 @@ void main() {
       LiveDuringClassTimeDisplayMode.nearest,
     );
     expect(settings.liveEnableMiuiIslandLabelImage, isFalse);
+    expect(settings.liveHideFromRecents, isFalse);
     expect(settings.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
       settings.liveMiuiIslandLabelContent,
@@ -76,6 +77,7 @@ void main() {
       LiveDuringClassTimeDisplayMode.nearest,
     );
     expect(restored.liveEnableMiuiIslandLabelImage, isFalse);
+    expect(restored.liveHideFromRecents, isFalse);
     expect(restored.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
       restored.liveMiuiIslandLabelContent,
@@ -123,6 +125,7 @@ void main() {
       enableHaptics: false,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
       liveEnableMiuiIslandLabelImage: true,
+      liveHideFromRecents: true,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
       liveMiuiIslandLabelFontSize: 18,
@@ -152,6 +155,7 @@ void main() {
       LiveDuringClassTimeDisplayMode.total,
     );
     expect(restored.liveEnableMiuiIslandLabelImage, isTrue);
+    expect(restored.liveHideFromRecents, isTrue);
     expect(
       restored.liveMiuiIslandLabelStyle,
       MiuiIslandLabelStyle.iconAndText,

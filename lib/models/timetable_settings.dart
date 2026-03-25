@@ -310,6 +310,7 @@ class TimetableSettings {
   final bool liveHidePrefixText;
   final LiveDuringClassTimeDisplayMode liveDuringClassTimeDisplayMode;
   final bool liveEnableMiuiIslandLabelImage;
+  final bool liveHideFromRecents;
   final MiuiIslandLabelStyle liveMiuiIslandLabelStyle;
   final MiuiIslandLabelContent liveMiuiIslandLabelContent;
   final double liveMiuiIslandLabelFontSize;
@@ -362,6 +363,7 @@ class TimetableSettings {
     this.liveDuringClassTimeDisplayMode =
         LiveDuringClassTimeDisplayMode.nearest,
     this.liveEnableMiuiIslandLabelImage = false,
+    this.liveHideFromRecents = false,
     this.liveMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     this.liveMiuiIslandLabelContent = MiuiIslandLabelContent.courseName,
     this.liveMiuiIslandLabelFontSize = 14,
@@ -426,6 +428,7 @@ class TimetableSettings {
       liveHidePrefixText: true,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
       liveEnableMiuiIslandLabelImage: false,
+      liveHideFromRecents: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
       liveMiuiIslandLabelFontSize: 14,
@@ -480,6 +483,7 @@ class TimetableSettings {
       'liveHidePrefixText': liveHidePrefixText,
       'liveDuringClassTimeDisplayMode': liveDuringClassTimeDisplayMode.value,
       'liveEnableMiuiIslandLabelImage': liveEnableMiuiIslandLabelImage,
+      'liveHideFromRecents': liveHideFromRecents,
       'liveMiuiIslandLabelStyle': liveMiuiIslandLabelStyle.value,
       'liveMiuiIslandLabelContent': liveMiuiIslandLabelContent.value,
       'liveMiuiIslandLabelFontSize': liveMiuiIslandLabelFontSize,
@@ -561,6 +565,7 @@ class TimetableSettings {
           json['liveDuringClassTimeDisplayMode'] as String?),
       liveEnableMiuiIslandLabelImage:
           json['liveEnableMiuiIslandLabelImage'] as bool? ?? false,
+      liveHideFromRecents: json['liveHideFromRecents'] as bool? ?? false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyleX.fromValue(
         json['liveMiuiIslandLabelStyle'] as String?,
       ),
@@ -638,6 +643,7 @@ class TimetableSettings {
     bool? liveHidePrefixText,
     LiveDuringClassTimeDisplayMode? liveDuringClassTimeDisplayMode,
     bool? liveEnableMiuiIslandLabelImage,
+    bool? liveHideFromRecents,
     MiuiIslandLabelStyle? liveMiuiIslandLabelStyle,
     MiuiIslandLabelContent? liveMiuiIslandLabelContent,
     double? liveMiuiIslandLabelFontSize,
@@ -707,6 +713,8 @@ class TimetableSettings {
           liveDuringClassTimeDisplayMode ?? this.liveDuringClassTimeDisplayMode,
       liveEnableMiuiIslandLabelImage:
           liveEnableMiuiIslandLabelImage ?? this.liveEnableMiuiIslandLabelImage,
+      liveHideFromRecents:
+          liveHideFromRecents ?? this.liveHideFromRecents,
       liveMiuiIslandLabelStyle:
           liveMiuiIslandLabelStyle ?? this.liveMiuiIslandLabelStyle,
       liveMiuiIslandLabelContent:

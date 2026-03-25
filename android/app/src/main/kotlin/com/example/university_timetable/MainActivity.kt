@@ -1,6 +1,7 @@
 package com.example.university_timetable
 
 import android.Manifest
+import android.app.ActivityManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -44,12 +45,19 @@ class MainActivity : FlutterActivity() {
         private const val HOME_WIDGET_CHANNEL = "com.example.university_timetable/home_widget"
         private const val CHANNEL_ID = "live_update_channel"
         private const val PERMISSION_REQUEST_CODE = 1001
+        private const val PREFS_NAME = "native_runtime_prefs"
+        private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
     }
 
     private var notificationManager: NotificationManager? = null
     private var permissionResult: MethodChannel.Result? = null
+
+    override fun onResume() {
+        super.onResume()
+        applyHideFromRecentsPreference()
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -88,6 +96,11 @@ class MainActivity : FlutterActivity() {
                     }
                     "openBatteryOptimizationSettings" -> {
                         openBatteryOptimizationSettings()
+                        result.success(true)
+                    }
+                    "setHideFromRecents" -> {
+                        persistHideFromRecents(call.arguments as? Boolean ?: false)
+                        applyHideFromRecentsPreference()
                         result.success(true)
                     }
 
@@ -383,6 +396,33 @@ class MainActivity : FlutterActivity() {
     private fun stopLiveUpdateService() {
         stopService(Intent(this, LiveUpdateService::class.java))
     }
+
+    private fun persistHideFromRecents(hidden: Boolean) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putBoolean(KEY_HIDE_FROM_RECENTS, hidden)
+            .apply()
+    }
+
+    private fun applyHideFromRecentsPreference() {
+        val hidden = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_HIDE_FROM_RECENTS, false)
+        setHideFromRecents(hidden)
+    }
+
+    private fun setHideFromRecents(hidden: Boolean) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            return
+        }
+        try {
+            val activityManager = getSystemService(ActivityManager::class.java)
+            activityManager?.appTasks?.forEach { task ->
+                task.setExcludeFromRecents(hidden)
+            }
+        } catch (e: Exception) {
+            Log.w("MainActivity", "Failed to update recents visibility", e)
+        }
+    }
 }
 
 class LiveUpdateService : Service() {
@@ -421,6 +461,7 @@ class LiveUpdateService : Service() {
     private var startAtMillis = 0L
     private var endAtMillis = 0L
     private var endReminderLeadMillis = 600_000L
+    private var liveClassReminderStartMinutes = 0
     private var enableBeforeClass = true
     private var enableDuringClass = true
     private var enableBeforeEnd = true
@@ -472,6 +513,8 @@ class LiveUpdateService : Service() {
             intent?.getLongExtra("endReminderLeadMillis", 600_000L)
                 ?.coerceAtLeast(0L)
                 ?: 600_000L
+        liveClassReminderStartMinutes =
+            intent?.getIntExtra("liveClassReminderStartMinutes", 0)?.coerceAtLeast(0) ?: 0
         enableBeforeClass = intent?.getBooleanExtra("enableBeforeClass", true) ?: true
         enableDuringClass = intent?.getBooleanExtra("enableDuringClass", true) ?: true
         enableBeforeEnd = intent?.getBooleanExtra("enableBeforeEnd", true) ?: true
@@ -513,6 +556,7 @@ class LiveUpdateService : Service() {
                 "startAtMillis=$startAtMillis, " +
                 "endAtMillis=$endAtMillis, " +
                 "endReminderLeadMillis=$endReminderLeadMillis"
+                + ", liveClassReminderStartMinutes=$liveClassReminderStartMinutes"
         )
 
         // Publish once immediately so the foreground service becomes resident.
@@ -533,6 +577,12 @@ class LiveUpdateService : Service() {
         }
         LiveUpdateScheduler.onLiveUpdateStopped(applicationContext)
         super.onDestroy()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.d(TAG, "Task removed; stopping live update and relying on scheduler")
+        stopAndRemoveNotification()
+        super.onTaskRemoved(rootIntent)
     }
 
     private fun startTicker() {
@@ -644,9 +694,17 @@ class LiveUpdateService : Service() {
             return null
         }
 
+        val reminderStart = if (liveClassReminderStartMinutes == 0) {
+            startAtMillis
+        } else {
+            maxOf(startAtMillis, endAtMillis - liveClassReminderStartMinutes * 60_000L)
+        }
         val endReminderStart = maxOf(startAtMillis, endAtMillis - endReminderLeadMillis)
         return when {
             now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
+            now < reminderStart -> null
+            liveClassReminderStartMinutes > 0 && enableBeforeEnd -> "beforeEnd"
+            liveClassReminderStartMinutes > 0 && canDisplayDuringStage() -> "duringClass"
             now >= endReminderStart && enableBeforeEnd -> "beforeEnd"
             now < endReminderStart && canDisplayDuringStage() -> "duringClass"
             now >= endReminderStart && canDisplayDuringStage() -> "duringClass"
@@ -1231,9 +1289,11 @@ class LiveUpdateService : Service() {
 
     private fun formatCustomDuration(durationMillis: Long): String {
         val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
-        val roundedUpMinutes = (totalSeconds + 59L) / 60L
+        val flooredMinutes = (totalSeconds / 60L).coerceAtLeast(1L)
+        val roundedUpMinutes = ((totalSeconds + 59L) / 60L).coerceAtLeast(1L)
 
         return when {
+            totalSeconds > 120L -> "${flooredMinutes}分钟"
             totalSeconds > 60L -> "${roundedUpMinutes}分钟"
             else -> "${totalSeconds}秒"
         }
