@@ -638,6 +638,10 @@ class LiveUpdateService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         Log.d(TAG, "Task removed; stopping live update and relying on scheduler")
+        getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
+            .edit()
+            .putLong("last_task_removed_at", System.currentTimeMillis())
+            .apply()
         stopAndRemoveNotification()
         super.onTaskRemoved(rootIntent)
     }
