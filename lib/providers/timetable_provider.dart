@@ -142,6 +142,7 @@ class TimetableProvider with ChangeNotifier {
       await syncCurrentWeekWithSemesterStart();
     }
     await _syncHomeWidgetSnapshot();
+    await _syncNativeRuntimePreferences();
     if (_enableLiveActivitySync) {
       _startLiveActivityTick();
     }
@@ -193,6 +194,13 @@ class TimetableProvider with ChangeNotifier {
       settings: _settings,
     );
     _currentWeek = profile.currentWeek;
+    unawaited(_syncNativeRuntimePreferences());
+  }
+
+  Future<void> _syncNativeRuntimePreferences() async {
+    await _liveActivitiesService.setHideFromRecents(
+      _settings.liveHideFromRecents,
+    );
   }
 
   TimetableSettings _normalizeSettingsWithTimeScheme(
@@ -583,17 +591,18 @@ class TimetableProvider with ChangeNotifier {
     }
 
     if (_settings.activeTimeSchemeId == schemeId) {
-      _courses = _syncCoursesWithEffectiveTimeSchemes(
-        List<Course>.from(_courses),
-        settings: _settings.copyWith(
-          activeTimeSchemeId: schemeId,
-          sections: List<SectionTime>.from(updatedScheme.sections),
-        ),
-      );
       _settings = _settings.copyWith(
         activeTimeSchemeId: schemeId,
         sections: List<SectionTime>.from(updatedScheme.sections),
       );
+    }
+
+    final activeProfileIndex = _profiles.indexWhere(
+      (profile) => profile.id == _activeProfileId,
+    );
+    if (activeProfileIndex != -1) {
+      _courses = List<Course>.from(_profiles[activeProfileIndex].courses);
+      _settings = _profiles[activeProfileIndex].settings;
     }
 
     await _persistTimeSchemes();
@@ -860,12 +869,18 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<String?> updateTimetableSettings(TimetableSettings settings) async {
-    if (settings.sectionCount < maxUsedSection) {
+    final sectionConfigChanged =
+        settings.sectionCount != _settings.sectionCount ||
+        _sectionSignature(settings.sections) != _sectionSignature(_settings.sections) ||
+        settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
+
+    if (sectionConfigChanged && settings.sectionCount < maxUsedSection) {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
     }
 
     _settings = _normalizeSettingsWithTimeScheme(settings);
     await _persistActiveProfileState();
+    await _syncNativeRuntimePreferences();
     _currentLiveCourseId = null;
     notifyListeners();
     await _updateLiveActivity();
@@ -1776,6 +1791,7 @@ class TimetableProvider with ChangeNotifier {
         displayCourse,
         displayNextCourse,
         stage: selection.stage.name,
+        liveClassReminderStartMinutes: settings.liveClassReminderStartMinutes,
         endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
         promoteDuringClass: settings.livePromoteDuringClass,
         showNotificationDuringClass: settings.liveShowDuringClassNotification,
@@ -1905,6 +1921,15 @@ class TimetableProvider with ChangeNotifier {
       return null;
     }
 
+    if (startMinutes > 0) {
+      if (_canDisplayStage(LiveActivityStage.beforeEnd)) {
+        return LiveActivityStage.beforeEnd;
+      }
+      return _canDisplayStage(LiveActivityStage.duringClass)
+          ? LiveActivityStage.duringClass
+          : null;
+    }
+
     final endReminderStart = _resolveEndReminderStart(startTime, endTime);
     if (!currentTime.isBefore(endReminderStart)) {
       if (_canDisplayStage(LiveActivityStage.beforeEnd)) {
@@ -1948,7 +1973,7 @@ class TimetableProvider with ChangeNotifier {
             (_settings.livePromoteDuringClass ||
                 _settings.liveShowDuringClassNotification);
       case LiveActivityStage.beforeEnd:
-        return _settings.liveEnableDuringClass;
+        return _settings.liveEnableBeforeEnd;
     }
   }
 }

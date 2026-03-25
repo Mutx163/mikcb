@@ -96,6 +96,16 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<void> setHideFromRecents(bool value) async {
+    if (!Platform.isAndroid) return;
+    await initialize();
+    try {
+      await _channel.invokeMethod('setHideFromRecents', value);
+    } catch (e) {
+      debugPrint('Failed to set hide from recents: $e');
+    }
+  }
+
   Future<bool> isIgnoringBatteryOptimizations() async {
     if (!Platform.isAndroid) return true;
     try {
@@ -116,6 +126,7 @@ class MiuiLiveActivitiesService {
     int? startAtMillis,
     int? endAtMillis,
     int? endReminderLeadMillis,
+    int liveClassReminderStartMinutes = 0,
     int endSecondsCountdownThreshold = 60,
     bool promoteDuringClass = true,
     bool showNotificationDuringClass = true,
@@ -152,6 +163,7 @@ class MiuiLiveActivitiesService {
         startAtMillis: startAtMillis,
         endAtMillis: endAtMillis,
         endReminderLeadMillis: endReminderLeadMillis,
+        liveClassReminderStartMinutes: liveClassReminderStartMinutes,
         endSecondsCountdownThreshold: endSecondsCountdownThreshold,
         promoteDuringClass: promoteDuringClass,
         showNotificationDuringClass: showNotificationDuringClass,
@@ -197,6 +209,7 @@ class MiuiLiveActivitiesService {
     int? startAtMillis,
     int? endAtMillis,
     int? endReminderLeadMillis,
+    int liveClassReminderStartMinutes = 0,
     int endSecondsCountdownThreshold = 60,
     bool promoteDuringClass = true,
     bool showNotificationDuringClass = true,
@@ -229,6 +242,7 @@ class MiuiLiveActivitiesService {
       'startAtMillis': startAtMillis,
       'endAtMillis': endAtMillis,
       'endReminderLeadMillis': endReminderLeadMillis,
+      'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'endSecondsCountdownThreshold': endSecondsCountdownThreshold,
       'promoteDuringClass': promoteDuringClass,
       'showNotificationDuringClass': showNotificationDuringClass,

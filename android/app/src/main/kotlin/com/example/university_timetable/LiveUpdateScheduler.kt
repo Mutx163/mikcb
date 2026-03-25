@@ -68,6 +68,7 @@ private data class NativeLiveSettings(
     val liveMiuiIslandExpandedIconMode: String,
     val liveMiuiIslandExpandedIconPath: String?,
     val liveShowBeforeClassMinutes: Int,
+    val liveClassReminderStartMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
 )
 
@@ -104,6 +105,7 @@ private data class LiveUpdatePayload(
     val endAtMillis: Long,
     val beforeClassLeadMillis: Long,
     val endReminderLeadMillis: Long,
+    val liveClassReminderStartMinutes: Int,
     val endSecondsCountdownThreshold: Int,
     val enableBeforeClass: Boolean,
     val enableDuringClass: Boolean,
@@ -189,6 +191,8 @@ object LiveUpdateScheduler {
             beforeClassLeadMillis = (data["beforeClassLeadMillis"] as? Number)?.toLong() ?: 0L,
             endReminderLeadMillis = (data["endReminderLeadMillis"] as? Number)?.toLong()
                 ?: 600_000L,
+            liveClassReminderStartMinutes =
+                (data["liveClassReminderStartMinutes"] as? Number)?.toInt() ?: 0,
             endSecondsCountdownThreshold =
                 (data["endSecondsCountdownThreshold"] as? Number)?.toInt() ?: 60,
             enableBeforeClass = data["enableBeforeClass"] as? Boolean ?: true,
@@ -288,6 +292,8 @@ object LiveUpdateScheduler {
             liveMiuiIslandExpandedIconPath =
                 settingsJson.optString("liveMiuiIslandExpandedIconPath").takeIf { it.isNotBlank() },
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
+            liveClassReminderStartMinutes =
+                settingsJson.optInt("liveClassReminderStartMinutes", 0),
             liveEndSecondsCountdownThreshold =
                 settingsJson.optInt("liveEndSecondsCountdownThreshold", 60),
         )
@@ -340,6 +346,7 @@ object LiveUpdateScheduler {
             putExtra("startAtMillis", payload.startAtMillis)
             putExtra("endAtMillis", payload.endAtMillis)
             putExtra("endReminderLeadMillis", payload.endReminderLeadMillis)
+            putExtra("liveClassReminderStartMinutes", payload.liveClassReminderStartMinutes)
             putExtra(
                 "endSecondsCountdownThreshold",
                 payload.endSecondsCountdownThreshold
@@ -510,6 +517,8 @@ object LiveUpdateScheduler {
             beforeClassLeadMillis =
                 snapshot.settings.liveShowBeforeClassMinutes * 60_000L,
             endReminderLeadMillis = snapshot.endReminderLeadMillis,
+            liveClassReminderStartMinutes =
+                snapshot.settings.liveClassReminderStartMinutes,
             endSecondsCountdownThreshold =
                 snapshot.settings.liveEndSecondsCountdownThreshold,
             enableBeforeClass = snapshot.settings.liveEnableBeforeClass,
@@ -552,15 +561,29 @@ object LiveUpdateScheduler {
         val settings = snapshot.settings
         val beforeClassLeadMillis = settings.liveShowBeforeClassMinutes * 60_000L
         val aheadTime = startAtMillis - beforeClassLeadMillis
+        val reminderStartMillis = if (settings.liveClassReminderStartMinutes == 0) {
+            startAtMillis
+        } else {
+            maxOf(startAtMillis, endAtMillis - settings.liveClassReminderStartMinutes * 60_000L)
+        }
         val endReminderStart = maxOf(startAtMillis, endAtMillis - snapshot.endReminderLeadMillis)
         val candidates = mutableListOf<FutureStageTrigger>()
         if (settings.liveEnableBeforeClass && aheadTime > nowMillis) {
             candidates += FutureStageTrigger("beforeClass", aheadTime)
         }
-        if (canDisplayDuring(settings) && startAtMillis > nowMillis) {
+        if (settings.liveClassReminderStartMinutes == 0 &&
+            canDisplayDuring(settings) &&
+            startAtMillis > nowMillis
+        ) {
             candidates += FutureStageTrigger("duringClass", startAtMillis)
         }
-        if (settings.liveEnableBeforeEnd && endReminderStart > nowMillis) {
+        if (settings.liveClassReminderStartMinutes > 0) {
+            if (settings.liveEnableBeforeEnd && reminderStartMillis > nowMillis) {
+                candidates += FutureStageTrigger("beforeEnd", reminderStartMillis)
+            } else if (canDisplayDuring(settings) && reminderStartMillis > nowMillis) {
+                candidates += FutureStageTrigger("duringClass", reminderStartMillis)
+            }
+        } else if (settings.liveEnableBeforeEnd && endReminderStart > nowMillis) {
             candidates += FutureStageTrigger("beforeEnd", endReminderStart)
         }
         return candidates.minByOrNull { it.triggerAtMillis }
@@ -580,6 +603,20 @@ object LiveUpdateScheduler {
         }
         if (nowMillis < startAtMillis) {
             return if (settings.liveEnableBeforeClass) "beforeClass" else null
+        }
+        val reminderStartMillis = if (settings.liveClassReminderStartMinutes == 0) {
+            startAtMillis
+        } else {
+            maxOf(startAtMillis, endAtMillis - settings.liveClassReminderStartMinutes * 60_000L)
+        }
+        if (nowMillis < reminderStartMillis) {
+            return null
+        }
+        if (settings.liveClassReminderStartMinutes > 0) {
+            if (settings.liveEnableBeforeEnd) {
+                return "beforeEnd"
+            }
+            return if (canDisplayDuring(settings)) "duringClass" else null
         }
         val endReminderStart = maxOf(startAtMillis, endAtMillis - snapshot.endReminderLeadMillis)
         if (nowMillis >= endReminderStart) {

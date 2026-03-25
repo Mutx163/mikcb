@@ -412,6 +412,179 @@ void main() {
     );
   });
 
+  test('updating an override time scheme refreshes referencing courses',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final overrideScheme = await provider.createTimeScheme(
+      name: '实验楼作息',
+      sections: [
+        ...provider.settings.sections.take(4),
+        const SectionTime(startTime: '14:00', endTime: '14:45'),
+        const SectionTime(startTime: '14:55', endTime: '15:40'),
+      ],
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'override-refresh-course',
+        name: '大学物理实验',
+        teacher: '王老师',
+        location: '实验楼 105',
+        dayOfWeek: 4,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:30',
+        endTime: '16:05',
+        timeSchemeIdOverride: overrideScheme.id,
+      ),
+    );
+
+    expect(provider.courses.single.startTime, '14:00');
+    expect(provider.courses.single.endTime, '15:40');
+
+    final message = await provider.updateTimeScheme(
+      schemeId: overrideScheme.id,
+      name: '实验楼作息',
+      sections: [
+        ...provider.settings.sections.take(4),
+        const SectionTime(startTime: '14:10', endTime: '14:55'),
+        const SectionTime(startTime: '15:05', endTime: '15:50'),
+      ],
+    );
+
+    expect(message, isNull);
+    expect(provider.courses.single.timeSchemeIdOverride, overrideScheme.id);
+    expect(provider.courses.single.startTime, '14:10');
+    expect(provider.courses.single.endTime, '15:50');
+  });
+
+  test('live activity respects reminder start minutes after class starts',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: false,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+        liveClassReminderStartMinutes: 5,
+      ),
+    );
+
+    final now = DateTime(2026, 3, 25, 14, 5);
+    await provider.addCourse(
+      Course(
+        id: 'live-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+
+    final earlySelection = provider.getLiveActivityCourseSelection(now: now);
+    final lateSelection = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 15, 36),
+    );
+
+    expect(earlySelection, isNull);
+    expect(lateSelection?.stage, LiveActivityStage.beforeEnd);
+  });
+
+  test('live activity starts during class immediately when reminder start is 0',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: false,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+        liveClassReminderStartMinutes: 0,
+      ),
+    );
+
+    final now = DateTime(2026, 3, 25, 14, 5);
+    await provider.addCourse(
+      Course(
+        id: 'live-course-immediate',
+        name: '线性代数',
+        teacher: '李老师',
+        location: 'B201',
+        dayOfWeek: now.weekday,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+
+    final selection = provider.getLiveActivityCourseSelection(now: now);
+
+    expect(selection?.stage, LiveActivityStage.duringClass);
+  });
+
+  test('updating non-section settings does not trigger section capacity guard',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final extendedScheme = await provider.createTimeScheme(
+      name: '晚课扩展作息',
+      sections: List.generate(
+        13,
+        (index) => SectionTime(
+          startTime: '${(8 + index).toString().padLeft(2, '0')}:00',
+          endTime: '${(8 + index).toString().padLeft(2, '0')}:45',
+        ),
+      ),
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'high-section-course',
+        name: '选修课',
+        teacher: '刘老师',
+        location: 'D401',
+        dayOfWeek: 5,
+        startSection: 13,
+        endSection: 13,
+        startTime: '20:00',
+        endTime: '20:45',
+        timeSchemeIdOverride: extendedScheme.id,
+      ),
+    );
+
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveShowCourseName: !provider.settings.liveShowCourseName,
+      ),
+    );
+
+    expect(message, isNull);
+    expect(provider.settings.liveShowCourseName, isFalse);
+  });
+
   test('ensuring import section capacity duplicates shared active scheme',
       () async {
     final provider = TimetableProvider(

@@ -35,6 +35,11 @@ class TimetableSettingsScreen extends StatelessWidget {
                 currentWeek: provider.currentWeek,
                 semesterWeekCount: settings.semesterWeekCount,
                 semesterStartDate: settings.semesterStartDate,
+                onPickSemesterStartDate: () => _pickSemesterStartDate(context),
+                onSyncCurrentWeek: settings.semesterStartDate == null
+                    ? null
+                    : () => _syncCurrentWeek(context),
+                onPickSemesterWeekCount: () => _pickSemesterWeekCount(context),
               ),
               const SizedBox(height: 16),
               Card(
@@ -181,59 +186,6 @@ class TimetableSettingsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '开学日期与当前周',
-                        style:
-                            Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        settings.semesterStartDate == null
-                            ? '未设置开学日期，回本周和日期栏会缺少精确映射。'
-                            : '已设置开学日期，可用它同步当前周并驱动课表日期显示。',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '当前学期共 ${settings.semesterWeekCount} 周。',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () => _pickSemesterStartDate(context),
-                            icon: const Icon(Icons.event_outlined),
-                            label: const Text('设置开学日期'),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: settings.semesterStartDate == null
-                                ? null
-                                : () => _syncCurrentWeek(context),
-                            icon: const Icon(Icons.sync_outlined),
-                            label: const Text('同步当前周'),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () => _pickSemesterWeekCount(context),
-                            icon: const Icon(Icons.view_week_outlined),
-                            label: Text('学期周数 ${settings.semesterWeekCount}'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
         );
@@ -464,11 +416,17 @@ class _SemesterOverviewCard extends StatelessWidget {
   final int currentWeek;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
+  final VoidCallback onPickSemesterStartDate;
+  final VoidCallback? onSyncCurrentWeek;
+  final VoidCallback onPickSemesterWeekCount;
 
   const _SemesterOverviewCard({
     required this.currentWeek,
     required this.semesterWeekCount,
     required this.semesterStartDate,
+    required this.onPickSemesterStartDate,
+    required this.onSyncCurrentWeek,
+    required this.onPickSemesterWeekCount,
   });
 
   @override
@@ -479,42 +437,65 @@ class _SemesterOverviewCard extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(
-                Icons.calendar_view_week_outlined,
-                color: colorScheme.primary,
-              ),
+            Row(
+              children: [
+                Image.asset(
+                  'assets/branding/launcher_icon.png',
+                  width: 44,
+                  height: 44,
+                  fit: BoxFit.contain,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '当前第 $currentWeek 周 / 共 $semesterWeekCount 周',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        semesterStartDate == null
+                            ? '设置开学日期后，可更准确地同步当前周和课表日期。'
+                            : '开学日期：${_formatDate(semesterStartDate!)}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '当前第 $currentWeek 周 / 共 $semesterWeekCount 周',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: onPickSemesterStartDate,
+                  icon: const Icon(Icons.event_outlined),
+                  label: Text(
+                    semesterStartDate == null ? '设置开学日期' : '修改开学日期',
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    semesterStartDate == null
-                        ? '开学日期未设置'
-                        : '开学日期：${_formatDate(semesterStartDate!)}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: onSyncCurrentWeek,
+                  icon: const Icon(Icons.sync_outlined),
+                  label: const Text('同步当前周'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: onPickSemesterWeekCount,
+                  icon: const Icon(Icons.view_week_outlined),
+                  label: Text('学期周数 $semesterWeekCount'),
+                ),
+              ],
             ),
           ],
         ),
@@ -907,6 +888,19 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       _draft = _draft.copyWith(
                         liveShowDuringClassNotification: value,
                       );
+                    });
+                  },
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('从最近任务隐藏应用'),
+                  subtitle: const Text(
+                    '开启后不再出现在最近任务列表，减少被误划掉导致岛冻结的情况。小米手机开启后请直接上滑返回桌面，不要先打开后台界面，否则当前任务不会立刻消失。',
+                  ),
+                  value: _draft.liveHideFromRecents,
+                  onChanged: (value) {
+                    setState(() {
+                      _draft = _draft.copyWith(liveHideFromRecents: value);
                     });
                   },
                 ),
@@ -1441,6 +1435,10 @@ Future<void> _showTestOptions(BuildContext context) async {
   }
 
   final provider = context.read<TimetableProvider>();
+  await provider.initialize();
+  final liveService = MiuiLiveActivitiesService();
+  await liveService.initialize();
+
   final selection = provider.getTestLiveActivityCourseSelection(now: now);
   if (selection == null) {
     if (!context.mounted) return;
@@ -1480,6 +1478,8 @@ Future<void> _showTestOptions(BuildContext context) async {
     provider.suspendLiveActivitySyncFor(
       end.difference(now) + const Duration(seconds: 20),
     );
+    await liveService.stopLiveUpdate();
+    await Future<void>.delayed(const Duration(milliseconds: 150));
     final progressMilestones = provider.buildLiveProgressMilestones(
       baseCourse,
       startAtMillis: start.millisecondsSinceEpoch,
@@ -1491,7 +1491,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
     );
-    await MiuiLiveActivitiesService().startLiveUpdate(
+    await liveService.startLiveUpdate(
       testCourse,
       previewNextCourse,
       stage: LiveActivityStage.beforeClass.name,
