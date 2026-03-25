@@ -21,6 +21,8 @@ class UmengApplication : Application() {
         @Volatile
         private var initialized = false
 
+        fun isAnalyticsInitialized(): Boolean = initialized
+
         fun initializeAnalyticsIfNeeded(context: Context): Boolean {
             if (initialized) {
                 return false

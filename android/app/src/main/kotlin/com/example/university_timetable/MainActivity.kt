@@ -164,6 +164,25 @@ class MainActivity : FlutterActivity() {
                         }
                         result.success(true)
                     }
+                    "reportCustomLog" -> {
+                        val data = call.arguments as? Map<*, *>
+                        if (data == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing log payload", null)
+                            return@setMethodCallHandler
+                        }
+                        UmengDiagnosticReporter.report(
+                            context = applicationContext,
+                            category = data["category"] as? String ?: "flutter_diagnostic",
+                            message = data["message"] as? String ?: "",
+                            stackTrace = data["stackTrace"] as? String,
+                            dedupeKey = data["dedupeKey"] as? String
+                                ?: (data["category"] as? String ?: "flutter_diagnostic"),
+                            extras = buildMap {
+                                put("error", data["error"])
+                            }
+                        )
+                        result.success(true)
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -388,11 +407,22 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun startLiveUpdateService(data: Map<String, Any>) {
-        val intent = LiveUpdateScheduler.buildServiceIntentFromMethodPayload(this, data)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
+        try {
+            val intent = LiveUpdateScheduler.buildServiceIntentFromMethodPayload(this, data)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        } catch (e: Exception) {
+            UmengDiagnosticReporter.report(
+                context = applicationContext,
+                category = "live_update_start_failed",
+                message = "Failed to start live update service from Flutter method channel",
+                throwable = e,
+                dedupeKey = "live_update_start_failed",
+            )
+            throw e
         }
     }
 
@@ -485,98 +515,113 @@ class LiveUpdateService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        courseName = intent?.getStringExtra("courseName").orEmpty()
-        shortCourseNameRaw = intent?.getStringExtra("shortName").orEmpty()
-        location = intent?.getStringExtra("location").orEmpty()
-        teacher = intent?.getStringExtra("teacher").orEmpty()
-        note = intent?.getStringExtra("note").orEmpty()
-        startTimeText = intent?.getStringExtra("startTime").orEmpty()
-        endTimeText = intent?.getStringExtra("endTime").orEmpty()
-        nextName = intent?.getStringExtra("nextName").orEmpty()
-        autoDismissAfterStartMinutes = intent?.getIntExtra("autoDismissAfterStartMinutes", 0) ?: 0
-        activityStage = intent?.getStringExtra("stage").orEmpty()
-        endSecondsCountdownThreshold =
-            intent?.getIntExtra("endSecondsCountdownThreshold", 60) ?: 60
-        showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
-        showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
-        showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
-        useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
-        hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
-        duringClassTimeDisplayMode =
-            intent?.getStringExtra("duringClassTimeDisplayMode") ?: "nearest"
-        enableMiuiIslandLabelImage =
-            intent?.getBooleanExtra("enableMiuiIslandLabelImage", false) ?: false
-        miuiIslandLabelStyle = intent?.getStringExtra("miuiIslandLabelStyle") ?: "text_only"
-        miuiIslandLabelContent =
-            intent?.getStringExtra("miuiIslandLabelContent") ?: "course_name"
-        miuiIslandLabelFontColor =
-            intent?.getStringExtra("miuiIslandLabelFontColor") ?: "#FFFFFF"
-        miuiIslandLabelFontWeight =
-            intent?.getStringExtra("miuiIslandLabelFontWeight") ?: "bold"
-        miuiIslandLabelRenderQuality =
-            intent?.getStringExtra("miuiIslandLabelRenderQuality") ?: "standard"
-        miuiIslandLabelFontSize =
-            intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
-        miuiIslandExpandedIconMode =
-            intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
-        miuiIslandExpandedIconPath =
-            intent?.getStringExtra("miuiIslandExpandedIconPath")?.takeIf { it.isNotBlank() }
-        endReminderLeadMillis =
-            intent?.getLongExtra("endReminderLeadMillis", 600_000L)
-                ?.coerceAtLeast(0L)
-                ?: 600_000L
-        liveClassReminderStartMinutes =
-            intent?.getIntExtra("liveClassReminderStartMinutes", 0)?.coerceAtLeast(0) ?: 0
-        enableBeforeClass = intent?.getBooleanExtra("enableBeforeClass", true) ?: true
-        enableDuringClass = intent?.getBooleanExtra("enableDuringClass", true) ?: true
-        enableBeforeEnd = intent?.getBooleanExtra("enableBeforeEnd", true) ?: true
-        promoteDuringClass = intent?.getBooleanExtra("promoteDuringClass", true) ?: true
-        showNotificationDuringClass =
-            intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
-        progressBreakOffsetsMillis =
-            intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
-        progressMilestoneLabels =
-            intent?.getStringArrayListExtra("progressMilestoneLabels") ?: emptyList()
-        progressMilestoneTimeTexts =
-            intent?.getStringArrayListExtra("progressMilestoneTimeTexts") ?: emptyList()
-        startAtMillis =
-            intent?.getLongExtra("startAtMillis", 0L)?.takeIf { it > 0L }
-                ?: buildCourseTimeMillis(startTimeText)
-                ?: System.currentTimeMillis()
-        endAtMillis =
-            intent?.getLongExtra("endAtMillis", 0L)?.takeIf { it > 0L }
-                ?: buildCourseTimeMillis(endTimeText)
-                ?: startAtMillis
-        
-        lastRemainingText = "-1" // Ensure the first tick always refreshes the notification.
-        lastProgressUnits = -1
-        lastCriticalTimeText = ""
+        return try {
+            courseName = intent?.getStringExtra("courseName").orEmpty()
+            shortCourseNameRaw = intent?.getStringExtra("shortName").orEmpty()
+            location = intent?.getStringExtra("location").orEmpty()
+            teacher = intent?.getStringExtra("teacher").orEmpty()
+            note = intent?.getStringExtra("note").orEmpty()
+            startTimeText = intent?.getStringExtra("startTime").orEmpty()
+            endTimeText = intent?.getStringExtra("endTime").orEmpty()
+            nextName = intent?.getStringExtra("nextName").orEmpty()
+            autoDismissAfterStartMinutes = intent?.getIntExtra("autoDismissAfterStartMinutes", 0) ?: 0
+            activityStage = intent?.getStringExtra("stage").orEmpty()
+            endSecondsCountdownThreshold =
+                intent?.getIntExtra("endSecondsCountdownThreshold", 60) ?: 60
+            showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
+            showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
+            showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
+            useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
+            hidePrefixText = intent?.getBooleanExtra("hidePrefixText", false) ?: false
+            duringClassTimeDisplayMode =
+                intent?.getStringExtra("duringClassTimeDisplayMode") ?: "nearest"
+            enableMiuiIslandLabelImage =
+                intent?.getBooleanExtra("enableMiuiIslandLabelImage", false) ?: false
+            miuiIslandLabelStyle = intent?.getStringExtra("miuiIslandLabelStyle") ?: "text_only"
+            miuiIslandLabelContent =
+                intent?.getStringExtra("miuiIslandLabelContent") ?: "course_name"
+            miuiIslandLabelFontColor =
+                intent?.getStringExtra("miuiIslandLabelFontColor") ?: "#FFFFFF"
+            miuiIslandLabelFontWeight =
+                intent?.getStringExtra("miuiIslandLabelFontWeight") ?: "bold"
+            miuiIslandLabelRenderQuality =
+                intent?.getStringExtra("miuiIslandLabelRenderQuality") ?: "standard"
+            miuiIslandLabelFontSize =
+                intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
+            miuiIslandExpandedIconMode =
+                intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
+            miuiIslandExpandedIconPath =
+                intent?.getStringExtra("miuiIslandExpandedIconPath")?.takeIf { it.isNotBlank() }
+            endReminderLeadMillis =
+                intent?.getLongExtra("endReminderLeadMillis", 600_000L)
+                    ?.coerceAtLeast(0L)
+                    ?: 600_000L
+            liveClassReminderStartMinutes =
+                intent?.getIntExtra("liveClassReminderStartMinutes", 0)?.coerceAtLeast(0) ?: 0
+            enableBeforeClass = intent?.getBooleanExtra("enableBeforeClass", true) ?: true
+            enableDuringClass = intent?.getBooleanExtra("enableDuringClass", true) ?: true
+            enableBeforeEnd = intent?.getBooleanExtra("enableBeforeEnd", true) ?: true
+            promoteDuringClass = intent?.getBooleanExtra("promoteDuringClass", true) ?: true
+            showNotificationDuringClass =
+                intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
+            progressBreakOffsetsMillis =
+                intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
+            progressMilestoneLabels =
+                intent?.getStringArrayListExtra("progressMilestoneLabels") ?: emptyList()
+            progressMilestoneTimeTexts =
+                intent?.getStringArrayListExtra("progressMilestoneTimeTexts") ?: emptyList()
+            startAtMillis =
+                intent?.getLongExtra("startAtMillis", 0L)?.takeIf { it > 0L }
+                    ?: buildCourseTimeMillis(startTimeText)
+                    ?: System.currentTimeMillis()
+            endAtMillis =
+                intent?.getLongExtra("endAtMillis", 0L)?.takeIf { it > 0L }
+                    ?: buildCourseTimeMillis(endTimeText)
+                    ?: startAtMillis
 
-        Log.d(
-            TAG,
-            "startLiveUpdate " +
-                "courseName=$courseName, " +
-                "stage=$activityStage, " +
-                "enableBeforeClass=$enableBeforeClass, " +
-                "enableDuringClass=$enableDuringClass, " +
-                "enableBeforeEnd=$enableBeforeEnd, " +
-                "promoteDuringClass=$promoteDuringClass, " +
-                "showNotificationDuringClass=$showNotificationDuringClass, " +
-                "progressBreakOffsetsMillis=${progressBreakOffsetsMillis.joinToString(prefix = "[", postfix = "]")}, " +
-                "progressMilestoneLabels=$progressMilestoneLabels, " +
-                "progressMilestoneTimeTexts=$progressMilestoneTimeTexts, " +
-                "startAtMillis=$startAtMillis, " +
-                "endAtMillis=$endAtMillis, " +
-                "endReminderLeadMillis=$endReminderLeadMillis"
-                + ", liveClassReminderStartMinutes=$liveClassReminderStartMinutes"
-        )
+            lastRemainingText = "-1"
+            lastProgressUnits = -1
+            lastCriticalTimeText = ""
 
-        // Publish once immediately so the foreground service becomes resident.
-        val initialText = computeRemainingText(System.currentTimeMillis())
-        lastRemainingText = initialText
-        startForeground(NOTIFICATION_ID, buildNotification(initialText))
-        startTicker()
-        return START_STICKY
+            Log.d(
+                TAG,
+                "startLiveUpdate " +
+                    "courseName=$courseName, " +
+                    "stage=$activityStage, " +
+                    "enableBeforeClass=$enableBeforeClass, " +
+                    "enableDuringClass=$enableDuringClass, " +
+                    "enableBeforeEnd=$enableBeforeEnd, " +
+                    "promoteDuringClass=$promoteDuringClass, " +
+                    "showNotificationDuringClass=$showNotificationDuringClass, " +
+                    "progressBreakOffsetsMillis=${progressBreakOffsetsMillis.joinToString(prefix = "[", postfix = "]")}, " +
+                    "progressMilestoneLabels=$progressMilestoneLabels, " +
+                    "progressMilestoneTimeTexts=$progressMilestoneTimeTexts, " +
+                    "startAtMillis=$startAtMillis, " +
+                    "endAtMillis=$endAtMillis, " +
+                    "endReminderLeadMillis=$endReminderLeadMillis" +
+                    ", liveClassReminderStartMinutes=$liveClassReminderStartMinutes"
+            )
+
+            val initialText = computeRemainingText(System.currentTimeMillis())
+            lastRemainingText = initialText
+            startForeground(NOTIFICATION_ID, buildNotification(initialText))
+            startTicker()
+            START_STICKY
+        } catch (e: Exception) {
+            UmengDiagnosticReporter.report(
+                context = applicationContext,
+                category = "live_update_service_start_failed",
+                message = "Failed to initialize live update service payload or notification",
+                throwable = e,
+                dedupeKey = "live_update_service_start_failed",
+                extras = mapOf(
+                    "courseName" to courseName,
+                    "stage" to activityStage,
+                )
+            )
+            stopSelf()
+            START_NOT_STICKY
+        }
     }
 
     override fun onDestroy() {
@@ -1312,6 +1357,22 @@ class LiveUpdateService : Service() {
         if (Build.VERSION.SDK_INT >= 36) {
             val canPostPromoted =
                 getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true
+            if (shouldPromote && (!notification.hasPromotableCharacteristics() || !canPostPromoted)) {
+                UmengDiagnosticReporter.report(
+                    context = applicationContext,
+                    category = "live_update_promoted_not_shown",
+                    message = "Live update could not be promoted as expected",
+                    dedupeKey = "live_update_promoted_not_shown:${courseName}:${activityStage}",
+                    extras = mapOf(
+                        "courseName" to courseName,
+                        "stage" to stage,
+                        "canPostPromoted" to canPostPromoted,
+                        "hasPromotableCharacteristics" to notification.hasPromotableCharacteristics(),
+                        "showStandardNotification" to showStandardNotification,
+                        "remainingText" to remainingText,
+                    )
+                )
+            }
             Log.d(
                 TAG,
                 "buildNotification " +

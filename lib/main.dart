@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -17,8 +18,42 @@ Color _colorFromHex(String hexColor) {
 }
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const MyApp());
+  runZonedGuarded(() {
+    WidgetsFlutterBinding.ensureInitialized();
+
+    FlutterError.onError = (details) {
+      FlutterError.presentError(details);
+      final stackTrace = details.stack ?? StackTrace.current;
+      unawaited(
+        UmengAnalyticsService.reportUnhandledError(
+          details.exception,
+          stackTrace,
+          category: 'flutter_framework_error',
+        ),
+      );
+    };
+
+    PlatformDispatcher.instance.onError = (error, stackTrace) {
+      unawaited(
+        UmengAnalyticsService.reportUnhandledError(
+          error,
+          stackTrace,
+          category: 'flutter_platform_error',
+        ),
+      );
+      return false;
+    };
+
+    runApp(const MyApp());
+  }, (error, stackTrace) {
+    unawaited(
+      UmengAnalyticsService.reportUnhandledError(
+        error,
+        stackTrace,
+        category: 'flutter_zone_error',
+      ),
+    );
+  });
 }
 
 class MyApp extends StatelessWidget {

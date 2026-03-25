@@ -261,6 +261,13 @@ object LiveUpdateScheduler {
             parseSnapshot(JSONObject(snapshotJson))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to parse snapshot", e)
+            UmengDiagnosticReporter.report(
+                context = context.applicationContext,
+                category = "live_update_snapshot_parse_failed",
+                message = "Failed to parse live update schedule snapshot",
+                throwable = e,
+                dedupeKey = "live_update_snapshot_parse_failed",
+            )
             null
         }
     }
@@ -809,6 +816,17 @@ object LiveUpdateScheduler {
             ContextCompat.startForegroundService(context, buildServiceIntent(context, payload))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to start live update service", e)
+            UmengDiagnosticReporter.report(
+                context = context.applicationContext,
+                category = "live_update_scheduler_start_failed",
+                message = "Scheduler failed to start live update service",
+                throwable = e,
+                dedupeKey = "live_update_scheduler_start_failed",
+                extras = mapOf(
+                    "courseName" to payload.currentCourse.name,
+                    "stage" to payload.stage,
+                )
+            )
         }
     }
 }
