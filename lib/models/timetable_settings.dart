@@ -378,6 +378,7 @@ class TimetableSettings {
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
   final String appUpdateDownloadSource;
+  final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
 
   const TimetableSettings({
@@ -435,6 +436,7 @@ class TimetableSettings {
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'original',
+    this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = 'https://ghfast.top/',
   });
 
@@ -504,6 +506,7 @@ class TimetableSettings {
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
       appUpdateDownloadSource: 'original',
+      appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: 'https://ghfast.top/',
     );
   }
@@ -563,6 +566,7 @@ class TimetableSettings {
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
+      'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
     };
   }
@@ -669,6 +673,8 @@ class TimetableSettings {
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
       appUpdateDownloadSource:
           json['appUpdateDownloadSource'] as String? ?? 'original',
+      appUpdateIncludePrerelease:
+          json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix:
           json['appUpdateMirrorUrlPrefix'] as String? ?? 'https://ghfast.top/',
     );
@@ -736,6 +742,7 @@ class TimetableSettings {
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
     String? appUpdateDownloadSource,
+    bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
   }) {
     return TimetableSettings(
@@ -826,6 +833,8 @@ class TimetableSettings {
           timetableUnifiedCardColor ?? this.timetableUnifiedCardColor,
       appUpdateDownloadSource:
           appUpdateDownloadSource ?? this.appUpdateDownloadSource,
+      appUpdateIncludePrerelease:
+          appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:
           appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
     );

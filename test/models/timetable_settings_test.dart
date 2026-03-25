@@ -47,6 +47,7 @@ void main() {
       MiuiIslandExpandedIconMode.appIcon,
     );
     expect(settings.liveMiuiIslandExpandedIconPath, isNull);
+    expect(settings.appUpdateIncludePrerelease, isFalse);
     expect(
       settings.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -99,6 +100,7 @@ void main() {
       MiuiIslandExpandedIconMode.appIcon,
     );
     expect(restored.liveMiuiIslandExpandedIconPath, isNull);
+    expect(restored.appUpdateIncludePrerelease, isFalse);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -143,6 +145,7 @@ void main() {
       liveMiuiIslandLabelFontSize: 18,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
       liveMiuiIslandExpandedIconPath: '/tmp/expanded.png',
+      appUpdateIncludePrerelease: true,
     );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
@@ -187,6 +190,7 @@ void main() {
       MiuiIslandExpandedIconMode.customImage,
     );
     expect(restored.liveMiuiIslandExpandedIconPath, '/tmp/expanded.png');
+    expect(restored.appUpdateIncludePrerelease, isTrue);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.spaceEvenly,

@@ -14,6 +14,7 @@ class AppReleaseInfo {
   final String releaseUrl;
   final String? downloadUrl;
   final DateTime? updatedAt;
+  final bool isPrerelease;
 
   const AppReleaseInfo({
     required this.version,
@@ -22,6 +23,7 @@ class AppReleaseInfo {
     required this.releaseUrl,
     required this.downloadUrl,
     required this.updatedAt,
+    required this.isPrerelease,
   });
 }
 
@@ -45,14 +47,18 @@ class AppUpdateService {
   static const String repositoryUrl = 'https://github.com/Mutx163/mikcb';
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
+  static const String releasesApiUrl =
+      'https://api.github.com/repos/Mutx163/mikcb/releases';
   static const String defaultMirrorUrlPrefix = 'https://ghfast.top/';
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
+    bool includePrerelease = false,
   }) async {
     try {
+      final apiUrl = includePrerelease ? releasesApiUrl : latestReleaseApiUrl;
       final response = await http.get(
-        Uri.parse(latestReleaseApiUrl),
+        Uri.parse(apiUrl),
         headers: const {
           'Accept': 'application/vnd.github+json',
           'X-GitHub-Api-Version': '2022-11-28',
@@ -78,25 +84,42 @@ class AppUpdateService {
         );
       }
 
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      final releaseJson = includePrerelease
+          ? _pickLatestEligibleRelease(
+              jsonDecode(response.body) as List<dynamic>,
+              includePrerelease: true,
+            )
+          : jsonDecode(response.body) as Map<String, dynamic>;
+      if (releaseJson == null) {
+        return AppUpdateCheckResult(
+          hasRelease: false,
+          hasUpdate: false,
+          currentVersion: currentVersion,
+          message: includePrerelease ? '还没有可用的正式版或预发布版本。' : '仓库还没有发布 Release。',
+        );
+      }
+
       final latestVersion = _normalizeVersion(
-        (json['tag_name'] as String?) ?? (json['name'] as String?) ?? '',
+        (releaseJson['tag_name'] as String?) ??
+            (releaseJson['name'] as String?) ??
+            '',
       );
       final release = AppReleaseInfo(
         version: latestVersion,
-        title: (json['name'] as String?)?.trim().isNotEmpty == true
-            ? (json['name'] as String).trim()
+        title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
+            ? (releaseJson['name'] as String).trim()
             : latestVersion,
-        body: (json['body'] as String?)?.trim() ?? '',
-        releaseUrl: (json['html_url'] as String?) ?? repositoryUrl,
+        body: (releaseJson['body'] as String?)?.trim() ?? '',
+        releaseUrl: (releaseJson['html_url'] as String?) ?? repositoryUrl,
         downloadUrl: _pickDownloadUrl(
-          json['assets'] as List<dynamic>? ?? const [],
+          releaseJson['assets'] as List<dynamic>? ?? const [],
         ),
         updatedAt: DateTime.tryParse(
-          (json['updated_at'] as String?) ??
-              (json['published_at'] as String?) ??
+          (releaseJson['updated_at'] as String?) ??
+              (releaseJson['published_at'] as String?) ??
               '',
         )?.toLocal(),
+        isPrerelease: releaseJson['prerelease'] as bool? ?? false,
       );
 
       final hasUpdate = _compareVersions(latestVersion, currentVersion) > 0;
@@ -105,7 +128,9 @@ class AppUpdateService {
         hasUpdate: hasUpdate,
         currentVersion: currentVersion,
         latestRelease: release,
-        message: hasUpdate ? '发现新版本' : '当前已经是最新版本',
+        message: hasUpdate
+            ? (release.isPrerelease ? '发现新的预发布版本' : '发现新版本')
+            : '当前已经是最新版本',
       );
     } catch (_) {
       return AppUpdateCheckResult(
@@ -206,28 +231,109 @@ class AppUpdateService {
   }
 
   int _compareVersions(String left, String right) {
-    final leftParts = _parseVersionParts(left);
-    final rightParts = _parseVersionParts(right);
-    final maxLength = leftParts.length > rightParts.length
-        ? leftParts.length
-        : rightParts.length;
+    final leftVersion = _parseVersion(left);
+    final rightVersion = _parseVersion(right);
+    final maxLength = leftVersion.mainParts.length > rightVersion.mainParts.length
+        ? leftVersion.mainParts.length
+        : rightVersion.mainParts.length;
 
     for (var index = 0; index < maxLength; index++) {
-      final leftValue = index < leftParts.length ? leftParts[index] : 0;
-      final rightValue = index < rightParts.length ? rightParts[index] : 0;
+      final leftValue =
+          index < leftVersion.mainParts.length ? leftVersion.mainParts[index] : 0;
+      final rightValue = index < rightVersion.mainParts.length
+          ? rightVersion.mainParts[index]
+          : 0;
       if (leftValue != rightValue) {
         return leftValue.compareTo(rightValue);
       }
     }
-    return 0;
+
+    final leftPre = leftVersion.prerelease;
+    final rightPre = rightVersion.prerelease;
+    if (leftPre == null && rightPre == null) {
+      return 0;
+    }
+    if (leftPre == null) {
+      return 1;
+    }
+    if (rightPre == null) {
+      return -1;
+    }
+    return _comparePrerelease(leftPre, rightPre);
   }
 
-  List<int> _parseVersionParts(String version) {
-    final normalized = version.split('+').first.split('-').first;
-    return normalized
+  _ParsedVersion _parseVersion(String version) {
+    final normalized = _normalizeVersion(version).split('+').first;
+    final dashIndex = normalized.indexOf('-');
+    final main = dashIndex == -1 ? normalized : normalized.substring(0, dashIndex);
+    final prerelease =
+        dashIndex == -1 ? null : normalized.substring(dashIndex + 1).trim();
+    return _ParsedVersion(
+      mainParts: main
         .split('.')
         .map(
             (item) => int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0)
-        .toList();
+        .toList(),
+      prerelease: prerelease == null || prerelease.isEmpty ? null : prerelease,
+    );
   }
+
+  int _comparePrerelease(String left, String right) {
+    final leftParts = left.split('.');
+    final rightParts = right.split('.');
+    final maxLength =
+        leftParts.length > rightParts.length ? leftParts.length : rightParts.length;
+
+    for (var index = 0; index < maxLength; index++) {
+      final leftValue = index < leftParts.length ? leftParts[index] : '';
+      final rightValue = index < rightParts.length ? rightParts[index] : '';
+      if (leftValue == rightValue) {
+        continue;
+      }
+      final leftNumber = int.tryParse(leftValue);
+      final rightNumber = int.tryParse(rightValue);
+      if (leftNumber != null && rightNumber != null) {
+        return leftNumber.compareTo(rightNumber);
+      }
+      if (leftNumber != null) {
+        return -1;
+      }
+      if (rightNumber != null) {
+        return 1;
+      }
+      return leftValue.compareTo(rightValue);
+    }
+
+    return 0;
+  }
+
+  Map<String, dynamic>? _pickLatestEligibleRelease(
+    List<dynamic> rawList, {
+    required bool includePrerelease,
+  }) {
+    for (final item in rawList) {
+      if (item is! Map) {
+        continue;
+      }
+      final release = Map<String, dynamic>.from(item);
+      if (release['draft'] == true) {
+        continue;
+      }
+      if (!includePrerelease && release['prerelease'] == true) {
+        continue;
+      }
+      return release;
+    }
+    return null;
+  }
+}
+
+class _ParsedVersion {
+  final List<int> mainParts;
+  final String? prerelease;
+
+  const _ParsedVersion({
+    required this.mainParts,
+    required this.prerelease,
+  });
 }
