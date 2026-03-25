@@ -188,9 +188,9 @@ class TimetableProvider with ChangeNotifier {
 
   void _applyProfileState(TimetableProfile profile) {
     _settings = _normalizeSettingsWithTimeScheme(profile.settings);
-    _courses = _syncCoursesWithSections(
+    _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(profile.courses),
-      _settings.sections,
+      settings: _settings,
     );
     _currentWeek = profile.currentWeek;
   }
@@ -212,28 +212,100 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  List<Course> _syncCoursesWithSections(
-    List<Course> source,
-    List<SectionTime> sections,
-  ) {
-    return source.map((course) {
-      final startIndex = course.startSection - 1;
-      final endIndex = course.endSection - 1;
-      if (startIndex < 0 || endIndex >= sections.length) {
-        return course;
-      }
+  List<Course> _syncCoursesWithEffectiveTimeSchemes(List<Course> source,
+      {TimetableSettings? settings}) {
+    return source
+        .map((course) => _syncCourseWithEffectiveTimeScheme(
+              course,
+              settings: settings,
+            ))
+        .toList();
+  }
 
-      final startTime = sections[startIndex].startTime;
-      final endTime = sections[endIndex].endTime;
-      if (course.startTime == startTime && course.endTime == endTime) {
-        return course;
-      }
+  Course _syncCourseWithEffectiveTimeScheme(
+    Course course, {
+    TimetableSettings? settings,
+  }) {
+    final sections = _resolveSectionsForCourse(course, settings: settings);
+    final startIndex = course.startSection - 1;
+    final endIndex = course.endSection - 1;
+    if (sections == null || startIndex < 0 || endIndex >= sections.length) {
+      return course.copyWith(timeSchemeIdOverride: course.timeSchemeIdOverride);
+    }
 
-      return course.copyWith(
-        startTime: startTime,
-        endTime: endTime,
-      );
-    }).toList();
+    final startTime = sections[startIndex].startTime;
+    final endTime = sections[endIndex].endTime;
+    if (course.startTime == startTime && course.endTime == endTime) {
+      return course;
+    }
+
+    return course.copyWith(
+      startTime: startTime,
+      endTime: endTime,
+      timeSchemeIdOverride: course.timeSchemeIdOverride,
+    );
+  }
+
+  TimeScheme? resolveCourseTimeScheme(
+    Course course, {
+    TimetableSettings? settings,
+  }) {
+    final overrideScheme = _getTimeSchemeById(course.timeSchemeIdOverride);
+    if (overrideScheme != null) {
+      return overrideScheme;
+    }
+    return _getTimeSchemeById((settings ?? _settings).activeTimeSchemeId);
+  }
+
+  List<SectionTime>? _resolveSectionsForCourse(
+    Course course, {
+    TimetableSettings? settings,
+  }) {
+    final scheme = resolveCourseTimeScheme(course, settings: settings);
+    if (scheme != null) {
+      return scheme.sections;
+    }
+    final activeSettings = settings ?? _settings;
+    return activeSettings.sections;
+  }
+
+  int maxUsedSectionForTimeScheme(
+    String schemeId, {
+    List<TimetableProfile>? profiles,
+  }) {
+    final sourceProfiles = profiles ?? _profiles;
+    var maxSection = 0;
+
+    for (final profile in sourceProfiles) {
+      for (final course in profile.courses) {
+        final usesScheme = course.timeSchemeIdOverride == schemeId ||
+            (course.timeSchemeIdOverride == null &&
+                profile.settings.activeTimeSchemeId == schemeId);
+        if (usesScheme && course.endSection > maxSection) {
+          maxSection = course.endSection;
+        }
+      }
+    }
+
+    return maxSection;
+  }
+
+  String? validateCourseTimeSchemeOverride({
+    String? timeSchemeId,
+    required int startSection,
+    required int endSection,
+  }) {
+    final scheme = timeSchemeId == null
+        ? activeTimeScheme
+        : _getTimeSchemeById(timeSchemeId);
+    final sectionCount = scheme?.sections.length ?? _settings.sections.length;
+    if (sectionCount <= 0) {
+      return timeSchemeId == null ? '当前课表时间配置不可用' : '未找到所选时间模板';
+    }
+    if (startSection < 1 || endSection > sectionCount) {
+      return '所选时间模板节次数不足，无法覆盖第 $startSection-$endSection 节';
+    }
+    return null;
   }
 
   Future<void> _persistActiveProfileState({
@@ -335,7 +407,7 @@ class TimetableProvider with ChangeNotifier {
     try {
       final profile = activeProfile;
       if (profile != null) {
-        _settings = profile.settings;
+        _settings = _normalizeSettingsWithTimeScheme(profile.settings);
       }
       notifyListeners();
     } catch (e) {
@@ -350,7 +422,10 @@ class TimetableProvider with ChangeNotifier {
     try {
       final profile = activeProfile;
       if (profile != null) {
-        _courses = List<Course>.from(profile.courses);
+        _courses = _syncCoursesWithEffectiveTimeSchemes(
+          List<Course>.from(profile.courses),
+          settings: _settings,
+        );
       }
     } catch (e) {
       debugPrint('Error loading courses: $e');
@@ -410,13 +485,13 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
-    _courses = _syncCoursesWithSections(
-      List<Course>.from(_courses),
-      scheme.sections,
-    );
     _settings = _settings.copyWith(
       activeTimeSchemeId: scheme.id,
       sections: List<SectionTime>.from(scheme.sections),
+    );
+    _courses = _syncCoursesWithEffectiveTimeSchemes(
+      List<Course>.from(_courses),
+      settings: _settings,
     );
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
@@ -473,9 +548,9 @@ class TimetableProvider with ChangeNotifier {
     if (validationMessage != null) {
       return validationMessage;
     }
-    if (sections.length < maxUsedSection &&
-        _settings.activeTimeSchemeId == schemeId) {
-      return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
+    final requiredMaxSection = maxUsedSectionForTimeScheme(schemeId);
+    if (requiredMaxSection > 0 && sections.length < requiredMaxSection) {
+      return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）';
     }
 
     final index = _timeSchemes.indexWhere((scheme) => scheme.id == schemeId);
@@ -492,25 +567,28 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < _profiles.length; i++) {
       final profile = _profiles[i];
-      if (profile.settings.activeTimeSchemeId != schemeId) {
-        continue;
-      }
+      final normalizedSettings = profile.settings.activeTimeSchemeId == schemeId
+          ? profile.settings.copyWith(
+              activeTimeSchemeId: schemeId,
+              sections: List<SectionTime>.from(updatedScheme.sections),
+            )
+          : profile.settings;
       _profiles[i] = profile.copyWith(
-        courses: _syncCoursesWithSections(
+        courses: _syncCoursesWithEffectiveTimeSchemes(
           List<Course>.from(profile.courses),
-          updatedScheme.sections,
+          settings: normalizedSettings,
         ),
-        settings: profile.settings.copyWith(
-          activeTimeSchemeId: schemeId,
-          sections: List<SectionTime>.from(updatedScheme.sections),
-        ),
+        settings: normalizedSettings,
       );
     }
 
     if (_settings.activeTimeSchemeId == schemeId) {
-      _courses = _syncCoursesWithSections(
+      _courses = _syncCoursesWithEffectiveTimeSchemes(
         List<Course>.from(_courses),
-        updatedScheme.sections,
+        settings: _settings.copyWith(
+          activeTimeSchemeId: schemeId,
+          sections: List<SectionTime>.from(updatedScheme.sections),
+        ),
       );
       _settings = _settings.copyWith(
         activeTimeSchemeId: schemeId,
@@ -529,7 +607,10 @@ class TimetableProvider with ChangeNotifier {
   Future<bool> deleteTimeScheme(String schemeId) async {
     await initialize();
     final isInUse = _profiles.any(
-      (profile) => profile.settings.activeTimeSchemeId == schemeId,
+      (profile) =>
+          profile.settings.activeTimeSchemeId == schemeId ||
+          profile.courses
+              .any((course) => course.timeSchemeIdOverride == schemeId),
     );
     if (isInUse) {
       return false;
@@ -662,7 +743,16 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> addCourse(Course course) async {
-    final normalizedCourse = _normalizeCourse(course);
+    final validationMessage = validateCourseTimeSchemeOverride(
+      timeSchemeId: course.timeSchemeIdOverride,
+      startSection: course.startSection,
+      endSection: course.endSection,
+    );
+    if (validationMessage != null) {
+      throw ArgumentError(validationMessage);
+    }
+    final normalizedCourse =
+        _syncCourseWithEffectiveTimeScheme(_normalizeCourse(course));
     final existingSharedCourse = _courses.cast<Course?>().firstWhere(
           (item) =>
               item != null &&
@@ -691,7 +781,16 @@ class TimetableProvider with ChangeNotifier {
   Future<void> updateCourse(Course course, {String? previousSharedName}) async {
     final index = _courses.indexWhere((c) => c.id == course.id);
     if (index != -1) {
-      final normalizedCourse = _normalizeCourse(course);
+      final validationMessage = validateCourseTimeSchemeOverride(
+        timeSchemeId: course.timeSchemeIdOverride,
+        startSection: course.startSection,
+        endSection: course.endSection,
+      );
+      if (validationMessage != null) {
+        throw ArgumentError(validationMessage);
+      }
+      final normalizedCourse =
+          _syncCourseWithEffectiveTimeScheme(_normalizeCourse(course));
       final originalCourse = _courses[index];
       final previousKey =
           _sharedCourseKeyFromName(previousSharedName ?? originalCourse.name);
@@ -804,9 +903,9 @@ class TimetableProvider with ChangeNotifier {
 
     if (currentScheme == null) {
       _settings = _settings.copyWith(sections: expandedSections);
-      _courses = _syncCoursesWithSections(
+      _courses = _syncCoursesWithEffectiveTimeSchemes(
         List<Course>.from(_courses),
-        expandedSections,
+        settings: _settings,
       );
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
@@ -843,9 +942,9 @@ class TimetableProvider with ChangeNotifier {
       activeTimeSchemeId: duplicatedScheme.id,
       sections: expandedSections,
     );
-    _courses = _syncCoursesWithSections(
+    _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(_courses),
-      expandedSections,
+      settings: _settings,
     );
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
@@ -866,7 +965,10 @@ class TimetableProvider with ChangeNotifier {
     final mergedCourses =
         replaceExisting ? result.courses : [..._courses, ...result.courses];
 
-    _courses = mergedCourses;
+    _courses = _syncCoursesWithEffectiveTimeSchemes(
+      mergedCourses,
+      settings: _settings,
+    );
     _settings = _settings.copyWith(semesterStartDate: result.semesterStart);
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
@@ -962,9 +1064,9 @@ class TimetableProvider with ChangeNotifier {
         backup.settings,
         fallbackName: '${activeProfile?.name ?? "导入课表"} 时间',
       );
-      _courses = _syncCoursesWithSections(
+      _courses = _syncCoursesWithEffectiveTimeSchemes(
         List<Course>.from(backup.courses),
-        resolvedSettings.sections,
+        settings: resolvedSettings,
       );
       _settings = resolvedSettings;
       _currentWeek = backup.currentWeek;
@@ -1006,9 +1108,9 @@ class TimetableProvider with ChangeNotifier {
       final nextProfile = TimetableProfile(
         id: const Uuid().v4(),
         name: nextName,
-        courses: _syncCoursesWithSections(
+        courses: _syncCoursesWithEffectiveTimeSchemes(
           List<Course>.from(backup.courses),
-          resolvedSettings.sections,
+          settings: resolvedSettings,
         ),
         settings: resolvedSettings,
         currentWeek: backup.currentWeek,
@@ -1052,6 +1154,16 @@ class TimetableProvider with ChangeNotifier {
           .map(
             (profile) => profile.copyWith(
               settings: _normalizeSettingsWithTimeScheme(profile.settings),
+            ),
+          )
+          .toList();
+      _profiles = _profiles
+          .map(
+            (profile) => profile.copyWith(
+              courses: _syncCoursesWithEffectiveTimeSchemes(
+                List<Course>.from(profile.courses),
+                settings: profile.settings,
+              ),
             ),
           )
           .toList();
@@ -1323,10 +1435,13 @@ class TimetableProvider with ChangeNotifier {
       return const [];
     }
 
+    final sections = _resolveSectionsForCourse(course);
+    if (sections == null) {
+      return const [];
+    }
     final firstSectionIndex = course.startSection - 1;
     final lastSectionIndex = course.endSection - 1;
-    if (firstSectionIndex < 0 ||
-        lastSectionIndex >= _settings.sections.length) {
+    if (firstSectionIndex < 0 || lastSectionIndex >= sections.length) {
       return const [];
     }
 
@@ -1339,9 +1454,9 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final sectionStartMinutes =
-        _parseClockMinutes(_settings.sections[firstSectionIndex].startTime);
+        _parseClockMinutes(sections[firstSectionIndex].startTime);
     final sectionEndMinutes =
-        _parseClockMinutes(_settings.sections[lastSectionIndex].endTime);
+        _parseClockMinutes(sections[lastSectionIndex].endTime);
     if (sectionStartMinutes == null ||
         sectionEndMinutes == null ||
         sectionEndMinutes <= sectionStartMinutes) {
@@ -1355,8 +1470,8 @@ class TimetableProvider with ChangeNotifier {
     for (var sectionIndex = firstSectionIndex;
         sectionIndex < lastSectionIndex;
         sectionIndex++) {
-      final currentSection = _settings.sections[sectionIndex];
-      final nextSection = _settings.sections[sectionIndex + 1];
+      final currentSection = sections[sectionIndex];
+      final nextSection = sections[sectionIndex + 1];
       final currentEndMinutes = _parseClockMinutes(currentSection.endTime);
       final nextStartMinutes = _parseClockMinutes(nextSection.startTime);
       if (currentEndMinutes == null ||
@@ -1406,12 +1521,15 @@ class TimetableProvider with ChangeNotifier {
   }
 
   String _resolveRealTime(Course course, bool isStart) {
+    final sections = _resolveSectionsForCourse(course);
     final sectionIndex =
         (isStart ? course.startSection : course.endSection) - 1;
-    if (sectionIndex >= 0 && sectionIndex < _settings.sections.length) {
+    if (sections != null &&
+        sectionIndex >= 0 &&
+        sectionIndex < sections.length) {
       return isStart
-          ? _settings.sections[sectionIndex].startTime
-          : _settings.sections[sectionIndex].endTime;
+          ? sections[sectionIndex].startTime
+          : sections[sectionIndex].endTime;
     }
     return isStart ? course.startTime : course.endTime;
   }

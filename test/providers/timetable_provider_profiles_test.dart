@@ -318,6 +318,100 @@ void main() {
     expect(provider.settings.sectionAt(1).displayText, '20:00-20:45');
   });
 
+  test('course can override active time scheme', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final activeSchemeId = provider.settings.activeTimeSchemeId!;
+    final overrideScheme = await provider.createTimeScheme(
+      name: '大二下午作息',
+      sections: [
+        ...provider.settings.sections.take(4),
+        const SectionTime(startTime: '14:00', endTime: '14:45'),
+        const SectionTime(startTime: '14:55', endTime: '15:40'),
+      ],
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'override-course',
+        name: '大学物理',
+        teacher: '陈老师',
+        location: '理科楼 203',
+        dayOfWeek: 2,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:30',
+        endTime: '16:05',
+        timeSchemeIdOverride: overrideScheme.id,
+      ),
+    );
+
+    expect(provider.courses.single.timeSchemeIdOverride, overrideScheme.id);
+    expect(provider.courses.single.startTime, '14:00');
+    expect(provider.courses.single.endTime, '15:40');
+
+    final anotherScheme = await provider.createTimeScheme(
+      name: '夏季主作息',
+      sections: [
+        ...provider.settings.sections.take(4),
+        const SectionTime(startTime: '14:30', endTime: '15:15'),
+        const SectionTime(startTime: '15:25', endTime: '16:10'),
+      ],
+    );
+
+    await provider.applyTimeScheme(anotherScheme.id);
+
+    expect(provider.settings.activeTimeSchemeId, anotherScheme.id);
+    expect(provider.courses.single.timeSchemeIdOverride, overrideScheme.id);
+    expect(provider.courses.single.startTime, '14:00');
+    expect(provider.courses.single.endTime, '15:40');
+    expect(provider.maxUsedSectionForTimeScheme(activeSchemeId),
+        greaterThanOrEqualTo(0));
+  });
+
+  test('deleting time scheme referenced by course override is rejected',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final overrideScheme = await provider.createTimeScheme(
+      name: '实验楼作息',
+      sections: [
+        ...provider.settings.sections.take(6),
+      ],
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'scheme-locked-course',
+        name: '物理实验',
+        teacher: '周老师',
+        location: '实验楼 101',
+        dayOfWeek: 4,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+        timeSchemeIdOverride: overrideScheme.id,
+      ),
+    );
+
+    final deleted = await provider.deleteTimeScheme(overrideScheme.id);
+
+    expect(deleted, isFalse);
+    expect(
+      provider.timeSchemes.any((scheme) => scheme.id == overrideScheme.id),
+      isTrue,
+    );
+  });
+
   test('ensuring import section capacity duplicates shared active scheme',
       () async {
     final provider = TimetableProvider(

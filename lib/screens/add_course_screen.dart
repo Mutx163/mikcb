@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
+import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 
@@ -38,6 +39,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   bool _isEvenWeek = false;
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
+  String? _selectedTimeSchemeOverrideId;
+
+  static const String _followProfileTimeSchemeValue = '__follow_profile__';
 
   final List<String> _weekDays = const [
     '周一',
@@ -98,7 +102,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final settings = context.watch<TimetableProvider>().settings;
+    final provider = context.watch<TimetableProvider>();
+    final settings = provider.settings;
     _normalizeSections(settings);
     _normalizeWeeks(settings);
 
@@ -113,7 +118,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               icon: const Icon(Icons.delete_outline_rounded),
             ),
           TextButton(
-            onPressed: () => _saveCourse(settings),
+            onPressed: () => _saveCourse(provider, settings),
             child: Text(
               '保存',
               style: TextStyle(color: Theme.of(context).colorScheme.primary),
@@ -128,7 +133,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           children: [
             _buildBasicInfoSection(),
             const SizedBox(height: 16),
-            _buildTimeSection(settings),
+            _buildTimeSection(provider, settings),
             const SizedBox(height: 16),
             _buildWeekSection(settings),
             const SizedBox(height: 16),
@@ -192,6 +197,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _isEvenWeek = course.isEvenWeek;
     _courseNature = course.courseNature;
     _selectedColor = course.color;
+    _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
   }
 
   void _normalizeSections(TimetableSettings settings) {
@@ -314,11 +320,28 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildTimeSection(TimetableSettings settings) {
+  Widget _buildTimeSection(
+    TimetableProvider provider,
+    TimetableSettings settings,
+  ) {
     final sectionNumbers =
         List.generate(settings.sectionCount, (index) => index + 1);
-    final startTime = settings.sectionAt(_startSection).startTime;
-    final endTime = settings.sectionAt(_endSection).endTime;
+    final selectedScheme = _resolveSelectedTimeScheme(provider);
+    final validationMessage = provider.validateCourseTimeSchemeOverride(
+      timeSchemeId: _selectedTimeSchemeOverrideId,
+      startSection: _startSection,
+      endSection: _endSection,
+    );
+    final effectiveScheme = validationMessage == null ? selectedScheme : null;
+    final fallbackStartSection = settings.sectionAt(_startSection);
+    final fallbackEndSection = settings.sectionAt(_endSection);
+    final startTime = effectiveScheme == null
+        ? fallbackStartSection.startTime
+        : effectiveScheme.sections[_startSection - 1].startTime;
+    final endTime = effectiveScheme == null
+        ? fallbackEndSection.endTime
+        : effectiveScheme.sections[_endSection - 1].endTime;
+    final followLabel = provider.activeTimeScheme?.name ?? '当前课表时间';
 
     return Card(
       child: Padding(
@@ -335,6 +358,53 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               '这里的星期、节次、教室、周次和单双周只影响当前这一条排课。',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _selectedTimeSchemeOverrideId ??
+                  _followProfileTimeSchemeValue,
+              decoration: const InputDecoration(
+                labelText: '上课时间方案',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.schedule_rounded),
+              ),
+              items: [
+                DropdownMenuItem(
+                  value: _followProfileTimeSchemeValue,
+                  child: Text('跟随当前课表（$followLabel）'),
+                ),
+                ...provider.timeSchemes.map(
+                  (scheme) => DropdownMenuItem(
+                    value: scheme.id,
+                    child: Text(scheme.name),
+                  ),
+                ),
+              ],
+              onChanged: (value) {
+                setState(() {
+                  _selectedTimeSchemeOverrideId =
+                      value == null || value == _followProfileTimeSchemeValue
+                          ? null
+                          : value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _selectedTimeSchemeOverrideId == null
+                  ? '默认跟随当前课表主时间模板，适合大多数课程。'
+                  : '这门课会单独使用所选时间模板，不跟随当前课表主时间模板。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            if (validationMessage != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                validationMessage,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.error,
+                  fontSize: 12,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               value: _selectedDayOfWeek,
@@ -704,12 +774,47 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
-  Future<void> _saveCourse(TimetableSettings settings) async {
+  TimeScheme? _resolveSelectedTimeScheme(TimetableProvider provider) {
+    if (_selectedTimeSchemeOverrideId == null) {
+      return provider.activeTimeScheme;
+    }
+
+    for (final scheme in provider.timeSchemes) {
+      if (scheme.id == _selectedTimeSchemeOverrideId) {
+        return scheme;
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> _saveCourse(
+    TimetableProvider provider,
+    TimetableSettings settings,
+  ) async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    final provider = context.read<TimetableProvider>();
+    final validationMessage = provider.validateCourseTimeSchemeOverride(
+      timeSchemeId: _selectedTimeSchemeOverrideId,
+      startSection: _startSection,
+      endSection: _endSection,
+    );
+    if (validationMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(validationMessage)),
+      );
+      return;
+    }
+
+    final selectedScheme = _resolveSelectedTimeScheme(provider);
+    final startTime = selectedScheme == null
+        ? settings.sectionAt(_startSection).startTime
+        : selectedScheme.sections[_startSection - 1].startTime;
+    final endTime = selectedScheme == null
+        ? settings.sectionAt(_endSection).endTime
+        : selectedScheme.sections[_endSection - 1].endTime;
     FocusScope.of(context).unfocus();
     await Future<void>.delayed(const Duration(milliseconds: 16));
 
@@ -723,8 +828,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       dayOfWeek: _selectedDayOfWeek,
       startSection: _startSection,
       endSection: _endSection,
-      startTime: settings.sectionAt(_startSection).startTime,
-      endTime: settings.sectionAt(_endSection).endTime,
+      startTime: startTime,
+      endTime: endTime,
       color: _selectedColor,
       startWeek: _startWeek,
       endWeek: _endWeek,
@@ -734,15 +839,26 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       description: _descriptionController.text.isEmpty
           ? null
           : _descriptionController.text,
+      timeSchemeIdOverride: _selectedTimeSchemeOverrideId,
     );
 
-    if (widget.course == null) {
-      await provider.addCourse(course);
-    } else {
-      await provider.updateCourse(
-        course,
-        previousSharedName: widget.course!.name,
+    try {
+      if (widget.course == null) {
+        await provider.addCourse(course);
+      } else {
+        await provider.updateCourse(
+          course,
+          previousSharedName: widget.course!.name,
+        );
+      }
+    } on ArgumentError catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message?.toString() ?? '保存失败')),
       );
+      return;
     }
 
     if (!mounted) {
