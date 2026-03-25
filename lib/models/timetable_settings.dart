@@ -6,7 +6,6 @@ enum AppUpdateDownloadSource {
 }
 
 enum WidgetBackgroundStyle {
-  glass,
   solid,
   gradient,
 }
@@ -31,6 +30,18 @@ enum MiuiIslandLabelContent {
   courseName,
   location,
   courseNameAndLocation,
+}
+
+enum MiuiIslandLabelFontWeight {
+  regular,
+  medium,
+  bold,
+}
+
+enum MiuiIslandLabelRenderQuality {
+  standard,
+  high,
+  ultra,
 }
 
 enum MiuiIslandExpandedIconMode {
@@ -62,13 +73,11 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
 
 extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
   String get value => switch (this) {
-        WidgetBackgroundStyle.glass => 'glass',
         WidgetBackgroundStyle.solid => 'solid',
         WidgetBackgroundStyle.gradient => 'gradient',
       };
 
   String get label => switch (this) {
-        WidgetBackgroundStyle.glass => '半透明玻璃感',
         WidgetBackgroundStyle.solid => '纯色卡片',
         WidgetBackgroundStyle.gradient => '渐变卡片',
       };
@@ -76,7 +85,7 @@ extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
   static WidgetBackgroundStyle fromValue(String? value) {
     return WidgetBackgroundStyle.values.firstWhere(
       (item) => item.value == value,
-      orElse: () => WidgetBackgroundStyle.glass,
+      orElse: () => WidgetBackgroundStyle.solid,
     );
   }
 }
@@ -137,6 +146,48 @@ extension MiuiIslandLabelContentX on MiuiIslandLabelContent {
     return MiuiIslandLabelContent.values.firstWhere(
       (item) => item.value == value,
       orElse: () => MiuiIslandLabelContent.courseName,
+    );
+  }
+}
+
+extension MiuiIslandLabelFontWeightX on MiuiIslandLabelFontWeight {
+  String get value => switch (this) {
+        MiuiIslandLabelFontWeight.regular => 'regular',
+        MiuiIslandLabelFontWeight.medium => 'medium',
+        MiuiIslandLabelFontWeight.bold => 'bold',
+      };
+
+  String get label => switch (this) {
+        MiuiIslandLabelFontWeight.regular => '常规',
+        MiuiIslandLabelFontWeight.medium => '中等',
+        MiuiIslandLabelFontWeight.bold => '加粗',
+      };
+
+  static MiuiIslandLabelFontWeight fromValue(String? value) {
+    return MiuiIslandLabelFontWeight.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => MiuiIslandLabelFontWeight.bold,
+    );
+  }
+}
+
+extension MiuiIslandLabelRenderQualityX on MiuiIslandLabelRenderQuality {
+  String get value => switch (this) {
+        MiuiIslandLabelRenderQuality.standard => 'standard',
+        MiuiIslandLabelRenderQuality.high => 'high',
+        MiuiIslandLabelRenderQuality.ultra => 'ultra',
+      };
+
+  String get label => switch (this) {
+        MiuiIslandLabelRenderQuality.standard => '标准',
+        MiuiIslandLabelRenderQuality.high => '高清',
+        MiuiIslandLabelRenderQuality.ultra => '超高清',
+      };
+
+  static MiuiIslandLabelRenderQuality fromValue(String? value) {
+    return MiuiIslandLabelRenderQuality.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => MiuiIslandLabelRenderQuality.standard,
     );
   }
 }
@@ -313,6 +364,9 @@ class TimetableSettings {
   final bool liveHideFromRecents;
   final MiuiIslandLabelStyle liveMiuiIslandLabelStyle;
   final MiuiIslandLabelContent liveMiuiIslandLabelContent;
+  final String liveMiuiIslandLabelFontColor;
+  final MiuiIslandLabelFontWeight liveMiuiIslandLabelFontWeight;
+  final MiuiIslandLabelRenderQuality liveMiuiIslandLabelRenderQuality;
   final double liveMiuiIslandLabelFontSize;
   final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
   final String? liveMiuiIslandExpandedIconPath;
@@ -344,7 +398,7 @@ class TimetableSettings {
     this.courseCardShowDescription = false,
     this.courseCardVerticalAlign = CourseCardVerticalAlign.center,
     this.courseCardHorizontalAlign = CourseCardHorizontalAlign.center,
-    this.widgetBackgroundStyle = WidgetBackgroundStyle.glass,
+    this.widgetBackgroundStyle = WidgetBackgroundStyle.solid,
     this.widgetShowLocation = true,
     this.widgetShowCountdown = true,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
@@ -366,6 +420,10 @@ class TimetableSettings {
     this.liveHideFromRecents = false,
     this.liveMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     this.liveMiuiIslandLabelContent = MiuiIslandLabelContent.courseName,
+    this.liveMiuiIslandLabelFontColor = '#FFFFFF',
+    this.liveMiuiIslandLabelFontWeight = MiuiIslandLabelFontWeight.bold,
+    this.liveMiuiIslandLabelRenderQuality =
+        MiuiIslandLabelRenderQuality.standard,
     this.liveMiuiIslandLabelFontSize = 14,
     this.liveMiuiIslandExpandedIconMode = MiuiIslandExpandedIconMode.appIcon,
     this.liveMiuiIslandExpandedIconPath,
@@ -410,7 +468,7 @@ class TimetableSettings {
       courseCardShowDescription: false,
       courseCardVerticalAlign: CourseCardVerticalAlign.center,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
-      widgetBackgroundStyle: WidgetBackgroundStyle.glass,
+      widgetBackgroundStyle: WidgetBackgroundStyle.solid,
       widgetShowLocation: true,
       widgetShowCountdown: true,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
@@ -431,6 +489,10 @@ class TimetableSettings {
       liveHideFromRecents: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
+      liveMiuiIslandLabelFontColor: '#FFFFFF',
+      liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.bold,
+      liveMiuiIslandLabelRenderQuality:
+          MiuiIslandLabelRenderQuality.standard,
       liveMiuiIslandLabelFontSize: 14,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
       liveMiuiIslandExpandedIconPath: null,
@@ -486,6 +548,10 @@ class TimetableSettings {
       'liveHideFromRecents': liveHideFromRecents,
       'liveMiuiIslandLabelStyle': liveMiuiIslandLabelStyle.value,
       'liveMiuiIslandLabelContent': liveMiuiIslandLabelContent.value,
+      'liveMiuiIslandLabelFontColor': liveMiuiIslandLabelFontColor,
+      'liveMiuiIslandLabelFontWeight': liveMiuiIslandLabelFontWeight.value,
+      'liveMiuiIslandLabelRenderQuality':
+          liveMiuiIslandLabelRenderQuality.value,
       'liveMiuiIslandLabelFontSize': liveMiuiIslandLabelFontSize,
       'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
       'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
@@ -572,6 +638,15 @@ class TimetableSettings {
       liveMiuiIslandLabelContent: MiuiIslandLabelContentX.fromValue(
         json['liveMiuiIslandLabelContent'] as String?,
       ),
+      liveMiuiIslandLabelFontColor:
+          json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF',
+      liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeightX.fromValue(
+        json['liveMiuiIslandLabelFontWeight'] as String?,
+      ),
+      liveMiuiIslandLabelRenderQuality:
+          MiuiIslandLabelRenderQualityX.fromValue(
+        json['liveMiuiIslandLabelRenderQuality'] as String?,
+      ),
       liveMiuiIslandLabelFontSize:
           (json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
@@ -646,6 +721,9 @@ class TimetableSettings {
     bool? liveHideFromRecents,
     MiuiIslandLabelStyle? liveMiuiIslandLabelStyle,
     MiuiIslandLabelContent? liveMiuiIslandLabelContent,
+    String? liveMiuiIslandLabelFontColor,
+    MiuiIslandLabelFontWeight? liveMiuiIslandLabelFontWeight,
+    MiuiIslandLabelRenderQuality? liveMiuiIslandLabelRenderQuality,
     double? liveMiuiIslandLabelFontSize,
     MiuiIslandExpandedIconMode? liveMiuiIslandExpandedIconMode,
     String? liveMiuiIslandExpandedIconPath,
@@ -719,6 +797,12 @@ class TimetableSettings {
           liveMiuiIslandLabelStyle ?? this.liveMiuiIslandLabelStyle,
       liveMiuiIslandLabelContent:
           liveMiuiIslandLabelContent ?? this.liveMiuiIslandLabelContent,
+      liveMiuiIslandLabelFontColor:
+          liveMiuiIslandLabelFontColor ?? this.liveMiuiIslandLabelFontColor,
+      liveMiuiIslandLabelFontWeight: liveMiuiIslandLabelFontWeight ??
+          this.liveMiuiIslandLabelFontWeight,
+      liveMiuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality ??
+          this.liveMiuiIslandLabelRenderQuality,
       liveMiuiIslandLabelFontSize:
           liveMiuiIslandLabelFontSize ?? this.liveMiuiIslandLabelFontSize,
       liveMiuiIslandExpandedIconMode:

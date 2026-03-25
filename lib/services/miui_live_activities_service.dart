@@ -144,6 +144,11 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     MiuiIslandLabelContent miuiIslandLabelContent =
         MiuiIslandLabelContent.courseName,
+    String miuiIslandLabelFontColor = '#FFFFFF',
+    MiuiIslandLabelFontWeight miuiIslandLabelFontWeight =
+        MiuiIslandLabelFontWeight.bold,
+    MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality =
+        MiuiIslandLabelRenderQuality.standard,
     double miuiIslandLabelFontSize = 14,
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
@@ -179,6 +184,9 @@ class MiuiLiveActivitiesService {
         enableMiuiIslandLabelImage: enableMiuiIslandLabelImage,
         miuiIslandLabelStyle: miuiIslandLabelStyle,
         miuiIslandLabelContent: miuiIslandLabelContent,
+        miuiIslandLabelFontColor: miuiIslandLabelFontColor,
+        miuiIslandLabelFontWeight: miuiIslandLabelFontWeight,
+        miuiIslandLabelRenderQuality: miuiIslandLabelRenderQuality,
         miuiIslandLabelFontSize: miuiIslandLabelFontSize,
         miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
@@ -227,6 +235,11 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
     MiuiIslandLabelContent miuiIslandLabelContent =
         MiuiIslandLabelContent.courseName,
+    String miuiIslandLabelFontColor = '#FFFFFF',
+    MiuiIslandLabelFontWeight miuiIslandLabelFontWeight =
+        MiuiIslandLabelFontWeight.bold,
+    MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality =
+        MiuiIslandLabelRenderQuality.standard,
     double miuiIslandLabelFontSize = 14,
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
@@ -262,6 +275,9 @@ class MiuiLiveActivitiesService {
         'enableMiuiIslandLabelImage': enableMiuiIslandLabelImage,
         'miuiIslandLabelStyle': miuiIslandLabelStyle.value,
         'miuiIslandLabelContent': miuiIslandLabelContent.value,
+        'miuiIslandLabelFontColor': miuiIslandLabelFontColor,
+        'miuiIslandLabelFontWeight': miuiIslandLabelFontWeight.value,
+        'miuiIslandLabelRenderQuality': miuiIslandLabelRenderQuality.value,
         'miuiIslandLabelFontSize': miuiIslandLabelFontSize,
         'miuiIslandExpandedIconMode': miuiIslandExpandedIconMode.value,
         'miuiIslandExpandedIconPath': miuiIslandExpandedIconPath,

@@ -16,7 +16,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
 import android.graphics.drawable.Icon
 import android.net.Uri
 import android.os.Build
@@ -455,6 +458,9 @@ class LiveUpdateService : Service() {
     private var enableMiuiIslandLabelImage = false
     private var miuiIslandLabelStyle = "text_only"
     private var miuiIslandLabelContent = "course_name"
+    private var miuiIslandLabelFontColor = "#FFFFFF"
+    private var miuiIslandLabelFontWeight = "bold"
+    private var miuiIslandLabelRenderQuality = "standard"
     private var miuiIslandLabelFontSize = 14f
     private var miuiIslandExpandedIconMode = "app_icon"
     private var miuiIslandExpandedIconPath: String? = null
@@ -503,6 +509,12 @@ class LiveUpdateService : Service() {
         miuiIslandLabelStyle = intent?.getStringExtra("miuiIslandLabelStyle") ?: "text_only"
         miuiIslandLabelContent =
             intent?.getStringExtra("miuiIslandLabelContent") ?: "course_name"
+        miuiIslandLabelFontColor =
+            intent?.getStringExtra("miuiIslandLabelFontColor") ?: "#FFFFFF"
+        miuiIslandLabelFontWeight =
+            intent?.getStringExtra("miuiIslandLabelFontWeight") ?: "bold"
+        miuiIslandLabelRenderQuality =
+            intent?.getStringExtra("miuiIslandLabelRenderQuality") ?: "standard"
         miuiIslandLabelFontSize =
             intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
         miuiIslandExpandedIconMode =
@@ -739,6 +751,9 @@ class LiveUpdateService : Service() {
         val cacheKey = listOf(
             text,
             miuiIslandLabelStyle,
+            miuiIslandLabelFontColor,
+            miuiIslandLabelFontWeight,
+            miuiIslandLabelRenderQuality,
             miuiIslandLabelFontSize.toString(),
         ).joinToString("|")
         if (cacheKey == cachedIslandBitmapKey && cachedIslandBitmap != null) {
@@ -748,6 +763,9 @@ class LiveUpdateService : Service() {
         val bitmap = buildIslandLabelBitmap(
             text = text,
             includeAppIcon = miuiIslandLabelStyle == "icon_and_text",
+            fontColorHex = miuiIslandLabelFontColor,
+            fontWeight = miuiIslandLabelFontWeight,
+            renderQuality = miuiIslandLabelRenderQuality,
             fontSizeSp = miuiIslandLabelFontSize,
         )
         cachedIslandBitmapKey = cacheKey
@@ -758,14 +776,24 @@ class LiveUpdateService : Service() {
     private fun buildIslandLabelBitmap(
         text: String,
         includeAppIcon: Boolean,
+        fontColorHex: String,
+        fontWeight: String,
+        renderQuality: String,
         fontSizeSp: Float,
     ): Bitmap? {
         val resolvedFontSizeSp = fontSizeSp.coerceIn(1f, 32f)
-        val renderScale = 2f
+        val renderScale = when (renderQuality) {
+            "high" -> 3f
+            "ultra" -> 4f
+            else -> 2f
+        }
+        val textColor = parseColorHexOrDefault(fontColorHex, 0xFFFFFFFF.toInt())
+        val typeface = resolveIslandLabelTypeface(fontWeight)
         val baseTextPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFFFFFFFF.toInt()
+            color = textColor
             textSize = sp(resolvedFontSizeSp)
-            isFakeBoldText = true
+            this.typeface = typeface
+            isFakeBoldText = fontWeight == "bold"
             isSubpixelText = true
             isLinearText = true
         }
@@ -788,9 +816,10 @@ class LiveUpdateService : Service() {
         }
 
         val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = 0xFFFFFFFF.toInt()
+            color = textColor
             textSize = sp(fittedSizeSp) * renderScale
-            isFakeBoldText = true
+            this.typeface = typeface
+            isFakeBoldText = fontWeight == "bold"
             isSubpixelText = true
             isLinearText = true
             setShadowLayer(dp(0.75f) * renderScale, 0f, dp(0.25f) * renderScale, 0x44000000)
@@ -860,6 +889,27 @@ class LiveUpdateService : Service() {
         val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f
         canvas.drawText(displayText, textStartX, baseline, textPaint)
         return bitmap
+    }
+
+    private fun parseColorHexOrDefault(colorHex: String?, fallback: Int): Int {
+        val normalized = colorHex?.trim()?.removePrefix("#")?.takeIf { it.isNotBlank() } ?: return fallback
+        return try {
+            when (normalized.length) {
+                6 -> (0xFF000000 or normalized.toLong(16)).toInt()
+                8 -> normalized.toLong(16).toInt()
+                else -> fallback
+            }
+        } catch (_: Exception) {
+            fallback
+        }
+    }
+
+    private fun resolveIslandLabelTypeface(fontWeight: String): Typeface {
+        return when (fontWeight) {
+            "regular" -> Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+            "medium" -> Typeface.create("sans-serif-medium", Typeface.NORMAL)
+            else -> Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
+        }
     }
 
     private fun buildMiuiFocusParam(
@@ -951,6 +1001,32 @@ class LiveUpdateService : Service() {
         return scaled
     }
 
+    private fun buildRoundedLauncherIcon(targetSizePx: Int, cornerRadiusPx: Float): Icon? {
+        val size = targetSizePx.coerceAtLeast(1)
+        return try {
+            val drawable = packageManager.getApplicationIcon(packageName)
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val clipPath = Path().apply {
+                addRoundRect(
+                    RectF(0f, 0f, size.toFloat(), size.toFloat()),
+                    cornerRadiusPx,
+                    cornerRadiusPx,
+                    Path.Direction.CW
+                )
+            }
+            canvas.save()
+            canvas.clipPath(clipPath)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(canvas)
+            canvas.restore()
+            Icon.createWithBitmap(bitmap)
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to build rounded launcher icon", e)
+            null
+        }
+    }
+
     private fun buildNotification(remainingText: String): Notification {
         val now = System.currentTimeMillis()
         val stage = resolveStage(now)
@@ -959,7 +1035,8 @@ class LiveUpdateService : Service() {
         val isDuringClass = stage == "duringClass"
         val shouldPromote = !isDuringClass || promoteDuringClass
         val showStandardNotification = !isDuringClass || showNotificationDuringClass
-        val duringClassProgress = if (isDuringClass) buildDuringClassProgress(now) else null
+        val classProgress = if (!isUpcoming) buildDuringClassProgress(now) else null
+        val usesProgressExpandedStyle = Build.VERSION.SDK_INT >= 36 && classProgress != null
 
         val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
         val nameToUse = if (useShortNameInIsland && shortCourseNameRaw.isNotBlank()) shortCourseNameRaw else courseName
@@ -1006,10 +1083,10 @@ class LiveUpdateService : Service() {
         } else {
             ""
         }
-        val summaryText = if (isDuringClass && duringClassProgress != null) {
+        val summaryText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
             listOf(
-                duringClassProgress.nextMilestoneDisplayText,
-                duringClassProgress.finalDismissDisplayText,
+                classProgress.nextMilestoneDisplayText,
+                classProgress.finalDismissDisplayText,
                 location.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
@@ -1033,7 +1110,7 @@ class LiveUpdateService : Service() {
         )
 
         val detailStatusText = when {
-            isDuringClass && duringClassProgress != null -> null
+            (isDuringClass || isEndingSoon) && classProgress != null -> null
             remainingText.isNotBlank() && !shouldPromote -> remainingText
             else -> null
         }
@@ -1042,11 +1119,11 @@ class LiveUpdateService : Service() {
             append(stageTitle)
             append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
-            if (isDuringClass && duringClassProgress != null) {
-                if (duringClassProgress.nextMilestoneDisplayText != null) {
-                    append("\n下一节点: ").append(duringClassProgress.nextMilestoneDisplayText)
+            if ((isDuringClass || isEndingSoon) && classProgress != null) {
+                if (classProgress.nextMilestoneDisplayText != null) {
+                    append("\n下一节点: ").append(classProgress.nextMilestoneDisplayText)
                 }
-                append("\n整节下课: ").append(duringClassProgress.finalDismissDisplayText)
+                append("\n整节下课: ").append(classProgress.finalDismissDisplayText)
             } else if (detailStatusText != null) {
                 append("\n状态: ").append(detailStatusText)
             }
@@ -1057,9 +1134,9 @@ class LiveUpdateService : Service() {
             if (note.isNotBlank()) append("\n备注: ").append(note)
         }
 
-        val promotedContentText = if (isDuringClass && duringClassProgress != null) {
+        val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
             listOf(
-                duringClassProgress.compactDisplayText,
+                classProgress.compactDisplayText,
                 location.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
@@ -1071,12 +1148,12 @@ class LiveUpdateService : Service() {
             ).filterNotNull().joinToString(" · ")
         }
         val promotedExpandedDetailText = buildString {
-            if (isDuringClass && duringClassProgress != null) {
-                if (duringClassProgress.nextMilestoneDisplayText != null) {
-                    append("下一节点: ").append(duringClassProgress.nextMilestoneDisplayText)
+            if ((isDuringClass || isEndingSoon) && classProgress != null) {
+                if (classProgress.nextMilestoneDisplayText != null) {
+                    append("下一节点: ").append(classProgress.nextMilestoneDisplayText)
                     append("\n")
                 }
-                append("整节下课: ").append(duringClassProgress.finalDismissDisplayText)
+                append("整节下课: ").append(classProgress.finalDismissDisplayText)
             } else if (detailStatusText != null) {
                 append("状态: ").append(detailStatusText)
             }
@@ -1091,7 +1168,7 @@ class LiveUpdateService : Service() {
 
         val contentText = if (!showStandardNotification) {
             ""
-        } else if (isDuringClass && duringClassProgress != null) {
+        } else if ((isDuringClass || isEndingSoon) && classProgress != null) {
             promotedContentText
         } else if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
             remainingText
@@ -1108,8 +1185,8 @@ class LiveUpdateService : Service() {
             bodyContent = if (shouldPromote) promotedContentText else contentText,
         )
 
-        val islandCriticalStatusText = if (isDuringClass && duringClassProgress != null) {
-            duringClassProgress.criticalTimeText
+        val islandCriticalStatusText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
+            classProgress.criticalTimeText
         } else {
             remainingText
         }
@@ -1169,8 +1246,8 @@ class LiveUpdateService : Service() {
             setShowWhen(!shouldPromote)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
             setUsesChronometer(false)
-            if (isDuringClass && duringClassProgress != null) {
-                setProgress(duringClassProgress.progressMax, duringClassProgress.progressUnits, false)
+            if (usesProgressExpandedStyle && classProgress != null) {
+                setProgress(classProgress.progressMax, classProgress.progressUnits, false)
             } else {
                 setProgress(0, 0, false)
             }
@@ -1198,23 +1275,24 @@ class LiveUpdateService : Service() {
             }
         }
 
-        if (Build.VERSION.SDK_INT >= 36 && isDuringClass && duringClassProgress != null) {
+        if (usesProgressExpandedStyle && classProgress != null) {
             builder.setStyle(
                 Notification.ProgressStyle()
                     .setStyledByProgress(true)
-                    .setProgress(duringClassProgress.progressUnits)
+                    .setProgress(classProgress.progressUnits)
                     .setProgressSegments(
                         listOf(
                             Notification.ProgressStyle.Segment(
-                                duringClassProgress.progressMax
+                                classProgress.progressMax
                             )
                         )
                     )
                     .setProgressTrackerIcon(
-                        Icon.createWithResource(this, R.mipmap.ic_launcher)
+                        buildRoundedLauncherIcon(dp(28f).toInt(), dp(9f))
+                            ?: Icon.createWithResource(this, R.mipmap.ic_launcher)
                     )
                     .setProgressPoints(
-                        duringClassProgress.breakPointUnits.map { point ->
+                        classProgress.breakPointUnits.map { point ->
                             Notification.ProgressStyle.Point(point)
                         }
                     )
@@ -1247,9 +1325,9 @@ class LiveUpdateService : Service() {
                     "hasPromotableCharacteristics=${notification.hasPromotableCharacteristics()}, " +
                     "canPostPromoted=$canPostPromoted, " +
                     "remainingText=$remainingText, " +
-                    "progress=${duringClassProgress?.progressUnits}, " +
-                    "progressPercent=${duringClassProgress?.progressPercent}, " +
-                    "progressPoints=${duringClassProgress?.breakPointUnits}, " +
+                    "progress=${classProgress?.progressUnits}, " +
+                    "progressPercent=${classProgress?.progressPercent}, " +
+                    "progressPoints=${classProgress?.breakPointUnits}, " +
                     "startAtMillis=$startAtMillis, " +
                     "endAtMillis=$endAtMillis"
             )
@@ -1314,22 +1392,20 @@ class LiveUpdateService : Service() {
         val totalMillis = (endAtMillis - startAtMillis).coerceAtLeast(1L)
         val elapsedMillis = (now - startAtMillis).coerceIn(0L, totalMillis)
         val remainingMillis = (endAtMillis - now).coerceAtLeast(0L)
-        val progressStepMillis = 60_000L
-        val progressMax = ((totalMillis / progressStepMillis).toInt()).coerceAtLeast(1)
+        val progressMax = 1000
         val progressUnits =
-            ((elapsedMillis / progressStepMillis).toInt()).coerceIn(0, progressMax)
+            ((elapsedMillis.toDouble() / totalMillis.toDouble()) * progressMax)
+                .toInt()
+                .coerceIn(0, progressMax)
         val progressPercent = ((progressUnits * 100L) / progressMax).toInt().coerceIn(0, 100)
-        val breakPointUnits = if (progressMax <= 1) {
-            emptyList()
-        } else {
-            progressBreakOffsetsMillis
-                .map { offsetMillis ->
-                    ((offsetMillis.coerceIn(0L, totalMillis) / progressStepMillis).toInt())
-                        .coerceIn(1, progressMax - 1)
-                }
-                .distinct()
-                .sorted()
-        }
+        val breakPointUnits = progressBreakOffsetsMillis
+            .map { offsetMillis ->
+                ((offsetMillis.coerceIn(0L, totalMillis).toDouble() / totalMillis.toDouble()) * progressMax)
+                    .toInt()
+                    .coerceIn(1, progressMax - 1)
+            }
+            .distinct()
+            .sorted()
         val nextMilestoneIndex =
             progressBreakOffsetsMillis.indexOfFirst { it > elapsedMillis }.takeIf { it >= 0 }
         val nextMilestoneLabel =

@@ -44,7 +44,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_large)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
-            val style = snapshot?.backgroundStyle ?: "glass"
+            val style = snapshot?.backgroundStyle ?: "solid"
             val primaryColor = TodayWidgetSupport.primaryTextColor(style)
             val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
 

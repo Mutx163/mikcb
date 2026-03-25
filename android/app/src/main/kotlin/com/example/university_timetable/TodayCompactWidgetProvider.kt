@@ -49,7 +49,7 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_today_compact)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
             val state = snapshot?.state ?: "no_course"
-            val backgroundStyle = snapshot?.backgroundStyle ?: "glass"
+            val backgroundStyle = snapshot?.backgroundStyle ?: "solid"
             val primaryTextColor = TodayWidgetSupport.primaryTextColor(backgroundStyle)
             val secondaryTextColor = TodayWidgetSupport.secondaryTextColor(backgroundStyle)
 

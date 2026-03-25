@@ -49,7 +49,7 @@ object TodayWidgetSupport {
         return when (style) {
             "solid" -> R.drawable.widget_today_compact_bg_solid
             "gradient" -> R.drawable.widget_today_compact_bg_gradient
-            else -> R.drawable.widget_today_compact_bg_glass
+            else -> R.drawable.widget_today_compact_bg_solid
         }
     }
 
@@ -167,7 +167,7 @@ object TodayWidgetSupport {
             profileName = json.optString("profileName", "轻屿课表"),
             currentWeek = json.optInt("currentWeek", 1),
             state = json.optString("state", "no_course"),
-            backgroundStyle = json.optString("backgroundStyle", "glass"),
+            backgroundStyle = json.optString("backgroundStyle", "solid"),
             showLocation = json.optBoolean("showLocation", true),
             showCountdown = json.optBoolean("showCountdown", true),
             todayCourses = parseCourses(json.optJSONArray("todayCourses")),

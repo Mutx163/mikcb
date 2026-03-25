@@ -1807,6 +1807,10 @@ class TimetableProvider with ChangeNotifier {
         enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
         miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
         miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
+        miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
+        miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
+        miuiIslandLabelRenderQuality:
+            settings.liveMiuiIslandLabelRenderQuality,
         miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
         miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
