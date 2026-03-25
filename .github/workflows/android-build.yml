@@ -40,10 +40,16 @@ jobs:
           RELEASE_TAG="${GITHUB_REF#refs/tags/}"
           VERSION_NAME="${RELEASE_TAG#v}"
           RELEASE_NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
+          if [[ "${APP_VERSION}" == *-* ]]; then
+            IS_PRERELEASE=true
+          else
+            IS_PRERELEASE=false
+          fi
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           echo "release_notes_file=${RELEASE_NOTES_FILE}" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -100,6 +106,7 @@ jobs:
           RELEASE_TAG: ${{ steps.meta.outputs.release_tag }}
           VERSION_NAME: ${{ steps.meta.outputs.version_name }}
           RELEASE_NOTES_FILE: ${{ steps.meta.outputs.release_notes_file }}
+          IS_PRERELEASE: ${{ steps.meta.outputs.is_prerelease }}
         run: |
           RELEASE_APK="dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           if [[ -f "${RELEASE_NOTES_FILE}" ]]; then
@@ -107,13 +114,18 @@ jobs:
           else
             RELEASE_NOTES_OPTION=(--notes "Automated release for ${RELEASE_TAG}")
           fi
+          if [[ "${IS_PRERELEASE}" == "true" ]]; then
+            PRERELEASE_OPTION=(--prerelease)
+          else
+            PRERELEASE_OPTION=()
+          fi
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             gh release upload "${RELEASE_TAG}" "${RELEASE_APK}" --clobber
-            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" --prerelease "${RELEASE_NOTES_OPTION[@]}"
+            gh release edit "${RELEASE_TAG}" --title "${RELEASE_TAG}" "${PRERELEASE_OPTION[@]}" "${RELEASE_NOTES_OPTION[@]}"
           else
             gh release create "${RELEASE_TAG}" "${RELEASE_APK}" \
               --title "${RELEASE_TAG}" \
-              --prerelease \
+              "${PRERELEASE_OPTION[@]}" \
               "${RELEASE_NOTES_OPTION[@]}" \
               --target "${GITHUB_SHA}"
           fi
