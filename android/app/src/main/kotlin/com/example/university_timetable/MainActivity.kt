@@ -59,7 +59,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        applyHideFromRecentsPreference()
+        disableDeprecatedHideFromRecents()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -102,8 +102,7 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "setHideFromRecents" -> {
-                        persistHideFromRecents(call.arguments as? Boolean ?: false)
-                        applyHideFromRecentsPreference()
+                        disableDeprecatedHideFromRecents()
                         result.success(true)
                     }
 
@@ -210,6 +209,11 @@ class MainActivity : FlutterActivity() {
                     "exportLiveDiagnosticsFile" -> {
                         result.success(
                             UmengDiagnosticReporter.exportLiveDiagnosticsFile(applicationContext)
+                        )
+                    }
+                    "clearLiveDiagnostics" -> {
+                        result.success(
+                            UmengDiagnosticReporter.clearLiveDiagnostics(applicationContext)
                         )
                     }
                     else -> result.notImplemented()
@@ -481,10 +485,9 @@ class MainActivity : FlutterActivity() {
             .apply()
     }
 
-    private fun applyHideFromRecentsPreference() {
-        val hidden = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getBoolean(KEY_HIDE_FROM_RECENTS, false)
-        setHideFromRecents(hidden)
+    private fun disableDeprecatedHideFromRecents() {
+        persistHideFromRecents(false)
+        setHideFromRecents(false)
     }
 
     private fun setHideFromRecents(hidden: Boolean) {
@@ -537,6 +540,8 @@ class LiveUpdateService : Service() {
     private var miuiIslandLabelFontWeight = "bold"
     private var miuiIslandLabelRenderQuality = "standard"
     private var miuiIslandLabelFontSize = 14f
+    private var miuiIslandLabelOffsetX = 0f
+    private var miuiIslandLabelOffsetY = 0f
     private var miuiIslandExpandedIconMode = "app_icon"
     private var miuiIslandExpandedIconPath: String? = null
     private var startAtMillis = 0L
@@ -594,6 +599,10 @@ class LiveUpdateService : Service() {
                 intent?.getStringExtra("miuiIslandLabelRenderQuality") ?: "standard"
             miuiIslandLabelFontSize =
                 intent?.getFloatExtra("miuiIslandLabelFontSize", 14f) ?: 14f
+            miuiIslandLabelOffsetX =
+                intent?.getFloatExtra("miuiIslandLabelOffsetX", 0f) ?: 0f
+            miuiIslandLabelOffsetY =
+                intent?.getFloatExtra("miuiIslandLabelOffsetY", 0f) ?: 0f
             miuiIslandExpandedIconMode =
                 intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
             miuiIslandExpandedIconPath =
@@ -629,24 +638,6 @@ class LiveUpdateService : Service() {
             lastProgressUnits = -1
             lastCriticalTimeText = ""
 
-            Log.d(
-                TAG,
-                "startLiveUpdate " +
-                    "courseName=$courseName, " +
-                    "stage=$activityStage, " +
-                    "enableBeforeClass=$enableBeforeClass, " +
-                    "enableDuringClass=$enableDuringClass, " +
-                    "enableBeforeEnd=$enableBeforeEnd, " +
-                    "promoteDuringClass=$promoteDuringClass, " +
-                    "showNotificationDuringClass=$showNotificationDuringClass, " +
-                    "progressBreakOffsetsMillis=${progressBreakOffsetsMillis.joinToString(prefix = "[", postfix = "]")}, " +
-                    "progressMilestoneLabels=$progressMilestoneLabels, " +
-                    "progressMilestoneTimeTexts=$progressMilestoneTimeTexts, " +
-                    "startAtMillis=$startAtMillis, " +
-                    "endAtMillis=$endAtMillis, " +
-                    "endReminderLeadMillis=$endReminderLeadMillis" +
-                    ", liveClassReminderStartMinutes=$liveClassReminderStartMinutes"
-            )
             UmengDiagnosticReporter.record(
                 context = applicationContext,
                 category = "live_update_service_started",
@@ -697,7 +688,6 @@ class LiveUpdateService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        Log.d(TAG, "Task removed; stopping live update and relying on scheduler")
         getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
             .edit()
             .putLong("last_task_removed_at", System.currentTimeMillis())
@@ -752,16 +742,6 @@ class LiveUpdateService : Service() {
                 }
                 val currentProgress = currentDuringClassProgress?.progressUnits ?: -1
                 val currentCriticalTimeText = currentDuringClassProgress?.criticalTimeText ?: currentText
-                if (stage == "duringClass") {
-                    Log.d(
-                        TAG,
-                        "tick stage=$stage, currentText=$currentText, " +
-                            "progress=$currentProgress, " +
-                            "criticalTimeText=$currentCriticalTimeText, " +
-                            "elapsedMillis=${(now - startAtMillis).coerceAtLeast(0L)}, " +
-                            "remainingMillis=${(endAtMillis - now).coerceAtLeast(0L)}"
-                    )
-                }
                 if (currentText != lastRemainingText ||
                     currentProgress != lastProgressUnits ||
                     currentCriticalTimeText != lastCriticalTimeText
@@ -873,6 +853,8 @@ class LiveUpdateService : Service() {
             miuiIslandLabelFontWeight,
             miuiIslandLabelRenderQuality,
             miuiIslandLabelFontSize.toString(),
+            miuiIslandLabelOffsetX.toString(),
+            miuiIslandLabelOffsetY.toString(),
         ).joinToString("|")
         if (cacheKey == cachedIslandBitmapKey && cachedIslandBitmap != null) {
             return cachedIslandBitmap
@@ -885,6 +867,8 @@ class LiveUpdateService : Service() {
             fontWeight = miuiIslandLabelFontWeight,
             renderQuality = miuiIslandLabelRenderQuality,
             fontSizeSp = miuiIslandLabelFontSize,
+            offsetXDp = miuiIslandLabelOffsetX,
+            offsetYDp = miuiIslandLabelOffsetY,
         )
         cachedIslandBitmapKey = cacheKey
         cachedIslandBitmap = bitmap
@@ -898,6 +882,8 @@ class LiveUpdateService : Service() {
         fontWeight: String,
         renderQuality: String,
         fontSizeSp: Float,
+        offsetXDp: Float,
+        offsetYDp: Float,
     ): Bitmap? {
         val resolvedFontSizeSp = fontSizeSp.coerceIn(1f, 32f)
         val renderScale = when (renderQuality) {
@@ -964,6 +950,10 @@ class LiveUpdateService : Service() {
         val verticalPaddingPx = dp(verticalPaddingDp) * renderScale
         val textOnlyMinWidthPx = dp(54f) * renderScale
         val textOnlyMinHeightPx = dp(18f) * renderScale
+        val clampedOffsetXDp = offsetXDp.coerceIn(-2f, 2f)
+        val clampedOffsetYDp = offsetYDp.coerceIn(-2f, 2f)
+        val horizontalOffsetPx = dp(clampedOffsetXDp) * renderScale
+        val verticalOffsetPx = dp(clampedOffsetYDp) * renderScale
 
         val contentWidth = (
             horizontalPaddingPx * 2f +
@@ -1002,9 +992,16 @@ class LiveUpdateService : Service() {
             appIcon.draw(canvas)
             textStartX += iconSizePx + iconGapPx
         } else {
-            textStartX = ((width - textWidthPx) / 2f).coerceAtLeast(horizontalPaddingPx)
+            textStartX = (
+                (width - textWidthPx) / 2f + horizontalOffsetPx
+            ).coerceIn(horizontalPaddingPx, width - horizontalPaddingPx - textWidthPx)
         }
-        val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f
+        if (includeAppIcon) {
+            textStartX = (
+                textStartX + horizontalOffsetPx
+            ).coerceIn(horizontalPaddingPx, width - horizontalPaddingPx - textWidthPx)
+        }
+        val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f + verticalOffsetPx
         canvas.drawText(displayText, textStartX, baseline, textPaint)
         return bitmap
     }
@@ -1462,25 +1459,6 @@ class LiveUpdateService : Service() {
                     )
                 )
             }
-            Log.d(
-                TAG,
-                "buildNotification " +
-                    "stage=$stage, " +
-                    "isUpcoming=$isUpcoming, " +
-                    "isDuringClass=$isDuringClass, " +
-                    "isEndingSoon=$isEndingSoon, " +
-                    "shouldPromote=$shouldPromote, " +
-                    "showStandardNotification=$showStandardNotification, " +
-                    "requestPromoted=${notification.extras?.getBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, false) == true}, " +
-                    "hasPromotableCharacteristics=${notification.hasPromotableCharacteristics()}, " +
-                    "canPostPromoted=$canPostPromoted, " +
-                    "remainingText=$remainingText, " +
-                    "progress=${classProgress?.progressUnits}, " +
-                    "progressPercent=${classProgress?.progressPercent}, " +
-                    "progressPoints=${classProgress?.breakPointUnits}, " +
-                    "startAtMillis=$startAtMillis, " +
-                    "endAtMillis=$endAtMillis"
-            )
         }
 
         return notification

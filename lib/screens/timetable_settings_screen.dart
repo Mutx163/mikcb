@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -424,11 +425,18 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   ];
 
   late TimetableSettings _draft;
+  Timer? _autoSaveTimer;
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+  }
+
+  @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -440,12 +448,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('外观与配色'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('保存'),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -536,9 +538,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       colorHex: color,
                       selected: _draft.themeSeedColor == color,
                       onTap: () {
-                        setState(() {
-                          _draft = _draft.copyWith(themeSeedColor: color);
-                        });
+                        _updateDraft(_draft.copyWith(themeSeedColor: color));
                       },
                     ),
                   )
@@ -558,11 +558,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       colorHex: color,
                       selected: _draft.timetablePageBackgroundColor == color,
                       onTap: () {
-                        setState(() {
-                          _draft = _draft.copyWith(
+                        _updateDraft(
+                          _draft.copyWith(
                             timetablePageBackgroundColor: color,
-                          );
-                        });
+                          ),
+                        );
                       },
                     ),
                   )
@@ -578,11 +578,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   subtitle: const Text('关闭后继续使用每门课程自己的颜色'),
                   value: _draft.timetableUseUnifiedCardColor,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(
+                    _updateDraft(
+                      _draft.copyWith(
                         timetableUseUnifiedCardColor: value,
-                      );
-                    });
+                      ),
+                    );
                   },
                 ),
                 if (_draft.timetableUseUnifiedCardColor) ...[
@@ -599,11 +599,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                               selected:
                                   _draft.timetableUnifiedCardColor == color,
                               onTap: () {
-                                setState(() {
-                                  _draft = _draft.copyWith(
+                                _updateDraft(
+                                  _draft.copyWith(
                                     timetableUnifiedCardColor: color,
-                                  );
-                                });
+                                  ),
+                                );
                               },
                             ),
                           )
@@ -619,18 +619,30 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     );
   }
 
-  Future<void> _save() async {
-    if (_draft.liveMiuiIslandExpandedIconMode ==
-            MiuiIslandExpandedIconMode.customImage &&
-        (_draft.liveMiuiIslandExpandedIconPath == null ||
-            _draft.liveMiuiIslandExpandedIconPath!.isEmpty)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先为展开态大图标选择一张图片')),
+  void _updateDraft(TimetableSettings next, {bool debounce = false}) {
+    setState(() {
+      _draft = next;
+    });
+    _autoSaveTimer?.cancel();
+    if (debounce) {
+      _autoSaveTimer = Timer(
+        const Duration(milliseconds: 250),
+        () => unawaited(_persistDraft(next)),
       );
       return;
     }
+    unawaited(_persistDraft(next));
+  }
+
+  Future<void> _persistDraft(TimetableSettings next) async {
+    if (next.liveMiuiIslandExpandedIconMode ==
+            MiuiIslandExpandedIconMode.customImage &&
+        (next.liveMiuiIslandExpandedIconPath == null ||
+            next.liveMiuiIslandExpandedIconPath!.isEmpty)) {
+      return;
+    }
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(_draft);
+    final message = await provider.updateTimetableSettings(next);
     if (!mounted) {
       return;
     }
@@ -638,9 +650,10 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
-      return;
+      setState(() {
+        _draft = provider.settings;
+      });
     }
-    Navigator.pop(context);
   }
 }
 
@@ -665,6 +678,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   ];
 
   late TimetableSettings _draft;
+  Timer? _autoSaveTimer;
 
   @override
   void initState() {
@@ -673,16 +687,16 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   }
 
   @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('超级岛与通知'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('保存'),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -699,9 +713,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       '在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出；不受下面“课中 / 临近下课提醒”开关影响'),
                   value: _draft.liveEnableBeforeClass,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveEnableBeforeClass: value);
-                    });
+                    _updateDraft(
+                      _draft.copyWith(liveEnableBeforeClass: value),
+                    );
                   },
                 ),
                 SwitchListTile(
@@ -710,9 +724,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('只影响上课后到下课前的提醒，不影响“上课前提醒”开关'),
                   value: _draft.liveEnableDuringClass,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveEnableDuringClass: value);
-                    });
+                    _updateDraft(
+                      _draft.copyWith(liveEnableDuringClass: value),
+                    );
                   },
                 ),
                 if (_draft.liveEnableDuringClass) ...[
@@ -734,10 +748,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       ],
                       onChanged: (value) {
                         if (value != null) {
-                          setState(() {
-                            _draft = _draft.copyWith(
-                                liveClassReminderStartMinutes: value);
-                          });
+                          _updateDraft(
+                            _draft.copyWith(
+                              liveClassReminderStartMinutes: value,
+                            ),
+                          );
                         }
                       },
                     ),
@@ -759,9 +774,9 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       const Text('关闭后不会再尝试触发系统超级岛；该能力需 HyperOS 3.0.300 及以上支持'),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(livePromoteDuringClass: value);
-                    });
+                    _updateDraft(
+                      _draft.copyWith(livePromoteDuringClass: value),
+                    );
                   },
                 ),
                 Text(
@@ -775,24 +790,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('关闭后尽量弱化普通通知栏的状态展现（因系统限制可能无效）'),
                   value: _draft.liveShowDuringClassNotification,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(
+                    _updateDraft(
+                      _draft.copyWith(
                         liveShowDuringClassNotification: value,
-                      );
-                    });
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('从最近任务隐藏应用'),
-                  subtitle: const Text(
-                    '开启后不再出现在最近任务列表，减少被误划掉导致岛冻结的情况。小米手机开启后请直接上滑返回桌面，不要先打开后台界面，否则当前任务不会立刻消失。',
-                  ),
-                  value: _draft.liveHideFromRecents,
-                  onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveHideFromRecents: value);
-                    });
+                      ),
+                    );
                   },
                 ),
               ],
@@ -826,11 +828,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveShowBeforeClassMinutes: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -850,11 +852,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveEndSecondsCountdownThreshold: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -872,9 +874,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   title: const Text('显示课程名'),
                   value: _draft.liveShowCourseName,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveShowCourseName: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveShowCourseName: value));
                   },
                 ),
                 SwitchListTile(
@@ -883,9 +883,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('建议简称控制在 3 个字以内'),
                   value: _draft.liveUseShortName,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveUseShortName: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveUseShortName: value));
                   },
                 ),
                 SwitchListTile(
@@ -893,9 +891,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   title: const Text('显示地点'),
                   value: _draft.liveShowLocation,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveShowLocation: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveShowLocation: value));
                   },
                 ),
                 SwitchListTile(
@@ -903,9 +899,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   title: const Text('显示倒计时'),
                   value: _draft.liveShowCountdown,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveShowCountdown: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveShowCountdown: value));
                   },
                 ),
                 SwitchListTile(
@@ -914,9 +908,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”'),
                   value: _draft.liveShowStageText,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveShowStageText: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveShowStageText: value));
                   },
                 ),
                 SwitchListTile(
@@ -925,9 +917,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('例如隐藏“即将上课”这类前缀'),
                   value: _draft.liveHidePrefixText,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(liveHidePrefixText: value);
-                    });
+                    _updateDraft(_draft.copyWith(liveHidePrefixText: value));
                   },
                 ),
                 const SizedBox(height: 12),
@@ -948,11 +938,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
-                    setState(() {
-                      _draft = _draft.copyWith(
+                    _updateDraft(
+                      _draft.copyWith(
                         liveDuringClassTimeDisplayMode: value,
-                      );
-                    });
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(height: 16),
@@ -962,11 +952,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   subtitle: const Text('实验性功能。仅小米手机样式生效，会把课程名生成到左侧图标位。'),
                   value: _draft.liveEnableMiuiIslandLabelImage,
                   onChanged: (value) {
-                    setState(() {
-                      _draft = _draft.copyWith(
+                    _updateDraft(
+                      _draft.copyWith(
                         liveEnableMiuiIslandLabelImage: value,
-                      );
-                    });
+                      ),
+                    );
                   },
                 ),
                 if (_draft.liveEnableMiuiIslandLabelImage) ...[
@@ -987,11 +977,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveMiuiIslandLabelContent: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1011,11 +1001,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveMiuiIslandLabelStyle: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1030,11 +1020,52 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     label:
                         _draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0),
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveMiuiIslandLabelFontSize: value,
-                        );
-                      });
+                        ),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '左侧文字水平偏移 ${_draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1)}',
+                  ),
+                  Slider(
+                    value: _draft.liveMiuiIslandLabelOffsetX.clamp(-2.0, 2.0),
+                    min: -2,
+                    max: 2,
+                    divisions: 40,
+                    label:
+                        _draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1),
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          liveMiuiIslandLabelOffsetX: value,
+                        ),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '左侧文字垂直偏移 ${_draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1)}',
+                  ),
+                  Slider(
+                    value: _draft.liveMiuiIslandLabelOffsetY.clamp(-2.0, 2.0),
+                    min: -2,
+                    max: 2,
+                    divisions: 40,
+                    label:
+                        _draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1),
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          liveMiuiIslandLabelOffsetY: value,
+                        ),
+                        debounce: true,
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1054,11 +1085,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveMiuiIslandLabelFontWeight: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1078,11 +1109,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           liveMiuiIslandLabelRenderQuality: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1103,11 +1134,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                             selected:
                                 _draft.liveMiuiIslandLabelFontColor == color,
                             onTap: () {
-                              setState(() {
-                                _draft = _draft.copyWith(
+                              _updateDraft(
+                                _draft.copyWith(
                                   liveMiuiIslandLabelFontColor: color,
-                                );
-                              });
+                                ),
+                              );
                             },
                           ),
                         )
@@ -1132,13 +1163,13 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
-                    setState(() {
-                      _draft = _draft.copyWith(
+                    _updateDraft(
+                      _draft.copyWith(
                         liveMiuiIslandExpandedIconMode: value,
                         clearLiveMiuiIslandExpandedIconPath:
                             value != MiuiIslandExpandedIconMode.customImage,
-                      );
-                    });
+                      ),
+                    );
                   },
                 ),
                 if (_draft.liveMiuiIslandExpandedIconMode ==
@@ -1161,11 +1192,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                         const SizedBox(width: 12),
                         IconButton.outlined(
                           onPressed: () {
-                            setState(() {
-                              _draft = _draft.copyWith(
+                            _updateDraft(
+                              _draft.copyWith(
                                 clearLiveMiuiIslandExpandedIconPath: true,
-                              );
-                            });
+                              ),
+                            );
                           },
                           icon: const Icon(Icons.delete_outline),
                           tooltip: '移除图片',
@@ -1270,12 +1301,12 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         '${iconsDirectory.path}${Platform.pathSeparator}expanded_icon.$extension';
     await File(targetPath).writeAsBytes(bytes, flush: true);
     if (!mounted) return;
-    setState(() {
-      _draft = _draft.copyWith(
+    _updateDraft(
+      _draft.copyWith(
         liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
         liveMiuiIslandExpandedIconPath: targetPath,
-      );
-    });
+      ),
+    );
   }
 
   Future<List<int>?> _readPickedFileBytes(String? path) async {
@@ -1305,9 +1336,30 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     return path.substring(dotIndex + 1).toLowerCase();
   }
 
-  Future<void> _save() async {
+  void _updateDraft(TimetableSettings next, {bool debounce = false}) {
+    setState(() {
+      _draft = next;
+    });
+    _autoSaveTimer?.cancel();
+    if (debounce) {
+      _autoSaveTimer = Timer(
+        const Duration(milliseconds: 250),
+        () => unawaited(_persistDraft(next)),
+      );
+      return;
+    }
+    unawaited(_persistDraft(next));
+  }
+
+  Future<void> _persistDraft(TimetableSettings next) async {
+    if (next.liveMiuiIslandExpandedIconMode ==
+            MiuiIslandExpandedIconMode.customImage &&
+        (next.liveMiuiIslandExpandedIconPath == null ||
+            next.liveMiuiIslandExpandedIconPath!.isEmpty)) {
+      return;
+    }
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(_draft);
+    final message = await provider.updateTimetableSettings(next);
     if (!mounted) {
       return;
     }
@@ -1315,9 +1367,11 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      setState(() {
+        _draft = provider.settings;
+      });
       return;
     }
-    Navigator.pop(context);
   }
 }
 
@@ -1541,6 +1595,8 @@ Future<void> _showTestOptions(BuildContext context) async {
       miuiIslandLabelRenderQuality:
           settings.liveMiuiIslandLabelRenderQuality,
       miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
+      miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
+      miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,
       miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
@@ -1595,6 +1651,7 @@ class _HomeWidgetSettingsScreen extends StatefulWidget {
 
 class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   late TimetableSettings _draft;
+  Timer? _autoSaveTimer;
 
   @override
   void initState() {
@@ -1603,16 +1660,16 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   }
 
   @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('桌面小组件'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('保存'),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1649,9 +1706,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(widgetBackgroundStyle: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(widgetBackgroundStyle: value),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1661,9 +1718,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     subtitle: const Text('关闭后，小组件次级信息会优先显示周次和课程数量。'),
                     value: _draft.widgetShowLocation,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(widgetShowLocation: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(widgetShowLocation: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1672,9 +1729,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     subtitle: const Text('先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。'),
                     value: _draft.widgetShowCountdown,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(widgetShowCountdown: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(widgetShowCountdown: value),
+                      );
                     },
                   ),
                 ],
@@ -1706,9 +1763,24 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     );
   }
 
-  Future<void> _save() async {
+  void _updateDraft(TimetableSettings next, {bool debounce = false}) {
+    setState(() {
+      _draft = next;
+    });
+    _autoSaveTimer?.cancel();
+    if (debounce) {
+      _autoSaveTimer = Timer(
+        const Duration(milliseconds: 250),
+        () => unawaited(_persistDraft(next)),
+      );
+      return;
+    }
+    unawaited(_persistDraft(next));
+  }
+
+  Future<void> _persistDraft(TimetableSettings next) async {
     final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(_draft);
+    final message = await provider.updateTimetableSettings(next);
     if (!mounted) {
       return;
     }
@@ -1716,14 +1788,17 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      setState(() {
+        _draft = provider.settings;
+      });
       return;
     }
-    Navigator.pop(context);
   }
 }
 
 class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   late TimetableSettings _draft;
+  Timer? _autoSaveTimer;
 
   @override
   void initState() {
@@ -1732,16 +1807,16 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 
   @override
+  void dispose() {
+    _autoSaveTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('布局与节次'),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: const Text('保存'),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1763,11 +1838,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     subtitle: const Text('开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'),
                     value: _draft.timetableAutoFitSectionHeight,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           timetableAutoFitSectionHeight: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1776,9 +1851,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     subtitle: const Text('开启后首页只显示周一到周五，剩余列宽会自动铺满。'),
                     value: _draft.timetableHideWeekends,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(timetableHideWeekends: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(timetableHideWeekends: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1787,9 +1862,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     subtitle: const Text('关闭后，页码切换等交互不再触发轻微震动。'),
                     value: _draft.enableHaptics,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(enableHaptics: value);
-                      });
+                      _updateDraft(_draft.copyWith(enableHaptics: value));
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1809,11 +1882,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           timetableSectionTimeDisplayMode: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 8),
@@ -1827,9 +1900,10 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     onChanged: _draft.timetableAutoFitSectionHeight
                         ? null
                         : (value) {
-                            setState(() {
-                              _draft = _draft.copyWith(sectionHeight: value);
-                            });
+                            _updateDraft(
+                              _draft.copyWith(sectionHeight: value),
+                              debounce: true,
+                            );
                           },
                   ),
                   const SizedBox(height: 8),
@@ -1841,9 +1915,10 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     divisions: 10,
                     label: _draft.compactFontSize.toStringAsFixed(1),
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(compactFontSize: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(compactFontSize: value),
+                        debounce: true,
+                      );
                     },
                   ),
                 ],
@@ -1872,9 +1947,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     title: const Text('显示课程名'),
                     value: _draft.courseCardShowName,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(courseCardShowName: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(courseCardShowName: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1882,9 +1957,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     title: const Text('显示老师'),
                     value: _draft.courseCardShowTeacher,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(courseCardShowTeacher: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(courseCardShowTeacher: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1892,9 +1967,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     title: const Text('显示教室'),
                     value: _draft.courseCardShowLocation,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(courseCardShowLocation: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(courseCardShowLocation: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1902,9 +1977,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     title: const Text('显示时间'),
                     value: _draft.courseCardShowTime,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(courseCardShowTime: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(courseCardShowTime: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1914,11 +1989,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     value: _draft.courseCardShowTimeLabels,
                     onChanged: _draft.courseCardShowTime
                         ? (value) {
-                            setState(() {
-                              _draft = _draft.copyWith(
+                            _updateDraft(
+                              _draft.copyWith(
                                 courseCardShowTimeLabels: value,
-                              );
-                            });
+                              ),
+                            );
                           }
                         : null,
                   ),
@@ -1928,9 +2003,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     subtitle: const Text('例如第 1-16 周、单双周'),
                     value: _draft.courseCardShowWeeks,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(courseCardShowWeeks: value);
-                      });
+                      _updateDraft(
+                        _draft.copyWith(courseCardShowWeeks: value),
+                      );
                     },
                   ),
                   SwitchListTile(
@@ -1939,11 +2014,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     subtitle: const Text('默认关闭，空间不足时会最先被压缩'),
                     value: _draft.courseCardShowDescription,
                     onChanged: (value) {
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           courseCardShowDescription: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 12),
@@ -1963,11 +2038,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           courseCardVerticalAlign: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 16),
@@ -1987,11 +2062,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         .toList(),
                     onChanged: (value) {
                       if (value == null) return;
-                      setState(() {
-                        _draft = _draft.copyWith(
+                      _updateDraft(
+                        _draft.copyWith(
                           courseCardHorizontalAlign: value,
-                        );
-                      });
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -2004,9 +2079,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               subtitle: const Text('关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'),
               value: _draft.showConflictBadgeOnTimetable,
               onChanged: (value) {
-                setState(() {
-                  _draft = _draft.copyWith(showConflictBadgeOnTimetable: value);
-                });
+                _updateDraft(
+                  _draft.copyWith(showConflictBadgeOnTimetable: value),
+                );
               },
             ),
           ),
@@ -2035,10 +2110,25 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  Future<void> _save() async {
+  void _updateDraft(TimetableSettings next, {bool debounce = false}) {
+    setState(() {
+      _draft = next;
+    });
+    _autoSaveTimer?.cancel();
+    if (debounce) {
+      _autoSaveTimer = Timer(
+        const Duration(milliseconds: 250),
+        () => unawaited(_persistDraft(next)),
+      );
+      return;
+    }
+    unawaited(_persistDraft(next));
+  }
+
+  Future<void> _persistDraft(TimetableSettings next) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      _draft.copyWith(
+      next.copyWith(
         activeTimeSchemeId: provider.settings.activeTimeSchemeId,
         sections: List<SectionTime>.from(provider.settings.sections),
       ),
@@ -2050,9 +2140,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message)),
       );
+      setState(() {
+        _draft = provider.settings;
+      });
       return;
     }
-    Navigator.pop(context);
   }
 }
 

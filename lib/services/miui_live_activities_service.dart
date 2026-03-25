@@ -103,16 +103,6 @@ class MiuiLiveActivitiesService {
     }
   }
 
-  Future<void> setHideFromRecents(bool value) async {
-    if (!Platform.isAndroid) return;
-    await initialize();
-    try {
-      await _channel.invokeMethod('setHideFromRecents', value);
-    } catch (e) {
-      debugPrint('Failed to set hide from recents: $e');
-    }
-  }
-
   Future<void> setLiveDiagnosticsEnabled(bool value) async {
     await UmengAnalyticsService.setLiveDiagnosticsEnabled(value);
   }
@@ -131,6 +121,10 @@ class MiuiLiveActivitiesService {
 
   Future<String?> exportLiveDiagnosticsFile() async {
     return UmengAnalyticsService.exportLiveDiagnosticsFile();
+  }
+
+  Future<bool> clearLiveDiagnostics() async {
+    return UmengAnalyticsService.clearLiveDiagnostics();
   }
 
   Future<bool> isIgnoringBatteryOptimizations() async {
@@ -178,6 +172,8 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality =
         MiuiIslandLabelRenderQuality.standard,
     double miuiIslandLabelFontSize = 14,
+    double miuiIslandLabelOffsetX = 0,
+    double miuiIslandLabelOffsetY = 0,
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
@@ -217,6 +213,8 @@ class MiuiLiveActivitiesService {
         miuiIslandLabelFontWeight: miuiIslandLabelFontWeight,
         miuiIslandLabelRenderQuality: miuiIslandLabelRenderQuality,
         miuiIslandLabelFontSize: miuiIslandLabelFontSize,
+        miuiIslandLabelOffsetX: miuiIslandLabelOffsetX,
+        miuiIslandLabelOffsetY: miuiIslandLabelOffsetY,
         miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
@@ -283,6 +281,8 @@ class MiuiLiveActivitiesService {
     MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality =
         MiuiIslandLabelRenderQuality.standard,
     double miuiIslandLabelFontSize = 14,
+    double miuiIslandLabelOffsetX = 0,
+    double miuiIslandLabelOffsetY = 0,
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
@@ -322,6 +322,8 @@ class MiuiLiveActivitiesService {
         'miuiIslandLabelFontWeight': miuiIslandLabelFontWeight.value,
         'miuiIslandLabelRenderQuality': miuiIslandLabelRenderQuality.value,
         'miuiIslandLabelFontSize': miuiIslandLabelFontSize,
+        'miuiIslandLabelOffsetX': miuiIslandLabelOffsetX,
+        'miuiIslandLabelOffsetY': miuiIslandLabelOffsetY,
         'miuiIslandExpandedIconMode': miuiIslandExpandedIconMode.value,
         'miuiIslandExpandedIconPath': miuiIslandExpandedIconPath,
       },

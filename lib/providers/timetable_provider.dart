@@ -36,6 +36,18 @@ class CourseConflict {
   });
 }
 
+class TimeSchemeCourseUsageReference {
+  final String profileName;
+  final Course course;
+  final bool usesOverride;
+
+  const TimeSchemeCourseUsageReference({
+    required this.profileName,
+    required this.course,
+    required this.usesOverride,
+  });
+}
+
 enum LiveActivityStage {
   beforeClass,
   duringClass,
@@ -198,9 +210,6 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _syncNativeRuntimePreferences() async {
-    await _liveActivitiesService.setHideFromRecents(
-      _settings.liveHideFromRecents,
-    );
     await _liveActivitiesService.setLiveDiagnosticsEnabled(
       _settings.liveEnableLocalDiagnostics,
     );
@@ -208,16 +217,17 @@ class TimetableProvider with ChangeNotifier {
 
   TimetableSettings _normalizeSettingsWithTimeScheme(
       TimetableSettings settings) {
-    final scheme = _getTimeSchemeById(settings.activeTimeSchemeId);
+    final normalizedSettings = settings.copyWith(liveHideFromRecents: false);
+    final scheme = _getTimeSchemeById(normalizedSettings.activeTimeSchemeId);
     if (scheme == null) {
-      return settings;
+      return normalizedSettings;
     }
-    final hasSameSections = _sectionSignature(settings.sections) ==
+    final hasSameSections = _sectionSignature(normalizedSettings.sections) ==
         _sectionSignature(scheme.sections);
     if (hasSameSections) {
-      return settings;
+      return normalizedSettings;
     }
-    return settings.copyWith(
+    return normalizedSettings.copyWith(
       sections: List<SectionTime>.from(scheme.sections),
       activeTimeSchemeId: scheme.id,
     );
@@ -280,25 +290,66 @@ class TimetableProvider with ChangeNotifier {
     return activeSettings.sections;
   }
 
-  int maxUsedSectionForTimeScheme(
+  List<TimeSchemeCourseUsageReference> getTimeSchemeCourseUsages(
     String schemeId, {
     List<TimetableProfile>? profiles,
   }) {
     final sourceProfiles = profiles ?? _profiles;
-    var maxSection = 0;
+    final usages = <TimeSchemeCourseUsageReference>[];
 
     for (final profile in sourceProfiles) {
       for (final course in profile.courses) {
-        final usesScheme = course.timeSchemeIdOverride == schemeId ||
-            (course.timeSchemeIdOverride == null &&
-                profile.settings.activeTimeSchemeId == schemeId);
-        if (usesScheme && course.endSection > maxSection) {
-          maxSection = course.endSection;
+        final usesOverride = course.timeSchemeIdOverride == schemeId;
+        final followsProfileScheme =
+            course.timeSchemeIdOverride == null &&
+                profile.settings.activeTimeSchemeId == schemeId;
+        if (!usesOverride && !followsProfileScheme) {
+          continue;
         }
+        usages.add(
+          TimeSchemeCourseUsageReference(
+            profileName: profile.name,
+            course: course,
+            usesOverride: usesOverride,
+          ),
+        );
       }
     }
 
-    return maxSection;
+    return usages;
+  }
+
+  int maxUsedSectionForTimeScheme(
+    String schemeId, {
+    List<TimetableProfile>? profiles,
+  }) {
+    final usages = getTimeSchemeCourseUsages(
+      schemeId,
+      profiles: profiles,
+    );
+    if (usages.isEmpty) {
+      return 0;
+    }
+    return usages
+        .map((usage) => usage.course.endSection)
+        .reduce((left, right) => left > right ? left : right);
+  }
+
+  TimeSchemeCourseUsageReference? maxSectionUsageForTimeScheme(
+    String schemeId, {
+    List<TimetableProfile>? profiles,
+  }) {
+    final usages = getTimeSchemeCourseUsages(
+      schemeId,
+      profiles: profiles,
+    );
+    if (usages.isEmpty) {
+      return null;
+    }
+    usages.sort(
+      (left, right) => right.course.endSection.compareTo(left.course.endSection),
+    );
+    return usages.first;
   }
 
   String? validateCourseTimeSchemeOverride({
@@ -561,6 +612,13 @@ class TimetableProvider with ChangeNotifier {
     }
     final requiredMaxSection = maxUsedSectionForTimeScheme(schemeId);
     if (requiredMaxSection > 0 && sections.length < requiredMaxSection) {
+      final usage = maxSectionUsageForTimeScheme(schemeId);
+      if (usage != null) {
+        final usageType = usage.usesOverride ? '副时间表' : '课表主时间表';
+        return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）。'
+            '正在使用：${usage.profileName} · ${usage.course.name}'
+            '（周${usage.course.dayOfWeek} ${usage.course.startSection}-${usage.course.endSection}节，$usageType）';
+      }
       return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）';
     }
 
@@ -1816,6 +1874,8 @@ class TimetableProvider with ChangeNotifier {
         miuiIslandLabelRenderQuality:
             settings.liveMiuiIslandLabelRenderQuality,
         miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
+        miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
+        miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,
         miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,

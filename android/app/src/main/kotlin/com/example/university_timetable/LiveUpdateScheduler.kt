@@ -69,6 +69,8 @@ private data class NativeLiveSettings(
     val liveMiuiIslandLabelFontWeight: String,
     val liveMiuiIslandLabelRenderQuality: String,
     val liveMiuiIslandLabelFontSize: Float,
+    val liveMiuiIslandLabelOffsetX: Float,
+    val liveMiuiIslandLabelOffsetY: Float,
     val liveMiuiIslandExpandedIconMode: String,
     val liveMiuiIslandExpandedIconPath: String?,
     val liveShowBeforeClassMinutes: Int,
@@ -130,6 +132,8 @@ private data class LiveUpdatePayload(
     val miuiIslandLabelFontWeight: String,
     val miuiIslandLabelRenderQuality: String,
     val miuiIslandLabelFontSize: Float,
+    val miuiIslandLabelOffsetX: Float,
+    val miuiIslandLabelOffsetY: Float,
     val miuiIslandExpandedIconMode: String,
     val miuiIslandExpandedIconPath: String?,
     val progressBreakOffsetsMillis: LongArray,
@@ -254,6 +258,10 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandLabelRenderQuality"] as? String ?: "standard",
             miuiIslandLabelFontSize =
                 (islandConfig["miuiIslandLabelFontSize"] as? Number)?.toFloat() ?: 14f,
+            miuiIslandLabelOffsetX =
+                (islandConfig["miuiIslandLabelOffsetX"] as? Number)?.toFloat() ?: 0f,
+            miuiIslandLabelOffsetY =
+                (islandConfig["miuiIslandLabelOffsetY"] as? Number)?.toFloat() ?: 0f,
             miuiIslandExpandedIconMode =
                 islandConfig["miuiIslandExpandedIconMode"] as? String ?: "app_icon",
             miuiIslandExpandedIconPath =
@@ -358,6 +366,10 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveMiuiIslandLabelRenderQuality", "standard"),
             liveMiuiIslandLabelFontSize =
                 settingsJson.optDouble("liveMiuiIslandLabelFontSize", 14.0).toFloat(),
+            liveMiuiIslandLabelOffsetX =
+                settingsJson.optDouble("liveMiuiIslandLabelOffsetX", 0.0).toFloat(),
+            liveMiuiIslandLabelOffsetY =
+                settingsJson.optDouble("liveMiuiIslandLabelOffsetY", 0.0).toFloat(),
             liveMiuiIslandExpandedIconMode =
                 settingsJson.optString("liveMiuiIslandExpandedIconMode", "app_icon"),
             liveMiuiIslandExpandedIconPath =
@@ -453,6 +465,8 @@ object LiveUpdateScheduler {
             putExtra("miuiIslandLabelFontWeight", payload.miuiIslandLabelFontWeight)
             putExtra("miuiIslandLabelRenderQuality", payload.miuiIslandLabelRenderQuality)
             putExtra("miuiIslandLabelFontSize", payload.miuiIslandLabelFontSize)
+            putExtra("miuiIslandLabelOffsetX", payload.miuiIslandLabelOffsetX)
+            putExtra("miuiIslandLabelOffsetY", payload.miuiIslandLabelOffsetY)
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
         }
@@ -624,6 +638,10 @@ object LiveUpdateScheduler {
                 snapshot.settings.liveMiuiIslandLabelRenderQuality,
             miuiIslandLabelFontSize =
                 snapshot.settings.liveMiuiIslandLabelFontSize.toFloat(),
+            miuiIslandLabelOffsetX =
+                snapshot.settings.liveMiuiIslandLabelOffsetX,
+            miuiIslandLabelOffsetY =
+                snapshot.settings.liveMiuiIslandLabelOffsetY,
             miuiIslandExpandedIconMode =
                 snapshot.settings.liveMiuiIslandExpandedIconMode,
             miuiIslandExpandedIconPath =
@@ -840,7 +858,6 @@ object LiveUpdateScheduler {
                 pendingIntent
             )
         }
-        Log.d(TAG, "Scheduled next live update at=$triggerAtMillis")
     }
 
     private fun cancelScheduledAlarm(context: Context) {

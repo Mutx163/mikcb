@@ -151,6 +151,26 @@ object UmengDiagnosticReporter {
         }.getOrNull()
     }
 
+    fun clearLiveDiagnostics(context: Context): Boolean {
+        if (!isLiveDiagnosticsEnabled(context)) {
+            return false
+        }
+        return runCatching {
+            val file = diagnosticLogFile(context)
+            if (file.exists()) {
+                file.delete()
+            }
+            appendToLocalFile(
+                context = context,
+                payload = buildString {
+                    appendLine("category=diagnostics_cleared")
+                    appendLine("message=Live diagnostics log cleared and restarted")
+                }.trim()
+            )
+            true
+        }.getOrDefault(false)
+    }
+
     fun isLiveDiagnosticsEnabled(context: Context): Boolean {
         return context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, false)
@@ -212,7 +232,6 @@ object UmengDiagnosticReporter {
             "hasPromotedPermissionDeclared" to isPromotedPermissionDeclared(context),
             "canPostPromotedNotifications" to canPostPromotedNotifications(context),
             "ignoringBatteryOptimizations" to isIgnoringBatteryOptimizations(context),
-            "hideFromRecentsEnabled" to nativePrefs.getBoolean(KEY_HIDE_FROM_RECENTS, false),
             "taskRemovedRecently" to (
                 lastTaskRemovedAt > 0L &&
                     System.currentTimeMillis() - lastTaskRemovedAt < 10 * 60 * 1000L
@@ -233,13 +252,14 @@ object UmengDiagnosticReporter {
             "liveHidePrefixText" to settings?.optBoolean("liveHidePrefixText"),
             "liveDuringClassTimeDisplayMode" to settings?.optString("liveDuringClassTimeDisplayMode"),
             "liveEnableMiuiIslandLabelImage" to settings?.optBoolean("liveEnableMiuiIslandLabelImage"),
-            "liveHideFromRecents" to settings?.optBoolean("liveHideFromRecents"),
             "liveMiuiIslandLabelStyle" to settings?.optString("liveMiuiIslandLabelStyle"),
             "liveMiuiIslandLabelContent" to settings?.optString("liveMiuiIslandLabelContent"),
             "liveMiuiIslandLabelFontColor" to settings?.optString("liveMiuiIslandLabelFontColor"),
             "liveMiuiIslandLabelFontWeight" to settings?.optString("liveMiuiIslandLabelFontWeight"),
             "liveMiuiIslandLabelRenderQuality" to settings?.optString("liveMiuiIslandLabelRenderQuality"),
             "liveMiuiIslandLabelFontSize" to settings?.optDouble("liveMiuiIslandLabelFontSize"),
+            "liveMiuiIslandLabelOffsetX" to settings?.optDouble("liveMiuiIslandLabelOffsetX"),
+            "liveMiuiIslandLabelOffsetY" to settings?.optDouble("liveMiuiIslandLabelOffsetY"),
             "liveMiuiIslandExpandedIconMode" to settings?.optString("liveMiuiIslandExpandedIconMode"),
             "liveShowBeforeClassMinutes" to settings?.optInt("liveShowBeforeClassMinutes"),
             "liveClassReminderStartMinutes" to settings?.optInt("liveClassReminderStartMinutes"),

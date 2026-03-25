@@ -370,6 +370,8 @@ class TimetableSettings {
   final MiuiIslandLabelFontWeight liveMiuiIslandLabelFontWeight;
   final MiuiIslandLabelRenderQuality liveMiuiIslandLabelRenderQuality;
   final double liveMiuiIslandLabelFontSize;
+  final double liveMiuiIslandLabelOffsetX;
+  final double liveMiuiIslandLabelOffsetY;
   final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
   final String? liveMiuiIslandExpandedIconPath;
   final int liveShowBeforeClassMinutes;
@@ -430,6 +432,8 @@ class TimetableSettings {
     this.liveMiuiIslandLabelRenderQuality =
         MiuiIslandLabelRenderQuality.standard,
     this.liveMiuiIslandLabelFontSize = 14,
+    this.liveMiuiIslandLabelOffsetX = 0,
+    this.liveMiuiIslandLabelOffsetY = 0,
     this.liveMiuiIslandExpandedIconMode = MiuiIslandExpandedIconMode.appIcon,
     this.liveMiuiIslandExpandedIconPath,
     this.liveShowBeforeClassMinutes = 20,
@@ -502,6 +506,8 @@ class TimetableSettings {
       liveMiuiIslandLabelRenderQuality:
           MiuiIslandLabelRenderQuality.standard,
       liveMiuiIslandLabelFontSize: 14,
+      liveMiuiIslandLabelOffsetX: 0,
+      liveMiuiIslandLabelOffsetY: 0,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
       liveMiuiIslandExpandedIconPath: null,
       liveShowBeforeClassMinutes: 20,
@@ -564,6 +570,8 @@ class TimetableSettings {
       'liveMiuiIslandLabelRenderQuality':
           liveMiuiIslandLabelRenderQuality.value,
       'liveMiuiIslandLabelFontSize': liveMiuiIslandLabelFontSize,
+      'liveMiuiIslandLabelOffsetX': liveMiuiIslandLabelOffsetX,
+      'liveMiuiIslandLabelOffsetY': liveMiuiIslandLabelOffsetY,
       'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
       'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
@@ -659,11 +667,15 @@ class TimetableSettings {
         json['liveMiuiIslandLabelFontWeight'] as String?,
       ),
       liveMiuiIslandLabelRenderQuality:
-          MiuiIslandLabelRenderQualityX.fromValue(
+        MiuiIslandLabelRenderQualityX.fromValue(
         json['liveMiuiIslandLabelRenderQuality'] as String?,
       ),
       liveMiuiIslandLabelFontSize:
           (json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14,
+      liveMiuiIslandLabelOffsetX:
+          (json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0,
+      liveMiuiIslandLabelOffsetY:
+          (json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
         json['liveMiuiIslandExpandedIconMode'] as String?,
       ),
@@ -744,6 +756,8 @@ class TimetableSettings {
     MiuiIslandLabelFontWeight? liveMiuiIslandLabelFontWeight,
     MiuiIslandLabelRenderQuality? liveMiuiIslandLabelRenderQuality,
     double? liveMiuiIslandLabelFontSize,
+    double? liveMiuiIslandLabelOffsetX,
+    double? liveMiuiIslandLabelOffsetY,
     MiuiIslandExpandedIconMode? liveMiuiIslandExpandedIconMode,
     String? liveMiuiIslandExpandedIconPath,
     bool clearLiveMiuiIslandExpandedIconPath = false,
@@ -828,6 +842,10 @@ class TimetableSettings {
           this.liveMiuiIslandLabelRenderQuality,
       liveMiuiIslandLabelFontSize:
           liveMiuiIslandLabelFontSize ?? this.liveMiuiIslandLabelFontSize,
+      liveMiuiIslandLabelOffsetX:
+          liveMiuiIslandLabelOffsetX ?? this.liveMiuiIslandLabelOffsetX,
+      liveMiuiIslandLabelOffsetY:
+          liveMiuiIslandLabelOffsetY ?? this.liveMiuiIslandLabelOffsetY,
       liveMiuiIslandExpandedIconMode:
           liveMiuiIslandExpandedIconMode ?? this.liveMiuiIslandExpandedIconMode,
       liveMiuiIslandExpandedIconPath: clearLiveMiuiIslandExpandedIconPath
