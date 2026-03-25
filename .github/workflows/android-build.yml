@@ -2,8 +2,6 @@ name: Android Build
 
 on:
   push:
-    branches:
-      - main
     tags:
       - 'v*'
   workflow_dispatch:
@@ -39,13 +37,8 @@ jobs:
         shell: bash
         run: |
           APP_VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            RELEASE_TAG="${GITHUB_REF#refs/tags/}"
-            VERSION_NAME="${RELEASE_TAG#v}"
-          else
-            VERSION_NAME="${APP_VERSION%%+*}"
-            RELEASE_TAG="v${VERSION_NAME}"
-          fi
+          RELEASE_TAG="${GITHUB_REF#refs/tags/}"
+          VERSION_NAME="${RELEASE_TAG#v}"
           RELEASE_NOTES_FILE="docs/releases/v${VERSION_NAME}.md"
           echo "app_version=${APP_VERSION}" >> "$GITHUB_OUTPUT"
           echo "version_name=${VERSION_NAME}" >> "$GITHUB_OUTPUT"

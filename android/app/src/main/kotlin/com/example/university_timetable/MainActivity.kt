@@ -183,6 +183,35 @@ class MainActivity : FlutterActivity() {
                         )
                         result.success(true)
                     }
+                    "recordDiagnosticEvent" -> {
+                        val data = call.arguments as? Map<*, *>
+                        if (data == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing log payload", null)
+                            return@setMethodCallHandler
+                        }
+                        @Suppress("UNCHECKED_CAST")
+                        val extras = (data["extras"] as? Map<String, Any?>) ?: emptyMap()
+                        UmengDiagnosticReporter.record(
+                            context = applicationContext,
+                            category = data["category"] as? String ?: "flutter_diagnostic_event",
+                            message = data["message"] as? String ?: "",
+                            extras = extras,
+                        )
+                        result.success(true)
+                    }
+                    "setLiveDiagnosticsEnabled" -> {
+                        val enabled = call.arguments as? Boolean ?: false
+                        UmengDiagnosticReporter.setLiveDiagnosticsEnabled(
+                            applicationContext,
+                            enabled
+                        )
+                        result.success(true)
+                    }
+                    "exportLiveDiagnosticsFile" -> {
+                        result.success(
+                            UmengDiagnosticReporter.exportLiveDiagnosticsFile(applicationContext)
+                        )
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -408,6 +437,16 @@ class MainActivity : FlutterActivity() {
 
     private fun startLiveUpdateService(data: Map<String, Any>) {
         try {
+            UmengDiagnosticReporter.record(
+                context = applicationContext,
+                category = "live_update_start_requested",
+                message = "Flutter requested live update start",
+                extras = mapOf(
+                    "stage" to data["stage"],
+                    "hasCurrentCourse" to (data["currentCourse"] != null),
+                    "hasNextCourse" to (data["nextCourse"] != null),
+                )
+            )
             val intent = LiveUpdateScheduler.buildServiceIntentFromMethodPayload(this, data)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent)
@@ -427,6 +466,11 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun stopLiveUpdateService() {
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_stop_requested",
+            message = "Flutter requested live update stop",
+        )
         stopService(Intent(this, LiveUpdateService::class.java))
     }
 
@@ -480,6 +524,7 @@ class LiveUpdateService : Service() {
     private var activityStage = ""
     private var endSecondsCountdownThreshold = 60
     private var showCountdown = true
+    private var showStageText = true
     private var showCourseNameInIsland = true
     private var showLocationInIsland = true
     private var useShortNameInIsland = false
@@ -529,6 +574,7 @@ class LiveUpdateService : Service() {
             endSecondsCountdownThreshold =
                 intent?.getIntExtra("endSecondsCountdownThreshold", 60) ?: 60
             showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
+            showStageText = intent?.getBooleanExtra("showStageText", true) ?: true
             showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
             showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
             useShortNameInIsland = intent?.getBooleanExtra("useShortNameInIsland", false) ?: false
@@ -601,6 +647,20 @@ class LiveUpdateService : Service() {
                     "endReminderLeadMillis=$endReminderLeadMillis" +
                     ", liveClassReminderStartMinutes=$liveClassReminderStartMinutes"
             )
+            UmengDiagnosticReporter.record(
+                context = applicationContext,
+                category = "live_update_service_started",
+                message = "Live update service started",
+                extras = mapOf(
+                    "courseName" to courseName,
+                    "stage" to activityStage,
+                    "startAtMillis" to startAtMillis,
+                    "endAtMillis" to endAtMillis,
+                    "enableBeforeClass" to enableBeforeClass,
+                    "enableDuringClass" to enableDuringClass,
+                    "enableBeforeEnd" to enableBeforeEnd,
+                )
+            )
 
             val initialText = computeRemainingText(System.currentTimeMillis())
             lastRemainingText = initialText
@@ -642,6 +702,15 @@ class LiveUpdateService : Service() {
             .edit()
             .putLong("last_task_removed_at", System.currentTimeMillis())
             .apply()
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_task_removed",
+            message = "Task removed while live update service was active",
+            extras = mapOf(
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
         stopAndRemoveNotification()
         super.onTaskRemoved(rootIntent)
     }
@@ -1108,6 +1177,11 @@ class LiveUpdateService : Service() {
             "beforeEnd" -> "下课提醒"
             else -> "上课中"
         }
+        val visibleStatusText = when {
+            !showCountdown && showStageText -> stageTitle
+            !showCountdown -> ""
+            else -> remainingText.ifBlank { stageTitle }
+        }
         val title = when (stage) {
             "beforeClass" -> "即将上课: $shortCourseName"
             "beforeEnd" -> "下课提醒: $shortCourseName"
@@ -1132,7 +1206,7 @@ class LiveUpdateService : Service() {
         } else {
             ""
         }
-        val summaryText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
+        val summaryText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             listOf(
                 classProgress.nextMilestoneDisplayText,
                 classProgress.finalDismissDisplayText,
@@ -1142,7 +1216,7 @@ class LiveUpdateService : Service() {
             listOf(
                 location.takeIf { it.isNotBlank() },
                 teacher.takeIf { it.isNotBlank() },
-                remainingText.takeIf { it.isNotBlank() }
+                visibleStatusText.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         }
 
@@ -1159,8 +1233,8 @@ class LiveUpdateService : Service() {
         )
 
         val detailStatusText = when {
-            (isDuringClass || isEndingSoon) && classProgress != null -> null
-            remainingText.isNotBlank() && !shouldPromote -> remainingText
+            (isDuringClass || isEndingSoon) && classProgress != null && showCountdown -> null
+            visibleStatusText.isNotBlank() && !shouldPromote -> visibleStatusText
             else -> null
         }
 
@@ -1168,7 +1242,7 @@ class LiveUpdateService : Service() {
             append(stageTitle)
             append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
-            if ((isDuringClass || isEndingSoon) && classProgress != null) {
+            if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
                 if (classProgress.nextMilestoneDisplayText != null) {
                     append("\n下一节点: ").append(classProgress.nextMilestoneDisplayText)
                 }
@@ -1183,21 +1257,21 @@ class LiveUpdateService : Service() {
             if (note.isNotBlank()) append("\n备注: ").append(note)
         }
 
-        val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
+        val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             listOf(
                 classProgress.compactDisplayText,
                 location.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
             listOf(
-                remainingText.takeIf { it.isNotBlank() },
+                visibleStatusText.takeIf { it.isNotBlank() },
                 timeRangeText.takeIf { it.isNotBlank() },
                 location.takeIf { it.isNotBlank() },
                 teacher.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         }
         val promotedExpandedDetailText = buildString {
-            if ((isDuringClass || isEndingSoon) && classProgress != null) {
+            if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
                 if (classProgress.nextMilestoneDisplayText != null) {
                     append("下一节点: ").append(classProgress.nextMilestoneDisplayText)
                     append("\n")
@@ -1220,24 +1294,24 @@ class LiveUpdateService : Service() {
         } else if ((isDuringClass || isEndingSoon) && classProgress != null) {
             promotedContentText
         } else if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
-            remainingText
+            visibleStatusText
         } else {
-            listOf(islandCourseName, islandLocation, teacher, remainingText)
+            listOf(islandCourseName, islandLocation, teacher, visibleStatusText)
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
         }
             
         val miuiFocusParam = buildMiuiFocusParam(
             title = title,
-            remainingText = remainingText,
+            remainingText = visibleStatusText,
             timeRangeText = timeRangeText,
             bodyContent = if (shouldPromote) promotedContentText else contentText,
         )
 
-        val islandCriticalStatusText = if ((isDuringClass || isEndingSoon) && classProgress != null) {
+        val islandCriticalStatusText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             classProgress.criticalTimeText
         } else {
-            remainingText
+            visibleStatusText
         }
 
         val islandCriticalText = if (shouldPromote && !showCourseNameInIsland && !showLocationInIsland) {
@@ -1362,6 +1436,17 @@ class LiveUpdateService : Service() {
             val canPostPromoted =
                 getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true
             if (shouldPromote && (!notification.hasPromotableCharacteristics() || !canPostPromoted)) {
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_not_promoted",
+                    message = "Live update notification was built but not promoted",
+                    extras = mapOf(
+                        "courseName" to courseName,
+                        "stage" to stage,
+                        "canPostPromoted" to canPostPromoted,
+                        "hasPromotableCharacteristics" to notification.hasPromotableCharacteristics(),
+                    )
+                )
                 UmengDiagnosticReporter.report(
                     context = applicationContext,
                     category = "live_update_promoted_not_shown",
@@ -1402,6 +1487,15 @@ class LiveUpdateService : Service() {
     }
 
     private fun stopAndRemoveNotification() {
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_service_stopped",
+            message = "Live update service stopped and notification removed",
+            extras = mapOf(
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
         stopTicker()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(STOP_FOREGROUND_REMOVE)

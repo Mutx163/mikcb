@@ -90,6 +90,54 @@ class UmengAnalyticsService {
     }
   }
 
+  static Future<void> setLiveDiagnosticsEnabled(bool value) async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    try {
+      await _channel.invokeMethod<void>('setLiveDiagnosticsEnabled', value);
+    } on MissingPluginException {
+      // Ignore when the platform implementation is unavailable.
+    } catch (_) {
+      // Diagnostics should never affect the app flow.
+    }
+  }
+
+  static Future<void> recordDiagnosticEvent(
+    String category,
+    String message, {
+    Map<String, Object?> extras = const {},
+  }) async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    try {
+      await _channel.invokeMethod<void>('recordDiagnosticEvent', {
+        'category': category,
+        'message': message,
+        'extras': extras,
+      });
+    } on MissingPluginException {
+      // Ignore when the platform implementation is unavailable.
+    } catch (_) {
+      // Diagnostics should never affect the app flow.
+    }
+  }
+
+  static Future<String?> exportLiveDiagnosticsFile() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return null;
+    }
+    try {
+      final result = await _channel.invokeMethod<String>('exportLiveDiagnosticsFile');
+      return result;
+    } on MissingPluginException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<void> triggerTestCrash() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;

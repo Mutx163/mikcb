@@ -113,6 +113,26 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<void> setLiveDiagnosticsEnabled(bool value) async {
+    await UmengAnalyticsService.setLiveDiagnosticsEnabled(value);
+  }
+
+  Future<void> recordDiagnosticEvent(
+    String category,
+    String message, {
+    Map<String, Object?> extras = const {},
+  }) async {
+    await UmengAnalyticsService.recordDiagnosticEvent(
+      category,
+      message,
+      extras: extras,
+    );
+  }
+
+  Future<String?> exportLiveDiagnosticsFile() async {
+    return UmengAnalyticsService.exportLiveDiagnosticsFile();
+  }
+
   Future<bool> isIgnoringBatteryOptimizations() async {
     if (!Platform.isAndroid) return true;
     try {
@@ -141,6 +161,7 @@ class MiuiLiveActivitiesService {
     bool enableDuringClass = true,
     bool enableBeforeEnd = true,
     bool showCountdown = true,
+    bool showStageText = true,
     bool showCourseNameInIsland = true,
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
@@ -183,6 +204,7 @@ class MiuiLiveActivitiesService {
         enableDuringClass: enableDuringClass,
         enableBeforeEnd: enableBeforeEnd,
         showCountdown: showCountdown,
+        showStageText: showStageText,
         showCourseNameInIsland: showCourseNameInIsland,
         showLocationInIsland: showLocationInIsland,
         useShortNameInIsland: useShortNameInIsland,
@@ -244,6 +266,7 @@ class MiuiLiveActivitiesService {
     bool enableDuringClass = true,
     bool enableBeforeEnd = true,
     bool showCountdown = true,
+    bool showStageText = true,
     bool showCourseNameInIsland = true,
     bool showLocationInIsland = true,
     bool useShortNameInIsland = true,
@@ -282,6 +305,7 @@ class MiuiLiveActivitiesService {
       'enableDuringClass': enableDuringClass,
       'enableBeforeEnd': enableBeforeEnd,
       'showCountdown': showCountdown,
+      'showStageText': showStageText,
       'progressBreakOffsetsMillis': progressBreakOffsetsMillis,
       'progressMilestoneLabels': progressMilestoneLabels,
       'progressMilestoneTimeTexts': progressMilestoneTimeTexts,
