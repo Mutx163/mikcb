@@ -138,7 +138,6 @@ void main() {
   test('settings preserve active time scheme id', () {
     final settings = TimetableSettings.defaults().copyWith(
       activeTimeSchemeId: 'scheme-1',
-      timetableShowCurrentWeekCourses: false,
       timetableShowNonCurrentWeekCourses: true,
       showConflictBadgeOnTimetable: false,
       timetableConflictCourseOpacity: 0.55,
@@ -175,7 +174,7 @@ void main() {
     final restored = TimetableSettings.fromJson(settings.toJson());
 
     expect(restored.activeTimeSchemeId, 'scheme-1');
-    expect(restored.timetableShowCurrentWeekCourses, isFalse);
+    expect(restored.timetableShowCurrentWeekCourses, isTrue);
     expect(restored.timetableShowNonCurrentWeekCourses, isTrue);
     expect(restored.showConflictBadgeOnTimetable, isFalse);
     expect(restored.timetableConflictCourseOpacity, 0.55);

@@ -20,6 +20,7 @@ class CourseCard extends StatelessWidget {
   final double compactSubtitleFontSize;
   final double compactVerticalPadding;
   final String? overrideColorHex;
+  final String? compactOverlineText;
   final String? topRightBadgeText;
 
   const CourseCard({
@@ -40,6 +41,7 @@ class CourseCard extends StatelessWidget {
     this.compactSubtitleFontSize = 8,
     this.compactVerticalPadding = 6,
     this.overrideColorHex,
+    this.compactOverlineText,
     this.topRightBadgeText,
   });
 
@@ -257,11 +259,11 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildBadge(String text) {
+  Widget _buildBadge(String text, {Color? color}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.red.shade600,
+        color: color ?? Colors.red.shade600,
         borderRadius: BorderRadius.circular(999),
         boxShadow: [
           BoxShadow(
@@ -309,10 +311,10 @@ class CourseCard extends StatelessWidget {
         ),
       );
     }
-    if (showDescription &&
-        (course.description?.trim().isNotEmpty ?? false)) {
+    if (showDescription && (course.description?.trim().isNotEmpty ?? false)) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
-      lines.add(_buildDetailRow(Icons.notes_rounded, course.description!.trim()));
+      lines.add(
+          _buildDetailRow(Icons.notes_rounded, course.description!.trim()));
     }
     return lines;
   }
@@ -340,6 +342,19 @@ class CourseCard extends StatelessWidget {
 
   List<_CompactTextLine> _buildCompactTextLines() {
     final lines = <_CompactTextLine>[];
+    if (compactOverlineText?.trim().isNotEmpty ?? false) {
+      lines.add(
+        _CompactTextLine(
+          text: compactOverlineText!.trim(),
+          flex: 1,
+          style: TextStyle(
+            fontSize: (compactSubtitleFontSize - 1).clamp(6.0, 12.0),
+            color: Colors.white.withValues(alpha: 0.78),
+            height: 1.05,
+          ),
+        ),
+      );
+    }
     if (showName) {
       lines.add(
         _CompactTextLine(
@@ -415,8 +430,7 @@ class CourseCard extends StatelessWidget {
         ),
       );
     }
-    if (showDescription &&
-        (course.description?.trim().isNotEmpty ?? false)) {
+    if (showDescription && (course.description?.trim().isNotEmpty ?? false)) {
       lines.add(
         _CompactTextLine(
           text: course.description!.trim(),
@@ -484,7 +498,6 @@ class CourseCard extends StatelessWidget {
         CourseCardHorizontalAlign.center => TextAlign.center,
         CourseCardHorizontalAlign.right => TextAlign.right,
       };
-
 }
 
 class _CompactTextLine {

@@ -1465,19 +1465,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('显示本周课程'),
-                    subtitle: const Text('默认开启，首页课表优先显示当前周实际生效的课程'),
-                    value: _draft.timetableShowCurrentWeekCourses,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          timetableShowCurrentWeekCourses: value,
-                        ),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
                     title: const Text('显示非本周课程'),
                     subtitle: const Text('默认关闭，开启后会用灰色半透明显示不在当前周的课程'),
                     value: _draft.timetableShowNonCurrentWeekCourses,
