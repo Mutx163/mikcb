@@ -360,10 +360,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 provider.courses,
                 week,
                 dayOfWeek,
+                settings,
               );
               return SizedBox(
                 width: dayWidth,
                 child: _buildDayColumn(
+                  week,
                   dayOfWeek,
                   dayCourses,
                   settings,
@@ -441,6 +443,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Widget _buildDayColumn(
+    int week,
     int dayOfWeek,
     List<Course> courses,
     TimetableSettings settings,
@@ -478,20 +481,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
       );
 
       for (final course in startingCourses) {
-        final overlapInsets = _resolveConflictInsets(courses, course);
+        final isCurrentWeekCourse = course.isInWeek(week);
         final isConflicting = conflictMap.containsKey(course.id);
         courseCards.add(
           Positioned(
             top: sectionIndex * sectionHeight,
-            left: 2 + overlapInsets.$1,
-            right: 2 + overlapInsets.$2,
+            left: 2,
+            right: 2,
             height: course.sectionCount * sectionHeight - 4,
             child: Opacity(
-              opacity:
-                  isConflicting ? settings.timetableConflictCourseOpacity : 1,
+              opacity: !isCurrentWeekCourse
+                  ? 0.62
+                  : (isConflicting
+                      ? settings.timetableConflictCourseOpacity
+                      : 1),
               child: CourseCard(
                 course: course,
-                overrideColorHex: overrideCardColor,
+                overrideColorHex:
+                    isCurrentWeekCourse ? overrideCardColor : '#94A3B8',
                 topRightBadgeText:
                     isConflicting && showConflictBadge ? '冲突' : null,
                 isCompact: true,
@@ -623,49 +630,34 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return courses.where((course) => course.startSection == section).toList();
   }
 
-  (double, double) _resolveConflictInsets(List<Course> courses, Course course) {
-    final overlappingCourses = courses
-        .where((other) => _coursesOverlapInLayout(course, other))
-        .toList()
-      ..sort((left, right) {
-        final startCompare = left.startSection.compareTo(right.startSection);
-        if (startCompare != 0) return startCompare;
-        final endCompare = left.endSection.compareTo(right.endSection);
-        if (endCompare != 0) return endCompare;
-        return left.id.compareTo(right.id);
-      });
-
-    if (overlappingCourses.length <= 1) {
-      return (0, 0);
-    }
-
-    final index = overlappingCourses.indexWhere((item) => item.id == course.id);
-    if (index < 0) {
-      return (0, 0);
-    }
-
-    const overlapOffset = 8.0;
-    return (
-      index * overlapOffset,
-      (overlappingCourses.length - index - 1) * overlapOffset,
-    );
-  }
-
-  bool _coursesOverlapInLayout(Course left, Course right) {
-    if (left.id == right.id) {
-      return true;
-    }
-    return !(left.endSection < right.startSection ||
-        right.endSection < left.startSection);
-  }
-
   List<Course> _getCoursesForDay(
-      List<Course> allCourses, int week, int dayOfWeek) {
-    return allCourses
-        .where(
-            (course) => course.dayOfWeek == dayOfWeek && course.isInWeek(week))
-        .toList()
-      ..sort((a, b) => a.startSection.compareTo(b.startSection));
+    List<Course> allCourses,
+    int week,
+    int dayOfWeek,
+    TimetableSettings settings,
+  ) {
+    return allCourses.where((course) {
+      if (course.dayOfWeek != dayOfWeek) {
+        return false;
+      }
+      final isCurrentWeek = course.isInWeek(week);
+      if (isCurrentWeek) {
+        return settings.timetableShowCurrentWeekCourses;
+      }
+      return settings.timetableShowNonCurrentWeekCourses;
+    }).toList()
+      ..sort((a, b) {
+        final startCompare = a.startSection.compareTo(b.startSection);
+        if (startCompare != 0) return startCompare;
+        final aCurrent = a.isInWeek(week);
+        final bCurrent = b.isInWeek(week);
+        if (aCurrent != bCurrent) {
+          return aCurrent ? 1 : -1;
+        }
+        final endCompare = a.endSection.compareTo(b.endSection);
+        if (endCompare != 0) return endCompare;
+        return a.id.compareTo(b.id);
+      });
   }
 
   int _clampWeek(int week, int maxWeek) {

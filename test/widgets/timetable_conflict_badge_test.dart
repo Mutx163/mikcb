@@ -137,4 +137,67 @@ void main() {
     expect(find.text('软件工程'), findsOneWidget);
     expect(find.text('计算机网络'), findsOneWidget);
   });
+
+  testWidgets('home timetable can show non-current-week courses separately',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.setCurrentWeek(1);
+    await provider.addCourse(
+      Course(
+        id: 'current-course',
+        name: '本周课程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 1,
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'other-week-course',
+        name: '非本周课程',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 1,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+        startWeek: 2,
+        endWeek: 2,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('本周课程'), findsOneWidget);
+    expect(find.text('非本周课程'), findsNothing);
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        timetableShowNonCurrentWeekCourses: true,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('本周课程'), findsOneWidget);
+    expect(find.text('非本周课程'), findsOneWidget);
+  });
 }

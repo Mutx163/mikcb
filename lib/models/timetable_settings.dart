@@ -430,6 +430,8 @@ class TimetableSettings {
   final bool timetableAutoFitSectionHeight;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
+  final bool timetableShowCurrentWeekCourses;
+  final bool timetableShowNonCurrentWeekCourses;
   final bool showConflictBadgeOnTimetable;
   final double timetableConflictCourseOpacity;
   final bool courseCardShowName;
@@ -510,6 +512,8 @@ class TimetableSettings {
     this.timetableAutoFitSectionHeight = false,
     this.semesterWeekCount = 20,
     this.semesterStartDate,
+    this.timetableShowCurrentWeekCourses = true,
+    this.timetableShowNonCurrentWeekCourses = false,
     this.showConflictBadgeOnTimetable = true,
     this.timetableConflictCourseOpacity = 0.72,
     this.courseCardShowName = true,
@@ -609,6 +613,8 @@ class TimetableSettings {
       timetableAutoFitSectionHeight: false,
       semesterWeekCount: 20,
       semesterStartDate: null,
+      timetableShowCurrentWeekCourses: true,
+      timetableShowNonCurrentWeekCourses: false,
       showConflictBadgeOnTimetable: true,
       timetableConflictCourseOpacity: 0.72,
       courseCardShowName: true,
@@ -694,6 +700,8 @@ class TimetableSettings {
       'timetableAutoFitSectionHeight': timetableAutoFitSectionHeight,
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
+      'timetableShowCurrentWeekCourses': timetableShowCurrentWeekCourses,
+      'timetableShowNonCurrentWeekCourses': timetableShowNonCurrentWeekCourses,
       'showConflictBadgeOnTimetable': showConflictBadgeOnTimetable,
       'timetableConflictCourseOpacity': timetableConflictCourseOpacity,
       'courseCardShowName': courseCardShowName,
@@ -802,6 +810,10 @@ class TimetableSettings {
               (json['semesterStartDate'] as num).toInt(),
             )
           : null,
+      timetableShowCurrentWeekCourses:
+          json['timetableShowCurrentWeekCourses'] as bool? ?? true,
+      timetableShowNonCurrentWeekCourses:
+          json['timetableShowNonCurrentWeekCourses'] as bool? ?? false,
       showConflictBadgeOnTimetable:
           json['showConflictBadgeOnTimetable'] as bool? ?? true,
       timetableConflictCourseOpacity:
@@ -975,6 +987,8 @@ class TimetableSettings {
     bool? timetableAutoFitSectionHeight,
     int? semesterWeekCount,
     DateTime? semesterStartDate,
+    bool? timetableShowCurrentWeekCourses,
+    bool? timetableShowNonCurrentWeekCourses,
     bool? showConflictBadgeOnTimetable,
     double? timetableConflictCourseOpacity,
     bool? courseCardShowName,
@@ -1058,6 +1072,10 @@ class TimetableSettings {
           timetableAutoFitSectionHeight ?? this.timetableAutoFitSectionHeight,
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
+      timetableShowCurrentWeekCourses: timetableShowCurrentWeekCourses ??
+          this.timetableShowCurrentWeekCourses,
+      timetableShowNonCurrentWeekCourses: timetableShowNonCurrentWeekCourses ??
+          this.timetableShowNonCurrentWeekCourses,
       showConflictBadgeOnTimetable:
           showConflictBadgeOnTimetable ?? this.showConflictBadgeOnTimetable,
       timetableConflictCourseOpacity: (timetableConflictCourseOpacity ??
