@@ -20,12 +20,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  final AppUpdateService _updateService = AppUpdateService();
-  final AppAnalytics _analytics = AppAnalytics.instance;
   PackageInfo? _packageInfo;
-  Future<AppUpdateCheckResult>? _updateFuture;
-  bool _isDownloading = false;
-  double _downloadProgress = 0.0;
 
   @override
   void initState() {
@@ -34,18 +29,12 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _loadPackageInfo() async {
-    final includePrerelease =
-        context.read<TimetableProvider>().settings.appUpdateIncludePrerelease;
     final info = await PackageInfo.fromPlatform();
     if (!mounted) {
       return;
     }
     setState(() {
       _packageInfo = info;
-      _updateFuture = _updateService.checkForUpdates(
-        currentVersion: info.version,
-        includePrerelease: includePrerelease,
-      );
     });
   }
 
@@ -65,8 +54,6 @@ class _AboutScreenState extends State<AboutScreen> {
       appBar: AppBar(
         title: const Text('关于软件'),
       ),
-      bottomNavigationBar:
-          _isDownloading ? _buildDownloadProgressBar(theme) : null,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -122,100 +109,24 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '一个面向课表查看、课程管理和实时提醒的开源项目。HyperOS 3.0.300 起支持超级岛展示。',
+                    '一个围绕课表查看、课程提醒和 HyperOS 超级岛体验打磨的 Android 开源项目。',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _buildUpdateCard(theme, settings),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '项目定位',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
-                  const _AboutBullet(
-                      text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示'),
-                  const _AboutBullet(text: '支持主题色、课表背景和卡片样式自定义'),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '目前怎么导入课表',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  const _AboutBullet(
-                    text: '当前版本还没有直接连接教务系统导入。',
-                  ),
-                  const _AboutBullet(
-                    text:
-                        '如果你要从教务系统导入，建议先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。',
-                  ),
-                  const _AboutBullet(
-                    text: '如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '开源仓库',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    AppUpdateService.repositoryUrl,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
+                    alignment: WrapAlignment.center,
                     children: [
-                      FilledButton.icon(
-                        onPressed: _openRepository,
-                        icon: const Icon(Icons.open_in_new_rounded),
-                        label: const Text('打开 GitHub'),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: _copyRepositoryUrl,
-                        icon: const Icon(Icons.copy_all_rounded),
-                        label: const Text('复制地址'),
+                      _buildInfoChip(theme, label: '平台', value: 'Android'),
+                      _buildInfoChip(theme, label: '重点', value: 'HyperOS'),
+                      _buildInfoChip(
+                        theme,
+                        label: '更新',
+                        value: settings.appUpdateIncludePrerelease
+                            ? '含预发布'
+                            : '正式版',
                       ),
                     ],
                   ),
@@ -223,6 +134,274 @@ class _AboutScreenState extends State<AboutScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: Column(
+              children: [
+                _AboutNavTile(
+                  icon: Icons.system_update_alt_rounded,
+                  title: '版本更新',
+                  subtitle: '检查更新、下载源、镜像源、预发布和诊断',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AboutUpdateScreen(
+                          packageInfo: _packageInfo,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _AboutNavTile(
+                  icon: Icons.flag_outlined,
+                  title: '项目定位',
+                  subtitle: '这是什么、适合谁、核心能力是什么',
+                  onTap: () {
+                    _showInfoSheet(
+                      context,
+                      title: '项目定位',
+                      children: const [
+                        _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
+                        _AboutBullet(
+                          text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示',
+                        ),
+                        _AboutBullet(
+                          text: '支持多课表、时间模板、主题色和卡片样式自定义',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _AboutNavTile(
+                  icon: Icons.import_export_rounded,
+                  title: '导入与迁移',
+                  subtitle: '当前导入方式、备份恢复和迁移建议',
+                  onTap: () {
+                    _showInfoSheet(
+                      context,
+                      title: '导入与迁移',
+                      children: const [
+                        _AboutBullet(text: '当前版本还没有直接连接教务系统导入。'),
+                        _AboutBullet(
+                          text:
+                              '如果你要从教务系统导入，建议先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。',
+                        ),
+                        _AboutBullet(
+                          text:
+                              '如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。',
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _AboutNavTile(
+                  icon: Icons.code_rounded,
+                  title: '开源仓库',
+                  subtitle: 'GitHub 仓库地址、源码、Release 和反馈入口',
+                  onTap: () {
+                    _showRepositorySheet(context, theme);
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoSheet(
+    BuildContext context, {
+    required String title,
+    required List<Widget> children,
+  }) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+                const SizedBox(height: 16),
+                ...children,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRepositorySheet(BuildContext context, ThemeData theme) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        final colorScheme = theme.colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '开源仓库',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  AppUpdateService.repositoryUrl,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _openRepository,
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text('打开 GitHub'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _copyRepositoryUrl,
+                        icon: const Icon(Icons.copy_all_rounded),
+                        label: const Text('复制地址'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildInfoChip(
+    ThemeData theme, {
+    required String label,
+    required String value,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openRepository() async {
+    final uri = Uri.tryParse(AppUpdateService.repositoryUrl);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _copyRepositoryUrl() async {
+    await Clipboard.setData(
+      const ClipboardData(text: AppUpdateService.repositoryUrl),
+    );
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已复制仓库地址')),
+    );
+  }
+}
+
+class AboutUpdateScreen extends StatefulWidget {
+  final PackageInfo? packageInfo;
+
+  const AboutUpdateScreen({
+    super.key,
+    required this.packageInfo,
+  });
+
+  @override
+  State<AboutUpdateScreen> createState() => _AboutUpdateScreenState();
+}
+
+class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
+  final AppUpdateService _updateService = AppUpdateService();
+  final AppAnalytics _analytics = AppAnalytics.instance;
+  Future<AppUpdateCheckResult>? _updateFuture;
+  bool _isDownloading = false;
+  double _downloadProgress = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshUpdate();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final settings =
+        context.select<TimetableProvider, TimetableSettings>((provider) {
+      return provider.settings;
+    });
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('版本更新'),
+      ),
+      bottomNavigationBar:
+          _isDownloading ? _buildDownloadProgressBar(theme) : null,
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _buildUpdateCard(theme, settings),
           const SizedBox(height: 16),
           _buildTesterOptionsCard(theme, settings),
         ],
@@ -235,347 +414,265 @@ class _AboutScreenState extends State<AboutScreen> {
     final downloadSource = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
     );
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '检查更新',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: '重新检查',
-                  onPressed: _packageInfo == null ? null : _refreshUpdate,
-                  icon: const Icon(Icons.refresh_rounded),
-                ),
-              ],
+    return FutureBuilder<AppUpdateCheckResult>(
+      future: _updateFuture,
+      builder: (context, snapshot) {
+        if (widget.packageInfo == null ||
+            snapshot.connectionState == ConnectionState.waiting) {
+          return _buildUpdateSectionCard(
+            theme,
+            title: '检查更新',
+            trailing: IconButton(
+              tooltip: '重新检查',
+              onPressed: widget.packageInfo == null ? null : _refreshUpdate,
+              icon: const Icon(Icons.refresh_rounded),
             ),
-            const SizedBox(height: 8),
-            FutureBuilder<AppUpdateCheckResult>(
-              future: _updateFuture,
-              builder: (context, snapshot) {
-                if (_packageInfo == null ||
-                    snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: LinearProgressIndicator(minHeight: 3),
-                  );
-                }
+            child: const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(minHeight: 3),
+            ),
+          );
+        }
 
-                final result = snapshot.data;
-                if (result == null) {
-                  return Text(
-                    '暂时无法读取更新信息',
-                    style: theme.textTheme.bodyMedium,
-                  );
-                }
+        final result = snapshot.data;
+        if (result == null) {
+          return _buildUpdateSectionCard(
+            theme,
+            title: '检查更新',
+            trailing: IconButton(
+              tooltip: '重新检查',
+              onPressed: widget.packageInfo == null ? null : _refreshUpdate,
+              icon: const Icon(Icons.refresh_rounded),
+            ),
+            child: Text(
+              '暂时无法读取更新信息',
+              style: theme.textTheme.bodyMedium,
+            ),
+          );
+        }
 
-                final release = result.latestRelease;
-                final updateColor = result.hasUpdate
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant;
-                final originalDownloadUrl = release?.downloadUrl;
-                final effectiveDownloadUrl = originalDownloadUrl == null
-                    ? null
-                    : _updateService.buildDownloadUrl(
-                        originalUrl: originalDownloadUrl,
-                        source: downloadSource,
-                        mirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-                      );
-                final isAndroid =
-                    defaultTargetPlatform == TargetPlatform.android;
-                final primaryButtonLabel = effectiveDownloadUrl == null
-                    ? '查看 Release'
-                    : isAndroid
-                        ? downloadSource == AppUpdateDownloadSource.mirror
-                            ? '应用内下载（镜像）'
-                            : '应用内下载'
-                        : downloadSource == AppUpdateDownloadSource.mirror
-                            ? '打开镜像下载'
-                            : '打开下载地址';
+        final release = result.latestRelease;
+        final updateColor = result.hasUpdate
+            ? colorScheme.primary
+            : colorScheme.onSurfaceVariant;
+        final originalDownloadUrl = release?.downloadUrl;
+        final effectiveDownloadUrl = originalDownloadUrl == null
+            ? null
+            : _updateService.buildDownloadUrl(
+                originalUrl: originalDownloadUrl,
+                source: downloadSource,
+                mirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+              );
+        final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+        final primaryButtonLabel = effectiveDownloadUrl == null
+            ? '查看 Release'
+            : isAndroid
+                ? downloadSource == AppUpdateDownloadSource.mirror
+                    ? '应用内下载（镜像）'
+                    : '应用内下载'
+                : downloadSource == AppUpdateDownloadSource.mirror
+                    ? '打开镜像下载'
+                    : '打开下载地址';
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: updateColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        result.message ?? '',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: updateColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+        return Column(
+          children: [
+            _buildUpdateSectionCard(
+              theme,
+              title: '检查更新',
+              trailing: IconButton(
+                tooltip: '重新检查',
+                onPressed: widget.packageInfo == null ? null : _refreshUpdate,
+                icon: const Icon(Icons.refresh_rounded),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _buildInfoChip(
-                          theme,
-                          label: '当前版本',
-                          value: result.currentVersion,
-                        ),
-                        _buildInfoChip(
-                          theme,
-                          label: '最新版本',
-                          value: release?.version ?? '未发布',
-                        ),
-                        if (release?.isPrerelease == true)
-                          _buildInfoChip(
-                            theme,
-                            label: '发布类型',
-                            value: '预发布',
-                          ),
-                      ],
+                    decoration: BoxDecoration(
+                      color: updateColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
                     ),
-                    if (release?.updatedAt != null) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        '更新时间：${_formatDateTime(release!.updatedAt!)}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '下载方式',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            isAndroid
-                                ? '支持应用内直接下载，也可以跳转到 Release 页面。'
-                                : '当前平台不支持应用内安装，会直接打开下载地址。',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.icon(
-                                  onPressed: result.hasRelease
-                                      ? () {
-                                          if (effectiveDownloadUrl != null &&
-                                              isAndroid) {
-                                            _downloadAndInstall(
-                                                effectiveDownloadUrl);
-                                          } else {
-                                            _openUrl(effectiveDownloadUrl ??
-                                                release?.releaseUrl);
-                                          }
-                                        }
-                                      : null,
-                                  icon: Icon(
-                                    isAndroid
-                                        ? Icons.download_rounded
-                                        : Icons.open_in_new_rounded,
-                                  ),
-                                  label: Text(primaryButtonLabel),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: FilledButton.tonalIcon(
-                                  onPressed: result.hasRelease
-                                      ? () => _openUrl(release?.releaseUrl)
-                                      : null,
-                                  icon: const Icon(
-                                    Icons.new_releases_outlined,
-                                  ),
-                                  label: const Text('打开 Release 页面'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '下载源',
-                      style: theme.textTheme.titleSmall?.copyWith(
+                    child: Text(
+                      result.message ?? '',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: updateColor,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildUpdateInfoChip(
+                        theme,
+                        label: '当前版本',
+                        value: result.currentVersion,
+                      ),
+                      _buildUpdateInfoChip(
+                        theme,
+                        label: '最新版本',
+                        value: release?.version ?? '未发布',
+                      ),
+                      if (release?.isPrerelease == true)
+                        _buildUpdateInfoChip(
+                          theme,
+                          label: '发布类型',
+                          value: '预发布',
+                        ),
+                    ],
+                  ),
+                  if (release?.updatedAt != null) ...[
+                    const SizedBox(height: 10),
                     Text(
-                      '原版直接使用 GitHub 地址；镜像会在原地址前加你设置的镜像前缀。',
+                      '更新时间：${_formatDateTime(release!.updatedAt!)}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    SegmentedButton<AppUpdateDownloadSource>(
-                      segments: AppUpdateDownloadSource.values
-                          .map(
-                            (item) => ButtonSegment<AppUpdateDownloadSource>(
-                              value: item,
-                              label: Text(item.label),
-                            ),
-                          )
-                          .toList(),
-                      selected: {downloadSource},
-                      onSelectionChanged: (selection) {
-                        final nextSource = selection.first;
-                        _updateDownloadSource(nextSource);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.5,
-                          ),
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '镜像源设置',
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          SelectableText(
-                            settings.appUpdateMirrorUrlPrefix,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              FilledButton.tonalIcon(
-                                onPressed: _editMirrorUrlPrefix,
-                                icon: const Icon(Icons.edit_outlined),
-                                label: const Text('修改镜像源'),
-                              ),
-                            ],
-                          ),
-                          if (downloadSource ==
-                                  AppUpdateDownloadSource.mirror &&
-                              (effectiveDownloadUrl ?? '').isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            Text(
-                              '当前镜像下载地址',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surface,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: SelectableText(
-                                effectiveDownloadUrl!,
-                                style: theme.textTheme.bodySmall,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    if ((release?.body ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: colorScheme.outlineVariant.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '本次更新日志',
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '向下滚动可以查看完整日志。',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              release!.body.trim(),
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
                   ],
-                );
-              },
+                ],
+              ),
             ),
+            const SizedBox(height: 16),
+            _buildUpdateSectionCard(
+              theme,
+              title: '下载与打开',
+              subtitle: isAndroid
+                  ? '优先支持应用内下载，也可以直接跳转到 Release 页面。'
+                  : '当前平台不支持应用内安装，会直接打开下载地址。',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FilledButton.icon(
+                    onPressed: result.hasRelease
+                        ? () {
+                            if (effectiveDownloadUrl != null && isAndroid) {
+                              _downloadAndInstall(effectiveDownloadUrl);
+                            } else {
+                              _openUrl(effectiveDownloadUrl ?? release?.releaseUrl);
+                            }
+                          }
+                        : null,
+                    icon: Icon(
+                      isAndroid
+                          ? Icons.download_rounded
+                          : Icons.open_in_new_rounded,
+                    ),
+                    label: Text(primaryButtonLabel),
+                  ),
+                  const SizedBox(height: 10),
+                  FilledButton.tonalIcon(
+                    onPressed:
+                        result.hasRelease ? () => _openUrl(release?.releaseUrl) : null,
+                    icon: const Icon(Icons.new_releases_outlined),
+                    label: const Text('打开 Release 页面'),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildUpdateSectionCard(
+              theme,
+              title: '下载源',
+              subtitle: '原版直接使用 GitHub 地址；镜像会在原地址前加你设置的镜像前缀。',
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SegmentedButton<AppUpdateDownloadSource>(
+                    segments: AppUpdateDownloadSource.values
+                        .map(
+                          (item) => ButtonSegment<AppUpdateDownloadSource>(
+                            value: item,
+                            label: Text(item.label),
+                          ),
+                        )
+                        .toList(),
+                    selected: {downloadSource},
+                    onSelectionChanged: (selection) {
+                      final nextSource = selection.first;
+                      _updateDownloadSource(nextSource);
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '镜像源前缀',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SelectableText(
+                          settings.appUpdateMirrorUrlPrefix,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        FilledButton.tonalIcon(
+                          onPressed: _editMirrorUrlPrefix,
+                          icon: const Icon(Icons.edit_outlined),
+                          label: const Text('修改镜像源'),
+                        ),
+                        if (downloadSource == AppUpdateDownloadSource.mirror &&
+                            (effectiveDownloadUrl ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            '当前镜像下载地址',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: colorScheme.surface,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: SelectableText(
+                              effectiveDownloadUrl!,
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if ((release?.body ?? '').isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _buildUpdateSectionCard(
+                theme,
+                title: '本次更新日志',
+                subtitle: '显示当前检测到版本的 Release 说明。',
+                child: Text(
+                  release!.body.trim(),
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+            ],
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -606,7 +703,7 @@ class _AboutScreenState extends State<AboutScreen> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               value: settings.appUpdateIncludePrerelease,
-              onChanged: _packageInfo == null
+              onChanged: widget.packageInfo == null
                   ? null
                   : (value) => _updatePrereleasePreference(value),
               title: const Text('检测预发布版本'),
@@ -615,7 +712,7 @@ class _AboutScreenState extends State<AboutScreen> {
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
               value: settings.liveEnableLocalDiagnostics,
-              onChanged: _packageInfo == null
+              onChanged: widget.packageInfo == null
                   ? null
                   : (value) => _updateLiveDiagnosticsPreference(value),
               title: const Text('超级岛诊断日志'),
@@ -645,27 +742,6 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Future<void> _openRepository() async {
-    _analytics.logEventLater(name: 'repository_opened');
-    final uri = Uri.tryParse(AppUpdateService.repositoryUrl);
-    if (uri == null) {
-      return;
-    }
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> _copyRepositoryUrl() async {
-    await Clipboard.setData(
-      const ClipboardData(text: AppUpdateService.repositoryUrl),
-    );
-    if (!mounted) {
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已复制仓库地址')),
-    );
-  }
-
   Future<void> _openUrl(String? url) async {
     final uri = Uri.tryParse(url ?? '');
     if (uri == null) {
@@ -675,13 +751,13 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   void _refreshUpdate() {
-    if (_packageInfo == null) {
+    if (widget.packageInfo == null) {
       return;
     }
     _analytics.logEventLater(name: 'update_check_requested');
     setState(() {
       _updateFuture = _updateService.checkForUpdates(
-        currentVersion: _packageInfo!.version,
+        currentVersion: widget.packageInfo!.version,
         includePrerelease:
             context.read<TimetableProvider>().settings.appUpdateIncludePrerelease,
       );
@@ -894,7 +970,7 @@ class _AboutScreenState extends State<AboutScreen> {
     return '$year-$month-$day $hour:$minute';
   }
 
-  Widget _buildInfoChip(
+  Widget _buildUpdateInfoChip(
     ThemeData theme, {
     required String label,
     required String value,
@@ -924,6 +1000,49 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildUpdateSectionCard(
+    ThemeData theme, {
+    required String title,
+    String? subtitle,
+    Widget? trailing,
+    required Widget child,
+  }) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing,
+              ],
+            ),
+            if (subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            child,
+          ],
+        ),
       ),
     );
   }
@@ -986,6 +1105,31 @@ class _AboutScreenState extends State<AboutScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _AboutNavTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AboutNavTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right_rounded),
+      onTap: onTap,
     );
   }
 }
