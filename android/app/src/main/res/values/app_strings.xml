@@ -1,0 +1,4 @@
+<resources>
+    <string name="accessibility_keep_alive_label">轻屿课表后台保活服务</string>
+    <string name="accessibility_keep_alive_description">轻屿课表用于提升超级岛与提醒在后台场景下稳定性的辅助服务，不会读取页面内容或执行自动操作。</string>
+</resources>

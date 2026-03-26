@@ -26,6 +26,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
   bool _hasPromotedPermission = false;
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
+  bool _isKeepAliveAccessibilityEnabled = false;
   bool _isNearBottom = false;
   late bool _privacyChecked;
   int _androidVersion = 0;
@@ -70,6 +71,8 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
         await _service.checkNotificationPermission();
     final isIgnoringBatteryOptimizations =
         await _service.isIgnoringBatteryOptimizations();
+    final isKeepAliveAccessibilityEnabled =
+        await _service.isKeepAliveAccessibilityEnabled();
 
     if (!mounted) {
       return;
@@ -82,6 +85,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
       _hasPromotedPermission = promotedSupport['hasPromotedPermission'] == true;
       _canPostPromoted = promotedSupport['canPostPromoted'] == true;
       _isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations;
+      _isKeepAliveAccessibilityEnabled = isKeepAliveAccessibilityEnabled;
       _isLoading = false;
     });
   }
@@ -287,7 +291,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '先把最关键的 4 个入口放在前面，不用翻到下面再找。',
+              '先把最关键的 5 个入口放在前面，不用翻到下面再找。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
@@ -323,6 +327,12 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                   subtitle: '避免提醒中断',
                   onTap: () =>
                       _runAction(_service.openBatteryOptimizationSettings),
+                ),
+                _buildQuickActionButton(
+                  icon: Icons.accessibility_new_rounded,
+                  title: '后台保活辅助',
+                  subtitle: '提升后台稳定性',
+                  onTap: () => _runAction(_service.openAccessibilitySettings),
                 ),
               ],
             ),
@@ -369,6 +379,12 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
                 title: '电池优化',
                 value: _isIgnoringBatteryOptimizations ? '无限制' : '仍受限制',
                 success: _isIgnoringBatteryOptimizations,
+              ),
+              _buildStatusTile(
+                icon: Icons.accessibility_new_rounded,
+                title: '后台保活辅助',
+                value: _isKeepAliveAccessibilityEnabled ? '已开启' : '未开启',
+                success: _isKeepAliveAccessibilityEnabled,
               ),
               _buildStatusTile(
                 icon: Icons.phone_android_outlined,
@@ -451,6 +467,13 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
               title: '打开电池策略设置',
               subtitle: '建议改成无限制，避免上课提醒被中断',
               onTap: () => _runAction(_service.openBatteryOptimizationSettings),
+            ),
+            _buildChecklistTile(
+              step: '6',
+              icon: Icons.accessibility_new_rounded,
+              title: '打开后台保活辅助',
+              subtitle: '进一步提升超级岛和提醒在后台场景下的稳定性',
+              onTap: () => _runAction(_service.openAccessibilitySettings),
             ),
           ],
         ),

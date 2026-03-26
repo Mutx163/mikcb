@@ -59,7 +59,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
-        disableDeprecatedHideFromRecents()
+        applyPersistedHideFromRecents()
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -101,8 +101,17 @@ class MainActivity : FlutterActivity() {
                         openBatteryOptimizationSettings()
                         result.success(true)
                     }
+                    "openAccessibilitySettings" -> {
+                        openAccessibilitySettings()
+                        result.success(true)
+                    }
+                    "isKeepAliveAccessibilityEnabled" -> {
+                        result.success(isKeepAliveAccessibilityEnabled())
+                    }
                     "setHideFromRecents" -> {
-                        disableDeprecatedHideFromRecents()
+                        val hidden = call.arguments as? Boolean ?: false
+                        persistHideFromRecents(hidden)
+                        setHideFromRecents(hidden)
                         result.success(true)
                     }
 
@@ -485,9 +494,13 @@ class MainActivity : FlutterActivity() {
             .apply()
     }
 
-    private fun disableDeprecatedHideFromRecents() {
-        persistHideFromRecents(false)
-        setHideFromRecents(false)
+    private fun isHideFromRecentsEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_HIDE_FROM_RECENTS, false)
+    }
+
+    private fun applyPersistedHideFromRecents() {
+        setHideFromRecents(isHideFromRecentsEnabled())
     }
 
     private fun setHideFromRecents(hidden: Boolean) {
@@ -503,6 +516,34 @@ class MainActivity : FlutterActivity() {
             Log.w("MainActivity", "Failed to update recents visibility", e)
         }
     }
+
+    private fun openAccessibilitySettings() {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            startActivity(fallbackIntent)
+        }
+    }
+
+    private fun isKeepAliveAccessibilityEnabled(): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val expectedComponent = ComponentName(
+            this,
+            KeepAliveAccessibilityService::class.java
+        ).flattenToString()
+        return enabledServices
+            .split(':')
+            .any { it.equals(expectedComponent, ignoreCase = true) }
+    }
 }
 
 class LiveUpdateService : Service() {
@@ -511,6 +552,8 @@ class LiveUpdateService : Service() {
         private const val CHANNEL_ID = "live_update_channel"
         private const val NOTIFICATION_ID = 2001
         private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
+        private const val PREFS_NAME = "native_runtime_prefs"
+        private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -688,6 +731,7 @@ class LiveUpdateService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
+        val keepAliveExperimentEnabled = isTaskRemovalKeepAliveEnabled()
         getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
             .edit()
             .putLong("last_task_removed_at", System.currentTimeMillis())
@@ -699,10 +743,38 @@ class LiveUpdateService : Service() {
             extras = mapOf(
                 "courseName" to courseName,
                 "stage" to activityStage,
+                "keepAliveExperimentEnabled" to keepAliveExperimentEnabled,
+                "hideFromRecentsEnabled" to isHideFromRecentsEnabled(),
+                "keepAliveAccessibilityEnabled" to isKeepAliveAccessibilityEnabled(),
             )
         )
-        stopAndRemoveNotification()
+        if (!keepAliveExperimentEnabled) {
+            stopAndRemoveNotification()
+        }
         super.onTaskRemoved(rootIntent)
+    }
+
+    private fun isTaskRemovalKeepAliveEnabled(): Boolean {
+        return isHideFromRecentsEnabled() || isKeepAliveAccessibilityEnabled()
+    }
+
+    private fun isHideFromRecentsEnabled(): Boolean {
+        return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getBoolean(KEY_HIDE_FROM_RECENTS, false)
+    }
+
+    private fun isKeepAliveAccessibilityEnabled(): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val expectedComponent = ComponentName(
+            this,
+            KeepAliveAccessibilityService::class.java
+        ).flattenToString()
+        return enabledServices
+            .split(':')
+            .any { it.equals(expectedComponent, ignoreCase = true) }
     }
 
     private fun startTicker() {
