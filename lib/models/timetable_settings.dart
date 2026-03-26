@@ -431,6 +431,7 @@ class TimetableSettings {
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
   final bool showConflictBadgeOnTimetable;
+  final double timetableConflictCourseOpacity;
   final bool courseCardShowName;
   final bool courseCardShowTeacher;
   final bool courseCardShowLocation;
@@ -510,6 +511,7 @@ class TimetableSettings {
     this.semesterWeekCount = 20,
     this.semesterStartDate,
     this.showConflictBadgeOnTimetable = true,
+    this.timetableConflictCourseOpacity = 0.72,
     this.courseCardShowName = true,
     this.courseCardShowTeacher = true,
     this.courseCardShowLocation = true,
@@ -608,6 +610,7 @@ class TimetableSettings {
       semesterWeekCount: 20,
       semesterStartDate: null,
       showConflictBadgeOnTimetable: true,
+      timetableConflictCourseOpacity: 0.72,
       courseCardShowName: true,
       courseCardShowTeacher: true,
       courseCardShowLocation: true,
@@ -692,6 +695,7 @@ class TimetableSettings {
       'semesterWeekCount': semesterWeekCount,
       'semesterStartDate': semesterStartDate?.millisecondsSinceEpoch,
       'showConflictBadgeOnTimetable': showConflictBadgeOnTimetable,
+      'timetableConflictCourseOpacity': timetableConflictCourseOpacity,
       'courseCardShowName': courseCardShowName,
       'courseCardShowTeacher': courseCardShowTeacher,
       'courseCardShowLocation': courseCardShowLocation,
@@ -800,6 +804,9 @@ class TimetableSettings {
           : null,
       showConflictBadgeOnTimetable:
           json['showConflictBadgeOnTimetable'] as bool? ?? true,
+      timetableConflictCourseOpacity:
+          ((json['timetableConflictCourseOpacity'] as num?)?.toDouble() ?? 0.72)
+              .clamp(0.2, 1.0),
       courseCardShowName: json['courseCardShowName'] as bool? ?? true,
       courseCardShowTeacher: json['courseCardShowTeacher'] as bool? ?? true,
       courseCardShowLocation: json['courseCardShowLocation'] as bool? ?? true,
@@ -969,6 +976,7 @@ class TimetableSettings {
     int? semesterWeekCount,
     DateTime? semesterStartDate,
     bool? showConflictBadgeOnTimetable,
+    double? timetableConflictCourseOpacity,
     bool? courseCardShowName,
     bool? courseCardShowTeacher,
     bool? courseCardShowLocation,
@@ -1052,6 +1060,9 @@ class TimetableSettings {
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
       showConflictBadgeOnTimetable:
           showConflictBadgeOnTimetable ?? this.showConflictBadgeOnTimetable,
+      timetableConflictCourseOpacity: (timetableConflictCourseOpacity ??
+              this.timetableConflictCourseOpacity)
+          .clamp(0.2, 1.0),
       courseCardShowName: courseCardShowName ?? this.courseCardShowName,
       courseCardShowTeacher:
           courseCardShowTeacher ?? this.courseCardShowTeacher,

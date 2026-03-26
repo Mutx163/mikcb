@@ -333,9 +333,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ) {
     final visibleDays = _visibleDayNumbers(settings);
     final dayWidth = (availableWidth - _timeColumnWidth) / visibleDays.length;
-    final conflictMap = settings.showConflictBadgeOnTimetable
-        ? provider.courseConflictMapForWeek(week)
-        : const <String, List<Course>>{};
+    final conflictMap = provider.courseConflictMapForWeek(week);
 
     return SizedBox(
       key: ValueKey<int>(week),
@@ -370,6 +368,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   dayCourses,
                   settings,
                   conflictMap,
+                  settings.showConflictBadgeOnTimetable,
                   sectionHeight,
                 ),
               );
@@ -446,6 +445,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     List<Course> courses,
     TimetableSettings settings,
     Map<String, List<Course>> conflictMap,
+    bool showConflictBadge,
     double sectionHeight,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -462,7 +462,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         sectionIndex < settings.sectionCount;
         sectionIndex++) {
       final section = sectionIndex + 1;
-      final course = _findCourseForSection(courses, section);
+      final startingCourses = _getCoursesStartingAtSection(courses, section);
 
       gridLines.add(
         Positioned(
@@ -477,33 +477,39 @@ class _TimetableScreenState extends State<TimetableScreen> {
         ),
       );
 
-      if (course != null && section == course.startSection) {
+      for (final course in startingCourses) {
+        final overlapInsets = _resolveConflictInsets(courses, course);
+        final isConflicting = conflictMap.containsKey(course.id);
         courseCards.add(
           Positioned(
             top: sectionIndex * sectionHeight,
-            left: 2,
-            right: 2,
+            left: 2 + overlapInsets.$1,
+            right: 2 + overlapInsets.$2,
             height: course.sectionCount * sectionHeight - 4,
-            child: CourseCard(
-              course: course,
-              overrideColorHex: overrideCardColor,
-              topRightBadgeText:
-                  conflictMap.containsKey(course.id) ? '冲突' : null,
-              isCompact: true,
-              showName: settings.courseCardShowName,
-              showTeacher: settings.courseCardShowTeacher,
-              showLocation: settings.courseCardShowLocation,
-              showTime: settings.courseCardShowTime,
-              showTimeLabels: settings.courseCardShowTimeLabels,
-              showWeeks: settings.courseCardShowWeeks,
-              showDescription: settings.courseCardShowDescription,
-              verticalAlign: settings.courseCardVerticalAlign,
-              horizontalAlign: settings.courseCardHorizontalAlign,
-              onTap: () => _editCourse(course),
-              compactTitleFontSize: settings.compactFontSize,
-              compactSubtitleFontSize:
-                  (settings.compactFontSize - 1).clamp(7.0, 14.0),
-              compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
+            child: Opacity(
+              opacity:
+                  isConflicting ? settings.timetableConflictCourseOpacity : 1,
+              child: CourseCard(
+                course: course,
+                overrideColorHex: overrideCardColor,
+                topRightBadgeText:
+                    isConflicting && showConflictBadge ? '冲突' : null,
+                isCompact: true,
+                showName: settings.courseCardShowName,
+                showTeacher: settings.courseCardShowTeacher,
+                showLocation: settings.courseCardShowLocation,
+                showTime: settings.courseCardShowTime,
+                showTimeLabels: settings.courseCardShowTimeLabels,
+                showWeeks: settings.courseCardShowWeeks,
+                showDescription: settings.courseCardShowDescription,
+                verticalAlign: settings.courseCardVerticalAlign,
+                horizontalAlign: settings.courseCardHorizontalAlign,
+                onTap: () => _editCourse(course),
+                compactTitleFontSize: settings.compactFontSize,
+                compactSubtitleFontSize:
+                    (settings.compactFontSize - 1).clamp(7.0, 14.0),
+                compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
+              ),
             ),
           ),
         );
@@ -613,13 +619,44 @@ class _TimetableScreenState extends State<TimetableScreen> {
     await _jumpToWeek(provider, selectedWeek);
   }
 
-  Course? _findCourseForSection(List<Course> courses, int section) {
-    for (final course in courses) {
-      if (section >= course.startSection && section <= course.endSection) {
-        return course;
-      }
+  List<Course> _getCoursesStartingAtSection(List<Course> courses, int section) {
+    return courses.where((course) => course.startSection == section).toList();
+  }
+
+  (double, double) _resolveConflictInsets(List<Course> courses, Course course) {
+    final overlappingCourses = courses
+        .where((other) => _coursesOverlapInLayout(course, other))
+        .toList()
+      ..sort((left, right) {
+        final startCompare = left.startSection.compareTo(right.startSection);
+        if (startCompare != 0) return startCompare;
+        final endCompare = left.endSection.compareTo(right.endSection);
+        if (endCompare != 0) return endCompare;
+        return left.id.compareTo(right.id);
+      });
+
+    if (overlappingCourses.length <= 1) {
+      return (0, 0);
     }
-    return null;
+
+    final index = overlappingCourses.indexWhere((item) => item.id == course.id);
+    if (index < 0) {
+      return (0, 0);
+    }
+
+    const overlapOffset = 8.0;
+    return (
+      index * overlapOffset,
+      (overlappingCourses.length - index - 1) * overlapOffset,
+    );
+  }
+
+  bool _coursesOverlapInLayout(Course left, Course right) {
+    if (left.id == right.id) {
+      return true;
+    }
+    return !(left.endSection < right.startSection ||
+        right.endSection < left.startSection);
   }
 
   List<Course> _getCoursesForDay(

@@ -82,4 +82,59 @@ void main() {
 
     expect(find.text('冲突'), findsNothing);
   });
+
+  testWidgets('home timetable renders overlapping conflict courses together',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '软件工程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '计算机网络',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 1,
+        startSection: 2,
+        endSection: 3,
+        startTime: '08:55',
+        endTime: '10:35',
+      ),
+    );
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        showConflictBadgeOnTimetable: false,
+        timetableConflictCourseOpacity: 0.6,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('软件工程'), findsOneWidget);
+    expect(find.text('计算机网络'), findsOneWidget);
+  });
 }

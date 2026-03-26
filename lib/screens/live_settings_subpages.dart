@@ -220,6 +220,27 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
+                  value: _draft.liveDuringEndTimeDisplayMode,
+                  decoration: const InputDecoration(
+                    labelText: '课中 / 下课提醒时间样式',
+                    helperText: '控制紧凑提醒里显示最近时间还是整段总时间',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: LiveDuringClassTimeDisplayMode.values
+                      .map((value) => DropdownMenuItem(
+                            value: value,
+                            child: Text(value.label),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) return;
+                    _updateDraft(
+                      _draft.copyWith(liveDuringEndTimeDisplayMode: value),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -349,27 +370,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               value: display.hidePrefixText,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(hidePrefixText: value)),
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
-              value: display.duringClassTimeDisplayMode,
-              decoration: const InputDecoration(
-                labelText: '紧凑提醒时间样式',
-                helperText: '只影响超级岛/紧凑提醒，展开内容保持完整',
-                border: OutlineInputBorder(),
-              ),
-              items: LiveDuringClassTimeDisplayMode.values
-                  .map((value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.label),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                _updateDisplay(
-                  display.copyWith(duringClassTimeDisplayMode: value),
-                );
-              },
             ),
           ],
         ),
