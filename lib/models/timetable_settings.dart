@@ -50,6 +50,12 @@ enum MiuiIslandExpandedIconMode {
   hidden,
 }
 
+enum LiveBeforeClassQuickAction {
+  none,
+  silent,
+  doNotDisturb,
+}
+
 extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
   String get value => switch (this) {
         SectionTimeDisplayMode.hidden => 'hidden',
@@ -209,6 +215,27 @@ extension MiuiIslandExpandedIconModeX on MiuiIslandExpandedIconMode {
     return MiuiIslandExpandedIconMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => MiuiIslandExpandedIconMode.appIcon,
+    );
+  }
+}
+
+extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
+  String get value => switch (this) {
+        LiveBeforeClassQuickAction.none => 'none',
+        LiveBeforeClassQuickAction.silent => 'silent',
+        LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
+      };
+
+  String get label => switch (this) {
+        LiveBeforeClassQuickAction.none => '不显示',
+        LiveBeforeClassQuickAction.silent => '打开静音',
+        LiveBeforeClassQuickAction.doNotDisturb => '打开免打扰',
+      };
+
+  static LiveBeforeClassQuickAction fromValue(String? value) {
+    return LiveBeforeClassQuickAction.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => LiveBeforeClassQuickAction.none,
     );
   }
 }
@@ -496,6 +523,8 @@ class TimetableSettings {
   final int liveShowBeforeClassMinutes;
   final int liveClassReminderStartMinutes;
   final int liveEndSecondsCountdownThreshold;
+  final int liveTimeCorrectionSeconds;
+  final LiveBeforeClassQuickAction liveBeforeClassQuickAction;
   final String themeSeedColor;
   final String timetablePageBackgroundColor;
   final bool timetableUseUnifiedCardColor;
@@ -584,6 +613,8 @@ class TimetableSettings {
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
+    this.liveTimeCorrectionSeconds = 0,
+    this.liveBeforeClassQuickAction = LiveBeforeClassQuickAction.none,
     this.themeSeedColor = '#2563EB',
     this.timetablePageBackgroundColor = '#F8FAFC',
     this.timetableUseUnifiedCardColor = false,
@@ -681,6 +712,8 @@ class TimetableSettings {
       liveShowBeforeClassMinutes: 20,
       liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
+      liveTimeCorrectionSeconds: 0,
+      liveBeforeClassQuickAction: LiveBeforeClassQuickAction.none,
       themeSeedColor: '#2563EB',
       timetablePageBackgroundColor: '#F8FAFC',
       timetableUseUnifiedCardColor: false,
@@ -778,6 +811,8 @@ class TimetableSettings {
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
+      'liveTimeCorrectionSeconds': liveTimeCorrectionSeconds,
+      'liveBeforeClassQuickAction': liveBeforeClassQuickAction.value,
       'themeSeedColor': themeSeedColor,
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
@@ -954,6 +989,11 @@ class TimetableSettings {
           (json['liveClassReminderStartMinutes'] as num?)?.toInt() ?? 0,
       liveEndSecondsCountdownThreshold:
           (json['liveEndSecondsCountdownThreshold'] as num?)?.toInt() ?? 60,
+      liveTimeCorrectionSeconds:
+          (json['liveTimeCorrectionSeconds'] as num?)?.toInt() ?? 0,
+      liveBeforeClassQuickAction: LiveBeforeClassQuickActionX.fromValue(
+        json['liveBeforeClassQuickAction'] as String?,
+      ),
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
       timetablePageBackgroundColor:
           json['timetablePageBackgroundColor'] as String? ?? '#F8FAFC',
@@ -1054,6 +1094,8 @@ class TimetableSettings {
     int? liveShowBeforeClassMinutes,
     int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
+    int? liveTimeCorrectionSeconds,
+    LiveBeforeClassQuickAction? liveBeforeClassQuickAction,
     String? themeSeedColor,
     String? timetablePageBackgroundColor,
     bool? timetableUseUnifiedCardColor,
@@ -1203,6 +1245,10 @@ class TimetableSettings {
           liveClassReminderStartMinutes ?? this.liveClassReminderStartMinutes,
       liveEndSecondsCountdownThreshold: liveEndSecondsCountdownThreshold ??
           this.liveEndSecondsCountdownThreshold,
+      liveTimeCorrectionSeconds:
+          liveTimeCorrectionSeconds ?? this.liveTimeCorrectionSeconds,
+      liveBeforeClassQuickAction:
+          liveBeforeClassQuickAction ?? this.liveBeforeClassQuickAction,
       themeSeedColor: themeSeedColor ?? this.themeSeedColor,
       timetablePageBackgroundColor:
           timetablePageBackgroundColor ?? this.timetablePageBackgroundColor,

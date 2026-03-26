@@ -477,6 +477,7 @@ void main() {
         liveEnableDuringClass: true,
         liveEnableBeforeEnd: true,
         liveClassReminderStartMinutes: 5,
+        liveShowDuringClassNotification: false,
       ),
     );
 
@@ -501,6 +502,49 @@ void main() {
     );
 
     expect(earlySelection, isNull);
+    expect(lateSelection?.stage, LiveActivityStage.beforeEnd);
+  });
+
+  test(
+      'live activity can show status bar stage before end reminder when not immediate',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: false,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+        liveClassReminderStartMinutes: 5,
+        liveShowDuringClassNotification: true,
+      ),
+    );
+
+    final now = DateTime(2026, 3, 25, 14, 5);
+    await provider.addCourse(
+      Course(
+        id: 'live-course-status-bar',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+
+    final earlySelection = provider.getLiveActivityCourseSelection(now: now);
+    final lateSelection = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 15, 36),
+    );
+
+    expect(earlySelection?.stage, LiveActivityStage.duringClassStatusBar);
     expect(lateSelection?.stage, LiveActivityStage.beforeEnd);
   });
 
@@ -594,6 +638,49 @@ void main() {
     expect(earlySelection, isNull);
     expect(afterPreviousCourseEnds?.stage, LiveActivityStage.beforeClass);
     expect(afterPreviousCourseEnds?.currentCourse.name, '大学英语');
+  });
+
+  test('time correction can shift before class reminder by seconds', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: false,
+        liveEnableBeforeEnd: false,
+        liveShowBeforeClassMinutes: 1,
+        liveTimeCorrectionSeconds: -5,
+      ),
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'course-time-correction',
+        name: '计算机网络',
+        teacher: '王老师',
+        location: 'C301',
+        dayOfWeek: DateTime(2026, 3, 25).weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+
+    final beforeWindow = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 7, 58, 54),
+    );
+    final shiftedWindow = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 7, 58, 56),
+    );
+
+    expect(beforeWindow, isNull);
+    expect(shiftedWindow?.stage, LiveActivityStage.beforeClass);
+    expect(shiftedWindow?.currentCourse.name, '计算机网络');
   });
 
   test('updating non-section settings does not trigger section capacity guard',

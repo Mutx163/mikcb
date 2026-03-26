@@ -95,6 +95,8 @@ private data class NativeLiveSettings(
     val liveShowBeforeClassMinutes: Int,
     val liveClassReminderStartMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
+    val liveTimeCorrectionSeconds: Int,
+    val liveBeforeClassQuickAction: String,
 )
 
 private data class NativeScheduleSnapshot(
@@ -155,6 +157,7 @@ private data class LiveUpdatePayload(
     val miuiIslandLabelOffsetY: Float,
     val miuiIslandExpandedIconMode: String,
     val miuiIslandExpandedIconPath: String?,
+    val beforeClassQuickAction: String,
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
@@ -285,6 +288,8 @@ object LiveUpdateScheduler {
                 islandConfig["miuiIslandExpandedIconMode"] as? String ?: "app_icon",
             miuiIslandExpandedIconPath =
                 islandConfig["miuiIslandExpandedIconPath"] as? String,
+            beforeClassQuickAction =
+                data["beforeClassQuickAction"] as? String ?: "none",
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
@@ -490,6 +495,10 @@ object LiveUpdateScheduler {
                 settingsJson.optInt("liveClassReminderStartMinutes", 0),
             liveEndSecondsCountdownThreshold =
                 settingsJson.optInt("liveEndSecondsCountdownThreshold", 60),
+            liveTimeCorrectionSeconds =
+                settingsJson.optInt("liveTimeCorrectionSeconds", 0),
+            liveBeforeClassQuickAction =
+                settingsJson.optString("liveBeforeClassQuickAction", "none"),
         )
 
         val coursesJson = json.optJSONArray("courses") ?: JSONArray()
@@ -580,6 +589,7 @@ object LiveUpdateScheduler {
             putExtra("miuiIslandLabelOffsetY", payload.miuiIslandLabelOffsetY)
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
+            putExtra("beforeClassQuickAction", payload.beforeClassQuickAction)
         }
     }
 
@@ -617,10 +627,25 @@ object LiveUpdateScheduler {
         }
 
         for ((index, course) in todayCourses.withIndex()) {
-            val startAtMillis = buildCourseDateTimeMillis(nowCalendar, course.startTime) ?: continue
-            val endAtMillis = buildCourseDateTimeMillis(nowCalendar, course.endTime) ?: continue
+            val startAtMillis =
+                buildCorrectedCourseDateTimeMillis(
+                    nowCalendar,
+                    course.startTime,
+                    snapshot.settings,
+                ) ?: continue
+            val endAtMillis =
+                buildCorrectedCourseDateTimeMillis(
+                    nowCalendar,
+                    course.endTime,
+                    snapshot.settings,
+                ) ?: continue
             val blockedUntilMillis =
-                resolveBeforeClassBlockedUntil(todayCourses, index, nowCalendar)
+                resolveBeforeClassBlockedUntil(
+                    todayCourses,
+                    index,
+                    nowCalendar,
+                    snapshot.settings,
+                )
             val stage =
                 resolveStage(
                     snapshot,
@@ -678,8 +703,18 @@ object LiveUpdateScheduler {
                     timeInMillis = todayStart.timeInMillis
                     add(Calendar.DAY_OF_YEAR, dayOffset)
                 }
-                val startAtMillis = buildCourseDateTimeMillis(candidateDate, course.startTime) ?: continue
-                val endAtMillis = buildCourseDateTimeMillis(candidateDate, course.endTime) ?: continue
+                val startAtMillis =
+                    buildCorrectedCourseDateTimeMillis(
+                        candidateDate,
+                        course.startTime,
+                        snapshot.settings,
+                    ) ?: continue
+                val endAtMillis =
+                    buildCorrectedCourseDateTimeMillis(
+                        candidateDate,
+                        course.endTime,
+                        snapshot.settings,
+                    ) ?: continue
                 val sameDayCourses = snapshot.courses
                     .filter { it.dayOfWeek == course.dayOfWeek && it.isInWeek(week) }
                     .sortedBy { it.startSection }
@@ -688,7 +723,12 @@ object LiveUpdateScheduler {
                     continue
                 }
                 val blockedUntilMillis =
-                    resolveBeforeClassBlockedUntil(sameDayCourses, currentIndex, candidateDate)
+                    resolveBeforeClassBlockedUntil(
+                        sameDayCourses,
+                        currentIndex,
+                        candidateDate,
+                        snapshot.settings,
+                    )
                 val nextTrigger =
                     resolveNextTrigger(
                         snapshot,
@@ -874,9 +914,18 @@ object LiveUpdateScheduler {
             enableBeforeClass = snapshot.settings.liveEnableBeforeClass,
             enableDuringClass = snapshot.settings.liveEnableDuringClass,
             enableBeforeEnd = snapshot.settings.liveEnableBeforeEnd,
-            promoteDuringClass = snapshot.settings.livePromoteDuringClass,
+            promoteDuringClass =
+                if (selection.stage == "duringClassStatusBar") {
+                    false
+                } else {
+                    snapshot.settings.livePromoteDuringClass
+                },
             showNotificationDuringClass =
-                snapshot.settings.liveShowDuringClassNotification,
+                if (selection.stage == "duringClassStatusBar") {
+                    true
+                } else {
+                    snapshot.settings.liveShowDuringClassNotification
+                },
             showCountdown = showCountdown,
             showStageText = showStageText,
             showCourseNameInIsland = showCourseName,
@@ -895,6 +944,7 @@ object LiveUpdateScheduler {
             miuiIslandLabelOffsetY = miuiIslandLabelOffsetY,
             miuiIslandExpandedIconMode = miuiIslandExpandedIconMode,
             miuiIslandExpandedIconPath = miuiIslandExpandedIconPath,
+            beforeClassQuickAction = snapshot.settings.liveBeforeClassQuickAction,
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
@@ -923,6 +973,13 @@ object LiveUpdateScheduler {
         val candidates = mutableListOf<FutureStageTrigger>()
         if (settings.liveEnableBeforeClass && aheadTime > nowMillis && aheadTime < startAtMillis) {
             candidates += FutureStageTrigger("beforeClass", aheadTime)
+        }
+        if (settings.liveClassReminderStartMinutes > 0 &&
+            startAtMillis < reminderStartMillis &&
+            canDisplayDuringStatusBarStage(settings) &&
+            startAtMillis > nowMillis
+        ) {
+            candidates += FutureStageTrigger("duringClassStatusBar", startAtMillis)
         }
         if (settings.liveClassReminderStartMinutes == 0 &&
             canDisplayDuring(settings) &&
@@ -966,8 +1023,12 @@ object LiveUpdateScheduler {
         } else {
             maxOf(startAtMillis, endAtMillis - settings.liveClassReminderStartMinutes * 60_000L)
         }
-        if (nowMillis < reminderStartMillis) {
-            return null
+        if (settings.liveClassReminderStartMinutes > 0 && nowMillis < reminderStartMillis) {
+            return if (canDisplayDuringStatusBarStage(settings)) {
+                "duringClassStatusBar"
+            } else {
+                null
+            }
         }
         if (settings.liveClassReminderStartMinutes > 0) {
             if (settings.liveEnableBeforeEnd) {
@@ -992,6 +1053,7 @@ object LiveUpdateScheduler {
         sameDayCourses: List<NativeCourse>,
         courseIndex: Int,
         dateCalendar: Calendar,
+        settings: NativeLiveSettings,
     ): Long? {
         if (courseIndex <= 0 || courseIndex >= sameDayCourses.size) {
             return null
@@ -999,15 +1061,27 @@ object LiveUpdateScheduler {
 
         val course = sameDayCourses[courseIndex]
         val courseStartAtMillis =
-            buildCourseDateTimeMillis(dateCalendar, course.startTime) ?: return null
+            buildCorrectedCourseDateTimeMillis(
+                dateCalendar,
+                course.startTime,
+                settings,
+            ) ?: return null
 
         var blockedUntilMillis: Long? = null
         for (index in 0 until courseIndex) {
             val previousCourse = sameDayCourses[index]
             val previousStartAtMillis =
-                buildCourseDateTimeMillis(dateCalendar, previousCourse.startTime) ?: continue
+                buildCorrectedCourseDateTimeMillis(
+                    dateCalendar,
+                    previousCourse.startTime,
+                    settings,
+                ) ?: continue
             val previousEndAtMillis =
-                buildCourseDateTimeMillis(dateCalendar, previousCourse.endTime) ?: continue
+                buildCorrectedCourseDateTimeMillis(
+                    dateCalendar,
+                    previousCourse.endTime,
+                    settings,
+                ) ?: continue
             if (previousStartAtMillis > courseStartAtMillis) {
                 continue
             }
@@ -1018,6 +1092,19 @@ object LiveUpdateScheduler {
         }
 
         return blockedUntilMillis
+    }
+
+    private fun buildCorrectedCourseDateTimeMillis(
+        dateCalendar: Calendar,
+        courseTime: String,
+        settings: NativeLiveSettings,
+    ): Long? {
+        val baseMillis = buildCourseDateTimeMillis(dateCalendar, courseTime) ?: return null
+        return baseMillis + settings.liveTimeCorrectionSeconds * 1000L
+    }
+
+    private fun canDisplayDuringStatusBarStage(settings: NativeLiveSettings): Boolean {
+        return settings.liveEnableDuringClass && settings.liveShowDuringClassNotification
     }
 
     private fun canDisplayDuring(settings: NativeLiveSettings): Boolean {

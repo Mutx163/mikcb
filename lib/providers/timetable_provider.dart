@@ -50,6 +50,7 @@ class TimeSchemeCourseUsageReference {
 
 enum LiveActivityStage {
   beforeClass,
+  duringClassStatusBar,
   duringClass,
   beforeEnd,
 }
@@ -1613,6 +1614,22 @@ class TimetableProvider with ChangeNotifier {
     return isStart ? course.startTime : course.endTime;
   }
 
+  DateTime _applyLiveTimeCorrection(DateTime dateTime) {
+    final correctionSeconds = _settings.liveTimeCorrectionSeconds;
+    if (correctionSeconds == 0) {
+      return dateTime;
+    }
+    return dateTime.add(Duration(seconds: correctionSeconds));
+  }
+
+  DateTime? _buildCorrectedCourseDateTime(DateTime date, String courseTime) {
+    final base = _buildCourseDateTime(date, courseTime);
+    if (base == null) {
+      return null;
+    }
+    return _applyLiveTimeCorrection(base);
+  }
+
   DateTime? _resolveBeforeClassBlockedUntil(
     List<Course> todayCourses,
     int courseIndex,
@@ -1623,8 +1640,10 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final course = todayCourses[courseIndex];
-    final courseStartTime =
-        _buildCourseDateTime(referenceDate, _resolveRealTime(course, true));
+    final courseStartTime = _buildCorrectedCourseDateTime(
+      referenceDate,
+      _resolveRealTime(course, true),
+    );
     if (courseStartTime == null) {
       return null;
     }
@@ -1632,11 +1651,11 @@ class TimetableProvider with ChangeNotifier {
     DateTime? blockedUntil;
     for (var i = 0; i < courseIndex; i++) {
       final previousCourse = todayCourses[i];
-      final previousStartTime = _buildCourseDateTime(
+      final previousStartTime = _buildCorrectedCourseDateTime(
         referenceDate,
         _resolveRealTime(previousCourse, true),
       );
-      final previousEndTime = _buildCourseDateTime(
+      final previousEndTime = _buildCorrectedCourseDateTime(
         referenceDate,
         _resolveRealTime(previousCourse, false),
       );
@@ -1668,9 +1687,9 @@ class TimetableProvider with ChangeNotifier {
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
       final startTime =
-          _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
+          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, true));
       final endTime =
-          _buildCourseDateTime(currentTime, _resolveRealTime(course, false));
+          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, false));
       if (startTime == null || endTime == null) {
         continue;
       }
@@ -1709,7 +1728,7 @@ class TimetableProvider with ChangeNotifier {
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
       final startTime =
-          _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
+          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, true));
       if (startTime == null || !startTime.isAfter(currentTime)) {
         continue;
       }
@@ -1775,7 +1794,10 @@ class TimetableProvider with ChangeNotifier {
 
         final candidateDate = today.add(Duration(days: dayOffset));
         final candidateStart =
-            _buildCourseDateTime(candidateDate, _resolveRealTime(course, true));
+            _buildCorrectedCourseDateTime(
+              candidateDate,
+              _resolveRealTime(course, true),
+            );
         if (candidateStart == null || !candidateStart.isAfter(currentTime)) {
           continue;
         }
@@ -1887,12 +1909,14 @@ class TimetableProvider with ChangeNotifier {
               startTime: _resolveRealTime(activeSelection.nextCourse!, true),
               endTime: _resolveRealTime(activeSelection.nextCourse!, false),
             );
-      final startAtMillis = _buildCourseDateTime(
-              DateTime.now(), _resolveRealTime(displayCourse, true))
-          ?.millisecondsSinceEpoch;
-      final endAtMillis = _buildCourseDateTime(
-              DateTime.now(), _resolveRealTime(displayCourse, false))
-          ?.millisecondsSinceEpoch;
+      final startAtMillis = _buildCorrectedCourseDateTime(
+        DateTime.now(),
+        _resolveRealTime(displayCourse, true),
+      )?.millisecondsSinceEpoch;
+      final endAtMillis = _buildCorrectedCourseDateTime(
+        DateTime.now(),
+        _resolveRealTime(displayCourse, false),
+      )?.millisecondsSinceEpoch;
       final progressMilestones = buildLiveProgressMilestones(
         displayCourse,
         startAtMillis: startAtMillis,
@@ -1910,8 +1934,14 @@ class TimetableProvider with ChangeNotifier {
         stage: selection.stage.name,
         liveClassReminderStartMinutes: settings.liveClassReminderStartMinutes,
         endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
-        promoteDuringClass: settings.livePromoteDuringClass,
-        showNotificationDuringClass: settings.liveShowDuringClassNotification,
+        promoteDuringClass:
+            activeSelection.stage == LiveActivityStage.duringClassStatusBar
+                ? false
+                : settings.livePromoteDuringClass,
+        showNotificationDuringClass:
+            activeSelection.stage == LiveActivityStage.duringClassStatusBar
+                ? true
+                : settings.liveShowDuringClassNotification,
         enableBeforeClass: settings.liveEnableBeforeClass,
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,
@@ -1934,6 +1964,7 @@ class TimetableProvider with ChangeNotifier {
         miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
         miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
+        beforeClassQuickAction: settings.liveBeforeClassQuickAction,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestones
             .map((milestone) => milestone['label'] as String)
@@ -2042,6 +2073,10 @@ class TimetableProvider with ChangeNotifier {
         : endTime.subtract(Duration(minutes: startMinutes));
 
     if (currentTime.isBefore(reminderStartTime)) {
+      if (startMinutes > 0 &&
+          _canDisplayStage(LiveActivityStage.duringClassStatusBar)) {
+        return LiveActivityStage.duringClassStatusBar;
+      }
       return null;
     }
 
@@ -2092,6 +2127,9 @@ class TimetableProvider with ChangeNotifier {
     switch (stage) {
       case LiveActivityStage.beforeClass:
         return _settings.liveEnableBeforeClass;
+      case LiveActivityStage.duringClassStatusBar:
+        return _settings.liveEnableDuringClass &&
+            _settings.liveShowDuringClassNotification;
       case LiveActivityStage.duringClass:
         return _settings.liveEnableDuringClass &&
             (_settings.livePromoteDuringClass ||

@@ -66,10 +66,6 @@ class TimetableSettingsScreen extends StatelessWidget {
                       icon: Icons.notifications_active_outlined,
                       title: '超级岛与通知',
                       subtitle: '提醒时段、岛展示、通知栏和显示内容',
-                      trailing: Text(
-                        _liveSettingsSummary(settings),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -696,10 +692,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                   icon: Icons.alarm_outlined,
                   title: '提醒时段',
                   subtitle: '上课前、课中/下课提醒开关，展示时机和通知方式',
-                  trailing: Text(
-                    _liveTimingSummary(_draft),
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
                   onTap: () async {
                     await Navigator.push(
                       context,
@@ -1035,6 +1027,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
       miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
+      beforeClassQuickAction: settings.liveBeforeClassQuickAction,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
       progressMilestoneLabels: progressMilestones
           .map((milestone) => milestone['label'] as String)
@@ -1778,35 +1771,25 @@ class _ColorDot extends StatelessWidget {
 String _liveSettingsSummary(TimetableSettings settings) {
   final enabledStages = <String>[];
   if (settings.liveEnableBeforeClass) enabledStages.add('上课前');
-  if (settings.liveEnableDuringClass) {
+  if (settings.liveEnableDuringClass || settings.liveEnableBeforeEnd) {
     if (settings.liveClassReminderStartMinutes == 0) {
-      enabledStages.add('上课中');
+      if (settings.liveEnableDuringClass) {
+        enabledStages.add('上课中');
+      }
     } else {
-      enabledStages.add('下课提醒');
+      if (settings.liveEnableDuringClass &&
+          settings.liveShowDuringClassNotification) {
+        enabledStages.add('课中通知');
+      }
+      if (settings.liveEnableBeforeEnd) {
+        enabledStages.add('下课提醒');
+      }
     }
   }
   if (enabledStages.isEmpty) {
     return '已全关';
   }
   return enabledStages.join(' + ');
-}
-
-String _liveTimingSummary(TimetableSettings settings) {
-  final enabledStages = <String>[];
-  if (settings.liveEnableBeforeClass) {
-    enabledStages.add('前 ${settings.liveShowBeforeClassMinutes} 分钟');
-  }
-  if (settings.liveEnableDuringClass || settings.liveEnableBeforeEnd) {
-    enabledStages.add(
-      settings.liveClassReminderStartMinutes == 0
-          ? '课中'
-          : '下课前 ${settings.liveClassReminderStartMinutes} 分钟',
-    );
-  }
-  if (enabledStages.isEmpty) {
-    return '已全关';
-  }
-  return enabledStages.join(' · ');
 }
 
 String _liveDisplaySummary(LiveDisplaySettings settings) {
