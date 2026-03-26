@@ -25,6 +25,8 @@ extension CourseNatureX on CourseNature {
 }
 
 class Course {
+  static const Object _unset = Object();
+
   final String id;
   final String name;
   final String? shortName;
@@ -124,7 +126,7 @@ class Course {
   Course copyWith({
     String? id,
     String? name,
-    String? shortName,
+    Object? shortName = _unset,
     String? teacher,
     String? location,
     int? dayOfWeek,
@@ -138,14 +140,15 @@ class Course {
     bool? isOddWeek,
     bool? isEvenWeek,
     CourseNature? courseNature,
-    String? description,
-    String? note,
-    String? timeSchemeIdOverride,
+    Object? description = _unset,
+    Object? note = _unset,
+    Object? timeSchemeIdOverride = _unset,
   }) {
     return Course(
       id: id ?? this.id,
       name: name ?? this.name,
-      shortName: shortName ?? this.shortName,
+      shortName:
+          identical(shortName, _unset) ? this.shortName : shortName as String?,
       teacher: teacher ?? this.teacher,
       location: location ?? this.location,
       dayOfWeek: dayOfWeek ?? this.dayOfWeek,
@@ -159,9 +162,13 @@ class Course {
       isOddWeek: isOddWeek ?? this.isOddWeek,
       isEvenWeek: isEvenWeek ?? this.isEvenWeek,
       courseNature: courseNature ?? this.courseNature,
-      description: description ?? this.description,
-      note: note ?? this.note,
-      timeSchemeIdOverride: timeSchemeIdOverride ?? this.timeSchemeIdOverride,
+      description: identical(description, _unset)
+          ? this.description
+          : description as String?,
+      note: identical(note, _unset) ? this.note : note as String?,
+      timeSchemeIdOverride: identical(timeSchemeIdOverride, _unset)
+          ? this.timeSchemeIdOverride
+          : timeSchemeIdOverride as String?,
     );
   }
 

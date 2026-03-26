@@ -619,7 +619,16 @@ object LiveUpdateScheduler {
         for ((index, course) in todayCourses.withIndex()) {
             val startAtMillis = buildCourseDateTimeMillis(nowCalendar, course.startTime) ?: continue
             val endAtMillis = buildCourseDateTimeMillis(nowCalendar, course.endTime) ?: continue
-            val stage = resolveStage(snapshot, nowMillis, startAtMillis, endAtMillis) ?: continue
+            val blockedUntilMillis =
+                resolveBeforeClassBlockedUntil(todayCourses, index, nowCalendar)
+            val stage =
+                resolveStage(
+                    snapshot,
+                    nowMillis,
+                    startAtMillis,
+                    endAtMillis,
+                    blockedUntilMillis,
+                ) ?: continue
             val progressMilestones =
                 buildProgressMilestones(snapshot.settings.sections, course, startAtMillis, endAtMillis)
             return ScheduledSelection(
@@ -671,17 +680,28 @@ object LiveUpdateScheduler {
                 }
                 val startAtMillis = buildCourseDateTimeMillis(candidateDate, course.startTime) ?: continue
                 val endAtMillis = buildCourseDateTimeMillis(candidateDate, course.endTime) ?: continue
+                val sameDayCourses = snapshot.courses
+                    .filter { it.dayOfWeek == course.dayOfWeek && it.isInWeek(week) }
+                    .sortedBy { it.startSection }
+                val currentIndex = sameDayCourses.indexOfFirst { it.id == course.id }
+                if (currentIndex == -1) {
+                    continue
+                }
+                val blockedUntilMillis =
+                    resolveBeforeClassBlockedUntil(sameDayCourses, currentIndex, candidateDate)
                 val nextTrigger =
-                    resolveNextTrigger(snapshot, startAtMillis, endAtMillis, nowMillis) ?: continue
+                    resolveNextTrigger(
+                        snapshot,
+                        startAtMillis,
+                        endAtMillis,
+                        nowMillis,
+                        blockedUntilMillis,
+                    ) ?: continue
                 if (nextTrigger.triggerAtMillis <= nowMillis) {
                     continue
                 }
                 val progressMilestones =
                     buildProgressMilestones(snapshot.settings.sections, course, startAtMillis, endAtMillis)
-                val sameDayCourses = snapshot.courses
-                    .filter { it.dayOfWeek == course.dayOfWeek && it.isInWeek(week) }
-                    .sortedBy { it.startSection }
-                val currentIndex = sameDayCourses.indexOfFirst { it.id == course.id }
                 val selection = ScheduledSelection(
                     currentCourse = course,
                     nextCourse = sameDayCourses.getOrNull(currentIndex + 1),
@@ -886,10 +906,14 @@ object LiveUpdateScheduler {
         startAtMillis: Long,
         endAtMillis: Long,
         nowMillis: Long,
+        blockedUntilMillis: Long?,
     ): FutureStageTrigger? {
         val settings = snapshot.settings
         val beforeClassLeadMillis = settings.liveShowBeforeClassMinutes * 60_000L
-        val aheadTime = startAtMillis - beforeClassLeadMillis
+        val aheadTime = maxOf(
+            startAtMillis - beforeClassLeadMillis,
+            blockedUntilMillis ?: Long.MIN_VALUE,
+        )
         val reminderStartMillis = if (settings.liveClassReminderStartMinutes == 0) {
             startAtMillis
         } else {
@@ -897,7 +921,7 @@ object LiveUpdateScheduler {
         }
         val endReminderStart = maxOf(startAtMillis, endAtMillis - snapshot.endReminderLeadMillis)
         val candidates = mutableListOf<FutureStageTrigger>()
-        if (settings.liveEnableBeforeClass && aheadTime > nowMillis) {
+        if (settings.liveEnableBeforeClass && aheadTime > nowMillis && aheadTime < startAtMillis) {
             candidates += FutureStageTrigger("beforeClass", aheadTime)
         }
         if (settings.liveClassReminderStartMinutes == 0 &&
@@ -923,10 +947,14 @@ object LiveUpdateScheduler {
         nowMillis: Long,
         startAtMillis: Long,
         endAtMillis: Long,
+        blockedUntilMillis: Long?,
     ): String? {
         val settings = snapshot.settings
         val beforeClassLeadMillis = settings.liveShowBeforeClassMinutes * 60_000L
-        val aheadTime = startAtMillis - beforeClassLeadMillis
+        val aheadTime = maxOf(
+            startAtMillis - beforeClassLeadMillis,
+            blockedUntilMillis ?: Long.MIN_VALUE,
+        )
         if (nowMillis < aheadTime || nowMillis >= endAtMillis) {
             return null
         }
@@ -958,6 +986,38 @@ object LiveUpdateScheduler {
             return null
         }
         return if (canDisplayDuring(settings)) "duringClass" else null
+    }
+
+    private fun resolveBeforeClassBlockedUntil(
+        sameDayCourses: List<NativeCourse>,
+        courseIndex: Int,
+        dateCalendar: Calendar,
+    ): Long? {
+        if (courseIndex <= 0 || courseIndex >= sameDayCourses.size) {
+            return null
+        }
+
+        val course = sameDayCourses[courseIndex]
+        val courseStartAtMillis =
+            buildCourseDateTimeMillis(dateCalendar, course.startTime) ?: return null
+
+        var blockedUntilMillis: Long? = null
+        for (index in 0 until courseIndex) {
+            val previousCourse = sameDayCourses[index]
+            val previousStartAtMillis =
+                buildCourseDateTimeMillis(dateCalendar, previousCourse.startTime) ?: continue
+            val previousEndAtMillis =
+                buildCourseDateTimeMillis(dateCalendar, previousCourse.endTime) ?: continue
+            if (previousStartAtMillis > courseStartAtMillis) {
+                continue
+            }
+            blockedUntilMillis = maxOf(
+                blockedUntilMillis ?: Long.MIN_VALUE,
+                previousEndAtMillis,
+            )
+        }
+
+        return blockedUntilMillis
     }
 
     private fun canDisplayDuring(settings: NativeLiveSettings): Boolean {

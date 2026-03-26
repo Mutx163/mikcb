@@ -1613,6 +1613,47 @@ class TimetableProvider with ChangeNotifier {
     return isStart ? course.startTime : course.endTime;
   }
 
+  DateTime? _resolveBeforeClassBlockedUntil(
+    List<Course> todayCourses,
+    int courseIndex,
+    DateTime referenceDate,
+  ) {
+    if (courseIndex <= 0 || courseIndex >= todayCourses.length) {
+      return null;
+    }
+
+    final course = todayCourses[courseIndex];
+    final courseStartTime =
+        _buildCourseDateTime(referenceDate, _resolveRealTime(course, true));
+    if (courseStartTime == null) {
+      return null;
+    }
+
+    DateTime? blockedUntil;
+    for (var i = 0; i < courseIndex; i++) {
+      final previousCourse = todayCourses[i];
+      final previousStartTime = _buildCourseDateTime(
+        referenceDate,
+        _resolveRealTime(previousCourse, true),
+      );
+      final previousEndTime = _buildCourseDateTime(
+        referenceDate,
+        _resolveRealTime(previousCourse, false),
+      );
+      if (previousStartTime == null || previousEndTime == null) {
+        continue;
+      }
+      if (previousStartTime.isAfter(courseStartTime)) {
+        continue;
+      }
+      if (blockedUntil == null || previousEndTime.isAfter(blockedUntil)) {
+        blockedUntil = previousEndTime;
+      }
+    }
+
+    return blockedUntil;
+  }
+
   LiveActivityCourseSelection? getLiveActivityCourseSelection({
     DateTime? now,
     bool allowUpcomingFallback = false,
@@ -1637,11 +1678,17 @@ class TimetableProvider with ChangeNotifier {
       final aheadTime = startTime.subtract(
         Duration(minutes: _settings.liveShowBeforeClassMinutes),
       );
+      final blockedUntil =
+          _resolveBeforeClassBlockedUntil(todayCourses, i, currentTime);
+      final effectiveAheadTime =
+          blockedUntil != null && blockedUntil.isAfter(aheadTime)
+              ? blockedUntil
+              : aheadTime;
       final stage = _resolveLiveActivityStage(
         currentTime: currentTime,
         startTime: startTime,
         endTime: endTime,
-        aheadTime: aheadTime,
+        aheadTime: effectiveAheadTime,
       );
       if (stage != null) {
         final nextCourse =
@@ -1664,6 +1711,11 @@ class TimetableProvider with ChangeNotifier {
       final startTime =
           _buildCourseDateTime(currentTime, _resolveRealTime(course, true));
       if (startTime == null || !startTime.isAfter(currentTime)) {
+        continue;
+      }
+      final blockedUntil =
+          _resolveBeforeClassBlockedUntil(todayCourses, i, currentTime);
+      if (blockedUntil != null && currentTime.isBefore(blockedUntil)) {
         continue;
       }
 

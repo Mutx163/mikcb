@@ -604,11 +604,14 @@ class LiveUpdateService : Service() {
     private var lastCriticalTimeText = ""
     private var cachedIslandBitmapKey: String? = null
     private var cachedIslandBitmap: Bitmap? = null
+    private var hasStartedForeground = false
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return try {
+            startForegroundSafely(intent)
+
             courseName = intent?.getStringExtra("courseName").orEmpty()
             shortCourseNameRaw = intent?.getStringExtra("shortName").orEmpty()
             location = intent?.getStringExtra("location").orEmpty()
@@ -698,7 +701,7 @@ class LiveUpdateService : Service() {
 
             val initialText = computeRemainingText(System.currentTimeMillis())
             lastRemainingText = initialText
-            startForeground(NOTIFICATION_ID, buildNotification(initialText))
+            updateForegroundNotification(buildNotification(initialText))
             startTicker()
             START_STICKY
         } catch (e: Exception) {
@@ -713,6 +716,15 @@ class LiveUpdateService : Service() {
                     "stage" to activityStage,
                 )
             )
+            if (hasStartedForeground) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    stopForeground(STOP_FOREGROUND_REMOVE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    stopForeground(true)
+                }
+                hasStartedForeground = false
+            }
             stopSelf()
             START_NOT_STICKY
         }
@@ -720,11 +732,14 @@ class LiveUpdateService : Service() {
 
     override fun onDestroy() {
         stopTicker()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
+        if (hasStartedForeground) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            hasStartedForeground = false
         }
         LiveUpdateScheduler.onLiveUpdateStopped(applicationContext)
         super.onDestroy()
@@ -756,6 +771,69 @@ class LiveUpdateService : Service() {
 
     private fun isTaskRemovalKeepAliveEnabled(): Boolean {
         return isHideFromRecentsEnabled() || isKeepAliveAccessibilityEnabled()
+    }
+
+    private fun startForegroundSafely(intent: Intent?) {
+        ensureNotificationChannel()
+        if (hasStartedForeground) {
+            return
+        }
+
+        val bootstrapTitle = intent?.getStringExtra("courseName")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { "课程提醒: $it" }
+            ?: "轻屿课表"
+        startForeground(
+            NOTIFICATION_ID,
+            buildBootstrapNotification(bootstrapTitle)
+        )
+        hasStartedForeground = true
+    }
+
+    private fun ensureNotificationChannel() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return
+        }
+
+        val manager = getSystemService(NotificationManager::class.java) ?: return
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "课程表实时更新",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "显示当前课程进度"
+        }
+        manager.createNotificationChannel(channel)
+    }
+
+    private fun buildBootstrapNotification(title: String): Notification {
+        val builder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            Notification.Builder(this)
+        }
+
+        return builder
+            .setContentTitle(title)
+            .setContentText("正在准备课程提醒")
+            .setSmallIcon(R.drawable.ic_course)
+            .setOngoing(true)
+            .setAutoCancel(false)
+            .setOnlyAlertOnce(true)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build()
+    }
+
+    private fun updateForegroundNotification(notification: Notification) {
+        if (!hasStartedForeground) {
+            startForeground(NOTIFICATION_ID, notification)
+            hasStartedForeground = true
+            return
+        }
+
+        getSystemService(NotificationManager::class.java)
+            ?.notify(NOTIFICATION_ID, notification)
+            ?: startForeground(NOTIFICATION_ID, notification)
     }
 
     private fun isHideFromRecentsEnabled(): Boolean {
