@@ -810,8 +810,7 @@ class TimetableSettings {
               (json['semesterStartDate'] as num).toInt(),
             )
           : null,
-      timetableShowCurrentWeekCourses:
-          json['timetableShowCurrentWeekCourses'] as bool? ?? true,
+      timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses:
           json['timetableShowNonCurrentWeekCourses'] as bool? ?? false,
       showConflictBadgeOnTimetable:
@@ -1072,8 +1071,7 @@ class TimetableSettings {
           timetableAutoFitSectionHeight ?? this.timetableAutoFitSectionHeight,
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
-      timetableShowCurrentWeekCourses: timetableShowCurrentWeekCourses ??
-          this.timetableShowCurrentWeekCourses,
+      timetableShowCurrentWeekCourses: true,
       timetableShowNonCurrentWeekCourses: timetableShowNonCurrentWeekCourses ??
           this.timetableShowNonCurrentWeekCourses,
       showConflictBadgeOnTimetable:

@@ -482,6 +482,14 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
       for (final course in startingCourses) {
         final isCurrentWeekCourse = course.isInWeek(week);
+        if (!isCurrentWeekCourse &&
+            _hasCurrentWeekOverlap(courses, course, week)) {
+          continue;
+        }
+        if (!isCurrentWeekCourse &&
+            !_isPreferredNonCurrentCourse(courses, course, week)) {
+          continue;
+        }
         final isConflicting = conflictMap.containsKey(course.id);
         courseCards.add(
           Positioned(
@@ -499,6 +507,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 course: course,
                 overrideColorHex:
                     isCurrentWeekCourse ? overrideCardColor : '#94A3B8',
+                compactOverlineText: isCurrentWeekCourse ? null : '非本周',
                 topRightBadgeText:
                     isConflicting && showConflictBadge ? '冲突' : null,
                 isCompact: true,
@@ -546,73 +555,122 @@ class _TimetableScreenState extends State<TimetableScreen> {
     final selectedWeek = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       builder: (sheetContext) {
+        final mediaQuery = MediaQuery.of(sheetContext);
+        final maxSheetHeight = (mediaQuery.size.height -
+                mediaQuery.padding.top -
+                mediaQuery.padding.bottom -
+                40)
+            .clamp(260.0, 520.0);
+        final maxSheetBodyHeight = (maxSheetHeight - 88).clamp(200.0, 360.0);
+        final colorScheme = Theme.of(sheetContext).colorScheme;
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '选择周次',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '共 ${availableWeeks.length} 周',
-                  style: Theme.of(sheetContext).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  height: 320,
-                  child: GridView.builder(
-                    itemCount: availableWeeks.length,
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      childAspectRatio: 2.1,
-                    ),
-                    itemBuilder: (gridContext, index) {
-                      final week = availableWeeks[index];
-                      final isCurrentSemesterWeek = week == currentSemesterWeek;
-                      final colorScheme = Theme.of(gridContext).colorScheme;
-                      return FilledButton.tonal(
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          backgroundColor: isCurrentSemesterWeek
-                              ? colorScheme.primary.withValues(alpha: 0.12)
-                              : colorScheme.surfaceContainerLowest,
-                          foregroundColor: isCurrentSemesterWeek
-                              ? colorScheme.primary
-                              : colorScheme.onSurface,
-                          side: isCurrentSemesterWeek
-                              ? BorderSide(
-                                  color: colorScheme.primary
-                                      .withValues(alpha: 0.45),
-                                )
-                              : BorderSide(
-                                  color: colorScheme.outlineVariant,
-                                ),
-                        ),
-                        onPressed: () => Navigator.of(sheetContext).pop(week),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxSheetHeight),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Expanded(
                         child: Text(
-                          '第 $week 周',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          '选择周次',
                           style: TextStyle(
-                            fontWeight: isCurrentSemesterWeek
-                                ? FontWeight.w700
-                                : FontWeight.w500,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      );
-                    },
+                      ),
+                      if (currentSemesterWeek != null &&
+                          provider.currentWeek != currentSemesterWeek)
+                        FilledButton.tonalIcon(
+                          style: FilledButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                            shape: const StadiumBorder(),
+                            backgroundColor:
+                                colorScheme.primary.withValues(alpha: 0.12),
+                            foregroundColor: colorScheme.primary,
+                            side: BorderSide(
+                              color:
+                                  colorScheme.primary.withValues(alpha: 0.18),
+                            ),
+                          ),
+                          onPressed: () => Navigator.of(sheetContext)
+                              .pop(currentSemesterWeek),
+                          icon: const Icon(Icons.my_location_rounded, size: 18),
+                          label: const Text('回本周'),
+                        ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    '共 ${availableWeeks.length} 周',
+                    style: Theme.of(sheetContext).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: SizedBox(
+                      height: maxSheetBodyHeight,
+                      child: GridView.builder(
+                        itemCount: availableWeeks.length,
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 4,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 2.1,
+                        ),
+                        itemBuilder: (gridContext, index) {
+                          final week = availableWeeks[index];
+                          final isCurrentSemesterWeek =
+                              week == currentSemesterWeek;
+                          final colorScheme = Theme.of(gridContext).colorScheme;
+                          return FilledButton.tonal(
+                            style: FilledButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                              backgroundColor: isCurrentSemesterWeek
+                                  ? colorScheme.primary.withValues(alpha: 0.12)
+                                  : colorScheme.surfaceContainerLowest,
+                              foregroundColor: isCurrentSemesterWeek
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface,
+                              side: isCurrentSemesterWeek
+                                  ? BorderSide(
+                                      color: colorScheme.primary
+                                          .withValues(alpha: 0.45),
+                                    )
+                                  : BorderSide(
+                                      color: colorScheme.outlineVariant,
+                                    ),
+                            ),
+                            onPressed: () =>
+                                Navigator.of(sheetContext).pop(week),
+                            child: Text(
+                              '第 $week 周',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontWeight: isCurrentSemesterWeek
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -630,6 +688,64 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return courses.where((course) => course.startSection == section).toList();
   }
 
+  bool _hasCurrentWeekOverlap(List<Course> courses, Course target, int week) {
+    return courses.any(
+      (course) =>
+          course.id != target.id &&
+          course.isInWeek(week) &&
+          !(course.endSection < target.startSection ||
+              target.endSection < course.startSection),
+    );
+  }
+
+  bool _isPreferredNonCurrentCourse(
+    List<Course> courses,
+    Course target,
+    int week,
+  ) {
+    final overlappingNonCurrentCourses = courses
+        .where(
+          (course) =>
+              !course.isInWeek(week) &&
+              !(course.endSection < target.startSection ||
+                  target.endSection < course.startSection),
+        )
+        .toList()
+      ..sort((left, right) {
+        final leftDistance = _distanceToNearestActiveWeek(left, week);
+        final rightDistance = _distanceToNearestActiveWeek(right, week);
+        if (leftDistance != rightDistance) {
+          return leftDistance.compareTo(rightDistance);
+        }
+        final startCompare = left.startWeek.compareTo(right.startWeek);
+        if (startCompare != 0) {
+          return startCompare;
+        }
+        final endCompare = left.endWeek.compareTo(right.endWeek);
+        if (endCompare != 0) {
+          return endCompare;
+        }
+        return left.id.compareTo(right.id);
+      });
+
+    return overlappingNonCurrentCourses.isNotEmpty &&
+        overlappingNonCurrentCourses.first.id == target.id;
+  }
+
+  int _distanceToNearestActiveWeek(Course course, int week) {
+    for (var offset = 0; offset <= 60; offset++) {
+      final previousWeek = week - offset;
+      if (previousWeek >= 1 && course.isInWeek(previousWeek)) {
+        return offset;
+      }
+      final nextWeek = week + offset;
+      if (offset > 0 && course.isInWeek(nextWeek)) {
+        return offset;
+      }
+    }
+    return 999;
+  }
+
   List<Course> _getCoursesForDay(
     List<Course> allCourses,
     int week,
@@ -642,7 +758,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
       }
       final isCurrentWeek = course.isInWeek(week);
       if (isCurrentWeek) {
-        return settings.timetableShowCurrentWeekCourses;
+        return true;
       }
       return settings.timetableShowNonCurrentWeekCourses;
     }).toList()
