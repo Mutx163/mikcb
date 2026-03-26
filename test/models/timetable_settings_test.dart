@@ -7,6 +7,7 @@ void main() {
 
     expect(settings.semesterWeekCount, 20);
     expect(settings.showConflictBadgeOnTimetable, isTrue);
+    expect(settings.timetableConflictCourseOpacity, 0.72);
     expect(settings.liveHidePrefixText, isTrue);
     expect(settings.courseCardShowName, isTrue);
     expect(settings.courseCardShowTeacher, isTrue);
@@ -65,6 +66,7 @@ void main() {
     final restored = TimetableSettings.fromJson(settings.toJson());
     expect(restored.semesterWeekCount, 20);
     expect(restored.showConflictBadgeOnTimetable, isTrue);
+    expect(restored.timetableConflictCourseOpacity, 0.72);
     expect(restored.liveHidePrefixText, isTrue);
     expect(restored.courseCardShowName, isTrue);
     expect(restored.courseCardShowTeacher, isTrue);
@@ -133,6 +135,7 @@ void main() {
     final settings = TimetableSettings.defaults().copyWith(
       activeTimeSchemeId: 'scheme-1',
       showConflictBadgeOnTimetable: false,
+      timetableConflictCourseOpacity: 0.55,
       timetableAutoFitSectionHeight: true,
       courseCardShowTime: true,
       courseCardShowTimeLabels: false,
@@ -167,6 +170,7 @@ void main() {
 
     expect(restored.activeTimeSchemeId, 'scheme-1');
     expect(restored.showConflictBadgeOnTimetable, isFalse);
+    expect(restored.timetableConflictCourseOpacity, 0.55);
     expect(restored.timetableAutoFitSectionHeight, isTrue);
     expect(restored.courseCardShowTime, isTrue);
     expect(restored.courseCardShowTimeLabels, isFalse);

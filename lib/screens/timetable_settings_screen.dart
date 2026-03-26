@@ -1534,6 +1534,43 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text(
+                    '冲突课程透明度 ${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '冲突课程会自动层叠显示，调低透明度后能同时看到多节课。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Slider(
+                    value: _draft.timetableConflictCourseOpacity,
+                    min: 0.2,
+                    max: 1.0,
+                    divisions: 16,
+                    label:
+                        '${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          timetableConflictCourseOpacity: value,
+                        ),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   const Text(
                     '说明',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
