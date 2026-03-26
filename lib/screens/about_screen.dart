@@ -53,7 +53,10 @@ class _AboutScreenState extends State<AboutScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final settings = context.watch<TimetableProvider>().settings;
+    final settings =
+        context.select<TimetableProvider, TimetableSettings>((provider) {
+      return provider.settings;
+    });
     final versionText = _packageInfo == null
         ? '读取中'
         : '${_packageInfo!.version} (${_packageInfo!.buildNumber})';
@@ -558,15 +561,9 @@ class _AboutScreenState extends State<AboutScreen> {
                               ),
                             ),
                             const SizedBox(height: 10),
-                            SizedBox(
-                              height: 240,
-                              child: SingleChildScrollView(
-                                padding: const EdgeInsets.only(right: 4),
-                                child: Text(
-                                  release!.body.trim(),
-                                  style: theme.textTheme.bodyMedium,
-                                ),
-                              ),
+                            Text(
+                              release!.body.trim(),
+                              style: theme.textTheme.bodyMedium,
                             ),
                           ],
                         ),

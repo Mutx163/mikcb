@@ -51,13 +51,19 @@ class AppUpdateService {
       'https://api.github.com/repos/Mutx163/mikcb/releases';
   static const String defaultMirrorUrlPrefix = 'https://ghfast.top/';
 
+  final http.Client _client;
+
+  AppUpdateService({
+    http.Client? client,
+  }) : _client = client ?? http.Client();
+
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
     bool includePrerelease = false,
   }) async {
     try {
       final apiUrl = includePrerelease ? releasesApiUrl : latestReleaseApiUrl;
-      final response = await http.get(
+      final response = await _client.get(
         Uri.parse(apiUrl),
         headers: const {
           'Accept': 'application/vnd.github+json',
@@ -311,6 +317,9 @@ class AppUpdateService {
     List<dynamic> rawList, {
     required bool includePrerelease,
   }) {
+    Map<String, dynamic>? bestRelease;
+    String? bestVersion;
+
     for (final item in rawList) {
       if (item is! Map) {
         continue;
@@ -322,9 +331,46 @@ class AppUpdateService {
       if (!includePrerelease && release['prerelease'] == true) {
         continue;
       }
-      return release;
+      final version = _normalizeVersion(
+        (release['tag_name'] as String?) ?? (release['name'] as String?) ?? '',
+      );
+      if (version.isEmpty) {
+        continue;
+      }
+
+      if (bestRelease == null || bestVersion == null) {
+        bestRelease = release;
+        bestVersion = version;
+        continue;
+      }
+
+      final compare = _compareVersions(version, bestVersion);
+      if (compare > 0) {
+        bestRelease = release;
+        bestVersion = version;
+        continue;
+      }
+      if (compare < 0) {
+        continue;
+      }
+
+      final bestUpdatedAt = DateTime.tryParse(
+        (bestRelease['updated_at'] as String?) ??
+            (bestRelease['published_at'] as String?) ??
+            '',
+      );
+      final currentUpdatedAt = DateTime.tryParse(
+        (release['updated_at'] as String?) ??
+            (release['published_at'] as String?) ??
+            '',
+      );
+      if ((currentUpdatedAt?.millisecondsSinceEpoch ?? 0) >
+          (bestUpdatedAt?.millisecondsSinceEpoch ?? 0)) {
+        bestRelease = release;
+        bestVersion = version;
+      }
     }
-    return null;
+    return bestRelease;
   }
 }
 
