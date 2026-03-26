@@ -205,6 +205,8 @@ class MiuiLiveActivitiesService {
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
+    LiveBeforeClassQuickAction beforeClassQuickAction =
+        LiveBeforeClassQuickAction.none,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -245,6 +247,7 @@ class MiuiLiveActivitiesService {
         miuiIslandLabelOffsetY: miuiIslandLabelOffsetY,
         miuiIslandExpandedIconMode: miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: miuiIslandExpandedIconPath,
+        beforeClassQuickAction: beforeClassQuickAction,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestoneLabels,
         progressMilestoneTimeTexts: progressMilestoneTimeTexts,
@@ -314,6 +317,8 @@ class MiuiLiveActivitiesService {
     MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     String? miuiIslandExpandedIconPath,
+    LiveBeforeClassQuickAction beforeClassQuickAction =
+        LiveBeforeClassQuickAction.none,
     List<int> progressBreakOffsetsMillis = const [],
     List<String> progressMilestoneLabels = const [],
     List<String> progressMilestoneTimeTexts = const [],
@@ -327,6 +332,7 @@ class MiuiLiveActivitiesService {
       'endReminderLeadMillis': endReminderLeadMillis,
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'endSecondsCountdownThreshold': endSecondsCountdownThreshold,
+      'beforeClassQuickAction': beforeClassQuickAction.value,
       'promoteDuringClass': promoteDuringClass,
       'showNotificationDuringClass': showNotificationDuringClass,
       'enableBeforeClass': enableBeforeClass,

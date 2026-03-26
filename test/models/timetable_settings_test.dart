@@ -36,6 +36,11 @@ void main() {
     expect(settings.liveHideFromRecents, isFalse);
     expect(settings.liveEnableLocalDiagnostics, isFalse);
     expect(settings.liveDuringEndFollowBeforeClass, isTrue);
+    expect(settings.liveTimeCorrectionSeconds, 0);
+    expect(
+      settings.liveBeforeClassQuickAction,
+      LiveBeforeClassQuickAction.none,
+    );
     expect(settings.liveShowStageText, isTrue);
     expect(settings.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
@@ -97,6 +102,11 @@ void main() {
     expect(restored.liveHideFromRecents, isFalse);
     expect(restored.liveEnableLocalDiagnostics, isFalse);
     expect(restored.liveDuringEndFollowBeforeClass, isTrue);
+    expect(restored.liveTimeCorrectionSeconds, 0);
+    expect(
+      restored.liveBeforeClassQuickAction,
+      LiveBeforeClassQuickAction.none,
+    );
     expect(restored.liveShowStageText, isTrue);
     expect(restored.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
@@ -158,6 +168,8 @@ void main() {
       liveHideFromRecents: true,
       liveEnableLocalDiagnostics: true,
       liveDuringEndFollowBeforeClass: false,
+      liveTimeCorrectionSeconds: -7,
+      liveBeforeClassQuickAction: LiveBeforeClassQuickAction.doNotDisturb,
       liveShowStageText: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
@@ -199,6 +211,11 @@ void main() {
     expect(restored.liveHideFromRecents, isTrue);
     expect(restored.liveEnableLocalDiagnostics, isTrue);
     expect(restored.liveDuringEndFollowBeforeClass, isFalse);
+    expect(restored.liveTimeCorrectionSeconds, -7);
+    expect(
+      restored.liveBeforeClassQuickAction,
+      LiveBeforeClassQuickAction.doNotDisturb,
+    );
     expect(restored.liveShowStageText, isFalse);
     expect(
       restored.liveMiuiIslandLabelStyle,

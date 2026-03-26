@@ -21,6 +21,7 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.Icon
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -554,6 +555,12 @@ class LiveUpdateService : Service() {
         private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
         private const val PREFS_NAME = "native_runtime_prefs"
         private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
+        private const val ACTION_ENABLE_SILENT_MODE =
+            "com.example.university_timetable.action.ENABLE_SILENT_MODE"
+        private const val ACTION_ENABLE_DO_NOT_DISTURB =
+            "com.example.university_timetable.action.ENABLE_DO_NOT_DISTURB"
+        private const val ACTION_DISMISS_STATUS_BAR_STAGE =
+            "com.example.university_timetable.action.DISMISS_STATUS_BAR_STAGE"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -596,6 +603,7 @@ class LiveUpdateService : Service() {
     private var enableBeforeEnd = true
     private var promoteDuringClass = true
     private var showNotificationDuringClass = true
+    private var beforeClassQuickAction = "none"
     private var progressBreakOffsetsMillis = longArrayOf()
     private var progressMilestoneLabels = emptyList<String>()
     private var progressMilestoneTimeTexts = emptyList<String>()
@@ -610,6 +618,25 @@ class LiveUpdateService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         return try {
+            val quickActionResult = when (intent?.action) {
+                ACTION_ENABLE_SILENT_MODE -> {
+                    handleBeforeClassQuickAction(enableDoNotDisturb = false)
+                    START_NOT_STICKY
+                }
+                ACTION_ENABLE_DO_NOT_DISTURB -> {
+                    handleBeforeClassQuickAction(enableDoNotDisturb = true)
+                    START_NOT_STICKY
+                }
+                ACTION_DISMISS_STATUS_BAR_STAGE -> {
+                    dismissStatusBarStage()
+                    START_NOT_STICKY
+                }
+                else -> null
+            }
+            if (quickActionResult != null) {
+                return quickActionResult
+            }
+
             startForegroundSafely(intent)
 
             courseName = intent?.getStringExtra("courseName").orEmpty()
@@ -665,6 +692,8 @@ class LiveUpdateService : Service() {
             promoteDuringClass = intent?.getBooleanExtra("promoteDuringClass", true) ?: true
             showNotificationDuringClass =
                 intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
+            beforeClassQuickAction =
+                intent?.getStringExtra("beforeClassQuickAction") ?: "none"
             progressBreakOffsetsMillis =
                 intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
             progressMilestoneLabels =
@@ -836,6 +865,153 @@ class LiveUpdateService : Service() {
             ?: startForeground(NOTIFICATION_ID, notification)
     }
 
+    private fun buildBeforeClassQuickAction(): Notification.Action? {
+        val (action, label) = when (beforeClassQuickAction) {
+            "silent" -> ACTION_ENABLE_SILENT_MODE to "打开静音"
+            "do_not_disturb" -> ACTION_ENABLE_DO_NOT_DISTURB to "打开免打扰"
+            else -> return null
+        }
+        val pendingIntent = PendingIntent.getService(
+            this,
+            action.hashCode(),
+            Intent(this, LiveUpdateService::class.java).apply {
+                this.action = action
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return Notification.Action.Builder(
+            Icon.createWithResource(this, R.drawable.ic_notification),
+            label,
+            pendingIntent,
+        ).build()
+    }
+
+    private fun buildDismissStatusBarAction(): Notification.Action {
+        val pendingIntent = PendingIntent.getService(
+            this,
+            ACTION_DISMISS_STATUS_BAR_STAGE.hashCode(),
+            Intent(this, LiveUpdateService::class.java).apply {
+                action = ACTION_DISMISS_STATUS_BAR_STAGE
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        return Notification.Action.Builder(
+            Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
+            "关闭",
+            pendingIntent,
+        ).build()
+    }
+
+    private fun handleBeforeClassQuickAction(enableDoNotDisturb: Boolean) {
+        val applied = if (enableDoNotDisturb) {
+            enableDoNotDisturbMode()
+        } else {
+            enableSilentMode()
+        }
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_before_class_quick_action",
+            message = "Before-class quick action invoked",
+            extras = mapOf(
+                "action" to if (enableDoNotDisturb) "do_not_disturb" else "silent",
+                "applied" to applied,
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
+        if (hasStartedForeground) {
+            updateForegroundNotification(buildNotification(computeRemainingText(System.currentTimeMillis())))
+        }
+    }
+
+    private fun dismissStatusBarStage() {
+        UmengDiagnosticReporter.record(
+            context = applicationContext,
+            category = "live_update_status_bar_dismissed",
+            message = "User dismissed during-class status bar notification",
+            extras = mapOf(
+                "courseName" to courseName,
+                "stage" to activityStage,
+            )
+        )
+        stopTicker()
+        if (hasStartedForeground) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+            } else {
+                @Suppress("DEPRECATION")
+                stopForeground(true)
+            }
+            hasStartedForeground = false
+        }
+        stopSelf()
+    }
+
+    private fun enableSilentMode(): Boolean {
+        val audioManager = getSystemService(AudioManager::class.java) ?: return false
+        return try {
+            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Failed to enable silent mode directly", e)
+            openSoundSettings()
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to enable silent mode", e)
+            openSoundSettings()
+            false
+        }
+    }
+
+    private fun enableDoNotDisturbMode(): Boolean {
+        val manager = getSystemService(NotificationManager::class.java) ?: return false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !manager.isNotificationPolicyAccessGranted
+        ) {
+            openNotificationPolicyAccessSettings()
+            return false
+        }
+        return try {
+            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+            true
+        } catch (e: SecurityException) {
+            Log.w(TAG, "Failed to enable do-not-disturb directly", e)
+            openNotificationPolicyAccessSettings()
+            false
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to enable do-not-disturb", e)
+            openNotificationPolicyAccessSettings()
+            false
+        }
+    }
+
+    private fun openNotificationPolicyAccessSettings() {
+        openSettingsIntent(
+            Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+        )
+    }
+
+    private fun openSoundSettings() {
+        openSettingsIntent(Intent(Settings.ACTION_SOUND_SETTINGS))
+    }
+
+    private fun openSettingsIntent(intent: Intent) {
+        try {
+            startActivity(intent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to open settings intent", e)
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_SETTINGS).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                )
+            } catch (fallbackError: Exception) {
+                Log.w(TAG, "Failed to open fallback settings", fallbackError)
+            }
+        }
+    }
+
     private fun isHideFromRecentsEnabled(): Boolean {
         return getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(KEY_HIDE_FROM_RECENTS, false)
@@ -943,7 +1119,8 @@ class LiveUpdateService : Service() {
                         "${prefixTextEnd}${formatCustomDuration(timeUntilEnd)}"
                     }
                 }
-                "duringClass" -> "上课中"
+                "duringClass",
+                "duringClassStatusBar" -> "上课中"
                 else -> ""
             }
         }
@@ -962,6 +1139,8 @@ class LiveUpdateService : Service() {
         val endReminderStart = maxOf(startAtMillis, endAtMillis - endReminderLeadMillis)
         return when {
             now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
+            liveClassReminderStartMinutes > 0 && now < reminderStart ->
+                if (canDisplayDuringStatusBarStage()) "duringClassStatusBar" else null
             now < reminderStart -> null
             liveClassReminderStartMinutes > 0 && enableBeforeEnd -> "beforeEnd"
             liveClassReminderStartMinutes > 0 && canDisplayDuringStage() -> "duringClass"
@@ -970,6 +1149,10 @@ class LiveUpdateService : Service() {
             now >= endReminderStart && canDisplayDuringStage() -> "duringClass"
             else -> null
         }
+    }
+
+    private fun canDisplayDuringStatusBarStage(): Boolean {
+        return enableDuringClass && showNotificationDuringClass
     }
 
     private fun canDisplayDuringStage(): Boolean {
@@ -1296,11 +1479,20 @@ class LiveUpdateService : Service() {
         val now = System.currentTimeMillis()
         val stage = resolveStage(now)
         val isUpcoming = stage == "beforeClass"
+        val isDuringClassStatusBar = stage == "duringClassStatusBar"
         val isEndingSoon = stage == "beforeEnd"
-        val isDuringClass = stage == "duringClass"
-        val shouldPromote = !isDuringClass || promoteDuringClass
-        val showStandardNotification = !isDuringClass || showNotificationDuringClass
-        val classProgress = if (!isUpcoming) buildDuringClassProgress(now) else null
+        val isDuringClass = stage == "duringClass" || isDuringClassStatusBar
+        val shouldPromote = when {
+            isDuringClassStatusBar -> false
+            isDuringClass -> promoteDuringClass
+            else -> true
+        }
+        val showStandardNotification = when {
+            isDuringClassStatusBar -> true
+            isDuringClass -> showNotificationDuringClass
+            else -> true
+        }
+        val classProgress = if (stage == "duringClass") buildDuringClassProgress(now) else null
         val usesProgressExpandedStyle = Build.VERSION.SDK_INT >= 36 && classProgress != null
 
         val shortCourseName = if (courseName.length > 8) courseName.substring(0, 8) + ".." else courseName
@@ -1543,6 +1735,13 @@ class LiveUpdateService : Service() {
                     )
                 }
             }
+        }
+
+        if (isUpcoming) {
+            buildBeforeClassQuickAction()?.let(builder::addAction)
+        }
+        if (isDuringClassStatusBar) {
+            builder.addAction(buildDismissStatusBarAction())
         }
 
         if (usesProgressExpandedStyle && classProgress != null) {

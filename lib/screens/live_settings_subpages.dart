@@ -20,6 +20,16 @@ const List<String> _labelColors = [
   '#F9A8D4',
 ];
 
+String _formatLiveTimeCorrection(int seconds) {
+  if (seconds == 0) {
+    return '不矫正';
+  }
+  if (seconds > 0) {
+    return '整体延后 $seconds 秒';
+  }
+  return '整体提前 ${seconds.abs()} 秒';
+}
+
 class _SectionCard extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -66,6 +76,8 @@ class LiveReminderTimingScreen extends StatefulWidget {
 class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
   static const List<int> _beforeClassMinutesOptions = [1, 5, 10, 15, 20, 30];
   static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
+  static const double _timeCorrectionMin = -30;
+  static const double _timeCorrectionMax = 30;
 
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
@@ -125,7 +137,10 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     subtitle: Text(
                       _draft.liveClassReminderStartMinutes == 0
                           ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                          : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
+                          : _draft.liveEnableDuringClass &&
+                                  _draft.liveShowDuringClassNotification
+                              ? '上课开始后先显示状态栏“上课中”，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                              : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
                     ),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
@@ -158,20 +173,24 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
+                  title: const Text('课中状态栏通知'),
+                  subtitle: Text(
+                    _draft.liveClassReminderStartMinutes == 0
+                        ? '上课后保留状态栏通知'
+                        : '上课开始后先显示“上课中”，到下课提醒前再切到重点提醒',
+                  ),
+                  value: _draft.liveShowDuringClassNotification,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveShowDuringClassNotification: value),
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
                   title: const Text('支持展示超级岛/灵动岛'),
                   subtitle: const Text('关闭后不会再尝试触发系统超级岛'),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(livePromoteDuringClass: value),
-                  ),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示通知栏常驻通知'),
-                  subtitle: const Text('关闭后尽量弱化普通通知栏状态展现'),
-                  value: _draft.liveShowDuringClassNotification,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveShowDuringClassNotification: value),
                   ),
                 ),
               ],
@@ -219,6 +238,32 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                       ),
                     );
                   },
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '铃声时间矫正：${_formatLiveTimeCorrection(_draft.liveTimeCorrectionSeconds)}',
+                ),
+                Slider(
+                  value: _draft.liveTimeCorrectionSeconds
+                      .toDouble()
+                      .clamp(_timeCorrectionMin, _timeCorrectionMax),
+                  min: _timeCorrectionMin,
+                  max: _timeCorrectionMax,
+                  divisions:
+                      (_timeCorrectionMax - _timeCorrectionMin).toInt(),
+                  label: _formatLiveTimeCorrection(
+                    _draft.liveTimeCorrectionSeconds,
+                  ),
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(
+                      liveTimeCorrectionSeconds: value.round(),
+                    ),
+                    debounce: true,
+                  ),
+                ),
+                Text(
+                  '如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
@@ -374,6 +419,34 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ],
         ),
       ),
+      if (!widget.forDuringEnd) ...[
+        const SizedBox(height: 16),
+        _SectionCard(
+          title: '上课前快捷操作',
+          subtitle: '只在上课前提醒的展开通知里显示。免打扰首次可能会跳到系统授权页。',
+          child: DropdownButtonFormField<LiveBeforeClassQuickAction>(
+            value: _draft.liveBeforeClassQuickAction,
+            decoration: const InputDecoration(
+              labelText: '快捷按钮',
+              border: OutlineInputBorder(),
+            ),
+            items: LiveBeforeClassQuickAction.values
+                .map(
+                  (value) => DropdownMenuItem(
+                    value: value,
+                    child: Text(value.label),
+                  ),
+                )
+                .toList(),
+            onChanged: (value) {
+              if (value == null) return;
+              _updateDraft(
+                _draft.copyWith(liveBeforeClassQuickAction: value),
+              );
+            },
+          ),
+        ),
+      ],
       const SizedBox(height: 16),
       _SectionCard(
         title: '左侧图标与展开态',
