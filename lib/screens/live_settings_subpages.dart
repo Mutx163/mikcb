@@ -69,6 +69,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
 
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -233,11 +234,15 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     if (debounce) {
       _autoSaveTimer = Timer(
         const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
+        () => _enqueuePersist(next),
       );
       return;
     }
-    unawaited(_persistDraft(next));
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
@@ -270,6 +275,7 @@ class LiveDisplaySettingsScreen extends StatefulWidget {
 class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -650,11 +656,15 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     if (debounce) {
       _autoSaveTimer = Timer(
         const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
+        () => _enqueuePersist(next),
       );
       return;
     }
-    unawaited(_persistDraft(next));
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
