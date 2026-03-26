@@ -1,105 +1,98 @@
 # 轻屿课表
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.27.0-02569B?logo=flutter&logoColor=white)
-![Android](https://img.shields.io/badge/Platform-Android-34A853?logo=android&logoColor=white)
+![Android](https://img.shields.io/badge/Android-Only-34A853?logo=android&logoColor=white)
 ![HyperOS](https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00)
 ![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
 ![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/android-build.yml?branch=main&label=android%20build)
 
-一个面向校园场景的 Flutter 课表应用。
+一个为校园场景设计的 Android 课表应用。
 
-轻屿课表不只是“看课表”，核心目标是把课程安排、实时提醒、课间状态和系统通知体验连起来，尤其针对 HyperOS / 小米超级岛做了专门优化。
+轻屿课表的重点不是“把课程列出来”，而是把课表、课前提醒、课中状态、下课提醒、桌面小组件和 HyperOS 超级岛尽量接成一条完整链路。它更像一个围绕“今天接下来要上什么课”来优化的日常工具，而不是传统的静态课表页。
 
-## 核心特性
+## 项目定位
 
-- 周视图课表，支持左右滑动切周
-- 多课表独立保存与快速切换
-- 开学日期同步当前周，支持一键回本周
-- 课程新增、编辑、删除、颜色区分、课程简称
-- `.ics` 课表导入
-- 完整备份导出与恢复
-- HyperOS / 小米超级岛、实时通知、焦点通知联动
-- 上课前 / 上课中 / 下课前提醒独立配置
-- 主题色、页面背景、课程卡片配色自定义
-- GitHub Releases 应用内更新检测
+- 面向 Android 维护，重点适配小米 / HyperOS 设备
+- 适合希望把课程提醒接进系统通知体验的学生用户
+- 支持一人维护多套课表，适合不同学期、身份或课程方案并行管理
+- 支持从 `.ics` 导入、完整备份导出与恢复，方便迁移和分享
 
-## 适合谁
+## 核心能力
 
-- 想要一个更轻、更快、更适合日常打开的课表应用的学生
-- 使用小米 / HyperOS 设备，希望把课程提醒接进系统实时通知体验的用户
-- 需要从 WakeUp 等应用迁移课程，或在同学之间直接共享课表备份的人
-- 同时管理多个学期、多个身份或多套课程安排的人
+- 周视图课表，支持左右滑动切周和一键回本周
+- 多课表独立保存、快速切换，通知与超级岛跟随当前课表
+- 课程增删改查，支持课程简称、颜色、单双周、备注等信息
+- 时间模板系统，可按学校作息自定义节次时间
+- 上课前、课中、下课前提醒分阶段配置
+- HyperOS / 小米超级岛、通知栏、焦点通知联动
+- 今日桌面小组件与课程快照同步
+- `.ics` 导入、完整备份导出、恢复为当前课表或新课表
+- 关于页读取 GitHub Releases，支持应用内更新检测
 
-## 技术栈
+## 为什么做这个
 
-- Flutter
-- Provider
-- SharedPreferences
-- 友盟移动统计 / U-APM
-- Android Notification / Foreground Service
-- GitHub Actions
-- GitHub Releases
+很多课表应用解决的是“录入课程”和“查看课程”，但真正高频的使用场景是：
 
-## 本地运行
+- 还有多久上课
+- 现在这节课上到哪了
+- 下一节在哪
+- 不打开应用能不能就看到
+
+轻屿课表主要在解决这类问题，尤其把提醒链路做得更细，把系统通知体验和课表本身连起来。
+
+## 下载与更新
+
+- 发布页：<https://github.com/Mutx163/mikcb/releases>
+- 正式包当前以 `arm64-v8a` 为主
+- 应用内可读取 GitHub Releases，显示版本号、更新时间和下载入口
+
+## 运行与构建
+
+本仓库当前只保留 Android 发布和维护所需内容。
+
+本地运行：
 
 ```bash
 flutter pub get
 flutter run -d android
 ```
 
-## Android 构建
+Android 构建：
 
 ```bash
 flutter build apk --release --split-per-abi
 ```
 
-当前仓库仅保留 Android 发布与维护所需内容，正式发布包以 `arm64-v8a` 为主。
+## 技术栈
 
-## 应用内更新
-
-“关于软件”页面会读取 GitHub Releases 最新版本，并支持：
-
-- 显示最新版本号
-- 显示本地时区下的 Release 更新时间
-- 优先跳转到 Release 里的 APK
-- Android 端应用内下载更新包
-- 原版下载 / 镜像下载切换
-
-## 多课表
-
-当前版本已经支持：
-
-- 多个课表独立保存
-- 首页快速切换当前课表
-- 不同课表分别拥有自己的课程、周数、节次、开学日期和通知设置
-- 通知与超级岛仅跟随当前选中的课表
+- Flutter
+- Provider
+- SharedPreferences
+- Android Notification / Foreground Service
+- GitHub Actions
+- GitHub Releases
+- 友盟移动统计 / U-APM
 
 ## 使用建议
 
-为了让超级岛和实时通知更稳定，建议在系统设置中同时打开：
+如果你主要使用超级岛或实时通知，建议在系统里同时打开这些能力：
 
 - 通知权限
 - 自启动
 - 电池无限制
 - 焦点通知 / promoted ongoing 权限
 
-这些说明已经集成在应用内“使用引导与权限”页面。
+这些说明已经放进应用内的“使用引导与权限”页面。
 
 ## 当前状态
 
-这是一个持续迭代中的开源项目，当前重点仍然放在功能打磨和 Android 体验完善上。
+项目仍在持续迭代，目前重点放在：
 
-接下来仍会持续补强：
+- Android 端提醒链路稳定性
+- HyperOS / 超级岛显示细节
+- 多课表与时间模板打磨
+- 导入、备份和更新体验完善
 
-- 仓库展示图和演示资源
-- 更新日志规范
-- 更多导入方式
-- 继续补强稳定性与使用体验
+## 许可证
 
-## 仓库地址
-
-- GitHub: https://github.com/Mutx163/mikcb
-
-## License
-
-本仓库已附带 `LICENSE` 文件。
+本仓库使用 [GNU General Public License v3.0](./LICENSE)。
