@@ -1903,12 +1903,10 @@ class TimetableProvider with ChangeNotifier {
         startTime: _resolveRealTime(liveCourse, true),
         endTime: _resolveRealTime(liveCourse, false),
       );
-      final displayNextCourse = activeSelection.nextCourse == null
-          ? null
-          : activeSelection.nextCourse!.copyWith(
-              startTime: _resolveRealTime(activeSelection.nextCourse!, true),
-              endTime: _resolveRealTime(activeSelection.nextCourse!, false),
-            );
+      final displayNextCourse = activeSelection.nextCourse?.copyWith(
+        startTime: _resolveRealTime(activeSelection.nextCourse!, true),
+        endTime: _resolveRealTime(activeSelection.nextCourse!, false),
+      );
       final startAtMillis = _buildCorrectedCourseDateTime(
         DateTime.now(),
         _resolveRealTime(displayCourse, true),
