@@ -103,6 +103,34 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<void> openAccessibilitySettings() async {
+    try {
+      await _channel.invokeMethod('openAccessibilitySettings');
+    } catch (e) {
+      debugPrint('Failed to open accessibility settings: $e');
+    }
+  }
+
+  Future<bool> isKeepAliveAccessibilityEnabled() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final result =
+          await _channel.invokeMethod('isKeepAliveAccessibilityEnabled');
+      return result == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> setHideFromRecents(bool value) async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod('setHideFromRecents', value);
+    } catch (e) {
+      debugPrint('Failed to update hide-from-recents: $e');
+    }
+  }
+
   Future<void> setLiveDiagnosticsEnabled(bool value) async {
     await UmengAnalyticsService.setLiveDiagnosticsEnabled(value);
   }

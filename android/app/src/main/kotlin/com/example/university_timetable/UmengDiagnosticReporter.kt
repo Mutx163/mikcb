@@ -3,9 +3,11 @@ package com.example.university_timetable
 import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.Context
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.PowerManager
+import android.provider.Settings
 import android.util.Log
 import org.json.JSONObject
 import java.io.File
@@ -232,6 +234,8 @@ object UmengDiagnosticReporter {
             "hasPromotedPermissionDeclared" to isPromotedPermissionDeclared(context),
             "canPostPromotedNotifications" to canPostPromotedNotifications(context),
             "ignoringBatteryOptimizations" to isIgnoringBatteryOptimizations(context),
+            "keepAliveAccessibilityEnabled" to isKeepAliveAccessibilityEnabled(context),
+            "hideFromRecentsEnabled" to nativePrefs.getBoolean("hide_from_recents", false),
             "taskRemovedRecently" to (
                 lastTaskRemovedAt > 0L &&
                     System.currentTimeMillis() - lastTaskRemovedAt < 10 * 60 * 1000L
@@ -311,6 +315,20 @@ object UmengDiagnosticReporter {
         } catch (_: Exception) {
             false
         }
+    }
+
+    private fun isKeepAliveAccessibilityEnabled(context: Context): Boolean {
+        val enabledServices = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+        val expectedComponent = ComponentName(
+            context,
+            KeepAliveAccessibilityService::class.java
+        ).flattenToString()
+        return enabledServices
+            .split(':')
+            .any { it.equals(expectedComponent, ignoreCase = true) }
     }
 
     private fun canPostPromotedNotifications(context: Context): Boolean {

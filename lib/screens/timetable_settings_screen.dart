@@ -677,13 +677,16 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     '#F9A8D4',
   ];
 
+  final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  bool _isKeepAliveAccessibilityEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+    unawaited(_refreshExperimentalState());
   }
 
   @override
@@ -796,6 +799,53 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                       ),
                     );
                   },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
+            title: '后台保活',
+            subtitle: '用于提升超级岛和提醒在后台场景下的稳定性，可按需配合系统权限一起开启。',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('从最近任务中隐藏应用'),
+                  subtitle: const Text('开启后应用会尽量不显示在最近任务列表中，适合配合后台保活一起使用。'),
+                  value: _draft.liveHideFromRecents,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(liveHideFromRecents: value));
+                  },
+                ),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    _isKeepAliveAccessibilityEnabled
+                        ? Icons.check_circle_rounded
+                        : Icons.accessibility_new_rounded,
+                    color: _isKeepAliveAccessibilityEnabled
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  title: const Text('后台保活辅助服务'),
+                  subtitle: Text(
+                    _isKeepAliveAccessibilityEnabled
+                        ? '当前已开启。系统会保持后台保活辅助服务处于可用状态。'
+                        : '当前未开启。可进入系统无障碍设置手动打开后台保活辅助服务。',
+                  ),
+                  trailing: FilledButton.tonal(
+                    onPressed: () => _runSystemAction(
+                      _liveService.openAccessibilitySettings,
+                    ),
+                    child: const Text('去开启'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '建议顺序：先开启自启动和无限制电源，再按需开启后台保活辅助服务；如果希望减少最近任务干扰，可再打开上面的隐藏后台选项。',
+                  style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
             ),
@@ -1037,8 +1087,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     min: -2,
                     max: 2,
                     divisions: 40,
-                    label:
-                        _draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1),
+                    label: _draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
@@ -1057,8 +1106,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     min: -2,
                     max: 2,
                     divisions: 40,
-                    label:
-                        _draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1),
+                    label: _draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1),
                     onChanged: (value) {
                       _updateDraft(
                         _draft.copyWith(
@@ -1336,6 +1384,25 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
     return path.substring(dotIndex + 1).toLowerCase();
   }
 
+  Future<void> _refreshExperimentalState() async {
+    final enabled = await _liveService.isKeepAliveAccessibilityEnabled();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _isKeepAliveAccessibilityEnabled = enabled;
+    });
+  }
+
+  Future<void> _runSystemAction(Future<void> Function() action) async {
+    await action();
+    await Future<void>.delayed(const Duration(milliseconds: 400));
+    if (!mounted) {
+      return;
+    }
+    await _refreshExperimentalState();
+  }
+
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
     setState(() {
       _draft = next;
@@ -1538,9 +1605,8 @@ Future<void> _showTestOptions(BuildContext context) async {
       'live_update_test_suspend_sync',
       'Temporarily suspended scheduled live update sync for manual test',
       extras: {
-        'untilMillis': end
-            .add(const Duration(seconds: 20))
-            .millisecondsSinceEpoch,
+        'untilMillis':
+            end.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
       },
     );
     await liveService.stopLiveUpdate();
@@ -1592,8 +1658,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
       miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
       miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
-      miuiIslandLabelRenderQuality:
-          settings.liveMiuiIslandLabelRenderQuality,
+      miuiIslandLabelRenderQuality: settings.liveMiuiIslandLabelRenderQuality,
       miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
       miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
       miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,

@@ -213,21 +213,23 @@ class TimetableProvider with ChangeNotifier {
     await _liveActivitiesService.setLiveDiagnosticsEnabled(
       _settings.liveEnableLocalDiagnostics,
     );
+    await _liveActivitiesService.setHideFromRecents(
+      _settings.liveHideFromRecents,
+    );
   }
 
   TimetableSettings _normalizeSettingsWithTimeScheme(
       TimetableSettings settings) {
-    final normalizedSettings = settings.copyWith(liveHideFromRecents: false);
-    final scheme = _getTimeSchemeById(normalizedSettings.activeTimeSchemeId);
+    final scheme = _getTimeSchemeById(settings.activeTimeSchemeId);
     if (scheme == null) {
-      return normalizedSettings;
+      return settings;
     }
-    final hasSameSections = _sectionSignature(normalizedSettings.sections) ==
+    final hasSameSections = _sectionSignature(settings.sections) ==
         _sectionSignature(scheme.sections);
     if (hasSameSections) {
-      return normalizedSettings;
+      return settings;
     }
-    return normalizedSettings.copyWith(
+    return settings.copyWith(
       sections: List<SectionTime>.from(scheme.sections),
       activeTimeSchemeId: scheme.id,
     );
@@ -300,9 +302,8 @@ class TimetableProvider with ChangeNotifier {
     for (final profile in sourceProfiles) {
       for (final course in profile.courses) {
         final usesOverride = course.timeSchemeIdOverride == schemeId;
-        final followsProfileScheme =
-            course.timeSchemeIdOverride == null &&
-                profile.settings.activeTimeSchemeId == schemeId;
+        final followsProfileScheme = course.timeSchemeIdOverride == null &&
+            profile.settings.activeTimeSchemeId == schemeId;
         if (!usesOverride && !followsProfileScheme) {
           continue;
         }
@@ -347,7 +348,8 @@ class TimetableProvider with ChangeNotifier {
       return null;
     }
     usages.sort(
-      (left, right) => right.course.endSection.compareTo(left.course.endSection),
+      (left, right) =>
+          right.course.endSection.compareTo(left.course.endSection),
     );
     return usages.first;
   }
@@ -932,8 +934,9 @@ class TimetableProvider with ChangeNotifier {
   Future<String?> updateTimetableSettings(TimetableSettings settings) async {
     final sectionConfigChanged =
         settings.sectionCount != _settings.sectionCount ||
-        _sectionSignature(settings.sections) != _sectionSignature(_settings.sections) ||
-        settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
+            _sectionSignature(settings.sections) !=
+                _sectionSignature(_settings.sections) ||
+            settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
 
     if (sectionConfigChanged && settings.sectionCount < maxUsedSection) {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
@@ -1871,8 +1874,7 @@ class TimetableProvider with ChangeNotifier {
         miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
         miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
         miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
-        miuiIslandLabelRenderQuality:
-            settings.liveMiuiIslandLabelRenderQuality,
+        miuiIslandLabelRenderQuality: settings.liveMiuiIslandLabelRenderQuality,
         miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
         miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
         miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,
