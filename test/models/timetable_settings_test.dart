@@ -6,6 +6,8 @@ void main() {
     final settings = TimetableSettings.defaults();
 
     expect(settings.semesterWeekCount, 20);
+    expect(settings.timetableShowCurrentWeekCourses, isTrue);
+    expect(settings.timetableShowNonCurrentWeekCourses, isFalse);
     expect(settings.showConflictBadgeOnTimetable, isTrue);
     expect(settings.timetableConflictCourseOpacity, 0.72);
     expect(settings.liveHidePrefixText, isTrue);
@@ -65,6 +67,8 @@ void main() {
 
     final restored = TimetableSettings.fromJson(settings.toJson());
     expect(restored.semesterWeekCount, 20);
+    expect(restored.timetableShowCurrentWeekCourses, isTrue);
+    expect(restored.timetableShowNonCurrentWeekCourses, isFalse);
     expect(restored.showConflictBadgeOnTimetable, isTrue);
     expect(restored.timetableConflictCourseOpacity, 0.72);
     expect(restored.liveHidePrefixText, isTrue);
@@ -134,6 +138,8 @@ void main() {
   test('settings preserve active time scheme id', () {
     final settings = TimetableSettings.defaults().copyWith(
       activeTimeSchemeId: 'scheme-1',
+      timetableShowCurrentWeekCourses: false,
+      timetableShowNonCurrentWeekCourses: true,
       showConflictBadgeOnTimetable: false,
       timetableConflictCourseOpacity: 0.55,
       timetableAutoFitSectionHeight: true,
@@ -169,6 +175,8 @@ void main() {
     final restored = TimetableSettings.fromJson(settings.toJson());
 
     expect(restored.activeTimeSchemeId, 'scheme-1');
+    expect(restored.timetableShowCurrentWeekCourses, isFalse);
+    expect(restored.timetableShowNonCurrentWeekCourses, isTrue);
     expect(restored.showConflictBadgeOnTimetable, isFalse);
     expect(restored.timetableConflictCourseOpacity, 0.55);
     expect(restored.timetableAutoFitSectionHeight, isTrue);
