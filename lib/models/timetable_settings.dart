@@ -289,6 +289,103 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   }
 }
 
+class LiveDisplaySettings {
+  final bool showCourseName;
+  final bool showLocation;
+  final bool showCountdown;
+  final bool showStageText;
+  final bool useShortName;
+  final bool hidePrefixText;
+  final LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode;
+  final bool enableMiuiIslandLabelImage;
+  final MiuiIslandLabelStyle miuiIslandLabelStyle;
+  final MiuiIslandLabelContent miuiIslandLabelContent;
+  final String miuiIslandLabelFontColor;
+  final MiuiIslandLabelFontWeight miuiIslandLabelFontWeight;
+  final MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality;
+  final double miuiIslandLabelFontSize;
+  final double miuiIslandLabelOffsetX;
+  final double miuiIslandLabelOffsetY;
+  final MiuiIslandExpandedIconMode miuiIslandExpandedIconMode;
+  final String? miuiIslandExpandedIconPath;
+
+  const LiveDisplaySettings({
+    required this.showCourseName,
+    required this.showLocation,
+    required this.showCountdown,
+    required this.showStageText,
+    required this.useShortName,
+    required this.hidePrefixText,
+    required this.duringClassTimeDisplayMode,
+    required this.enableMiuiIslandLabelImage,
+    required this.miuiIslandLabelStyle,
+    required this.miuiIslandLabelContent,
+    required this.miuiIslandLabelFontColor,
+    required this.miuiIslandLabelFontWeight,
+    required this.miuiIslandLabelRenderQuality,
+    required this.miuiIslandLabelFontSize,
+    required this.miuiIslandLabelOffsetX,
+    required this.miuiIslandLabelOffsetY,
+    required this.miuiIslandExpandedIconMode,
+    required this.miuiIslandExpandedIconPath,
+  });
+
+  LiveDisplaySettings copyWith({
+    bool? showCourseName,
+    bool? showLocation,
+    bool? showCountdown,
+    bool? showStageText,
+    bool? useShortName,
+    bool? hidePrefixText,
+    LiveDuringClassTimeDisplayMode? duringClassTimeDisplayMode,
+    bool? enableMiuiIslandLabelImage,
+    MiuiIslandLabelStyle? miuiIslandLabelStyle,
+    MiuiIslandLabelContent? miuiIslandLabelContent,
+    String? miuiIslandLabelFontColor,
+    MiuiIslandLabelFontWeight? miuiIslandLabelFontWeight,
+    MiuiIslandLabelRenderQuality? miuiIslandLabelRenderQuality,
+    double? miuiIslandLabelFontSize,
+    double? miuiIslandLabelOffsetX,
+    double? miuiIslandLabelOffsetY,
+    MiuiIslandExpandedIconMode? miuiIslandExpandedIconMode,
+    String? miuiIslandExpandedIconPath,
+    bool clearMiuiIslandExpandedIconPath = false,
+  }) {
+    return LiveDisplaySettings(
+      showCourseName: showCourseName ?? this.showCourseName,
+      showLocation: showLocation ?? this.showLocation,
+      showCountdown: showCountdown ?? this.showCountdown,
+      showStageText: showStageText ?? this.showStageText,
+      useShortName: useShortName ?? this.useShortName,
+      hidePrefixText: hidePrefixText ?? this.hidePrefixText,
+      duringClassTimeDisplayMode:
+          duringClassTimeDisplayMode ?? this.duringClassTimeDisplayMode,
+      enableMiuiIslandLabelImage:
+          enableMiuiIslandLabelImage ?? this.enableMiuiIslandLabelImage,
+      miuiIslandLabelStyle: miuiIslandLabelStyle ?? this.miuiIslandLabelStyle,
+      miuiIslandLabelContent:
+          miuiIslandLabelContent ?? this.miuiIslandLabelContent,
+      miuiIslandLabelFontColor:
+          miuiIslandLabelFontColor ?? this.miuiIslandLabelFontColor,
+      miuiIslandLabelFontWeight:
+          miuiIslandLabelFontWeight ?? this.miuiIslandLabelFontWeight,
+      miuiIslandLabelRenderQuality:
+          miuiIslandLabelRenderQuality ?? this.miuiIslandLabelRenderQuality,
+      miuiIslandLabelFontSize:
+          miuiIslandLabelFontSize ?? this.miuiIslandLabelFontSize,
+      miuiIslandLabelOffsetX:
+          miuiIslandLabelOffsetX ?? this.miuiIslandLabelOffsetX,
+      miuiIslandLabelOffsetY:
+          miuiIslandLabelOffsetY ?? this.miuiIslandLabelOffsetY,
+      miuiIslandExpandedIconMode:
+          miuiIslandExpandedIconMode ?? this.miuiIslandExpandedIconMode,
+      miuiIslandExpandedIconPath: clearMiuiIslandExpandedIconPath
+          ? null
+          : miuiIslandExpandedIconPath ?? this.miuiIslandExpandedIconPath,
+    );
+  }
+}
+
 class SectionTime {
   final String startTime;
   final String endTime;
@@ -362,6 +459,15 @@ class TimetableSettings {
   final bool liveHidePrefixText;
   final LiveDuringClassTimeDisplayMode liveDuringClassTimeDisplayMode;
   final bool liveEnableMiuiIslandLabelImage;
+  final bool liveDuringEndShowCourseName;
+  final bool liveDuringEndShowLocation;
+  final bool liveDuringEndShowCountdown;
+  final bool liveDuringEndShowStageText;
+  final bool liveDuringEndUseShortName;
+  final bool liveDuringEndHidePrefixText;
+  final bool liveDuringEndFollowBeforeClass;
+  final LiveDuringClassTimeDisplayMode liveDuringEndTimeDisplayMode;
+  final bool liveDuringEndEnableMiuiIslandLabelImage;
   final bool liveHideFromRecents;
   final bool liveEnableLocalDiagnostics;
   final MiuiIslandLabelStyle liveMiuiIslandLabelStyle;
@@ -374,6 +480,16 @@ class TimetableSettings {
   final double liveMiuiIslandLabelOffsetY;
   final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
   final String? liveMiuiIslandExpandedIconPath;
+  final MiuiIslandLabelStyle liveDuringEndMiuiIslandLabelStyle;
+  final MiuiIslandLabelContent liveDuringEndMiuiIslandLabelContent;
+  final String liveDuringEndMiuiIslandLabelFontColor;
+  final MiuiIslandLabelFontWeight liveDuringEndMiuiIslandLabelFontWeight;
+  final MiuiIslandLabelRenderQuality liveDuringEndMiuiIslandLabelRenderQuality;
+  final double liveDuringEndMiuiIslandLabelFontSize;
+  final double liveDuringEndMiuiIslandLabelOffsetX;
+  final double liveDuringEndMiuiIslandLabelOffsetY;
+  final MiuiIslandExpandedIconMode liveDuringEndMiuiIslandExpandedIconMode;
+  final String? liveDuringEndMiuiIslandExpandedIconPath;
   final int liveShowBeforeClassMinutes;
   final int liveClassReminderStartMinutes;
   final int liveEndSecondsCountdownThreshold;
@@ -423,6 +539,15 @@ class TimetableSettings {
     this.liveDuringClassTimeDisplayMode =
         LiveDuringClassTimeDisplayMode.nearest,
     this.liveEnableMiuiIslandLabelImage = false,
+    this.liveDuringEndShowCourseName = true,
+    this.liveDuringEndShowLocation = true,
+    this.liveDuringEndShowCountdown = true,
+    this.liveDuringEndShowStageText = true,
+    this.liveDuringEndUseShortName = true,
+    this.liveDuringEndHidePrefixText = true,
+    this.liveDuringEndFollowBeforeClass = true,
+    this.liveDuringEndTimeDisplayMode = LiveDuringClassTimeDisplayMode.nearest,
+    this.liveDuringEndEnableMiuiIslandLabelImage = false,
     this.liveHideFromRecents = false,
     this.liveEnableLocalDiagnostics = false,
     this.liveMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
@@ -436,6 +561,20 @@ class TimetableSettings {
     this.liveMiuiIslandLabelOffsetY = 0,
     this.liveMiuiIslandExpandedIconMode = MiuiIslandExpandedIconMode.appIcon,
     this.liveMiuiIslandExpandedIconPath,
+    this.liveDuringEndMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
+    this.liveDuringEndMiuiIslandLabelContent =
+        MiuiIslandLabelContent.courseName,
+    this.liveDuringEndMiuiIslandLabelFontColor = '#FFFFFF',
+    this.liveDuringEndMiuiIslandLabelFontWeight =
+        MiuiIslandLabelFontWeight.bold,
+    this.liveDuringEndMiuiIslandLabelRenderQuality =
+        MiuiIslandLabelRenderQuality.standard,
+    this.liveDuringEndMiuiIslandLabelFontSize = 14,
+    this.liveDuringEndMiuiIslandLabelOffsetX = 0,
+    this.liveDuringEndMiuiIslandLabelOffsetY = 0,
+    this.liveDuringEndMiuiIslandExpandedIconMode =
+        MiuiIslandExpandedIconMode.appIcon,
+    this.liveDuringEndMiuiIslandExpandedIconPath,
     this.liveShowBeforeClassMinutes = 20,
     this.liveClassReminderStartMinutes = 0,
     this.liveEndSecondsCountdownThreshold = 60,
@@ -497,19 +636,39 @@ class TimetableSettings {
       liveHidePrefixText: true,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
       liveEnableMiuiIslandLabelImage: false,
+      liveDuringEndShowCourseName: true,
+      liveDuringEndShowLocation: true,
+      liveDuringEndShowCountdown: true,
+      liveDuringEndShowStageText: true,
+      liveDuringEndUseShortName: true,
+      liveDuringEndHidePrefixText: true,
+      liveDuringEndFollowBeforeClass: true,
+      liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayMode.nearest,
+      liveDuringEndEnableMiuiIslandLabelImage: false,
       liveHideFromRecents: false,
       liveEnableLocalDiagnostics: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
       liveMiuiIslandLabelFontColor: '#FFFFFF',
       liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.bold,
-      liveMiuiIslandLabelRenderQuality:
-          MiuiIslandLabelRenderQuality.standard,
+      liveMiuiIslandLabelRenderQuality: MiuiIslandLabelRenderQuality.standard,
       liveMiuiIslandLabelFontSize: 14,
       liveMiuiIslandLabelOffsetX: 0,
       liveMiuiIslandLabelOffsetY: 0,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
       liveMiuiIslandExpandedIconPath: null,
+      liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
+      liveDuringEndMiuiIslandLabelContent: MiuiIslandLabelContent.courseName,
+      liveDuringEndMiuiIslandLabelFontColor: '#FFFFFF',
+      liveDuringEndMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.bold,
+      liveDuringEndMiuiIslandLabelRenderQuality:
+          MiuiIslandLabelRenderQuality.standard,
+      liveDuringEndMiuiIslandLabelFontSize: 14,
+      liveDuringEndMiuiIslandLabelOffsetX: 0,
+      liveDuringEndMiuiIslandLabelOffsetY: 0,
+      liveDuringEndMiuiIslandExpandedIconMode:
+          MiuiIslandExpandedIconMode.appIcon,
+      liveDuringEndMiuiIslandExpandedIconPath: null,
       liveShowBeforeClassMinutes: 20,
       liveClassReminderStartMinutes: 0,
       liveEndSecondsCountdownThreshold: 60,
@@ -561,6 +720,16 @@ class TimetableSettings {
       'liveHidePrefixText': liveHidePrefixText,
       'liveDuringClassTimeDisplayMode': liveDuringClassTimeDisplayMode.value,
       'liveEnableMiuiIslandLabelImage': liveEnableMiuiIslandLabelImage,
+      'liveDuringEndShowCourseName': liveDuringEndShowCourseName,
+      'liveDuringEndShowLocation': liveDuringEndShowLocation,
+      'liveDuringEndShowCountdown': liveDuringEndShowCountdown,
+      'liveDuringEndShowStageText': liveDuringEndShowStageText,
+      'liveDuringEndUseShortName': liveDuringEndUseShortName,
+      'liveDuringEndHidePrefixText': liveDuringEndHidePrefixText,
+      'liveDuringEndFollowBeforeClass': liveDuringEndFollowBeforeClass,
+      'liveDuringEndTimeDisplayMode': liveDuringEndTimeDisplayMode.value,
+      'liveDuringEndEnableMiuiIslandLabelImage':
+          liveDuringEndEnableMiuiIslandLabelImage,
       'liveHideFromRecents': liveHideFromRecents,
       'liveEnableLocalDiagnostics': liveEnableLocalDiagnostics,
       'liveMiuiIslandLabelStyle': liveMiuiIslandLabelStyle.value,
@@ -574,6 +743,26 @@ class TimetableSettings {
       'liveMiuiIslandLabelOffsetY': liveMiuiIslandLabelOffsetY,
       'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
       'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
+      'liveDuringEndMiuiIslandLabelStyle':
+          liveDuringEndMiuiIslandLabelStyle.value,
+      'liveDuringEndMiuiIslandLabelContent':
+          liveDuringEndMiuiIslandLabelContent.value,
+      'liveDuringEndMiuiIslandLabelFontColor':
+          liveDuringEndMiuiIslandLabelFontColor,
+      'liveDuringEndMiuiIslandLabelFontWeight':
+          liveDuringEndMiuiIslandLabelFontWeight.value,
+      'liveDuringEndMiuiIslandLabelRenderQuality':
+          liveDuringEndMiuiIslandLabelRenderQuality.value,
+      'liveDuringEndMiuiIslandLabelFontSize':
+          liveDuringEndMiuiIslandLabelFontSize,
+      'liveDuringEndMiuiIslandLabelOffsetX':
+          liveDuringEndMiuiIslandLabelOffsetX,
+      'liveDuringEndMiuiIslandLabelOffsetY':
+          liveDuringEndMiuiIslandLabelOffsetY,
+      'liveDuringEndMiuiIslandExpandedIconMode':
+          liveDuringEndMiuiIslandExpandedIconMode.value,
+      'liveDuringEndMiuiIslandExpandedIconPath':
+          liveDuringEndMiuiIslandExpandedIconPath,
       'liveShowBeforeClassMinutes': liveShowBeforeClassMinutes,
       'liveClassReminderStartMinutes': liveClassReminderStartMinutes,
       'liveEndSecondsCountdownThreshold': liveEndSecondsCountdownThreshold,
@@ -652,6 +841,29 @@ class TimetableSettings {
           json['liveDuringClassTimeDisplayMode'] as String?),
       liveEnableMiuiIslandLabelImage:
           json['liveEnableMiuiIslandLabelImage'] as bool? ?? false,
+      liveDuringEndShowCourseName:
+          json['liveDuringEndShowCourseName'] as bool? ??
+              (json['liveShowCourseName'] as bool? ?? true),
+      liveDuringEndShowLocation: json['liveDuringEndShowLocation'] as bool? ??
+          (json['liveShowLocation'] as bool? ?? true),
+      liveDuringEndShowCountdown: json['liveDuringEndShowCountdown'] as bool? ??
+          (json['liveShowCountdown'] as bool? ?? true),
+      liveDuringEndShowStageText: json['liveDuringEndShowStageText'] as bool? ??
+          (json['liveShowStageText'] as bool? ?? true),
+      liveDuringEndUseShortName: json['liveDuringEndUseShortName'] as bool? ??
+          (json['liveUseShortName'] as bool? ?? true),
+      liveDuringEndHidePrefixText:
+          json['liveDuringEndHidePrefixText'] as bool? ??
+              (json['liveHidePrefixText'] as bool? ?? true),
+      liveDuringEndFollowBeforeClass:
+          json['liveDuringEndFollowBeforeClass'] as bool? ?? true,
+      liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
+        json['liveDuringEndTimeDisplayMode'] as String? ??
+            json['liveDuringClassTimeDisplayMode'] as String?,
+      ),
+      liveDuringEndEnableMiuiIslandLabelImage:
+          json['liveDuringEndEnableMiuiIslandLabelImage'] as bool? ??
+              (json['liveEnableMiuiIslandLabelImage'] as bool? ?? false),
       liveHideFromRecents: json['liveHideFromRecents'] as bool? ?? false,
       liveEnableLocalDiagnostics:
           json['liveEnableLocalDiagnostics'] as bool? ?? false,
@@ -666,8 +878,7 @@ class TimetableSettings {
       liveMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeightX.fromValue(
         json['liveMiuiIslandLabelFontWeight'] as String?,
       ),
-      liveMiuiIslandLabelRenderQuality:
-        MiuiIslandLabelRenderQualityX.fromValue(
+      liveMiuiIslandLabelRenderQuality: MiuiIslandLabelRenderQualityX.fromValue(
         json['liveMiuiIslandLabelRenderQuality'] as String?,
       ),
       liveMiuiIslandLabelFontSize:
@@ -681,6 +892,44 @@ class TimetableSettings {
       ),
       liveMiuiIslandExpandedIconPath:
           json['liveMiuiIslandExpandedIconPath'] as String?,
+      liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyleX.fromValue(
+        json['liveDuringEndMiuiIslandLabelStyle'] as String? ??
+            json['liveMiuiIslandLabelStyle'] as String?,
+      ),
+      liveDuringEndMiuiIslandLabelContent: MiuiIslandLabelContentX.fromValue(
+        json['liveDuringEndMiuiIslandLabelContent'] as String? ??
+            json['liveMiuiIslandLabelContent'] as String?,
+      ),
+      liveDuringEndMiuiIslandLabelFontColor:
+          json['liveDuringEndMiuiIslandLabelFontColor'] as String? ??
+              (json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF'),
+      liveDuringEndMiuiIslandLabelFontWeight:
+          MiuiIslandLabelFontWeightX.fromValue(
+        json['liveDuringEndMiuiIslandLabelFontWeight'] as String? ??
+            json['liveMiuiIslandLabelFontWeight'] as String?,
+      ),
+      liveDuringEndMiuiIslandLabelRenderQuality:
+          MiuiIslandLabelRenderQualityX.fromValue(
+        json['liveDuringEndMiuiIslandLabelRenderQuality'] as String? ??
+            json['liveMiuiIslandLabelRenderQuality'] as String?,
+      ),
+      liveDuringEndMiuiIslandLabelFontSize:
+          (json['liveDuringEndMiuiIslandLabelFontSize'] as num?)?.toDouble() ??
+              ((json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14),
+      liveDuringEndMiuiIslandLabelOffsetX:
+          (json['liveDuringEndMiuiIslandLabelOffsetX'] as num?)?.toDouble() ??
+              ((json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0),
+      liveDuringEndMiuiIslandLabelOffsetY:
+          (json['liveDuringEndMiuiIslandLabelOffsetY'] as num?)?.toDouble() ??
+              ((json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0),
+      liveDuringEndMiuiIslandExpandedIconMode:
+          MiuiIslandExpandedIconModeX.fromValue(
+        json['liveDuringEndMiuiIslandExpandedIconMode'] as String? ??
+            json['liveMiuiIslandExpandedIconMode'] as String?,
+      ),
+      liveDuringEndMiuiIslandExpandedIconPath:
+          json['liveDuringEndMiuiIslandExpandedIconPath'] as String? ??
+              json['liveMiuiIslandExpandedIconPath'] as String?,
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -748,6 +997,15 @@ class TimetableSettings {
     bool? liveHidePrefixText,
     LiveDuringClassTimeDisplayMode? liveDuringClassTimeDisplayMode,
     bool? liveEnableMiuiIslandLabelImage,
+    bool? liveDuringEndShowCourseName,
+    bool? liveDuringEndShowLocation,
+    bool? liveDuringEndShowCountdown,
+    bool? liveDuringEndShowStageText,
+    bool? liveDuringEndUseShortName,
+    bool? liveDuringEndHidePrefixText,
+    bool? liveDuringEndFollowBeforeClass,
+    LiveDuringClassTimeDisplayMode? liveDuringEndTimeDisplayMode,
+    bool? liveDuringEndEnableMiuiIslandLabelImage,
     bool? liveHideFromRecents,
     bool? liveEnableLocalDiagnostics,
     MiuiIslandLabelStyle? liveMiuiIslandLabelStyle,
@@ -761,6 +1019,17 @@ class TimetableSettings {
     MiuiIslandExpandedIconMode? liveMiuiIslandExpandedIconMode,
     String? liveMiuiIslandExpandedIconPath,
     bool clearLiveMiuiIslandExpandedIconPath = false,
+    MiuiIslandLabelStyle? liveDuringEndMiuiIslandLabelStyle,
+    MiuiIslandLabelContent? liveDuringEndMiuiIslandLabelContent,
+    String? liveDuringEndMiuiIslandLabelFontColor,
+    MiuiIslandLabelFontWeight? liveDuringEndMiuiIslandLabelFontWeight,
+    MiuiIslandLabelRenderQuality? liveDuringEndMiuiIslandLabelRenderQuality,
+    double? liveDuringEndMiuiIslandLabelFontSize,
+    double? liveDuringEndMiuiIslandLabelOffsetX,
+    double? liveDuringEndMiuiIslandLabelOffsetY,
+    MiuiIslandExpandedIconMode? liveDuringEndMiuiIslandExpandedIconMode,
+    String? liveDuringEndMiuiIslandExpandedIconPath,
+    bool clearLiveDuringEndMiuiIslandExpandedIconPath = false,
     int? liveShowBeforeClassMinutes,
     int? liveClassReminderStartMinutes,
     int? liveEndSecondsCountdownThreshold,
@@ -826,8 +1095,26 @@ class TimetableSettings {
           liveDuringClassTimeDisplayMode ?? this.liveDuringClassTimeDisplayMode,
       liveEnableMiuiIslandLabelImage:
           liveEnableMiuiIslandLabelImage ?? this.liveEnableMiuiIslandLabelImage,
-      liveHideFromRecents:
-          liveHideFromRecents ?? this.liveHideFromRecents,
+      liveDuringEndShowCourseName:
+          liveDuringEndShowCourseName ?? this.liveDuringEndShowCourseName,
+      liveDuringEndShowLocation:
+          liveDuringEndShowLocation ?? this.liveDuringEndShowLocation,
+      liveDuringEndShowCountdown:
+          liveDuringEndShowCountdown ?? this.liveDuringEndShowCountdown,
+      liveDuringEndShowStageText:
+          liveDuringEndShowStageText ?? this.liveDuringEndShowStageText,
+      liveDuringEndUseShortName:
+          liveDuringEndUseShortName ?? this.liveDuringEndUseShortName,
+      liveDuringEndHidePrefixText:
+          liveDuringEndHidePrefixText ?? this.liveDuringEndHidePrefixText,
+      liveDuringEndFollowBeforeClass:
+          liveDuringEndFollowBeforeClass ?? this.liveDuringEndFollowBeforeClass,
+      liveDuringEndTimeDisplayMode:
+          liveDuringEndTimeDisplayMode ?? this.liveDuringEndTimeDisplayMode,
+      liveDuringEndEnableMiuiIslandLabelImage:
+          liveDuringEndEnableMiuiIslandLabelImage ??
+              this.liveDuringEndEnableMiuiIslandLabelImage,
+      liveHideFromRecents: liveHideFromRecents ?? this.liveHideFromRecents,
       liveEnableLocalDiagnostics:
           liveEnableLocalDiagnostics ?? this.liveEnableLocalDiagnostics,
       liveMiuiIslandLabelStyle:
@@ -836,8 +1123,8 @@ class TimetableSettings {
           liveMiuiIslandLabelContent ?? this.liveMiuiIslandLabelContent,
       liveMiuiIslandLabelFontColor:
           liveMiuiIslandLabelFontColor ?? this.liveMiuiIslandLabelFontColor,
-      liveMiuiIslandLabelFontWeight: liveMiuiIslandLabelFontWeight ??
-          this.liveMiuiIslandLabelFontWeight,
+      liveMiuiIslandLabelFontWeight:
+          liveMiuiIslandLabelFontWeight ?? this.liveMiuiIslandLabelFontWeight,
       liveMiuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality ??
           this.liveMiuiIslandLabelRenderQuality,
       liveMiuiIslandLabelFontSize:
@@ -852,6 +1139,37 @@ class TimetableSettings {
           ? null
           : liveMiuiIslandExpandedIconPath ??
               this.liveMiuiIslandExpandedIconPath,
+      liveDuringEndMiuiIslandLabelStyle: liveDuringEndMiuiIslandLabelStyle ??
+          this.liveDuringEndMiuiIslandLabelStyle,
+      liveDuringEndMiuiIslandLabelContent:
+          liveDuringEndMiuiIslandLabelContent ??
+              this.liveDuringEndMiuiIslandLabelContent,
+      liveDuringEndMiuiIslandLabelFontColor:
+          liveDuringEndMiuiIslandLabelFontColor ??
+              this.liveDuringEndMiuiIslandLabelFontColor,
+      liveDuringEndMiuiIslandLabelFontWeight:
+          liveDuringEndMiuiIslandLabelFontWeight ??
+              this.liveDuringEndMiuiIslandLabelFontWeight,
+      liveDuringEndMiuiIslandLabelRenderQuality:
+          liveDuringEndMiuiIslandLabelRenderQuality ??
+              this.liveDuringEndMiuiIslandLabelRenderQuality,
+      liveDuringEndMiuiIslandLabelFontSize:
+          liveDuringEndMiuiIslandLabelFontSize ??
+              this.liveDuringEndMiuiIslandLabelFontSize,
+      liveDuringEndMiuiIslandLabelOffsetX:
+          liveDuringEndMiuiIslandLabelOffsetX ??
+              this.liveDuringEndMiuiIslandLabelOffsetX,
+      liveDuringEndMiuiIslandLabelOffsetY:
+          liveDuringEndMiuiIslandLabelOffsetY ??
+              this.liveDuringEndMiuiIslandLabelOffsetY,
+      liveDuringEndMiuiIslandExpandedIconMode:
+          liveDuringEndMiuiIslandExpandedIconMode ??
+              this.liveDuringEndMiuiIslandExpandedIconMode,
+      liveDuringEndMiuiIslandExpandedIconPath:
+          clearLiveDuringEndMiuiIslandExpandedIconPath
+              ? null
+              : liveDuringEndMiuiIslandExpandedIconPath ??
+                  this.liveDuringEndMiuiIslandExpandedIconPath,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:
@@ -875,6 +1193,114 @@ class TimetableSettings {
   }
 
   int get sectionCount => sections.length;
+
+  LiveDisplaySettings get beforeClassDisplaySettings => LiveDisplaySettings(
+        showCourseName: liveShowCourseName,
+        showLocation: liveShowLocation,
+        showCountdown: liveShowCountdown,
+        showStageText: liveShowStageText,
+        useShortName: liveUseShortName,
+        hidePrefixText: liveHidePrefixText,
+        duringClassTimeDisplayMode: liveDuringClassTimeDisplayMode,
+        enableMiuiIslandLabelImage: liveEnableMiuiIslandLabelImage,
+        miuiIslandLabelStyle: liveMiuiIslandLabelStyle,
+        miuiIslandLabelContent: liveMiuiIslandLabelContent,
+        miuiIslandLabelFontColor: liveMiuiIslandLabelFontColor,
+        miuiIslandLabelFontWeight: liveMiuiIslandLabelFontWeight,
+        miuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality,
+        miuiIslandLabelFontSize: liveMiuiIslandLabelFontSize,
+        miuiIslandLabelOffsetX: liveMiuiIslandLabelOffsetX,
+        miuiIslandLabelOffsetY: liveMiuiIslandLabelOffsetY,
+        miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
+        miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
+      );
+
+  LiveDisplaySettings get duringEndDisplaySettings =>
+      liveDuringEndFollowBeforeClass
+          ? beforeClassDisplaySettings
+          : LiveDisplaySettings(
+              showCourseName: liveDuringEndShowCourseName,
+              showLocation: liveDuringEndShowLocation,
+              showCountdown: liveDuringEndShowCountdown,
+              showStageText: liveDuringEndShowStageText,
+              useShortName: liveDuringEndUseShortName,
+              hidePrefixText: liveDuringEndHidePrefixText,
+              duringClassTimeDisplayMode: liveDuringEndTimeDisplayMode,
+              enableMiuiIslandLabelImage:
+                  liveDuringEndEnableMiuiIslandLabelImage,
+              miuiIslandLabelStyle: liveDuringEndMiuiIslandLabelStyle,
+              miuiIslandLabelContent: liveDuringEndMiuiIslandLabelContent,
+              miuiIslandLabelFontColor: liveDuringEndMiuiIslandLabelFontColor,
+              miuiIslandLabelFontWeight: liveDuringEndMiuiIslandLabelFontWeight,
+              miuiIslandLabelRenderQuality:
+                  liveDuringEndMiuiIslandLabelRenderQuality,
+              miuiIslandLabelFontSize: liveDuringEndMiuiIslandLabelFontSize,
+              miuiIslandLabelOffsetX: liveDuringEndMiuiIslandLabelOffsetX,
+              miuiIslandLabelOffsetY: liveDuringEndMiuiIslandLabelOffsetY,
+              miuiIslandExpandedIconMode:
+                  liveDuringEndMiuiIslandExpandedIconMode,
+              miuiIslandExpandedIconPath:
+                  liveDuringEndMiuiIslandExpandedIconPath,
+            );
+
+  TimetableSettings copyWithBeforeClassDisplaySettings(
+    LiveDisplaySettings settings, {
+    bool clearExpandedIconPath = false,
+  }) {
+    return copyWith(
+      liveShowCourseName: settings.showCourseName,
+      liveShowLocation: settings.showLocation,
+      liveShowCountdown: settings.showCountdown,
+      liveShowStageText: settings.showStageText,
+      liveUseShortName: settings.useShortName,
+      liveHidePrefixText: settings.hidePrefixText,
+      liveDuringClassTimeDisplayMode: settings.duringClassTimeDisplayMode,
+      liveEnableMiuiIslandLabelImage: settings.enableMiuiIslandLabelImage,
+      liveMiuiIslandLabelStyle: settings.miuiIslandLabelStyle,
+      liveMiuiIslandLabelContent: settings.miuiIslandLabelContent,
+      liveMiuiIslandLabelFontColor: settings.miuiIslandLabelFontColor,
+      liveMiuiIslandLabelFontWeight: settings.miuiIslandLabelFontWeight,
+      liveMiuiIslandLabelRenderQuality: settings.miuiIslandLabelRenderQuality,
+      liveMiuiIslandLabelFontSize: settings.miuiIslandLabelFontSize,
+      liveMiuiIslandLabelOffsetX: settings.miuiIslandLabelOffsetX,
+      liveMiuiIslandLabelOffsetY: settings.miuiIslandLabelOffsetY,
+      liveMiuiIslandExpandedIconMode: settings.miuiIslandExpandedIconMode,
+      liveMiuiIslandExpandedIconPath: settings.miuiIslandExpandedIconPath,
+      clearLiveMiuiIslandExpandedIconPath: clearExpandedIconPath,
+    );
+  }
+
+  TimetableSettings copyWithDuringEndDisplaySettings(
+    LiveDisplaySettings settings, {
+    bool clearExpandedIconPath = false,
+  }) {
+    return copyWith(
+      liveDuringEndShowCourseName: settings.showCourseName,
+      liveDuringEndShowLocation: settings.showLocation,
+      liveDuringEndShowCountdown: settings.showCountdown,
+      liveDuringEndShowStageText: settings.showStageText,
+      liveDuringEndUseShortName: settings.useShortName,
+      liveDuringEndHidePrefixText: settings.hidePrefixText,
+      liveDuringEndTimeDisplayMode: settings.duringClassTimeDisplayMode,
+      liveDuringEndEnableMiuiIslandLabelImage:
+          settings.enableMiuiIslandLabelImage,
+      liveDuringEndMiuiIslandLabelStyle: settings.miuiIslandLabelStyle,
+      liveDuringEndMiuiIslandLabelContent: settings.miuiIslandLabelContent,
+      liveDuringEndMiuiIslandLabelFontColor: settings.miuiIslandLabelFontColor,
+      liveDuringEndMiuiIslandLabelFontWeight:
+          settings.miuiIslandLabelFontWeight,
+      liveDuringEndMiuiIslandLabelRenderQuality:
+          settings.miuiIslandLabelRenderQuality,
+      liveDuringEndMiuiIslandLabelFontSize: settings.miuiIslandLabelFontSize,
+      liveDuringEndMiuiIslandLabelOffsetX: settings.miuiIslandLabelOffsetX,
+      liveDuringEndMiuiIslandLabelOffsetY: settings.miuiIslandLabelOffsetY,
+      liveDuringEndMiuiIslandExpandedIconMode:
+          settings.miuiIslandExpandedIconMode,
+      liveDuringEndMiuiIslandExpandedIconPath:
+          settings.miuiIslandExpandedIconPath,
+      clearLiveDuringEndMiuiIslandExpandedIconPath: clearExpandedIconPath,
+    );
+  }
 
   List<int> get availableWeeks =>
       List.generate(semesterWeekCount, (index) => index + 1);

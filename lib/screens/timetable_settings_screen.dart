@@ -1,10 +1,6 @@
 import 'dart:async';
-import 'dart:io';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
@@ -14,6 +10,7 @@ import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
+import 'live_settings_subpages.dart';
 import 'time_scheme_bottom_sheet.dart';
 import 'user_guide_screen.dart';
 
@@ -665,38 +662,21 @@ class _LiveSettingsScreen extends StatefulWidget {
 }
 
 class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
-  static const List<int> _beforeClassMinutesOptions = [1, 5, 10, 15, 20, 30];
-  static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
-  static const String _miuiExpandedIconDirName = 'miui_expanded_icons';
-  static const List<String> _miuiLabelTextColors = [
-    '#FFFFFF',
-    '#E2E8F0',
-    '#BFDBFE',
-    '#A7F3D0',
-    '#FDE68A',
-    '#F9A8D4',
-  ];
-
-  final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
   late TimetableSettings _draft;
-  Timer? _autoSaveTimer;
-  bool _isKeepAliveAccessibilityEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
-    unawaited(_refreshExperimentalState());
-  }
-
-  @override
-  void dispose() {
-    _autoSaveTimer?.cancel();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final beforeClassSummary =
+        _liveDisplaySummary(_draft.beforeClassDisplaySettings);
+    final duringEndSummary = _draft.liveDuringEndFollowBeforeClass
+        ? '跟随上课前提醒'
+        : _liveDisplaySummary(_draft.duringEndDisplaySettings);
     return Scaffold(
       appBar: AppBar(
         title: const Text('超级岛与通知'),
@@ -704,797 +684,181 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _SettingsSectionCard(
-            title: '提醒时段',
-            subtitle: '不同提醒时段可以自由组合；这里的开关互不替代。',
-            child: Column(
-              children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('上课前提醒'),
-                  subtitle: Text(
-                      '在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出；不受下面“课中 / 临近下课提醒”开关影响'),
-                  value: _draft.liveEnableBeforeClass,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liveEnableBeforeClass: value),
-                    );
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('启用课中 / 临近下课提醒'),
-                  subtitle: const Text('只影响上课后到下课前的提醒，不影响“上课前提醒”开关'),
-                  value: _draft.liveEnableDuringClass,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(liveEnableDuringClass: value),
-                    );
-                  },
-                ),
-                if (_draft.liveEnableDuringClass) ...[
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('提醒启动时机'),
-                    subtitle: Text(_draft.liveClassReminderStartMinutes == 0
-                        ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                        : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'),
-                    trailing: DropdownButton<int>(
-                      value: _draft.liveClassReminderStartMinutes,
-                      items: const [
-                        DropdownMenuItem(value: 0, child: Text('一上课就展示')),
-                        DropdownMenuItem(value: 5, child: Text('提前 5 分钟展示')),
-                        DropdownMenuItem(value: 10, child: Text('提前 10 分钟展示')),
-                        DropdownMenuItem(value: 15, child: Text('提前 15 分钟展示')),
-                        DropdownMenuItem(value: 20, child: Text('提前 20 分钟展示')),
-                        DropdownMenuItem(value: 30, child: Text('提前 30 分钟展示')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) {
-                          _updateDraft(
-                            _draft.copyWith(
-                              liveClassReminderStartMinutes: value,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SettingsSectionCard(
-            title: '提醒时段内展示方式',
-            subtitle: '对前面启用的提醒时段生效。',
-            child: Column(
-              children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('支持展示超级岛/灵动岛'),
-                  subtitle:
-                      const Text('关闭后不会再尝试触发系统超级岛；该能力需 HyperOS 3.0.300 及以上支持'),
-                  value: _draft.livePromoteDuringClass,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(livePromoteDuringClass: value),
-                    );
-                  },
-                ),
-                Text(
-                  '返回桌面后，超级岛可能需要约 30 秒才会自动出现，这是系统拉起和状态收敛的延迟。',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示通知栏常驻通知'),
-                  subtitle: const Text('关闭后尽量弱化普通通知栏的状态展现（因系统限制可能无效）'),
-                  value: _draft.liveShowDuringClassNotification,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(
-                        liveShowDuringClassNotification: value,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SettingsSectionCard(
-            title: '后台保活',
-            subtitle: '用于提升超级岛和提醒在后台场景下的稳定性，可按需配合系统权限一起开启。',
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('从最近任务中隐藏应用'),
-                  subtitle: const Text('开启后应用会尽量不显示在最近任务列表中，适合配合后台保活一起使用。'),
-                  value: _draft.liveHideFromRecents,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveHideFromRecents: value));
-                  },
-                ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    _isKeepAliveAccessibilityEnabled
-                        ? Icons.check_circle_rounded
-                        : Icons.accessibility_new_rounded,
-                    color: _isKeepAliveAccessibilityEnabled
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  title: const Text('后台保活辅助服务'),
-                  subtitle: Text(
-                    _isKeepAliveAccessibilityEnabled
-                        ? '当前已开启。系统会保持后台保活辅助服务处于可用状态。'
-                        : '当前未开启。可进入系统无障碍设置手动打开后台保活辅助服务。',
-                  ),
-                  trailing: FilledButton.tonal(
-                    onPressed: () => _runSystemAction(
-                      _liveService.openAccessibilitySettings,
-                    ),
-                    child: const Text('去开启'),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '建议顺序：先开启自启动和无限制电源，再按需开启后台保活辅助服务；如果希望减少最近任务干扰，可再打开上面的隐藏后台选项。',
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '时间阈值',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<int>(
-                    value: _draft.liveShowBeforeClassMinutes,
-                    decoration: const InputDecoration(
-                      labelText: '上课前弹出时间',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _beforeClassMinutesOptions
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text('$value 分钟'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveShowBeforeClassMinutes: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<int>(
-                    value: _draft.liveEndSecondsCountdownThreshold,
-                    decoration: const InputDecoration(
-                      labelText: '下课前秒级提醒阈值',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _endSecondsOptions
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text('$value 秒'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveEndSecondsCountdownThreshold: value,
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _SettingsSectionCard(
-            title: '显示内容',
-            subtitle: '这些项会影响岛区和通知展开视图的信息密度。',
             child: Column(
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示课程名'),
-                  value: _draft.liveShowCourseName,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveShowCourseName: value));
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('优先显示课程简称'),
-                  subtitle: const Text('建议简称控制在 3 个字以内'),
-                  value: _draft.liveUseShortName,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveUseShortName: value));
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示地点'),
-                  value: _draft.liveShowLocation,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveShowLocation: value));
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示倒计时'),
-                  value: _draft.liveShowCountdown,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveShowCountdown: value));
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('显示阶段状态文案'),
-                  subtitle: const Text('关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”'),
-                  value: _draft.liveShowStageText,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveShowStageText: value));
-                  },
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('隐藏前缀文案'),
-                  subtitle: const Text('例如隐藏“即将上课”这类前缀'),
-                  value: _draft.liveHidePrefixText,
-                  onChanged: (value) {
-                    _updateDraft(_draft.copyWith(liveHidePrefixText: value));
-                  },
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
-                  value: _draft.liveDuringClassTimeDisplayMode,
-                  decoration: const InputDecoration(
-                    labelText: '上课中紧凑提醒时间',
-                    helperText: '只影响超级岛/紧凑提醒，展开内容保持完整',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: LiveDuringClassTimeDisplayMode.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateDraft(
-                      _draft.copyWith(
-                        liveDuringClassTimeDisplayMode: value,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('小米岛左侧文字图标'),
-                  subtitle: const Text('实验性功能。仅小米手机样式生效，会把课程名生成到左侧图标位。'),
-                  value: _draft.liveEnableMiuiIslandLabelImage,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(
-                        liveEnableMiuiIslandLabelImage: value,
-                      ),
-                    );
-                  },
-                ),
-                if (_draft.liveEnableMiuiIslandLabelImage) ...[
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<MiuiIslandLabelContent>(
-                    value: _draft.liveMiuiIslandLabelContent,
-                    decoration: const InputDecoration(
-                      labelText: '左侧文字内容',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MiuiIslandLabelContent.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelContent: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<MiuiIslandLabelStyle>(
-                    value: _draft.liveMiuiIslandLabelStyle,
-                    decoration: const InputDecoration(
-                      labelText: '左侧图标样式',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MiuiIslandLabelStyle.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelStyle: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '左侧文字大小 ${_draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0)}',
-                  ),
-                  Slider(
-                    value: _draft.liveMiuiIslandLabelFontSize,
-                    min: 1,
-                    max: 32,
-                    divisions: 31,
-                    label:
-                        _draft.liveMiuiIslandLabelFontSize.toStringAsFixed(0),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelFontSize: value,
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '左侧文字水平偏移 ${_draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1)}',
-                  ),
-                  Slider(
-                    value: _draft.liveMiuiIslandLabelOffsetX.clamp(-2.0, 2.0),
-                    min: -2,
-                    max: 2,
-                    divisions: 40,
-                    label: _draft.liveMiuiIslandLabelOffsetX.toStringAsFixed(1),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelOffsetX: value,
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '左侧文字垂直偏移 ${_draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1)}',
-                  ),
-                  Slider(
-                    value: _draft.liveMiuiIslandLabelOffsetY.clamp(-2.0, 2.0),
-                    min: -2,
-                    max: 2,
-                    divisions: 40,
-                    label: _draft.liveMiuiIslandLabelOffsetY.toStringAsFixed(1),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelOffsetY: value,
-                        ),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<MiuiIslandLabelFontWeight>(
-                    value: _draft.liveMiuiIslandLabelFontWeight,
-                    decoration: const InputDecoration(
-                      labelText: '左侧文字粗细',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MiuiIslandLabelFontWeight.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelFontWeight: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<MiuiIslandLabelRenderQuality>(
-                    value: _draft.liveMiuiIslandLabelRenderQuality,
-                    decoration: const InputDecoration(
-                      labelText: '左侧文字清晰度',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: MiuiIslandLabelRenderQuality.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          liveMiuiIslandLabelRenderQuality: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    '左侧文字颜色',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: _miuiLabelTextColors
-                        .map(
-                          (color) => _SelectableColorChip(
-                            colorHex: color,
-                            selected:
-                                _draft.liveMiuiIslandLabelFontColor == color,
-                            onTap: () {
-                              _updateDraft(
-                                _draft.copyWith(
-                                  liveMiuiIslandLabelFontColor: color,
-                                ),
-                              );
-                            },
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                DropdownButtonFormField<MiuiIslandExpandedIconMode>(
-                  value: _draft.liveMiuiIslandExpandedIconMode,
-                  decoration: const InputDecoration(
-                    labelText: '展开态大图标',
-                    helperText: '只影响展开通知视图，不会把左侧文字图带进去。',
-                    border: OutlineInputBorder(),
-                  ),
-                  items: MiuiIslandExpandedIconMode.values
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateDraft(
-                      _draft.copyWith(
-                        liveMiuiIslandExpandedIconMode: value,
-                        clearLiveMiuiIslandExpandedIconPath:
-                            value != MiuiIslandExpandedIconMode.customImage,
-                      ),
-                    );
-                  },
-                ),
-                if (_draft.liveMiuiIslandExpandedIconMode ==
-                    MiuiIslandExpandedIconMode.customImage) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.tonalIcon(
-                          onPressed: _pickMiuiExpandedIconImage,
-                          icon: const Icon(Icons.image_outlined),
-                          label: Text(
-                            _draft.liveMiuiIslandExpandedIconPath == null
-                                ? '选择图片'
-                                : '更换图片',
-                          ),
-                        ),
-                      ),
-                      if (_draft.liveMiuiIslandExpandedIconPath != null) ...[
-                        const SizedBox(width: 12),
-                        IconButton.outlined(
-                          onPressed: () {
-                            _updateDraft(
-                              _draft.copyWith(
-                                clearLiveMiuiIslandExpandedIconPath: true,
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.delete_outline),
-                          tooltip: '移除图片',
-                        ),
-                      ],
-                    ],
-                  ),
-                  if (_draft.liveMiuiIslandExpandedIconPath != null) ...[
-                    const SizedBox(height: 12),
-                    _MiuiExpandedIconPreview(
-                      imagePath: _draft.liveMiuiIslandExpandedIconPath!,
-                    ),
-                  ],
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '测试通知',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '用于验证超级岛、通知栏和课程简称等显示效果。正式版也会保留这个入口。',
+                _SettingsEntryTile(
+                  icon: Icons.alarm_outlined,
+                  title: '提醒时段',
+                  subtitle: '上课前、课中/下课提醒开关，展示时机和通知方式',
+                  trailing: Text(
+                    _liveTimingSummary(_draft),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(height: 12),
-                  FilledButton.tonalIcon(
-                    onPressed: () => _showTestOptions(context),
-                    icon: const Icon(Icons.science_outlined),
-                    label: const Text('发送测试通知'),
-                  ),
-                  if (!kReleaseMode) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报。',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: () => _triggerUmengTestCrash(context),
-                          icon: const Icon(Icons.warning_amber_rounded),
-                          label: const Text('崩溃测试'),
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveReminderTimingScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                _SettingsEntryTile(
+                  icon: Icons.upcoming_outlined,
+                  title: '上课前提醒显示',
+                  subtitle: beforeClassSummary,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveDisplaySettingsScreen(
+                          title: '上课前提醒显示',
+                          forDuringEnd: false,
                         ),
-                        FilledButton.tonalIcon(
-                          onPressed: () => _triggerUmengTestAnr(context),
-                          icon: const Icon(Icons.hourglass_bottom_rounded),
-                          label: const Text('异常卡顿测试'),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                _SettingsEntryTile(
+                  icon: Icons.timelapse_rounded,
+                  title: '课中/下课提醒显示',
+                  subtitle: duringEndSummary,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveDisplaySettingsScreen(
+                          title: '课中/下课提醒显示',
+                          forDuringEnd: true,
                         ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                _SettingsEntryTile(
+                  icon: Icons.shield_outlined,
+                  title: '后台保活',
+                  subtitle: '隐藏后台、后台保活辅助服务和权限入口',
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveKeepAliveSettingsScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                const Divider(height: 1),
+                _SettingsEntryTile(
+                  icon: Icons.science_outlined,
+                  title: '测试与诊断',
+                  subtitle: '发送测试通知，检查超级岛和本地诊断日志',
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const _LiveTestingSettingsScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
   }
-
-  Future<void> _pickMiuiExpandedIconImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
-    if (!mounted || result == null || result.files.isEmpty) {
-      return;
-    }
-
-    final file = result.files.single;
-    final bytes = file.bytes ?? await _readPickedFileBytes(file.path);
-    if (bytes == null || bytes.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('无法读取所选图片')),
-      );
-      return;
-    }
-
-    final extension = _resolvePickedImageExtension(file);
-    final targetDirectory = await getApplicationDocumentsDirectory();
-    final iconsDirectory = Directory(
-      '${targetDirectory.path}${Platform.pathSeparator}$_miuiExpandedIconDirName',
-    );
-    if (!await iconsDirectory.exists()) {
-      await iconsDirectory.create(recursive: true);
-    }
-
-    final targetPath =
-        '${iconsDirectory.path}${Platform.pathSeparator}expanded_icon.$extension';
-    await File(targetPath).writeAsBytes(bytes, flush: true);
-    if (!mounted) return;
-    _updateDraft(
-      _draft.copyWith(
-        liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
-        liveMiuiIslandExpandedIconPath: targetPath,
-      ),
-    );
-  }
-
-  Future<List<int>?> _readPickedFileBytes(String? path) async {
-    if (path == null || path.isEmpty) {
-      return null;
-    }
-    final file = File(path);
-    if (!await file.exists()) {
-      return null;
-    }
-    return file.readAsBytes();
-  }
-
-  String _resolvePickedImageExtension(PlatformFile file) {
-    final extension = file.extension?.toLowerCase();
-    if (extension != null && extension.isNotEmpty) {
-      return extension;
-    }
-    final path = file.path;
-    if (path == null || path.isEmpty) {
-      return 'png';
-    }
-    final dotIndex = path.lastIndexOf('.');
-    if (dotIndex == -1 || dotIndex == path.length - 1) {
-      return 'png';
-    }
-    return path.substring(dotIndex + 1).toLowerCase();
-  }
-
-  Future<void> _refreshExperimentalState() async {
-    final enabled = await _liveService.isKeepAliveAccessibilityEnabled();
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _isKeepAliveAccessibilityEnabled = enabled;
-    });
-  }
-
-  Future<void> _runSystemAction(Future<void> Function() action) async {
-    await action();
-    await Future<void>.delayed(const Duration(milliseconds: 400));
-    if (!mounted) {
-      return;
-    }
-    await _refreshExperimentalState();
-  }
-
-  void _updateDraft(TimetableSettings next, {bool debounce = false}) {
-    setState(() {
-      _draft = next;
-    });
-    _autoSaveTimer?.cancel();
-    if (debounce) {
-      _autoSaveTimer = Timer(
-        const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
-      );
-      return;
-    }
-    unawaited(_persistDraft(next));
-  }
-
-  Future<void> _persistDraft(TimetableSettings next) async {
-    if (next.liveMiuiIslandExpandedIconMode ==
-            MiuiIslandExpandedIconMode.customImage &&
-        (next.liveMiuiIslandExpandedIconPath == null ||
-            next.liveMiuiIslandExpandedIconPath!.isEmpty)) {
-      return;
-    }
-    final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(next);
-    if (!mounted) {
-      return;
-    }
-    if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-      setState(() {
-        _draft = provider.settings;
-      });
-      return;
-    }
-  }
 }
 
-class _MiuiExpandedIconPreview extends StatelessWidget {
-  const _MiuiExpandedIconPreview({
-    required this.imagePath,
-  });
-
-  final String imagePath;
+class _LiveTestingSettingsScreen extends StatelessWidget {
+  const _LiveTestingSettingsScreen();
 
   @override
   Widget build(BuildContext context) {
-    final file = File(imagePath);
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Theme.of(context).dividerColor),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
+    return Scaffold(
+      appBar: AppBar(title: const Text('测试与诊断')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: file.existsSync()
-                ? Image.file(
-                    file,
-                    width: 56,
-                    height: 56,
-                    fit: BoxFit.cover,
-                  )
-                : Container(
-                    width: 56,
-                    height: 56,
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image_outlined),
-                  ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
+          _SettingsSectionCard(
+            title: '测试通知',
+            subtitle: '用于验证超级岛、通知栏和课程简称等显示效果。',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '当前展开态图片',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                FilledButton.tonalIcon(
+                  onPressed: () => _showTestOptions(context),
+                  icon: const Icon(Icons.science_outlined),
+                  label: const Text('发送测试通知'),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  imagePath,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+                if (!kReleaseMode) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报。',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed: () => _triggerUmengTestCrash(context),
+                        icon: const Icon(Icons.warning_amber_rounded),
+                        label: const Text('崩溃测试'),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed: () => _triggerUmengTestAnr(context),
+                        icon: const Icon(Icons.hourglass_bottom_rounded),
+                        label: const Text('异常卡顿测试'),
+                      ),
+                    ],
+                  ),
+                ],
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
+            title: '本地诊断日志',
+            subtitle: '导出和清空重收集入口放在关于软件页底部的测试者选项中。',
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.tonalIcon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AboutScreen()),
+                  );
+                },
+                icon: const Icon(Icons.info_outline_rounded),
+                label: const Text('前往关于软件'),
+              ),
             ),
           ),
         ],
@@ -1562,6 +926,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     return;
   }
   final settings = provider.settings;
+  final displaySettings = settings.beforeClassDisplaySettings;
   final start = now.add(beforeClassLead);
   final end = start.add(totalCourseDuration);
 
@@ -1646,24 +1011,25 @@ Future<void> _showTestOptions(BuildContext context) async {
       enableBeforeClass: true,
       enableDuringClass: false,
       enableBeforeEnd: false,
-      showCountdown: settings.liveShowCountdown,
-      showStageText: settings.liveShowStageText,
-      showCourseNameInIsland: settings.liveShowCourseName,
-      showLocationInIsland: settings.liveShowLocation,
-      useShortNameInIsland: settings.liveUseShortName,
-      hidePrefixText: settings.liveHidePrefixText,
-      duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
-      enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
-      miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
-      miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
-      miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
-      miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
-      miuiIslandLabelRenderQuality: settings.liveMiuiIslandLabelRenderQuality,
-      miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
-      miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
-      miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,
-      miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
-      miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
+      showCountdown: displaySettings.showCountdown,
+      showStageText: displaySettings.showStageText,
+      showCourseNameInIsland: displaySettings.showCourseName,
+      showLocationInIsland: displaySettings.showLocation,
+      useShortNameInIsland: displaySettings.useShortName,
+      hidePrefixText: displaySettings.hidePrefixText,
+      duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
+      enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
+      miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
+      miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
+      miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
+      miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
+      miuiIslandLabelRenderQuality:
+          displaySettings.miuiIslandLabelRenderQuality,
+      miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
+      miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
+      miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
+      miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
+      miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
       progressBreakOffsetsMillis: progressBreakOffsetsMillis,
       progressMilestoneLabels: progressMilestones
           .map((milestone) => milestone['label'] as String)
@@ -2358,6 +1724,46 @@ String _liveSettingsSummary(TimetableSettings settings) {
     return '已全关';
   }
   return enabledStages.join(' + ');
+}
+
+String _liveTimingSummary(TimetableSettings settings) {
+  final enabledStages = <String>[];
+  if (settings.liveEnableBeforeClass) {
+    enabledStages.add('前 ${settings.liveShowBeforeClassMinutes} 分钟');
+  }
+  if (settings.liveEnableDuringClass || settings.liveEnableBeforeEnd) {
+    enabledStages.add(
+      settings.liveClassReminderStartMinutes == 0
+          ? '课中'
+          : '下课前 ${settings.liveClassReminderStartMinutes} 分钟',
+    );
+  }
+  if (enabledStages.isEmpty) {
+    return '已全关';
+  }
+  return enabledStages.join(' · ');
+}
+
+String _liveDisplaySummary(LiveDisplaySettings settings) {
+  final parts = <String>[];
+  if (settings.showCourseName) {
+    parts.add(settings.useShortName ? '简称' : '课程名');
+  }
+  if (settings.showLocation) {
+    parts.add('地点');
+  }
+  if (settings.showCountdown) {
+    parts.add('倒计时');
+  } else if (settings.showStageText) {
+    parts.add('阶段文案');
+  }
+  if (settings.enableMiuiIslandLabelImage) {
+    parts.add('左侧文字图');
+  }
+  if (parts.isEmpty) {
+    return '显示项较少';
+  }
+  return parts.join(' / ');
 }
 
 Color _colorFromHex(String hexColor) {

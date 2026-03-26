@@ -1808,19 +1808,20 @@ class TimetableProvider with ChangeNotifier {
     final liveCourse = selection?.currentCourse;
 
     if (liveCourse != null) {
+      final activeSelection = selection!;
       final settings = _settings;
-      final nextCourse = selection!.nextCourse;
+      final displaySettings =
+          activeSelection.stage == LiveActivityStage.beforeClass
+              ? settings.beforeClassDisplaySettings
+              : settings.duringEndDisplaySettings;
+      final nextCourse = activeSelection.nextCourse;
       final nextCourseKey = nextCourse != null
           ? '${nextCourse.id}:${nextCourse.name}:${nextCourse.startSection}'
           : 'null';
       final liveActivityKey =
-          '${liveCourse.id}:${selection.stage.name}:${liveCourse.name}:${liveCourse.startSection}:${liveCourse.endSection}:${liveCourse.location}:${liveCourse.teacher}:$nextCourseKey:${settings.hashCode}';
+          '${liveCourse.id}:${activeSelection.stage.name}:${liveCourse.name}:${liveCourse.startSection}:${liveCourse.endSection}:${liveCourse.location}:${liveCourse.teacher}:$nextCourseKey:${settings.hashCode}';
       if (_currentLiveCourseId == liveActivityKey) {
         return; // 防抖，避免频繁唤起 Android 服务
-      }
-      if (_hasVisibleLiveUpdate) {
-        await _liveActivitiesService.stopLiveUpdate();
-        _hasVisibleLiveUpdate = false;
       }
       _currentLiveCourseId = liveActivityKey;
 
@@ -1828,11 +1829,11 @@ class TimetableProvider with ChangeNotifier {
         startTime: _resolveRealTime(liveCourse, true),
         endTime: _resolveRealTime(liveCourse, false),
       );
-      final displayNextCourse = selection.nextCourse == null
+      final displayNextCourse = activeSelection.nextCourse == null
           ? null
-          : selection.nextCourse!.copyWith(
-              startTime: _resolveRealTime(selection.nextCourse!, true),
-              endTime: _resolveRealTime(selection.nextCourse!, false),
+          : activeSelection.nextCourse!.copyWith(
+              startTime: _resolveRealTime(activeSelection.nextCourse!, true),
+              endTime: _resolveRealTime(activeSelection.nextCourse!, false),
             );
       final startAtMillis = _buildCourseDateTime(
               DateTime.now(), _resolveRealTime(displayCourse, true))
@@ -1862,24 +1863,25 @@ class TimetableProvider with ChangeNotifier {
         enableBeforeClass: settings.liveEnableBeforeClass,
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,
-        showCountdown: settings.liveShowCountdown,
-        showStageText: settings.liveShowStageText,
-        showCourseNameInIsland: settings.liveShowCourseName,
-        showLocationInIsland: settings.liveShowLocation,
-        useShortNameInIsland: settings.liveUseShortName,
-        hidePrefixText: settings.liveHidePrefixText,
-        duringClassTimeDisplayMode: settings.liveDuringClassTimeDisplayMode,
-        enableMiuiIslandLabelImage: settings.liveEnableMiuiIslandLabelImage,
-        miuiIslandLabelStyle: settings.liveMiuiIslandLabelStyle,
-        miuiIslandLabelContent: settings.liveMiuiIslandLabelContent,
-        miuiIslandLabelFontColor: settings.liveMiuiIslandLabelFontColor,
-        miuiIslandLabelFontWeight: settings.liveMiuiIslandLabelFontWeight,
-        miuiIslandLabelRenderQuality: settings.liveMiuiIslandLabelRenderQuality,
-        miuiIslandLabelFontSize: settings.liveMiuiIslandLabelFontSize,
-        miuiIslandLabelOffsetX: settings.liveMiuiIslandLabelOffsetX,
-        miuiIslandLabelOffsetY: settings.liveMiuiIslandLabelOffsetY,
-        miuiIslandExpandedIconMode: settings.liveMiuiIslandExpandedIconMode,
-        miuiIslandExpandedIconPath: settings.liveMiuiIslandExpandedIconPath,
+        showCountdown: displaySettings.showCountdown,
+        showStageText: displaySettings.showStageText,
+        showCourseNameInIsland: displaySettings.showCourseName,
+        showLocationInIsland: displaySettings.showLocation,
+        useShortNameInIsland: displaySettings.useShortName,
+        hidePrefixText: displaySettings.hidePrefixText,
+        duringClassTimeDisplayMode: displaySettings.duringClassTimeDisplayMode,
+        enableMiuiIslandLabelImage: displaySettings.enableMiuiIslandLabelImage,
+        miuiIslandLabelStyle: displaySettings.miuiIslandLabelStyle,
+        miuiIslandLabelContent: displaySettings.miuiIslandLabelContent,
+        miuiIslandLabelFontColor: displaySettings.miuiIslandLabelFontColor,
+        miuiIslandLabelFontWeight: displaySettings.miuiIslandLabelFontWeight,
+        miuiIslandLabelRenderQuality:
+            displaySettings.miuiIslandLabelRenderQuality,
+        miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
+        miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
+        miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
+        miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
+        miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
         progressBreakOffsetsMillis: progressBreakOffsetsMillis,
         progressMilestoneLabels: progressMilestones
             .map((milestone) => milestone['label'] as String)

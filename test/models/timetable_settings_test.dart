@@ -32,6 +32,7 @@ void main() {
     expect(settings.liveEnableMiuiIslandLabelImage, isFalse);
     expect(settings.liveHideFromRecents, isFalse);
     expect(settings.liveEnableLocalDiagnostics, isFalse);
+    expect(settings.liveDuringEndFollowBeforeClass, isTrue);
     expect(settings.liveShowStageText, isTrue);
     expect(settings.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
@@ -89,6 +90,7 @@ void main() {
     expect(restored.liveEnableMiuiIslandLabelImage, isFalse);
     expect(restored.liveHideFromRecents, isFalse);
     expect(restored.liveEnableLocalDiagnostics, isFalse);
+    expect(restored.liveDuringEndFollowBeforeClass, isTrue);
     expect(restored.liveShowStageText, isTrue);
     expect(restored.liveMiuiIslandLabelStyle, MiuiIslandLabelStyle.textOnly);
     expect(
@@ -147,6 +149,7 @@ void main() {
       liveEnableMiuiIslandLabelImage: true,
       liveHideFromRecents: true,
       liveEnableLocalDiagnostics: true,
+      liveDuringEndFollowBeforeClass: false,
       liveShowStageText: false,
       liveMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
       liveMiuiIslandLabelContent: MiuiIslandLabelContent.courseNameAndLocation,
@@ -184,6 +187,7 @@ void main() {
     expect(restored.liveEnableMiuiIslandLabelImage, isTrue);
     expect(restored.liveHideFromRecents, isTrue);
     expect(restored.liveEnableLocalDiagnostics, isTrue);
+    expect(restored.liveDuringEndFollowBeforeClass, isFalse);
     expect(restored.liveShowStageText, isFalse);
     expect(
       restored.liveMiuiIslandLabelStyle,
@@ -215,5 +219,81 @@ void main() {
       restored.courseCardHorizontalAlign,
       CourseCardHorizontalAlign.right,
     );
+  });
+
+  test('during and end live display settings can be customized independently',
+      () {
+    final settings = TimetableSettings.defaults().copyWith(
+      liveDuringEndFollowBeforeClass: false,
+      liveDuringEndShowCourseName: false,
+      liveDuringEndShowLocation: false,
+      liveDuringEndShowCountdown: false,
+      liveDuringEndShowStageText: true,
+      liveDuringEndUseShortName: false,
+      liveDuringEndHidePrefixText: false,
+      liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
+      liveDuringEndEnableMiuiIslandLabelImage: true,
+      liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
+      liveDuringEndMiuiIslandLabelContent:
+          MiuiIslandLabelContent.courseNameAndLocation,
+      liveDuringEndMiuiIslandLabelFontColor: '#BFDBFE',
+      liveDuringEndMiuiIslandLabelFontWeight: MiuiIslandLabelFontWeight.medium,
+      liveDuringEndMiuiIslandLabelFontSize: 17,
+      liveDuringEndMiuiIslandLabelOffsetX: 1.2,
+      liveDuringEndMiuiIslandLabelOffsetY: -0.6,
+      liveDuringEndMiuiIslandExpandedIconMode:
+          MiuiIslandExpandedIconMode.customImage,
+      liveDuringEndMiuiIslandExpandedIconPath: '/tmp/during-end.png',
+    );
+
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    final beforeClass = restored.beforeClassDisplaySettings;
+    final duringEnd = restored.duringEndDisplaySettings;
+
+    expect(beforeClass.showCourseName, isTrue);
+    expect(duringEnd.showCourseName, isFalse);
+    expect(duringEnd.showLocation, isFalse);
+    expect(duringEnd.showCountdown, isFalse);
+    expect(duringEnd.showStageText, isTrue);
+    expect(duringEnd.useShortName, isFalse);
+    expect(duringEnd.hidePrefixText, isFalse);
+    expect(
+      duringEnd.duringClassTimeDisplayMode,
+      LiveDuringClassTimeDisplayMode.total,
+    );
+    expect(duringEnd.enableMiuiIslandLabelImage, isTrue);
+    expect(duringEnd.miuiIslandLabelStyle, MiuiIslandLabelStyle.iconAndText);
+    expect(
+      duringEnd.miuiIslandLabelContent,
+      MiuiIslandLabelContent.courseNameAndLocation,
+    );
+    expect(duringEnd.miuiIslandLabelFontColor, '#BFDBFE');
+    expect(
+      duringEnd.miuiIslandLabelFontWeight,
+      MiuiIslandLabelFontWeight.medium,
+    );
+    expect(duringEnd.miuiIslandLabelFontSize, 17);
+    expect(duringEnd.miuiIslandLabelOffsetX, 1.2);
+    expect(duringEnd.miuiIslandLabelOffsetY, -0.6);
+    expect(
+      duringEnd.miuiIslandExpandedIconMode,
+      MiuiIslandExpandedIconMode.customImage,
+    );
+    expect(duringEnd.miuiIslandExpandedIconPath, '/tmp/during-end.png');
+  });
+
+  test('during and end live display settings can follow before class', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      liveShowCourseName: false,
+      liveShowLocation: false,
+      liveDuringEndFollowBeforeClass: true,
+      liveDuringEndShowCourseName: true,
+      liveDuringEndShowLocation: true,
+    );
+
+    final duringEnd = settings.duringEndDisplaySettings;
+
+    expect(duringEnd.showCourseName, isFalse);
+    expect(duringEnd.showLocation, isFalse);
   });
 }

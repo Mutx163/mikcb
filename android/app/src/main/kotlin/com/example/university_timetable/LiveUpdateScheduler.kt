@@ -63,6 +63,15 @@ private data class NativeLiveSettings(
     val liveHidePrefixText: Boolean,
     val liveDuringClassTimeDisplayMode: String,
     val liveEnableMiuiIslandLabelImage: Boolean,
+    val liveDuringEndShowCourseName: Boolean,
+    val liveDuringEndShowLocation: Boolean,
+    val liveDuringEndShowCountdown: Boolean,
+    val liveDuringEndShowStageText: Boolean,
+    val liveDuringEndUseShortName: Boolean,
+    val liveDuringEndHidePrefixText: Boolean,
+    val liveDuringEndFollowBeforeClass: Boolean,
+    val liveDuringEndTimeDisplayMode: String,
+    val liveDuringEndEnableMiuiIslandLabelImage: Boolean,
     val liveMiuiIslandLabelStyle: String,
     val liveMiuiIslandLabelContent: String,
     val liveMiuiIslandLabelFontColor: String,
@@ -73,6 +82,16 @@ private data class NativeLiveSettings(
     val liveMiuiIslandLabelOffsetY: Float,
     val liveMiuiIslandExpandedIconMode: String,
     val liveMiuiIslandExpandedIconPath: String?,
+    val liveDuringEndMiuiIslandLabelStyle: String,
+    val liveDuringEndMiuiIslandLabelContent: String,
+    val liveDuringEndMiuiIslandLabelFontColor: String,
+    val liveDuringEndMiuiIslandLabelFontWeight: String,
+    val liveDuringEndMiuiIslandLabelRenderQuality: String,
+    val liveDuringEndMiuiIslandLabelFontSize: Float,
+    val liveDuringEndMiuiIslandLabelOffsetX: Float,
+    val liveDuringEndMiuiIslandLabelOffsetY: Float,
+    val liveDuringEndMiuiIslandExpandedIconMode: String,
+    val liveDuringEndMiuiIslandExpandedIconPath: String?,
     val liveShowBeforeClassMinutes: Int,
     val liveClassReminderStartMinutes: Int,
     val liveEndSecondsCountdownThreshold: Int,
@@ -354,6 +373,48 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveDuringClassTimeDisplayMode", "nearest"),
             liveEnableMiuiIslandLabelImage =
                 settingsJson.optBoolean("liveEnableMiuiIslandLabelImage", false),
+            liveDuringEndShowCourseName =
+                settingsJson.optBoolean(
+                    "liveDuringEndShowCourseName",
+                    settingsJson.optBoolean("liveShowCourseName", true),
+                ),
+            liveDuringEndShowLocation =
+                settingsJson.optBoolean(
+                    "liveDuringEndShowLocation",
+                    settingsJson.optBoolean("liveShowLocation", true),
+                ),
+            liveDuringEndShowCountdown =
+                settingsJson.optBoolean(
+                    "liveDuringEndShowCountdown",
+                    settingsJson.optBoolean("liveShowCountdown", true),
+                ),
+            liveDuringEndShowStageText =
+                settingsJson.optBoolean(
+                    "liveDuringEndShowStageText",
+                    settingsJson.optBoolean("liveShowStageText", true),
+                ),
+            liveDuringEndUseShortName =
+                settingsJson.optBoolean(
+                    "liveDuringEndUseShortName",
+                    settingsJson.optBoolean("liveUseShortName", true),
+                ),
+            liveDuringEndHidePrefixText =
+                settingsJson.optBoolean(
+                    "liveDuringEndHidePrefixText",
+                    settingsJson.optBoolean("liveHidePrefixText", false),
+                ),
+            liveDuringEndFollowBeforeClass =
+                settingsJson.optBoolean("liveDuringEndFollowBeforeClass", true),
+            liveDuringEndTimeDisplayMode =
+                settingsJson.optString(
+                    "liveDuringEndTimeDisplayMode",
+                    settingsJson.optString("liveDuringClassTimeDisplayMode", "nearest"),
+                ),
+            liveDuringEndEnableMiuiIslandLabelImage =
+                settingsJson.optBoolean(
+                    "liveDuringEndEnableMiuiIslandLabelImage",
+                    settingsJson.optBoolean("liveEnableMiuiIslandLabelImage", false),
+                ),
             liveMiuiIslandLabelStyle =
                 settingsJson.optString("liveMiuiIslandLabelStyle", "text_only"),
             liveMiuiIslandLabelContent =
@@ -374,6 +435,56 @@ object LiveUpdateScheduler {
                 settingsJson.optString("liveMiuiIslandExpandedIconMode", "app_icon"),
             liveMiuiIslandExpandedIconPath =
                 settingsJson.optString("liveMiuiIslandExpandedIconPath").takeIf { it.isNotBlank() },
+            liveDuringEndMiuiIslandLabelStyle =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandLabelStyle",
+                    settingsJson.optString("liveMiuiIslandLabelStyle", "text_only"),
+                ),
+            liveDuringEndMiuiIslandLabelContent =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandLabelContent",
+                    settingsJson.optString("liveMiuiIslandLabelContent", "course_name"),
+                ),
+            liveDuringEndMiuiIslandLabelFontColor =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandLabelFontColor",
+                    settingsJson.optString("liveMiuiIslandLabelFontColor", "#FFFFFF"),
+                ),
+            liveDuringEndMiuiIslandLabelFontWeight =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandLabelFontWeight",
+                    settingsJson.optString("liveMiuiIslandLabelFontWeight", "bold"),
+                ),
+            liveDuringEndMiuiIslandLabelRenderQuality =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandLabelRenderQuality",
+                    settingsJson.optString("liveMiuiIslandLabelRenderQuality", "standard"),
+                ),
+            liveDuringEndMiuiIslandLabelFontSize =
+                settingsJson.optDouble(
+                    "liveDuringEndMiuiIslandLabelFontSize",
+                    settingsJson.optDouble("liveMiuiIslandLabelFontSize", 14.0),
+                ).toFloat(),
+            liveDuringEndMiuiIslandLabelOffsetX =
+                settingsJson.optDouble(
+                    "liveDuringEndMiuiIslandLabelOffsetX",
+                    settingsJson.optDouble("liveMiuiIslandLabelOffsetX", 0.0),
+                ).toFloat(),
+            liveDuringEndMiuiIslandLabelOffsetY =
+                settingsJson.optDouble(
+                    "liveDuringEndMiuiIslandLabelOffsetY",
+                    settingsJson.optDouble("liveMiuiIslandLabelOffsetY", 0.0),
+                ).toFloat(),
+            liveDuringEndMiuiIslandExpandedIconMode =
+                settingsJson.optString(
+                    "liveDuringEndMiuiIslandExpandedIconMode",
+                    settingsJson.optString("liveMiuiIslandExpandedIconMode", "app_icon"),
+                ),
+            liveDuringEndMiuiIslandExpandedIconPath =
+                settingsJson.optString("liveDuringEndMiuiIslandExpandedIconPath")
+                    .takeIf { it.isNotBlank() }
+                    ?: settingsJson.optString("liveMiuiIslandExpandedIconPath")
+                        .takeIf { it.isNotBlank() },
             liveShowBeforeClassMinutes = settingsJson.optInt("liveShowBeforeClassMinutes", 20),
             liveClassReminderStartMinutes =
                 settingsJson.optInt("liveClassReminderStartMinutes", 0),
@@ -597,6 +708,136 @@ object LiveUpdateScheduler {
         snapshot: NativeScheduleSnapshot,
         selection: ScheduledSelection,
     ): LiveUpdatePayload {
+        val isBeforeClass = selection.stage == "beforeClass"
+        val followBeforeClass =
+            !isBeforeClass && snapshot.settings.liveDuringEndFollowBeforeClass
+        val showCourseName = if (isBeforeClass) {
+            snapshot.settings.liveShowCourseName
+        } else if (followBeforeClass) {
+            snapshot.settings.liveShowCourseName
+        } else {
+            snapshot.settings.liveDuringEndShowCourseName
+        }
+        val showLocation = if (isBeforeClass) {
+            snapshot.settings.liveShowLocation
+        } else if (followBeforeClass) {
+            snapshot.settings.liveShowLocation
+        } else {
+            snapshot.settings.liveDuringEndShowLocation
+        }
+        val showCountdown = if (isBeforeClass) {
+            snapshot.settings.liveShowCountdown
+        } else if (followBeforeClass) {
+            snapshot.settings.liveShowCountdown
+        } else {
+            snapshot.settings.liveDuringEndShowCountdown
+        }
+        val showStageText = if (isBeforeClass) {
+            snapshot.settings.liveShowStageText
+        } else if (followBeforeClass) {
+            snapshot.settings.liveShowStageText
+        } else {
+            snapshot.settings.liveDuringEndShowStageText
+        }
+        val useShortName = if (isBeforeClass) {
+            snapshot.settings.liveUseShortName
+        } else if (followBeforeClass) {
+            snapshot.settings.liveUseShortName
+        } else {
+            snapshot.settings.liveDuringEndUseShortName
+        }
+        val hidePrefixText = if (isBeforeClass) {
+            snapshot.settings.liveHidePrefixText
+        } else if (followBeforeClass) {
+            snapshot.settings.liveHidePrefixText
+        } else {
+            snapshot.settings.liveDuringEndHidePrefixText
+        }
+        val duringClassTimeDisplayMode = if (isBeforeClass) {
+            snapshot.settings.liveDuringClassTimeDisplayMode
+        } else if (followBeforeClass) {
+            snapshot.settings.liveDuringClassTimeDisplayMode
+        } else {
+            snapshot.settings.liveDuringEndTimeDisplayMode
+        }
+        val enableMiuiIslandLabelImage = if (isBeforeClass) {
+            snapshot.settings.liveEnableMiuiIslandLabelImage
+        } else if (followBeforeClass) {
+            snapshot.settings.liveEnableMiuiIslandLabelImage
+        } else {
+            snapshot.settings.liveDuringEndEnableMiuiIslandLabelImage
+        }
+        val miuiIslandLabelStyle = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelStyle
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelStyle
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelStyle
+        }
+        val miuiIslandLabelContent = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelContent
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelContent
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelContent
+        }
+        val miuiIslandLabelFontColor = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontColor
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontColor
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelFontColor
+        }
+        val miuiIslandLabelFontWeight = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontWeight
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontWeight
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelFontWeight
+        }
+        val miuiIslandLabelRenderQuality = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelRenderQuality
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelRenderQuality
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelRenderQuality
+        }
+        val miuiIslandLabelFontSize = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontSize.toFloat()
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelFontSize.toFloat()
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelFontSize
+        }
+        val miuiIslandLabelOffsetX = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelOffsetX
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelOffsetX
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelOffsetX
+        }
+        val miuiIslandLabelOffsetY = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelOffsetY
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandLabelOffsetY
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandLabelOffsetY
+        }
+        val miuiIslandExpandedIconMode = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandExpandedIconMode
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandExpandedIconMode
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandExpandedIconMode
+        }
+        val miuiIslandExpandedIconPath = if (isBeforeClass) {
+            snapshot.settings.liveMiuiIslandExpandedIconPath
+        } else if (followBeforeClass) {
+            snapshot.settings.liveMiuiIslandExpandedIconPath
+        } else {
+            snapshot.settings.liveDuringEndMiuiIslandExpandedIconPath
+        }
+
         return LiveUpdatePayload(
             currentCourse = selection.currentCourse,
             nextCourse = selection.nextCourse,
@@ -616,36 +857,24 @@ object LiveUpdateScheduler {
             promoteDuringClass = snapshot.settings.livePromoteDuringClass,
             showNotificationDuringClass =
                 snapshot.settings.liveShowDuringClassNotification,
-            showCountdown = snapshot.settings.liveShowCountdown,
-            showStageText = snapshot.settings.liveShowStageText,
-            showCourseNameInIsland = snapshot.settings.liveShowCourseName,
-            showLocationInIsland = snapshot.settings.liveShowLocation,
-            useShortNameInIsland = snapshot.settings.liveUseShortName,
-            hidePrefixText = snapshot.settings.liveHidePrefixText,
-            duringClassTimeDisplayMode =
-                snapshot.settings.liveDuringClassTimeDisplayMode,
-            enableMiuiIslandLabelImage =
-                snapshot.settings.liveEnableMiuiIslandLabelImage,
-            miuiIslandLabelStyle =
-                snapshot.settings.liveMiuiIslandLabelStyle,
-            miuiIslandLabelContent =
-                snapshot.settings.liveMiuiIslandLabelContent,
-            miuiIslandLabelFontColor =
-                snapshot.settings.liveMiuiIslandLabelFontColor,
-            miuiIslandLabelFontWeight =
-                snapshot.settings.liveMiuiIslandLabelFontWeight,
-            miuiIslandLabelRenderQuality =
-                snapshot.settings.liveMiuiIslandLabelRenderQuality,
-            miuiIslandLabelFontSize =
-                snapshot.settings.liveMiuiIslandLabelFontSize.toFloat(),
-            miuiIslandLabelOffsetX =
-                snapshot.settings.liveMiuiIslandLabelOffsetX,
-            miuiIslandLabelOffsetY =
-                snapshot.settings.liveMiuiIslandLabelOffsetY,
-            miuiIslandExpandedIconMode =
-                snapshot.settings.liveMiuiIslandExpandedIconMode,
-            miuiIslandExpandedIconPath =
-                snapshot.settings.liveMiuiIslandExpandedIconPath,
+            showCountdown = showCountdown,
+            showStageText = showStageText,
+            showCourseNameInIsland = showCourseName,
+            showLocationInIsland = showLocation,
+            useShortNameInIsland = useShortName,
+            hidePrefixText = hidePrefixText,
+            duringClassTimeDisplayMode = duringClassTimeDisplayMode,
+            enableMiuiIslandLabelImage = enableMiuiIslandLabelImage,
+            miuiIslandLabelStyle = miuiIslandLabelStyle,
+            miuiIslandLabelContent = miuiIslandLabelContent,
+            miuiIslandLabelFontColor = miuiIslandLabelFontColor,
+            miuiIslandLabelFontWeight = miuiIslandLabelFontWeight,
+            miuiIslandLabelRenderQuality = miuiIslandLabelRenderQuality,
+            miuiIslandLabelFontSize = miuiIslandLabelFontSize,
+            miuiIslandLabelOffsetX = miuiIslandLabelOffsetX,
+            miuiIslandLabelOffsetY = miuiIslandLabelOffsetY,
+            miuiIslandExpandedIconMode = miuiIslandExpandedIconMode,
+            miuiIslandExpandedIconPath = miuiIslandExpandedIconPath,
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
