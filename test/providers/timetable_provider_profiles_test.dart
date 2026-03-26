@@ -541,6 +541,61 @@ void main() {
     expect(selection?.stage, LiveActivityStage.duringClass);
   });
 
+  test('before class reminder waits until previous course ends', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: false,
+        liveEnableBeforeEnd: false,
+        liveShowBeforeClassMinutes: 30,
+      ),
+    );
+
+    await provider.addCourse(
+      Course(
+        id: 'course-12',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: DateTime(2026, 3, 25).weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-34',
+        name: '大学英语',
+        teacher: '李老师',
+        location: 'B201',
+        dayOfWeek: DateTime(2026, 3, 25).weekday,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    );
+
+    final earlySelection = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 9, 35),
+    );
+    final afterPreviousCourseEnds = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 9, 40),
+    );
+
+    expect(earlySelection, isNull);
+    expect(afterPreviousCourseEnds?.stage, LiveActivityStage.beforeClass);
+    expect(afterPreviousCourseEnds?.currentCourse.name, '大学英语');
+  });
+
   test('updating non-section settings does not trigger section capacity guard',
       () async {
     final provider = TimetableProvider(
@@ -685,6 +740,81 @@ void main() {
     );
     expect(syncedCourses.map((course) => course.location).toSet(),
         {'A101', 'B202'});
+  });
+
+  test('clearing short name falls back to course name for live island payload',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: false,
+        liveEnableBeforeEnd: false,
+        liveShowBeforeClassMinutes: 30,
+      ),
+    );
+
+    final day = DateTime(2026, 3, 25);
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '离散数学',
+        shortName: '离散',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: day.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '离散数学',
+        shortName: '离散',
+        teacher: '张老师',
+        location: 'B202',
+        dayOfWeek: 4,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+
+    await provider.updateCourse(
+      Course(
+        id: 'course-a',
+        name: '离散数学',
+        shortName: null,
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: day.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+      previousSharedName: '离散数学',
+    );
+
+    final syncedCourses =
+        provider.courses.where((course) => course.name == '离散数学').toList();
+    final selection = provider.getLiveActivityCourseSelection(
+      now: DateTime(2026, 3, 25, 7, 45),
+    );
+
+    expect(syncedCourses, hasLength(2));
+    expect(syncedCourses.every((course) => course.shortName == null), isTrue);
+    expect(provider.resolveCourseShortName(syncedCourses.first), isNull);
+    expect(selection?.currentCourse.name, '离散数学');
+    expect(selection?.currentCourse.shortName, isNull);
   });
 
   test('home widget snapshot highlights the next course before class',
