@@ -1066,8 +1066,15 @@ class LiveUpdateService : Service() {
                 } else {
                     null
                 }
-                val currentProgress = currentDuringClassProgress?.progressUnits ?: -1
                 val currentCriticalTimeText = currentDuringClassProgress?.criticalTimeText ?: currentText
+                val shouldRefreshProgressThisTick =
+                    currentDuringClassProgress != null && currentCriticalTimeText.contains("秒")
+                val currentProgress =
+                    if (shouldRefreshProgressThisTick) {
+                        currentDuringClassProgress.progressUnits
+                    } else {
+                        -1
+                    }
                 if (currentText != lastRemainingText ||
                     currentProgress != lastProgressUnits ||
                     currentCriticalTimeText != lastCriticalTimeText

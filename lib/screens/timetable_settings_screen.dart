@@ -1768,30 +1768,6 @@ class _ColorDot extends StatelessWidget {
   }
 }
 
-String _liveSettingsSummary(TimetableSettings settings) {
-  final enabledStages = <String>[];
-  if (settings.liveEnableBeforeClass) enabledStages.add('上课前');
-  if (settings.liveEnableDuringClass || settings.liveEnableBeforeEnd) {
-    if (settings.liveClassReminderStartMinutes == 0) {
-      if (settings.liveEnableDuringClass) {
-        enabledStages.add('上课中');
-      }
-    } else {
-      if (settings.liveEnableDuringClass &&
-          settings.liveShowDuringClassNotification) {
-        enabledStages.add('课中通知');
-      }
-      if (settings.liveEnableBeforeEnd) {
-        enabledStages.add('下课提醒');
-      }
-    }
-  }
-  if (enabledStages.isEmpty) {
-    return '已全关';
-  }
-  return enabledStages.join(' + ');
-}
-
 String _liveDisplaySummary(LiveDisplaySettings settings) {
   final parts = <String>[];
   if (settings.showCourseName) {
