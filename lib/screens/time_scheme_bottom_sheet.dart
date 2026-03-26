@@ -38,6 +38,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   TextEditingController? _nameController;
   List<SectionTime> _sections = [];
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
   _QuickGeneratePreset _lastQuickGeneratePreset = const _QuickGeneratePreset(
     morningCount: 4,
     afternoonCount: 4,
@@ -203,7 +204,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   Widget _buildEditor(BuildContext context) {
     final provider = context.watch<TimetableProvider>();
     final schemeId = _editingSchemeId!;
-    final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+    final scheme =
+        provider.timeSchemes.firstWhere((item) => item.id == schemeId);
     final isActive = provider.activeTimeScheme?.id == schemeId;
     final usage = _buildUsageInfo(provider, schemeId);
 
@@ -305,12 +307,14 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                             label: const Text('快捷生成'),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed: _sections.length >= 20 ? null : _addSection,
+                            onPressed:
+                                _sections.length >= 20 ? null : _addSection,
                             icon: const Icon(Icons.add),
                             label: const Text('新增一节'),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed: _sections.length <= 1 ? null : _removeSection,
+                            onPressed:
+                                _sections.length <= 1 ? null : _removeSection,
                             icon: const Icon(Icons.remove),
                             label: const Text('删除末节'),
                           ),
@@ -327,7 +331,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           title: Text('第 ${index + 1} 节'),
-                          subtitle: Text('${section.startTime} - ${section.endTime}'),
+                          subtitle:
+                              Text('${section.startTime} - ${section.endTime}'),
                           trailing: IconButton(
                             tooltip: '编辑时间',
                             onPressed: () => _editSectionTime(index),
@@ -388,7 +393,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   void _beginEditing(String schemeId) {
     final provider = context.read<TimetableProvider>();
-    final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+    final scheme =
+        provider.timeSchemes.firstWhere((item) => item.id == schemeId);
     _nameController?.dispose();
     _nameController = TextEditingController(text: scheme.name)
       ..addListener(_scheduleAutoSave);
@@ -767,8 +773,13 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     _autoSaveTimer?.cancel();
     _autoSaveTimer = Timer(
       const Duration(milliseconds: 300),
-      () => unawaited(_persistEditingScheme()),
+      _enqueuePersistEditingScheme,
     );
+  }
+
+  void _enqueuePersistEditingScheme() {
+    _saveQueue =
+        _saveQueue.catchError((_) {}).then((_) => _persistEditingScheme());
   }
 
   Future<void> _persistEditingScheme() async {
@@ -779,7 +790,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final trimmedName = _nameController!.text.trim();
     if (trimmedName.isEmpty) {
       final provider = context.read<TimetableProvider>();
-      final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      final scheme =
+          provider.timeSchemes.firstWhere((item) => item.id == schemeId);
       _nameController!
         ..removeListener(_scheduleAutoSave)
         ..text = scheme.name
@@ -800,7 +812,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       return;
     }
     if (message != null) {
-      final scheme = provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      final scheme =
+          provider.timeSchemes.firstWhere((item) => item.id == schemeId);
       _nameController!
         ..removeListener(_scheduleAutoSave)
         ..text = scheme.name
@@ -1179,7 +1192,8 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
     }
 
     final breakOverrideRules = _breakOverrides
-        .where((item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
+        .where(
+            (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
         .map(
           (item) => BreakOverrideRule(
             afterSection: item.afterSection,

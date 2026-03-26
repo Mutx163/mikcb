@@ -423,6 +423,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -624,11 +625,15 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     if (debounce) {
       _autoSaveTimer = Timer(
         const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
+        () => _enqueuePersist(next),
       );
       return;
     }
-    unawaited(_persistDraft(next));
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
@@ -1083,6 +1088,7 @@ class _HomeWidgetSettingsScreen extends StatefulWidget {
 class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -1202,11 +1208,15 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     if (debounce) {
       _autoSaveTimer = Timer(
         const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
+        () => _enqueuePersist(next),
       );
       return;
     }
-    unawaited(_persistDraft(next));
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
@@ -1230,6 +1240,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
+  Future<void> _saveQueue = Future<void>.value();
 
   @override
   void initState() {
@@ -1549,11 +1560,15 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     if (debounce) {
       _autoSaveTimer = Timer(
         const Duration(milliseconds: 250),
-        () => unawaited(_persistDraft(next)),
+        () => _enqueuePersist(next),
       );
       return;
     }
-    unawaited(_persistDraft(next));
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
