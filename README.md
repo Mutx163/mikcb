@@ -44,7 +44,7 @@
 
 ```bash
 flutter pub get
-flutter run
+flutter run -d android
 ```
 
 ## Android 构建
@@ -53,7 +53,7 @@ flutter run
 flutter build apk --release --split-per-abi
 ```
 
-当前仓库默认面向 Android 维护，正式发布包以 `arm64-v8a` 为主。
+当前仓库仅保留 Android 发布与维护所需内容，正式发布包以 `arm64-v8a` 为主。
 
 ## 应用内更新
 
