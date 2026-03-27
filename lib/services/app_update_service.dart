@@ -150,7 +150,7 @@ class AppUpdateService {
 
   Future<String?> downloadAndInstallUpdate(
     String url,
-    void Function(double) onProgress,
+    void Function(int downloadedBytes, int? totalBytes) onProgress,
   ) async {
     try {
       final tempDir = await getTemporaryDirectory();
@@ -172,9 +172,7 @@ class AppUpdateService {
       await for (final chunk in response) {
         sink.add(chunk);
         downloaded += chunk.length;
-        if (total != -1) {
-          onProgress(downloaded / total);
-        }
+        onProgress(downloaded, total <= 0 ? null : total);
       }
 
       await sink.close();
