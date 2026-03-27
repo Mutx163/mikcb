@@ -36,6 +36,7 @@ void main() {
       settings.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.nearest,
     );
+    expect(settings.liveCountdownTextStyle, LiveCountdownTextStyle.smart);
     expect(settings.liveEnableMiuiIslandLabelImage, isFalse);
     expect(settings.liveHideFromRecents, isFalse);
     expect(settings.liveEnableLocalDiagnostics, isFalse);
@@ -106,6 +107,7 @@ void main() {
       restored.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.nearest,
     );
+    expect(restored.liveCountdownTextStyle, LiveCountdownTextStyle.smart);
     expect(restored.liveEnableMiuiIslandLabelImage, isFalse);
     expect(restored.liveHideFromRecents, isFalse);
     expect(restored.liveEnableLocalDiagnostics, isFalse);
@@ -176,6 +178,7 @@ void main() {
       timetableHideWeekends: true,
       enableHaptics: false,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
+      liveCountdownTextStyle: LiveCountdownTextStyle.minuteOnlyMin,
       liveEnableMiuiIslandLabelImage: true,
       liveHideFromRecents: true,
       liveEnableLocalDiagnostics: true,
@@ -222,6 +225,10 @@ void main() {
     expect(
       restored.liveDuringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.total,
+    );
+    expect(
+      restored.liveCountdownTextStyle,
+      LiveCountdownTextStyle.minuteOnlyMin,
     );
     expect(restored.liveEnableMiuiIslandLabelImage, isTrue);
     expect(restored.liveHideFromRecents, isTrue);
@@ -275,6 +282,7 @@ void main() {
       liveDuringEndShowStageText: true,
       liveDuringEndUseShortName: false,
       liveDuringEndHidePrefixText: false,
+      liveDuringEndCountdownTextStyle: LiveCountdownTextStyle.secondOnlyShort,
       liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayMode.total,
       liveDuringEndEnableMiuiIslandLabelImage: true,
       liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyle.iconAndText,
@@ -301,6 +309,10 @@ void main() {
     expect(duringEnd.showStageText, isTrue);
     expect(duringEnd.useShortName, isFalse);
     expect(duringEnd.hidePrefixText, isFalse);
+    expect(
+      duringEnd.countdownTextStyle,
+      LiveCountdownTextStyle.secondOnlyShort,
+    );
     expect(
       duringEnd.duringClassTimeDisplayMode,
       LiveDuringClassTimeDisplayMode.total,
@@ -330,6 +342,7 @@ void main() {
     final settings = TimetableSettings.defaults().copyWith(
       liveShowCourseName: false,
       liveShowLocation: false,
+      liveCountdownTextStyle: LiveCountdownTextStyle.minuteSecondCn,
       liveDuringEndFollowBeforeClass: true,
       liveDuringEndShowCourseName: true,
       liveDuringEndShowLocation: true,
@@ -339,5 +352,6 @@ void main() {
 
     expect(duringEnd.showCourseName, isFalse);
     expect(duringEnd.showLocation, isFalse);
+    expect(duringEnd.countdownTextStyle, LiveCountdownTextStyle.minuteSecondCn);
   });
 }

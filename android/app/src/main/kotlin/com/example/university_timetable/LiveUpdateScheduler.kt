@@ -53,6 +53,7 @@ private data class NativeLiveSettings(
     val liveShowCourseName: Boolean,
     val liveShowLocation: Boolean,
     val liveShowCountdown: Boolean,
+    val liveCountdownTextStyle: String,
     val liveShowStageText: Boolean,
     val liveEnableBeforeClass: Boolean,
     val liveEnableDuringClass: Boolean,
@@ -66,6 +67,7 @@ private data class NativeLiveSettings(
     val liveDuringEndShowCourseName: Boolean,
     val liveDuringEndShowLocation: Boolean,
     val liveDuringEndShowCountdown: Boolean,
+    val liveDuringEndCountdownTextStyle: String,
     val liveDuringEndShowStageText: Boolean,
     val liveDuringEndUseShortName: Boolean,
     val liveDuringEndHidePrefixText: Boolean,
@@ -140,6 +142,7 @@ private data class LiveUpdatePayload(
     val promoteDuringClass: Boolean,
     val showNotificationDuringClass: Boolean,
     val showCountdown: Boolean,
+    val countdownTextStyle: String,
     val showStageText: Boolean,
     val showCourseNameInIsland: Boolean,
     val showLocationInIsland: Boolean,
@@ -259,6 +262,7 @@ object LiveUpdateScheduler {
             showNotificationDuringClass =
                 data["showNotificationDuringClass"] as? Boolean ?: true,
             showCountdown = data["showCountdown"] as? Boolean ?: true,
+            countdownTextStyle = data["countdownTextStyle"] as? String ?: "smart",
             showStageText = data["showStageText"] as? Boolean ?: true,
             showCourseNameInIsland = islandConfig["showCourseName"] as? Boolean ?: true,
             showLocationInIsland = islandConfig["showLocation"] as? Boolean ?: true,
@@ -365,6 +369,8 @@ object LiveUpdateScheduler {
             liveShowCourseName = settingsJson.optBoolean("liveShowCourseName", true),
             liveShowLocation = settingsJson.optBoolean("liveShowLocation", true),
             liveShowCountdown = settingsJson.optBoolean("liveShowCountdown", true),
+            liveCountdownTextStyle =
+                settingsJson.optString("liveCountdownTextStyle", "smart"),
             liveShowStageText = settingsJson.optBoolean("liveShowStageText", true),
             liveEnableBeforeClass = settingsJson.optBoolean("liveEnableBeforeClass", true),
             liveEnableDuringClass = settingsJson.optBoolean("liveEnableDuringClass", true),
@@ -392,6 +398,11 @@ object LiveUpdateScheduler {
                 settingsJson.optBoolean(
                     "liveDuringEndShowCountdown",
                     settingsJson.optBoolean("liveShowCountdown", true),
+                ),
+            liveDuringEndCountdownTextStyle =
+                settingsJson.optString(
+                    "liveDuringEndCountdownTextStyle",
+                    settingsJson.optString("liveCountdownTextStyle", "smart"),
                 ),
             liveDuringEndShowStageText =
                 settingsJson.optBoolean(
@@ -563,6 +574,7 @@ object LiveUpdateScheduler {
                 payload.showNotificationDuringClass
             )
             putExtra("showCountdown", payload.showCountdown)
+            putExtra("countdownTextStyle", payload.countdownTextStyle)
             putExtra("showStageText", payload.showStageText)
             putExtra("progressBreakOffsetsMillis", payload.progressBreakOffsetsMillis)
             putStringArrayListExtra(
@@ -792,6 +804,13 @@ object LiveUpdateScheduler {
         } else {
             snapshot.settings.liveDuringEndShowCountdown
         }
+        val countdownTextStyle = if (isBeforeClass) {
+            snapshot.settings.liveCountdownTextStyle
+        } else if (followBeforeClass) {
+            snapshot.settings.liveCountdownTextStyle
+        } else {
+            snapshot.settings.liveDuringEndCountdownTextStyle
+        }
         val showStageText = if (isBeforeClass) {
             snapshot.settings.liveShowStageText
         } else if (followBeforeClass) {
@@ -927,6 +946,7 @@ object LiveUpdateScheduler {
                     snapshot.settings.liveShowDuringClassNotification
                 },
             showCountdown = showCountdown,
+            countdownTextStyle = countdownTextStyle,
             showStageText = showStageText,
             showCourseNameInIsland = showCourseName,
             showLocationInIsland = showLocation,
@@ -974,13 +994,6 @@ object LiveUpdateScheduler {
         if (settings.liveEnableBeforeClass && aheadTime > nowMillis && aheadTime < startAtMillis) {
             candidates += FutureStageTrigger("beforeClass", aheadTime)
         }
-        if (settings.liveClassReminderStartMinutes > 0 &&
-            startAtMillis < reminderStartMillis &&
-            canDisplayDuringStatusBarStage(settings) &&
-            startAtMillis > nowMillis
-        ) {
-            candidates += FutureStageTrigger("duringClassStatusBar", startAtMillis)
-        }
         if (settings.liveClassReminderStartMinutes == 0 &&
             canDisplayDuring(settings) &&
             startAtMillis > nowMillis
@@ -1024,8 +1037,11 @@ object LiveUpdateScheduler {
             maxOf(startAtMillis, endAtMillis - settings.liveClassReminderStartMinutes * 60_000L)
         }
         if (settings.liveClassReminderStartMinutes > 0 && nowMillis < reminderStartMillis) {
-            return if (canDisplayDuringStatusBarStage(settings)) {
-                "duringClassStatusBar"
+            return if (settings.liveEnableDuringClass &&
+                settings.liveShowDuringClassNotification &&
+                !settings.livePromoteDuringClass
+            ) {
+                "duringClass"
             } else {
                 null
             }
@@ -1101,10 +1117,6 @@ object LiveUpdateScheduler {
     ): Long? {
         val baseMillis = buildCourseDateTimeMillis(dateCalendar, courseTime) ?: return null
         return baseMillis + settings.liveTimeCorrectionSeconds * 1000L
-    }
-
-    private fun canDisplayDuringStatusBarStage(settings: NativeLiveSettings): Boolean {
-        return settings.liveEnableDuringClass && settings.liveShowDuringClassNotification
     }
 
     private fun canDisplayDuring(settings: NativeLiveSettings): Boolean {

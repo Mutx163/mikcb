@@ -27,6 +27,20 @@ enum LiveDuringClassTimeDisplayMode {
   total,
 }
 
+enum LiveCountdownTextStyle {
+  smart,
+  smartMinS,
+  minuteSecondCn,
+  minuteSecondMinS,
+  minuteSecondMinSlashS,
+  minuteOnlyCn,
+  minuteOnlyMin,
+  minuteOnlySlash,
+  secondOnlyCn,
+  secondOnlyShort,
+  secondOnlySlash,
+}
+
 enum MiuiIslandLabelStyle {
   textOnly,
   iconAndText,
@@ -138,6 +152,55 @@ extension LiveDuringClassTimeDisplayModeX on LiveDuringClassTimeDisplayMode {
     return LiveDuringClassTimeDisplayMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => LiveDuringClassTimeDisplayMode.nearest,
+    );
+  }
+}
+
+extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
+  String get value => switch (this) {
+        LiveCountdownTextStyle.smart => 'smart',
+        LiveCountdownTextStyle.smartMinS => 'smart_min_s',
+        LiveCountdownTextStyle.minuteSecondCn => 'minute_second_cn',
+        LiveCountdownTextStyle.minuteSecondMinS => 'minute_second_min_s',
+        LiveCountdownTextStyle.minuteSecondMinSlashS =>
+          'minute_second_min_slash_s',
+        LiveCountdownTextStyle.minuteOnlyCn => 'minute_only_cn',
+        LiveCountdownTextStyle.minuteOnlyMin => 'minute_only_min',
+        LiveCountdownTextStyle.minuteOnlySlash => 'minute_only_slash',
+        LiveCountdownTextStyle.secondOnlyCn => 'second_only_cn',
+        LiveCountdownTextStyle.secondOnlyShort => 'second_only_short',
+        LiveCountdownTextStyle.secondOnlySlash => 'second_only_slash',
+      };
+
+  String get label => switch (this) {
+        LiveCountdownTextStyle.smart => '智能（中文）',
+        LiveCountdownTextStyle.smartMinS => '智能（英文）',
+        LiveCountdownTextStyle.minuteSecondCn => '分秒（5分钟19秒）',
+        LiveCountdownTextStyle.minuteSecondMinS => 'min+s（5min19s）',
+        LiveCountdownTextStyle.minuteSecondMinSlashS => 'min/s（5min/19s）',
+        LiveCountdownTextStyle.minuteOnlyCn => '纯分钟（5分钟）',
+        LiveCountdownTextStyle.minuteOnlyMin => 'min（5min）',
+        LiveCountdownTextStyle.minuteOnlySlash => '/min（5/min）',
+        LiveCountdownTextStyle.secondOnlyCn => '纯秒（5秒）',
+        LiveCountdownTextStyle.secondOnlyShort => 's（5s）',
+        LiveCountdownTextStyle.secondOnlySlash => '/s（5/s）',
+      };
+
+  bool get alwaysShowsSeconds => switch (this) {
+        LiveCountdownTextStyle.minuteSecondCn ||
+        LiveCountdownTextStyle.minuteSecondMinS ||
+        LiveCountdownTextStyle.minuteSecondMinSlashS ||
+        LiveCountdownTextStyle.secondOnlyCn ||
+        LiveCountdownTextStyle.secondOnlyShort ||
+        LiveCountdownTextStyle.secondOnlySlash =>
+          true,
+        _ => false,
+      };
+
+  static LiveCountdownTextStyle fromValue(String? value) {
+    return LiveCountdownTextStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => LiveCountdownTextStyle.smart,
     );
   }
 }
@@ -347,6 +410,7 @@ class LiveDisplaySettings {
   final bool showCourseName;
   final bool showLocation;
   final bool showCountdown;
+  final LiveCountdownTextStyle countdownTextStyle;
   final bool showStageText;
   final bool useShortName;
   final bool hidePrefixText;
@@ -367,6 +431,7 @@ class LiveDisplaySettings {
     required this.showCourseName,
     required this.showLocation,
     required this.showCountdown,
+    required this.countdownTextStyle,
     required this.showStageText,
     required this.useShortName,
     required this.hidePrefixText,
@@ -388,6 +453,7 @@ class LiveDisplaySettings {
     bool? showCourseName,
     bool? showLocation,
     bool? showCountdown,
+    LiveCountdownTextStyle? countdownTextStyle,
     bool? showStageText,
     bool? useShortName,
     bool? hidePrefixText,
@@ -409,6 +475,7 @@ class LiveDisplaySettings {
       showCourseName: showCourseName ?? this.showCourseName,
       showLocation: showLocation ?? this.showLocation,
       showCountdown: showCountdown ?? this.showCountdown,
+      countdownTextStyle: countdownTextStyle ?? this.countdownTextStyle,
       showStageText: showStageText ?? this.showStageText,
       useShortName: useShortName ?? this.useShortName,
       hidePrefixText: hidePrefixText ?? this.hidePrefixText,
@@ -510,6 +577,7 @@ class TimetableSettings {
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
+  final LiveCountdownTextStyle liveCountdownTextStyle;
   final bool liveShowStageText;
   final bool liveEnableBeforeClass;
   final bool liveEnableDuringClass;
@@ -523,6 +591,7 @@ class TimetableSettings {
   final bool liveDuringEndShowCourseName;
   final bool liveDuringEndShowLocation;
   final bool liveDuringEndShowCountdown;
+  final LiveCountdownTextStyle liveDuringEndCountdownTextStyle;
   final bool liveDuringEndShowStageText;
   final bool liveDuringEndUseShortName;
   final bool liveDuringEndHidePrefixText;
@@ -598,6 +667,7 @@ class TimetableSettings {
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
+    this.liveCountdownTextStyle = LiveCountdownTextStyle.smart,
     this.liveShowStageText = true,
     this.liveEnableBeforeClass = true,
     this.liveEnableDuringClass = true,
@@ -612,6 +682,7 @@ class TimetableSettings {
     this.liveDuringEndShowCourseName = true,
     this.liveDuringEndShowLocation = true,
     this.liveDuringEndShowCountdown = true,
+    this.liveDuringEndCountdownTextStyle = LiveCountdownTextStyle.smart,
     this.liveDuringEndShowStageText = true,
     this.liveDuringEndUseShortName = true,
     this.liveDuringEndHidePrefixText = true,
@@ -705,6 +776,7 @@ class TimetableSettings {
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
+      liveCountdownTextStyle: LiveCountdownTextStyle.smart,
       liveShowStageText: true,
       liveEnableBeforeClass: true,
       liveEnableDuringClass: true,
@@ -718,6 +790,7 @@ class TimetableSettings {
       liveDuringEndShowCourseName: true,
       liveDuringEndShowLocation: true,
       liveDuringEndShowCountdown: true,
+      liveDuringEndCountdownTextStyle: LiveCountdownTextStyle.smart,
       liveDuringEndShowStageText: true,
       liveDuringEndUseShortName: true,
       liveDuringEndHidePrefixText: true,
@@ -798,6 +871,7 @@ class TimetableSettings {
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
+      'liveCountdownTextStyle': liveCountdownTextStyle.value,
       'liveShowStageText': liveShowStageText,
       'liveEnableBeforeClass': liveEnableBeforeClass,
       'liveEnableDuringClass': liveEnableDuringClass,
@@ -811,6 +885,7 @@ class TimetableSettings {
       'liveDuringEndShowCourseName': liveDuringEndShowCourseName,
       'liveDuringEndShowLocation': liveDuringEndShowLocation,
       'liveDuringEndShowCountdown': liveDuringEndShowCountdown,
+      'liveDuringEndCountdownTextStyle': liveDuringEndCountdownTextStyle.value,
       'liveDuringEndShowStageText': liveDuringEndShowStageText,
       'liveDuringEndUseShortName': liveDuringEndUseShortName,
       'liveDuringEndHidePrefixText': liveDuringEndHidePrefixText,
@@ -933,6 +1008,9 @@ class TimetableSettings {
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
+      liveCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
+        json['liveCountdownTextStyle'] as String?,
+      ),
       liveShowStageText: json['liveShowStageText'] as bool? ?? true,
       liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
       liveEnableDuringClass: json['liveEnableDuringClass'] as bool? ?? true,
@@ -953,6 +1031,10 @@ class TimetableSettings {
           (json['liveShowLocation'] as bool? ?? true),
       liveDuringEndShowCountdown: json['liveDuringEndShowCountdown'] as bool? ??
           (json['liveShowCountdown'] as bool? ?? true),
+      liveDuringEndCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
+        json['liveDuringEndCountdownTextStyle'] as String? ??
+            json['liveCountdownTextStyle'] as String?,
+      ),
       liveDuringEndShowStageText: json['liveDuringEndShowStageText'] as bool? ??
           (json['liveShowStageText'] as bool? ?? true),
       liveDuringEndUseShortName: json['liveDuringEndUseShortName'] as bool? ??
@@ -1104,6 +1186,7 @@ class TimetableSettings {
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
+    LiveCountdownTextStyle? liveCountdownTextStyle,
     bool? liveShowStageText,
     bool? liveEnableBeforeClass,
     bool? liveEnableDuringClass,
@@ -1117,6 +1200,7 @@ class TimetableSettings {
     bool? liveDuringEndShowCourseName,
     bool? liveDuringEndShowLocation,
     bool? liveDuringEndShowCountdown,
+    LiveCountdownTextStyle? liveDuringEndCountdownTextStyle,
     bool? liveDuringEndShowStageText,
     bool? liveDuringEndUseShortName,
     bool? liveDuringEndHidePrefixText,
@@ -1210,6 +1294,8 @@ class TimetableSettings {
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,
+      liveCountdownTextStyle:
+          liveCountdownTextStyle ?? this.liveCountdownTextStyle,
       liveShowStageText: liveShowStageText ?? this.liveShowStageText,
       liveEnableBeforeClass:
           liveEnableBeforeClass ?? this.liveEnableBeforeClass,
@@ -1232,6 +1318,8 @@ class TimetableSettings {
           liveDuringEndShowLocation ?? this.liveDuringEndShowLocation,
       liveDuringEndShowCountdown:
           liveDuringEndShowCountdown ?? this.liveDuringEndShowCountdown,
+      liveDuringEndCountdownTextStyle: liveDuringEndCountdownTextStyle ??
+          this.liveDuringEndCountdownTextStyle,
       liveDuringEndShowStageText:
           liveDuringEndShowStageText ?? this.liveDuringEndShowStageText,
       liveDuringEndUseShortName:
@@ -1333,6 +1421,7 @@ class TimetableSettings {
         showCourseName: liveShowCourseName,
         showLocation: liveShowLocation,
         showCountdown: liveShowCountdown,
+        countdownTextStyle: liveCountdownTextStyle,
         showStageText: liveShowStageText,
         useShortName: liveUseShortName,
         hidePrefixText: liveHidePrefixText,
@@ -1357,6 +1446,7 @@ class TimetableSettings {
               showCourseName: liveDuringEndShowCourseName,
               showLocation: liveDuringEndShowLocation,
               showCountdown: liveDuringEndShowCountdown,
+              countdownTextStyle: liveDuringEndCountdownTextStyle,
               showStageText: liveDuringEndShowStageText,
               useShortName: liveDuringEndUseShortName,
               hidePrefixText: liveDuringEndHidePrefixText,
@@ -1386,6 +1476,7 @@ class TimetableSettings {
       liveShowCourseName: settings.showCourseName,
       liveShowLocation: settings.showLocation,
       liveShowCountdown: settings.showCountdown,
+      liveCountdownTextStyle: settings.countdownTextStyle,
       liveShowStageText: settings.showStageText,
       liveUseShortName: settings.useShortName,
       liveHidePrefixText: settings.hidePrefixText,
@@ -1413,6 +1504,7 @@ class TimetableSettings {
       liveDuringEndShowCourseName: settings.showCourseName,
       liveDuringEndShowLocation: settings.showLocation,
       liveDuringEndShowCountdown: settings.showCountdown,
+      liveDuringEndCountdownTextStyle: settings.countdownTextStyle,
       liveDuringEndShowStageText: settings.showStageText,
       liveDuringEndUseShortName: settings.useShortName,
       liveDuringEndHidePrefixText: settings.hidePrefixText,

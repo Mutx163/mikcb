@@ -577,6 +577,7 @@ class LiveUpdateService : Service() {
     private var activityStage = ""
     private var endSecondsCountdownThreshold = 60
     private var showCountdown = true
+    private var countdownTextStyle = "smart"
     private var showStageText = true
     private var showCourseNameInIsland = true
     private var showLocationInIsland = true
@@ -652,6 +653,7 @@ class LiveUpdateService : Service() {
             endSecondsCountdownThreshold =
                 intent?.getIntExtra("endSecondsCountdownThreshold", 60) ?: 60
             showCountdown = intent?.getBooleanExtra("showCountdown", true) ?: true
+            countdownTextStyle = intent?.getStringExtra("countdownTextStyle") ?: "smart"
             showStageText = intent?.getBooleanExtra("showStageText", true) ?: true
             showCourseNameInIsland = intent?.getBooleanExtra("showCourseNameInIsland", true) ?: true
             showLocationInIsland = intent?.getBooleanExtra("showLocationInIsland", true) ?: true
@@ -1068,7 +1070,7 @@ class LiveUpdateService : Service() {
                 }
                 val currentCriticalTimeText = currentDuringClassProgress?.criticalTimeText ?: currentText
                 val shouldRefreshProgressThisTick =
-                    currentDuringClassProgress != null && currentCriticalTimeText.contains("秒")
+                    currentDuringClassProgress?.updatesEverySecond == true
                 val currentProgress =
                     if (shouldRefreshProgressThisTick) {
                         currentDuringClassProgress.progressUnits
@@ -1085,9 +1087,8 @@ class LiveUpdateService : Service() {
                     getSystemService(NotificationManager::class.java)
                         ?.notify(NOTIFICATION_ID, buildNotification(currentText))
                 }
-                
-                // Keep a 1s heartbeat so countdowns and stage transitions update on time.
-                handler.postDelayed(this, 1000L)
+
+                handler.postDelayed(this, computeNextTickDelayMillis(now, stage, currentDuringClassProgress))
             }
         }
         handler.post(ticker!!)
@@ -1113,18 +1114,16 @@ class LiveUpdateService : Service() {
             when (stage) {
                 "beforeClass" -> {
                     val timeUntilStart = (startAtMillis - now).coerceAtLeast(0L)
-                    if (timeUntilStart <= 60_000L) {
-                        "${prefixTextStart}${(timeUntilStart / 1000L).coerceAtLeast(0L)}秒"
-                    } else {
-                        "${prefixTextStart}${formatCustomDuration(timeUntilStart)}"
-                    }
+                    "${prefixTextStart}${formatCountdownDuration(
+                        durationMillis = timeUntilStart,
+                        secondsThresholdMillis = 60_000L,
+                    )}"
                 }
                 "beforeEnd" -> {
-                    if (timeUntilEnd <= endSecondsCountdownThreshold * 1000L) {
-                        "${prefixTextEnd}${(timeUntilEnd / 1000L).coerceAtLeast(0L)}秒"
-                    } else {
-                        "${prefixTextEnd}${formatCustomDuration(timeUntilEnd)}"
-                    }
+                    "${prefixTextEnd}${formatCountdownDuration(
+                        durationMillis = timeUntilEnd,
+                        secondsThresholdMillis = endSecondsCountdownThreshold * 1000L,
+                    )}"
                 }
                 "duringClass",
                 "duringClassStatusBar" -> "上课中"
@@ -1147,7 +1146,11 @@ class LiveUpdateService : Service() {
         return when {
             now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
             liveClassReminderStartMinutes > 0 && now < reminderStart ->
-                if (canDisplayDuringStatusBarStage()) "duringClassStatusBar" else null
+                if (enableDuringClass && showNotificationDuringClass && !promoteDuringClass) {
+                    "duringClass"
+                } else {
+                    null
+                }
             now < reminderStart -> null
             liveClassReminderStartMinutes > 0 && enableBeforeEnd -> "beforeEnd"
             liveClassReminderStartMinutes > 0 && canDisplayDuringStage() -> "duringClass"
@@ -1156,10 +1159,6 @@ class LiveUpdateService : Service() {
             now >= endReminderStart && canDisplayDuringStage() -> "duringClass"
             else -> null
         }
-    }
-
-    private fun canDisplayDuringStatusBarStage(): Boolean {
-        return enableDuringClass && showNotificationDuringClass
     }
 
     private fun canDisplayDuringStage(): Boolean {
@@ -1647,7 +1646,7 @@ class LiveUpdateService : Service() {
                 .joinToString(" · ")
         }
             
-        val miuiFocusParam = if (isDuringClassStatusBar) {
+        val miuiFocusParam = if (!shouldPromote || isDuringClassStatusBar) {
             null
         } else {
             buildMiuiFocusParam(
@@ -1748,11 +1747,7 @@ class LiveUpdateService : Service() {
                     )
                 } else {
                     setShortCriticalText("")
-                    setExtras(
-                        Bundle().apply {
-                            putBoolean(EXTRA_REQUEST_PROMOTED_ONGOING, false)
-                        }
-                    )
+                    setExtras(Bundle())
                 }
             }
         }
@@ -1871,16 +1866,83 @@ class LiveUpdateService : Service() {
         }.timeInMillis
     }
 
-    private fun formatCustomDuration(durationMillis: Long): String {
+    private fun formatCountdownDuration(
+        durationMillis: Long,
+        secondsThresholdMillis: Long = 60_000L,
+    ): String {
+        return when (countdownTextStyle) {
+            "smart_min_s" -> formatSmartDuration(
+                durationMillis = durationMillis,
+                secondsThresholdMillis = secondsThresholdMillis,
+                minuteSuffix = "min",
+                secondSuffix = "s",
+            )
+            "minute_second_cn" -> formatMinuteSecondCn(durationMillis)
+            "minute_second_min_s" -> formatMinuteSecond(durationMillis, minuteSuffix = "min", secondSuffix = "s")
+            "minute_second_min_slash_s" -> formatMinuteSecond(durationMillis, minuteSuffix = "min/", secondSuffix = "s")
+            "minute_only_cn" -> formatMinuteOnly(durationMillis, "分钟")
+            "minute_only_min" -> formatMinuteOnly(durationMillis, "min")
+            "minute_only_slash" -> formatMinuteOnly(durationMillis, "/min")
+            "second_only_cn" -> formatSecondOnly(durationMillis, "秒")
+            "second_only_short" -> formatSecondOnly(durationMillis, "s")
+            "second_only_slash" -> formatSecondOnly(durationMillis, "/s")
+            else -> formatSmartDuration(durationMillis, secondsThresholdMillis)
+        }
+    }
+
+    private fun formatSmartDuration(
+        durationMillis: Long,
+        secondsThresholdMillis: Long,
+        minuteSuffix: String = "分钟",
+        secondSuffix: String = "秒",
+    ): String {
         val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
         val flooredMinutes = (totalSeconds / 60L).coerceAtLeast(1L)
         val roundedUpMinutes = ((totalSeconds + 59L) / 60L).coerceAtLeast(1L)
 
         return when {
-            totalSeconds > 120L -> "${flooredMinutes}分钟"
-            totalSeconds > 60L -> "${roundedUpMinutes}分钟"
-            else -> "${totalSeconds}秒"
+            durationMillis <= secondsThresholdMillis -> "${totalSeconds}${secondSuffix}"
+            totalSeconds > 120L -> "${flooredMinutes}${minuteSuffix}"
+            totalSeconds > 60L -> "${roundedUpMinutes}${minuteSuffix}"
+            else -> "${totalSeconds}${secondSuffix}"
         }
+    }
+
+    private fun formatMinuteSecondCn(durationMillis: Long): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+        return when {
+            minutes > 0L && seconds > 0L -> "${minutes}分钟${seconds}秒"
+            minutes > 0L -> "${minutes}分钟"
+            else -> "${seconds}秒"
+        }
+    }
+
+    private fun formatMinuteSecond(
+        durationMillis: Long,
+        minuteSuffix: String,
+        secondSuffix: String,
+    ): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+        return when {
+            minutes > 0L && seconds > 0L -> "${minutes}${minuteSuffix}${seconds}${secondSuffix}"
+            minutes > 0L -> "${minutes}${minuteSuffix.trimEnd('/')}"
+            else -> "${seconds}${secondSuffix}"
+        }
+    }
+
+    private fun formatMinuteOnly(durationMillis: Long, suffix: String): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = (totalSeconds / 60L).coerceAtLeast(1L)
+        return "$minutes$suffix"
+    }
+
+    private fun formatSecondOnly(durationMillis: Long, suffix: String): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        return "$totalSeconds$suffix"
     }
 
     private data class DuringClassProgress(
@@ -1892,6 +1954,7 @@ class LiveUpdateService : Service() {
         val compactDisplayText: String,
         val criticalTimeText: String,
         val breakPointUnits: List<Int>,
+        val updatesEverySecond: Boolean,
     )
 
     private fun buildDuringClassProgress(now: Long): DuringClassProgress? {
@@ -1917,8 +1980,8 @@ class LiveUpdateService : Service() {
         val nextMilestoneLabel =
             nextMilestoneIndex?.let { progressMilestoneLabels.getOrNull(it)?.takeIf { label -> label.isNotBlank() } }
         val nextMilestoneRemainingText =
-            nextMilestoneIndex?.let { formatCustomDuration(progressBreakOffsetsMillis[it] - elapsedMillis) }
-        val finalDismissRemainingText = formatCustomDuration(remainingMillis)
+            nextMilestoneIndex?.let { formatCountdownDuration(progressBreakOffsetsMillis[it] - elapsedMillis) }
+        val finalDismissRemainingText = formatCountdownDuration(remainingMillis)
         val nextMilestoneDisplayText =
             if (nextMilestoneLabel != null && nextMilestoneRemainingText != null) {
                 "$nextMilestoneLabel $nextMilestoneRemainingText"
@@ -1947,18 +2010,137 @@ class LiveUpdateService : Service() {
             compactDisplayText = compactDisplayText,
             criticalTimeText = criticalTimeText,
             breakPointUnits = breakPointUnits,
+            updatesEverySecond = shouldRefreshEverySecond(
+                durationMillis = nextMilestoneIndex?.let { progressBreakOffsetsMillis[it] - elapsedMillis }
+                    ?: remainingMillis,
+                secondsThresholdMillis = 60_000L,
+            ),
         )
     }
 
-    private fun formatProgressDuration(durationMillis: Long): String {
-        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
-        val minutes = totalSeconds / 60L
-        val seconds = totalSeconds % 60L
-
-        return when {
-            minutes > 0L && seconds > 0L -> "${minutes}分${seconds}秒"
-            minutes > 0L -> "${minutes}分钟"
-            else -> "${seconds}秒"
+    private fun shouldRefreshEverySecond(
+        durationMillis: Long,
+        secondsThresholdMillis: Long,
+    ): Boolean {
+        if (!showCountdown) {
+            return false
         }
+        return when (countdownTextStyle) {
+            "minute_second_cn",
+            "minute_second_min_s",
+            "minute_second_min_slash_s",
+            "second_only_cn",
+            "second_only_short",
+            "second_only_slash" -> true
+            "smart",
+            "smart_min_s" -> durationMillis <= secondsThresholdMillis
+            else -> false
+        }
+    }
+
+    private fun nextCountdownTextChangeDelayMillis(
+        durationMillis: Long,
+        secondsThresholdMillis: Long,
+    ): Long {
+        if (!showCountdown) {
+            return 60_000L
+        }
+        val safeDurationMillis = durationMillis.coerceAtLeast(0L)
+        val totalSeconds = (safeDurationMillis / 1000L).coerceAtLeast(0L)
+        return when (countdownTextStyle) {
+            "minute_second_cn",
+            "minute_second_min_s",
+            "minute_second_min_slash_s",
+            "second_only_cn",
+            "second_only_short",
+            "second_only_slash" -> 1_000L
+            "minute_only_cn",
+            "minute_only_min",
+            "minute_only_slash" -> {
+                val currentMinutes = (totalSeconds / 60L).coerceAtLeast(1L)
+                if (currentMinutes <= 1L) {
+                    safeDurationMillis.coerceAtLeast(1_000L)
+                } else {
+                    (safeDurationMillis - currentMinutes * 60_000L + 1L).coerceAtLeast(1_000L)
+                }
+            }
+            else -> {
+                when {
+                    safeDurationMillis <= secondsThresholdMillis -> 1_000L
+                    totalSeconds > 120L -> {
+                        val currentMinutes = (totalSeconds / 60L).coerceAtLeast(1L)
+                        (safeDurationMillis - currentMinutes * 60_000L + 1L).coerceAtLeast(1_000L)
+                    }
+                    totalSeconds > 60L -> {
+                        (safeDurationMillis - secondsThresholdMillis + 1L).coerceAtLeast(1_000L)
+                    }
+                    else -> 1_000L
+                }
+            }
+        }
+    }
+
+    private fun computeNextTickDelayMillis(
+        now: Long,
+        stage: String?,
+        duringClassProgress: DuringClassProgress?,
+    ): Long {
+        val refreshEverySecond = when (stage) {
+            "beforeClass" -> shouldRefreshEverySecond(
+                durationMillis = (startAtMillis - now).coerceAtLeast(0L),
+                secondsThresholdMillis = 60_000L,
+            )
+            "beforeEnd" -> shouldRefreshEverySecond(
+                durationMillis = (endAtMillis - now).coerceAtLeast(0L),
+                secondsThresholdMillis = endSecondsCountdownThreshold * 1000L,
+            )
+            "duringClass" -> duringClassProgress?.updatesEverySecond == true
+            else -> false
+        }
+        if (refreshEverySecond) {
+            return 1000L
+        }
+        val stageDelay = when (stage) {
+            "beforeClass" -> minOf(
+                (startAtMillis - now).coerceAtLeast(1_000L),
+                nextCountdownTextChangeDelayMillis(
+                    durationMillis = (startAtMillis - now).coerceAtLeast(0L),
+                    secondsThresholdMillis = 60_000L,
+                ),
+            )
+            "beforeEnd" -> minOf(
+                (endAtMillis - now).coerceAtLeast(1_000L),
+                nextCountdownTextChangeDelayMillis(
+                    durationMillis = (endAtMillis - now).coerceAtLeast(0L),
+                    secondsThresholdMillis = endSecondsCountdownThreshold * 1000L,
+                ),
+            )
+            "duringClass" -> {
+                val elapsedMillis = (now - startAtMillis).coerceAtLeast(0L)
+                val nextMilestoneDelay = progressBreakOffsetsMillis
+                    .firstOrNull { it > elapsedMillis }
+                    ?.minus(elapsedMillis)
+                listOfNotNull(
+                    nextMilestoneDelay?.takeIf { it > 0L },
+                    (endAtMillis - now).takeIf { it > 0L },
+                    nextCountdownTextChangeDelayMillis(
+                        durationMillis = nextMilestoneDelay ?: (endAtMillis - now).coerceAtLeast(0L),
+                        secondsThresholdMillis = 60_000L,
+                    ),
+                ).minOrNull() ?: 60_000L
+            }
+            "duringClassStatusBar" -> {
+                val beforeEndStartMillis = maxOf(
+                    startAtMillis,
+                    endAtMillis - liveClassReminderStartMinutes * 60_000L,
+                )
+                listOfNotNull(
+                    (beforeEndStartMillis - now).takeIf { it > 0L },
+                    (endAtMillis - now).takeIf { it > 0L },
+                ).minOrNull() ?: 60_000L
+            }
+            else -> 60_000L
+        }
+        return stageDelay.coerceIn(1_000L, 60_000L)
     }
 }
