@@ -16,6 +16,7 @@ import 'add_course_screen.dart';
 import 'about_screen.dart';
 import 'course_overview_screen.dart';
 import 'feedback_screen.dart';
+import 'support_creator_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -125,8 +126,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             surfaceTintColor: backgroundColor,
             title: const Text('轻屿课表'),
             actions: [
-              PopupMenuButton<String>(
+              IconButton(
                 tooltip: '更多',
+                onPressed: _showTopActionsSheet,
                 icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -150,56 +152,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                   ],
                 ),
-                onSelected: _handleTopMenuAction,
-                itemBuilder: (context) {
-                  final colorScheme = Theme.of(context).colorScheme;
-                  return [
-                    if (_hasAvailableUpdate)
-                      PopupMenuItem(
-                        value: 'update',
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.system_update_rounded,
-                              color: colorScheme.primary,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '软件有更新',
-                              style: TextStyle(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    const PopupMenuItem(
-                      value: 'profiles',
-                      child: Text('课表管理'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'overview',
-                      child: Text('课程总览'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'import',
-                      child: Text('导入课程'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'settings',
-                      child: Text('课表设置'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'feedback',
-                      child: Text('问题反馈'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'add',
-                      child: Text('添加课程'),
-                    ),
-                  ];
-                },
               ),
             ],
           ),
@@ -1089,6 +1041,86 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
+  void _openSupportCreatorPage() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/support/creator'),
+        builder: (context) => const SupportCreatorScreen(),
+      ),
+    );
+  }
+
+  Future<void> _showTopActionsSheet() async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _HomeActionButton(
+                  icon: Icons.system_update_alt_rounded,
+                  title: '软件更新',
+                  badgeText: _hasAvailableUpdate ? '更新' : null,
+                  accentColor: _hasAvailableUpdate ? colorScheme.primary : null,
+                  onTap: () => Navigator.of(sheetContext).pop('update'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.view_week_rounded,
+                  title: '课表管理',
+                  onTap: () => Navigator.of(sheetContext).pop('profiles'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.dashboard_customize_rounded,
+                  title: '课程总览',
+                  onTap: () => Navigator.of(sheetContext).pop('overview'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.add_circle_outline_rounded,
+                  title: '添加课程',
+                  onTap: () => Navigator.of(sheetContext).pop('add'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.file_upload_outlined,
+                  title: '导入课程',
+                  onTap: () => Navigator.of(sheetContext).pop('import'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.tune_rounded,
+                  title: '课表设置',
+                  onTap: () => Navigator.of(sheetContext).pop('settings'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.favorite_border_rounded,
+                  title: '请喝咖啡',
+                  accentColor: colorScheme.secondary,
+                  onTap: () => Navigator.of(sheetContext).pop('coffee'),
+                ),
+                _HomeActionButton(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  title: '问题反馈',
+                  onTap: () => Navigator.of(sheetContext).pop('feedback'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+    _handleTopMenuAction(selected);
+  }
+
   void _handleTopMenuAction(String value) {
     switch (value) {
       case 'update':
@@ -1120,6 +1152,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             builder: (context) => const FeedbackScreen(),
           ),
         );
+        break;
+      case 'coffee':
+        _openSupportCreatorPage();
         break;
       case 'add':
         _navigateToAddCourse(context);
@@ -1291,6 +1326,100 @@ class _TimetableScreenState extends State<TimetableScreen>
                   ? '已自动补齐到第 $requiredSectionCount 节，并导入 $importedCount 条课程'
                   : '已导入 $importedCount 条课程'
               : '未识别到可导入课程',
+        ),
+      ),
+    );
+  }
+}
+
+class _HomeActionButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final String? badgeText;
+  final Color? accentColor;
+
+  const _HomeActionButton({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.badgeText,
+    this.accentColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final highlightColor = accentColor ?? colorScheme.primary;
+    final width = ((MediaQuery.of(context).size.width - 32 - 36) / 4).clamp(
+      72.0,
+      112.0,
+    );
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(22),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: highlightColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Icon(icon, color: highlightColor),
+                    ),
+                    if ((badgeText ?? '').isNotEmpty)
+                      Positioned(
+                        right: -8,
+                        top: -6,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: highlightColor,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            badgeText!,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

@@ -9,6 +9,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -25,10 +26,12 @@ import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.PowerManager
+import android.provider.MediaStore
 import android.provider.Settings
 import android.text.TextPaint
 import android.text.TextUtils
@@ -47,6 +50,7 @@ class MainActivity : FlutterActivity() {
         private const val METHOD_CHANNEL = "com.example.university_timetable/miui_live"
         private const val UMENG_CHANNEL = "com.example.university_timetable/umeng_analytics"
         private const val HOME_WIDGET_CHANNEL = "com.example.university_timetable/home_widget"
+        private const val SUPPORT_CHANNEL = "com.example.university_timetable/support"
         private const val CHANNEL_ID = "live_update_channel"
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val PREFS_NAME = "native_runtime_prefs"
@@ -263,6 +267,33 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SUPPORT_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "saveImageToGallery" -> {
+                        val arguments = call.arguments as? Map<*, *>
+                        val bytes = arguments?.get("bytes") as? ByteArray
+                        val fileName = arguments?.get("fileName") as? String ?: "qingyu_kebiao.png"
+                        val mimeType = arguments?.get("mimeType") as? String ?: "image/png"
+                        if (bytes == null || bytes.isEmpty()) {
+                            result.error("INVALID_ARGUMENTS", "Missing image bytes", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            val savedUri = saveImageToGallery(bytes, fileName, mimeType)
+                            if (savedUri == null) {
+                                result.error("SAVE_FAILED", "Failed to save image to gallery", null)
+                            } else {
+                                result.success(savedUri)
+                            }
+                        } catch (e: Exception) {
+                            result.error("SAVE_FAILED", e.message, null)
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     private fun hasNotificationPermission(): Boolean {
@@ -409,6 +440,53 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             Log.w("MainActivity", "Failed to open app details settings", e)
         }
+    }
+
+    private fun saveImageToGallery(
+        bytes: ByteArray,
+        fileName: String,
+        mimeType: String,
+    ): String? {
+        val safeFileName = if (fileName.contains(".")) fileName else "$fileName.png"
+        val resolver = applicationContext.contentResolver
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val values = ContentValues().apply {
+                put(MediaStore.Images.Media.DISPLAY_NAME, safeFileName)
+                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+                put(
+                    MediaStore.Images.Media.RELATIVE_PATH,
+                    "${Environment.DIRECTORY_PICTURES}/轻屿课表"
+                )
+                put(MediaStore.Images.Media.IS_PENDING, 1)
+            }
+            val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: return null
+            return try {
+                resolver.openOutputStream(uri)?.use { output ->
+                    output.write(bytes)
+                    output.flush()
+                } ?: return null
+                values.clear()
+                values.put(MediaStore.Images.Media.IS_PENDING, 0)
+                resolver.update(uri, values, null, null)
+                uri.toString()
+            } catch (e: Exception) {
+                resolver.delete(uri, null, null)
+                throw e
+            }
+        }
+
+        @Suppress("DEPRECATION")
+        val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+        @Suppress("DEPRECATION")
+        val inserted = MediaStore.Images.Media.insertImage(
+            resolver,
+            bitmap,
+            safeFileName,
+            "轻屿课表收款码"
+        )
+        return inserted?.takeIf { it.isNotBlank() }
     }
 
     private fun isPromotedPermissionDeclared(): Boolean {
