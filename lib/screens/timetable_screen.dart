@@ -31,7 +31,8 @@ class TimetableScreen extends StatefulWidget {
   State<TimetableScreen> createState() => _TimetableScreenState();
 }
 
-class _TimetableScreenState extends State<TimetableScreen> {
+class _TimetableScreenState extends State<TimetableScreen>
+    with WidgetsBindingObserver {
   static const double _headerControlWidth = _timeColumnWidth;
   static const double _timeColumnWidth = 40;
   static const int _minWeek = 1;
@@ -52,6 +53,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   int? _pendingSyncedWeek;
   final AppUpdateService _updateService = AppUpdateService();
   bool _hasAvailableUpdate = false;
+  bool? _lastUpdateCheckIncludePrerelease;
+  bool _isCheckingForUpdate = false;
 
   Color _colorFromHex(String hexColor, Color fallback) {
     try {
@@ -65,6 +68,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
     _weekPageController = PageController(
@@ -72,20 +76,36 @@ class _TimetableScreenState extends State<TimetableScreen> {
           _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
     if (widget.enableUpdateCheck) {
-      _checkForAppUpdate();
+      _checkForAppUpdate(
+        includePrerelease: provider.settings.appUpdateIncludePrerelease,
+      );
     }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _weekPageController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && widget.enableUpdateCheck) {
+      _checkForAppUpdate(
+        includePrerelease: context
+            .read<TimetableProvider>()
+            .settings
+            .appUpdateIncludePrerelease,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(
           provider.currentWeek,
           provider.settings.semesterWeekCount,
@@ -1107,14 +1127,39 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
   }
 
-  Future<void> _checkForAppUpdate() async {
+  void _scheduleUpdateCheckIfNeeded(TimetableProvider provider) {
+    if (!widget.enableUpdateCheck) {
+      return;
+    }
+    final includePrerelease = provider.settings.appUpdateIncludePrerelease;
+    if (_lastUpdateCheckIncludePrerelease == includePrerelease) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _checkForAppUpdate(includePrerelease: includePrerelease);
+    });
+  }
+
+  Future<void> _checkForAppUpdate({
+    required bool includePrerelease,
+  }) async {
+    if (_isCheckingForUpdate) {
+      return;
+    }
+    _isCheckingForUpdate = true;
+    _lastUpdateCheckIncludePrerelease = includePrerelease;
     if (!kReleaseMode) {
       if (!mounted) {
+        _isCheckingForUpdate = false;
         return;
       }
       setState(() {
         _hasAvailableUpdate = true;
       });
+      _isCheckingForUpdate = false;
       return;
     }
 
@@ -1122,8 +1167,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
       final packageInfo = await PackageInfo.fromPlatform();
       final result = await _updateService.checkForUpdates(
         currentVersion: packageInfo.version,
+        includePrerelease: includePrerelease,
       );
       if (!mounted) {
+        _isCheckingForUpdate = false;
         return;
       }
       setState(() {
@@ -1131,6 +1178,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
       });
     } catch (_) {
       // Ignore update check failures on home screen; About page provides details.
+    } finally {
+      _isCheckingForUpdate = false;
     }
   }
 
