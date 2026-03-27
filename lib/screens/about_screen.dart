@@ -376,7 +376,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   final AppAnalytics _analytics = AppAnalytics.instance;
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
-  double _downloadProgress = 0.0;
+  int _downloadedBytes = 0;
+  int? _downloadTotalBytes;
 
   @override
   void initState() {
@@ -932,17 +933,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     _analytics.logEventLater(name: 'update_download_started');
     setState(() {
       _isDownloading = true;
-      _downloadProgress = 0.0;
+      _downloadedBytes = 0;
+      _downloadTotalBytes = null;
     });
 
-    final error =
-        await _updateService.downloadAndInstallUpdate(url, (progress) {
+    final error = await _updateService.downloadAndInstallUpdate(
+      url,
+      (downloadedBytes, totalBytes) {
       if (mounted) {
         setState(() {
-          _downloadProgress = progress;
+          _downloadedBytes = downloadedBytes;
+          _downloadTotalBytes = totalBytes;
         });
       }
-    });
+    },
+    );
 
     if (!mounted) return;
 
@@ -1064,6 +1069,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Widget _buildDownloadProgressBar(ThemeData theme) {
     final colorScheme = theme.colorScheme;
+    final totalBytes = _downloadTotalBytes;
+    final progress =
+        totalBytes == null || totalBytes <= 0 ? null : _downloadedBytes / totalBytes;
+    final progressText = progress == null
+        ? '正在下载更新 ${_formatBytes(_downloadedBytes)}'
+        : '正在下载更新 ${(progress * 100).toStringAsFixed(1)}%';
     return SafeArea(
       top: false,
       child: Container(
@@ -1088,17 +1099,26 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              '正在下载更新 ${(_downloadProgress * 100).toStringAsFixed(1)}%',
+              progressText,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.primary,
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (progress == null && _downloadedBytes > 0) ...[
+              const SizedBox(height: 4),
+              Text(
+                '镜像源未返回文件总大小，先显示已下载体积',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
               child: LinearProgressIndicator(
-                value: _downloadProgress,
+                value: progress,
                 minHeight: 8,
               ),
             ),
@@ -1106,6 +1126,16 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         ),
       ),
     );
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) {
+      return '$bytes B';
+    }
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
 

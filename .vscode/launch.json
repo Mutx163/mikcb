@@ -2,40 +2,45 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Flutter (Debug)",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "flutterMode": "debug",
-            "args": []
-        },
-        {
-            "name": "Flutter (Release)",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "flutterMode": "release"
-        },
-        {
-            "name": "Flutter (Profile)",
-            "request": "launch",
-            "type": "dart",
-            "program": "lib/main.dart",
-            "flutterMode": "profile"
-        },
-        {
-            "name": "Flutter (Android)",
+            "name": "Android Debug",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
             "flutterMode": "debug",
             "deviceId": "android"
+        },
+        {
+            "name": "Android Release",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "release",
+            "deviceId": "android"
+        },
+        {
+            "name": "Android Profile",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "profile",
+            "deviceId": "android"
+        },
+        {
+            "name": "Android Debug (Verbose)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart",
+            "flutterMode": "debug",
+            "deviceId": "android",
+            "args": [
+                "--verbose"
+            ]
         }
     ],
     "compounds": [
         {
-            "name": "All Devices",
-            "configurations": ["Flutter (Debug)"]
+            "name": "Android",
+            "configurations": ["Android Debug"]
         }
     ]
 }
