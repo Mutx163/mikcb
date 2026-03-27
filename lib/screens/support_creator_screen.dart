@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/timetable_provider.dart';
 import '../services/support_creator_service.dart';
 
 class SupportCreatorScreen extends StatefulWidget {
@@ -16,7 +18,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   @override
   void initState() {
     super.initState();
-    _donorFuture = _service.fetchDonors();
+    _donorFuture = _loadDonors();
   }
 
   @override
@@ -447,7 +449,13 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
 
   void _reloadDonors() {
     setState(() {
-      _donorFuture = _service.fetchDonors();
+      _donorFuture = _loadDonors();
     });
+  }
+
+  Future<SupportDonorData> _loadDonors() {
+    final mirrorUrlPrefix =
+        context.read<TimetableProvider>().settings.appUpdateMirrorUrlPrefix;
+    return _service.fetchDonors(mirrorUrlPrefix: mirrorUrlPrefix);
   }
 }
