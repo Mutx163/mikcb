@@ -10,6 +10,12 @@ enum WidgetBackgroundStyle {
   gradient,
 }
 
+enum AppThemeMode {
+  system,
+  light,
+  dark,
+}
+
 enum SectionTimeDisplayMode {
   hidden,
   startOnly,
@@ -92,6 +98,27 @@ extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
     return WidgetBackgroundStyle.values.firstWhere(
       (item) => item.value == value,
       orElse: () => WidgetBackgroundStyle.solid,
+    );
+  }
+}
+
+extension AppThemeModeX on AppThemeMode {
+  String get value => switch (this) {
+        AppThemeMode.system => 'system',
+        AppThemeMode.light => 'light',
+        AppThemeMode.dark => 'dark',
+      };
+
+  String get label => switch (this) {
+        AppThemeMode.system => '跟随系统',
+        AppThemeMode.light => '浅色模式',
+        AppThemeMode.dark => '深色模式',
+      };
+
+  static AppThemeMode fromValue(String? value) {
+    return AppThemeMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => AppThemeMode.system,
     );
   }
 }
@@ -473,6 +500,10 @@ class TimetableSettings {
   final WidgetBackgroundStyle widgetBackgroundStyle;
   final bool widgetShowLocation;
   final bool widgetShowCountdown;
+  final bool widgetHideCompletedCourses;
+  final double widgetHeightAdjustment;
+  final double widgetCornerRadius;
+  final AppThemeMode appThemeMode;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
@@ -557,6 +588,10 @@ class TimetableSettings {
     this.widgetBackgroundStyle = WidgetBackgroundStyle.solid,
     this.widgetShowLocation = true,
     this.widgetShowCountdown = true,
+    this.widgetHideCompletedCourses = false,
+    this.widgetHeightAdjustment = -11,
+    this.widgetCornerRadius = 22,
+    this.appThemeMode = AppThemeMode.system,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
@@ -660,6 +695,10 @@ class TimetableSettings {
       widgetBackgroundStyle: WidgetBackgroundStyle.solid,
       widgetShowLocation: true,
       widgetShowCountdown: true,
+      widgetHideCompletedCourses: false,
+      widgetHeightAdjustment: -11,
+      widgetCornerRadius: 22,
+      appThemeMode: AppThemeMode.system,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
@@ -749,6 +788,10 @@ class TimetableSettings {
       'widgetBackgroundStyle': widgetBackgroundStyle.value,
       'widgetShowLocation': widgetShowLocation,
       'widgetShowCountdown': widgetShowCountdown,
+      'widgetHideCompletedCourses': widgetHideCompletedCourses,
+      'widgetHeightAdjustment': widgetHeightAdjustment,
+      'widgetCornerRadius': widgetCornerRadius,
+      'appThemeMode': appThemeMode.value,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
@@ -873,6 +916,15 @@ class TimetableSettings {
       ),
       widgetShowLocation: json['widgetShowLocation'] as bool? ?? true,
       widgetShowCountdown: json['widgetShowCountdown'] as bool? ?? true,
+      widgetHideCompletedCourses:
+          json['widgetHideCompletedCourses'] as bool? ?? false,
+      widgetHeightAdjustment:
+          (json['widgetHeightAdjustment'] as num?)?.toDouble() ?? -11,
+      widgetCornerRadius:
+          (json['widgetCornerRadius'] as num?)?.toDouble() ?? 22,
+      appThemeMode: AppThemeModeX.fromValue(
+        json['appThemeMode'] as String?,
+      ),
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
       ),
@@ -1042,6 +1094,10 @@ class TimetableSettings {
     WidgetBackgroundStyle? widgetBackgroundStyle,
     bool? widgetShowLocation,
     bool? widgetShowCountdown,
+    bool? widgetHideCompletedCourses,
+    double? widgetHeightAdjustment,
+    double? widgetCornerRadius,
+    AppThemeMode? appThemeMode,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
@@ -1140,6 +1196,12 @@ class TimetableSettings {
           widgetBackgroundStyle ?? this.widgetBackgroundStyle,
       widgetShowLocation: widgetShowLocation ?? this.widgetShowLocation,
       widgetShowCountdown: widgetShowCountdown ?? this.widgetShowCountdown,
+      widgetHideCompletedCourses:
+          widgetHideCompletedCourses ?? this.widgetHideCompletedCourses,
+      widgetHeightAdjustment:
+          widgetHeightAdjustment ?? this.widgetHeightAdjustment,
+      widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,
+      appThemeMode: appThemeMode ?? this.appThemeMode,
       timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:

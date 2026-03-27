@@ -1647,12 +1647,16 @@ class LiveUpdateService : Service() {
                 .joinToString(" · ")
         }
             
-        val miuiFocusParam = buildMiuiFocusParam(
-            title = title,
-            remainingText = visibleStatusText,
-            timeRangeText = timeRangeText,
-            bodyContent = if (shouldPromote) promotedContentText else contentText,
-        )
+        val miuiFocusParam = if (isDuringClassStatusBar) {
+            null
+        } else {
+            buildMiuiFocusParam(
+                title = title,
+                remainingText = visibleStatusText,
+                timeRangeText = timeRangeText,
+                bodyContent = if (shouldPromote) promotedContentText else contentText,
+            )
+        }
 
         val islandCriticalStatusText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             classProgress.criticalTimeText
@@ -1710,7 +1714,13 @@ class LiveUpdateService : Service() {
             setOngoing(true)
             setAutoCancel(false)
             setOnlyAlertOnce(true)
-            setCategory(Notification.CATEGORY_PROGRESS)
+            setCategory(
+                if (isDuringClassStatusBar) {
+                    Notification.CATEGORY_REMINDER
+                } else {
+                    Notification.CATEGORY_PROGRESS
+                }
+            )
             setColorized(false)
             setShowWhen(!shouldPromote)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
@@ -1726,7 +1736,10 @@ class LiveUpdateService : Service() {
             }
 
             if (Build.VERSION.SDK_INT >= 36) {
-                if (shouldPromote) {
+                if (isDuringClassStatusBar) {
+                    setShortCriticalText("")
+                    setExtras(Bundle())
+                } else if (shouldPromote) {
                     setShortCriticalText(islandCriticalText)
                     setExtras(
                         Bundle().apply {

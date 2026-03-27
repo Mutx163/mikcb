@@ -9,6 +9,16 @@ import android.view.View
 import android.widget.RemoteViews
 
 class TodayCompactWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -48,20 +58,37 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_compact)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val state = snapshot?.state ?: "no_course"
             val backgroundStyle = snapshot?.backgroundStyle ?: "solid"
             val primaryTextColor = TodayWidgetSupport.primaryTextColor(backgroundStyle)
             val secondaryTextColor = TodayWidgetSupport.secondaryTextColor(backgroundStyle)
 
             views.setInt(
-                R.id.widget_root,
+                R.id.widget_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(backgroundStyle)
+                TodayWidgetSupport.backgroundRes(
+                    backgroundStyle,
+                    snapshot?.cornerRadius ?: 28
+                )
+            )
+            TodayWidgetSupport.applySquareishPadding(
+                views,
+                R.id.widget_root,
+                profile,
+                baseHorizontalDp = 14,
+                baseVerticalDp = 14,
+                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                targetAspect = 1f,
             )
             views.setTextViewText(R.id.widget_status, TodayWidgetSupport.statusText(state))
             views.setTextViewText(
                 R.id.widget_course_name,
-                snapshot?.let(TodayWidgetSupport::heroCourseName) ?: "今日无课"
+                when {
+                    snapshot == null -> "今日无课"
+                    state == "completed" -> "今天课程"
+                    else -> TodayWidgetSupport.heroCourseName(snapshot)
+                }
             )
             views.setTextViewText(
                 R.id.widget_meta,
@@ -79,6 +106,25 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 R.id.widget_status,
                 "setBackgroundResource",
                 TodayWidgetSupport.statusBackgroundRes(state, backgroundStyle)
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_status,
+                if (profile.isNarrow || profile.isShort) 10f else 11f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_course_name,
+                when {
+                    profile.isShort -> 16f
+                    profile.isWide -> 19f
+                    else -> 18f
+                }
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_meta,
+                if (profile.isNarrow || profile.isShort) 11f else 12f
             )
 
             views.setOnClickPendingIntent(

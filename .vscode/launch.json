@@ -6,24 +6,21 @@
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
-            "flutterMode": "debug",
-            "deviceId": "android"
+            "flutterMode": "debug"
         },
         {
             "name": "Android Release",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
-            "flutterMode": "release",
-            "deviceId": "android"
+            "flutterMode": "release"
         },
         {
             "name": "Android Profile",
             "request": "launch",
             "type": "dart",
             "program": "lib/main.dart",
-            "flutterMode": "profile",
-            "deviceId": "android"
+            "flutterMode": "profile"
         },
         {
             "name": "Android Debug (Verbose)",
@@ -31,7 +28,6 @@
             "type": "dart",
             "program": "lib/main.dart",
             "flutterMode": "debug",
-            "deviceId": "android",
             "args": [
                 "--verbose"
             ]

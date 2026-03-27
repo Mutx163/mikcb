@@ -22,6 +22,10 @@ void main() {
     expect(settings.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(settings.widgetShowLocation, isTrue);
     expect(settings.widgetShowCountdown, isTrue);
+    expect(settings.widgetHideCompletedCourses, isFalse);
+    expect(settings.widgetHeightAdjustment, -11);
+    expect(settings.widgetCornerRadius, 22);
+    expect(settings.appThemeMode, AppThemeMode.system);
     expect(
       settings.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -88,6 +92,10 @@ void main() {
     expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.solid);
     expect(restored.widgetShowLocation, isTrue);
     expect(restored.widgetShowCountdown, isTrue);
+    expect(restored.widgetHideCompletedCourses, isFalse);
+    expect(restored.widgetHeightAdjustment, -11);
+    expect(restored.widgetCornerRadius, 22);
+    expect(restored.appThemeMode, AppThemeMode.system);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -158,6 +166,10 @@ void main() {
       widgetBackgroundStyle: WidgetBackgroundStyle.gradient,
       widgetShowLocation: false,
       widgetShowCountdown: false,
+      widgetHideCompletedCourses: true,
+      widgetHeightAdjustment: 12,
+      widgetCornerRadius: 18,
+      appThemeMode: AppThemeMode.dark,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
@@ -197,6 +209,10 @@ void main() {
     expect(restored.widgetBackgroundStyle, WidgetBackgroundStyle.gradient);
     expect(restored.widgetShowLocation, isFalse);
     expect(restored.widgetShowCountdown, isFalse);
+    expect(restored.widgetHideCompletedCourses, isTrue);
+    expect(restored.widgetHeightAdjustment, 12);
+    expect(restored.widgetCornerRadius, 18);
+    expect(restored.appThemeMode, AppThemeMode.dark);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,

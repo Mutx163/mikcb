@@ -9,6 +9,16 @@ import android.view.View
 import android.widget.RemoteViews
 
 class TodayLargeWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -44,14 +54,24 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_large)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val style = snapshot?.backgroundStyle ?: "solid"
             val primaryColor = TodayWidgetSupport.primaryTextColor(style)
             val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
 
             views.setInt(
-                R.id.widget_large_root,
+                R.id.widget_large_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style)
+                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28)
+            )
+            TodayWidgetSupport.applySquareishPadding(
+                views,
+                R.id.widget_large_root,
+                profile,
+                baseHorizontalDp = 14,
+                baseVerticalDp = 14,
+                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                targetAspect = 1f,
             )
             views.setTextColor(R.id.widget_large_heading, secondaryColor)
             views.setTextColor(R.id.widget_large_week, secondaryColor)
@@ -80,7 +100,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     R.id.widget_large_subtitle,
                     when (snapshot.state) {
                         "no_course" -> "今天没有课程安排"
-                        "completed" -> "今天课程已经结束"
+                        "completed" -> TodayWidgetSupport.footerText(snapshot)
                         else -> TodayWidgetSupport.footerText(snapshot)
                     }
                 )
@@ -94,8 +114,45 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_large_empty, emptyText)
-                setCourseRows(views, snapshot.todayCourses.take(5), primaryColor, secondaryColor)
+                setCourseRows(
+                    views,
+                    if (snapshot.state == "completed") {
+                        emptyList()
+                    } else {
+                        snapshot.visibleTodayCourses.take(
+                            TodayWidgetSupport.largeVisibleRows(profile)
+                        )
+                    },
+                    primaryColor,
+                    secondaryColor
+                )
             }
+
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_large_heading,
+                if (profile.isNarrow || profile.isShort) 10f else 11f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_large_week,
+                if (profile.isNarrow || profile.isShort) 10f else 11f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_large_title,
+                if (profile.isShort) 16f else 18f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_large_subtitle,
+                if (profile.isShort) 11f else 12f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_large_empty,
+                if (profile.isShort) 11f else 12f
+            )
 
             views.setOnClickPendingIntent(
                 R.id.widget_large_root,

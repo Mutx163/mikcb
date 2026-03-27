@@ -9,6 +9,16 @@ import android.view.View
 import android.widget.RemoteViews
 
 class TodayMiniListWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -44,14 +54,24 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_mini_list)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val style = snapshot?.backgroundStyle ?: "solid"
             val primaryColor = TodayWidgetSupport.primaryTextColor(style)
             val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
 
             views.setInt(
-                R.id.widget_mini_root,
+                R.id.widget_mini_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style)
+                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28)
+            )
+            TodayWidgetSupport.applySquareishPadding(
+                views,
+                R.id.widget_mini_root,
+                profile,
+                baseHorizontalDp = 10,
+                baseVerticalDp = 10,
+                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                targetAspect = 1f,
             )
             views.setTextColor(R.id.widget_mini_heading, secondaryColor)
             views.setTextColor(R.id.widget_mini_week, secondaryColor)
@@ -75,7 +95,12 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             } else {
                 views.setTextViewText(R.id.widget_mini_heading, "今日课程")
                 views.setTextViewText(R.id.widget_mini_week, "第${snapshot.currentWeek}周")
-                val rows = snapshot.todayCourses.take(3)
+                val maxRows = TodayWidgetSupport.miniListVisibleRows(profile)
+                val rows = if (snapshot.state == "completed") {
+                    emptyList()
+                } else {
+                    snapshot.visibleTodayCourses.take(maxRows)
+                }
                 val emptyText = when {
                     rows.isNotEmpty() -> ""
                     snapshot.state == "completed" -> "今天课程已结束"
@@ -86,7 +111,11 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_mini_empty, emptyText)
-                val remainingCount = (snapshot.todayCourses.size - rows.size).coerceAtLeast(0)
+                val remainingCount = if (snapshot.state == "completed") {
+                    0
+                } else {
+                    (snapshot.visibleTodayCourses.size - rows.size).coerceAtLeast(0)
+                }
                 views.setViewVisibility(
                     R.id.widget_mini_more,
                     if (remainingCount > 0) View.VISIBLE else View.GONE
@@ -115,13 +144,34 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                 bindRow(
                     views,
                     2,
-                    rows.getOrNull(2),
+                    if (maxRows >= 3) rows.getOrNull(2) else null,
                     primaryColor,
                     secondaryColor,
-                    rows.getOrNull(2)?.id == highlightedId,
+                    maxRows >= 3 && rows.getOrNull(2)?.id == highlightedId,
                     style
                 )
             }
+
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_mini_heading,
+                if (profile.isNarrow || profile.isShort) 9f else 10f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_mini_week,
+                if (profile.isNarrow || profile.isShort) 9f else 10f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_mini_empty,
+                if (profile.isShort) 10f else 11f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_mini_more,
+                if (profile.isShort) 8f else 9f
+            )
 
             views.setOnClickPendingIntent(
                 R.id.widget_mini_root,
@@ -161,6 +211,8 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             )
             views.setTextColor(timeId, if (isHighlighted) primaryColor else secondaryColor)
             views.setTextColor(titleId, primaryColor)
+            TodayWidgetSupport.setTextSizeSp(views, timeId, 9f)
+            TodayWidgetSupport.setTextSizeSp(views, titleId, 11f)
             views.setTextViewText(
                 timeId,
                 if (course.location.isNotBlank()) {

@@ -90,10 +90,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
           provider.currentWeek,
           provider.settings.semesterWeekCount,
         );
-        final backgroundColor = _colorFromHex(
-          provider.settings.timetablePageBackgroundColor,
-          Theme.of(context).colorScheme.surface,
-        );
+        final colorScheme = Theme.of(context).colorScheme;
+        final backgroundColor = Theme.of(context).brightness == Brightness.dark
+            ? colorScheme.surface
+            : _colorFromHex(
+                provider.settings.timetablePageBackgroundColor,
+                colorScheme.surface,
+              );
         return Scaffold(
           resizeToAvoidBottomInset: false,
           backgroundColor: backgroundColor,
@@ -1048,20 +1051,28 @@ class _TimetableScreenState extends State<TimetableScreen> {
     );
   }
 
-  void _openAbout() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/about'),
-        builder: (context) => const AboutScreen(),
-      ),
-    );
+  Future<void> _openUpdatePage() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/about/update'),
+          builder: (context) => AboutUpdateScreen(packageInfo: packageInfo),
+        ),
+      );
+    });
   }
 
   void _handleTopMenuAction(String value) {
     switch (value) {
       case 'update':
-        _openAbout();
+        _openUpdatePage();
         break;
       case 'profiles':
         _openProfiles();
