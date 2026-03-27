@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
+import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
@@ -15,6 +16,57 @@ import 'services/umeng_analytics_service.dart';
 Color _colorFromHex(String hexColor) {
   final normalized = hexColor.replaceFirst('#', '');
   return Color(int.parse('FF$normalized', radix: 16));
+}
+
+ThemeMode _themeModeFromSettings(AppThemeMode mode) {
+  return switch (mode) {
+    AppThemeMode.system => ThemeMode.system,
+    AppThemeMode.light => ThemeMode.light,
+    AppThemeMode.dark => ThemeMode.dark,
+  };
+}
+
+ThemeData _buildAppTheme(Color seedColor, Brightness brightness) {
+  final colorScheme = ColorScheme.fromSeed(
+    seedColor: seedColor,
+    brightness: brightness,
+  );
+  return ThemeData(
+    useMaterial3: true,
+    colorScheme: colorScheme,
+    scaffoldBackgroundColor: colorScheme.surface,
+    appBarTheme: AppBarTheme(
+      centerTitle: false,
+      elevation: 0,
+      scrolledUnderElevation: 0,
+      backgroundColor: colorScheme.surface,
+      foregroundColor: colorScheme.onSurface,
+      titleTextStyle: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        color: colorScheme.onSurface,
+      ),
+    ),
+    cardTheme: CardThemeData(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: colorScheme.inverseSurface,
+      contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
+    ),
+    chipTheme: ChipThemeData(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
+      side: BorderSide(color: colorScheme.outlineVariant),
+    ),
+  );
 }
 
 Future<void> main() async {
@@ -70,10 +122,6 @@ class MyApp extends StatelessWidget {
       child: Consumer<TimetableProvider>(
         builder: (context, provider, child) {
           final seedColor = _colorFromHex(provider.settings.themeSeedColor);
-          final colorScheme = ColorScheme.fromSeed(
-            seedColor: seedColor,
-            brightness: Brightness.light,
-          );
 
           return MaterialApp(
             title: _appTitle,
@@ -87,43 +135,9 @@ class MyApp extends StatelessWidget {
               Locale('zh', 'CN'),
               Locale('en', 'US'),
             ],
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: colorScheme,
-              scaffoldBackgroundColor: colorScheme.surface,
-              appBarTheme: AppBarTheme(
-                centerTitle: false,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                backgroundColor: colorScheme.surface,
-                foregroundColor: colorScheme.onSurface,
-                titleTextStyle: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-              cardTheme: CardThemeData(
-                elevation: 0,
-                margin: EdgeInsets.zero,
-                color: colorScheme.surface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              snackBarTheme: SnackBarThemeData(
-                behavior: SnackBarBehavior.floating,
-                backgroundColor: colorScheme.inverseSurface,
-                contentTextStyle:
-                    TextStyle(color: colorScheme.onInverseSurface),
-              ),
-              chipTheme: ChipThemeData(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                side: BorderSide(color: colorScheme.outlineVariant),
-              ),
-            ),
+            themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
+            theme: _buildAppTheme(seedColor, Brightness.light),
+            darkTheme: _buildAppTheme(seedColor, Brightness.dark),
             home: const AppEntryScreen(),
           );
         },

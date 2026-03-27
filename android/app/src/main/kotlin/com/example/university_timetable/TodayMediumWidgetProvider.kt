@@ -9,6 +9,16 @@ import android.view.View
 import android.widget.RemoteViews
 
 class TodayMediumWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: android.os.Bundle,
+    ) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        updateWidget(context, appWidgetManager, appWidgetId)
+    }
+
     override fun onUpdate(
         context: Context,
         appWidgetManager: AppWidgetManager,
@@ -44,14 +54,24 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
         ) {
             val views = RemoteViews(context.packageName, R.layout.widget_today_medium)
             val snapshot = TodayWidgetSupport.readSnapshot(context)
+            val profile = TodayWidgetSupport.sizeProfile(appWidgetManager, appWidgetId)
             val style = snapshot?.backgroundStyle ?: "solid"
             val primaryColor = TodayWidgetSupport.primaryTextColor(style)
             val secondaryColor = TodayWidgetSupport.secondaryTextColor(style)
 
             views.setInt(
-                R.id.widget_medium_root,
+                R.id.widget_medium_card,
                 "setBackgroundResource",
-                TodayWidgetSupport.backgroundRes(style)
+                TodayWidgetSupport.backgroundRes(style, snapshot?.cornerRadius ?: 28)
+            )
+            TodayWidgetSupport.applySquareishPadding(
+                views,
+                R.id.widget_medium_root,
+                profile,
+                baseHorizontalDp = 14,
+                baseVerticalDp = 14,
+                heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
+                targetAspect = 0.5f,
             )
             views.setTextColor(R.id.widget_medium_label, secondaryColor)
             views.setTextColor(R.id.widget_medium_title, primaryColor)
@@ -93,11 +113,40 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                     TodayWidgetSupport.footerText(snapshot)
                 )
 
-                val secondaryCourses = TodayWidgetSupport.secondaryCourses(snapshot, 3)
+                val secondaryCourses = TodayWidgetSupport.secondaryCourses(
+                    snapshot,
+                    TodayWidgetSupport.mediumVisibleRows(profile)
+                )
                 bindRow(views, 0, secondaryCourses.getOrNull(0), primaryColor, secondaryColor)
                 bindRow(views, 1, secondaryCourses.getOrNull(1), primaryColor, secondaryColor)
                 bindRow(views, 2, secondaryCourses.getOrNull(2), primaryColor, secondaryColor)
             }
+
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_medium_label,
+                if (profile.isNarrow || profile.isShort) 10f else 11f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_medium_title,
+                if (profile.isShort) 15f else 17f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_medium_time,
+                if (profile.isShort) 15f else 16f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_medium_meta,
+                if (profile.isShort) 11f else 12f
+            )
+            TodayWidgetSupport.setTextSizeSp(
+                views,
+                R.id.widget_medium_footer,
+                if (profile.isShort) 9f else 10f
+            )
 
             views.setOnClickPendingIntent(
                 R.id.widget_medium_root,

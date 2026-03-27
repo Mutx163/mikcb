@@ -79,7 +79,12 @@ class HomeWidgetSnapshot {
   final WidgetBackgroundStyle backgroundStyle;
   final bool showLocation;
   final bool showCountdown;
+  final bool hideCompletedCourses;
+  final double heightAdjustment;
+  final double cornerRadius;
+  final int totalTodayCourseCount;
   final List<HomeWidgetCourseSummary> todayCourses;
+  final List<HomeWidgetCourseSummary> visibleTodayCourses;
   final HomeWidgetCourseSummary? highlightedCourse;
   final HomeWidgetCourseSummary? nextCourse;
 
@@ -93,7 +98,12 @@ class HomeWidgetSnapshot {
     required this.backgroundStyle,
     required this.showLocation,
     required this.showCountdown,
+    required this.hideCompletedCourses,
+    required this.heightAdjustment,
+    required this.cornerRadius,
+    required this.totalTodayCourseCount,
     required this.todayCourses,
+    required this.visibleTodayCourses,
     this.highlightedCourse,
     this.nextCourse,
   });
@@ -109,7 +119,13 @@ class HomeWidgetSnapshot {
       'backgroundStyle': backgroundStyle.value,
       'showLocation': showLocation,
       'showCountdown': showCountdown,
+      'hideCompletedCourses': hideCompletedCourses,
+      'heightAdjustment': heightAdjustment,
+      'cornerRadius': cornerRadius,
+      'totalTodayCourseCount': totalTodayCourseCount,
       'todayCourses': todayCourses.map((course) => course.toJson()).toList(),
+      'visibleTodayCourses':
+          visibleTodayCourses.map((course) => course.toJson()).toList(),
       'highlightedCourse': highlightedCourse?.toJson(),
       'nextCourse': nextCourse?.toJson(),
     };
@@ -128,6 +144,15 @@ class HomeWidgetSnapshotService {
     required DateTime now,
   }) {
     final summaries = todayCourses
+        .map(HomeWidgetCourseSummary.fromCourse)
+        .toList(growable: false);
+    final visibleCourses = settings.widgetHideCompletedCourses
+        ? todayCourses.where((course) {
+            final end = _buildCourseDateTime(now, course.endTime);
+            return end != null && end.isAfter(now);
+          }).toList(growable: false)
+        : todayCourses;
+    final visibleSummaries = visibleCourses
         .map(HomeWidgetCourseSummary.fromCourse)
         .toList(growable: false);
 
@@ -152,7 +177,12 @@ class HomeWidgetSnapshotService {
       backgroundStyle: settings.widgetBackgroundStyle,
       showLocation: settings.widgetShowLocation,
       showCountdown: settings.widgetShowCountdown,
+      hideCompletedCourses: settings.widgetHideCompletedCourses,
+      heightAdjustment: settings.widgetHeightAdjustment,
+      cornerRadius: settings.widgetCornerRadius,
+      totalTodayCourseCount: todayCourses.length,
       todayCourses: summaries,
+      visibleTodayCourses: visibleSummaries,
       highlightedCourse: currentCourse == null
           ? (upcomingCourse == null
               ? null

@@ -447,7 +447,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           Card(
-            color: _colorFromHex(_draft.timetablePageBackgroundColor),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Theme.of(context).colorScheme.surfaceContainerHighest
+                : _colorFromHex(_draft.timetablePageBackgroundColor),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -460,7 +462,10 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.78),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainer
+                          .withValues(alpha: 0.82),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.all(12),
@@ -498,7 +503,10 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                           child: Container(
                             height: 72,
                             decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.72),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surface
+                                  .withValues(alpha: 0.72),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             alignment: Alignment.center,
@@ -517,6 +525,30 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
+            title: '显示模式',
+            subtitle: '支持跟随系统、浅色模式和深色模式。',
+            child: DropdownButtonFormField<AppThemeMode>(
+              value: _draft.appThemeMode,
+              decoration: const InputDecoration(
+                labelText: '主题模式',
+                border: OutlineInputBorder(),
+              ),
+              items: AppThemeMode.values
+                  .map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(value.label),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                _updateDraft(_draft.copyWith(appThemeMode: value));
+              },
             ),
           ),
           const SizedBox(height: 16),
@@ -1079,9 +1111,13 @@ class _HomeWidgetSettingsScreen extends StatefulWidget {
 }
 
 class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
+  static const double _defaultWidgetHeightAdjustment = -11;
+  static const double _defaultWidgetCornerRadius = 22;
+
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
-  Future<void> _saveQueue = Future<void>.value();
+  bool _isPersisting = false;
+  TimetableSettings? _pendingPersist;
 
   @override
   void initState() {
@@ -1164,6 +1200,81 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                       );
                     },
                   ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('隐藏已上完课程'),
+                    subtitle: const Text('开启后，2×2 和 4×4 课程列表只显示还没结束的课程。'),
+                    value: _draft.widgetHideCompletedCourses,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(widgetHideCompletedCourses: value),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '卡片高度微调',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _draft.widgetHeightAdjustment ==
+                            _defaultWidgetHeightAdjustment
+                        ? '默认'
+                        : (_draft.widgetHeightAdjustment >
+                                _defaultWidgetHeightAdjustment
+                            ? '更高 ${(_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment).toStringAsFixed(0)}'
+                            : '更矮 ${(_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment).toStringAsFixed(0)}'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Slider(
+                    value: (_draft.widgetHeightAdjustment -
+                            _defaultWidgetHeightAdjustment)
+                        .clamp(-16, 16)
+                        .toDouble(),
+                    min: -16,
+                    max: 16,
+                    divisions: 32,
+                    label: _draft.widgetHeightAdjustment.toStringAsFixed(0),
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          widgetHeightAdjustment:
+                              _defaultWidgetHeightAdjustment + value,
+                        ),
+                        debounce: true,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '卡片圆角',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  Slider(
+                    value:
+                        (_draft.widgetCornerRadius - _defaultWidgetCornerRadius)
+                            .clamp(-14, 14)
+                            .toDouble(),
+                    min: -14,
+                    max: 14,
+                    divisions: 28,
+                    label: _draft.widgetCornerRadius.toStringAsFixed(0),
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(
+                          widgetCornerRadius:
+                              _defaultWidgetCornerRadius + value,
+                        ),
+                        debounce: true,
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -1209,7 +1320,24 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   }
 
   void _enqueuePersist(TimetableSettings next) {
-    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
+    _pendingPersist = next;
+    if (_isPersisting) {
+      return;
+    }
+    _drainPersistQueue();
+  }
+
+  Future<void> _drainPersistQueue() async {
+    _isPersisting = true;
+    try {
+      while (_pendingPersist != null) {
+        final next = _pendingPersist!;
+        _pendingPersist = null;
+        await _persistDraft(next);
+      }
+    } finally {
+      _isPersisting = false;
+    }
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
@@ -1654,12 +1782,29 @@ class _SettingsEntryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        splashFactory: NoSplash.splashFactory,
+        overlayColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.pressed)) {
+            return colorScheme.primary.withValues(alpha: 0.08);
+          }
+          if (states.contains(WidgetState.hovered) ||
+              states.contains(WidgetState.focused)) {
+            return colorScheme.primary.withValues(alpha: 0.04);
+          }
+          return Colors.transparent;
+        }),
+        child: ListTile(
+          leading: Icon(icon),
+          title: Text(title),
+          subtitle: Text(subtitle),
+          trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
+        ),
+      ),
     );
   }
 }
