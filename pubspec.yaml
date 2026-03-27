@@ -1,7 +1,7 @@
 name: university_timetable
 description: 轻屿课表应用 - 支持小米超级岛
 publish_to: 'none'
-version: 1.1.9-7+29
+version: 1.1.10+30
 
 environment:
   sdk: ^3.6.0
@@ -33,3 +33,5 @@ flutter:
   uses-material-design: true
   assets:
     - assets/branding/launcher_icon.png
+    - assets/donate/wechatpay.png
+    - assets/donate/alipay.png
