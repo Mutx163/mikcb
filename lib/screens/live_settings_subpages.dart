@@ -138,8 +138,12 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                       _draft.liveClassReminderStartMinutes == 0
                           ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
                           : _draft.liveEnableDuringClass &&
-                                  _draft.liveShowDuringClassNotification
-                              ? '上课开始后先显示状态栏“上课中”，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                                  _draft.liveShowDuringClassNotification &&
+                                  !_draft.livePromoteDuringClass
+                              ? '上课后先保留普通课中通知，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到下课提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                              : _draft.liveEnableDuringClass &&
+                                      _draft.liveShowDuringClassNotification
+                                  ? '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
                               : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
                     ),
                     trailing: DropdownButton<int>(
@@ -177,7 +181,9 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   subtitle: Text(
                     _draft.liveClassReminderStartMinutes == 0
                         ? '上课后保留状态栏通知'
-                        : '上课开始后先显示“上课中”，到下课提醒前再切到重点提醒',
+                        : _draft.livePromoteDuringClass
+                            ? '在下课提醒开始前保留普通通知文案'
+                            : '上课后持续显示普通课中通知，到下课提醒前再切换',
                   ),
                   value: _draft.liveShowDuringClassNotification,
                   onChanged: (value) => _updateDraft(
@@ -249,8 +255,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                       .clamp(_timeCorrectionMin, _timeCorrectionMax),
                   min: _timeCorrectionMin,
                   max: _timeCorrectionMax,
-                  divisions:
-                      (_timeCorrectionMax - _timeCorrectionMin).toInt(),
+                  divisions: (_timeCorrectionMax - _timeCorrectionMin).toInt(),
                   label: _formatLiveTimeCorrection(
                     _draft.liveTimeCorrectionSeconds,
                   ),
@@ -400,6 +405,31 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showCountdown: value)),
             ),
+            if (display.showCountdown) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<LiveCountdownTextStyle>(
+                value: display.countdownTextStyle,
+                decoration: const InputDecoration(
+                  labelText: '倒计时格式',
+                  helperText: '纯分钟样式按分钟刷新，带秒样式按秒刷新',
+                  border: OutlineInputBorder(),
+                ),
+                items: LiveCountdownTextStyle.values
+                    .map(
+                      (value) => DropdownMenuItem(
+                        value: value,
+                        child: Text(value.label),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) return;
+                  _updateDisplay(
+                    display.copyWith(countdownTextStyle: value),
+                  );
+                },
+              ),
+            ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('显示阶段状态文案'),

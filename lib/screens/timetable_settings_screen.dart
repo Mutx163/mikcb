@@ -1041,6 +1041,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       enableDuringClass: false,
       enableBeforeEnd: false,
       showCountdown: displaySettings.showCountdown,
+      countdownTextStyle: displaySettings.countdownTextStyle,
       showStageText: displaySettings.showStageText,
       showCourseNameInIsland: displaySettings.showCourseName,
       showLocationInIsland: displaySettings.showLocation,
@@ -1922,7 +1923,7 @@ String _liveDisplaySummary(LiveDisplaySettings settings) {
     parts.add('地点');
   }
   if (settings.showCountdown) {
-    parts.add('倒计时');
+    parts.add('倒计时·${settings.countdownTextStyle.label}');
   } else if (settings.showStageText) {
     parts.add('阶段文案');
   }

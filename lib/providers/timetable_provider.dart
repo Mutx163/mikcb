@@ -1686,10 +1686,10 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime =
-          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, true));
-      final endTime =
-          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, false));
+      final startTime = _buildCorrectedCourseDateTime(
+          currentTime, _resolveRealTime(course, true));
+      final endTime = _buildCorrectedCourseDateTime(
+          currentTime, _resolveRealTime(course, false));
       if (startTime == null || endTime == null) {
         continue;
       }
@@ -1727,8 +1727,8 @@ class TimetableProvider with ChangeNotifier {
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
-      final startTime =
-          _buildCorrectedCourseDateTime(currentTime, _resolveRealTime(course, true));
+      final startTime = _buildCorrectedCourseDateTime(
+          currentTime, _resolveRealTime(course, true));
       if (startTime == null || !startTime.isAfter(currentTime)) {
         continue;
       }
@@ -1793,11 +1793,10 @@ class TimetableProvider with ChangeNotifier {
         }
 
         final candidateDate = today.add(Duration(days: dayOffset));
-        final candidateStart =
-            _buildCorrectedCourseDateTime(
-              candidateDate,
-              _resolveRealTime(course, true),
-            );
+        final candidateStart = _buildCorrectedCourseDateTime(
+          candidateDate,
+          _resolveRealTime(course, true),
+        );
         if (candidateStart == null || !candidateStart.isAfter(currentTime)) {
           continue;
         }
@@ -1944,6 +1943,7 @@ class TimetableProvider with ChangeNotifier {
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,
         showCountdown: displaySettings.showCountdown,
+        countdownTextStyle: displaySettings.countdownTextStyle,
         showStageText: displaySettings.showStageText,
         showCourseNameInIsland: displaySettings.showCourseName,
         showLocationInIsland: displaySettings.showLocation,
