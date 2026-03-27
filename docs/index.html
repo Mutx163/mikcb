@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>轻屿课表 - 把课程信息做成系统体验</title>
+    <meta
+      name="description"
+      content="轻屿课表是一款为 Android 与 HyperOS 打磨的课表应用，支持多课表、时间模板、桌面小组件、分阶段提醒与超级岛联动。"
+    />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="global-nav">
+      <div class="nav-inner">
+        <a class="nav-brand" href="#top" aria-label="轻屿课表首页">
+          <span class="nav-brand-mark">
+            <img src="./app-icon.png" alt="轻屿课表图标" />
+          </span>
+          <span class="nav-brand-text">轻屿课表</span>
+        </a>
+        <button
+          class="nav-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="nav-menu"
+          aria-label="切换导航"
+        >
+          <span></span>
+          <span></span>
+        </button>
+        <nav id="nav-menu" class="nav-links" aria-label="站点导航">
+          <a href="#overview">概览</a>
+          <a href="#experience">体验</a>
+          <a href="#features">能力</a>
+          <a href="#platform">平台</a>
+          <a href="#download">下载</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero-section">
+        <div class="hero-inner reveal">
+          <p class="hero-eyebrow">Android App</p>
+          <p class="hero-product">轻屿课表</p>
+          <h1 class="hero-title">
+            <span class="title-line">上课这件事，</span>
+            <span class="title-line">清楚一点。</span>
+          </h1>
+          <p class="hero-subtitle">
+            为 Android 打磨，也为 HyperOS 深入适配。把课表、提醒、桌面小组件和超级岛整理成一套更顺手的日常体验。
+          </p>
+          <div class="hero-links">
+            <button class="primary-cta release-open-button" type="button">
+              下载最新版本
+            </button>
+            <div class="inline-links hero-sub-links">
+              <a class="hero-link-secondary" href="#overview">进一步了解</a>
+              <a
+                class="hero-link-secondary"
+                href="https://github.com/Mutx163/mikcb"
+                target="_blank"
+                rel="noreferrer"
+              >
+                GitHub
+              </a>
+            </div>
+          </div>
+          <div class="hero-specs">
+            <span>多课表</span>
+            <span>时间模板</span>
+            <span>桌面小组件</span>
+            <span>HyperOS 超级岛</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="overview" class="overview-section">
+        <div class="section-shell reveal">
+          <div class="headline-block">
+            <p class="section-label">概览</p>
+            <h2>
+              <span class="title-line">不只是看课表。</span>
+              <span class="title-line">也是看清今天。</span>
+            </h2>
+            <p>
+              你反复确认的，往往不是今天有什么课，而是还有多久开始、现在到哪一节、下一节在哪里。轻屿课表围绕这些时刻重新组织信息，让查看、提醒和切换都更自然。
+            </p>
+          </div>
+          <div class="spec-grid">
+            <article>
+              <strong>多课表</strong>
+              <span>学期、身份、课程方案分别保存</span>
+            </article>
+            <article>
+              <strong>分阶段提醒</strong>
+              <span>课前、课中、下课前自然切换</span>
+            </article>
+            <article>
+              <strong>时间模板</strong>
+              <span>支持全局模板与课程级覆盖</span>
+            </article>
+            <article>
+              <strong>Android 优化</strong>
+              <span>强调通知链路与日常使用稳定性</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="experience" class="detail-band detail-band-unified">
+        <div class="section-shell split-layout reveal">
+          <div class="split-copy">
+            <p class="section-label">体验</p>
+            <h3>看一周，也看当下。</h3>
+            <p>
+              周视图课表、左右滑周、一键回本周，再加上多课表切换，重点不是把更多内容堆上去，而是让你每次打开时都更快进入状态。
+            </p>
+          </div>
+          <div class="feature-stack">
+            <article class="feature-item">
+              <small>体验</small>
+              <strong>周视图课表</strong>
+            </article>
+            <article class="feature-item">
+              <small>体验</small>
+              <strong>多课表切换</strong>
+            </article>
+            <article class="feature-item">
+              <small>体验</small>
+              <strong>当前周联动</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="detail-band detail-band-unified">
+        <div class="section-shell split-layout split-layout-reverse reveal">
+          <div class="split-copy">
+            <p class="section-label">能力</p>
+            <h3>提醒，不只是一条通知。</h3>
+            <p>
+              从上课前的预热提醒，到课中状态，再到下课前重点提醒，信息会随着课程阶段变化。你看到的是连续流程，而不是孤立的一个时间点。
+            </p>
+          </div>
+          <div class="feature-stack">
+            <article class="feature-item">
+              <small>课前</small>
+              <strong>提前知道下一节课。</strong>
+            </article>
+            <article class="feature-item">
+              <small>课中</small>
+              <strong>在系统层持续保持状态感。</strong>
+            </article>
+            <article class="feature-item">
+              <small>课后</small>
+              <strong>自然切换到下一节课。</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="detail-band detail-band-unified">
+        <div class="section-shell split-layout reveal">
+          <div class="split-copy">
+            <p class="section-label">时间模板</p>
+            <h3>不同学校作息不同，时间模板应该独立存在。</h3>
+            <p>
+              全局时间模板库让课表可以快速切换节次时间。对特殊课程，还可以单独覆盖时间模板。导入、调课和迁移都更轻松。
+            </p>
+          </div>
+          <div class="feature-stack">
+            <article class="feature-item">
+              <small>模板</small>
+              <strong>全局时间模板</strong>
+            </article>
+            <article class="feature-item">
+              <small>模板</small>
+              <strong>课程级覆盖</strong>
+            </article>
+            <article class="feature-item">
+              <small>模板</small>
+              <strong>导入时自动补齐节次</strong>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="platform" class="platform-section">
+        <div class="section-shell reveal">
+          <div class="headline-block">
+            <p class="section-label">平台</p>
+            <h2>专注 Android。重点适配 HyperOS。</h2>
+            <p>
+              轻屿课表从一开始就更关注 Android 通知链路、HyperOS 超级岛、小组件和真实使用稳定性，而不是追求泛平台外观上的一致。
+            </p>
+          </div>
+          <div class="platform-panels">
+            <article class="platform-panel">
+              <h3>系统联动</h3>
+              <p>桌面小组件、状态栏提醒、超级岛与应用内状态可以形成更完整的承接关系。</p>
+            </article>
+            <article class="platform-panel">
+              <h3>数据迁移</h3>
+              <p>支持 .ics 导入、完整备份导出与恢复，也支持版本更新与预发布检测。</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="download" class="download-section">
+        <div class="section-shell download-shell reveal">
+          <p class="section-label">下载</p>
+          <h2>从 GitHub Releases 开始体验。</h2>
+          <p>
+            当前发布以 Android arm64-v8a 为主，也会持续提供预发布版本，用来提前验证更新页、提醒链路和超级岛相关改进。
+          </p>
+          <div class="download-cta-group">
+            <button class="primary-cta release-open-button" type="button">
+              下载最新版本
+            </button>
+            <p class="download-note">弹窗会显示最新正式版、发布时间，以及 GitHub 原版和镜像下载入口。</p>
+          </div>
+          <div class="inline-links download-links">
+            <a
+              href="https://github.com/Mutx163/mikcb"
+              target="_blank"
+              rel="noreferrer"
+            >
+              GitHub
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <p>Copyright © <span id="year"></span> 轻屿课表</p>
+      </div>
+    </footer>
+
+    <div class="release-modal" id="release-modal" aria-hidden="true">
+      <div class="release-modal-backdrop" data-close-release-modal></div>
+      <div
+        class="release-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="release-dialog-title"
+      >
+        <button
+          class="release-close"
+          type="button"
+          aria-label="关闭下载弹窗"
+          data-close-release-modal
+        >
+          ×
+        </button>
+        <p class="section-label">下载</p>
+        <h2 id="release-dialog-title">最新版本</h2>
+        <p class="release-description" id="release-description">
+          正在读取最新发行版信息...
+        </p>
+        <dl class="release-meta">
+          <div>
+            <dt>版本</dt>
+            <dd id="release-version">读取中</dd>
+          </div>
+          <div>
+            <dt>发布时间</dt>
+            <dd id="release-published-at">读取中</dd>
+          </div>
+        </dl>
+        <div class="release-actions">
+          <a
+            id="release-github-download"
+            class="primary-cta release-action-link"
+            href="https://github.com/Mutx163/mikcb/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub 下载
+          </a>
+          <a
+            id="release-mirror-download"
+            class="secondary-cta release-action-link"
+            href="https://github.com/Mutx163/mikcb/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            镜像下载
+          </a>
+        </div>
+        <div class="inline-links release-links">
+          <a
+            id="release-page-link"
+            href="https://github.com/Mutx163/mikcb/releases"
+            target="_blank"
+            rel="noreferrer"
+          >
+            查看 Release 页面
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
