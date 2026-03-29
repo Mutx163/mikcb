@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -118,3 +118,4 @@ object HomeWidgetStorage {
         }
     }
 }
+

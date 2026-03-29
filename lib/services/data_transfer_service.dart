@@ -40,7 +40,7 @@ class FullAppDataBackup {
 
 class DataTransferService {
   static const int schemaVersion = 1;
-  static const String fileExtension = 'mikcb.json';
+  static const String fileExtension = 'mikcb';
 
   String buildBackupJson({
     String? profileName,

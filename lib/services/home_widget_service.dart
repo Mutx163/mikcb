@@ -5,7 +5,7 @@ import 'home_widget_snapshot_service.dart';
 
 class HomeWidgetService {
   static const MethodChannel _channel =
-      MethodChannel('com.example.university_timetable/home_widget');
+      MethodChannel('com.mutx163.qingyu/home_widget');
 
   static final HomeWidgetService _instance = HomeWidgetService._internal();
   factory HomeWidgetService() => _instance;

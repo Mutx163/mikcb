@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.app.Application
 import android.content.Context
@@ -47,3 +47,4 @@ class UmengApplication : Application() {
         }
     }
 }
+

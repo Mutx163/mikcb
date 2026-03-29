@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:ui';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,8 +10,10 @@ import 'package:provider/provider.dart';
 
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
+import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
+import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
 
@@ -111,13 +115,15 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  String get _appTitle => kReleaseMode ? '轻屿课表' : '轻屿课表测试';
+  String get _appTitle => kReleaseMode ? '轻屿课表' : '轻屿课表调试版';
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => TimetableProvider()),
+        ChangeNotifierProvider(
+          create: (_) => TimetableProvider(autoInitialize: false),
+        ),
       ],
       child: Consumer<TimetableProvider>(
         builder: (context, provider, child) {
@@ -155,13 +161,15 @@ class AppEntryScreen extends StatefulWidget {
 
 class _AppEntryScreenState extends State<AppEntryScreen> {
   final StorageService _storageService = StorageService();
+  final AppMigrationService _migrationService = AppMigrationService();
   bool _hasScheduledGuide = false;
   bool _startupHandled = false;
+  bool _isBootstrapping = true;
 
   @override
   void initState() {
     super.initState();
-    _handleStartupFlows();
+    unawaited(_handleStartupFlows());
   }
 
   Future<void> _handleStartupFlows() async {
@@ -170,11 +178,93 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
     _startupHandled = true;
 
+    await _storageService.init();
+    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
+    final hasCompletedOnboarding =
+        await _storageService.hasCompletedOnboarding();
+    final hasHandledPackageMigration =
+        await _storageService.hasHandledPackageMigration();
     final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
+    final legacyPackage = await _migrationService.findInstalledLegacyPackage();
+    final shouldShowMigrationGuide =
+        !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
+
+    if (!mounted) {
+      return;
+    }
+
+    final provider = context.read<TimetableProvider>();
+    await provider.initialize();
+
+    if (!mounted) {
+      return;
+    }
+
+    if (shouldShowMigrationGuide) {
+      final action = await Navigator.of(context).push<MigrationFlowAction>(
+        MaterialPageRoute(
+          builder: (_) => PackageMigrationGuideScreen(
+            legacyPackageName: legacyPackage,
+          ),
+          fullscreenDialog: true,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (action == MigrationFlowAction.restoreBackup) {
+        final imported = await _runBackupImportFlow(
+          forcedMode: _BackupImportMode.replaceCurrent,
+        );
+        if (imported) {
+          await _storageService.setHandledPackageMigration(true);
+          await _storageService.setCompletedOnboarding(true);
+        }
+      } else if (action == MigrationFlowAction.skip) {
+        await _storageService.setHandledPackageMigration(true);
+        await _storageService.setCompletedOnboarding(true);
+      }
+    } else if (!hasCompletedOnboarding) {
+      final action = await Navigator.of(context).push<WelcomeFlowAction>(
+        MaterialPageRoute(
+          builder: (_) => const StartupWelcomeScreen(),
+          fullscreenDialog: true,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (action != null) {
+        var completedOnboarding = false;
+        switch (action) {
+          case WelcomeFlowAction.importCourses:
+            completedOnboarding = await _runCourseImportFlow();
+            break;
+          case WelcomeFlowAction.restoreBackup:
+            completedOnboarding = await _runBackupImportFlow(
+              forcedMode: _BackupImportMode.replaceCurrent,
+            );
+            break;
+          case WelcomeFlowAction.viewGuide:
+          case WelcomeFlowAction.startUsing:
+            completedOnboarding = true;
+            break;
+        }
+        if (completedOnboarding) {
+          await _storageService.setCompletedOnboarding(true);
+        }
+      }
+    }
 
     if (hasAcceptedPrivacy && hasSeenGuide) {
       await UmengAnalyticsService.initializeIfNeeded();
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isBootstrapping = false;
+      });
       return;
     }
 
@@ -195,6 +285,10 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
           markGuideSeenAfterExit: !hasSeenGuide,
         ),
       );
+    });
+
+    setState(() {
+      _isBootstrapping = false;
     });
   }
 
@@ -232,8 +326,222 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
   }
 
+  Future<bool> _runBackupImportFlow({
+    _BackupImportMode? forcedMode,
+  }) async {
+    if (!mounted) {
+      return false;
+    }
+    final provider = context.read<TimetableProvider>();
+    final importMode = forcedMode ??
+        await showDialog<_BackupImportMode>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: const Text('选择导入方式'),
+              content: const Text('你可以覆盖当前课表，或者把备份导入成一个新的独立课表。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () =>
+                      Navigator.pop(context, _BackupImportMode.replaceCurrent),
+                  child: const Text('覆盖当前课表'),
+                ),
+                FilledButton.tonal(
+                  onPressed: () =>
+                      Navigator.pop(context, _BackupImportMode.importAsNew),
+                  child: const Text('导入为新课表'),
+                ),
+              ],
+            );
+          },
+        );
+
+    if (importMode == null || !mounted) {
+      return false;
+    }
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        withData: true,
+        allowedExtensions: const ['json', 'mikcb'],
+      );
+      final file = result?.files.single;
+      if (file == null) {
+        return false;
+      }
+      final bytes = file.bytes;
+      final content = bytes == null ? '' : utf8.decode(bytes);
+      if (content.isEmpty) {
+        throw const FormatException('文件读取失败');
+      }
+
+      final message = switch (importMode) {
+        _BackupImportMode.replaceCurrent =>
+          await provider.importAppDataBackup(content),
+        _BackupImportMode.importAsNew =>
+          await provider.importAppDataBackupAsNewProfile(content),
+      };
+
+      if (!mounted) {
+        return false;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message ??
+                (importMode == _BackupImportMode.importAsNew
+                    ? '导入成功，已创建新的课表'
+                    : '导入成功，备份数据已恢复'),
+          ),
+        ),
+      );
+      return true;
+    } on FormatException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('导入失败，请确认文件有效')),
+        );
+      }
+    }
+    return false;
+  }
+
+  Future<bool> _runCourseImportFlow() async {
+    final provider = context.read<TimetableProvider>();
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['ics'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty || !mounted) {
+      return false;
+    }
+
+    final file = result.files.single;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('无法读取所选文件')),
+      );
+      return false;
+    }
+
+    final replaceExisting = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('导入课程'),
+          content: Text('导入 ${file.name} 时，是否替换现有课程？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('追加导入'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('替换现有'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (replaceExisting == null || !mounted) {
+      return false;
+    }
+
+    final content = utf8.decode(bytes, allowMalformed: true);
+    final requiredSectionCount =
+        provider.previewWakeUpImportRequiredSectionCount(
+      content,
+      replaceExisting: replaceExisting,
+    );
+    var sectionCapacityExpanded = false;
+    if (requiredSectionCount > provider.settings.sectionCount) {
+      final shouldContinue = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('时间模板节次不足'),
+            content: Text(
+              '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入课表需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('自动补齐并导入'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldContinue != true || !mounted) {
+        return false;
+      }
+
+      final ensureMessage =
+          await provider.ensureSectionCapacityForImport(requiredSectionCount);
+      if (ensureMessage != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(ensureMessage)),
+          );
+        }
+        return false;
+      }
+      sectionCapacityExpanded = true;
+    }
+
+    final importedCount = await provider.importWakeUpCalendar(
+      content,
+      replaceExisting: replaceExisting,
+    );
+
+    if (!mounted) {
+      return false;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          importedCount > 0
+              ? sectionCapacityExpanded
+                  ? '已自动补齐到第 $requiredSectionCount 节，并导入 $importedCount 条课程'
+                  : '已导入 $importedCount 条课程'
+              : '未识别到可导入课程',
+        ),
+      ),
+    );
+    return importedCount > 0;
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_isBootstrapping) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
     return const TimetableScreen();
   }
+}
+
+enum _BackupImportMode {
+  replaceCurrent,
+  importAsNew,
 }

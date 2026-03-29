@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.appwidget.AppWidgetManager
 import android.content.BroadcastReceiver
@@ -19,3 +19,4 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
         }
     }
 }
+

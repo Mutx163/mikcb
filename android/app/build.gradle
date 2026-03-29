@@ -24,7 +24,7 @@ def hasReleaseSigning =
 def overrideVersionName = project.findProperty("OVERRIDE_VERSION_NAME") ?: System.getenv("OVERRIDE_VERSION_NAME")
 
 android {
-    namespace = "com.example.university_timetable"
+    namespace = "com.mutx163.qingyu"
     compileSdk = 36
     ndkVersion = "27.0.12077973"
 
@@ -42,7 +42,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.university_timetable"
+        applicationId = "com.mutx163.qingyu"
         minSdk = 26
         targetSdk = 36
         versionCode = flutter.versionCode
@@ -72,7 +72,7 @@ android {
             versionNameSuffix "-debug"
             buildConfigField "String", "UMENG_CHANNEL", "\"official-debug\""
             manifestPlaceholders = [
-                    appLabel   : "轻屿课表测试",
+                    appLabel   : "轻屿课表调试版",
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }

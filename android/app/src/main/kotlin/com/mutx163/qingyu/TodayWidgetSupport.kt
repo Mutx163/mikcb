@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.appwidget.AppWidgetManager
 import android.app.PendingIntent
@@ -353,3 +353,4 @@ object TodayWidgetSupport {
         }
     }
 }
+

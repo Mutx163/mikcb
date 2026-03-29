@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.example.university_timetable" />
+        <package android:name="com.example.university_timetable.debug" />
+    </queries>
+
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
@@ -69,7 +74,7 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED"/>
                 <action android:name="android.intent.action.TIME_SET"/>
                 <action android:name="android.intent.action.TIMEZONE_CHANGED"/>
-                <action android:name="com.example.university_timetable.ACTION_TRIGGER_LIVE_UPDATE"/>
+                <action android:name="com.mutx163.qingyu.ACTION_TRIGGER_LIVE_UPDATE"/>
             </intent-filter>
         </receiver>
 
@@ -142,3 +147,4 @@
             android:value="false" />
     </application>
 </manifest>
+

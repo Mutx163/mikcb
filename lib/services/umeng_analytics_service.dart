@@ -5,7 +5,7 @@ class UmengAnalyticsService {
   UmengAnalyticsService._();
 
   static const MethodChannel _channel =
-      MethodChannel('com.example.university_timetable/umeng_analytics');
+      MethodChannel('com.mutx163.qingyu/umeng_analytics');
 
   static bool _initialized = false;
   static final Map<String, DateTime> _lastReportAt = {};
@@ -129,7 +129,8 @@ class UmengAnalyticsService {
       return null;
     }
     try {
-      final result = await _channel.invokeMethod<String>('exportLiveDiagnosticsFile');
+      final result =
+          await _channel.invokeMethod<String>('exportLiveDiagnosticsFile');
       return result;
     } on MissingPluginException {
       return null;
@@ -143,8 +144,7 @@ class UmengAnalyticsService {
       return false;
     }
     try {
-      final result =
-          await _channel.invokeMethod<bool>('clearLiveDiagnostics');
+      final result = await _channel.invokeMethod<bool>('clearLiveDiagnostics');
       return result ?? false;
     } on MissingPluginException {
       return false;
