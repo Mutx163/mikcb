@@ -394,14 +394,14 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
       };
 
   String get label => switch (this) {
-        AppUpdateDownloadSource.original => '原版下载',
-        AppUpdateDownloadSource.mirror => '镜像下载',
+        AppUpdateDownloadSource.original => 'GitHub 原版',
+        AppUpdateDownloadSource.mirror => '国内镜像',
       };
 
   static AppUpdateDownloadSource fromValue(String? value) {
     return AppUpdateDownloadSource.values.firstWhere(
       (item) => item.value == value,
-      orElse: () => AppUpdateDownloadSource.original,
+      orElse: () => AppUpdateDownloadSource.mirror,
     );
   }
 }
@@ -725,7 +725,7 @@ class TimetableSettings {
     this.timetablePageBackgroundColor = '#F8FAFC',
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
-    this.appUpdateDownloadSource = 'original',
+    this.appUpdateDownloadSource = 'mirror',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = 'https://ghfast.top/',
   });
@@ -830,7 +830,7 @@ class TimetableSettings {
       timetablePageBackgroundColor: '#F8FAFC',
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
-      appUpdateDownloadSource: 'original',
+      appUpdateDownloadSource: 'mirror',
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: 'https://ghfast.top/',
     );
@@ -1136,7 +1136,7 @@ class TimetableSettings {
       timetableUnifiedCardColor:
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
       appUpdateDownloadSource:
-          json['appUpdateDownloadSource'] as String? ?? 'original',
+          json['appUpdateDownloadSource'] as String? ?? 'mirror',
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix:

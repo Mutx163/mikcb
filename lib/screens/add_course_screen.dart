@@ -6,6 +6,8 @@ import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 
+enum _WeekSelectionMode { range, custom }
+
 class AddCourseScreen extends StatefulWidget {
   final Course? course;
   final int? initialDayOfWeek;
@@ -37,6 +39,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   int _endWeek = 16;
   bool _isOddWeek = false;
   bool _isEvenWeek = false;
+  _WeekSelectionMode _weekSelectionMode = _WeekSelectionMode.range;
+  Set<int> _selectedCustomWeeks = <int>{};
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
   String? _selectedTimeSchemeOverrideId;
@@ -195,6 +199,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _endWeek = course.endWeek;
     _isOddWeek = course.isOddWeek;
     _isEvenWeek = course.isEvenWeek;
+    final customWeeks = course.normalizedCustomWeeks;
+    if (customWeeks != null) {
+      _weekSelectionMode = _WeekSelectionMode.custom;
+      _selectedCustomWeeks = customWeeks.toSet();
+    }
     _courseNature = course.courseNature;
     _selectedColor = course.color;
     _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
@@ -226,6 +235,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
     if (_endWeek < _startWeek) {
       _endWeek = _startWeek;
+    }
+
+    if (_selectedCustomWeeks.isNotEmpty) {
+      _selectedCustomWeeks = _selectedCustomWeeks
+          .where((week) => week >= 1 && week <= maxWeek)
+          .toSet();
+    }
+    if (_weekSelectionMode == _WeekSelectionMode.custom &&
+        _selectedCustomWeeks.isEmpty) {
+      _selectedCustomWeeks = {_startWeek.clamp(1, maxWeek)};
     }
   }
 
@@ -498,6 +517,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   Widget _buildWeekSection(TimetableSettings settings) {
     final availableWeeks = settings.availableWeeks;
+    final selectedWeeks = _selectedCustomWeeks.toList()..sort();
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -509,87 +529,220 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _startWeek,
-                    decoration: const InputDecoration(
-                      labelText: '开始周',
-                      border: OutlineInputBorder(),
+            SegmentedButton<_WeekSelectionMode>(
+              segments: const [
+                ButtonSegment(
+                  value: _WeekSelectionMode.range,
+                  label: Text('连续周'),
+                  icon: Icon(Icons.linear_scale_rounded),
+                ),
+                ButtonSegment(
+                  value: _WeekSelectionMode.custom,
+                  label: Text('自定义周'),
+                  icon: Icon(Icons.apps_rounded),
+                ),
+              ],
+              selected: {_weekSelectionMode},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                final nextMode = selection.first;
+                setState(() {
+                  if (nextMode == _WeekSelectionMode.custom &&
+                      _selectedCustomWeeks.isEmpty) {
+                    _selectedCustomWeeks = _buildWeeksFromRange().toSet();
+                    if (_selectedCustomWeeks.isEmpty) {
+                      _selectedCustomWeeks = {_startWeek};
+                    }
+                  }
+                  if (nextMode == _WeekSelectionMode.range &&
+                      _selectedCustomWeeks.isNotEmpty) {
+                    final sortedWeeks = _selectedCustomWeeks.toList()..sort();
+                    _startWeek = sortedWeeks.first;
+                    _endWeek = sortedWeeks.last;
+                    _isOddWeek = false;
+                    _isEvenWeek = false;
+                  }
+                  _weekSelectionMode = nextMode;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            if (_weekSelectionMode == _WeekSelectionMode.range) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _startWeek,
+                      decoration: const InputDecoration(
+                        labelText: '开始周',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: availableWeeks.map((week) {
+                        return DropdownMenuItem(
+                          value: week,
+                          child: Text('第 $week 周'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _startWeek = value!;
+                          if (_endWeek < _startWeek) {
+                            _endWeek = _startWeek;
+                          }
+                        });
+                      },
                     ),
-                    items: availableWeeks.map((week) {
-                      return DropdownMenuItem(
-                        value: week,
-                        child: Text('第 $week 周'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: DropdownButtonFormField<int>(
+                      value: _endWeek,
+                      decoration: const InputDecoration(
+                        labelText: '结束周',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: availableWeeks
+                          .where((week) => week >= _startWeek)
+                          .map((week) {
+                        return DropdownMenuItem(
+                          value: week,
+                          child: Text('第 $week 周'),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _endWeek = value!;
+                        });
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: CheckboxListTile(
+                      title: const Text('单周'),
+                      value: _isOddWeek,
+                      onChanged: (value) {
+                        setState(() {
+                          _isOddWeek = value!;
+                          if (_isOddWeek) _isEvenWeek = false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                  ),
+                  Expanded(
+                    child: CheckboxListTile(
+                      title: const Text('双周'),
+                      value: _isEvenWeek,
+                      onChanged: (value) {
+                        setState(() {
+                          _isEvenWeek = value!;
+                          if (_isEvenWeek) _isOddWeek = false;
+                        });
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                  ),
+                ],
+              ),
+            ] else ...[
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: availableWeeks.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 6,
+                  mainAxisSpacing: 8,
+                  crossAxisSpacing: 8,
+                  childAspectRatio: 1.7,
+                ),
+                itemBuilder: (context, index) {
+                  final week = availableWeeks[index];
+                  final isSelected = _selectedCustomWeeks.contains(week);
+                  return FilledButton.tonal(
+                    style: FilledButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      backgroundColor: isSelected
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest,
+                      foregroundColor: isSelected
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      side: BorderSide(
+                        color: isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      elevation: 0,
+                    ),
+                    onPressed: () {
                       setState(() {
-                        _startWeek = value!;
-                        if (_endWeek < _startWeek) {
-                          _endWeek = _startWeek;
+                        if (isSelected) {
+                          if (_selectedCustomWeeks.length > 1) {
+                            _selectedCustomWeeks.remove(week);
+                          }
+                        } else {
+                          _selectedCustomWeeks.add(week);
                         }
                       });
                     },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _endWeek,
-                    decoration: const InputDecoration(
-                      labelText: '结束周',
-                      border: OutlineInputBorder(),
+                    child: Text(
+                      '$week',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    items: availableWeeks
-                        .where((week) => week >= _startWeek)
-                        .map((week) {
-                      return DropdownMenuItem(
-                        value: week,
-                        child: Text('第 $week 周'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    label: const Text('全选'),
+                    onPressed: () {
                       setState(() {
-                        _endWeek = value!;
+                        _selectedCustomWeeks = availableWeeks.toSet();
                       });
                     },
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: CheckboxListTile(
-                    title: const Text('单周'),
-                    value: _isOddWeek,
-                    onChanged: (value) {
+                  ActionChip(
+                    label: const Text('单周'),
+                    onPressed: () {
                       setState(() {
-                        _isOddWeek = value!;
-                        if (_isOddWeek) _isEvenWeek = false;
+                        _selectedCustomWeeks =
+                            availableWeeks.where((week) => week.isOdd).toSet();
                       });
                     },
-                    controlAffinity: ListTileControlAffinity.leading,
                   ),
-                ),
-                Expanded(
-                  child: CheckboxListTile(
-                    title: const Text('双周'),
-                    value: _isEvenWeek,
-                    onChanged: (value) {
+                  ActionChip(
+                    label: const Text('双周'),
+                    onPressed: () {
                       setState(() {
-                        _isEvenWeek = value!;
-                        if (_isEvenWeek) _isOddWeek = false;
+                        _selectedCustomWeeks =
+                            availableWeeks.where((week) => week.isEven).toSet();
                       });
                     },
-                    controlAffinity: ListTileControlAffinity.leading,
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '已选 ${selectedWeeks.length} 周：第${_formatWeekList(selectedWeeks)}周',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
           ],
         ),
       ),
@@ -788,6 +941,45 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     return null;
   }
 
+  List<int> _buildWeeksFromRange() {
+    final weeks = <int>[];
+    for (var week = _startWeek; week <= _endWeek; week++) {
+      if (_isOddWeek && week.isEven) {
+        continue;
+      }
+      if (_isEvenWeek && week.isOdd) {
+        continue;
+      }
+      weeks.add(week);
+    }
+    return weeks;
+  }
+
+  String _formatWeekList(List<int> weeks) {
+    if (weeks.isEmpty) {
+      return '';
+    }
+    final ranges = <String>[];
+    var rangeStart = weeks.first;
+    var previous = weeks.first;
+    for (var index = 1; index < weeks.length; index++) {
+      final current = weeks[index];
+      if (current == previous + 1) {
+        previous = current;
+        continue;
+      }
+      ranges.add(
+        rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
+      );
+      rangeStart = current;
+      previous = current;
+    }
+    ranges.add(
+      rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
+    );
+    return ranges.join('、');
+  }
+
   Future<void> _saveCourse(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -806,6 +998,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         SnackBar(content: Text(validationMessage)),
       );
       return;
+    }
+
+    List<int>? customWeeks;
+    if (_weekSelectionMode == _WeekSelectionMode.custom) {
+      final selectedWeeks = _selectedCustomWeeks.toList()..sort();
+      if (selectedWeeks.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('请至少选择一个上课周次')),
+        );
+        return;
+      }
+      customWeeks = selectedWeeks;
     }
 
     final selectedScheme = _resolveSelectedTimeScheme(provider);
@@ -831,10 +1035,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       startTime: startTime,
       endTime: endTime,
       color: _selectedColor,
-      startWeek: _startWeek,
-      endWeek: _endWeek,
-      isOddWeek: _isOddWeek,
-      isEvenWeek: _isEvenWeek,
+      startWeek: customWeeks == null ? _startWeek : customWeeks.first,
+      endWeek: customWeeks == null ? _endWeek : customWeeks.last,
+      isOddWeek: customWeeks == null ? _isOddWeek : false,
+      isEvenWeek: customWeeks == null ? _isEvenWeek : false,
+      customWeeks: customWeeks,
       courseNature: _courseNature,
       description: _descriptionController.text.isEmpty
           ? null

@@ -65,8 +65,9 @@ class CourseOverviewScreen extends StatelessWidget {
                           child: Text(
                             '检测到 $conflictingCourseCount 门排课存在实际冲突，课程列表已标记冲突项。',
                             style: TextStyle(
-                              color:
-                                  Theme.of(context).colorScheme.onErrorContainer,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onErrorContainer,
                             ),
                           ),
                         ),
@@ -146,7 +147,8 @@ class CourseOverviewScreen extends StatelessWidget {
                                 : '共排课 ${group.length} 节',
                           ),
                           children: group.map((course) {
-                            final conflicts = conflictMap[course.id] ?? const [];
+                            final conflicts =
+                                conflictMap[course.id] ?? const [];
                             final conflictSummary =
                                 _buildConflictSummary(conflicts);
 
@@ -157,15 +159,15 @@ class CourseOverviewScreen extends StatelessWidget {
                               ),
                               subtitle: Text(
                                 conflicts.isEmpty
-                                    ? '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'
-                                    : '第${course.startWeek}-${course.endWeek}周  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}\n冲突课程: $conflictSummary',
+                                    ? '${course.weekDescription}  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'
+                                    : '${course.weekDescription}  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}\n冲突课程: $conflictSummary',
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   IconButton(
-                                    icon:
-                                        const Icon(Icons.edit, color: Colors.blue),
+                                    icon: const Icon(Icons.edit,
+                                        color: Colors.blue),
                                     onPressed: () {
                                       Navigator.push(
                                         context,
@@ -179,8 +181,8 @@ class CourseOverviewScreen extends StatelessWidget {
                                     },
                                   ),
                                   IconButton(
-                                    icon:
-                                        const Icon(Icons.delete, color: Colors.red),
+                                    icon: const Icon(Icons.delete,
+                                        color: Colors.red),
                                     onPressed: () =>
                                         _confirmDelete(context, course),
                                   ),
@@ -190,8 +192,8 @@ class CourseOverviewScreen extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    settings:
-                                        const RouteSettings(name: '/course/edit'),
+                                    settings: const RouteSettings(
+                                        name: '/course/edit'),
                                     builder: (_) =>
                                         AddCourseScreen(course: course),
                                   ),
@@ -212,12 +214,7 @@ class CourseOverviewScreen extends StatelessWidget {
   String _buildConflictSummary(List<Course> conflicts) {
     final labels = conflicts
         .map((course) {
-          final weekMode = course.isOddWeek
-              ? ' 单周'
-              : course.isEvenWeek
-                  ? ' 双周'
-                  : '';
-          return '${course.name}(第${course.startWeek}-${course.endWeek}周$weekMode 星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)';
+          return '${course.name}(${course.weekDescription} 星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)';
         })
         .toSet()
         .toList();

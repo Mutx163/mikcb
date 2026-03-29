@@ -460,12 +460,7 @@ class CourseCard extends StatelessWidget {
   }
 
   String _buildWeekText() {
-    final mode = course.isOddWeek
-        ? ' 单周'
-        : course.isEvenWeek
-            ? ' 双周'
-            : '';
-    return '第${course.startWeek}-${course.endWeek}周$mode';
+    return course.weekDescription;
   }
 
   String _buildTimeText({required bool isCompact}) {
