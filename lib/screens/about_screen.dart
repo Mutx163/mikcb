@@ -469,11 +469,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             ? '查看 Release'
             : isAndroid
                 ? downloadSource == AppUpdateDownloadSource.mirror
-                    ? '应用内下载（镜像）'
-                    : '应用内下载'
+                    ? '应用内下载安装'
+                    : '打开 GitHub 下载'
                 : downloadSource == AppUpdateDownloadSource.mirror
-                    ? '打开镜像下载'
-                    : '打开下载地址';
+                    ? '打开国内镜像下载'
+                    : '打开 GitHub 下载';
 
         return Column(
           children: [
@@ -545,18 +545,39 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               theme,
               title: '下载与打开',
               subtitle: isAndroid
-                  ? '优先支持应用内下载，也可以直接跳转到 Release 页面。'
+                  ? '国内网络建议优先用国内镜像下载；如果你能稳定访问 GitHub，也可以切到原版。'
                   : '当前平台不支持应用内安装，会直接打开下载地址。',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (downloadSource == AppUpdateDownloadSource.mirror)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        '当前已选：国内镜像。大多数国内网络直接点这个就行。',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        '当前已选：GitHub 原版。若下载慢或打不开，建议切回国内镜像。',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   FilledButton.icon(
                     onPressed: result.hasRelease
                         ? () {
                             if (effectiveDownloadUrl != null && isAndroid) {
                               _downloadAndInstall(effectiveDownloadUrl);
                             } else {
-                              _openUrl(effectiveDownloadUrl ?? release?.releaseUrl);
+                              _openUrl(
+                                  effectiveDownloadUrl ?? release?.releaseUrl);
                             }
                           }
                         : null,
@@ -569,8 +590,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   ),
                   const SizedBox(height: 10),
                   FilledButton.tonalIcon(
-                    onPressed:
-                        result.hasRelease ? () => _openUrl(release?.releaseUrl) : null,
+                    onPressed: result.hasRelease
+                        ? () => _openUrl(release?.releaseUrl)
+                        : null,
                     icon: const Icon(Icons.new_releases_outlined),
                     label: const Text('打开 Release 页面'),
                   ),
@@ -581,19 +603,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             _buildUpdateSectionCard(
               theme,
               title: '下载源',
-              subtitle: '原版直接使用 GitHub 地址；镜像会在原地址前加你设置的镜像前缀。',
+              subtitle: '国内用户建议保持“国内镜像”。只有你能稳定访问 GitHub 时，再切到 GitHub 原版。',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SegmentedButton<AppUpdateDownloadSource>(
-                    segments: AppUpdateDownloadSource.values
-                        .map(
-                          (item) => ButtonSegment<AppUpdateDownloadSource>(
-                            value: item,
-                            label: Text(item.label),
-                          ),
-                        )
-                        .toList(),
+                    segments: const [
+                      ButtonSegment<AppUpdateDownloadSource>(
+                        value: AppUpdateDownloadSource.mirror,
+                        label: Text('国内镜像'),
+                      ),
+                      ButtonSegment<AppUpdateDownloadSource>(
+                        value: AppUpdateDownloadSource.original,
+                        label: Text('GitHub 原版'),
+                      ),
+                    ],
                     selected: {downloadSource},
                     onSelectionChanged: (selection) {
                       final nextSource = selection.first;
@@ -622,6 +646,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                           settings.appUpdateMirrorUrlPrefix,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          '一般不用改，保持默认就可以。',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -717,8 +748,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   ? null
                   : (value) => _updateLiveDiagnosticsPreference(value),
               title: const Text('超级岛诊断日志'),
-              subtitle:
-                  const Text('打开后会在本地持续记录超级岛关键日志，仅用于排查“该弹不弹”等问题。'),
+              subtitle: const Text('打开后会在本地持续记录超级岛关键日志，仅用于排查“该弹不弹”等问题。'),
             ),
             if (settings.liveEnableLocalDiagnostics)
               Wrap(
@@ -759,8 +789,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     setState(() {
       _updateFuture = _updateService.checkForUpdates(
         currentVersion: widget.packageInfo!.version,
-        includePrerelease:
-            context.read<TimetableProvider>().settings.appUpdateIncludePrerelease,
+        includePrerelease: context
+            .read<TimetableProvider>()
+            .settings
+            .appUpdateIncludePrerelease,
       );
     });
   }
@@ -940,13 +972,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final error = await _updateService.downloadAndInstallUpdate(
       url,
       (downloadedBytes, totalBytes) {
-      if (mounted) {
-        setState(() {
-          _downloadedBytes = downloadedBytes;
-          _downloadTotalBytes = totalBytes;
-        });
-      }
-    },
+        if (mounted) {
+          setState(() {
+            _downloadedBytes = downloadedBytes;
+            _downloadTotalBytes = totalBytes;
+          });
+        }
+      },
     );
 
     if (!mounted) return;
@@ -1070,8 +1102,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Widget _buildDownloadProgressBar(ThemeData theme) {
     final colorScheme = theme.colorScheme;
     final totalBytes = _downloadTotalBytes;
-    final progress =
-        totalBytes == null || totalBytes <= 0 ? null : _downloadedBytes / totalBytes;
+    final progress = totalBytes == null || totalBytes <= 0
+        ? null
+        : _downloadedBytes / totalBytes;
     final progressText = progress == null
         ? '正在下载更新 ${_formatBytes(_downloadedBytes)}'
         : '正在下载更新 ${(progress * 100).toStringAsFixed(1)}%';

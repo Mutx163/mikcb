@@ -42,6 +42,7 @@ class Course {
   final int endWeek; // 结束周次
   final bool isOddWeek; // 是否单周
   final bool isEvenWeek; // 是否双周
+  final List<int>? customWeeks; // 自定义周次
   final CourseNature courseNature; // 课程性质
   final String? description; // 课程简介（同名课程共享）
   final String? note; // 备注/备忘录
@@ -63,6 +64,7 @@ class Course {
     this.endWeek = 16,
     this.isOddWeek = false,
     this.isEvenWeek = false,
+    this.customWeeks,
     this.courseNature = CourseNature.required,
     this.description,
     this.note,
@@ -86,6 +88,7 @@ class Course {
       'endWeek': endWeek,
       'isOddWeek': isOddWeek,
       'isEvenWeek': isEvenWeek,
+      'customWeeks': customWeeks,
       'courseNature': courseNature.value,
       'description': description,
       'note': note,
@@ -110,6 +113,9 @@ class Course {
       endWeek: json['endWeek'] as int? ?? 16,
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
+      customWeeks: (json['customWeeks'] as List<dynamic>?)
+          ?.map((item) => item as int)
+          .toList(),
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
       description: json['description'] as String? ?? json['note'] as String?,
       note: json['note'] as String?,
@@ -139,6 +145,7 @@ class Course {
     int? endWeek,
     bool? isOddWeek,
     bool? isEvenWeek,
+    Object? customWeeks = _unset,
     CourseNature? courseNature,
     Object? description = _unset,
     Object? note = _unset,
@@ -161,6 +168,9 @@ class Course {
       endWeek: endWeek ?? this.endWeek,
       isOddWeek: isOddWeek ?? this.isOddWeek,
       isEvenWeek: isEvenWeek ?? this.isEvenWeek,
+      customWeeks: identical(customWeeks, _unset)
+          ? this.customWeeks
+          : (customWeeks as List<int>?),
       courseNature: courseNature ?? this.courseNature,
       description: identical(description, _unset)
           ? this.description
@@ -174,10 +184,82 @@ class Course {
 
   int get sectionCount => endSection - startSection + 1;
 
+  List<int>? get normalizedCustomWeeks {
+    final source = customWeeks;
+    if (source == null || source.isEmpty) {
+      return null;
+    }
+    final normalized = source.toSet().toList()..sort();
+    return normalized;
+  }
+
+  bool get hasCustomWeeks => normalizedCustomWeeks != null;
+
+  List<int> get activeWeeks {
+    final custom = normalizedCustomWeeks;
+    if (custom != null) {
+      return custom;
+    }
+
+    final weeks = <int>[];
+    for (var week = startWeek; week <= endWeek; week++) {
+      if (isOddWeek && week.isEven) {
+        continue;
+      }
+      if (isEvenWeek && week.isOdd) {
+        continue;
+      }
+      weeks.add(week);
+    }
+    return weeks;
+  }
+
+  String get weekDescription {
+    final custom = normalizedCustomWeeks;
+    if (custom != null) {
+      return '第${_formatWeekList(custom)}周';
+    }
+
+    final mode = isOddWeek
+        ? ' 单周'
+        : isEvenWeek
+            ? ' 双周'
+            : '';
+    return '第$startWeek-$endWeek周$mode';
+  }
+
   bool isInWeek(int week) {
+    final custom = normalizedCustomWeeks;
+    if (custom != null) {
+      return custom.contains(week);
+    }
     if (week < startWeek || week > endWeek) return false;
     if (isOddWeek && week % 2 == 0) return false;
     if (isEvenWeek && week % 2 != 0) return false;
     return true;
+  }
+
+  String _formatWeekList(List<int> weeks) {
+    final ranges = <String>[];
+    var rangeStart = weeks.first;
+    var previous = weeks.first;
+
+    for (var index = 1; index < weeks.length; index++) {
+      final current = weeks[index];
+      if (current == previous + 1) {
+        previous = current;
+        continue;
+      }
+      ranges.add(
+        rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
+      );
+      rangeStart = current;
+      previous = current;
+    }
+
+    ranges.add(
+      rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
+    );
+    return ranges.join('、');
   }
 }
