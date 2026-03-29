@@ -19,6 +19,7 @@ class CourseCard extends StatelessWidget {
   final double compactTitleFontSize;
   final double compactSubtitleFontSize;
   final double compactVerticalPadding;
+  final double compactOuterInset;
   final String? overrideColorHex;
   final String? compactOverlineText;
   final String? topRightBadgeText;
@@ -40,6 +41,7 @@ class CourseCard extends StatelessWidget {
     this.compactTitleFontSize = 9,
     this.compactSubtitleFontSize = 8,
     this.compactVerticalPadding = 6,
+    this.compactOuterInset = 2,
     this.overrideColorHex,
     this.compactOverlineText,
     this.topRightBadgeText,
@@ -165,7 +167,7 @@ class CourseCard extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+              margin: EdgeInsets.all(compactOuterInset),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 gradient: LinearGradient(

@@ -34,8 +34,6 @@ class TimetableScreen extends StatefulWidget {
 
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver {
-  static const double _headerControlWidth = _timeColumnWidth;
-  static const double _timeColumnWidth = 40;
   static const int _minWeek = 1;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
@@ -186,6 +184,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider,
     int week,
     TimetableSettings settings,
+    double timeColumnWidth,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final currentSemesterWeek = _resolveCurrentSemesterWeek(settings);
@@ -204,7 +203,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: Row(
         children: [
           SizedBox(
-            width: _headerControlWidth,
+            width: timeColumnWidth,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -212,8 +211,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                   onTap: _showWeekSelector,
                   borderRadius: BorderRadius.circular(10),
                   child: Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 2,
+                      vertical: 2,
+                    ),
                     child: Text(
                       '$week周',
                       textAlign: TextAlign.center,
@@ -225,24 +226,35 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ),
                 ),
-                if (canReturnToCurrentWeek) ...[
-                  const SizedBox(height: 2),
-                  InkWell(
-                    onTap: () => _jumpToCurrentWeek(provider),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 1),
-                      child: Text(
-                        '回本周',
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: colorScheme.onSurfaceVariant,
+                if (canReturnToCurrentWeek)
+                  SizedBox(
+                    height: 10,
+                    child: OverflowBox(
+                      minWidth: 0,
+                      maxWidth: 72,
+                      alignment: Alignment.topCenter,
+                      child: InkWell(
+                        onTap: () => _jumpToCurrentWeek(provider),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 1,
+                          ),
+                          child: Text(
+                            '回本周',
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.visible,
+                            style: TextStyle(
+                              fontSize: 8,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ],
               ],
             ),
           ),
@@ -307,7 +319,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     double sectionHeight,
   ) {
     final visibleDays = _visibleDayNumbers(settings);
-    final dayWidth = (availableWidth - _timeColumnWidth) / visibleDays.length;
+    final timeColumnWidth = _resolveTimeColumnWidth(settings);
+    final cardInset = _resolveCourseCardInset(settings);
+    final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
     final conflictMap = provider.courseConflictMapForWeek(week);
 
     return SizedBox(
@@ -317,7 +331,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: _timeColumnWidth,
+            width: timeColumnWidth,
             child: Column(
               children: List.generate(settings.sectionCount, (index) {
                 final section = settings.sections[index];
@@ -347,6 +361,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   conflictMap,
                   settings.showConflictBadgeOnTimetable,
                   sectionHeight,
+                  cardInset,
                 ),
               );
             }).toList(),
@@ -404,7 +419,12 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     return Column(
       children: [
-        _buildWeekDayHeader(provider, week, settings),
+        _buildWeekDayHeader(
+          provider,
+          week,
+          settings,
+          _resolveTimeColumnWidth(settings),
+        ),
         Expanded(
           child: settings.timetableAutoFitSectionHeight
               ? grid
@@ -425,6 +445,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     Map<String, List<Course>> conflictMap,
     bool showConflictBadge,
     double sectionHeight,
+    double cardInset,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
@@ -469,9 +490,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         courseCards.add(
           Positioned(
             top: sectionIndex * sectionHeight,
-            left: 2,
-            right: 2,
-            height: course.sectionCount * sectionHeight - 4,
+            left: 0,
+            right: 0,
+            height: course.sectionCount * sectionHeight,
             child: Opacity(
               opacity: !isCurrentWeekCourse
                   ? 0.62
@@ -496,10 +517,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
                 onTap: () => _editCourse(course),
-                compactTitleFontSize: settings.compactFontSize,
+                compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize:
-                    (settings.compactFontSize - 1).clamp(7.0, 14.0),
+                    (settings.courseCardFontSize - 1).clamp(7.0, 14.0),
                 compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
+                compactOuterInset: cardInset,
               ),
             ),
           ),
@@ -562,7 +584,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                       if (currentSemesterWeek != null &&
                           provider.currentWeek != currentSemesterWeek)
-                        FilledButton.tonalIcon(
+                        FilledButton.tonal(
                           style: FilledButton.styleFrom(
                             visualDensity: VisualDensity.compact,
                             padding: const EdgeInsets.symmetric(
@@ -573,6 +595,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                             backgroundColor:
                                 colorScheme.primary.withValues(alpha: 0.12),
                             foregroundColor: colorScheme.primary,
+                            minimumSize: const Size(0, 36),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             side: BorderSide(
                               color:
                                   colorScheme.primary.withValues(alpha: 0.18),
@@ -580,8 +604,19 @@ class _TimetableScreenState extends State<TimetableScreen>
                           ),
                           onPressed: () => Navigator.of(sheetContext)
                               .pop(currentSemesterWeek),
-                          icon: const Icon(Icons.my_location_rounded, size: 18),
-                          label: const Text('回本周'),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.my_location_rounded, size: 18),
+                              SizedBox(width: 6),
+                              Text(
+                                '回本周',
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.fade,
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),
@@ -1004,6 +1039,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     return settings.timetableHideWeekends
         ? const [1, 2, 3, 4, 5]
         : const [1, 2, 3, 4, 5, 6, 7];
+  }
+
+  double _resolveTimeColumnWidth(TimetableSettings settings) {
+    return switch (settings.timetableTimeColumnWidthMode) {
+      TimetableTimeColumnWidthMode.narrow => 34,
+      TimetableTimeColumnWidthMode.wide => 40,
+    };
+  }
+
+  double _resolveCourseCardInset(TimetableSettings settings) {
+    return settings.timetableCourseCardGap.clamp(0.0, 3.0);
   }
 
   void _maybeSelectionClick(TimetableSettings settings) {

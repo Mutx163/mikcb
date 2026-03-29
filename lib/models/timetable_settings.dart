@@ -387,6 +387,54 @@ extension CourseCardHorizontalAlignX on CourseCardHorizontalAlign {
   }
 }
 
+enum TimetableTimeColumnWidthMode {
+  narrow,
+  wide,
+}
+
+extension TimetableTimeColumnWidthModeX on TimetableTimeColumnWidthMode {
+  String get value => switch (this) {
+        TimetableTimeColumnWidthMode.narrow => 'narrow',
+        TimetableTimeColumnWidthMode.wide => 'wide',
+      };
+
+  String get label => switch (this) {
+        TimetableTimeColumnWidthMode.narrow => '窄',
+        TimetableTimeColumnWidthMode.wide => '宽',
+      };
+
+  static TimetableTimeColumnWidthMode fromValue(String? value) {
+    return TimetableTimeColumnWidthMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => TimetableTimeColumnWidthMode.narrow,
+    );
+  }
+}
+
+enum TimetableCourseSpacingMode {
+  narrow,
+  wide,
+}
+
+extension TimetableCourseSpacingModeX on TimetableCourseSpacingMode {
+  String get value => switch (this) {
+        TimetableCourseSpacingMode.narrow => 'narrow',
+        TimetableCourseSpacingMode.wide => 'wide',
+      };
+
+  String get label => switch (this) {
+        TimetableCourseSpacingMode.narrow => '窄',
+        TimetableCourseSpacingMode.wide => '宽',
+      };
+
+  static TimetableCourseSpacingMode fromValue(String? value) {
+    return TimetableCourseSpacingMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => TimetableCourseSpacingMode.narrow,
+    );
+  }
+}
+
 extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   String get value => switch (this) {
         AppUpdateDownloadSource.original => 'original',
@@ -564,6 +612,10 @@ class TimetableSettings {
   final bool courseCardShowDescription;
   final CourseCardVerticalAlign courseCardVerticalAlign;
   final CourseCardHorizontalAlign courseCardHorizontalAlign;
+  final double courseCardFontSize;
+  final TimetableTimeColumnWidthMode timetableTimeColumnWidthMode;
+  final double timetableCourseCardGap;
+  final TimetableCourseSpacingMode timetableCourseSpacingMode;
   final WidgetBackgroundStyle widgetBackgroundStyle;
   final bool widgetShowLocation;
   final bool widgetShowCountdown;
@@ -654,6 +706,10 @@ class TimetableSettings {
     this.courseCardShowDescription = false,
     this.courseCardVerticalAlign = CourseCardVerticalAlign.center,
     this.courseCardHorizontalAlign = CourseCardHorizontalAlign.center,
+    this.courseCardFontSize = 9,
+    this.timetableTimeColumnWidthMode = TimetableTimeColumnWidthMode.narrow,
+    this.timetableCourseCardGap = 1.25,
+    this.timetableCourseSpacingMode = TimetableCourseSpacingMode.narrow,
     this.widgetBackgroundStyle = WidgetBackgroundStyle.solid,
     this.widgetShowLocation = true,
     this.widgetShowCountdown = true,
@@ -763,6 +819,10 @@ class TimetableSettings {
       courseCardShowDescription: false,
       courseCardVerticalAlign: CourseCardVerticalAlign.center,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.center,
+      courseCardFontSize: 9,
+      timetableTimeColumnWidthMode: TimetableTimeColumnWidthMode.narrow,
+      timetableCourseCardGap: 1.25,
+      timetableCourseSpacingMode: TimetableCourseSpacingMode.narrow,
       widgetBackgroundStyle: WidgetBackgroundStyle.solid,
       widgetShowLocation: true,
       widgetShowCountdown: true,
@@ -858,6 +918,10 @@ class TimetableSettings {
       'courseCardShowDescription': courseCardShowDescription,
       'courseCardVerticalAlign': courseCardVerticalAlign.value,
       'courseCardHorizontalAlign': courseCardHorizontalAlign.value,
+      'courseCardFontSize': courseCardFontSize,
+      'timetableTimeColumnWidthMode': timetableTimeColumnWidthMode.value,
+      'timetableCourseCardGap': timetableCourseCardGap,
+      'timetableCourseSpacingMode': timetableCourseSpacingMode.value,
       'widgetBackgroundStyle': widgetBackgroundStyle.value,
       'widgetShowLocation': widgetShowLocation,
       'widgetShowCountdown': widgetShowCountdown,
@@ -985,6 +1049,18 @@ class TimetableSettings {
       ),
       courseCardHorizontalAlign: CourseCardHorizontalAlignX.fromValue(
         json['courseCardHorizontalAlign'] as String?,
+      ),
+      courseCardFontSize: (json['courseCardFontSize'] as num?)?.toDouble() ?? 9,
+      timetableTimeColumnWidthMode: TimetableTimeColumnWidthModeX.fromValue(
+        json['timetableTimeColumnWidthMode'] as String?,
+      ),
+      timetableCourseCardGap:
+          (json['timetableCourseCardGap'] as num?)?.toDouble() ??
+              ((json['timetableCourseSpacingMode'] as String?) == 'wide'
+                  ? 2.0
+                  : 1.25),
+      timetableCourseSpacingMode: TimetableCourseSpacingModeX.fromValue(
+        json['timetableCourseSpacingMode'] as String?,
       ),
       widgetBackgroundStyle: WidgetBackgroundStyleX.fromValue(
         json['widgetBackgroundStyle'] as String?,
@@ -1173,6 +1249,10 @@ class TimetableSettings {
     bool? courseCardShowDescription,
     CourseCardVerticalAlign? courseCardVerticalAlign,
     CourseCardHorizontalAlign? courseCardHorizontalAlign,
+    double? courseCardFontSize,
+    TimetableTimeColumnWidthMode? timetableTimeColumnWidthMode,
+    double? timetableCourseCardGap,
+    TimetableCourseSpacingMode? timetableCourseSpacingMode,
     WidgetBackgroundStyle? widgetBackgroundStyle,
     bool? widgetShowLocation,
     bool? widgetShowCountdown,
@@ -1276,6 +1356,13 @@ class TimetableSettings {
           courseCardVerticalAlign ?? this.courseCardVerticalAlign,
       courseCardHorizontalAlign:
           courseCardHorizontalAlign ?? this.courseCardHorizontalAlign,
+      courseCardFontSize: courseCardFontSize ?? this.courseCardFontSize,
+      timetableTimeColumnWidthMode:
+          timetableTimeColumnWidthMode ?? this.timetableTimeColumnWidthMode,
+      timetableCourseCardGap:
+          timetableCourseCardGap ?? this.timetableCourseCardGap,
+      timetableCourseSpacingMode:
+          timetableCourseSpacingMode ?? this.timetableCourseSpacingMode,
       widgetBackgroundStyle:
           widgetBackgroundStyle ?? this.widgetBackgroundStyle,
       widgetShowLocation: widgetShowLocation ?? this.widgetShowLocation,
