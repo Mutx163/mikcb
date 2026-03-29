@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.accessibilityservice.AccessibilityService
 import android.util.Log
@@ -23,3 +23,4 @@ class KeepAliveAccessibilityService : AccessibilityService() {
         Log.i("KeepAliveAccessibility", "Accessibility keep-alive service interrupted")
     }
 }
+

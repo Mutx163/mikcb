@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -171,7 +171,7 @@ object LiveUpdateScheduler {
     private const val PREFS_NAME = "live_update_scheduler"
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
     private const val REQUEST_CODE_TRIGGER = 2002
-    const val ACTION_TRIGGER = "com.example.university_timetable.ACTION_TRIGGER_LIVE_UPDATE"
+    const val ACTION_TRIGGER = "com.mutx163.qingyu.ACTION_TRIGGER_LIVE_UPDATE"
 
     fun syncSnapshot(context: Context, snapshotJson: String) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -1308,3 +1308,4 @@ private fun Int.toWeekday(): Int {
         else -> 1
     }
 }
+

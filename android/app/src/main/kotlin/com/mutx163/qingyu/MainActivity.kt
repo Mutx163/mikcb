@@ -1,4 +1,4 @@
-package com.example.university_timetable
+package com.mutx163.qingyu
 
 import android.Manifest
 import android.app.ActivityManager
@@ -47,10 +47,11 @@ import java.util.Calendar
 
 class MainActivity : FlutterActivity() {
     companion object {
-        private const val METHOD_CHANNEL = "com.example.university_timetable/miui_live"
-        private const val UMENG_CHANNEL = "com.example.university_timetable/umeng_analytics"
-        private const val HOME_WIDGET_CHANNEL = "com.example.university_timetable/home_widget"
-        private const val SUPPORT_CHANNEL = "com.example.university_timetable/support"
+        private const val METHOD_CHANNEL = "com.mutx163.qingyu/miui_live"
+        private const val UMENG_CHANNEL = "com.mutx163.qingyu/umeng_analytics"
+        private const val HOME_WIDGET_CHANNEL = "com.mutx163.qingyu/home_widget"
+        private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
+        private const val MIGRATION_CHANNEL = "com.mutx163.qingyu/migration"
         private const val CHANNEL_ID = "live_update_channel"
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val PREFS_NAME = "native_runtime_prefs"
@@ -294,6 +295,27 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MIGRATION_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "findInstalledPackage" -> {
+                        val packageNames = (call.arguments as? List<*>)?.mapNotNull {
+                            it as? String
+                        } ?: emptyList()
+                        result.success(findInstalledPackage(packageNames))
+                    }
+                    "openPackage" -> {
+                        val packageName = call.arguments as? String
+                        if (packageName.isNullOrBlank()) {
+                            result.success(false)
+                        } else {
+                            result.success(openPackage(packageName))
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
     }
 
     private fun hasNotificationPermission(): Boolean {
@@ -384,12 +406,32 @@ class MainActivity : FlutterActivity() {
                     "com.miui.permcenter.autostart.AutoStartManagementActivity"
                 )
             },
+            Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                setClassName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                )
+                putExtra("extra_pkgname", packageName)
+                putExtra("package_name", packageName)
+                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
+            },
+            Intent().apply {
+                component = ComponentName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.permissions.AppPermissionsEditorActivity"
+                )
+                putExtra("extra_pkgname", packageName)
+                putExtra("package_name", packageName)
+                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
+            },
             Intent().apply {
                 component = ComponentName(
                     "com.miui.securitycenter",
                     "com.miui.permcenter.permissions.PermissionsEditorActivity"
                 )
                 putExtra("extra_pkgname", packageName)
+                putExtra("package_name", packageName)
+                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
             }
         )
 
@@ -439,6 +481,28 @@ class MainActivity : FlutterActivity() {
             )
         } catch (e: Exception) {
             Log.w("MainActivity", "Failed to open app details settings", e)
+        }
+    }
+
+    private fun findInstalledPackage(packageNames: List<String>): String? {
+        for (packageName in packageNames) {
+            try {
+                packageManager.getPackageInfo(packageName, 0)
+                return packageName
+            } catch (_: Exception) {
+            }
+        }
+        return null
+    }
+
+    private fun openPackage(packageName: String): Boolean {
+        val launchIntent = packageManager.getLaunchIntentForPackage(packageName) ?: return false
+        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return try {
+            startActivity(launchIntent)
+            true
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -597,12 +661,35 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openAccessibilitySettings() {
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
         try {
-            startActivity(intent)
+            startActivity(
+                Intent("android.settings.ACCESSIBILITY_DETAILS_SETTINGS").apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    putExtra("package_name", packageName)
+                    putExtra("android.intent.extra.PACKAGE_NAME", packageName)
+                    putExtra(
+                        "android.intent.extra.COMPONENT_NAME",
+                        ComponentName(
+                            this@MainActivity,
+                            KeepAliveAccessibilityService::class.java
+                        ).flattenToString()
+                    )
+                }
+            )
+            return
         } catch (e: ActivityNotFoundException) {
+            // Fall through to the general accessibility settings page.
+        } catch (_: Exception) {
+            // Fall through to the general accessibility settings page.
+        }
+
+        try {
+            startActivity(
+                Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+            )
+        } catch (_: ActivityNotFoundException) {
             val fallbackIntent = Intent(Settings.ACTION_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
@@ -634,11 +721,11 @@ class LiveUpdateService : Service() {
         private const val PREFS_NAME = "native_runtime_prefs"
         private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
         private const val ACTION_ENABLE_SILENT_MODE =
-            "com.example.university_timetable.action.ENABLE_SILENT_MODE"
+            "com.mutx163.qingyu.action.ENABLE_SILENT_MODE"
         private const val ACTION_ENABLE_DO_NOT_DISTURB =
-            "com.example.university_timetable.action.ENABLE_DO_NOT_DISTURB"
+            "com.mutx163.qingyu.action.ENABLE_DO_NOT_DISTURB"
         private const val ACTION_DISMISS_STATUS_BAR_STAGE =
-            "com.example.university_timetable.action.DISMISS_STATUS_BAR_STAGE"
+            "com.mutx163.qingyu.action.DISMISS_STATUS_BAR_STAGE"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -2222,3 +2309,4 @@ class LiveUpdateService : Service() {
         return stageDelay.coerceIn(1_000L, 60_000L)
     }
 }
+

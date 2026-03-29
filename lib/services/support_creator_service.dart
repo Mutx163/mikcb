@@ -58,7 +58,7 @@ class SupportDonorData {
 
 class SupportCreatorService {
   static const MethodChannel _channel =
-      MethodChannel('com.example.university_timetable/support');
+      MethodChannel('com.mutx163.qingyu/support');
   static const String _donorsUrl =
       'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/donors.json';
 

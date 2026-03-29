@@ -9,7 +9,7 @@ import 'umeng_analytics_service.dart';
 
 class MiuiLiveActivitiesService {
   static const MethodChannel _channel =
-      MethodChannel('com.example.university_timetable/miui_live');
+      MethodChannel('com.mutx163.qingyu/miui_live');
 
   static final MiuiLiveActivitiesService _instance =
       MiuiLiveActivitiesService._internal();

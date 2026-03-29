@@ -16,6 +16,9 @@ class StorageService {
   static const String _timeSchemesKey = 'time_schemes';
   static const String _hasSeenUserGuideKey = 'has_seen_user_guide';
   static const String _acceptedPrivacyPolicyKey = 'accepted_privacy_policy';
+  static const String _hasCompletedOnboardingKey = 'has_completed_onboarding';
+  static const String _hasHandledPackageMigrationKey =
+      'has_handled_package_migration';
   static const String _hidePrefixDefaultMigrationKey =
       'did_migrate_live_hide_prefix_default';
 
@@ -126,6 +129,115 @@ class StorageService {
   Future<void> setAcceptedPrivacyPolicy(bool value) async {
     if (_prefs == null) await init();
     await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+  }
+
+  Future<bool> hasCompletedOnboarding() async {
+    if (_prefs == null) await init();
+    return _prefs?.getBool(_hasCompletedOnboardingKey) ?? false;
+  }
+
+  Future<void> setCompletedOnboarding(bool value) async {
+    if (_prefs == null) await init();
+    await _prefs?.setBool(_hasCompletedOnboardingKey, value);
+  }
+
+  Future<bool> hasHandledPackageMigration() async {
+    if (_prefs == null) await init();
+    return _prefs?.getBool(_hasHandledPackageMigrationKey) ?? false;
+  }
+
+  Future<void> setHandledPackageMigration(bool value) async {
+    if (_prefs == null) await init();
+    await _prefs?.setBool(_hasHandledPackageMigrationKey, value);
+  }
+
+  Future<bool> isAppDataEffectivelyEmpty() async {
+    if (_prefs == null) await init();
+
+    final legacyCourses = _prefs?.getStringList(_coursesKey) ?? const [];
+    if (legacyCourses.isNotEmpty) {
+      return false;
+    }
+
+    final profilesJson = _prefs?.getString(_profilesKey);
+    if (profilesJson != null && profilesJson.isNotEmpty) {
+      final rawProfiles = jsonDecode(profilesJson) as List<dynamic>;
+      if (!_isProfilesPayloadEffectivelyEmpty(rawProfiles)) {
+        return false;
+      }
+    }
+
+    final timeSchemesJson = _prefs?.getString(_timeSchemesKey);
+    if (timeSchemesJson != null && timeSchemesJson.isNotEmpty) {
+      final schemes = jsonDecode(timeSchemesJson) as List<dynamic>;
+      if (!_isTimeSchemesPayloadEffectivelyEmpty(schemes)) {
+        return false;
+      }
+    }
+
+    final settingsJson = _prefs?.getString(_timetableSettingsKey);
+    if (settingsJson != null &&
+        settingsJson.isNotEmpty &&
+        !_isSettingsJsonEffectivelyDefault(settingsJson)) {
+      return false;
+    }
+    if (_prefs?.getInt(_semesterStartKey) != null) {
+      return false;
+    }
+    final currentWeek = _prefs?.getInt(_currentWeekKey);
+    if (currentWeek != null && currentWeek != 1) {
+      return false;
+    }
+
+    return true;
+  }
+
+  bool _isProfilesPayloadEffectivelyEmpty(List<dynamic> rawProfiles) {
+    if (rawProfiles.isEmpty) {
+      return true;
+    }
+    if (rawProfiles.length != 1) {
+      return false;
+    }
+
+    final profile = TimetableProfile.fromJson(
+      Map<String, dynamic>.from(rawProfiles.first as Map),
+    );
+    return profile.courses.isEmpty &&
+        profile.currentWeek == 1 &&
+        _isSettingsEffectivelyDefault(profile.settings);
+  }
+
+  bool _isTimeSchemesPayloadEffectivelyEmpty(List<dynamic> rawSchemes) {
+    if (rawSchemes.isEmpty) {
+      return true;
+    }
+    if (rawSchemes.length != 1) {
+      return false;
+    }
+
+    final scheme = TimeScheme.fromJson(
+      Map<String, dynamic>.from(rawSchemes.first as Map),
+    );
+    return _sectionSignature(scheme.sections) ==
+        _sectionSignature(TimetableSettings.defaults().sections);
+  }
+
+  bool _isSettingsJsonEffectivelyDefault(String settingsJson) {
+    try {
+      final settings = TimetableSettings.fromJsonString(settingsJson);
+      return _isSettingsEffectivelyDefault(settings);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool _isSettingsEffectivelyDefault(TimetableSettings settings) {
+    final defaults = TimetableSettings.defaults();
+    final normalizedSettings =
+        settings.copyWith(activeTimeSchemeId: null).toJson();
+    final normalizedDefaults = defaults.toJson();
+    return jsonEncode(normalizedSettings) == jsonEncode(normalizedDefaults);
   }
 
   // 获取指定周次的课程
