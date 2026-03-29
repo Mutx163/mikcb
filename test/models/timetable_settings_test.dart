@@ -74,6 +74,16 @@ void main() {
       settings.courseCardHorizontalAlign,
       CourseCardHorizontalAlign.center,
     );
+    expect(settings.courseCardFontSize, 9);
+    expect(
+      settings.timetableTimeColumnWidthMode,
+      TimetableTimeColumnWidthMode.narrow,
+    );
+    expect(settings.timetableCourseCardGap, 1.25);
+    expect(
+      settings.timetableCourseSpacingMode,
+      TimetableCourseSpacingMode.narrow,
+    );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
     expect(restored.semesterWeekCount, 20);
@@ -145,6 +155,16 @@ void main() {
       restored.courseCardHorizontalAlign,
       CourseCardHorizontalAlign.center,
     );
+    expect(restored.courseCardFontSize, 9);
+    expect(
+      restored.timetableTimeColumnWidthMode,
+      TimetableTimeColumnWidthMode.narrow,
+    );
+    expect(restored.timetableCourseCardGap, 1.25);
+    expect(
+      restored.timetableCourseSpacingMode,
+      TimetableCourseSpacingMode.narrow,
+    );
   });
 
   test('available weeks follow configured semester week count', () {
@@ -174,6 +194,10 @@ void main() {
       appThemeMode: AppThemeMode.dark,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
+      courseCardFontSize: 10.5,
+      timetableTimeColumnWidthMode: TimetableTimeColumnWidthMode.wide,
+      timetableCourseCardGap: 2.4,
+      timetableCourseSpacingMode: TimetableCourseSpacingMode.wide,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: true,
       enableHaptics: false,
@@ -270,6 +294,16 @@ void main() {
       restored.courseCardHorizontalAlign,
       CourseCardHorizontalAlign.right,
     );
+    expect(restored.courseCardFontSize, 10.5);
+    expect(restored.timetableCourseCardGap, 2.4);
+    expect(
+      restored.timetableTimeColumnWidthMode,
+      TimetableTimeColumnWidthMode.wide,
+    );
+    expect(
+      restored.timetableCourseSpacingMode,
+      TimetableCourseSpacingMode.wide,
+    );
   });
 
   test('during and end live display settings can be customized independently',
@@ -353,5 +387,15 @@ void main() {
     expect(duringEnd.showCourseName, isFalse);
     expect(duringEnd.showLocation, isFalse);
     expect(duringEnd.countdownTextStyle, LiveCountdownTextStyle.minuteSecondCn);
+  });
+
+  test('legacy spacing mode migrates to numeric card gap', () {
+    final restored = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'timetableCourseCardGap': null,
+      'timetableCourseSpacingMode': 'wide',
+    });
+
+    expect(restored.timetableCourseCardGap, 2.0);
   });
 }

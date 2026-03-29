@@ -8,6 +8,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
+import '../widgets/course_card.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 import 'live_settings_subpages.dart';
@@ -1363,6 +1364,15 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
+  final List<String> _weekDays = const [
+    '周一',
+    '周二',
+    '周三',
+    '周四',
+    '周五',
+    '周六',
+    '周日',
+  ];
 
   @override
   void initState() {
@@ -1378,349 +1388,790 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<TimetableProvider>();
     return Scaffold(
       appBar: AppBar(
         title: const Text('布局与节次'),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
+      body: Column(
         children: [
-          Card(
-            child: Padding(
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: _buildLayoutPreviewCard(provider),
+          ),
+          Expanded(
+            child: ListView(
               padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '课表密度',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('自动充满屏幕高度'),
-                    subtitle: const Text('开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'),
-                    value: _draft.timetableAutoFitSectionHeight,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          timetableAutoFitSectionHeight: value,
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '课表密度',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700),
                         ),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('隐藏周六周日'),
-                    subtitle: const Text('开启后首页只显示周一到周五，剩余列宽会自动铺满。'),
-                    value: _draft.timetableHideWeekends,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(timetableHideWeekends: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('启用应用内震动反馈'),
-                    subtitle: const Text('关闭后，页码切换等交互不再触发轻微震动。'),
-                    value: _draft.enableHaptics,
-                    onChanged: (value) {
-                      _updateDraft(_draft.copyWith(enableHaptics: value));
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<SectionTimeDisplayMode>(
-                    value: _draft.timetableSectionTimeDisplayMode,
-                    decoration: const InputDecoration(
-                      labelText: '首页时间列显示',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: SectionTimeDisplayMode.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          timetableSectionTimeDisplayMode: value,
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  Text('课表行高 ${_draft.sectionHeight.toStringAsFixed(0)}'),
-                  Slider(
-                    value: _draft.sectionHeight,
-                    min: 48,
-                    max: 92,
-                    divisions: 11,
-                    label: _draft.sectionHeight.toStringAsFixed(0),
-                    onChanged: _draft.timetableAutoFitSectionHeight
-                        ? null
-                        : (value) {
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('自动充满屏幕高度'),
+                          subtitle: const Text('开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'),
+                          value: _draft.timetableAutoFitSectionHeight,
+                          onChanged: (value) {
                             _updateDraft(
-                              _draft.copyWith(sectionHeight: value),
+                              _draft.copyWith(
+                                timetableAutoFitSectionHeight: value,
+                              ),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('隐藏周六周日'),
+                          subtitle: const Text('开启后首页只显示周一到周五，剩余列宽会自动铺满。'),
+                          value: _draft.timetableHideWeekends,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(timetableHideWeekends: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('启用应用内震动反馈'),
+                          subtitle: const Text('关闭后，页码切换等交互不再触发轻微震动。'),
+                          value: _draft.enableHaptics,
+                          onChanged: (value) {
+                            _updateDraft(_draft.copyWith(enableHaptics: value));
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<SectionTimeDisplayMode>(
+                          value: _draft.timetableSectionTimeDisplayMode,
+                          decoration: const InputDecoration(
+                            labelText: '首页时间列显示',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: SectionTimeDisplayMode.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                timetableSectionTimeDisplayMode: value,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<TimetableTimeColumnWidthMode>(
+                          value: _draft.timetableTimeColumnWidthMode,
+                          decoration: const InputDecoration(
+                            labelText: '时间栏宽度',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: TimetableTimeColumnWidthMode.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                timetableTimeColumnWidthMode: value,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          '课程卡片间距 ${_draft.timetableCourseCardGap.toStringAsFixed(1)}',
+                        ),
+                        Slider(
+                          value: _draft.timetableCourseCardGap.clamp(0.0, 3.0),
+                          min: 0,
+                          max: 3,
+                          divisions: 12,
+                          label:
+                              _draft.timetableCourseCardGap.toStringAsFixed(1),
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(timetableCourseCardGap: value),
                               debounce: true,
                             );
                           },
+                        ),
+                        const SizedBox(height: 8),
+                        Text('课表行高 ${_draft.sectionHeight.toStringAsFixed(0)}'),
+                        Slider(
+                          value: _draft.sectionHeight,
+                          min: 48,
+                          max: 92,
+                          divisions: 11,
+                          label: _draft.sectionHeight.toStringAsFixed(0),
+                          onChanged: _draft.timetableAutoFitSectionHeight
+                              ? null
+                              : (value) {
+                                  _updateDraft(
+                                    _draft.copyWith(sectionHeight: value),
+                                    debounce: true,
+                                  );
+                                },
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                            '紧凑字号 ${_draft.compactFontSize.toStringAsFixed(1)}'),
+                        Slider(
+                          value: _draft.compactFontSize,
+                          min: 7,
+                          max: 12,
+                          divisions: 10,
+                          label: _draft.compactFontSize.toStringAsFixed(1),
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(compactFontSize: value),
+                              debounce: true,
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                            '课程卡片字号 ${_draft.courseCardFontSize.toStringAsFixed(1)}'),
+                        Slider(
+                          value: _draft.courseCardFontSize,
+                          min: 7,
+                          max: 12,
+                          divisions: 10,
+                          label: _draft.courseCardFontSize.toStringAsFixed(1),
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardFontSize: value),
+                              debounce: true,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text('紧凑字号 ${_draft.compactFontSize.toStringAsFixed(1)}'),
-                  Slider(
-                    value: _draft.compactFontSize,
-                    min: 7,
-                    max: 12,
-                    divisions: 10,
-                    label: _draft.compactFontSize.toStringAsFixed(1),
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(compactFontSize: value),
-                        debounce: true,
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '课程卡片显示',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '默认显示课程名、老师和教室；其他信息可按课表自由开关组合。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示课程名'),
-                    value: _draft.courseCardShowName,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardShowName: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示老师'),
-                    value: _draft.courseCardShowTeacher,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardShowTeacher: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示教室'),
-                    value: _draft.courseCardShowLocation,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardShowLocation: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示时间'),
-                    value: _draft.courseCardShowTime,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardShowTime: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示上课/下课字样'),
-                    subtitle: const Text('关闭后仅显示时间点，不显示“上课”“下课”文字。'),
-                    value: _draft.courseCardShowTimeLabels,
-                    onChanged: _draft.courseCardShowTime
-                        ? (value) {
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '课程卡片显示',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '默认显示课程名、老师和教室；其他信息可按课表自由开关组合。',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示课程名'),
+                          value: _draft.courseCardShowName,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardShowName: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示老师'),
+                          value: _draft.courseCardShowTeacher,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardShowTeacher: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示教室'),
+                          value: _draft.courseCardShowLocation,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardShowLocation: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示时间'),
+                          value: _draft.courseCardShowTime,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardShowTime: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示上课/下课字样'),
+                          subtitle: const Text('关闭后仅显示时间点，不显示“上课”“下课”文字。'),
+                          value: _draft.courseCardShowTimeLabels,
+                          onChanged: _draft.courseCardShowTime
+                              ? (value) {
+                                  _updateDraft(
+                                    _draft.copyWith(
+                                      courseCardShowTimeLabels: value,
+                                    ),
+                                  );
+                                }
+                              : null,
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示周数'),
+                          subtitle: const Text('例如第 1-16 周、单双周'),
+                          value: _draft.courseCardShowWeeks,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(courseCardShowWeeks: value),
+                            );
+                          },
+                        ),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示课程简介'),
+                          subtitle: const Text('默认关闭，空间不足时会最先被压缩'),
+                          value: _draft.courseCardShowDescription,
+                          onChanged: (value) {
                             _updateDraft(
                               _draft.copyWith(
-                                courseCardShowTimeLabels: value,
+                                courseCardShowDescription: value,
                               ),
                             );
-                          }
-                        : null,
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示周数'),
-                    subtitle: const Text('例如第 1-16 周、单双周'),
-                    value: _draft.courseCardShowWeeks,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(courseCardShowWeeks: value),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示课程简介'),
-                    subtitle: const Text('默认关闭，空间不足时会最先被压缩'),
-                    value: _draft.courseCardShowDescription,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          courseCardShowDescription: value,
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('显示非本周课程'),
-                    subtitle: const Text('默认关闭，开启后会用灰色半透明显示不在当前周的课程'),
-                    value: _draft.timetableShowNonCurrentWeekCourses,
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          timetableShowNonCurrentWeekCourses: value,
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: const Text('显示非本周课程'),
+                          subtitle: const Text('默认关闭，开启后会用灰色半透明显示不在当前周的课程'),
+                          value: _draft.timetableShowNonCurrentWeekCourses,
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                timetableShowNonCurrentWeekCourses: value,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<CourseCardVerticalAlign>(
-                    value: _draft.courseCardVerticalAlign,
-                    decoration: const InputDecoration(
-                      labelText: '垂直排版',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: CourseCardVerticalAlign.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<CourseCardVerticalAlign>(
+                          value: _draft.courseCardVerticalAlign,
+                          decoration: const InputDecoration(
+                            labelText: '垂直排版',
+                            border: OutlineInputBorder(),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          courseCardVerticalAlign: value,
+                          items: CourseCardVerticalAlign.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                courseCardVerticalAlign: value,
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<CourseCardHorizontalAlign>(
-                    value: _draft.courseCardHorizontalAlign,
-                    decoration: const InputDecoration(
-                      labelText: '水平排版',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: CourseCardHorizontalAlign.values
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<CourseCardHorizontalAlign>(
+                          value: _draft.courseCardHorizontalAlign,
+                          decoration: const InputDecoration(
+                            labelText: '水平排版',
+                            border: OutlineInputBorder(),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(
-                          courseCardHorizontalAlign: value,
+                          items: CourseCardHorizontalAlign.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(value.label),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                courseCardHorizontalAlign: value,
+                              ),
+                            );
+                          },
                         ),
+                      ],
+                    ),
+                  ),
+                ),
+                Card(
+                  child: SwitchListTile(
+                    title: const Text('首页显示冲突小胶囊'),
+                    subtitle: const Text('关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'),
+                    value: _draft.showConflictBadgeOnTimetable,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(showConflictBadgeOnTimetable: value),
                       );
                     },
                   ),
-                ],
-              ),
-            ),
-          ),
-          Card(
-            child: SwitchListTile(
-              title: const Text('首页显示冲突小胶囊'),
-              subtitle: const Text('关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'),
-              value: _draft.showConflictBadgeOnTimetable,
-              onChanged: (value) {
-                _updateDraft(
-                  _draft.copyWith(showConflictBadgeOnTimetable: value),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '冲突课程透明度 ${(_draft.timetableConflictCourseOpacity * 100).round()}%',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '冲突课程会自动层叠显示，调低透明度后能同时看到多节课。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Slider(
-                    value: _draft.timetableConflictCourseOpacity,
-                    min: 0.2,
-                    max: 1.0,
-                    divisions: 16,
-                    label:
-                        '${(_draft.timetableConflictCourseOpacity * 100).round()}%',
-                    onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(
-                          timetableConflictCourseOpacity: value,
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '冲突课程透明度 ${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        debounce: true,
-                      );
-                    },
+                        const SizedBox(height: 8),
+                        Text(
+                          '冲突课程会自动层叠显示，调低透明度后能同时看到多节课。',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                        Slider(
+                          value: _draft.timetableConflictCourseOpacity,
+                          min: 0.2,
+                          max: 1.0,
+                          divisions: 16,
+                          label:
+                              '${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                          onChanged: (value) {
+                            _updateDraft(
+                              _draft.copyWith(
+                                timetableConflictCourseOpacity: value,
+                              ),
+                              debounce: true,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '说明',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '说明',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w700),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLayoutPreviewCard(TimetableProvider provider) {
+    final preview = _buildLayoutPreviewData(provider);
+    final colorScheme = Theme.of(context).colorScheme;
+    final sections = provider.settings.sections
+        .skip(preview.baseSection - 1)
+        .take(4)
+        .toList();
+    final timeColumnWidth = _draft.timetableTimeColumnWidthMode ==
+            TimetableTimeColumnWidthMode.narrow
+        ? 34.0
+        : 40.0;
+    final cardInset = _draft.timetableCourseCardGap.clamp(0.0, 3.0);
+    final sectionHeight = _draft.sectionHeight;
+    final gridHeight = sections.length * sectionHeight;
+
+    return Transform.translate(
+      offset: const Offset(-16, 0),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final dayWidth = (constraints.maxWidth - timeColumnWidth) /
+                  preview.dayTitles.length;
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: colorScheme.outlineVariant),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: timeColumnWidth,
+                          child: Center(
+                            child: Text(
+                              '${provider.currentWeek}周',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                        ),
+                        for (var dayIndex = 0;
+                            dayIndex < preview.dayTitles.length;
+                            dayIndex++)
+                          SizedBox(
+                            width: dayWidth,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  preview.dayTitles[dayIndex],
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                                DateTime.now().weekday
+                                            ? FontWeight.w800
+                                            : FontWeight.w600,
+                                    color:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                                DateTime.now().weekday
+                                            ? colorScheme.primary
+                                            : colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatPreviewDate(
+                                    _previewDateForWeekDay(
+                                      _draft,
+                                      provider.currentWeek,
+                                      preview.visibleDayNumbers[dayIndex],
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    color:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                                DateTime.now().weekday
+                                            ? colorScheme.primary
+                                                .withValues(alpha: 0.78)
+                                            : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: gridHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: timeColumnWidth,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < sections.length; i++)
+                                Container(
+                                  height: sectionHeight,
+                                  alignment: Alignment.center,
+                                  child: _buildPreviewSectionTimeCell(
+                                    preview.baseSection + i,
+                                    sections[i],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        for (var dayIndex = 0;
+                            dayIndex < preview.dayTitles.length;
+                            dayIndex++)
+                          SizedBox(
+                            width: dayWidth,
+                            child: Container(
+                              height: gridHeight,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerLowest
+                                    .withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Stack(
+                                clipBehavior: Clip.antiAlias,
+                                children: [
+                                  for (final placement
+                                      in preview.placements.where(
+                                    (item) => item.dayIndex == dayIndex,
+                                  ))
+                                    Positioned(
+                                      top: (placement.startSlot - 1) *
+                                          sectionHeight,
+                                      left: 0,
+                                      right: 0,
+                                      height:
+                                          placement.slotSpan * sectionHeight,
+                                      child: CourseCard(
+                                        course: placement.course,
+                                        isCompact: true,
+                                        showName: _draft.courseCardShowName,
+                                        showTeacher:
+                                            _draft.courseCardShowTeacher,
+                                        showLocation:
+                                            _draft.courseCardShowLocation,
+                                        showTime: _draft.courseCardShowTime,
+                                        showTimeLabels:
+                                            _draft.courseCardShowTimeLabels,
+                                        showWeeks: _draft.courseCardShowWeeks,
+                                        showDescription:
+                                            _draft.courseCardShowDescription,
+                                        verticalAlign:
+                                            _draft.courseCardVerticalAlign,
+                                        horizontalAlign:
+                                            _draft.courseCardHorizontalAlign,
+                                        compactTitleFontSize:
+                                            _draft.courseCardFontSize,
+                                        compactSubtitleFontSize:
+                                            (_draft.courseCardFontSize - 1)
+                                                .clamp(7.0, 14.0),
+                                        compactVerticalPadding: 4,
+                                        compactOuterInset: cardInset,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  _LayoutPreviewData _buildLayoutPreviewData(TimetableProvider provider) {
+    final currentWeek = provider.currentWeek;
+    final visibleDays = _draft.timetableHideWeekends
+        ? const [1, 2, 3, 4, 5]
+        : const [1, 2, 3, 4, 5, 6, 7];
+    final currentWeekCourses = provider.courses
+        .where(
+          (course) =>
+              course.isInWeek(currentWeek) &&
+              visibleDays.contains(course.dayOfWeek),
+        )
+        .toList()
+      ..sort((left, right) {
+        final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
+        if (dayCompare != 0) {
+          return dayCompare;
+        }
+        final sectionCompare = left.startSection.compareTo(right.startSection);
+        if (sectionCompare != 0) {
+          return sectionCompare;
+        }
+        return left.id.compareTo(right.id);
+      });
+
+    final dayTitles = visibleDays
+        .map((dayOfWeek) => _weekDays[dayOfWeek - 1])
+        .toList(growable: false);
+
+    if (currentWeekCourses.isNotEmpty) {
+      final baseSection = currentWeekCourses
+          .map((course) => course.startSection)
+          .reduce((left, right) => left < right ? left : right)
+          .clamp(1, (provider.settings.sectionCount - 3).clamp(1, 999));
+      final endSection = baseSection + 3;
+      final placements = <_PreviewPlacement>[];
+      for (final course in currentWeekCourses) {
+        if (course.endSection < baseSection ||
+            course.startSection > endSection) {
+          continue;
+        }
+        final visibleStartSection = course.startSection < baseSection
+            ? baseSection
+            : course.startSection;
+        final visibleEndSection =
+            course.endSection > endSection ? endSection : course.endSection;
+        final relativeStart = visibleStartSection - baseSection + 1;
+        final relativeEnd = visibleEndSection - baseSection + 1;
+        placements.add(
+          _PreviewPlacement(
+            dayIndex: visibleDays.indexOf(course.dayOfWeek),
+            startSlot: relativeStart,
+            slotSpan: relativeEnd - relativeStart + 1,
+            course: course.copyWith(
+              startSection: relativeStart,
+              endSection: relativeEnd,
+            ),
+          ),
+        );
+      }
+      return _LayoutPreviewData(
+        usesRealCourses: true,
+        baseSection: baseSection,
+        visibleDayNumbers: visibleDays,
+        dayTitles: dayTitles,
+        placements: placements,
+      );
+    }
+
+    final samples = [
+      Course(
+        id: 'layout-preview-1',
+        name: '高数',
+        shortName: '高数',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        color: '#2563EB',
+      ),
+      Course(
+        id: 'layout-preview-2',
+        name: '英语',
+        shortName: '英语',
+        teacher: '李老师',
+        location: 'B203',
+        dayOfWeek: 2,
+        startSection: 2,
+        endSection: 3,
+        startTime: '08:55',
+        endTime: '10:45',
+        color: '#10B981',
+      ),
+    ];
+
+    return _LayoutPreviewData(
+      usesRealCourses: false,
+      baseSection: 1,
+      visibleDayNumbers: visibleDays,
+      dayTitles: dayTitles,
+      placements: [
+        _PreviewPlacement(
+          dayIndex: 0,
+          startSlot: 1,
+          slotSpan: 2,
+          course: samples[0],
+        ),
+        _PreviewPlacement(
+          dayIndex: 1,
+          startSlot: 2,
+          slotSpan: 2,
+          course: samples[1],
+        ),
+      ],
+    );
+  }
+
+  DateTime? _previewDateForWeekDay(
+    TimetableSettings settings,
+    int week,
+    int dayOfWeek,
+  ) {
+    final semesterStart = settings.semesterStartDate;
+    if (semesterStart == null) {
+      return null;
+    }
+
+    final normalizedStart = DateTime(
+      semesterStart.year,
+      semesterStart.month,
+      semesterStart.day,
+    ).subtract(Duration(days: semesterStart.weekday - 1));
+
+    return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
+  }
+
+  String _formatPreviewDate(DateTime? date) {
+    if (date == null) {
+      return '';
+    }
+    return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _buildPreviewSectionTimeCell(
+    int sectionNumber,
+    SectionTime section,
+  ) {
+    final compactTextStyle = TextStyle(
+      fontSize: (_draft.compactFontSize - 2).clamp(6.0, 10.0),
+      color: Colors.grey.shade600,
+      height: 1.05,
+    );
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          '$sectionNumber',
+          style: TextStyle(
+            fontSize: _draft.compactFontSize.clamp(8.0, 11.0),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        if (_draft.timetableSectionTimeDisplayMode !=
+            SectionTimeDisplayMode.hidden)
+          Text(section.startTime, style: compactTextStyle),
+        if (_draft.timetableSectionTimeDisplayMode ==
+            SectionTimeDisplayMode.startAndEnd)
+          Text(section.endTime, style: compactTextStyle),
+      ],
     );
   }
 
@@ -1808,6 +2259,36 @@ class _SettingsEntryTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _LayoutPreviewData {
+  final bool usesRealCourses;
+  final int baseSection;
+  final List<int> visibleDayNumbers;
+  final List<String> dayTitles;
+  final List<_PreviewPlacement> placements;
+
+  const _LayoutPreviewData({
+    required this.usesRealCourses,
+    required this.baseSection,
+    required this.visibleDayNumbers,
+    required this.dayTitles,
+    required this.placements,
+  });
+}
+
+class _PreviewPlacement {
+  final int dayIndex;
+  final int startSlot;
+  final int slotSpan;
+  final Course course;
+
+  const _PreviewPlacement({
+    required this.dayIndex,
+    required this.startSlot,
+    required this.slotSpan,
+    required this.course,
+  });
 }
 
 class _SettingsSectionCard extends StatelessWidget {
