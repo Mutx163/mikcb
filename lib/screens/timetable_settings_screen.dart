@@ -1396,7 +1396,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.only(top: 16),
             child: _buildLayoutPreviewCard(provider),
           ),
           Expanded(
@@ -1822,179 +1822,167 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     final sectionHeight = _draft.sectionHeight;
     final gridHeight = sections.length * sectionHeight;
 
-    return Transform.translate(
-      offset: const Offset(-16, 0),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final dayWidth = (constraints.maxWidth - timeColumnWidth) /
-                  preview.dayTitles.length;
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    height: 50,
-                    padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: colorScheme.outlineVariant),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final dayWidth = (constraints.maxWidth - timeColumnWidth) /
+              preview.dayTitles.length;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                height: 50,
+                padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: colorScheme.outlineVariant),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: timeColumnWidth,
+                      child: Center(
+                        child: Text(
+                          '${provider.currentWeek}周',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: timeColumnWidth,
-                          child: Center(
-                            child: Text(
-                              '${provider.currentWeek}周',
+                    for (var dayIndex = 0;
+                        dayIndex < preview.dayTitles.length;
+                        dayIndex++)
+                      SizedBox(
+                        width: dayWidth,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              preview.dayTitles[dayIndex],
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                color: colorScheme.onSurface,
+                                fontWeight:
+                                    preview.visibleDayNumbers[dayIndex] ==
+                                            DateTime.now().weekday
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                color: preview.visibleDayNumbers[dayIndex] ==
+                                        DateTime.now().weekday
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurface,
                               ),
                             ),
-                          ),
-                        ),
-                        for (var dayIndex = 0;
-                            dayIndex < preview.dayTitles.length;
-                            dayIndex++)
-                          SizedBox(
-                            width: dayWidth,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  preview.dayTitles[dayIndex],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                                DateTime.now().weekday
-                                            ? FontWeight.w800
-                                            : FontWeight.w600,
-                                    color:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                                DateTime.now().weekday
-                                            ? colorScheme.primary
-                                            : colorScheme.onSurface,
-                                  ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatPreviewDate(
+                                _previewDateForWeekDay(
+                                  _draft,
+                                  provider.currentWeek,
+                                  preview.visibleDayNumbers[dayIndex],
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _formatPreviewDate(
-                                    _previewDateForWeekDay(
-                                      _draft,
-                                      provider.currentWeek,
-                                      preview.visibleDayNumbers[dayIndex],
-                                    ),
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 8.5,
-                                    color:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                                DateTime.now().weekday
-                                            ? colorScheme.primary
-                                                .withValues(alpha: 0.78)
-                                            : colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
+                              ),
+                              style: TextStyle(
+                                fontSize: 8.5,
+                                color: preview.visibleDayNumbers[dayIndex] ==
+                                        DateTime.now().weekday
+                                    ? colorScheme.primary
+                                        .withValues(alpha: 0.78)
+                                    : colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                      ],
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: gridHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: timeColumnWidth,
+                      child: Column(
+                        children: [
+                          for (var i = 0; i < sections.length; i++)
+                            Container(
+                              height: sectionHeight,
+                              alignment: Alignment.center,
+                              child: _buildPreviewSectionTimeCell(
+                                preview.baseSection + i,
+                                sections[i],
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(
-                    height: gridHeight,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: timeColumnWidth,
-                          child: Column(
+                    for (var dayIndex = 0;
+                        dayIndex < preview.dayTitles.length;
+                        dayIndex++)
+                      SizedBox(
+                        width: dayWidth,
+                        child: Container(
+                          height: gridHeight,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLowest
+                                .withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Stack(
+                            clipBehavior: Clip.antiAlias,
                             children: [
-                              for (var i = 0; i < sections.length; i++)
-                                Container(
-                                  height: sectionHeight,
-                                  alignment: Alignment.center,
-                                  child: _buildPreviewSectionTimeCell(
-                                    preview.baseSection + i,
-                                    sections[i],
+                              for (final placement in preview.placements.where(
+                                (item) => item.dayIndex == dayIndex,
+                              ))
+                                Positioned(
+                                  top:
+                                      (placement.startSlot - 1) * sectionHeight,
+                                  left: 0,
+                                  right: 0,
+                                  height: placement.slotSpan * sectionHeight,
+                                  child: CourseCard(
+                                    course: placement.course,
+                                    isCompact: true,
+                                    showName: _draft.courseCardShowName,
+                                    showTeacher: _draft.courseCardShowTeacher,
+                                    showLocation: _draft.courseCardShowLocation,
+                                    showTime: _draft.courseCardShowTime,
+                                    showTimeLabels:
+                                        _draft.courseCardShowTimeLabels,
+                                    showWeeks: _draft.courseCardShowWeeks,
+                                    showDescription:
+                                        _draft.courseCardShowDescription,
+                                    verticalAlign:
+                                        _draft.courseCardVerticalAlign,
+                                    horizontalAlign:
+                                        _draft.courseCardHorizontalAlign,
+                                    compactTitleFontSize:
+                                        _draft.courseCardFontSize,
+                                    compactSubtitleFontSize:
+                                        (_draft.courseCardFontSize - 1)
+                                            .clamp(7.0, 14.0),
+                                    compactVerticalPadding: 4,
+                                    compactOuterInset: cardInset,
                                   ),
                                 ),
                             ],
                           ),
                         ),
-                        for (var dayIndex = 0;
-                            dayIndex < preview.dayTitles.length;
-                            dayIndex++)
-                          SizedBox(
-                            width: dayWidth,
-                            child: Container(
-                              height: gridHeight,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerLowest
-                                    .withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Stack(
-                                clipBehavior: Clip.antiAlias,
-                                children: [
-                                  for (final placement
-                                      in preview.placements.where(
-                                    (item) => item.dayIndex == dayIndex,
-                                  ))
-                                    Positioned(
-                                      top: (placement.startSlot - 1) *
-                                          sectionHeight,
-                                      left: 0,
-                                      right: 0,
-                                      height:
-                                          placement.slotSpan * sectionHeight,
-                                      child: CourseCard(
-                                        course: placement.course,
-                                        isCompact: true,
-                                        showName: _draft.courseCardShowName,
-                                        showTeacher:
-                                            _draft.courseCardShowTeacher,
-                                        showLocation:
-                                            _draft.courseCardShowLocation,
-                                        showTime: _draft.courseCardShowTime,
-                                        showTimeLabels:
-                                            _draft.courseCardShowTimeLabels,
-                                        showWeeks: _draft.courseCardShowWeeks,
-                                        showDescription:
-                                            _draft.courseCardShowDescription,
-                                        verticalAlign:
-                                            _draft.courseCardVerticalAlign,
-                                        horizontalAlign:
-                                            _draft.courseCardHorizontalAlign,
-                                        compactTitleFontSize:
-                                            _draft.courseCardFontSize,
-                                        compactSubtitleFontSize:
-                                            (_draft.courseCardFontSize - 1)
-                                                .clamp(7.0, 14.0),
-                                        compactVerticalPadding: 4,
-                                        compactOuterInset: cardInset,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
