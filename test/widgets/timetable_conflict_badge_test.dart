@@ -10,9 +10,10 @@ import 'package:university_timetable/screens/timetable_screen.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const homeWidgetChannel =
-      MethodChannel('com.example.university_timetable/home_widget');
+      MethodChannel('com.mutx163.qingyu/home_widget');
   const analyticsChannel =
-      MethodChannel('com.example.university_timetable/umeng_analytics');
+      MethodChannel('com.mutx163.qingyu/umeng_analytics');
+  const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
@@ -20,6 +21,8 @@ void main() {
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(analyticsChannel, (call) async => null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(liveChannel, (call) async => null);
   });
 
   tearDown(() {
@@ -27,6 +30,8 @@ void main() {
         .setMockMethodCallHandler(homeWidgetChannel, null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(analyticsChannel, null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(liveChannel, null);
   });
 
   testWidgets('home timetable shows conflict badge when enabled',
