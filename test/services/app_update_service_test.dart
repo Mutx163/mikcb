@@ -48,4 +48,33 @@ void main() {
     expect(result.latestRelease?.version, '1.1.9.4');
     expect(result.latestRelease?.isPrerelease, isTrue);
   });
+
+  test('dotted tag suffix matches pubspec prerelease format', () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases/latest')) {
+        return http.Response(
+          jsonEncode({
+            'tag_name': 'v1.1.10.3',
+            'name': 'v1.1.10.3',
+            'draft': false,
+            'prerelease': false,
+            'html_url': 'https://example.com/1.1.10.3',
+            'assets': const [],
+            'updated_at': '2026-03-30T10:00:00Z',
+          }),
+          200,
+        );
+      }
+      throw UnsupportedError('Unexpected url: ${request.url}');
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.1.10-3+33',
+    );
+
+    expect(result.hasRelease, isTrue);
+    expect(result.hasUpdate, isFalse);
+    expect(result.latestRelease?.version, '1.1.10.3');
+  });
 }

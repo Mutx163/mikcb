@@ -237,13 +237,15 @@ class AppUpdateService {
   int _compareVersions(String left, String right) {
     final leftVersion = _parseVersion(left);
     final rightVersion = _parseVersion(right);
-    final maxLength = leftVersion.mainParts.length > rightVersion.mainParts.length
-        ? leftVersion.mainParts.length
-        : rightVersion.mainParts.length;
+    final maxLength =
+        leftVersion.mainParts.length > rightVersion.mainParts.length
+            ? leftVersion.mainParts.length
+            : rightVersion.mainParts.length;
 
     for (var index = 0; index < maxLength; index++) {
-      final leftValue =
-          index < leftVersion.mainParts.length ? leftVersion.mainParts[index] : 0;
+      final leftValue = index < leftVersion.mainParts.length
+          ? leftVersion.mainParts[index]
+          : 0;
       final rightValue = index < rightVersion.mainParts.length
           ? rightVersion.mainParts[index]
           : 0;
@@ -269,15 +271,27 @@ class AppUpdateService {
   _ParsedVersion _parseVersion(String version) {
     final normalized = _normalizeVersion(version).split('+').first;
     final dashIndex = normalized.indexOf('-');
-    final main = dashIndex == -1 ? normalized : normalized.substring(0, dashIndex);
-    final prerelease =
-        dashIndex == -1 ? null : normalized.substring(dashIndex + 1).trim();
+    final hasExplicitPrerelease = dashIndex != -1;
+    final base =
+        hasExplicitPrerelease ? normalized.substring(0, dashIndex) : normalized;
+    final explicitPrerelease = hasExplicitPrerelease
+        ? normalized.substring(dashIndex + 1).trim()
+        : null;
+    final baseParts = base.split('.');
+    final hasDottedPrerelease = !hasExplicitPrerelease && baseParts.length > 3;
+    final main = hasDottedPrerelease ? baseParts.take(3).join('.') : base;
+    final prerelease = hasExplicitPrerelease
+        ? explicitPrerelease
+        : hasDottedPrerelease
+            ? baseParts.skip(3).join('.')
+            : null;
     return _ParsedVersion(
       mainParts: main
-        .split('.')
-        .map(
-            (item) => int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0)
-        .toList(),
+          .split('.')
+          .map(
+            (item) => int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+          )
+          .toList(),
       prerelease: prerelease == null || prerelease.isEmpty ? null : prerelease,
     );
   }
@@ -285,8 +299,9 @@ class AppUpdateService {
   int _comparePrerelease(String left, String right) {
     final leftParts = left.split('.');
     final rightParts = right.split('.');
-    final maxLength =
-        leftParts.length > rightParts.length ? leftParts.length : rightParts.length;
+    final maxLength = leftParts.length > rightParts.length
+        ? leftParts.length
+        : rightParts.length;
 
     for (var index = 0; index < maxLength; index++) {
       final leftValue = index < leftParts.length ? leftParts[index] : '';

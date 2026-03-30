@@ -263,7 +263,7 @@ class _PackageMigrationGuideScreenState
                     child: TextButton(
                       onPressed: () =>
                           Navigator.pop(context, MigrationFlowAction.skip),
-                      child: const Text('稍后再说'),
+                      child: const Text('以全新应用开始，不迁移'),
                     ),
                   ),
                 ],
