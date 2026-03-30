@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -696,9 +697,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 theme,
                 title: '本次更新日志',
                 subtitle: '显示当前检测到版本的 Release 说明。',
-                child: Text(
-                  release!.body.trim(),
-                  style: theme.textTheme.bodyMedium,
+                child: ReleaseNotesMarkdown(
+                  data: release!.body.trim(),
+                  onTapLink: _openUrl,
                 ),
               ),
             ],
@@ -1169,6 +1170,28 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return '${(bytes / 1024).toStringAsFixed(1)} KB';
     }
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
+class ReleaseNotesMarkdown extends StatelessWidget {
+  final String data;
+  final ValueChanged<String?>? onTapLink;
+
+  const ReleaseNotesMarkdown({
+    super.key,
+    required this.data,
+    this.onTapLink,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return MarkdownBody(
+      data: data,
+      selectable: true,
+      styleSheet: MarkdownStyleSheet.fromTheme(theme),
+      onTapLink: (text, href, title) => onTapLink?.call(href),
+    );
   }
 }
 
