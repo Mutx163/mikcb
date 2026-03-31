@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
+import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
@@ -120,7 +121,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           appBar: AppBar(
             backgroundColor: backgroundColor,
             surfaceTintColor: backgroundColor,
-            title: const Text('轻屿课表'),
+            title: _buildProfileSwitcherTrigger(provider),
             actions: [
               IconButton(
                 tooltip: '更多',
@@ -175,6 +176,64 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
         );
       },
+    );
+  }
+
+  Widget _buildProfileSwitcherTrigger(TimetableProvider provider) {
+    return switch (provider.settings.homeTitleStyle) {
+      HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(provider),
+      HomeTitleStyle.brand => _buildBrandProfileSwitcherTrigger(provider),
+    };
+  }
+
+  Widget _buildClassicProfileSwitcherTrigger(TimetableProvider provider) {
+    return GestureDetector(
+      key: const ValueKey('profile_switcher_trigger'),
+      onTap: _showProfileQuickSwitchSheet,
+      behavior: HitTestBehavior.opaque,
+      child: const Text('轻屿课表'),
+    );
+  }
+
+  Widget _buildBrandProfileSwitcherTrigger(TimetableProvider provider) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final activeProfileName = provider.activeProfile?.name.trim();
+
+    return InkWell(
+      key: const ValueKey('profile_switcher_trigger'),
+      borderRadius: BorderRadius.circular(18),
+      onTap: _showProfileQuickSwitchSheet,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '轻屿课表',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+                letterSpacing: 0.2,
+              ),
+            ),
+            Text(
+              (activeProfileName == null || activeProfileName.isEmpty)
+                  ? '点击切换课表'
+                  : activeProfileName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1521,6 +1580,149 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  Future<void> _showProfileQuickSwitchSheet() async {
+    final provider = context.read<TimetableProvider>();
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        final activeProfile = provider.activeProfile;
+        final profiles = provider.profiles;
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: colorScheme.primary.withValues(alpha: 0.12),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Image.asset(
+                            'assets/branding/launcher_icon.png',
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(
+                                Icons.view_week_rounded,
+                                color: colorScheme.primary,
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '切换课表',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                activeProfile == null
+                                    ? '点击下面的课表，立即切换当前视图。'
+                                    : '当前：${activeProfile.name}，点击下面的课表立即切换。',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: colorScheme.outlineVariant),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (var index = 0;
+                            index < profiles.length;
+                            index++) ...[
+                          _ProfileQuickSwitchTile(
+                            profile: profiles[index],
+                            isActive:
+                                profiles[index].id == provider.activeProfileId,
+                            onTap: () => Navigator.of(sheetContext)
+                                .pop(profiles[index].id),
+                          ),
+                          if (index != profiles.length - 1)
+                            Divider(
+                              height: 1,
+                              indent: 16,
+                              endIndent: 16,
+                              color: colorScheme.outlineVariant,
+                            ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () =>
+                          Navigator.of(sheetContext).pop('profiles'),
+                      icon: const Icon(Icons.view_week_rounded),
+                      label: const Text('课表管理'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+    if (selected == 'profiles') {
+      _openProfiles();
+      return;
+    }
+    if (selected == provider.activeProfileId) {
+      return;
+    }
+    await provider.switchProfile(selected);
+    if (!mounted) {
+      return;
+    }
+    _maybeSelectionClick(provider.settings);
+  }
+
   Future<void> _openUpdatePage() async {
     final packageInfo = await PackageInfo.fromPlatform();
     if (!mounted) {
@@ -1819,6 +2021,99 @@ class _HomeActionButton extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileQuickSwitchTile extends StatelessWidget {
+  final TimetableProfile profile;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _ProfileQuickSwitchTile({
+    required this.profile,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final accentColor =
+        isActive ? colorScheme.primary : colorScheme.onSurfaceVariant;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: accentColor.withValues(alpha: isActive ? 0.14 : 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(
+                  isActive ? Icons.check_circle_rounded : Icons.layers_rounded,
+                  color: accentColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      profile.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${profile.courses.length} 门课',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isActive)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '当前',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                )
+              else
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+            ],
           ),
         ),
       ),
