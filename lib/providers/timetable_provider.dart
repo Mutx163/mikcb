@@ -911,6 +911,159 @@ class TimetableProvider with ChangeNotifier {
     _updateLiveActivity();
   }
 
+  Future<bool> deleteCourseOccurrence({
+    required String courseId,
+    required int sourceWeek,
+  }) async {
+    await initialize();
+    final index = _courses.indexWhere((course) => course.id == courseId);
+    if (index == -1) {
+      throw ArgumentError('未找到要删除的课程');
+    }
+
+    final originalCourse = _courses[index];
+    if (!originalCourse.isInWeek(sourceWeek)) {
+      throw ArgumentError('这门课在第 $sourceWeek 周没有排课');
+    }
+
+    final remainingWeeks = originalCourse.activeWeeks
+        .where((week) => week != sourceWeek)
+        .toList()
+      ..sort();
+
+    if (remainingWeeks.isEmpty) {
+      _courses.removeAt(index);
+    } else {
+      _courses[index] = _syncCourseWithEffectiveTimeScheme(
+        _normalizeCourse(
+          originalCourse.copyWith(
+            startWeek: remainingWeeks.first,
+            endWeek: remainingWeeks.last,
+            isOddWeek: false,
+            isEvenWeek: false,
+            customWeeks: remainingWeeks,
+          ),
+        ),
+      );
+    }
+
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_occurrence_deleted',
+      parameters: {
+        'source_week': sourceWeek,
+        'remaining_course_count': _courses.length,
+      },
+    );
+    await _updateLiveActivity();
+    return true;
+  }
+
+  Future<bool> rescheduleCourseOccurrence({
+    required String courseId,
+    required int sourceWeek,
+    required int targetWeek,
+    required int targetDayOfWeek,
+    required int targetStartSection,
+    required int targetEndSection,
+    String? targetLocation,
+    String? targetTimeSchemeIdOverride,
+  }) async {
+    await initialize();
+    final index = _courses.indexWhere((course) => course.id == courseId);
+    if (index == -1) {
+      throw ArgumentError('未找到要调课的课程');
+    }
+
+    final originalCourse = _courses[index];
+    if (!originalCourse.isInWeek(sourceWeek)) {
+      throw ArgumentError('这门课在第 $sourceWeek 周没有排课');
+    }
+    if (targetWeek < 1 || targetWeek > _settings.semesterWeekCount) {
+      throw ArgumentError('目标周次超出当前学期范围');
+    }
+
+    final validationMessage = validateCourseTimeSchemeOverride(
+      timeSchemeId:
+          targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride,
+      startSection: targetStartSection,
+      endSection: targetEndSection,
+    );
+    if (validationMessage != null) {
+      throw ArgumentError(validationMessage);
+    }
+
+    final normalizedLocation =
+        targetLocation?.trim() ?? originalCourse.location;
+    final normalizedTimeSchemeId =
+        targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride;
+    final isNoop = sourceWeek == targetWeek &&
+        originalCourse.dayOfWeek == targetDayOfWeek &&
+        originalCourse.startSection == targetStartSection &&
+        originalCourse.endSection == targetEndSection &&
+        originalCourse.location == normalizedLocation &&
+        originalCourse.timeSchemeIdOverride == normalizedTimeSchemeId;
+    if (isNoop) {
+      return false;
+    }
+
+    final remainingWeeks = originalCourse.activeWeeks
+        .where((week) => week != sourceWeek)
+        .toList()
+      ..sort();
+
+    final movedOccurrence = _syncCourseWithEffectiveTimeScheme(
+      _normalizeCourse(
+        originalCourse.copyWith(
+          id: remainingWeeks.isEmpty ? originalCourse.id : const Uuid().v4(),
+          dayOfWeek: targetDayOfWeek,
+          startSection: targetStartSection,
+          endSection: targetEndSection,
+          location: normalizedLocation,
+          startWeek: targetWeek,
+          endWeek: targetWeek,
+          isOddWeek: false,
+          isEvenWeek: false,
+          customWeeks: [targetWeek],
+          timeSchemeIdOverride: normalizedTimeSchemeId,
+        ),
+      ),
+    );
+
+    if (remainingWeeks.isEmpty) {
+      _courses[index] = movedOccurrence;
+    } else {
+      _courses[index] = _syncCourseWithEffectiveTimeScheme(
+        _normalizeCourse(
+          originalCourse.copyWith(
+            startWeek: remainingWeeks.first,
+            endWeek: remainingWeeks.last,
+            isOddWeek: false,
+            isEvenWeek: false,
+            customWeeks: remainingWeeks,
+          ),
+        ),
+      );
+      _courses.add(movedOccurrence);
+    }
+
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_rescheduled',
+      parameters: {
+        'source_week': sourceWeek,
+        'target_week': targetWeek,
+        'target_day_of_week': targetDayOfWeek,
+      },
+    );
+    await _updateLiveActivity();
+    return true;
+  }
+
   Future<bool> clearActiveProfileCourses() async {
     await initialize();
     final clearedCourseCount = _courses.length;
@@ -957,12 +1110,22 @@ class TimetableProvider with ChangeNotifier {
     required bool replaceExisting,
   }) {
     final result = _icsImportService.parseWakeUpSchedule(content);
-    if (result.courses.isEmpty) {
+    return previewImportedCourseRequiredSectionCount(
+      result.courses,
+      replaceExisting: replaceExisting,
+    );
+  }
+
+  int previewImportedCourseRequiredSectionCount(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+  }) {
+    if (importedCourses.isEmpty) {
       return _settings.sectionCount;
     }
 
     final mergedCourses =
-        replaceExisting ? result.courses : [..._courses, ...result.courses];
+        replaceExisting ? importedCourses : [..._courses, ...importedCourses];
     return mergedCourses
         .map((course) => course.endSection)
         .reduce((left, right) => left > right ? left : right);
@@ -1038,30 +1201,54 @@ class TimetableProvider with ChangeNotifier {
     required bool replaceExisting,
   }) async {
     final result = _icsImportService.parseWakeUpSchedule(content);
-    if (result.courses.isEmpty) {
+    return importParsedCourses(
+      result.courses,
+      replaceExisting: replaceExisting,
+      semesterStart: result.semesterStart,
+      source: 'ics',
+    );
+  }
+
+  Future<int> importParsedCourses(
+    List<Course> importedCourses, {
+    required bool replaceExisting,
+    DateTime? semesterStart,
+    required String source,
+  }) async {
+    if (importedCourses.isEmpty) {
       return 0;
     }
 
     final mergedCourses =
-        replaceExisting ? result.courses : [..._courses, ...result.courses];
+        replaceExisting ? importedCourses : [..._courses, ...importedCourses];
 
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       mergedCourses,
       settings: _settings,
     );
-    _settings = _settings.copyWith(semesterStartDate: result.semesterStart);
+    final requiredWeekCount = _maxCourseWeek(_courses);
+    _settings = _settings.copyWith(
+      semesterStartDate: semesterStart ?? _settings.semesterStartDate,
+      semesterWeekCount: requiredWeekCount > _settings.semesterWeekCount
+          ? requiredWeekCount
+          : _settings.semesterWeekCount,
+    );
+    if (semesterStart != null) {
+      _currentWeek = _calculateWeekForDate(DateTime.now());
+    }
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
       name: 'schedule_imported',
       parameters: {
-        'imported_course_count': result.courses.length,
+        'imported_course_count': importedCourses.length,
         'replace_existing': replaceExisting ? 1 : 0,
+        'source': source,
       },
     );
     await _updateLiveActivity();
-    return result.courses.length;
+    return importedCourses.length;
   }
 
   List<SectionTime> _buildExpandedSections(
@@ -1278,14 +1465,15 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final now = DateTime.now();
-    final normalizedNow = DateTime(now.year, now.month, now.day);
-    final normalizedStart = DateTime(
-      semesterStart.year,
-      semesterStart.month,
-      semesterStart.day,
-    );
+    final normalizedNow = _startOfWeek(now);
+    final normalizedStart = _startOfWeek(semesterStart);
     final week = (normalizedNow.difference(normalizedStart).inDays ~/ 7) + 1;
-    await setCurrentWeek(week < 1 ? 1 : week);
+    final targetWeek = week < 1 ? 1 : week;
+    await setCurrentWeek(
+      targetWeek > _settings.semesterWeekCount
+          ? _settings.semesterWeekCount
+          : targetWeek,
+    );
   }
 
   Map<String, List<Course>> _buildCourseConflictMap({int? week}) {
@@ -1380,14 +1568,31 @@ class TimetableProvider with ChangeNotifier {
       return _currentWeek;
     }
 
-    final normalizedDate = DateTime(date.year, date.month, date.day);
-    final normalizedStart = DateTime(
-      semesterStart.year,
-      semesterStart.month,
-      semesterStart.day,
-    );
+    final normalizedDate = _startOfWeek(date);
+    final normalizedStart = _startOfWeek(semesterStart);
     final week = (normalizedDate.difference(normalizedStart).inDays ~/ 7) + 1;
-    return week < 1 ? 1 : week;
+    if (week < 1) {
+      return 1;
+    }
+    if (week > _settings.semesterWeekCount) {
+      return _settings.semesterWeekCount;
+    }
+    return week;
+  }
+
+  int _maxCourseWeek(List<Course> courses) {
+    if (courses.isEmpty) {
+      return _settings.semesterWeekCount;
+    }
+
+    return courses
+        .map((course) => course.normalizedCustomWeeks?.last ?? course.endWeek)
+        .reduce((left, right) => left > right ? left : right);
+  }
+
+  DateTime _startOfWeek(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    return normalizedDate.subtract(Duration(days: normalizedDate.weekday - 1));
   }
 
   List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
@@ -1991,12 +2196,14 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
+    final displayCourses =
+        _courses.map(resolveCourseDisplayName).toList(growable: false);
     final snapshotSignature = jsonEncode({
       'profileId': activeProfile.id,
       'currentWeek': _currentWeek,
       'semesterStartDate': _settings.semesterStartDate?.millisecondsSinceEpoch,
       'settings': _settings.toJson(),
-      'courses': _courses.map((course) => course.toJson()).toList(),
+      'courses': displayCourses.map((course) => course.toJson()).toList(),
     });
     if (_lastLiveSnapshotSignature == snapshotSignature) {
       return;
@@ -2004,7 +2211,7 @@ class TimetableProvider with ChangeNotifier {
 
     _lastLiveSnapshotSignature = snapshotSignature;
     await _liveActivitiesService.syncScheduleSnapshot(
-      courses: _courses,
+      courses: displayCourses,
       settings: _settings,
       currentWeek: _currentWeek,
       semesterStartDate: _settings.semesterStartDate,

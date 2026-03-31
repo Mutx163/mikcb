@@ -8,16 +8,22 @@ import '../providers/timetable_provider.dart';
 
 enum _WeekSelectionMode { range, custom }
 
+enum CourseEditorMode { singleLesson, recurring }
+
 class AddCourseScreen extends StatefulWidget {
   final Course? course;
   final int? initialDayOfWeek;
   final int? initialStartSection;
+  final int? initialWeek;
+  final CourseEditorMode mode;
 
   const AddCourseScreen({
     super.key,
     this.course,
     this.initialDayOfWeek,
     this.initialStartSection,
+    this.initialWeek,
+    this.mode = CourseEditorMode.recurring,
   });
 
   @override
@@ -37,10 +43,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   int _endSection = 2;
   int _startWeek = 1;
   int _endWeek = 16;
+  int _singleWeek = 1;
   bool _isOddWeek = false;
   bool _isEvenWeek = false;
   _WeekSelectionMode _weekSelectionMode = _WeekSelectionMode.range;
   Set<int> _selectedCustomWeeks = <int>{};
+  late CourseEditorMode _editorMode;
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
   String? _selectedTimeSchemeOverrideId;
@@ -85,12 +93,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   @override
   void initState() {
     super.initState();
+    _editorMode = widget.mode;
     if (widget.course != null) {
       _loadCourseData(widget.course!);
     } else {
       _selectedDayOfWeek = widget.initialDayOfWeek ?? 1;
       _startSection = widget.initialStartSection ?? 1;
       _endSection = _startSection + 1;
+      _singleWeek = widget.initialWeek ?? 1;
+      if (_editorMode == CourseEditorMode.singleLesson) {
+        _weekSelectionMode = _WeekSelectionMode.custom;
+        _selectedCustomWeeks = {_singleWeek};
+        _startWeek = _singleWeek;
+        _endWeek = _singleWeek;
+      }
     }
   }
 
@@ -110,10 +126,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final settings = provider.settings;
     _normalizeSections(settings);
     _normalizeWeeks(settings);
+    _normalizeSingleWeek(settings);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.course == null ? '添加课程' : '编辑课程'),
+        title: Text(_resolveTitle()),
         actions: [
           if (widget.course != null)
             IconButton(
@@ -135,6 +152,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            if (widget.course == null) ...[
+              _buildModeSection(settings),
+              const SizedBox(height: 16),
+            ],
             _buildBasicInfoSection(),
             const SizedBox(height: 16),
             _buildTimeSection(provider, settings),
@@ -204,6 +225,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       _weekSelectionMode = _WeekSelectionMode.custom;
       _selectedCustomWeeks = customWeeks.toSet();
     }
+    final activeWeeks = course.activeWeeks;
+    if (activeWeeks.length == 1) {
+      _editorMode = CourseEditorMode.singleLesson;
+      _singleWeek = activeWeeks.first;
+    }
     _courseNature = course.courseNature;
     _selectedColor = course.color;
     _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
@@ -246,6 +272,88 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         _selectedCustomWeeks.isEmpty) {
       _selectedCustomWeeks = {_startWeek.clamp(1, maxWeek)};
     }
+  }
+
+  void _normalizeSingleWeek(TimetableSettings settings) {
+    final maxWeek = settings.semesterWeekCount;
+    if (_singleWeek < 1) {
+      _singleWeek = 1;
+    }
+    if (_singleWeek > maxWeek) {
+      _singleWeek = maxWeek;
+    }
+  }
+
+  String _resolveTitle() {
+    if (widget.course != null) {
+      return _editorMode == CourseEditorMode.singleLesson ? '编辑单节课' : '编辑课程';
+    }
+    return _editorMode == CourseEditorMode.singleLesson ? '添加单节课' : '添加多节课';
+  }
+
+  Widget _buildModeSection(TimetableSettings settings) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '添加方式',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            SegmentedButton<CourseEditorMode>(
+              segments: const [
+                ButtonSegment(
+                  value: CourseEditorMode.singleLesson,
+                  icon: Icon(Icons.looks_one_rounded),
+                  label: Text('单节课'),
+                ),
+                ButtonSegment(
+                  value: CourseEditorMode.recurring,
+                  icon: Icon(Icons.view_week_rounded),
+                  label: Text('多节课'),
+                ),
+              ],
+              selected: {_editorMode},
+              showSelectedIcon: false,
+              onSelectionChanged: (selection) {
+                final nextMode = selection.first;
+                setState(() {
+                  _editorMode = nextMode;
+                  if (nextMode == CourseEditorMode.singleLesson) {
+                    final fallbackWeek = widget.initialWeek ?? _startWeek;
+                    _singleWeek =
+                        fallbackWeek.clamp(1, settings.semesterWeekCount);
+                    _weekSelectionMode = _WeekSelectionMode.custom;
+                    _selectedCustomWeeks = {_singleWeek};
+                    _startWeek = _singleWeek;
+                    _endWeek = _singleWeek;
+                    _isOddWeek = false;
+                    _isEvenWeek = false;
+                  } else {
+                    if (_selectedCustomWeeks.isNotEmpty) {
+                      final sortedWeeks = _selectedCustomWeeks.toList()..sort();
+                      _startWeek = sortedWeeks.first;
+                      _endWeek = sortedWeeks.last;
+                    }
+                    _weekSelectionMode = _WeekSelectionMode.range;
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _editorMode == CourseEditorMode.singleLesson
+                  ? '适合临时补课、调休补上一节，课程只会落在一个周次。'
+                  : '适合同一时间连续上很多周的常规课程。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildBasicInfoSection() {
@@ -518,6 +626,52 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   Widget _buildWeekSection(TimetableSettings settings) {
     final availableWeeks = settings.availableWeeks;
     final selectedWeeks = _selectedCustomWeeks.toList()..sort();
+    if (_editorMode == CourseEditorMode.singleLesson) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '上课周次',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '单节课只会出现在一个周次里，适合补课、临时加课。',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<int>(
+                value: _singleWeek,
+                decoration: const InputDecoration(
+                  labelText: '选择周次',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.event_note_rounded),
+                ),
+                items: availableWeeks
+                    .map(
+                      (week) => DropdownMenuItem(
+                        value: week,
+                        child: Text('第 $week 周'),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() {
+                    _singleWeek = value;
+                  });
+                },
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1001,7 +1155,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
 
     List<int>? customWeeks;
-    if (_weekSelectionMode == _WeekSelectionMode.custom) {
+    if (_editorMode == CourseEditorMode.singleLesson) {
+      customWeeks = [_singleWeek];
+    } else if (_weekSelectionMode == _WeekSelectionMode.custom) {
       final selectedWeeks = _selectedCustomWeeks.toList()..sort();
       if (selectedWeeks.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(

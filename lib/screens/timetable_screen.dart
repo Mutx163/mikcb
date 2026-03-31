@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +11,7 @@ import '../services/app_update_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'about_screen.dart';
+import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
 import 'feedback_screen.dart';
 import 'support_creator_screen.dart';
@@ -469,10 +467,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           left: 0,
           right: 0,
           height: sectionHeight,
-          child: GestureDetector(
-            onTap: () => _addCourseAt(dayOfWeek, section),
-            child: const SizedBox.expand(),
-          ),
+          child: const SizedBox.expand(),
         ),
       );
 
@@ -516,7 +511,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 showDescription: settings.courseCardShowDescription,
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
-                onTap: () => _editCourse(course),
+                onTap: () => _showCourseActions(course, week),
                 compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize:
                     (settings.courseCardFontSize - 1).clamp(7.0, 14.0),
@@ -827,7 +822,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       semesterStart.year,
       semesterStart.month,
       semesterStart.day,
-    );
+    ).subtract(Duration(days: semesterStart.weekday - 1));
     final week = (normalizedToday.difference(normalizedStart).inDays ~/ 7) + 1;
     return _clampWeek(
       week < 1 ? 1 : week,
@@ -960,24 +955,25 @@ class _TimetableScreenState extends State<TimetableScreen>
     });
   }
 
-  void _navigateToAddCourse(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/course/create'),
-        builder: (context) => const AddCourseScreen(),
-      ),
-    );
+  Future<void> _navigateToAddCourse(BuildContext context) async {
+    await _showAddCourseSheet();
   }
 
-  void _addCourseAt(int dayOfWeek, int section) {
+  void _openAddCourseEditor({
+    required CourseEditorMode mode,
+    int? initialWeek,
+    int? initialDayOfWeek,
+    int? initialStartSection,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
         settings: const RouteSettings(name: '/course/create'),
         builder: (context) => AddCourseScreen(
-          initialDayOfWeek: dayOfWeek,
-          initialStartSection: section,
+          mode: mode,
+          initialWeek: initialWeek,
+          initialDayOfWeek: initialDayOfWeek,
+          initialStartSection: initialStartSection,
         ),
       ),
     );
@@ -988,9 +984,465 @@ class _TimetableScreenState extends State<TimetableScreen>
       context,
       MaterialPageRoute(
         settings: const RouteSettings(name: '/course/edit'),
-        builder: (context) => AddCourseScreen(course: course),
+        builder: (context) => AddCourseScreen(
+          course: course,
+          mode: course.activeWeeks.length == 1
+              ? CourseEditorMode.singleLesson
+              : CourseEditorMode.recurring,
+          initialWeek:
+              course.activeWeeks.length == 1 ? course.activeWeeks.first : null,
+        ),
       ),
     );
+  }
+
+  Future<void> _showAddCourseSheet() async {
+    final provider = context.read<TimetableProvider>();
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '添加课程',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '空白课表区域不响应点击。请从这里明确选择是加一节临时课，还是加整学期重复课。',
+                  style: Theme.of(sheetContext).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _HomeActionButton(
+                      icon: Icons.looks_one_rounded,
+                      title: '单节课',
+                      onTap: () => Navigator.of(sheetContext).pop('single'),
+                    ),
+                    _HomeActionButton(
+                      icon: Icons.view_week_rounded,
+                      title: '多节课',
+                      onTap: () => Navigator.of(sheetContext).pop('recurring'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    switch (selected) {
+      case 'single':
+        _openAddCourseEditor(
+          mode: CourseEditorMode.singleLesson,
+          initialWeek: provider.currentWeek,
+        );
+        break;
+      case 'recurring':
+        _openAddCourseEditor(
+          mode: CourseEditorMode.recurring,
+          initialWeek: provider.currentWeek,
+        );
+        break;
+    }
+  }
+
+  Future<void> _showCourseActions(Course course, int week) async {
+    final colorScheme = Theme.of(context).colorScheme;
+    final courseColor = _colorFromHex(course.color, colorScheme.primary);
+    final canReschedule = course.isInWeek(week);
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: courseColor.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Icon(
+                              Icons.menu_book_rounded,
+                              color: courseColor,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  course.name,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                if (course.shortName?.trim().isNotEmpty == true)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      '简称：${course.shortName!.trim()}',
+                                      style:
+                                          theme.textTheme.bodySmall?.copyWith(
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        '${_weekDays[course.dayOfWeek - 1]} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        course.weekDescription,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      if (course.teacher.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '老师：${course.teacher.trim()}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                      if (course.location.trim().isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          '地点：${course.location.trim()}',
+                          style: theme.textTheme.bodySmall,
+                        ),
+                      ],
+                      const SizedBox(height: 10),
+                      Text(
+                        canReschedule
+                            ? '当前查看第 $week 周，可直接对这一周这节课调课。'
+                            : '当前查看第 $week 周，这门课这周没有上课，因此不能按“本周这节”调课。',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _HomeActionButton(
+                      icon: Icons.edit_rounded,
+                      title: '编辑',
+                      onTap: () => Navigator.of(sheetContext).pop('edit'),
+                    ),
+                    _HomeActionButton(
+                      icon: Icons.swap_horiz_rounded,
+                      title: '调课',
+                      enabled: canReschedule,
+                      onTap: () => Navigator.of(sheetContext).pop('reschedule'),
+                    ),
+                    _HomeActionButton(
+                      icon: Icons.delete_outline_rounded,
+                      title: '删除',
+                      accentColor: theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('delete'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    switch (selected) {
+      case 'edit':
+        _editCourse(course);
+        break;
+      case 'reschedule':
+        await _showRescheduleSheet(course, sourceWeek: week);
+        break;
+      case 'delete':
+        await _showDeleteCourseOptions(course, week);
+        break;
+    }
+  }
+
+  Future<void> _showDeleteCourseOptions(Course course, int week) async {
+    final canDeleteOccurrence = course.isInWeek(week);
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '删除方式',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '你可以删掉整条排课，也可以只删当前看到的这一周这一节。',
+                  style: theme.textTheme.bodySmall,
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _HomeActionButton(
+                      icon: Icons.delete_sweep_rounded,
+                      title: '删这个课',
+                      accentColor: theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('course'),
+                    ),
+                    _HomeActionButton(
+                      icon: Icons.remove_circle_outline_rounded,
+                      title: '删这节课',
+                      accentColor: theme.colorScheme.error,
+                      enabled: canDeleteOccurrence,
+                      onTap: () => Navigator.of(sheetContext).pop('occurrence'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  canDeleteOccurrence
+                      ? '“删这个课”会删除这条排课的全部周次；“删这节课”只会删除第 $week 周这一次。'
+                      : '当前卡片不是第 $week 周的实际排课，所以只能删除整条排课。',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    switch (selected) {
+      case 'course':
+        await _confirmDeleteCourse(course);
+        break;
+      case 'occurrence':
+        await _confirmDeleteOccurrence(course, week);
+        break;
+    }
+  }
+
+  Future<void> _confirmDeleteCourse(Course course) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除排课'),
+        content: Text(
+          '确定删除“${course.name}”这条排课吗？\n${course.weekDescription} · ${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    await context.read<TimetableProvider>().deleteCourse(course.id);
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已删除：${course.name}')),
+    );
+  }
+
+  Future<void> _confirmDeleteOccurrence(Course course, int sourceWeek) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除这节课'),
+        content: Text(
+          '确定删除“${course.name}”在第 $sourceWeek 周的这一节吗？\n'
+          '${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) {
+      return;
+    }
+
+    try {
+      final changed =
+          await context.read<TimetableProvider>().deleteCourseOccurrence(
+                courseId: course.id,
+                sourceWeek: sourceWeek,
+              );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            changed ? '已删除第 $sourceWeek 周这节课' : '未检测到变更',
+          ),
+        ),
+      );
+    } on ArgumentError catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message?.toString() ?? '删除失败')),
+      );
+    }
+  }
+
+  Future<void> _showRescheduleSheet(
+    Course course, {
+    required int sourceWeek,
+  }) async {
+    final provider = context.read<TimetableProvider>();
+    final settings = provider.settings;
+
+    final draft = await showModalBottomSheet<_CourseRescheduleDraft>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (sheetContext) => _CourseRescheduleSheet(
+        course: course,
+        sourceWeek: sourceWeek,
+        settings: settings,
+        weekDays: _weekDays,
+      ),
+    );
+
+    if (draft == null) {
+      return;
+    }
+
+    try {
+      final changed = await provider.rescheduleCourseOccurrence(
+        courseId: course.id,
+        sourceWeek: sourceWeek,
+        targetWeek: draft.targetWeek,
+        targetDayOfWeek: draft.targetDayOfWeek,
+        targetStartSection: draft.targetStartSection,
+        targetEndSection: draft.targetEndSection,
+        targetLocation: draft.targetLocation,
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            changed
+                ? '已调到第 ${draft.targetWeek} 周 ${_weekDays[draft.targetDayOfWeek - 1]} 第${draft.targetStartSection}-${draft.targetEndSection}节'
+                : '未检测到变更',
+          ),
+        ),
+      );
+    } on ArgumentError catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message?.toString() ?? '调课失败')),
+      );
+    }
   }
 
   void _openSettings() {
@@ -1185,7 +1637,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
         break;
       case 'import':
-        _importCalendarFile();
+        _openCourseImportPage();
         break;
       case 'settings':
         _openSettings();
@@ -1264,115 +1716,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  Future<void> _importCalendarFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['ics'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) {
-      return;
-    }
-
-    final file = result.files.single;
-    final bytes = file.bytes;
-    if (bytes == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('无法读取所选文件')),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-    final replaceExisting = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('导入课程'),
-          content: Text('导入 ${file.name} 时，是否替换现有课程？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('追加导入'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('替换现有'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (replaceExisting == null || !mounted) {
-      return;
-    }
-
-    final content = utf8.decode(bytes, allowMalformed: true);
-    final provider = context.read<TimetableProvider>();
-    final requiredSectionCount =
-        provider.previewWakeUpImportRequiredSectionCount(
-      content,
-      replaceExisting: replaceExisting,
-    );
-    var sectionCapacityExpanded = false;
-    if (requiredSectionCount > provider.settings.sectionCount) {
-      final shouldContinue = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: const Text('时间模板节次不足'),
-            content: Text(
-              '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入课表需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('取消'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('自动补齐并导入'),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (shouldContinue != true || !mounted) {
-        return;
-      }
-
-      final ensureMessage =
-          await provider.ensureSectionCapacityForImport(requiredSectionCount);
-      if (ensureMessage != null) {
-        if (!mounted) {
-          return;
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(ensureMessage)),
-        );
-        return;
-      }
-      sectionCapacityExpanded = true;
-    }
-
-    final importedCount = await provider.importWakeUpCalendar(
-      content,
-      replaceExisting: replaceExisting,
-    );
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          importedCount > 0
-              ? sectionCapacityExpanded
-                  ? '已自动补齐到第 $requiredSectionCount 节，并导入 $importedCount 条课程'
-                  : '已导入 $importedCount 条课程'
-              : '未识别到可导入课程',
-        ),
+  Future<void> _openCourseImportPage() async {
+    await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/courses/import'),
+        builder: (context) => const CourseImportScreen(),
       ),
     );
   }
@@ -1384,6 +1733,7 @@ class _HomeActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final String? badgeText;
   final Color? accentColor;
+  final bool enabled;
 
   const _HomeActionButton({
     required this.icon,
@@ -1391,13 +1741,16 @@ class _HomeActionButton extends StatelessWidget {
     required this.onTap,
     this.badgeText,
     this.accentColor,
+    this.enabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final highlightColor = accentColor ?? colorScheme.primary;
+    final highlightColor = enabled
+        ? accentColor ?? colorScheme.primary
+        : colorScheme.onSurfaceVariant;
     final width = ((MediaQuery.of(context).size.width - 32 - 36) / 4).clamp(
       72.0,
       112.0,
@@ -1409,7 +1762,7 @@ class _HomeActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
+          onTap: enabled ? onTap : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
             child: Column(
@@ -1461,11 +1814,246 @@ class _HomeActionButton extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     height: 1.25,
+                    color: enabled ? null : colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CourseRescheduleDraft {
+  final int targetWeek;
+  final int targetDayOfWeek;
+  final int targetStartSection;
+  final int targetEndSection;
+  final String targetLocation;
+
+  const _CourseRescheduleDraft({
+    required this.targetWeek,
+    required this.targetDayOfWeek,
+    required this.targetStartSection,
+    required this.targetEndSection,
+    required this.targetLocation,
+  });
+}
+
+class _CourseRescheduleSheet extends StatefulWidget {
+  final Course course;
+  final int sourceWeek;
+  final TimetableSettings settings;
+  final List<String> weekDays;
+
+  const _CourseRescheduleSheet({
+    required this.course,
+    required this.sourceWeek,
+    required this.settings,
+    required this.weekDays,
+  });
+
+  @override
+  State<_CourseRescheduleSheet> createState() => _CourseRescheduleSheetState();
+}
+
+class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
+  late int _targetWeek;
+  late int _targetDayOfWeek;
+  late int _targetStartSection;
+  late int _targetEndSection;
+  late final TextEditingController _locationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _targetWeek = widget.sourceWeek;
+    _targetDayOfWeek = widget.course.dayOfWeek;
+    _targetStartSection = widget.course.startSection;
+    _targetEndSection = widget.course.endSection;
+    _locationController = TextEditingController(text: widget.course.location);
+  }
+
+  @override
+  void dispose() {
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final sectionNumbers =
+        List.generate(widget.settings.sectionCount, (index) => index + 1);
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + bottomInset),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '调本周这节课',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '只调整第 ${widget.sourceWeek} 周这一节，原课程在这一周会自动移除，其他周保持不变。',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<int>(
+              value: _targetWeek,
+              decoration: const InputDecoration(
+                labelText: '调到第几周',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.calendar_month_rounded),
+              ),
+              items: widget.settings.availableWeeks
+                  .map(
+                    (week) => DropdownMenuItem(
+                      value: week,
+                      child: Text('第 $week 周'),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _targetWeek = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<int>(
+              value: _targetDayOfWeek,
+              decoration: const InputDecoration(
+                labelText: '星期',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.event_available_rounded),
+              ),
+              items: List.generate(
+                widget.weekDays.length,
+                (index) => DropdownMenuItem(
+                  value: index + 1,
+                  child: Text(widget.weekDays[index]),
+                ),
+              ),
+              onChanged: (value) {
+                if (value == null) {
+                  return;
+                }
+                setState(() {
+                  _targetDayOfWeek = value;
+                });
+              },
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _targetStartSection,
+                    decoration: const InputDecoration(
+                      labelText: '开始节次',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: sectionNumbers
+                        .map(
+                          (section) => DropdownMenuItem(
+                            value: section,
+                            child: Text('第 $section 节'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        _targetStartSection = value;
+                        if (_targetEndSection < _targetStartSection) {
+                          _targetEndSection = _targetStartSection;
+                        }
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: DropdownButtonFormField<int>(
+                    value: _targetEndSection,
+                    decoration: const InputDecoration(
+                      labelText: '结束节次',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: sectionNumbers
+                        .where((section) => section >= _targetStartSection)
+                        .map(
+                          (section) => DropdownMenuItem(
+                            value: section,
+                            child: Text('第 $section 节'),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() {
+                        _targetEndSection = value;
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _locationController,
+              decoration: const InputDecoration(
+                labelText: '上课地点',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on_outlined),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('取消'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).pop(
+                        _CourseRescheduleDraft(
+                          targetWeek: _targetWeek,
+                          targetDayOfWeek: _targetDayOfWeek,
+                          targetStartSection: _targetStartSection,
+                          targetEndSection: _targetEndSection,
+                          targetLocation: _locationController.text,
+                        ),
+                      );
+                    },
+                    child: const Text('确认调课'),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

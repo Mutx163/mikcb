@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
+import 'screens/course_import_screen.dart';
 import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
@@ -418,116 +419,13 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   }
 
   Future<bool> _runCourseImportFlow() async {
-    final provider = context.read<TimetableProvider>();
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['ics'],
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty || !mounted) {
-      return false;
-    }
-
-    final file = result.files.single;
-    final bytes = file.bytes;
-    if (bytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('无法读取所选文件')),
-      );
-      return false;
-    }
-
-    final replaceExisting = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('导入课程'),
-          content: Text('导入 ${file.name} 时，是否替换现有课程？'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('追加导入'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('替换现有'),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (replaceExisting == null || !mounted) {
-      return false;
-    }
-
-    final content = utf8.decode(bytes, allowMalformed: true);
-    final requiredSectionCount =
-        provider.previewWakeUpImportRequiredSectionCount(
-      content,
-      replaceExisting: replaceExisting,
-    );
-    var sectionCapacityExpanded = false;
-    if (requiredSectionCount > provider.settings.sectionCount) {
-      final shouldContinue = await showDialog<bool>(
-        context: context,
-        builder: (dialogContext) {
-          return AlertDialog(
-            title: const Text('时间模板节次不足'),
-            content: Text(
-              '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入课表需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('取消'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('自动补齐并导入'),
-              ),
-            ],
-          );
-        },
-      );
-
-      if (shouldContinue != true || !mounted) {
-        return false;
-      }
-
-      final ensureMessage =
-          await provider.ensureSectionCapacityForImport(requiredSectionCount);
-      if (ensureMessage != null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(ensureMessage)),
-          );
-        }
-        return false;
-      }
-      sectionCapacityExpanded = true;
-    }
-
-    final importedCount = await provider.importWakeUpCalendar(
-      content,
-      replaceExisting: replaceExisting,
-    );
-
-    if (!mounted) {
-      return false;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          importedCount > 0
-              ? sectionCapacityExpanded
-                  ? '已自动补齐到第 $requiredSectionCount 节，并导入 $importedCount 条课程'
-                  : '已导入 $importedCount 条课程'
-              : '未识别到可导入课程',
-        ),
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/courses/import'),
+        builder: (_) => const CourseImportScreen(),
       ),
     );
-    return importedCount > 0;
+    return imported == true;
   }
 
   @override

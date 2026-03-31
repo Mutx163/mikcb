@@ -75,7 +75,7 @@ class StartupWelcomeScreen extends StatelessWidget {
             _StartupActionTile(
               icon: Icons.file_upload_outlined,
               title: '导入课表',
-              subtitle: '从 .ics 文件导入课程',
+              subtitle: '从 .ics 文件或 AI 解析结果导入课程',
               onTap: () =>
                   Navigator.pop(context, WelcomeFlowAction.importCourses),
             ),
