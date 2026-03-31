@@ -71,7 +71,7 @@ class CourseImportScreen extends StatelessWidget {
             icon: Icons.auto_awesome_rounded,
             title: '识图导入',
             subtitle: '适合直接从课表截图导入，支持 1 张或多张连续截图。',
-            footer: '建议优先使用豆包，先把左下角切到专家模式，再发送截图和提示词，最后把生成的 JSON 复制回来。',
+            footer: '先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期。',
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const AiImageCourseImportScreen(),
@@ -433,7 +433,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '识图 -> 校准周次 -> 导入',
+                                      '复制提示词 -> 豆包识图 -> 导入',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -443,7 +443,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '建议用豆包专家模式。',
+                                      '豆包专家模式 -> 复制 JSON -> 选择开学日期',
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -457,7 +457,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '识图 -> 校准开学日期和周次 -> 导入',
+                                      '复制提示词 -> 豆包识图 -> 粘贴 JSON -> 导入',
                                       style:
                                           theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w800,
@@ -465,7 +465,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                     ),
                                     SizedBox(height: dense ? 4 : 6),
                                     Text(
-                                      '建议优先使用豆包，先把左下角切换为专家模式，再发送截图和提示词。导入前还会让你确认开学日期和周次对应。',
+                                      '先复制提示词，再到豆包左下角切换为专家模式，把课表截图和提示词一起发过去。把豆包返回的 JSON 复制回这里，点击导入后再选择开学日期。',
                                       style:
                                           theme.textTheme.bodySmall?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
@@ -504,7 +504,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
-                        '建议豆包专家模式，支持多图，需带星期表头。',
+                        '建议豆包专家模式，支持多图，截图需带星期表头。',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -519,19 +519,19 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       children: [
                         _CompactHintChip(
                           icon: Icons.smart_toy_outlined,
-                          label: '建议豆包专家模式',
+                          label: '先切到豆包专家模式',
                         ),
                         _CompactHintChip(
                           icon: Icons.photo_library_outlined,
-                          label: '支持多张连续截图',
+                          label: '截图和提示词一起发',
                         ),
                         _CompactHintChip(
-                          icon: Icons.privacy_tip_outlined,
-                          label: '截图会发送到第三方 AI',
+                          icon: Icons.content_copy_rounded,
+                          label: '返回结果复制 JSON',
                         ),
                         _CompactHintChip(
-                          icon: Icons.view_week_outlined,
-                          label: '必须带星期表头',
+                          icon: Icons.event_available_rounded,
+                          label: '导入后再选开学日期',
                         ),
                       ],
                     ),
@@ -664,7 +664,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                           contentPadding: EdgeInsets.all(ultraDense ? 10 : 14),
                           hintText: ultraDense
                               ? '粘贴 AI 返回的 JSON'
-                              : '把 AI 返回的 JSON 原样粘贴到这里。支持纯 JSON，也兼容 ```json 代码块。',
+                              : '把豆包返回的 JSON 原样粘贴到这里，然后点击导入。支持纯 JSON，也兼容 ```json 代码块。',
                         ),
                       ),
                     ),
@@ -692,7 +692,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        '支持纯 JSON，也兼容代码块包装。先预览，再确认导入。',
+                        '复制提示词 -> 豆包发送截图和提示词 -> 把 JSON 贴回这里 -> 点击导入 -> 选择开学日期。',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -745,7 +745,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('识图提示词已复制')),
+      const SnackBar(content: Text('提示词已复制，去豆包发送截图和提示词')),
     );
   }
 
@@ -802,7 +802,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '建议优先使用豆包。先把豆包左下角切换为专家模式，再把下面整段提示词和课表截图一起发过去，让它只返回 JSON；生成后把整段内容复制回本页。',
+                    '建议使用豆包。先把豆包左下角切换为专家模式，再把下面整段提示词和课表截图一起发过去，让它只返回 JSON。生成后把 JSON 复制回本页，点击导入后再选择开学日期。',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
