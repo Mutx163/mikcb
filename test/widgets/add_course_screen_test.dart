@@ -9,10 +9,8 @@ import 'package:university_timetable/screens/add_course_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const homeWidgetChannel =
-      MethodChannel('com.mutx163.qingyu/home_widget');
-  const analyticsChannel =
-      MethodChannel('com.mutx163.qingyu/umeng_analytics');
+  const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
+  const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
@@ -64,5 +62,33 @@ void main() {
     await tester.pump();
 
     expect(find.byTooltip('删除课程'), findsOneWidget);
+  });
+
+  testWidgets('single lesson mode shows simplified week selector',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: AddCourseScreen(
+            mode: CourseEditorMode.singleLesson,
+            initialWeek: 4,
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.drag(find.byType(ListView), const Offset(0, -800));
+    await tester.pumpAndSettle();
+
+    expect(find.text('添加单节课'), findsOneWidget);
+    expect(find.text('上课周次'), findsOneWidget);
+    expect(find.text('连续周'), findsNothing);
   });
 }

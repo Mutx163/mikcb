@@ -166,6 +166,16 @@ private data class LiveUpdatePayload(
     val progressMilestoneTimeTexts: List<String>,
 )
 
+private fun normalizeNullableText(value: String?): String? {
+    val normalized = value?.trim() ?: return null
+    if (normalized.isEmpty() || normalized.equals("null", ignoreCase = true)) {
+        return null
+    }
+    return normalized
+}
+
+private fun normalizeText(value: String?): String = normalizeNullableText(value) ?: ""
+
 object LiveUpdateScheduler {
     private const val TAG = "LiveUpdateScheduler"
     private const val PREFS_NAME = "live_update_scheduler"
@@ -517,21 +527,21 @@ object LiveUpdateScheduler {
         for (index in 0 until coursesJson.length()) {
             val courseJson = coursesJson.optJSONObject(index) ?: continue
             courses += NativeCourse(
-                id = courseJson.optString("id"),
-                name = courseJson.optString("name"),
-                shortName = courseJson.optString("shortName").ifBlank { null },
-                teacher = courseJson.optString("teacher"),
-                location = courseJson.optString("location"),
+                id = normalizeText(courseJson.opt("id")?.toString()),
+                name = normalizeText(courseJson.opt("name")?.toString()),
+                shortName = normalizeNullableText(courseJson.opt("shortName")?.toString()),
+                teacher = normalizeText(courseJson.opt("teacher")?.toString()),
+                location = normalizeText(courseJson.opt("location")?.toString()),
                 dayOfWeek = courseJson.optInt("dayOfWeek", 1),
                 startSection = courseJson.optInt("startSection", 1),
                 endSection = courseJson.optInt("endSection", 1),
-                startTime = courseJson.optString("startTime"),
-                endTime = courseJson.optString("endTime"),
+                startTime = normalizeText(courseJson.opt("startTime")?.toString()),
+                endTime = normalizeText(courseJson.opt("endTime")?.toString()),
                 startWeek = courseJson.optInt("startWeek", 1),
                 endWeek = courseJson.optInt("endWeek", 16),
                 isOddWeek = courseJson.optBoolean("isOddWeek", false),
                 isEvenWeek = courseJson.optBoolean("isEvenWeek", false),
-                note = courseJson.optString("note").ifBlank { null },
+                note = normalizeNullableText(courseJson.opt("note")?.toString()),
             )
         }
 
@@ -607,21 +617,21 @@ object LiveUpdateScheduler {
 
     private fun mapToNativeCourse(data: Map<String, Any>): NativeCourse {
         return NativeCourse(
-            id = data["id"] as? String ?: "",
-            name = data["name"] as? String ?: "",
-            shortName = (data["shortName"] as? String)?.ifBlank { null },
-            teacher = data["teacher"] as? String ?: "",
-            location = data["location"] as? String ?: "",
+            id = normalizeText(data["id"] as? String),
+            name = normalizeText(data["name"] as? String),
+            shortName = normalizeNullableText(data["shortName"] as? String),
+            teacher = normalizeText(data["teacher"] as? String),
+            location = normalizeText(data["location"] as? String),
             dayOfWeek = (data["dayOfWeek"] as? Number)?.toInt() ?: 1,
             startSection = (data["startSection"] as? Number)?.toInt() ?: 1,
             endSection = (data["endSection"] as? Number)?.toInt() ?: 1,
-            startTime = data["startTime"] as? String ?: "",
-            endTime = data["endTime"] as? String ?: "",
+            startTime = normalizeText(data["startTime"] as? String),
+            endTime = normalizeText(data["endTime"] as? String),
             startWeek = (data["startWeek"] as? Number)?.toInt() ?: 1,
             endWeek = (data["endWeek"] as? Number)?.toInt() ?: 16,
             isOddWeek = data["isOddWeek"] as? Boolean ?: false,
             isEvenWeek = data["isEvenWeek"] as? Boolean ?: false,
-            note = (data["note"] as? String)?.ifBlank { null },
+            note = normalizeNullableText(data["note"] as? String),
         )
     }
 

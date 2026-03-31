@@ -978,4 +978,149 @@ void main() {
     expect(snapshot.nextCourse, isNull);
     expect(snapshot.todayCourses, isEmpty);
   });
+
+  test('home widget snapshot uses selected date week monday as anchor',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: DateTime(2026, 3, 25),
+      ),
+    );
+
+    final snapshot = provider.buildHomeWidgetSnapshot(
+      now: DateTime(2026, 3, 30, 8, 00),
+    );
+
+    expect(snapshot, isNotNull);
+    expect(snapshot!.currentWeek, 2);
+  });
+
+  test('rescheduling a single occurrence splits the original course weeks',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-reschedule',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 4,
+      ),
+    );
+
+    final changed = await provider.rescheduleCourseOccurrence(
+      courseId: 'course-reschedule',
+      sourceWeek: 2,
+      targetWeek: 6,
+      targetDayOfWeek: 3,
+      targetStartSection: 3,
+      targetEndSection: 4,
+      targetLocation: 'B201',
+    );
+
+    expect(changed, isTrue);
+    expect(provider.courses, hasLength(2));
+
+    final remainingCourse = provider.courses.firstWhere(
+      (course) => course.id == 'course-reschedule',
+    );
+    final movedCourse = provider.courses.firstWhere(
+      (course) => course.id != 'course-reschedule',
+    );
+
+    expect(remainingCourse.activeWeeks, [1, 3, 4]);
+    expect(remainingCourse.dayOfWeek, 1);
+    expect(remainingCourse.startSection, 1);
+    expect(remainingCourse.location, 'A101');
+
+    expect(movedCourse.activeWeeks, [6]);
+    expect(movedCourse.dayOfWeek, 3);
+    expect(movedCourse.startSection, 3);
+    expect(movedCourse.endSection, 4);
+    expect(movedCourse.location, 'B201');
+  });
+
+  test('deleting a single occurrence keeps the remaining course weeks',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-delete-occurrence',
+        name: '大学英语',
+        teacher: '李老师',
+        location: 'A205',
+        dayOfWeek: 2,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:10',
+        endTime: '11:50',
+        startWeek: 1,
+        endWeek: 4,
+      ),
+    );
+
+    final changed = await provider.deleteCourseOccurrence(
+      courseId: 'course-delete-occurrence',
+      sourceWeek: 2,
+    );
+
+    expect(changed, isTrue);
+    expect(provider.courses, hasLength(1));
+    expect(provider.courses.single.activeWeeks, [1, 3, 4]);
+    expect(provider.courses.single.name, '大学英语');
+    expect(provider.courses.single.location, 'A205');
+  });
+
+  test('import parsed courses expands semester week count when needed',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(semesterWeekCount: 16),
+    );
+
+    await provider.importParsedCourses(
+      [
+        Course(
+          id: 'imported-course',
+          name: '机械原理',
+          teacher: '王老师',
+          location: 'A301',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          startWeek: 3,
+          endWeek: 18,
+        ),
+      ],
+      replaceExisting: true,
+      source: 'ai',
+    );
+
+    expect(provider.settings.semesterWeekCount, 18);
+  });
 }

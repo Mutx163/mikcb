@@ -805,14 +805,14 @@ class LiveUpdateService : Service() {
 
             startForegroundSafely(intent)
 
-            courseName = intent?.getStringExtra("courseName").orEmpty()
-            shortCourseNameRaw = intent?.getStringExtra("shortName").orEmpty()
-            location = intent?.getStringExtra("location").orEmpty()
-            teacher = intent?.getStringExtra("teacher").orEmpty()
-            note = intent?.getStringExtra("note").orEmpty()
-            startTimeText = intent?.getStringExtra("startTime").orEmpty()
-            endTimeText = intent?.getStringExtra("endTime").orEmpty()
-            nextName = intent?.getStringExtra("nextName").orEmpty()
+            courseName = sanitizeTextExtra(intent?.getStringExtra("courseName"))
+            shortCourseNameRaw = sanitizeTextExtra(intent?.getStringExtra("shortName"))
+            location = sanitizeTextExtra(intent?.getStringExtra("location"))
+            teacher = sanitizeTextExtra(intent?.getStringExtra("teacher"))
+            note = sanitizeTextExtra(intent?.getStringExtra("note"))
+            startTimeText = sanitizeTextExtra(intent?.getStringExtra("startTime"))
+            endTimeText = sanitizeTextExtra(intent?.getStringExtra("endTime"))
+            nextName = sanitizeTextExtra(intent?.getStringExtra("nextName"))
             autoDismissAfterStartMinutes = intent?.getIntExtra("autoDismissAfterStartMinutes", 0) ?: 0
             activityStage = intent?.getStringExtra("stage").orEmpty()
             endSecondsCountdownThreshold =
@@ -1991,6 +1991,11 @@ class LiveUpdateService : Service() {
         }
 
         return notification
+    }
+
+    private fun sanitizeTextExtra(value: String?): String {
+        val normalized = value?.trim().orEmpty()
+        return if (normalized.equals("null", ignoreCase = true)) "" else normalized
     }
 
     private fun stopAndRemoveNotification() {
