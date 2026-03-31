@@ -36,6 +36,7 @@ enum LiveCountdownTextStyle {
   smart,
   smartMinS,
   minuteSecondCn,
+  minuteSecondColon,
   minuteSecondMinS,
   minuteSecondMinSlashS,
   minuteOnlyCn,
@@ -190,6 +191,7 @@ extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
         LiveCountdownTextStyle.smart => 'smart',
         LiveCountdownTextStyle.smartMinS => 'smart_min_s',
         LiveCountdownTextStyle.minuteSecondCn => 'minute_second_cn',
+        LiveCountdownTextStyle.minuteSecondColon => 'minute_second_colon',
         LiveCountdownTextStyle.minuteSecondMinS => 'minute_second_min_s',
         LiveCountdownTextStyle.minuteSecondMinSlashS =>
           'minute_second_min_slash_s',
@@ -205,6 +207,7 @@ extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
         LiveCountdownTextStyle.smart => '智能（中文）',
         LiveCountdownTextStyle.smartMinS => '智能（英文）',
         LiveCountdownTextStyle.minuteSecondCn => '分秒（5分钟19秒）',
+        LiveCountdownTextStyle.minuteSecondColon => 'mm:ss（05:19）',
         LiveCountdownTextStyle.minuteSecondMinS => 'min+s（5min19s）',
         LiveCountdownTextStyle.minuteSecondMinSlashS => 'min/s（5min/19s）',
         LiveCountdownTextStyle.minuteOnlyCn => '纯分钟（5分钟）',
@@ -217,6 +220,7 @@ extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
 
   bool get alwaysShowsSeconds => switch (this) {
         LiveCountdownTextStyle.minuteSecondCn ||
+        LiveCountdownTextStyle.minuteSecondColon ||
         LiveCountdownTextStyle.minuteSecondMinS ||
         LiveCountdownTextStyle.minuteSecondMinSlashS ||
         LiveCountdownTextStyle.secondOnlyCn ||

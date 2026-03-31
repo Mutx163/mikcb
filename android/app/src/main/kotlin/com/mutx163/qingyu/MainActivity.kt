@@ -2048,6 +2048,7 @@ class LiveUpdateService : Service() {
                 secondSuffix = "s",
             )
             "minute_second_cn" -> formatMinuteSecondCn(durationMillis)
+            "minute_second_colon" -> formatMinuteSecondColon(durationMillis)
             "minute_second_min_s" -> formatMinuteSecond(durationMillis, minuteSuffix = "min", secondSuffix = "s")
             "minute_second_min_slash_s" -> formatMinuteSecond(durationMillis, minuteSuffix = "min/", secondSuffix = "s")
             "minute_only_cn" -> formatMinuteOnly(durationMillis, "分钟")
@@ -2102,6 +2103,13 @@ class LiveUpdateService : Service() {
             minutes > 0L -> "${minutes}${minuteSuffix.trimEnd('/')}"
             else -> "${seconds}${secondSuffix}"
         }
+    }
+
+    private fun formatMinuteSecondColon(durationMillis: Long): String {
+        val totalSeconds = (durationMillis / 1000L).coerceAtLeast(0L)
+        val minutes = totalSeconds / 60L
+        val seconds = totalSeconds % 60L
+        return "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     }
 
     private fun formatMinuteOnly(durationMillis: Long, suffix: String): String {
@@ -2197,6 +2205,7 @@ class LiveUpdateService : Service() {
         }
         return when (countdownTextStyle) {
             "minute_second_cn",
+            "minute_second_colon",
             "minute_second_min_s",
             "minute_second_min_slash_s",
             "second_only_cn",
@@ -2219,6 +2228,7 @@ class LiveUpdateService : Service() {
         val totalSeconds = (safeDurationMillis / 1000L).coerceAtLeast(0L)
         return when (countdownTextStyle) {
             "minute_second_cn",
+            "minute_second_colon",
             "minute_second_min_s",
             "minute_second_min_slash_s",
             "second_only_cn",
