@@ -91,4 +91,56 @@ void main() {
     expect(find.text('上课周次'), findsOneWidget);
     expect(find.text('连续周'), findsNothing);
   });
+
+  testWidgets('single lesson mode can prefill from existing course',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-template',
+        name: '大学英语',
+        shortName: '英语',
+        teacher: '李老师',
+        location: 'A101',
+        dayOfWeek: 2,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:10',
+        endTime: '11:50',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: AddCourseScreen(
+            mode: CourseEditorMode.singleLesson,
+            initialWeek: 4,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('手动填写'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('大学英语 · 周二 第3-4节 · A101').last);
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    final fieldValues = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .map((widget) => widget.controller.text)
+        .toList();
+
+    expect(fieldValues, contains('大学英语'));
+    expect(fieldValues, contains('李老师'));
+    expect(fieldValues, contains('A101'));
+  });
 }

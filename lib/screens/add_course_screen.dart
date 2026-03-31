@@ -31,6 +31,9 @@ class AddCourseScreen extends StatefulWidget {
 }
 
 class _AddCourseScreenState extends State<AddCourseScreen> {
+  static const String _manualSingleLessonTemplateValue =
+      '__manual_single_lesson__';
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _shortNameController = TextEditingController();
@@ -49,6 +52,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   _WeekSelectionMode _weekSelectionMode = _WeekSelectionMode.range;
   Set<int> _selectedCustomWeeks = <int>{};
   late CourseEditorMode _editorMode;
+  String _selectedSingleLessonTemplateId = _manualSingleLessonTemplateValue;
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
   String? _selectedTimeSchemeOverrideId;
@@ -156,7 +160,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               _buildModeSection(settings),
               const SizedBox(height: 16),
             ],
-            _buildBasicInfoSection(),
+            _buildBasicInfoSection(provider),
             const SizedBox(height: 16),
             _buildTimeSection(provider, settings),
             const SizedBox(height: 16),
@@ -356,7 +360,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildBasicInfoSection() {
+  Widget _buildBasicInfoSection(TimetableProvider provider) {
+    final singleLessonTemplates = _buildSingleLessonTemplates(provider);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -372,6 +377,63 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               '课程名、简称、老师、课程简介、课程性质和颜色会同步到同名课程的其他排课。',
               style: Theme.of(context).textTheme.bodySmall,
             ),
+            if (widget.course == null &&
+                _editorMode == CourseEditorMode.singleLesson) ...[
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: singleLessonTemplates.any(
+                  (template) => template.id == _selectedSingleLessonTemplateId,
+                )
+                    ? _selectedSingleLessonTemplateId
+                    : _manualSingleLessonTemplateValue,
+                decoration: const InputDecoration(
+                  labelText: '沿用已有课程',
+                  helperText: '选一个已有课程，自动带入课程名、老师和常用排课信息',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.auto_awesome_motion_rounded),
+                ),
+                items: [
+                  const DropdownMenuItem(
+                    value: _manualSingleLessonTemplateValue,
+                    child: Text('手动填写'),
+                  ),
+                  ...singleLessonTemplates.map(
+                    (template) => DropdownMenuItem(
+                      value: template.id,
+                      child: Text(template.summary),
+                    ),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value == null) {
+                    return;
+                  }
+                  setState(() {
+                    _selectedSingleLessonTemplateId = value;
+                    if (value == _manualSingleLessonTemplateValue) {
+                      return;
+                    }
+                    _SingleLessonTemplate? template;
+                    for (final item in singleLessonTemplates) {
+                      if (item.id == value) {
+                        template = item;
+                        break;
+                      }
+                    }
+                    if (template != null) {
+                      _applySingleLessonTemplate(template.course);
+                    }
+                  });
+                },
+              ),
+              if (singleLessonTemplates.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了。',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ],
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
@@ -445,6 +507,59 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ),
       ),
     );
+  }
+
+  List<_SingleLessonTemplate> _buildSingleLessonTemplates(
+    TimetableProvider provider,
+  ) {
+    if (provider.courses.isEmpty) {
+      return const <_SingleLessonTemplate>[];
+    }
+
+    final uniqueCourses = <String, Course>{};
+    final sortedCourses = provider.courses.toList()
+      ..sort((left, right) {
+        final nameCompare = left.name.compareTo(right.name);
+        if (nameCompare != 0) {
+          return nameCompare;
+        }
+        final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
+        if (dayCompare != 0) {
+          return dayCompare;
+        }
+        return left.startSection.compareTo(right.startSection);
+      });
+
+    for (final course in sortedCourses) {
+      final key = course.name.trim().toLowerCase();
+      uniqueCourses.putIfAbsent(key, () => course);
+    }
+
+    return uniqueCourses.values
+        .map(
+          (course) => _SingleLessonTemplate(
+            id: course.id,
+            course: course,
+            summary:
+                '${course.name} · ${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节'
+                '${course.location.trim().isEmpty ? '' : ' · ${course.location.trim()}'}',
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  void _applySingleLessonTemplate(Course course) {
+    _nameController.text = course.name;
+    _shortNameController.text = course.shortName ?? '';
+    _teacherController.text = course.teacher;
+    _locationController.text = course.location;
+    _descriptionController.text = course.description ?? course.note ?? '';
+    _selectedDayOfWeek = course.dayOfWeek;
+    _startSection = course.startSection;
+    _endSection = course.endSection;
+    _courseNature = course.courseNature;
+    _selectedColor = course.color;
+    _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
   }
 
   Widget _buildTimeSection(
@@ -1230,4 +1345,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       SnackBar(content: Text(widget.course == null ? '课程添加成功' : '课程更新成功')),
     );
   }
+}
+
+class _SingleLessonTemplate {
+  final String id;
+  final Course course;
+  final String summary;
+
+  const _SingleLessonTemplate({
+    required this.id,
+    required this.course,
+    required this.summary,
+  });
 }
