@@ -26,6 +26,7 @@ void main() {
     expect(settings.widgetHeightAdjustment, -11);
     expect(settings.widgetCornerRadius, 22);
     expect(settings.appThemeMode, AppThemeMode.system);
+    expect(settings.homeTitleStyle, HomeTitleStyle.classic);
     expect(
       settings.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -107,6 +108,7 @@ void main() {
     expect(restored.widgetHeightAdjustment, -11);
     expect(restored.widgetCornerRadius, 22);
     expect(restored.appThemeMode, AppThemeMode.system);
+    expect(restored.homeTitleStyle, HomeTitleStyle.classic);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -192,6 +194,7 @@ void main() {
       widgetHeightAdjustment: 12,
       widgetCornerRadius: 18,
       appThemeMode: AppThemeMode.dark,
+      homeTitleStyle: HomeTitleStyle.brand,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
       courseCardFontSize: 10.5,
@@ -240,6 +243,7 @@ void main() {
     expect(restored.widgetHeightAdjustment, 12);
     expect(restored.widgetCornerRadius, 18);
     expect(restored.appThemeMode, AppThemeMode.dark);
+    expect(restored.homeTitleStyle, HomeTitleStyle.brand);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,

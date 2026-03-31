@@ -16,6 +16,11 @@ enum AppThemeMode {
   dark,
 }
 
+enum HomeTitleStyle {
+  classic,
+  brand,
+}
+
 enum SectionTimeDisplayMode {
   hidden,
   startOnly,
@@ -133,6 +138,30 @@ extension AppThemeModeX on AppThemeMode {
     return AppThemeMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => AppThemeMode.system,
+    );
+  }
+}
+
+extension HomeTitleStyleX on HomeTitleStyle {
+  String get value => switch (this) {
+        HomeTitleStyle.classic => 'classic',
+        HomeTitleStyle.brand => 'brand',
+      };
+
+  String get label => switch (this) {
+        HomeTitleStyle.classic => '经典文字',
+        HomeTitleStyle.brand => '大 Logo',
+      };
+
+  String get description => switch (this) {
+        HomeTitleStyle.classic => '保持原本标题样式，只显示文字，点击即可切换课表',
+        HomeTitleStyle.brand => '显示大 Logo 和小课表名称，更强调品牌感',
+      };
+
+  static HomeTitleStyle fromValue(String? value) {
+    return HomeTitleStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => HomeTitleStyle.classic,
     );
   }
 }
@@ -623,6 +652,7 @@ class TimetableSettings {
   final double widgetHeightAdjustment;
   final double widgetCornerRadius;
   final AppThemeMode appThemeMode;
+  final HomeTitleStyle homeTitleStyle;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
@@ -717,6 +747,7 @@ class TimetableSettings {
     this.widgetHeightAdjustment = -11,
     this.widgetCornerRadius = 22,
     this.appThemeMode = AppThemeMode.system,
+    this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
@@ -830,6 +861,7 @@ class TimetableSettings {
       widgetHeightAdjustment: -11,
       widgetCornerRadius: 22,
       appThemeMode: AppThemeMode.system,
+      homeTitleStyle: HomeTitleStyle.classic,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
@@ -929,6 +961,7 @@ class TimetableSettings {
       'widgetHeightAdjustment': widgetHeightAdjustment,
       'widgetCornerRadius': widgetCornerRadius,
       'appThemeMode': appThemeMode.value,
+      'homeTitleStyle': homeTitleStyle.value,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
@@ -1075,6 +1108,9 @@ class TimetableSettings {
           (json['widgetCornerRadius'] as num?)?.toDouble() ?? 22,
       appThemeMode: AppThemeModeX.fromValue(
         json['appThemeMode'] as String?,
+      ),
+      homeTitleStyle: HomeTitleStyleX.fromValue(
+        json['homeTitleStyle'] as String?,
       ),
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
@@ -1260,6 +1296,7 @@ class TimetableSettings {
     double? widgetHeightAdjustment,
     double? widgetCornerRadius,
     AppThemeMode? appThemeMode,
+    HomeTitleStyle? homeTitleStyle,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
@@ -1373,6 +1410,7 @@ class TimetableSettings {
           widgetHeightAdjustment ?? this.widgetHeightAdjustment,
       widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,
       appThemeMode: appThemeMode ?? this.appThemeMode,
+      homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:

@@ -554,6 +554,44 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
+            title: '首页标题',
+            subtitle: '控制首页左上角课表切换入口的样式。',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<HomeTitleStyle>(
+                  value: _draft.homeTitleStyle,
+                  decoration: const InputDecoration(
+                    labelText: '标题样式',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: HomeTitleStyle.values
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(value.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    _updateDraft(_draft.copyWith(homeTitleStyle: value));
+                  },
+                ),
+                const SizedBox(height: 12),
+                _HomeTitleStylePreview(style: _draft.homeTitleStyle),
+                const SizedBox(height: 8),
+                Text(
+                  _draft.homeTitleStyle.description,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
             title: '应用主题色',
             subtitle: '影响顶部栏、强调色和全局主色调。',
             child: Wrap(
@@ -685,6 +723,63 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         _draft = provider.settings;
       });
     }
+  }
+}
+
+class _HomeTitleStylePreview extends StatelessWidget {
+  final HomeTitleStyle style;
+
+  const _HomeTitleStylePreview({required this.style});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    Widget child;
+    switch (style) {
+      case HomeTitleStyle.classic:
+        child = Text(
+          '轻屿课表',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        );
+      case HomeTitleStyle.brand:
+        child = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '轻屿课表',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+              ),
+            ),
+            Text(
+              '默认课表',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: child,
+      ),
+    );
   }
 }
 
