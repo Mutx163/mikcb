@@ -278,6 +278,40 @@ class AppUpdateService {
         ? normalized.substring(dashIndex + 1).trim()
         : null;
     final baseParts = base.split('.');
+    final numericExplicitPrereleaseParts = explicitPrerelease == null
+        ? null
+        : _parseNumericParts(explicitPrerelease);
+    if (numericExplicitPrereleaseParts != null &&
+        numericExplicitPrereleaseParts.isNotEmpty) {
+      return _ParsedVersion(
+        mainParts: [
+          ...baseParts.map(
+            (item) => int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+          ),
+          ...numericExplicitPrereleaseParts,
+        ],
+        prerelease: null,
+      );
+    }
+
+    final numericDottedSuffixParts =
+        !hasExplicitPrerelease && baseParts.length > 3
+            ? _parseNumericParts(baseParts.skip(3).join('.'))
+            : null;
+    if (numericDottedSuffixParts != null &&
+        numericDottedSuffixParts.isNotEmpty) {
+      return _ParsedVersion(
+        mainParts: [
+          ...baseParts.take(3).map(
+                (item) =>
+                    int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+              ),
+          ...numericDottedSuffixParts,
+        ],
+        prerelease: null,
+      );
+    }
+
     final hasDottedPrerelease = !hasExplicitPrerelease && baseParts.length > 3;
     final main = hasDottedPrerelease ? baseParts.take(3).join('.') : base;
     final prerelease = hasExplicitPrerelease
@@ -294,6 +328,26 @@ class AppUpdateService {
           .toList(),
       prerelease: prerelease == null || prerelease.isEmpty ? null : prerelease,
     );
+  }
+
+  List<int>? _parseNumericParts(String raw) {
+    final parts = raw
+        .split('.')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+    if (parts.isEmpty) {
+      return null;
+    }
+    final values = <int>[];
+    for (final part in parts) {
+      final value = int.tryParse(part);
+      if (value == null) {
+        return null;
+      }
+      values.add(value);
+    }
+    return values;
   }
 
   int _comparePrerelease(String left, String right) {

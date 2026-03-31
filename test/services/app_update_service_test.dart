@@ -77,4 +77,89 @@ void main() {
     expect(result.hasUpdate, isFalse);
     expect(result.latestRelease?.version, '1.1.10.3');
   });
+
+  test('include prerelease keeps numbered prerelease above base release',
+      () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.1.10',
+              'name': 'v1.1.10',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.1.10',
+              'assets': const [],
+              'updated_at': '2026-03-29T09:00:00Z',
+            },
+            {
+              'tag_name': 'v1.1.10.4',
+              'name': 'v1.1.10.4',
+              'draft': false,
+              'prerelease': true,
+              'html_url': 'https://example.com/1.1.10.4',
+              'assets': const [],
+              'updated_at': '2026-03-31T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      throw UnsupportedError('Unexpected url: ${request.url}');
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.1.10-4+34',
+      includePrerelease: true,
+    );
+
+    expect(result.hasRelease, isTrue);
+    expect(result.hasUpdate, isFalse);
+    expect(result.latestRelease?.version, '1.1.10.4');
+    expect(result.latestRelease?.isPrerelease, isTrue);
+  });
+
+  test('numbered prerelease still upgrades from base release when enabled',
+      () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.1.10',
+              'name': 'v1.1.10',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.1.10',
+              'assets': const [],
+              'updated_at': '2026-03-29T09:00:00Z',
+            },
+            {
+              'tag_name': 'v1.1.10.4',
+              'name': 'v1.1.10.4',
+              'draft': false,
+              'prerelease': true,
+              'html_url': 'https://example.com/1.1.10.4',
+              'assets': const [],
+              'updated_at': '2026-03-31T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      throw UnsupportedError('Unexpected url: ${request.url}');
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.1.10',
+      includePrerelease: true,
+    );
+
+    expect(result.hasRelease, isTrue);
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.1.10.4');
+  });
 }
