@@ -381,6 +381,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 _editorMode == CourseEditorMode.singleLesson) ...[
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: singleLessonTemplates.any(
                   (template) => template.id == _selectedSingleLessonTemplateId,
                 )
@@ -388,19 +389,47 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     : _manualSingleLessonTemplateValue,
                 decoration: const InputDecoration(
                   labelText: '沿用已有课程',
-                  helperText: '选一个已有课程，自动带入课程名、老师和常用排课信息',
+                  helperText: '选一个已有课程，自动带入课程名、老师和其他共享信息',
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.auto_awesome_motion_rounded),
                 ),
                 items: [
                   const DropdownMenuItem(
                     value: _manualSingleLessonTemplateValue,
-                    child: Text('手动填写'),
+                    child: Text(
+                      '手动填写',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   ...singleLessonTemplates.map(
                     (template) => DropdownMenuItem(
                       value: template.id,
-                      child: Text(template.summary),
+                      child: Text(
+                        template.summary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                selectedItemBuilder: (context) => [
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '手动填写',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  ...singleLessonTemplates.map(
+                    (template) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        template.summary,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
                 ],
@@ -540,26 +569,36 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           (course) => _SingleLessonTemplate(
             id: course.id,
             course: course,
-            summary:
-                '${course.name} · ${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节'
-                '${course.location.trim().isEmpty ? '' : ' · ${course.location.trim()}'}',
+            summary: _buildSingleLessonTemplateSummary(course),
           ),
         )
         .toList(growable: false);
+  }
+
+  String _buildSingleLessonTemplateSummary(Course course) {
+    final parts = <String>[course.name];
+    final shortName = course.shortName?.trim();
+    final teacher = course.teacher.trim();
+
+    if (shortName != null &&
+        shortName.isNotEmpty &&
+        shortName.toLowerCase() != course.name.trim().toLowerCase()) {
+      parts.add(shortName);
+    }
+    if (teacher.isNotEmpty) {
+      parts.add(teacher);
+    }
+
+    return parts.join(' · ');
   }
 
   void _applySingleLessonTemplate(Course course) {
     _nameController.text = course.name;
     _shortNameController.text = course.shortName ?? '';
     _teacherController.text = course.teacher;
-    _locationController.text = course.location;
     _descriptionController.text = course.description ?? course.note ?? '';
-    _selectedDayOfWeek = course.dayOfWeek;
-    _startSection = course.startSection;
-    _endSection = course.endSection;
     _courseNature = course.courseNature;
     _selectedColor = course.color;
-    _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
   }
 
   Widget _buildTimeSection(
