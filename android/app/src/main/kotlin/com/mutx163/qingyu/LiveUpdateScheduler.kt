@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -180,6 +181,7 @@ object LiveUpdateScheduler {
     private const val TAG = "LiveUpdateScheduler"
     private const val PREFS_NAME = "live_update_scheduler"
     private const val KEY_SNAPSHOT_JSON = "snapshot_json"
+    private const val KEY_SNAPSHOT_VERSION = "snapshot_version"
     private const val REQUEST_CODE_TRIGGER = 2002
     const val ACTION_TRIGGER = "com.mutx163.qingyu.ACTION_TRIGGER_LIVE_UPDATE"
 
@@ -187,6 +189,7 @@ object LiveUpdateScheduler {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putString(KEY_SNAPSHOT_JSON, snapshotJson)
+            .putString(KEY_SNAPSHOT_VERSION, resolveAppVersionToken(context))
             .apply()
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
@@ -203,6 +206,7 @@ object LiveUpdateScheduler {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .remove(KEY_SNAPSHOT_JSON)
+            .remove(KEY_SNAPSHOT_VERSION)
             .apply()
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
@@ -346,8 +350,22 @@ object LiveUpdateScheduler {
     }
 
     private fun loadSnapshot(context: Context): NativeScheduleSnapshot? {
-        val snapshotJson = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_SNAPSHOT_JSON, null) ?: return null
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val snapshotJson = prefs.getString(KEY_SNAPSHOT_JSON, null) ?: return null
+        val snapshotVersion = prefs.getString(KEY_SNAPSHOT_VERSION, null)
+        val currentVersion = resolveAppVersionToken(context)
+        if (snapshotVersion.isNullOrBlank() || (
+                !currentVersion.isNullOrBlank() &&
+                    snapshotVersion != currentVersion
+                )
+        ) {
+            invalidateSnapshotForVersionChange(
+                context = context,
+                storedSnapshotVersion = snapshotVersion,
+                currentVersion = currentVersion,
+            )
+            return null
+        }
         return try {
             parseSnapshot(JSONObject(snapshotJson))
         } catch (e: Exception) {
@@ -359,6 +377,53 @@ object LiveUpdateScheduler {
                 throwable = e,
                 dedupeKey = "live_update_snapshot_parse_failed",
             )
+            null
+        }
+    }
+
+    private fun invalidateSnapshotForVersionChange(
+        context: Context,
+        storedSnapshotVersion: String?,
+        currentVersion: String?,
+    ) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_SNAPSHOT_JSON)
+            .remove(KEY_SNAPSHOT_VERSION)
+            .apply()
+        cancelScheduledAlarm(context)
+        context.stopService(Intent(context, LiveUpdateService::class.java))
+        UmengDiagnosticReporter.record(
+            context = context.applicationContext,
+            category = "live_update_snapshot_invalidated_after_upgrade",
+            message = "Invalidated stale live update snapshot after app version change",
+            extras = mapOf(
+                "storedSnapshotVersion" to (storedSnapshotVersion ?: "missing"),
+                "currentVersion" to (currentVersion ?: "unknown"),
+            )
+        )
+    }
+
+    private fun resolveAppVersionToken(context: Context): String? {
+        return try {
+            val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.packageManager.getPackageInfo(
+                    context.packageName,
+                    PackageManager.PackageInfoFlags.of(0)
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            }
+            val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode.toLong()
+            }
+            "${packageInfo.versionName ?: ""}:$versionCode"
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to resolve app version token", e)
             null
         }
     }
