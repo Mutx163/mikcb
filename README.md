@@ -45,6 +45,7 @@
 - 发布页：<https://github.com/Mutx163/mikcb/releases>
 - 正式包当前以 `arm64-v8a` 为主
 - 应用内可读取 GitHub Releases，显示版本号、更新时间和下载入口
+- 发行步骤见 [docs/RELEASE.md](./docs/RELEASE.md)
 
 ## 运行与构建
 

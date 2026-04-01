@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../services/miui_live_activities_service.dart';
@@ -17,7 +19,8 @@ class UserGuideScreen extends StatefulWidget {
   State<UserGuideScreen> createState() => _UserGuideScreenState();
 }
 
-class _UserGuideScreenState extends State<UserGuideScreen> {
+class _UserGuideScreenState extends State<UserGuideScreen>
+    with WidgetsBindingObserver {
   final MiuiLiveActivitiesService _service = MiuiLiveActivitiesService();
   final ScrollController _scrollController = ScrollController();
 
@@ -34,6 +37,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _privacyChecked = widget.initialPrivacyChecked;
     _scrollController.addListener(_handleScroll);
     _refreshStatus();
@@ -42,10 +46,18 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController
       ..removeListener(_handleScroll)
       ..dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refreshStatus(showLoading: false));
+    }
   }
 
   void _handleScroll() {
@@ -61,10 +73,12 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     }
   }
 
-  Future<void> _refreshStatus() async {
-    setState(() {
-      _isLoading = true;
-    });
+  Future<void> _refreshStatus({bool showLoading = true}) async {
+    if (showLoading) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     final promotedSupport = await _service.checkPromotedSupport();
     final hasNotificationPermission =
@@ -96,7 +110,7 @@ class _UserGuideScreenState extends State<UserGuideScreen> {
     if (!mounted) {
       return;
     }
-    await _refreshStatus();
+    await _refreshStatus(showLoading: false);
   }
 
   Future<void> _scrollMore() async {

@@ -819,7 +819,7 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 _SettingsEntryTile(
                   icon: Icons.alarm_outlined,
                   title: '提醒时段',
-                  subtitle: '上课前、课中/下课提醒开关，展示时机和通知方式',
+                  subtitle: '上课前、课中/下课提醒开关，以及下课前多久切到超级岛 / 重点提醒',
                   onTap: () async {
                     await Navigator.push(
                       context,

@@ -318,17 +318,7 @@ object UmengDiagnosticReporter {
     }
 
     private fun isKeepAliveAccessibilityEnabled(context: Context): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            context.contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-        val expectedComponent = ComponentName(
-            context,
-            KeepAliveAccessibilityService::class.java
-        ).flattenToString()
-        return enabledServices
-            .split(':')
-            .any { it.equals(expectedComponent, ignoreCase = true) }
+        return KeepAliveAccessibilityStatus.isEnabled(context)
     }
 
     private fun canPostPromotedNotifications(context: Context): Boolean {
