@@ -133,28 +133,28 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('提醒启动时机'),
+                    title: const Text('下课前多久切到超级岛 / 重点提醒'),
                     subtitle: Text(
                       _draft.liveClassReminderStartMinutes == 0
-                          ? '从上课开始就展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                          ? '从上课开始就进入重点提醒展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
                           : _draft.liveEnableDuringClass &&
                                   _draft.liveShowDuringClassNotification &&
                                   !_draft.livePromoteDuringClass
-                              ? '上课后先保留普通课中通知，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到下课提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                              ? '上课后先保留普通课中通知，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒 / 下课提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
                               : _draft.liveEnableDuringClass &&
                                       _draft.liveShowDuringClassNotification
-                                  ? '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                              : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
+                                  ? '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到超级岛 / 重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
+                                  : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
                     ),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
                       items: const [
-                        DropdownMenuItem(value: 0, child: Text('一上课就展示')),
-                        DropdownMenuItem(value: 5, child: Text('提前 5 分钟展示')),
-                        DropdownMenuItem(value: 10, child: Text('提前 10 分钟展示')),
-                        DropdownMenuItem(value: 15, child: Text('提前 15 分钟展示')),
-                        DropdownMenuItem(value: 20, child: Text('提前 20 分钟展示')),
-                        DropdownMenuItem(value: 30, child: Text('提前 30 分钟展示')),
+                        DropdownMenuItem(value: 0, child: Text('一上课就切换')),
+                        DropdownMenuItem(value: 5, child: Text('下课前 5 分钟切换')),
+                        DropdownMenuItem(value: 10, child: Text('下课前 10 分钟切换')),
+                        DropdownMenuItem(value: 15, child: Text('下课前 15 分钟切换')),
+                        DropdownMenuItem(value: 20, child: Text('下课前 20 分钟切换')),
+                        DropdownMenuItem(value: 30, child: Text('下课前 30 分钟切换')),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -205,7 +205,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
           const SizedBox(height: 16),
           _SectionCard(
             title: '时间阈值',
-            subtitle: '控制提醒开始时机和最后秒级倒计时。',
+            subtitle: '控制上课前弹出、下课前多久切到超级岛 / 重点提醒，以及最后秒级倒计时。',
             child: Column(
               children: [
                 DropdownButtonFormField<int>(
@@ -833,7 +833,7 @@ class LiveKeepAliveSettingsScreen extends StatefulWidget {
 }
 
 class _LiveKeepAliveSettingsScreenState
-    extends State<LiveKeepAliveSettingsScreen> {
+    extends State<LiveKeepAliveSettingsScreen> with WidgetsBindingObserver {
   final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
   late TimetableSettings _draft;
   bool _enabled = false;
@@ -841,8 +841,22 @@ class _LiveKeepAliveSettingsScreenState
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _draft = context.read<TimetableProvider>().settings;
-    unawaited(_refresh());
+    unawaited(_refresh(retryIfDisabled: true));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh(retryIfDisabled: true));
+    }
   }
 
   @override
@@ -907,13 +921,20 @@ class _LiveKeepAliveSettingsScreenState
 
   Future<void> _openSettings() async {
     await _liveService.openAccessibilitySettings();
-    await Future<void>.delayed(const Duration(milliseconds: 400));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
-    await _refresh();
+    await _refresh(retryIfDisabled: true);
   }
 
-  Future<void> _refresh() async {
-    final enabled = await _liveService.isKeepAliveAccessibilityEnabled();
+  Future<void> _refresh({bool retryIfDisabled = false}) async {
+    var enabled = await _liveService.isKeepAliveAccessibilityEnabled();
+    if (!enabled && retryIfDisabled) {
+      for (var i = 0; i < 3 && !enabled; i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+        if (!mounted) return;
+        enabled = await _liveService.isKeepAliveAccessibilityEnabled();
+      }
+    }
     if (!mounted) return;
     setState(() {
       _enabled = enabled;

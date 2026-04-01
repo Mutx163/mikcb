@@ -698,17 +698,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun isKeepAliveAccessibilityEnabled(): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-        val expectedComponent = ComponentName(
-            this,
-            KeepAliveAccessibilityService::class.java
-        ).flattenToString()
-        return enabledServices
-            .split(':')
-            .any { it.equals(expectedComponent, ignoreCase = true) }
+        return KeepAliveAccessibilityStatus.isEnabled(this)
     }
 }
 
@@ -1185,17 +1175,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun isKeepAliveAccessibilityEnabled(): Boolean {
-        val enabledServices = Settings.Secure.getString(
-            contentResolver,
-            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
-        ) ?: return false
-        val expectedComponent = ComponentName(
-            this,
-            KeepAliveAccessibilityService::class.java
-        ).flattenToString()
-        return enabledServices
-            .split(':')
-            .any { it.equals(expectedComponent, ignoreCase = true) }
+        return KeepAliveAccessibilityStatus.isEnabled(this)
     }
 
     private fun startTicker() {
