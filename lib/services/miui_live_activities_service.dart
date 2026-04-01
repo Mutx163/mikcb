@@ -280,6 +280,29 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<Map<String, dynamic>> getLiveUpdateDebugStatus() async {
+    await initialize();
+    try {
+      final result = await _channel.invokeMethod('getLiveUpdateDebugStatus');
+      return Map<String, dynamic>.from(result as Map);
+    } catch (e, stackTrace) {
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_debug_status_failed',
+        'Failed to fetch native live update debug status',
+        error: e,
+        stackTrace: stackTrace,
+      );
+      debugPrint('Failed to fetch live update debug status: $e');
+      return {
+        'summary': {
+          'serviceRunning': false,
+          'statusText': '读取失败',
+          'notIslandReason': e.toString(),
+        },
+      };
+    }
+  }
+
   Map<String, dynamic> _buildData(
     Course currentCourse,
     Course? nextCourse, {

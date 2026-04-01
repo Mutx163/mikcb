@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
@@ -920,11 +924,167 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   }
 }
 
-class _LiveTestingSettingsScreen extends StatelessWidget {
+class _LiveTestingSettingsScreen extends StatefulWidget {
   const _LiveTestingSettingsScreen();
 
   @override
+  State<_LiveTestingSettingsScreen> createState() =>
+      _LiveTestingSettingsScreenState();
+}
+
+class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
+    with WidgetsBindingObserver {
+  final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
+  Map<String, dynamic>? _debugStatus;
+  bool _loadingDebugStatus = true;
+  bool _exportingDiagnostics = false;
+  bool _clearingDiagnostics = false;
+  Timer? _autoRefreshTimer;
+  bool _refreshInFlight = false;
+  bool _isAppResumed = true;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_refreshDebugStatus(showLoading: true));
+    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_isAppResumed) {
+        return;
+      }
+      unawaited(_refreshDebugStatus());
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _isAppResumed = state == AppLifecycleState.resumed;
+  }
+
+  @override
+  void dispose() {
+    _autoRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  Future<void> _refreshDebugStatus({bool showLoading = false}) async {
+    if (_refreshInFlight) {
+      return;
+    }
+    _refreshInFlight = true;
+    if (mounted && showLoading) {
+      setState(() {
+        _loadingDebugStatus = true;
+      });
+    }
+    try {
+      final status = await _liveService.getLiveUpdateDebugStatus();
+      if (!mounted) return;
+      setState(() {
+        _debugStatus = status;
+        _loadingDebugStatus = false;
+      });
+    } finally {
+      _refreshInFlight = false;
+      if (mounted && showLoading) {
+        setState(() {
+          _loadingDebugStatus = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _exportLiveDiagnostics() async {
+    if (_exportingDiagnostics) return;
+    setState(() {
+      _exportingDiagnostics = true;
+    });
+    final logPath = await _liveService.exportLiveDiagnosticsFile();
+    if (!mounted) return;
+    var exportPath = logPath;
+    var shareText = '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。';
+    var shareSubject = '轻屿课表 - 超级岛诊断日志';
+    if ((exportPath == null || exportPath.isEmpty) && _debugStatus != null) {
+      exportPath = await _exportCurrentDebugSnapshot();
+      shareText = '这是轻屿课表当前测试诊断页导出的超级岛状态快照，可用于排查“超级岛没有弹出”等问题。';
+      shareSubject = '轻屿课表 - 超级岛状态快照';
+    }
+    if (!mounted) return;
+    setState(() {
+      _exportingDiagnostics = false;
+    });
+    if (exportPath == null || exportPath.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前没有可导出的日志文件，也没有可导出的状态快照')),
+      );
+      return;
+    }
+    await Share.shareXFiles(
+      [XFile(exportPath)],
+      text: shareText,
+      subject: shareSubject,
+    );
+  }
+
+  Future<String?> _exportCurrentDebugSnapshot() async {
+    final snapshot = _debugStatus;
+    if (snapshot == null) {
+      return null;
+    }
+    final directory = await getTemporaryDirectory();
+    final file = File(
+      '${directory.path}${Platform.pathSeparator}mikcb-live-debug-snapshot-${DateTime.now().millisecondsSinceEpoch}.json',
+    );
+    final payload = <String, dynamic>{
+      'exportedAtMillis': DateTime.now().millisecondsSinceEpoch,
+      'source': 'live_testing_screen_snapshot',
+      'debugStatus': snapshot,
+    };
+    await file.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(payload),
+    );
+    return file.path;
+  }
+
+  Future<void> _clearLiveDiagnostics() async {
+    if (_clearingDiagnostics) return;
+    setState(() {
+      _clearingDiagnostics = true;
+    });
+    final cleared = await _liveService.clearLiveDiagnostics();
+    if (!mounted) return;
+    setState(() {
+      _clearingDiagnostics = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cleared ? '已清空超级岛诊断日志，后续会重新开始收集' : '清空超级岛诊断日志失败',
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final summary = _debugSectionMap(_debugStatus?['summary']);
+    final environment = _debugSectionMap(_debugStatus?['environment']);
+    final service = _debugSectionMap(_debugStatus?['service']);
+    final course = _debugSectionMap(_debugStatus?['course']);
+    final timing = _debugSectionMap(_debugStatus?['timing']);
+    final switches = _debugSectionMap(_debugStatus?['switches']);
+    final display = _debugSectionMap(_debugStatus?['display']);
+    final notification = _debugSectionMap(_debugStatus?['notification']);
+
+    final serviceRunning = summary['serviceRunning'] == true;
+    final isActuallyPromotable = summary['isActuallyPromotable'] == true;
+    final statusText = _debugValueText(summary['statusText']);
+    final notIslandReason = _debugValueText(summary['notIslandReason']);
+    final rawDebugJson = _debugStatus == null
+        ? ''
+        : JsonEncoder.withIndent('  ').convert(_debugStatus);
+
     return Scaffold(
       appBar: AppBar(title: const Text('测试与诊断')),
       body: ListView(
@@ -937,7 +1097,11 @@ class _LiveTestingSettingsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 FilledButton.tonalIcon(
-                  onPressed: () => _showTestOptions(context),
+                  onPressed: () async {
+                    await _showTestOptions(context);
+                    await Future<void>.delayed(const Duration(milliseconds: 300));
+                    await _refreshDebugStatus(showLoading: true);
+                  },
                   icon: const Icon(Icons.science_outlined),
                   label: const Text('发送测试通知'),
                 ),
@@ -970,20 +1134,267 @@ class _LiveTestingSettingsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '本地诊断日志',
-            subtitle: '导出和清空重收集入口放在关于软件页底部的测试者选项中。',
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: FilledButton.tonalIcon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const AboutScreen()),
-                  );
-                },
-                icon: const Icon(Icons.info_outline_rounded),
-                label: const Text('前往关于软件'),
+            title: '上岛状态诊断',
+            subtitle: '这里直接显示原生实时服务、通知构造结果和不上岛原因。',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _DebugStatusChip(
+                      icon: serviceRunning
+                          ? Icons.play_circle_outline_rounded
+                          : Icons.stop_circle_outlined,
+                      label: '服务${serviceRunning ? "运行中" : "未运行"}',
+                      color: serviceRunning
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline,
+                    ),
+                    _DebugStatusChip(
+                      icon: isActuallyPromotable
+                          ? Icons.verified_outlined
+                          : Icons.warning_amber_rounded,
+                      label: statusText,
+                      color: isActuallyPromotable
+                          ? Colors.green
+                          : Colors.orange,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '不上岛原因',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  notIslandReason.isEmpty ? '当前无拦截原因' : notIslandReason,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.tonalIcon(
+                        onPressed:
+                            _loadingDebugStatus
+                                ? null
+                                : () => _refreshDebugStatus(showLoading: true),
+                        icon: _loadingDebugStatus
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.refresh_rounded),
+                        label: Text(_loadingDebugStatus ? '刷新中' : '刷新诊断'),
+                      ),
+                      FilledButton.tonalIcon(
+                        onPressed:
+                            _exportingDiagnostics ? null : _exportLiveDiagnostics,
+                        icon: _exportingDiagnostics
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.ios_share_rounded),
+                        label:
+                            Text(_exportingDiagnostics ? '导出中' : '导出并分享日志'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_debugStatus != null) ...[
+            _DebugSectionCard(title: '环境与权限', data: environment),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '服务状态', data: service),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '课程数据', data: course),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '时间与阶段', data: timing),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '阶段开关', data: switches),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '岛显示配置', data: display),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '通知判定结果', data: notification),
+            const SizedBox(height: 16),
+            _SettingsSectionCard(
+              title: '原始调试数据',
+              subtitle: '完整原始数据，用于直接核对原生侧所有上岛字段。',
+              child: SelectableText(
+                rawDebugJson,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      height: 1.4,
+                      fontFamily: 'monospace',
+                    ),
               ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          _SettingsSectionCard(
+            title: '本地诊断日志',
+            subtitle: '一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集。',
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: _clearingDiagnostics ? null : _clearLiveDiagnostics,
+                  icon: _clearingDiagnostics
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.delete_outline_rounded),
+                  label: Text(_clearingDiagnostics ? '清空中' : '清空日志'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutScreen()),
+                    );
+                  },
+                  icon: const Icon(Icons.info_outline_rounded),
+                  label: const Text('更多测试者选项'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Map<String, dynamic> _debugSectionMap(dynamic value) {
+  if (value is Map) {
+    return value.map(
+      (key, item) => MapEntry(key.toString(), item),
+    );
+  }
+  return const <String, dynamic>{};
+}
+
+String _debugValueText(dynamic value) {
+  if (value == null) return '';
+  if (value is bool) return value ? '是' : '否';
+  return value.toString();
+}
+
+class _DebugStatusChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _DebugStatusChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DebugSectionCard extends StatelessWidget {
+  final String title;
+  final Map<String, dynamic> data;
+
+  const _DebugSectionCard({
+    required this.title,
+    required this.data,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _SettingsSectionCard(
+      title: title,
+      subtitle: '显示当前原生诊断字段。',
+      child: Column(
+        children: data.entries
+            .map(
+              (entry) => _DebugValueRow(
+                label: entry.key,
+                value: _debugValueText(entry.value).isEmpty
+                    ? '-'
+                    : _debugValueText(entry.value),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+}
+
+class _DebugValueRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DebugValueRow({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 144,
+            child: Text(
+              label,
+              style: textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: SelectableText(
+              value,
+              style: textTheme.bodyMedium?.copyWith(height: 1.35),
             ),
           ),
         ],

@@ -135,6 +135,9 @@ class MainActivity : FlutterActivity() {
                         stopLiveUpdateService()
                         result.success(true)
                     }
+                    "getLiveUpdateDebugStatus" -> {
+                        result.success(LiveUpdateService.buildDebugStatus(this))
+                    }
                     "syncScheduleSnapshot" -> {
                         val snapshotJson = call.arguments as? String
                         if (snapshotJson != null) {
@@ -716,6 +719,163 @@ class LiveUpdateService : Service() {
             "com.mutx163.qingyu.action.ENABLE_DO_NOT_DISTURB"
         private const val ACTION_DISMISS_STATUS_BAR_STAGE =
             "com.mutx163.qingyu.action.DISMISS_STATUS_BAR_STAGE"
+        private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
+            "android.permission.POST_PROMOTED_NOTIFICATIONS"
+
+        @Volatile
+        private var isServiceRunning = false
+
+        @Volatile
+        private var lastDebugSnapshot: Map<String, Any?> = emptyMap()
+
+        @Volatile
+        private var lastDebugUpdatedAtMillis = 0L
+
+        @Volatile
+        private var lastStopReason: String? = "原生实时服务未运行"
+
+        fun buildDebugStatus(context: Context): Map<String, Any?> {
+            val snapshot = lastDebugSnapshot
+            val summary = copyStringKeyMap(snapshot["summary"]).apply {
+                this["serviceRunning"] = isServiceRunning
+                this["statusText"] = when {
+                    isServiceRunning -> this["statusText"] ?: "运行中"
+                    else -> "未运行"
+                }
+                this["isExpectedToShowIsland"] =
+                    (this["isExpectedToShowIsland"] as? Boolean == true) && isServiceRunning
+                this["isActuallyPromotable"] =
+                    (this["isActuallyPromotable"] as? Boolean == true) && isServiceRunning
+                this["notIslandReason"] =
+                    if (isServiceRunning) {
+                        this["notIslandReason"] ?: ""
+                    } else {
+                        lastStopReason ?: "原生实时服务未运行"
+                    }
+            }
+
+            val service = copyStringKeyMap(snapshot["service"]).apply {
+                this["serviceRunning"] = isServiceRunning
+                this["lastDebugUpdatedAtMillis"] = lastDebugUpdatedAtMillis
+                this["lastStopReason"] = lastStopReason
+            }
+
+            return linkedMapOf(
+                "generatedAtMillis" to System.currentTimeMillis(),
+                "summary" to summary,
+                "environment" to buildEnvironmentSnapshot(context),
+                "service" to service,
+                "course" to copyStringKeyMap(snapshot["course"]),
+                "timing" to copyStringKeyMap(snapshot["timing"]),
+                "switches" to copyStringKeyMap(snapshot["switches"]),
+                "display" to copyStringKeyMap(snapshot["display"]),
+                "notification" to copyStringKeyMap(snapshot["notification"]),
+            )
+        }
+
+        private fun copyStringKeyMap(value: Any?): LinkedHashMap<String, Any?> {
+            val source = value as? Map<*, *> ?: return linkedMapOf()
+            val result = linkedMapOf<String, Any?>()
+            source.forEach { (key, item) ->
+                if (key is String) {
+                    result[key] = item
+                }
+            }
+            return result
+        }
+
+        private fun buildEnvironmentSnapshot(context: Context): Map<String, Any?> {
+            return linkedMapOf(
+                "androidVersion" to Build.VERSION.SDK_INT,
+                "brand" to Build.BRAND,
+                "manufacturer" to Build.MANUFACTURER,
+                "device" to Build.DEVICE,
+                "model" to Build.MODEL,
+                "isXiaomiFamilyDevice" to isXiaomiFamilyDeviceCompat(),
+                "hasNotificationPermission" to hasNotificationPermissionCompat(context),
+                "hasPromotedPermissionDeclared" to isPromotedPermissionDeclaredCompat(context),
+                "canPostPromotedNotifications" to canPostPromotedNotificationsCompat(context),
+                "ignoringBatteryOptimizations" to isIgnoringBatteryOptimizationsCompat(context),
+                "keepAliveAccessibilityEnabled" to KeepAliveAccessibilityStatus.isEnabled(context),
+                "hideFromRecentsEnabled" to context
+                    .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                    .getBoolean(KEY_HIDE_FROM_RECENTS, false),
+            )
+        }
+
+        private fun updateDebugSnapshot(snapshot: Map<String, Any?>) {
+            lastDebugSnapshot = snapshot
+            lastDebugUpdatedAtMillis = System.currentTimeMillis()
+            lastStopReason = null
+        }
+
+        private fun markServiceRunning() {
+            isServiceRunning = true
+            lastStopReason = null
+            lastDebugUpdatedAtMillis = System.currentTimeMillis()
+        }
+
+        private fun markServiceStopped(reason: String) {
+            isServiceRunning = false
+            lastStopReason = reason
+            lastDebugUpdatedAtMillis = System.currentTimeMillis()
+        }
+
+        private fun hasNotificationPermissionCompat(context: Context): Boolean {
+            return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true
+            }
+        }
+
+        private fun isPromotedPermissionDeclaredCompat(context: Context): Boolean {
+            return try {
+                val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        PackageManager.PackageInfoFlags.of(PackageManager.GET_PERMISSIONS.toLong())
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    context.packageManager.getPackageInfo(
+                        context.packageName,
+                        PackageManager.GET_PERMISSIONS
+                    )
+                }
+                packageInfo.requestedPermissions
+                    ?.contains(POST_PROMOTED_NOTIFICATIONS_PERMISSION) == true
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to inspect promoted notification permission", e)
+                false
+            }
+        }
+
+        private fun canPostPromotedNotificationsCompat(context: Context): Boolean {
+            return Build.VERSION.SDK_INT >= 36 &&
+                context.getSystemService(NotificationManager::class.java)
+                    ?.canPostPromotedNotifications() == true
+        }
+
+        private fun isIgnoringBatteryOptimizationsCompat(context: Context): Boolean {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                return true
+            }
+            val powerManager = context.getSystemService(Context.POWER_SERVICE) as? PowerManager
+            return powerManager?.isIgnoringBatteryOptimizations(context.packageName) == true
+        }
+
+        private fun isXiaomiFamilyDeviceCompat(): Boolean {
+            val brand = Build.BRAND.lowercase()
+            val manufacturer = Build.MANUFACTURER.lowercase()
+            return manufacturer.contains("xiaomi") ||
+                brand.contains("xiaomi") ||
+                brand.contains("redmi") ||
+                brand.contains("poco")
+        }
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -869,6 +1029,7 @@ class LiveUpdateService : Service() {
             lastRemainingText = "-1"
             lastProgressUnits = -1
             lastCriticalTimeText = ""
+            markServiceRunning()
 
             UmengDiagnosticReporter.record(
                 context = applicationContext,
@@ -891,6 +1052,7 @@ class LiveUpdateService : Service() {
             startTicker()
             START_STICKY
         } catch (e: Exception) {
+            markServiceStopped("实时服务启动失败")
             UmengDiagnosticReporter.report(
                 context = applicationContext,
                 category = "live_update_service_start_failed",
@@ -918,6 +1080,9 @@ class LiveUpdateService : Service() {
 
     override fun onDestroy() {
         stopTicker()
+        if (isServiceRunning) {
+            markServiceStopped("原生实时服务已销毁")
+        }
         if (hasStartedForeground) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 stopForeground(STOP_FOREGROUND_REMOVE)
@@ -1082,6 +1247,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun dismissStatusBarStage() {
+        markServiceStopped("课中状态栏提醒已手动关闭")
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_status_bar_dismissed",
@@ -1565,17 +1731,6 @@ class LiveUpdateService : Service() {
         }
     }
 
-    private fun resolveExpandedLargeIcon(): Icon? {
-        return when (miuiIslandExpandedIconMode) {
-            "hidden" -> null
-            "custom_image" -> {
-                val path = miuiIslandExpandedIconPath ?: return null
-                decodeExpandedIconBitmap(path)?.let(Icon::createWithBitmap)
-            }
-            else -> Icon.createWithResource(this, R.mipmap.ic_launcher)
-        }
-    }
-
     private fun decodeExpandedIconBitmap(path: String): Bitmap? {
         val source = BitmapFactory.decodeFile(path) ?: return null
         val side = minOf(source.width, source.height)
@@ -1598,6 +1753,21 @@ class LiveUpdateService : Service() {
             cropped.recycle()
         }
         return scaled
+    }
+
+    private fun applyExpandedLargeIcon(builder: Notification.Builder) {
+        when (miuiIslandExpandedIconMode) {
+            "hidden" -> return
+            "custom_image" -> {
+                val path = miuiIslandExpandedIconPath ?: return
+                decodeExpandedIconBitmap(path)?.let(builder::setLargeIcon)
+            }
+            else -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    builder.setLargeIcon(Icon.createWithResource(this, R.mipmap.ic_launcher))
+                }
+            }
+        }
     }
 
     private fun buildRoundedLauncherIcon(targetSizePx: Int, cornerRadiusPx: Float): Icon? {
@@ -1827,18 +1997,22 @@ class LiveUpdateService : Service() {
             Notification.Builder(this)
         }
 
-        val notificationTitle = if (showStandardNotification) title else ""
-        val notificationContentText = if (!showStandardNotification) {
+        val notificationTitle = if (shouldPromote || showStandardNotification) {
+            title
+        } else {
             ""
-        } else if (shouldPromote) {
+        }
+        val notificationContentText = if (shouldPromote) {
             promotedContentText
+        } else if (!showStandardNotification) {
+            ""
         } else {
             contentText
         }
-        val notificationExpandedText = if (!showStandardNotification) {
-            ""
-        } else if (shouldPromote) {
+        val notificationExpandedText = if (shouldPromote) {
             promotedExpandedDetailText
+        } else if (!showStandardNotification) {
+            ""
         } else {
             expandedDetailText
         }
@@ -1851,9 +2025,7 @@ class LiveUpdateService : Service() {
             } else {
                 setSmallIcon(iconRes)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                resolveExpandedLargeIcon()?.let(::setLargeIcon)
-            }
+            applyExpandedLargeIcon(this)
             setContentIntent(pendingIntent)
             setOngoing(true)
             setAutoCancel(false)
@@ -1938,10 +2110,122 @@ class LiveUpdateService : Service() {
         val notification = builder.build()
         miuiFocusParam?.let { notification.extras.putString("miui.focus.param", it) }
 
+        val canPostPromoted = if (Build.VERSION.SDK_INT >= 36) {
+            getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true
+        } else {
+            false
+        }
+        val hasPromotableCharacteristics = if (Build.VERSION.SDK_INT >= 36) {
+            notification.hasPromotableCharacteristics()
+        } else {
+            null
+        }
+        val isActuallyPromotable =
+            shouldPromote && !isDuringClassStatusBar && canPostPromoted && hasPromotableCharacteristics == true
+        val notIslandReason = when {
+            !hasStartedForeground -> "前台实时通知尚未启动"
+            stage == null -> "当前不在可展示阶段"
+            isDuringClassStatusBar -> "当前处于仅状态栏提醒阶段，不会上岛"
+            !shouldPromote && isDuringClass && !promoteDuringClass ->
+                "课中阶段已配置为普通通知，不会上岛"
+            !shouldPromote -> "当前阶段未请求提升显示"
+            Build.VERSION.SDK_INT < 36 -> "当前系统版本不支持提升通知上岛"
+            !hasNotificationPermissionCompat(this) -> "通知权限未开启"
+            !isPromotedPermissionDeclaredCompat(this) -> "应用未声明提升通知权限"
+            !canPostPromoted -> "系统未允许提升通知"
+            hasPromotableCharacteristics == false -> "当前通知不满足系统提升特征"
+            else -> ""
+        }
+
+        updateDebugSnapshot(
+            linkedMapOf(
+                "summary" to linkedMapOf(
+                    "serviceRunning" to true,
+                    "currentStage" to activityStage,
+                    "resolvedStage" to stage,
+                    "isExpectedToShowIsland" to shouldPromote,
+                    "isActuallyPromotable" to isActuallyPromotable,
+                    "statusText" to if (isActuallyPromotable) "已满足上岛条件" else "未满足上岛条件",
+                    "notIslandReason" to notIslandReason,
+                ),
+                "service" to linkedMapOf(
+                    "serviceRunning" to true,
+                    "hasStartedForeground" to hasStartedForeground,
+                    "activityStage" to activityStage,
+                    "resolvedStage" to stage,
+                    "lastRemainingText" to remainingText,
+                    "lastProgressUnits" to lastProgressUnits,
+                    "lastCriticalTimeText" to lastCriticalTimeText,
+                ),
+                "course" to linkedMapOf(
+                    "courseName" to courseName,
+                    "shortCourseNameRaw" to shortCourseNameRaw,
+                    "nextCourseName" to nextName,
+                    "location" to location,
+                    "teacher" to teacher,
+                    "note" to note,
+                    "startTimeText" to startTimeText,
+                    "endTimeText" to endTimeText,
+                ),
+                "timing" to linkedMapOf(
+                    "nowMillis" to now,
+                    "startAtMillis" to startAtMillis,
+                    "endAtMillis" to endAtMillis,
+                    "remainingToStartMillis" to (startAtMillis - now).coerceAtLeast(0L),
+                    "remainingToEndMillis" to (endAtMillis - now).coerceAtLeast(0L),
+                    "endReminderLeadMillis" to endReminderLeadMillis,
+                    "liveClassReminderStartMinutes" to liveClassReminderStartMinutes,
+                    "endSecondsCountdownThreshold" to endSecondsCountdownThreshold,
+                    "autoDismissAfterStartMinutes" to autoDismissAfterStartMinutes,
+                ),
+                "switches" to linkedMapOf(
+                    "enableBeforeClass" to enableBeforeClass,
+                    "enableDuringClass" to enableDuringClass,
+                    "enableBeforeEnd" to enableBeforeEnd,
+                    "promoteDuringClass" to promoteDuringClass,
+                    "showNotificationDuringClass" to showNotificationDuringClass,
+                ),
+                "display" to linkedMapOf(
+                    "showCountdown" to showCountdown,
+                    "countdownTextStyle" to countdownTextStyle,
+                    "showStageText" to showStageText,
+                    "showCourseNameInIsland" to showCourseNameInIsland,
+                    "showLocationInIsland" to showLocationInIsland,
+                    "useShortNameInIsland" to useShortNameInIsland,
+                    "hidePrefixText" to hidePrefixText,
+                    "duringClassTimeDisplayMode" to duringClassTimeDisplayMode,
+                    "enableMiuiIslandLabelImage" to enableMiuiIslandLabelImage,
+                    "miuiIslandLabelStyle" to miuiIslandLabelStyle,
+                    "miuiIslandLabelContent" to miuiIslandLabelContent,
+                    "miuiIslandLabelFontColor" to miuiIslandLabelFontColor,
+                    "miuiIslandLabelFontWeight" to miuiIslandLabelFontWeight,
+                    "miuiIslandLabelRenderQuality" to miuiIslandLabelRenderQuality,
+                    "miuiIslandLabelFontSize" to miuiIslandLabelFontSize,
+                    "miuiIslandLabelOffsetX" to miuiIslandLabelOffsetX,
+                    "miuiIslandLabelOffsetY" to miuiIslandLabelOffsetY,
+                    "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
+                    "miuiIslandExpandedIconPath" to miuiIslandExpandedIconPath,
+                    "beforeClassQuickAction" to beforeClassQuickAction,
+                ),
+                "notification" to linkedMapOf(
+                    "shouldPromote" to shouldPromote,
+                    "showStandardNotification" to showStandardNotification,
+                    "isDuringClassStatusBar" to isDuringClassStatusBar,
+                    "canPostPromotedNotifications" to canPostPromoted,
+                    "hasPromotableCharacteristics" to hasPromotableCharacteristics,
+                    "miuiFocusParamPresent" to (miuiFocusParam != null),
+                    "notificationTitle" to notificationTitle,
+                    "notificationContentText" to notificationContentText,
+                    "notificationExpandedText" to notificationExpandedText,
+                    "visibleStatusText" to visibleStatusText,
+                    "islandCriticalText" to islandCriticalText,
+                    "promotedContentText" to promotedContentText,
+                ),
+            )
+        )
+
         if (Build.VERSION.SDK_INT >= 36) {
-            val canPostPromoted =
-                getSystemService(NotificationManager::class.java)?.canPostPromotedNotifications() == true
-            if (shouldPromote && (!notification.hasPromotableCharacteristics() || !canPostPromoted)) {
+            if (shouldPromote && (hasPromotableCharacteristics != true || !canPostPromoted)) {
                 UmengDiagnosticReporter.record(
                     context = applicationContext,
                     category = "live_update_not_promoted",
@@ -1950,7 +2234,8 @@ class LiveUpdateService : Service() {
                         "courseName" to courseName,
                         "stage" to stage,
                         "canPostPromoted" to canPostPromoted,
-                        "hasPromotableCharacteristics" to notification.hasPromotableCharacteristics(),
+                        "hasPromotableCharacteristics" to hasPromotableCharacteristics,
+                        "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                     )
                 )
                 UmengDiagnosticReporter.report(
@@ -1962,9 +2247,10 @@ class LiveUpdateService : Service() {
                         "courseName" to courseName,
                         "stage" to stage,
                         "canPostPromoted" to canPostPromoted,
-                        "hasPromotableCharacteristics" to notification.hasPromotableCharacteristics(),
+                        "hasPromotableCharacteristics" to hasPromotableCharacteristics,
                         "showStandardNotification" to showStandardNotification,
                         "remainingText" to remainingText,
+                        "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                     )
                 )
             }
@@ -1979,6 +2265,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun stopAndRemoveNotification() {
+        markServiceStopped("实时提醒已结束并移除通知")
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_service_stopped",
