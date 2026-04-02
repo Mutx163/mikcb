@@ -771,8 +771,12 @@ class TimetableProvider with ChangeNotifier {
     _applyProfileState(targetProfile);
     await _persistActiveProfileState(touchLastUsedAt: true);
     _currentLiveCourseId = null;
+    _hasVisibleLiveUpdate = false;
+    _lastLiveSnapshotSignature = null;
     notifyListeners();
-    await _updateLiveActivity();
+    await _liveActivitiesService.stopLiveUpdate();
+    await _syncLiveScheduleSnapshot();
+    await _updateLiveActivity(syncScheduleSnapshot: false);
   }
 
   Future<void> renameProfile(String profileId, String name) async {

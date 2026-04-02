@@ -1190,6 +1190,7 @@ class LiveUpdateService : Service() {
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         val keepAliveExperimentEnabled = isTaskRemovalKeepAliveEnabled()
+        val keepAliveAccessibilityEnabled = isKeepAliveAccessibilityEnabled()
         getSharedPreferences("native_runtime_prefs", Context.MODE_PRIVATE)
             .edit()
             .putLong("last_task_removed_at", System.currentTimeMillis())
@@ -1203,27 +1204,27 @@ class LiveUpdateService : Service() {
                 "stage" to activityStage,
                 "keepAliveExperimentEnabled" to keepAliveExperimentEnabled,
                 "hideFromRecentsEnabled" to isHideFromRecentsEnabled(),
-                "keepAliveAccessibilityEnabled" to isKeepAliveAccessibilityEnabled(),
+                "keepAliveAccessibilityEnabled" to keepAliveAccessibilityEnabled,
             )
         )
-        if (!keepAliveExperimentEnabled) {
-            val resumed = LiveUpdateScheduler.reschedule(
-                applicationContext,
-                allowImmediateStart = true,
-            )
-            if (!resumed) {
-                stopAndRemoveNotification()
-            } else {
-                UmengDiagnosticReporter.record(
-                    context = applicationContext,
-                    category = "live_update_task_removed_resumed",
-                    message = "Task removed but current live update was resumed immediately",
-                    extras = mapOf(
-                        "courseName" to courseName,
-                        "stage" to activityStage,
-                    )
+        val resumed = LiveUpdateScheduler.reschedule(
+            applicationContext,
+            allowImmediateStart = true,
+        )
+        if (!resumed) {
+            stopAndRemoveNotification()
+        } else {
+            UmengDiagnosticReporter.record(
+                context = applicationContext,
+                category = "live_update_task_removed_resumed",
+                message = "Task removed but current live update was resumed immediately",
+                extras = mapOf(
+                    "courseName" to courseName,
+                    "stage" to activityStage,
+                    "keepAliveExperimentEnabled" to keepAliveExperimentEnabled,
+                    "keepAliveAccessibilityEnabled" to keepAliveAccessibilityEnabled,
                 )
-            }
+            )
         }
         super.onTaskRemoved(rootIntent)
     }
