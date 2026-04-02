@@ -46,6 +46,7 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
 import java.util.Calendar
+import kotlin.math.ceil
 
 class MainActivity : FlutterActivity() {
     companion object {
@@ -1022,6 +1023,30 @@ class LiveUpdateService : Service() {
 
             startForegroundSafely(intent)
 
+            if (!hasCompleteLivePayload(intent)) {
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_service_missing_payload",
+                    message = "Live update service restarted without complete payload",
+                    extras = mapOf(
+                        "intentIsNull" to (intent == null),
+                        "hasCourseName" to (!intent?.getStringExtra("courseName").isNullOrBlank()),
+                        "hasStage" to (!intent?.getStringExtra("stage").isNullOrBlank()),
+                        "hasStartAtMillis" to ((intent?.getLongExtra("startAtMillis", 0L) ?: 0L) > 0L),
+                        "hasEndAtMillis" to ((intent?.getLongExtra("endAtMillis", 0L) ?: 0L) > 0L),
+                    )
+                )
+                val resumed = LiveUpdateScheduler.reschedule(
+                    applicationContext,
+                    allowImmediateStart = true,
+                )
+                if (!resumed) {
+                    stopAndRemoveNotification()
+                    return START_NOT_STICKY
+                }
+                return START_STICKY
+            }
+
             courseName = sanitizeTextExtra(intent?.getStringExtra("courseName"))
             shortCourseNameRaw = sanitizeTextExtra(intent?.getStringExtra("shortName"))
             location = sanitizeTextExtra(intent?.getStringExtra("location"))
@@ -1182,7 +1207,23 @@ class LiveUpdateService : Service() {
             )
         )
         if (!keepAliveExperimentEnabled) {
-            stopAndRemoveNotification()
+            val resumed = LiveUpdateScheduler.reschedule(
+                applicationContext,
+                allowImmediateStart = true,
+            )
+            if (!resumed) {
+                stopAndRemoveNotification()
+            } else {
+                UmengDiagnosticReporter.record(
+                    context = applicationContext,
+                    category = "live_update_task_removed_resumed",
+                    message = "Task removed but current live update was resumed immediately",
+                    extras = mapOf(
+                        "courseName" to courseName,
+                        "stage" to activityStage,
+                    )
+                )
+            }
         }
         super.onTaskRemoved(rootIntent)
     }
@@ -1407,6 +1448,21 @@ class LiveUpdateService : Service() {
             .getBoolean(KEY_HIDE_FROM_RECENTS, false)
     }
 
+    private fun hasCompleteLivePayload(intent: Intent?): Boolean {
+        if (intent == null) {
+            return false
+        }
+        val courseName = intent.getStringExtra("courseName")
+        val stage = intent.getStringExtra("stage")
+        val startAtMillis = intent.getLongExtra("startAtMillis", 0L)
+        val endAtMillis = intent.getLongExtra("endAtMillis", 0L)
+        return !courseName.isNullOrBlank() &&
+            !stage.isNullOrBlank() &&
+            startAtMillis > 0L &&
+            endAtMillis > 0L &&
+            endAtMillis >= startAtMillis
+    }
+
     private fun isKeepAliveAccessibilityEnabled(): Boolean {
         return KeepAliveAccessibilityStatus.isEnabled(this)
     }
@@ -1620,7 +1676,7 @@ class LiveUpdateService : Service() {
         }
         val iconSizeDp = if (includeAppIcon) 24f else 0f
         val iconGapDp = if (includeAppIcon) 3f else 0f
-        val horizontalPaddingDp = if (includeAppIcon) 3f else 2f
+        val horizontalPaddingDp = if (includeAppIcon) 3f else 0.75f
         val verticalPaddingDp = 0.5f
         val maxWidthDp = if (includeAppIcon) 132f else 112f
         val maxTextWidthPx = dp(
@@ -1665,7 +1721,6 @@ class LiveUpdateService : Service() {
         val iconGapPx = dp(iconGapDp) * renderScale
         val horizontalPaddingPx = dp(horizontalPaddingDp) * renderScale
         val verticalPaddingPx = dp(verticalPaddingDp) * renderScale
-        val textOnlyMinWidthPx = dp(54f) * renderScale
         val textOnlyMinHeightPx = dp(18f) * renderScale
         val clampedOffsetXDp = offsetXDp.coerceIn(-2f, 2f)
         val clampedOffsetYDp = offsetYDp.coerceIn(-2f, 2f)
@@ -1678,9 +1733,9 @@ class LiveUpdateService : Service() {
                 if (includeAppIcon) iconSizePx + iconGapPx else 0f
             )
         val width = maxOf(
-            contentWidth,
-            if (includeAppIcon) dp(20f) * renderScale else textOnlyMinWidthPx
-        ).toInt()
+            ceil(contentWidth).toInt(),
+            if (includeAppIcon) (dp(20f) * renderScale).toInt() else 1
+        )
         val contentHeight = (
             verticalPaddingPx * 2f + maxOf(textHeightPx, iconSizePx.toFloat())
             )
