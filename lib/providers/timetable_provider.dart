@@ -1099,9 +1099,11 @@ class TimetableProvider with ChangeNotifier {
     _settings = _normalizeSettingsWithTimeScheme(settings);
     await _persistActiveProfileState();
     await _syncNativeRuntimePreferences();
+    _lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
     notifyListeners();
-    await _updateLiveActivity();
+    await _syncLiveScheduleSnapshot();
+    await _updateLiveActivity(syncScheduleSnapshot: false);
     return null;
   }
 
@@ -2066,13 +2068,17 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  Future<void> _updateLiveActivity() async {
+  Future<void> _updateLiveActivity({
+    bool syncScheduleSnapshot = true,
+  }) async {
     await _syncHomeWidgetSnapshot();
     if (!_enableLiveActivitySync) {
       return;
     }
 
-    await _syncLiveScheduleSnapshot();
+    if (syncScheduleSnapshot) {
+      await _syncLiveScheduleSnapshot();
+    }
 
     final suspendedUntil = _liveActivitySuspendedUntil;
     if (suspendedUntil != null) {
@@ -2244,6 +2250,18 @@ class TimetableProvider with ChangeNotifier {
 
   void suspendLiveActivitySyncFor(Duration duration) {
     _liveActivitySuspendedUntil = DateTime.now().add(duration);
+  }
+
+  Future<void> refreshLiveActivityNow({
+    bool forceSnapshotSync = false,
+  }) async {
+    await initialize();
+    if (forceSnapshotSync) {
+      _lastLiveSnapshotSignature = null;
+    }
+    _currentLiveCourseId = null;
+    await _syncLiveScheduleSnapshot();
+    await _updateLiveActivity(syncScheduleSnapshot: false);
   }
 
   void updateCurrentDayOfWeek() {

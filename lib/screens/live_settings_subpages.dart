@@ -91,7 +91,12 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
 
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    if (_autoSaveTimer?.isActive ?? false) {
+      _autoSaveTimer?.cancel();
+      _enqueuePersist(_draft);
+    } else {
+      _autoSaveTimer?.cancel();
+    }
     super.dispose();
   }
 
@@ -352,11 +357,21 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+    unawaited(
+      context.read<TimetableProvider>().refreshLiveActivityNow(
+            forceSnapshotSync: true,
+          ),
+    );
   }
 
   @override
   void dispose() {
-    _autoSaveTimer?.cancel();
+    if (_autoSaveTimer?.isActive ?? false) {
+      _autoSaveTimer?.cancel();
+      _enqueuePersist(_draft);
+    } else {
+      _autoSaveTimer?.cancel();
+    }
     super.dispose();
   }
 
