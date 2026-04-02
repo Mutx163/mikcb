@@ -13,6 +13,7 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED -> {
+                HomeWidgetStorage.refreshSnapshotFromFlutterState(context)
                 TodayWidgetSupport.updateAll(context)
                 HomeWidgetStorage.rescheduleRefresh(context)
             }

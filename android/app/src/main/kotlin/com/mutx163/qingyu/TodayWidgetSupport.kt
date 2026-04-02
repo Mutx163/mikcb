@@ -10,6 +10,7 @@ import android.util.TypedValue
 import android.widget.RemoteViews
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.Calendar
 
 data class TodayWidgetCourseInfo(
     val id: String,
@@ -47,8 +48,62 @@ data class TodayWidgetSizeProfile(
     val isWide: Boolean get() = widthDp > heightDp + 36
 }
 
+private data class WidgetSourceCourse(
+    val id: String,
+    val name: String,
+    val shortName: String?,
+    val location: String,
+    val startTime: String,
+    val endTime: String,
+    val dayOfWeek: Int,
+    val startSection: Int,
+    val endSection: Int,
+    val startWeek: Int,
+    val endWeek: Int,
+    val isOddWeek: Boolean,
+    val isEvenWeek: Boolean,
+    val customWeeks: List<Int>?,
+) {
+    fun isInWeek(week: Int): Boolean {
+        val normalizedCustomWeeks = customWeeks
+            ?.filter { it > 0 }
+            ?.distinct()
+            ?.sorted()
+            ?.takeIf { it.isNotEmpty() }
+        if (normalizedCustomWeeks != null) {
+            return normalizedCustomWeeks.contains(week)
+        }
+        if (week < startWeek || week > endWeek) {
+            return false
+        }
+        if (isOddWeek && week % 2 == 0) {
+            return false
+        }
+        if (isEvenWeek && week % 2 != 0) {
+            return false
+        }
+        return true
+    }
+
+    fun toWidgetCourseInfo(): TodayWidgetCourseInfo {
+        return TodayWidgetCourseInfo(
+            id = id,
+            name = name,
+            shortName = shortName,
+            location = location,
+            startTime = startTime,
+            endTime = endTime,
+        )
+    }
+}
+
 object TodayWidgetSupport {
+    private const val FLUTTER_PREFS_NAME = "FlutterSharedPreferences"
+    private const val KEY_TIMETABLE_PROFILES = "flutter.timetable_profiles"
+    private const val KEY_ACTIVE_PROFILE_ID = "flutter.active_timetable_profile_id"
+
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
+        buildSnapshotFromFlutterState(context)?.let { return it }
         val payload = HomeWidgetStorage.getSnapshotJson(context) ?: return null
         return try {
             parseSnapshot(JSONObject(payload))
@@ -62,6 +117,103 @@ object TodayWidgetSupport {
         TodayMiniListWidgetProvider.updateAll(context)
         TodayMediumWidgetProvider.updateAll(context)
         TodayLargeWidgetProvider.updateAll(context)
+    }
+
+    fun buildSnapshotFromFlutterState(
+        context: Context,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): TodayWidgetSnapshotInfo? {
+        val profileJson = readActiveProfileJson(context) ?: return null
+        val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
+        val currentWeek = calculateWeekForDate(
+            semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
+            fallbackWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
+            semesterWeekCount = semesterWeekCount,
+            nowMillis = nowMillis,
+        )
+        val todayWeekday = Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+        }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
+        val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
+        val todayCourses = allCourses
+            .filter { it.dayOfWeek == todayWeekday && it.isInWeek(currentWeek) }
+            .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
+        val currentCourse = todayCourses.firstOrNull { course ->
+            val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
+            val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return@firstOrNull false
+            nowMillis in startMillis..endMillis
+        }
+        val upcomingCourse = todayCourses.firstOrNull { course ->
+            val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
+            startMillis > nowMillis
+        }
+        val hideCompletedCourses = settingsJson.optBoolean("widgetHideCompletedCourses", false)
+        val visibleTodayCourses = if (hideCompletedCourses) {
+            todayCourses.filter { course ->
+                val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return@filter false
+                endMillis > nowMillis
+            }
+        } else {
+            todayCourses
+        }
+        val state = when {
+            todayCourses.isEmpty() -> "no_course"
+            currentCourse != null -> "ongoing"
+            upcomingCourse != null -> "upcoming"
+            else -> "completed"
+        }
+        return TodayWidgetSnapshotInfo(
+            profileName = profileJson.optString("name", "轻屿课表"),
+            currentWeek = currentWeek,
+            state = state,
+            backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
+            showLocation = settingsJson.optBoolean("widgetShowLocation", true),
+            showCountdown = settingsJson.optBoolean("widgetShowCountdown", true),
+            hideCompletedCourses = hideCompletedCourses,
+            heightAdjustment = settingsJson.optDouble("widgetHeightAdjustment", -11.0).toInt(),
+            cornerRadius = settingsJson.optDouble("widgetCornerRadius", 22.0).toInt(),
+            totalTodayCourseCount = todayCourses.size,
+            todayCourses = todayCourses.map { it.toWidgetCourseInfo() },
+            visibleTodayCourses = visibleTodayCourses.map { it.toWidgetCourseInfo() },
+            highlightedCourse = (currentCourse ?: upcomingCourse)?.toWidgetCourseInfo(),
+            nextCourse = upcomingCourse?.toWidgetCourseInfo(),
+        )
+    }
+
+    fun findNextRefreshAtMillis(
+        context: Context,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): Long? {
+        val profileJson = readActiveProfileJson(context) ?: return null
+        val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
+        val currentWeek = calculateWeekForDate(
+            semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
+            fallbackWeek = profileJson.optInt("currentWeek", 1).coerceAtLeast(1),
+            semesterWeekCount = semesterWeekCount,
+            nowMillis = nowMillis,
+        )
+        val weekday = Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+        }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
+        val todayCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
+            .filter { it.dayOfWeek == weekday && it.isInWeek(currentWeek) }
+            .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
+
+        val triggers = mutableListOf<Long>()
+        for (course in todayCourses) {
+            val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime)
+            val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime)
+            if (startMillis != null && startMillis > nowMillis) {
+                triggers += startMillis
+            }
+            if (endMillis != null && endMillis > nowMillis) {
+                triggers += endMillis + 1000L
+            }
+        }
+        triggers += buildNextMidnightMillis(nowMillis) + 1000L
+        return triggers.filter { it > nowMillis }.minOrNull()
     }
 
     fun sizeProfile(
@@ -299,6 +451,140 @@ object TodayWidgetSupport {
             startTime = json.optString("startTime"),
             endTime = json.optString("endTime"),
         )
+    }
+
+    private fun readActiveProfileJson(context: Context): JSONObject? {
+        val flutterPrefs = context.getSharedPreferences(FLUTTER_PREFS_NAME, Context.MODE_PRIVATE)
+        val profilesPayload = flutterPrefs.getString(KEY_TIMETABLE_PROFILES, null) ?: return null
+        return try {
+            val activeProfileId = flutterPrefs.getString(KEY_ACTIVE_PROFILE_ID, null)
+            val profiles = JSONArray(profilesPayload)
+            var fallbackProfile: JSONObject? = null
+            for (index in 0 until profiles.length()) {
+                val profile = profiles.optJSONObject(index) ?: continue
+                if (fallbackProfile == null) {
+                    fallbackProfile = profile
+                }
+                if (!activeProfileId.isNullOrBlank() &&
+                    profile.optString("id") == activeProfileId
+                ) {
+                    return profile
+                }
+            }
+            fallbackProfile
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private fun parseSourceCourses(json: JSONArray?): List<WidgetSourceCourse> {
+        if (json == null) {
+            return emptyList()
+        }
+        return buildList {
+            for (index in 0 until json.length()) {
+                val item = json.optJSONObject(index) ?: continue
+                add(
+                    WidgetSourceCourse(
+                        id = item.optString("id"),
+                        name = item.optString("name"),
+                        shortName = item.optString("shortName").takeIf { it.isNotBlank() },
+                        location = item.optString("location"),
+                        startTime = item.optString("startTime"),
+                        endTime = item.optString("endTime"),
+                        dayOfWeek = item.optInt("dayOfWeek", 1),
+                        startSection = item.optInt("startSection", 1),
+                        endSection = item.optInt("endSection", 1),
+                        startWeek = item.optInt("startWeek", 1),
+                        endWeek = item.optInt("endWeek", 20),
+                        isOddWeek = item.optBoolean("isOddWeek", false),
+                        isEvenWeek = item.optBoolean("isEvenWeek", false),
+                        customWeeks = item.optJSONArray("customWeeks")?.let { rawWeeks ->
+                            buildList {
+                                for (weekIndex in 0 until rawWeeks.length()) {
+                                    val week = rawWeeks.optInt(weekIndex, 0)
+                                    if (week > 0) {
+                                        add(week)
+                                    }
+                                }
+                            }
+                        },
+                    )
+                )
+            }
+        }
+    }
+
+    private fun calculateWeekForDate(
+        semesterStartMillis: Long?,
+        fallbackWeek: Int,
+        semesterWeekCount: Int,
+        nowMillis: Long,
+    ): Int {
+        if (semesterStartMillis == null) {
+            return fallbackWeek.coerceIn(1, semesterWeekCount)
+        }
+        val normalizedNow = Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val normalizedStart = Calendar.getInstance().apply {
+            timeInMillis = semesterStartMillis
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }
+        val diffDays =
+            ((normalizedNow.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
+        val week = (diffDays / 7) + 1
+        return week.coerceIn(1, semesterWeekCount)
+    }
+
+    private fun buildCourseDateTimeMillis(
+        nowMillis: Long,
+        courseTime: String,
+    ): Long? {
+        val parts = courseTime.split(":")
+        if (parts.size != 2) {
+            return null
+        }
+        val hour = parts[0].toIntOrNull() ?: return null
+        val minute = parts[1].toIntOrNull() ?: return null
+        return Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    private fun buildNextMidnightMillis(nowMillis: Long): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = nowMillis
+            add(Calendar.DAY_OF_YEAR, 1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+
+    private fun calendarDayToWeekday(dayOfWeek: Int): Int {
+        return when (dayOfWeek) {
+            Calendar.MONDAY -> 1
+            Calendar.TUESDAY -> 2
+            Calendar.WEDNESDAY -> 3
+            Calendar.THURSDAY -> 4
+            Calendar.FRIDAY -> 5
+            Calendar.SATURDAY -> 6
+            Calendar.SUNDAY -> 7
+            else -> 1
+        }
     }
 
     private fun normalizedCornerRadius(cornerRadius: Int): Int {
