@@ -2,6 +2,7 @@ package com.mutx163.qingyu
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.DownloadManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -37,6 +38,7 @@ import android.text.TextPaint
 import android.text.TextUtils
 import android.util.Log
 import android.util.TypedValue
+import android.webkit.URLUtil
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
@@ -275,6 +277,28 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SUPPORT_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "enqueueSystemDownload" -> {
+                        val arguments = call.arguments as? Map<*, *>
+                        val url = arguments?.get("url") as? String
+                        val fileName = arguments?.get("fileName") as? String
+                        val title = arguments?.get("title") as? String
+                        val description = arguments?.get("description") as? String
+                        if (url.isNullOrBlank()) {
+                            result.error("INVALID_ARGUMENTS", "Missing download url", null)
+                            return@setMethodCallHandler
+                        }
+                        try {
+                            val downloadId = enqueueSystemDownload(
+                                url = url,
+                                fileName = fileName,
+                                title = title,
+                                description = description,
+                            )
+                            result.success(downloadId)
+                        } catch (e: Exception) {
+                            result.error("DOWNLOAD_ENQUEUE_FAILED", e.message, null)
+                        }
+                    }
                     "saveImageToGallery" -> {
                         val arguments = call.arguments as? Map<*, *>
                         val bytes = arguments?.get("bytes") as? ByteArray
@@ -319,6 +343,49 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun enqueueSystemDownload(
+        url: String,
+        fileName: String?,
+        title: String?,
+        description: String?,
+    ): Long {
+        val downloadManager =
+            getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+                ?: throw IllegalStateException("DownloadManager unavailable")
+        val resolvedFileName = sanitizeDownloadFileName(
+            fileName?.takeIf { it.isNotBlank() }
+                ?: URLUtil.guessFileName(url, null, "application/vnd.android.package-archive")
+        )
+        val request = DownloadManager.Request(Uri.parse(url)).apply {
+            setMimeType("application/vnd.android.package-archive")
+            setTitle(title?.takeIf { it.isNotBlank() } ?: resolvedFileName)
+            if (!description.isNullOrBlank()) {
+                setDescription(description)
+            }
+            setNotificationVisibility(
+                DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+            )
+            setVisibleInDownloadsUi(true)
+            setAllowedOverMetered(true)
+            setAllowedOverRoaming(true)
+            setDestinationInExternalPublicDir(
+                Environment.DIRECTORY_DOWNLOADS,
+                resolvedFileName
+            )
+        }
+        return downloadManager.enqueue(request)
+    }
+
+    private fun sanitizeDownloadFileName(fileName: String): String {
+        val trimmed = fileName.trim().ifEmpty { "mikcb_update.apk" }
+        val normalized = trimmed.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+        return if (normalized.lowercase().endsWith(".apk")) {
+            normalized
+        } else {
+            "$normalized.apk"
+        }
     }
 
     private fun hasNotificationPermission(): Boolean {

@@ -22,6 +22,7 @@ object HomeWidgetStorage {
             .edit()
             .putString(KEY_SNAPSHOT_JSON, payload)
             .apply()
+        refreshSnapshotFromFlutterState(context)
         TodayWidgetSupport.updateAll(context)
         rescheduleRefresh(context)
     }
@@ -57,9 +58,13 @@ object HomeWidgetStorage {
 
     fun rescheduleRefresh(context: Context) {
         cancelRefreshAlarm(context)
-        val nextTriggerAtMillis = loadRefreshTimes(context)
-            .filter { it > System.currentTimeMillis() }
-            .minOrNull() ?: return
+        val nowMillis = System.currentTimeMillis()
+        val nextTriggerAtMillis =
+            TodayWidgetSupport.findNextRefreshAtMillis(context, nowMillis)
+                ?: loadRefreshTimes(context)
+                    .filter { it > nowMillis }
+                    .minOrNull()
+                ?: return
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val pendingIntent = buildRefreshPendingIntent(context)
@@ -102,6 +107,48 @@ object HomeWidgetStorage {
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
+
+    fun refreshSnapshotFromFlutterState(context: Context): Boolean {
+        val snapshot = TodayWidgetSupport.buildSnapshotFromFlutterState(context) ?: return false
+        val payload = JSONObject().apply {
+            put("profileName", snapshot.profileName)
+            put("currentWeek", snapshot.currentWeek)
+            put("state", snapshot.state)
+            put("backgroundStyle", snapshot.backgroundStyle)
+            put("showLocation", snapshot.showLocation)
+            put("showCountdown", snapshot.showCountdown)
+            put("hideCompletedCourses", snapshot.hideCompletedCourses)
+            put("heightAdjustment", snapshot.heightAdjustment)
+            put("cornerRadius", snapshot.cornerRadius)
+            put("totalTodayCourseCount", snapshot.totalTodayCourseCount)
+            put("todayCourses", coursesToJson(snapshot.todayCourses))
+            put("visibleTodayCourses", coursesToJson(snapshot.visibleTodayCourses))
+            put("highlightedCourse", snapshot.highlightedCourse?.let(::courseToJson))
+            put("nextCourse", snapshot.nextCourse?.let(::courseToJson))
+        }.toString()
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_SNAPSHOT_JSON, payload)
+            .apply()
+        return true
+    }
+
+    private fun coursesToJson(courses: List<TodayWidgetCourseInfo>): JSONArray {
+        return JSONArray().apply {
+            courses.forEach { put(courseToJson(it)) }
+        }
+    }
+
+    private fun courseToJson(course: TodayWidgetCourseInfo): JSONObject {
+        return JSONObject().apply {
+            put("id", course.id)
+            put("name", course.name)
+            put("shortName", course.shortName)
+            put("location", course.location)
+            put("startTime", course.startTime)
+            put("endTime", course.endTime)
+        }
     }
 
     private fun loadRefreshTimes(context: Context): List<Long> {

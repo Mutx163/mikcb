@@ -123,6 +123,23 @@ class SupportCreatorService {
     return savedUri != null && savedUri.isNotEmpty;
   }
 
+  Future<int?> enqueueSystemDownload({
+    required String url,
+    String? fileName,
+    String? title,
+    String? description,
+  }) {
+    return _channel.invokeMethod<int>(
+      'enqueueSystemDownload',
+      {
+        'url': url,
+        'fileName': fileName,
+        'title': title,
+        'description': description,
+      },
+    );
+  }
+
   String? _normalizeMirrorUrlPrefix(String? prefix) {
     final candidate =
         (prefix ?? AppUpdateService.defaultMirrorUrlPrefix).trim();

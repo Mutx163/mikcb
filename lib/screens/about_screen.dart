@@ -12,6 +12,7 @@ import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
+import '../services/support_creator_service.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -375,6 +376,7 @@ class AboutUpdateScreen extends StatefulWidget {
 class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   final AppUpdateService _updateService = AppUpdateService();
   final AppAnalytics _analytics = AppAnalytics.instance;
+  final SupportCreatorService _supportService = SupportCreatorService();
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
   int _downloadedBytes = 0;
@@ -546,7 +548,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               theme,
               title: '下载与打开',
               subtitle: isAndroid
-                  ? '国内网络建议优先用国内镜像下载；如果你能稳定访问 GitHub，也可以切到原版。'
+                  ? '国内网络建议优先用国内镜像下载；也可以直接交给系统下载管理器，走系统通知和下载列表。'
                   : '当前平台不支持应用内安装，会直接打开下载地址。',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -589,6 +591,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     ),
                     label: Text(primaryButtonLabel),
                   ),
+                  if (result.hasRelease &&
+                      isAndroid &&
+                      effectiveDownloadUrl != null) ...[
+                    const SizedBox(height: 10),
+                    FilledButton.tonalIcon(
+                      onPressed: _isDownloading
+                          ? null
+                          : () => _enqueueSystemDownload(
+                                url: effectiveDownloadUrl,
+                                version: release?.version,
+                              ),
+                      icon: const Icon(Icons.download_for_offline_rounded),
+                      label: const Text('使用系统下载器下载'),
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   FilledButton.tonalIcon(
                     onPressed: result.hasRelease
@@ -997,6 +1014,60 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
 
     _analytics.logEventLater(name: 'update_download_completed');
+  }
+
+  Future<void> _enqueueSystemDownload({
+    required String url,
+    String? version,
+  }) async {
+    try {
+      final normalizedVersion = (version ?? '').trim().replaceAll(' ', '_');
+      final fileName = normalizedVersion.isEmpty
+          ? 'mikcb_update.apk'
+          : 'mikcb_v$normalizedVersion.apk';
+      final downloadId = await _supportService.enqueueSystemDownload(
+        url: url,
+        fileName: fileName,
+        title: '轻屿课表更新包',
+        description: '已交给系统下载管理器下载，完成后可直接从系统通知安装。',
+      );
+      if (!mounted) {
+        return;
+      }
+      _analytics.logEventLater(
+        name: 'update_system_download_enqueued',
+        parameters: {
+          'has_download_id': downloadId != null,
+        },
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('已交给系统下载管理器，请在系统通知或下载列表里查看进度'),
+        ),
+      );
+    } on PlatformException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _analytics.logEventLater(name: 'update_system_download_failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.message?.trim().isNotEmpty == true
+                ? error.message!
+                : '调用系统下载管理器失败',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _analytics.logEventLater(name: 'update_system_download_failed');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('调用系统下载管理器失败')),
+      );
+    }
   }
 
   String _formatDateTime(DateTime dateTime) {
