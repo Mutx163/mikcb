@@ -11,31 +11,35 @@ class HomeWidgetService {
   factory HomeWidgetService() => _instance;
   HomeWidgetService._internal();
 
-  Future<void> syncSnapshot(HomeWidgetSnapshot snapshot) async {
+  Future<bool> syncSnapshot(HomeWidgetSnapshot snapshot) async {
     try {
       await _channel.invokeMethod(
         'syncSnapshot',
         snapshot.toJson(),
       );
+      return true;
     } on MissingPluginException {
       if (kDebugMode) {
-        return;
+        return true;
       }
     } catch (e) {
       debugPrint('Failed to sync home widget snapshot: $e');
     }
+    return false;
   }
 
-  Future<void> clearSnapshot() async {
+  Future<bool> clearSnapshot() async {
     try {
       await _channel.invokeMethod('clearSnapshot');
+      return true;
     } on MissingPluginException {
       if (kDebugMode) {
-        return;
+        return true;
       }
     } catch (e) {
       debugPrint('Failed to clear home widget snapshot: $e');
     }
+    return false;
   }
 
   Future<void> scheduleRefresh(List<int> triggerAtMillis) async {

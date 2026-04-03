@@ -412,7 +412,7 @@ class MiuiLiveActivitiesService {
     return data;
   }
 
-  Future<void> syncScheduleSnapshot({
+  Future<bool> syncScheduleSnapshot({
     required List<Course> courses,
     required TimetableSettings settings,
     required int currentWeek,
@@ -429,6 +429,7 @@ class MiuiLiveActivitiesService {
         'settings': settings.toJson(),
       });
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
+      return true;
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_snapshot_sync_failed',
@@ -437,13 +438,15 @@ class MiuiLiveActivitiesService {
         stackTrace: stackTrace,
       );
       debugPrint('Failed to sync schedule snapshot: $e');
+      return false;
     }
   }
 
-  Future<void> clearScheduleSnapshot() async {
+  Future<bool> clearScheduleSnapshot() async {
     await initialize();
     try {
       await _channel.invokeMethod('clearScheduleSnapshot');
+      return true;
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_snapshot_clear_failed',
@@ -452,6 +455,7 @@ class MiuiLiveActivitiesService {
         stackTrace: stackTrace,
       );
       debugPrint('Failed to clear schedule snapshot: $e');
+      return false;
     }
   }
 }
