@@ -1076,6 +1076,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final switches = _debugSectionMap(_debugStatus?['switches']);
     final display = _debugSectionMap(_debugStatus?['display']);
     final notification = _debugSectionMap(_debugStatus?['notification']);
+    final recentDiagnostics = _debugSectionMap(_debugStatus?['recentDiagnostics']);
 
     final serviceRunning = summary['serviceRunning'] == true;
     final isActuallyPromotable = summary['isActuallyPromotable'] == true;
@@ -1230,6 +1231,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
             _DebugSectionCard(title: '岛显示配置', data: display),
             const SizedBox(height: 16),
             _DebugSectionCard(title: '通知判定结果', data: notification),
+            const SizedBox(height: 16),
+            _DebugSectionCard(title: '最近诊断日志', data: recentDiagnostics),
             const SizedBox(height: 16),
             _SettingsSectionCard(
               title: '原始调试数据',

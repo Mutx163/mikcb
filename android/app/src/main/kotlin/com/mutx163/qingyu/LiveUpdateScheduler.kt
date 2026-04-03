@@ -1076,6 +1076,12 @@ object LiveUpdateScheduler {
             candidates += FutureStageTrigger("duringClass", startAtMillis)
         }
         if (settings.liveClassReminderStartMinutes > 0) {
+            if (settings.liveEnableDuringClass &&
+                settings.liveShowDuringClassNotification &&
+                startAtMillis > nowMillis
+            ) {
+                candidates += FutureStageTrigger("duringClassStatusBar", startAtMillis)
+            }
             if (settings.liveEnableBeforeEnd && reminderStartMillis > nowMillis) {
                 candidates += FutureStageTrigger("beforeEnd", reminderStartMillis)
             } else if (canDisplayDuring(settings) && reminderStartMillis > nowMillis) {
@@ -1112,11 +1118,8 @@ object LiveUpdateScheduler {
             maxOf(startAtMillis, endAtMillis - settings.liveClassReminderStartMinutes * 60_000L)
         }
         if (settings.liveClassReminderStartMinutes > 0 && nowMillis < reminderStartMillis) {
-            return if (settings.liveEnableDuringClass &&
-                settings.liveShowDuringClassNotification &&
-                !settings.livePromoteDuringClass
-            ) {
-                "duringClass"
+            return if (settings.liveEnableDuringClass && settings.liveShowDuringClassNotification) {
+                "duringClassStatusBar"
             } else {
                 null
             }
@@ -1341,6 +1344,26 @@ object LiveUpdateScheduler {
 
     private fun startForegroundService(context: Context, payload: LiveUpdatePayload) {
         try {
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_payload_selected",
+                message = "Scheduler selected live update payload for native service",
+                extras = mapOf(
+                    "stage" to payload.stage,
+                    "courseName" to payload.currentCourse.name,
+                    "showCourseNameInIsland" to payload.showCourseNameInIsland,
+                    "showLocationInIsland" to payload.showLocationInIsland,
+                    "showCountdown" to payload.showCountdown,
+                    "showStageText" to payload.showStageText,
+                    "promoteDuringClass" to payload.promoteDuringClass,
+                    "showNotificationDuringClass" to payload.showNotificationDuringClass,
+                    "enableMiuiIslandLabelImage" to payload.enableMiuiIslandLabelImage,
+                    "miuiIslandLabelFontSize" to payload.miuiIslandLabelFontSize,
+                    "miuiIslandLabelOffsetX" to payload.miuiIslandLabelOffsetX,
+                    "miuiIslandLabelOffsetY" to payload.miuiIslandLabelOffsetY,
+                    "miuiIslandExpandedIconMode" to payload.miuiIslandExpandedIconMode,
+                )
+            )
             ContextCompat.startForegroundService(context, buildServiceIntent(context, payload))
         } catch (e: Exception) {
             Log.w(TAG, "Failed to start live update service", e)
