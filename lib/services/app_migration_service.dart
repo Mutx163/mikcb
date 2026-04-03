@@ -11,18 +11,30 @@ class AppMigrationService {
   Future<String?> findInstalledLegacyPackage({
     List<String>? candidates,
   }) async {
-    final result = await _channel.invokeMethod<String?>(
-      'findInstalledPackage',
-      candidates ?? const [oldReleasePackage, oldDebugPackage],
-    );
-    return result?.trim().isEmpty ?? true ? null : result;
+    try {
+      final result = await _channel.invokeMethod<String?>(
+        'findInstalledPackage',
+        candidates ?? const [oldReleasePackage, oldDebugPackage],
+      );
+      return result?.trim().isEmpty ?? true ? null : result;
+    } on PlatformException {
+      return null;
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<bool> openPackage(String packageName) async {
-    final result = await _channel.invokeMethod<bool>(
-      'openPackage',
-      packageName,
-    );
-    return result == true;
+    try {
+      final result = await _channel.invokeMethod<bool>(
+        'openPackage',
+        packageName,
+      );
+      return result == true;
+    } on PlatformException {
+      return false;
+    } catch (_) {
+      return false;
+    }
   }
 }

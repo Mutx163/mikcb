@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/support_creator_service.dart';
 
@@ -454,8 +455,11 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   }
 
   Future<SupportDonorData> _loadDonors() {
-    final mirrorUrlPrefix =
-        context.read<TimetableProvider>().settings.appUpdateMirrorUrlPrefix;
+    final settings = context.read<TimetableProvider>().settings;
+    final mirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: AppUpdateMirrorPresetX.fromValue(settings.appUpdateMirrorPreset),
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
     return _service.fetchDonors(mirrorUrlPrefix: mirrorUrlPrefix);
   }
 }

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -161,5 +163,77 @@ void main() {
     expect(result.hasRelease, isTrue);
     expect(result.hasUpdate, isTrue);
     expect(result.latestRelease?.version, '1.1.10.4');
+  });
+
+  test('download can be cancelled and cleans up partial apk', () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+
+    unawaited(() async {
+      await for (final request in server) {
+        request.response.statusCode = 200;
+        request.response.headers.contentType =
+            ContentType.binary;
+        request.response.headers.contentLength = 12;
+        request.response.add(List<int>.filled(4, 1));
+        await request.response.flush();
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+        request.response.add(List<int>.filled(4, 2));
+        await request.response.flush();
+        await Future<void>.delayed(const Duration(milliseconds: 40));
+        request.response.add(List<int>.filled(4, 3));
+        await request.response.close();
+      }
+    }());
+
+    final controller = AppUpdateDownloadController();
+    final progressEvents = <int>[];
+    final service = AppUpdateService(
+      temporaryDirectoryProvider: () async => tempDir,
+      openInstaller: (path) async {
+        fail('cancelled download should not try to open installer');
+      },
+    );
+
+    final downloadFuture = service.downloadAndInstallUpdate(
+      'http://${server.address.host}:${server.port}/app.apk',
+      (downloadedBytes, totalBytes) {
+        progressEvents.add(downloadedBytes);
+        if (downloadedBytes >= 4) {
+          controller.cancel();
+        }
+      },
+      controller,
+    );
+
+    final result = await downloadFuture;
+    final apkFile = File('${tempDir.path}/mikcb_update.apk');
+
+    expect(result, AppUpdateService.downloadCancelledMessage);
+    expect(progressEvents, isNotEmpty);
+    expect(await apkFile.exists(), isFalse);
+
+    await server.close(force: true);
+    await tempDir.delete(recursive: true);
+  });
+
+  test('probe download falls back to range get when head is rejected',
+      () async {
+    final client = MockClient((request) async {
+      if (request.method == 'HEAD') {
+        return http.Response('', 405);
+      }
+      if (request.method == 'GET') {
+        expect(request.headers['Range'], 'bytes=0-0');
+        return http.Response('', 206);
+      }
+      throw UnsupportedError('Unexpected method: ${request.method}');
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.probeDownloadUrl('https://example.com/app.apk');
+
+    expect(result.isSuccess, isTrue);
+    expect(result.statusCode, 206);
   });
 }
