@@ -37,6 +37,7 @@ windows/
 .pub/
 /build/
 web/build/
+.omx/
 
 # Symbolication related
 app.*.symbols
