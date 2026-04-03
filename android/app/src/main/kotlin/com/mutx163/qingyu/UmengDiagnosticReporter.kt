@@ -173,6 +173,27 @@ object UmengDiagnosticReporter {
         }.getOrDefault(false)
     }
 
+    fun readLiveDiagnosticsTail(
+        context: Context,
+        maxChars: Int = 6000,
+    ): String? {
+        if (!isLiveDiagnosticsEnabled(context)) {
+            return null
+        }
+        return runCatching {
+            val file = diagnosticLogFile(context)
+            if (!file.exists()) {
+                return@runCatching null
+            }
+            val text = file.readText()
+            if (text.length <= maxChars) {
+                text.trim().ifEmpty { null }
+            } else {
+                text.takeLast(maxChars).trim().ifEmpty { null }
+            }
+        }.getOrNull()
+    }
+
     fun isLiveDiagnosticsEnabled(context: Context): Boolean {
         return context.getSharedPreferences(NATIVE_PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(KEY_LIVE_DIAGNOSTICS_ENABLED, false)

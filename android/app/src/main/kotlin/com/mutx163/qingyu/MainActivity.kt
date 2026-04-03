@@ -827,6 +827,10 @@ class LiveUpdateService : Service() {
                 this["lastDebugUpdatedAtMillis"] = lastDebugUpdatedAtMillis
                 this["lastStopReason"] = lastStopReason
             }
+            val recentDiagnostics = linkedMapOf<String, Any?>(
+                "enabled" to UmengDiagnosticReporter.isLiveDiagnosticsEnabled(context),
+                "tail" to UmengDiagnosticReporter.readLiveDiagnosticsTail(context),
+            )
 
             return linkedMapOf(
                 "generatedAtMillis" to System.currentTimeMillis(),
@@ -838,6 +842,7 @@ class LiveUpdateService : Service() {
                 "switches" to copyStringKeyMap(snapshot["switches"]),
                 "display" to copyStringKeyMap(snapshot["display"]),
                 "notification" to copyStringKeyMap(snapshot["notification"]),
+                "recentDiagnostics" to recentDiagnostics,
             )
         }
 
@@ -1135,6 +1140,15 @@ class LiveUpdateService : Service() {
                     "enableBeforeClass" to enableBeforeClass,
                     "enableDuringClass" to enableDuringClass,
                     "enableBeforeEnd" to enableBeforeEnd,
+                    "promoteDuringClass" to promoteDuringClass,
+                    "showNotificationDuringClass" to showNotificationDuringClass,
+                    "showCourseNameInIsland" to showCourseNameInIsland,
+                    "showLocationInIsland" to showLocationInIsland,
+                    "enableMiuiIslandLabelImage" to enableMiuiIslandLabelImage,
+                    "miuiIslandLabelFontSize" to miuiIslandLabelFontSize,
+                    "miuiIslandLabelOffsetX" to miuiIslandLabelOffsetX,
+                    "miuiIslandLabelOffsetY" to miuiIslandLabelOffsetY,
+                    "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                 )
             )
 
@@ -1581,8 +1595,8 @@ class LiveUpdateService : Service() {
         return when {
             now < startAtMillis -> if (enableBeforeClass) "beforeClass" else null
             liveClassReminderStartMinutes > 0 && now < reminderStart ->
-                if (enableDuringClass && showNotificationDuringClass && !promoteDuringClass) {
-                    "duringClass"
+                if (enableDuringClass && showNotificationDuringClass) {
+                    "duringClassStatusBar"
                 } else {
                     null
                 }
@@ -1805,6 +1819,7 @@ class LiveUpdateService : Service() {
         remainingText: String,
         timeRangeText: String,
         bodyContent: String,
+        visibleLocation: String,
     ): String? {
         if (!isXiaomiFamilyDevice()) {
             return null
@@ -1812,7 +1827,7 @@ class LiveUpdateService : Service() {
 
         return try {
             val extraInfo = JSONObject().apply {
-                if (location.isNotBlank()) put("location", location)
+                if (visibleLocation.isNotBlank()) put("location", visibleLocation)
                 if (teacher.isNotBlank()) put("teacher", teacher)
                 if (timeRangeText.isNotBlank()) put("time", timeRangeText)
                 if (nextName.isNotBlank()) put("nextCourse", nextName)
@@ -1944,7 +1959,8 @@ class LiveUpdateService : Service() {
         val islandCourseName = if (showCourseNameInIsland) {
             if (nameToUse.length > 5) nameToUse.substring(0, 5) else nameToUse
         } else ""
-        val islandLocation = if (showLocationInIsland) location else ""
+        val visibleLocation = if (showLocationInIsland) location else ""
+        val islandLocation = visibleLocation
         val miuiIslandLabelText = when (miuiIslandLabelContent) {
             "location" -> location
             "course_name_and_location" -> listOf(
@@ -1979,12 +1995,12 @@ class LiveUpdateService : Service() {
         val subText = if (isUpcoming) {
             listOf(
                 timeRangeText.takeIf { it.isNotBlank() }?.let { "上课时间: $it" },
-                location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+                visibleLocation.takeIf { it.isNotBlank() }?.let { "地点: $it" }
             ).filterNotNull().joinToString("  ·  ")
         } else if (isEndingSoon) {
             listOf(
                 timeRangeText.takeIf { it.isNotBlank() }?.let { "下课时间: $it" },
-                location.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+                visibleLocation.takeIf { it.isNotBlank() }?.let { "地点: $it" }
             ).filterNotNull().joinToString("  ·  ")
         } else {
             ""
@@ -1993,11 +2009,11 @@ class LiveUpdateService : Service() {
             listOf(
                 classProgress.nextMilestoneDisplayText,
                 classProgress.finalDismissDisplayText,
-                location.takeIf { it.isNotBlank() }
+                visibleLocation.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
             listOf(
-                location.takeIf { it.isNotBlank() },
+                visibleLocation.takeIf { it.isNotBlank() },
                 teacher.takeIf { it.isNotBlank() },
                 visibleStatusText.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
@@ -2034,7 +2050,7 @@ class LiveUpdateService : Service() {
                 append("\n状态: ").append(detailStatusText)
             }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (location.isNotBlank()) append("\n地点: ").append(location)
+            if (visibleLocation.isNotBlank()) append("\n地点: ").append(visibleLocation)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
             if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
             if (note.isNotBlank()) append("\n备注: ").append(note)
@@ -2043,13 +2059,13 @@ class LiveUpdateService : Service() {
         val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
             listOf(
                 classProgress.compactDisplayText,
-                location.takeIf { it.isNotBlank() }
+                visibleLocation.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         } else {
             listOf(
                 visibleStatusText.takeIf { it.isNotBlank() },
                 timeRangeText.takeIf { it.isNotBlank() },
-                location.takeIf { it.isNotBlank() },
+                visibleLocation.takeIf { it.isNotBlank() },
                 teacher.takeIf { it.isNotBlank() }
             ).filterNotNull().joinToString(" · ")
         }
@@ -2064,7 +2080,7 @@ class LiveUpdateService : Service() {
                 append("状态: ").append(detailStatusText)
             }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (location.isNotBlank()) append("\n地点: ").append(location)
+            if (visibleLocation.isNotBlank()) append("\n地点: ").append(visibleLocation)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
             append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
@@ -2092,6 +2108,7 @@ class LiveUpdateService : Service() {
                 remainingText = visibleStatusText,
                 timeRangeText = timeRangeText,
                 bodyContent = if (shouldPromote) promotedContentText else contentText,
+                visibleLocation = visibleLocation,
             )
         }
 
