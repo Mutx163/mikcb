@@ -14,6 +14,63 @@ import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
 
+enum AboutUpdatePrimaryAction {
+  openReleasePage,
+  openDownloadLink,
+  downloadInApp,
+}
+
+@visibleForTesting
+AboutUpdatePrimaryAction resolveAboutUpdatePrimaryAction({
+  required bool isAndroid,
+  required String? downloadUrl,
+}) {
+  final hasDownloadUrl = (downloadUrl ?? '').trim().isNotEmpty;
+  if (!hasDownloadUrl) {
+    return AboutUpdatePrimaryAction.openReleasePage;
+  }
+  if (isAndroid) {
+    return AboutUpdatePrimaryAction.downloadInApp;
+  }
+  return AboutUpdatePrimaryAction.openDownloadLink;
+}
+
+class _MirrorProbeState {
+  final AppUpdateMirrorPreset preset;
+  final String prefix;
+  final AppUpdateDownloadProbeResult result;
+
+  const _MirrorProbeState({
+    required this.preset,
+    required this.prefix,
+    required this.result,
+  });
+}
+
+@visibleForTesting
+AppUpdateMirrorPreset? resolveRecommendedMirrorPreset(
+  Map<AppUpdateMirrorPreset, AppUpdateDownloadProbeResult> probeResults,
+) {
+  final successfulEntries = probeResults.entries
+      .where((entry) => entry.value.isSuccess)
+      .toList()
+    ..sort((left, right) => left.value.elapsed.compareTo(right.value.elapsed));
+  return successfulEntries.isEmpty ? null : successfulEntries.first.key;
+}
+
+@visibleForTesting
+AppUpdateMirrorPreset? resolveMirrorFallbackPreset({
+  required AppUpdateMirrorPreset currentPreset,
+  required List<AppUpdateMirrorPreset> availablePresets,
+}) {
+  for (final preset in availablePresets) {
+    if (preset != currentPreset) {
+      return preset;
+    }
+  }
+  return null;
+}
+
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
@@ -379,13 +436,23 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   final SupportCreatorService _supportService = SupportCreatorService();
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
+  bool _isCancellingDownload = false;
+  bool _isProbingMirrors = false;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
+  AppUpdateDownloadController? _downloadController;
+  List<_MirrorProbeState> _mirrorProbeStates = const [];
 
   @override
   void initState() {
     super.initState();
     _refreshUpdate();
+  }
+
+  @override
+  void dispose() {
+    _downloadController?.cancel();
+    super.dispose();
   }
 
   @override
@@ -418,6 +485,18 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final downloadSource = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
     );
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
+    final probeResultByPreset = {
+      for (final item in _mirrorProbeStates) item.preset: item.result,
+    };
+    final recommendedMirrorPreset =
+        resolveRecommendedMirrorPreset(probeResultByPreset);
     return FutureBuilder<AppUpdateCheckResult>(
       future: _updateFuture,
       builder: (context, snapshot) {
@@ -465,18 +544,27 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             : _updateService.buildDownloadUrl(
                 originalUrl: originalDownloadUrl,
                 source: downloadSource,
-                mirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+                mirrorUrlPrefix: effectiveMirrorUrlPrefix,
               );
         final isAndroid = defaultTargetPlatform == TargetPlatform.android;
-        final primaryButtonLabel = effectiveDownloadUrl == null
-            ? '查看 Release'
-            : isAndroid
-                ? downloadSource == AppUpdateDownloadSource.mirror
-                    ? '应用内下载安装'
-                    : '打开 GitHub 下载'
-                : downloadSource == AppUpdateDownloadSource.mirror
-                    ? '打开国内镜像下载'
-                    : '打开 GitHub 下载';
+        final primaryAction = resolveAboutUpdatePrimaryAction(
+          isAndroid: isAndroid,
+          downloadUrl: effectiveDownloadUrl,
+        );
+        final primaryButtonLabel = switch (primaryAction) {
+          AboutUpdatePrimaryAction.openReleasePage => '查看 Release',
+          AboutUpdatePrimaryAction.downloadInApp => '应用内下载安装',
+          AboutUpdatePrimaryAction.openDownloadLink =>
+            downloadSource == AppUpdateDownloadSource.mirror
+                ? '打开国内镜像下载'
+                : '打开 GitHub 下载',
+        };
+        final primaryButtonIcon = switch (primaryAction) {
+          AboutUpdatePrimaryAction.downloadInApp => Icons.download_rounded,
+          AboutUpdatePrimaryAction.openDownloadLink ||
+          AboutUpdatePrimaryAction.openReleasePage =>
+            Icons.open_in_new_rounded,
+        };
 
         return Column(
           children: [
@@ -575,20 +663,26 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     ),
                   FilledButton.icon(
                     onPressed: result.hasRelease
-                        ? () {
-                            if (effectiveDownloadUrl != null && isAndroid) {
-                              _downloadAndInstall(effectiveDownloadUrl);
-                            } else {
-                              _openUrl(
-                                  effectiveDownloadUrl ?? release?.releaseUrl);
-                            }
-                          }
+                        ? (primaryAction ==
+                                    AboutUpdatePrimaryAction.downloadInApp &&
+                                _isDownloading
+                            ? null
+                            : () {
+                                switch (primaryAction) {
+                                  case AboutUpdatePrimaryAction.downloadInApp:
+                                    _downloadAndInstall(effectiveDownloadUrl!);
+                                    break;
+                                  case AboutUpdatePrimaryAction
+                                        .openDownloadLink:
+                                    _openUrl(effectiveDownloadUrl);
+                                    break;
+                                  case AboutUpdatePrimaryAction.openReleasePage:
+                                    _openUrl(release?.releaseUrl);
+                                    break;
+                                }
+                              })
                         : null,
-                    icon: Icon(
-                      isAndroid
-                          ? Icons.download_rounded
-                          : Icons.open_in_new_rounded,
-                    ),
+                    icon: Icon(primaryButtonIcon),
                     label: Text(primaryButtonLabel),
                   ),
                   if (result.hasRelease &&
@@ -643,68 +737,259 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     },
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
+                  if (downloadSource == AppUpdateDownloadSource.mirror) ...[
+                    Text(
+                      '镜像线路',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '镜像源前缀',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                    const SizedBox(height: 8),
+                    ...AppUpdateMirrorPreset.values.map((preset) {
+                      final isSelected = mirrorPreset == preset;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Material(
+                          color: isSelected
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(16),
+                          child: RadioListTile<AppUpdateMirrorPreset>(
+                            value: preset,
+                            groupValue: mirrorPreset,
+                            onChanged: (value) {
+                              if (value == null) {
+                                return;
+                              }
+                              _updateMirrorPreset(value);
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            title: Text(preset.label),
+                            subtitle: Text(preset.description),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          settings.appUpdateMirrorUrlPrefix,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '一般不用改，保持默认就可以。',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        FilledButton.tonalIcon(
-                          onPressed: _editMirrorUrlPrefix,
-                          icon: const Icon(Icons.edit_outlined),
-                          label: const Text('修改镜像源'),
-                        ),
-                        if (downloadSource == AppUpdateDownloadSource.mirror &&
-                            (effectiveDownloadUrl ?? '').isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                      );
+                    }),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            '当前镜像下载地址',
+                            mirrorPreset.usesCustomUrl
+                                ? '当前自定义镜像前缀'
+                                : '当前生效镜像前缀',
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            effectiveMirrorUrlPrefix,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            mirrorPreset.usesCustomUrl
+                                ? '当前使用你自定义的镜像地址。保存后会记住这个选项。'
+                                : '已记住当前镜像线路。若访问失败，可切换到其他内置镜像或自定义镜像。',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surface,
-                              borderRadius: BorderRadius.circular(12),
+                          if (originalDownloadUrl != null) ...[
+                            const SizedBox(height: 10),
+                            Wrap(
+                              spacing: 10,
+                              runSpacing: 10,
+                              children: [
+                                FilledButton.tonalIcon(
+                                  onPressed: _isProbingMirrors
+                                      ? null
+                                      : () => _probeAndRecommendMirrors(
+                                            originalDownloadUrl,
+                                            customMirrorUrlPrefix:
+                                                settings.appUpdateMirrorUrlPrefix,
+                                          ),
+                                  icon: Icon(
+                                    _isProbingMirrors
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.speed_rounded,
+                                  ),
+                                  label: Text(
+                                    _isProbingMirrors
+                                        ? '测速中…'
+                                        : '测速并推荐',
+                                  ),
+                                ),
+                                if (recommendedMirrorPreset != null &&
+                                    recommendedMirrorPreset != mirrorPreset)
+                                  FilledButton.tonalIcon(
+                                    onPressed: () => _updateMirrorPreset(
+                                      recommendedMirrorPreset,
+                                    ),
+                                    icon:
+                                        const Icon(Icons.bolt_rounded),
+                                    label: Text(
+                                      '切换到推荐：${recommendedMirrorPreset.label}',
+                                    ),
+                                  ),
+                              ],
                             ),
-                            child: SelectableText(
-                              effectiveDownloadUrl!,
-                              style: theme.textTheme.bodySmall,
+                          ],
+                          if (mirrorPreset.usesCustomUrl) ...[
+                            const SizedBox(height: 10),
+                            FilledButton.tonalIcon(
+                              onPressed: _editMirrorUrlPrefix,
+                              icon: const Icon(Icons.edit_outlined),
+                              label: const Text('修改自定义镜像'),
                             ),
-                          ),
+                          ],
+                          if ((effectiveDownloadUrl ?? '').isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              '当前镜像下载地址',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surface,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: SelectableText(
+                                effectiveDownloadUrl!,
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                          if (_mirrorProbeStates.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              '线路测速结果',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            ..._mirrorProbeStates.map((item) {
+                              final isRecommended =
+                                  item.preset == recommendedMirrorPreset &&
+                                      item.result.isSuccess;
+                              final statusText = item.result.isSuccess
+                                  ? '${item.result.elapsed.inMilliseconds} ms'
+                                  : (item.result.message ?? '不可用');
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.surface,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isRecommended
+                                          ? colorScheme.primary
+                                          : colorScheme.outlineVariant,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              item.preset.label,
+                                              style: theme
+                                                  .textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              item.prefix,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            statusText,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  color: item.result.isSuccess
+                                                      ? colorScheme.primary
+                                                      : colorScheme.error,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                          if (isRecommended)
+                                            Text(
+                                              '推荐',
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        colorScheme.primary,
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
+                  ] else
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        'GitHub 原版现在也支持应用内下载安装。若当前网络访问 GitHub 慢或失败，可切回上面的国内镜像。',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -918,6 +1203,204 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
   }
 
+  Future<void> _updateMirrorPreset(AppUpdateMirrorPreset preset) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorPreset: preset.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    _analytics.logEventLater(
+      name: 'update_mirror_preset_changed',
+      parameters: {
+        'preset': preset.value,
+      },
+    );
+  }
+
+  List<MapEntry<AppUpdateMirrorPreset, String>> _buildMirrorPresetCandidates(
+    String customMirrorUrlPrefix,
+  ) {
+    final candidates = <MapEntry<AppUpdateMirrorPreset, String>>[
+      MapEntry(
+        AppUpdateMirrorPreset.ghfast,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghfast,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghproxyCn,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghproxyCn,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghLlkk,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghLlkk,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+    ];
+    final normalizedCustomPrefix =
+        _normalizeMirrorUrlPrefix(customMirrorUrlPrefix);
+    if (normalizedCustomPrefix != null) {
+      candidates.add(
+        MapEntry(AppUpdateMirrorPreset.custom, normalizedCustomPrefix),
+      );
+    }
+    return candidates;
+  }
+
+  Future<void> _probeAndRecommendMirrors(
+    String originalDownloadUrl, {
+    required String customMirrorUrlPrefix,
+  }) async {
+    final candidates = _buildMirrorPresetCandidates(customMirrorUrlPrefix);
+    if (candidates.isEmpty) {
+      return;
+    }
+
+    _analytics.logEventLater(name: 'update_mirror_probe_started');
+    setState(() {
+      _isProbingMirrors = true;
+      _mirrorProbeStates = const [];
+    });
+
+    final nextStates = <_MirrorProbeState>[];
+    for (final candidate in candidates) {
+      final probeUrl = _updateService.buildDownloadUrl(
+        originalUrl: originalDownloadUrl,
+        source: AppUpdateDownloadSource.mirror,
+        mirrorUrlPrefix: candidate.value,
+      );
+      final probeResult = await _updateService.probeDownloadUrl(probeUrl);
+      nextStates.add(
+        _MirrorProbeState(
+          preset: candidate.key,
+          prefix: candidate.value,
+          result: probeResult,
+        ),
+      );
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isProbingMirrors = false;
+      _mirrorProbeStates = nextStates;
+    });
+
+    final recommendedPreset = resolveRecommendedMirrorPreset({
+      for (final item in nextStates) item.preset: item.result,
+    });
+    if (recommendedPreset == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('测速完成，但暂时没有发现可用镜像线路')),
+      );
+      return;
+    }
+
+    final currentPreset = AppUpdateMirrorPresetX.fromValue(
+      context.read<TimetableProvider>().settings.appUpdateMirrorPreset,
+    );
+    _analytics.logEventLater(
+      name: 'update_mirror_probe_completed',
+      parameters: {
+        'recommended': recommendedPreset.value,
+      },
+    );
+    if (recommendedPreset == currentPreset) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('测速完成，当前线路“${currentPreset.label}”已是最快可用线路')),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('测速完成，推荐切换到“${recommendedPreset.label}”'),
+        action: SnackBarAction(
+          label: '切换',
+          onPressed: () {
+            _updateMirrorPreset(recommendedPreset);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showDownloadFailureSnackBar(String error) {
+    final settings = context.read<TimetableProvider>().settings;
+    final source = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+
+    if (source == AppUpdateDownloadSource.original) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$error，可切到国内镜像后再试'),
+          action: SnackBarAction(
+            label: '切换',
+            onPressed: () {
+              _updateDownloadSource(AppUpdateDownloadSource.mirror);
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    final currentPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final availablePresets = _buildMirrorPresetCandidates(
+      settings.appUpdateMirrorUrlPrefix,
+    ).map((item) => item.key).toList();
+    final recommendedPreset = resolveRecommendedMirrorPreset({
+      for (final item in _mirrorProbeStates) item.preset: item.result,
+    });
+    final fallbackPreset = recommendedPreset != null &&
+            recommendedPreset != currentPreset
+        ? recommendedPreset
+        : resolveMirrorFallbackPreset(
+            currentPreset: currentPreset,
+            availablePresets: availablePresets,
+          );
+
+    if (fallbackPreset != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$error，建议切换到“${fallbackPreset.label}”后重试'),
+          action: SnackBarAction(
+            label: '切换',
+            onPressed: () {
+              _updateMirrorPreset(fallbackPreset);
+            },
+          ),
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(error)),
+    );
+  }
+
   Future<void> _editMirrorUrlPrefix() async {
     final provider = context.read<TimetableProvider>();
     final controller = TextEditingController(
@@ -967,12 +1450,16 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     final message = await provider.updateTimetableSettings(
       provider.settings.copyWith(
+        appUpdateMirrorPreset: AppUpdateMirrorPreset.custom.value,
         appUpdateMirrorUrlPrefix: normalizedPrefix,
       ),
     );
     if (!mounted) {
       return;
     }
+    setState(() {
+      _mirrorProbeStates = const [];
+    });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message ?? '镜像源已保存')),
     );
@@ -980,11 +1467,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Future<void> _downloadAndInstall(String url) async {
+    final controller = AppUpdateDownloadController();
     _analytics.logEventLater(name: 'update_download_started');
     setState(() {
       _isDownloading = true;
+      _isCancellingDownload = false;
       _downloadedBytes = 0;
       _downloadTotalBytes = null;
+      _downloadController = controller;
     });
 
     final error = await _updateService.downloadAndInstallUpdate(
@@ -997,23 +1487,49 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           });
         }
       },
+      controller,
     );
 
-    if (!mounted) return;
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _isDownloading = false;
+      _isCancellingDownload = false;
+      _downloadController = null;
     });
 
     if (error != null) {
+      if (error == AppUpdateService.downloadCancelledMessage) {
+        _analytics.logEventLater(name: 'update_download_cancelled');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已取消下载')),
+        );
+        return;
+      }
       _analytics.logEventLater(name: 'update_download_failed');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      _showDownloadFailureSnackBar(error);
       return;
     }
 
     _analytics.logEventLater(name: 'update_download_completed');
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('安装包已准备好，已尝试打开安装界面；如果系统没有弹出，请稍后从通知或文件管理器手动安装'),
+      ),
+    );
+  }
+
+  void _cancelDownload() {
+    if (!_isDownloading || _isCancellingDownload) {
+      return;
+    }
+    _analytics.logEventLater(name: 'update_download_cancel_requested');
+    _downloadController?.cancel();
+    setState(() {
+      _isCancellingDownload = true;
+    });
   }
 
   Future<void> _enqueueSystemDownload({
@@ -1177,9 +1693,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final progress = totalBytes == null || totalBytes <= 0
         ? null
         : _downloadedBytes / totalBytes;
-    final progressText = progress == null
-        ? '正在下载更新 ${_formatBytes(_downloadedBytes)}'
-        : '正在下载更新 ${(progress * 100).toStringAsFixed(1)}%';
+    final progressText = _isCancellingDownload
+        ? '正在取消下载…'
+        : progress == null
+            ? '正在下载更新 ${_formatBytes(_downloadedBytes)}'
+            : '正在下载更新 ${(progress * 100).toStringAsFixed(1)}%';
     return SafeArea(
       top: false,
       child: Container(
@@ -1225,6 +1743,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: LinearProgressIndicator(
                 value: progress,
                 minHeight: 8,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: _isCancellingDownload ? null : _cancelDownload,
+                icon: const Icon(Icons.close_rounded),
+                label: Text(_isCancellingDownload ? '正在取消…' : '取消下载'),
               ),
             ),
           ],

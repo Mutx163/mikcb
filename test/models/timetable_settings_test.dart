@@ -66,7 +66,10 @@ void main() {
       MiuiIslandExpandedIconMode.appIcon,
     );
     expect(settings.liveMiuiIslandExpandedIconPath, isNull);
+    expect(settings.appUpdateDownloadSource, 'mirror');
+    expect(settings.appUpdateMirrorPreset, 'ghfast');
     expect(settings.appUpdateIncludePrerelease, isFalse);
+    expect(settings.appUpdateMirrorUrlPrefix, defaultAppUpdateMirrorUrlPrefix);
     expect(
       settings.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -148,7 +151,10 @@ void main() {
       MiuiIslandExpandedIconMode.appIcon,
     );
     expect(restored.liveMiuiIslandExpandedIconPath, isNull);
+    expect(restored.appUpdateDownloadSource, 'mirror');
+    expect(restored.appUpdateMirrorPreset, 'ghfast');
     expect(restored.appUpdateIncludePrerelease, isFalse);
+    expect(restored.appUpdateMirrorUrlPrefix, defaultAppUpdateMirrorUrlPrefix);
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.center,
@@ -222,7 +228,10 @@ void main() {
       liveMiuiIslandLabelOffsetY: -3,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
       liveMiuiIslandExpandedIconPath: '/tmp/expanded.png',
+      appUpdateDownloadSource: AppUpdateDownloadSource.original.value,
+      appUpdateMirrorPreset: AppUpdateMirrorPreset.custom.value,
       appUpdateIncludePrerelease: true,
+      appUpdateMirrorUrlPrefix: 'https://mirror.example.com/',
     );
 
     final restored = TimetableSettings.fromJson(settings.toJson());
@@ -289,7 +298,16 @@ void main() {
       MiuiIslandExpandedIconMode.customImage,
     );
     expect(restored.liveMiuiIslandExpandedIconPath, '/tmp/expanded.png');
+    expect(
+      restored.appUpdateDownloadSource,
+      AppUpdateDownloadSource.original.value,
+    );
+    expect(
+      restored.appUpdateMirrorPreset,
+      AppUpdateMirrorPreset.custom.value,
+    );
     expect(restored.appUpdateIncludePrerelease, isTrue);
+    expect(restored.appUpdateMirrorUrlPrefix, 'https://mirror.example.com/');
     expect(
       restored.courseCardVerticalAlign,
       CourseCardVerticalAlign.spaceEvenly,
@@ -401,5 +419,40 @@ void main() {
     });
 
     expect(restored.timetableCourseCardGap, 2.0);
+  });
+
+  test('mirror preset resolves built-in and custom prefixes', () {
+    expect(
+      resolveAppUpdateMirrorUrlPrefix(
+        preset: AppUpdateMirrorPreset.ghfast,
+        customUrlPrefix: 'https://custom.example.com/',
+      ),
+      defaultAppUpdateMirrorUrlPrefix,
+    );
+    expect(
+      resolveAppUpdateMirrorUrlPrefix(
+        preset: AppUpdateMirrorPreset.ghproxyCn,
+        customUrlPrefix: 'https://custom.example.com/',
+      ),
+      ghproxyCnMirrorUrlPrefix,
+    );
+    expect(
+      resolveAppUpdateMirrorUrlPrefix(
+        preset: AppUpdateMirrorPreset.custom,
+        customUrlPrefix: 'https://custom.example.com/',
+      ),
+      'https://custom.example.com/',
+    );
+  });
+
+  test('legacy mirror-only settings infer preset from saved prefix', () {
+    final restored = TimetableSettings.fromJson({
+      ...TimetableSettings.defaults().toJson(),
+      'appUpdateMirrorPreset': null,
+      'appUpdateMirrorUrlPrefix': 'https://mirror.example.com/',
+    });
+
+    expect(restored.appUpdateMirrorPreset, AppUpdateMirrorPreset.custom.value);
+    expect(restored.appUpdateMirrorUrlPrefix, 'https://mirror.example.com/');
   });
 }

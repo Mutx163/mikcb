@@ -43,19 +43,54 @@ class AppUpdateCheckResult {
   });
 }
 
+class AppUpdateDownloadController {
+  bool _isCancelled = false;
+
+  bool get isCancelled => _isCancelled;
+
+  void cancel() {
+    _isCancelled = true;
+  }
+}
+
+typedef AppUpdateTempDirectoryProvider = Future<Directory> Function();
+typedef AppUpdateOpenInstaller = Future<OpenResult> Function(String path);
+
+class AppUpdateDownloadProbeResult {
+  final bool isSuccess;
+  final Duration elapsed;
+  final int? statusCode;
+  final String? message;
+
+  const AppUpdateDownloadProbeResult({
+    required this.isSuccess,
+    required this.elapsed,
+    this.statusCode,
+    this.message,
+  });
+}
+
 class AppUpdateService {
   static const String repositoryUrl = 'https://github.com/Mutx163/mikcb';
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
   static const String releasesApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases';
-  static const String defaultMirrorUrlPrefix = 'https://ghfast.top/';
+  static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
+  static const String downloadCancelledMessage = '下载已取消';
 
   final http.Client _client;
+  final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
+  final AppUpdateOpenInstaller _openInstaller;
 
   AppUpdateService({
     http.Client? client,
-  }) : _client = client ?? http.Client();
+    AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
+    AppUpdateOpenInstaller? openInstaller,
+  })  : _client = client ?? http.Client(),
+        _temporaryDirectoryProvider =
+            temporaryDirectoryProvider ?? getTemporaryDirectory,
+        _openInstaller = openInstaller ?? OpenFilex.open;
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -151,12 +186,17 @@ class AppUpdateService {
   Future<String?> downloadAndInstallUpdate(
     String url,
     void Function(int downloadedBytes, int? totalBytes) onProgress,
+    AppUpdateDownloadController? controller,
   ) async {
+    HttpClient? client;
+    IOSink? sink;
+    File? file;
     try {
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await _temporaryDirectoryProvider();
       final savePath = '${tempDir.path}/mikcb_update.apk';
+      file = File(savePath);
 
-      final client = HttpClient();
+      client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
       final response = await request.close();
 
@@ -166,25 +206,96 @@ class AppUpdateService {
 
       final total = response.contentLength;
       int downloaded = 0;
-      final file = File(savePath);
-      final sink = file.openWrite();
+      sink = file.openWrite();
 
       await for (final chunk in response) {
+        if (controller?.isCancelled == true) {
+          return downloadCancelledMessage;
+        }
         sink.add(chunk);
         downloaded += chunk.length;
         onProgress(downloaded, total <= 0 ? null : total);
       }
 
       await sink.close();
-      client.close();
+      sink = null;
 
-      final result = await OpenFilex.open(savePath);
+      if (controller?.isCancelled == true) {
+        return downloadCancelledMessage;
+      }
+
+      final result = await _openInstaller(savePath);
       if (result.type != ResultType.done) {
         return '打开安装包失败: ${result.message}';
       }
       return null;
     } catch (e) {
+      if (controller?.isCancelled == true) {
+        return downloadCancelledMessage;
+      }
       return '下载或安装过程中出现错误: $e';
+    } finally {
+      try {
+        await sink?.close();
+      } catch (_) {}
+      client?.close(force: true);
+      if (controller?.isCancelled == true && file != null) {
+        await _deleteFileIfExists(file);
+      }
+    }
+  }
+
+  Future<AppUpdateDownloadProbeResult> probeDownloadUrl(
+    String url, {
+    Duration timeout = const Duration(seconds: 4),
+  }) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      return const AppUpdateDownloadProbeResult(
+        isSuccess: false,
+        elapsed: Duration.zero,
+        message: '地址无效',
+      );
+    }
+
+    final stopwatch = Stopwatch()..start();
+    try {
+      var response = await _client
+          .head(
+            uri,
+            headers: const {
+              'User-Agent': 'mikcb-app',
+            },
+          )
+          .timeout(timeout);
+
+      if (response.statusCode == 405 || response.statusCode == 403) {
+        response = await _client
+            .get(
+              uri,
+              headers: const {
+                'User-Agent': 'mikcb-app',
+                'Range': 'bytes=0-0',
+              },
+            )
+            .timeout(timeout);
+      }
+
+      stopwatch.stop();
+      final isSuccess = response.statusCode >= 200 && response.statusCode < 400;
+      return AppUpdateDownloadProbeResult(
+        isSuccess: isSuccess,
+        elapsed: stopwatch.elapsed,
+        statusCode: response.statusCode,
+        message: isSuccess ? null : 'HTTP ${response.statusCode}',
+      );
+    } catch (error) {
+      stopwatch.stop();
+      return AppUpdateDownloadProbeResult(
+        isSuccess: false,
+        elapsed: stopwatch.elapsed,
+        message: error.runtimeType.toString(),
+      );
     }
   }
 
@@ -228,6 +339,12 @@ class AppUpdateService {
 
     final firstAsset = normalizedAssets.isEmpty ? null : normalizedAssets.first;
     return firstAsset?['browser_download_url'] as String?;
+  }
+
+  Future<void> _deleteFileIfExists(File file) async {
+    if (await file.exists()) {
+      await file.delete();
+    }
   }
 
   String _normalizeVersion(String raw) {

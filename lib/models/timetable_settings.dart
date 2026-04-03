@@ -5,6 +5,13 @@ enum AppUpdateDownloadSource {
   mirror,
 }
 
+enum AppUpdateMirrorPreset {
+  ghfast,
+  ghproxyCn,
+  ghLlkk,
+  custom,
+}
+
 enum WidgetBackgroundStyle {
   solid,
   gradient,
@@ -80,6 +87,20 @@ enum LiveBeforeClassQuickAction {
   none,
   silent,
   doNotDisturb,
+}
+
+const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
+const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
+const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
+
+String _normalizeMirrorUrlPrefixValue(String? value) {
+  final normalized = (value ?? '').trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  return normalized.endsWith('/')
+      ? normalized.substring(0, normalized.length - 1)
+      : normalized;
 }
 
 extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
@@ -487,6 +508,72 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   }
 }
 
+extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
+  String get value => switch (this) {
+        AppUpdateMirrorPreset.ghfast => 'ghfast',
+        AppUpdateMirrorPreset.ghproxyCn => 'ghproxy_cn',
+        AppUpdateMirrorPreset.ghLlkk => 'gh_llkk',
+        AppUpdateMirrorPreset.custom => 'custom',
+      };
+
+  String get label => switch (this) {
+        AppUpdateMirrorPreset.ghfast => '默认镜像',
+        AppUpdateMirrorPreset.ghproxyCn => '备用镜像 1',
+        AppUpdateMirrorPreset.ghLlkk => '备用镜像 2',
+        AppUpdateMirrorPreset.custom => '自定义',
+      };
+
+  String get description => switch (this) {
+        AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
+        AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
+        AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+        AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
+      };
+
+  bool get usesCustomUrl =>
+      this == AppUpdateMirrorPreset.custom;
+
+  static AppUpdateMirrorPreset fromValue(String? value) {
+    return AppUpdateMirrorPreset.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => AppUpdateMirrorPreset.ghfast,
+    );
+  }
+
+  static AppUpdateMirrorPreset fromUrlPrefix(String? urlPrefix) {
+    final normalized = _normalizeMirrorUrlPrefixValue(urlPrefix);
+    if (normalized.isEmpty ||
+        normalized == _normalizeMirrorUrlPrefixValue(
+          defaultAppUpdateMirrorUrlPrefix,
+        )) {
+      return AppUpdateMirrorPreset.ghfast;
+    }
+    if (normalized ==
+        _normalizeMirrorUrlPrefixValue(ghproxyCnMirrorUrlPrefix)) {
+      return AppUpdateMirrorPreset.ghproxyCn;
+    }
+    if (normalized == _normalizeMirrorUrlPrefixValue(ghLlkkMirrorUrlPrefix)) {
+      return AppUpdateMirrorPreset.ghLlkk;
+    }
+    return AppUpdateMirrorPreset.custom;
+  }
+}
+
+String resolveAppUpdateMirrorUrlPrefix({
+  required AppUpdateMirrorPreset preset,
+  required String customUrlPrefix,
+}) {
+  final normalizedCustomUrlPrefix = customUrlPrefix.trim();
+  return switch (preset) {
+    AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+    AppUpdateMirrorPreset.custom => normalizedCustomUrlPrefix.isEmpty
+        ? defaultAppUpdateMirrorUrlPrefix
+        : normalizedCustomUrlPrefix,
+  };
+}
+
 class LiveDisplaySettings {
   final bool showCourseName;
   final bool showLocation;
@@ -716,6 +803,7 @@ class TimetableSettings {
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
   final String appUpdateDownloadSource;
+  final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
 
@@ -817,8 +905,9 @@ class TimetableSettings {
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'mirror',
+    this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
-    this.appUpdateMirrorUrlPrefix = 'https://ghfast.top/',
+    this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
   });
 
   factory TimetableSettings.defaults() {
@@ -927,8 +1016,9 @@ class TimetableSettings {
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
       appUpdateDownloadSource: 'mirror',
+      appUpdateMirrorPreset: 'ghfast',
       appUpdateIncludePrerelease: false,
-      appUpdateMirrorUrlPrefix: 'https://ghfast.top/',
+      appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
     );
   }
 
@@ -1037,6 +1127,7 @@ class TimetableSettings {
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
+      'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
     };
@@ -1047,6 +1138,10 @@ class TimetableSettings {
     if (rawSections.isEmpty) {
       return TimetableSettings.defaults();
     }
+    final rawAppUpdateMirrorUrlPrefix =
+        json['appUpdateMirrorUrlPrefix'] as String? ??
+            defaultAppUpdateMirrorUrlPrefix;
+    final rawAppUpdateMirrorPreset = json['appUpdateMirrorPreset'] as String?;
 
     return TimetableSettings(
       sections: rawSections
@@ -1253,10 +1348,16 @@ class TimetableSettings {
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
       appUpdateDownloadSource:
           json['appUpdateDownloadSource'] as String? ?? 'mirror',
+      appUpdateMirrorPreset:
+          (rawAppUpdateMirrorPreset == null
+                  ? AppUpdateMirrorPresetX.fromUrlPrefix(
+                      rawAppUpdateMirrorUrlPrefix,
+                    ).value
+                  : AppUpdateMirrorPresetX.fromValue(rawAppUpdateMirrorPreset)
+                      .value),
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
-      appUpdateMirrorUrlPrefix:
-          json['appUpdateMirrorUrlPrefix'] as String? ?? 'https://ghfast.top/',
+      appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
     );
   }
 
@@ -1362,6 +1463,7 @@ class TimetableSettings {
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
     String? appUpdateDownloadSource,
+    String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
   }) {
@@ -1537,6 +1639,8 @@ class TimetableSettings {
           timetableUnifiedCardColor ?? this.timetableUnifiedCardColor,
       appUpdateDownloadSource:
           appUpdateDownloadSource ?? this.appUpdateDownloadSource,
+      appUpdateMirrorPreset:
+          appUpdateMirrorPreset ?? this.appUpdateMirrorPreset,
       appUpdateIncludePrerelease:
           appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:

@@ -163,7 +163,6 @@ class AppEntryScreen extends StatefulWidget {
 class _AppEntryScreenState extends State<AppEntryScreen> {
   final StorageService _storageService = StorageService();
   final AppMigrationService _migrationService = AppMigrationService();
-  bool _hasScheduledGuide = false;
   bool _startupHandled = false;
   bool _isBootstrapping = true;
 
@@ -269,31 +268,37 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return;
     }
 
-    if (_hasScheduledGuide || !mounted) {
+    if (!mounted) {
       return;
     }
 
-    _hasScheduledGuide = true;
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      unawaited(
-        _openGuide(
-          requirePrivacyConsent: !hasAcceptedPrivacy,
-          initialPrivacyChecked: hasAcceptedPrivacy,
-          markGuideSeenAfterExit: !hasSeenGuide,
-        ),
-      );
-    });
+    final guideCompleted = await _openGuide(
+      requirePrivacyConsent: !hasAcceptedPrivacy,
+      initialPrivacyChecked: hasAcceptedPrivacy,
+      markGuideSeenAfterExit: !hasSeenGuide,
+    );
+    if (!mounted || !guideCompleted) {
+      return;
+    }
+
+    if (await _storageService.hasAcceptedPrivacyPolicy()) {
+      await UmengAnalyticsService.initializeIfNeeded();
+    }
+    if (!mounted) {
+      return;
+    }
 
     setState(() {
       _isBootstrapping = false;
     });
   }
 
-  Future<void> _openGuide({
+  Future<bool> _openGuide({
     required bool requirePrivacyConsent,
     required bool initialPrivacyChecked,
     required bool markGuideSeenAfterExit,
@@ -310,7 +315,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     );
 
     if (!mounted) {
-      return;
+      return false;
     }
 
     if (requirePrivacyConsent) {
@@ -318,13 +323,14 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         await _storageService.setAcceptedPrivacyPolicy(true);
         await UmengAnalyticsService.initializeIfNeeded();
       } else {
-        return;
+        return false;
       }
     }
 
     if (markGuideSeenAfterExit) {
       await _storageService.setHasSeenUserGuide(true);
     }
+    return true;
   }
 
   Future<bool> _runBackupImportFlow({

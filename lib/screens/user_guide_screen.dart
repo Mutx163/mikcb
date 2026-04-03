@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/miui_live_activities_service.dart';
 import 'course_overview_screen.dart';
@@ -137,7 +138,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         child: Scaffold(
           appBar: AppBar(
             automaticallyImplyLeading: !widget.requirePrivacyConsent,
-            title: const Text('首次使用引导'),
+            title: Text(
+              widget.requirePrivacyConsent ? '首次使用引导' : '使用引导与权限',
+            ),
             actions: [
               IconButton(
                 tooltip: '刷新状态',
@@ -161,10 +164,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               _buildShortNameCard(theme),
               const SizedBox(height: 16),
               _buildImportGuideCard(theme),
-              if (widget.requirePrivacyConsent) ...[
-                const SizedBox(height: 16),
-                _buildPrivacyConsentCard(theme),
-              ],
+              const SizedBox(height: 16),
+              _buildPrivacyConsentCard(theme),
               const SizedBox(height: 16),
               _buildTipsCard(theme),
             ],
@@ -609,6 +610,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   Widget _buildPrivacyConsentCard(ThemeData theme) {
     final colorScheme = theme.colorScheme;
+    final helperText = widget.requirePrivacyConsent
+        ? '你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示。'
+        : '这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意。';
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -616,7 +620,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '隐私与数据说明',
+              '隐私、第三方 SDK 与免责说明',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -645,6 +649,40 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '免责与风险提示',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '1. 超级岛、焦点通知、后台提醒和保活效果依赖系统版本、机型、厂商策略、权限、自启动、电池策略等外部条件，无法保证所有设备表现完全一致。',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '2. 检查更新、镜像下载、系统下载器、导入导出与分享等能力依赖网络环境、第三方服务和系统文件能力；若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '3. 在迁移、导入或覆盖数据前，请先自行确认备份文件完整可用，并妥善保管含有课表信息的文件；因用户自行删除、覆盖、分享或保管不当造成的数据问题，需要由用户自行承担相应风险。',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
                 color: colorScheme.surfaceContainerLowest,
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -652,7 +690,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '你勾选同意后，代表你已阅读并同意上述友盟相关说明。',
+                    helperText,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
@@ -726,7 +764,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               children: [
                 if (widget.requirePrivacyConsent)
                   TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
+                    onPressed: _exitWithoutConsent,
                     child: const Text('退出应用'),
                   ),
                 if (widget.requirePrivacyConsent) const SizedBox(width: 8),
@@ -765,6 +803,18 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _exitWithoutConsent() async {
+    try {
+      await SystemNavigator.pop();
+    } catch (_) {
+      // Fall back to dismissing the route so the caller can keep the app blocked.
+    }
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop(false);
   }
 
   Widget _buildHeroChip(IconData icon, String text) {
