@@ -2200,8 +2200,10 @@ class TimetableProvider with ChangeNotifier {
     final activeProfile = this.activeProfile;
     if (activeProfile == null || _courses.isEmpty) {
       if (_lastLiveSnapshotSignature != null) {
-        _lastLiveSnapshotSignature = null;
-        await _liveActivitiesService.clearScheduleSnapshot();
+        final cleared = await _liveActivitiesService.clearScheduleSnapshot();
+        if (cleared) {
+          _lastLiveSnapshotSignature = null;
+        }
       }
       return;
     }
@@ -2219,14 +2221,16 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
-    _lastLiveSnapshotSignature = snapshotSignature;
-    await _liveActivitiesService.syncScheduleSnapshot(
+    final synced = await _liveActivitiesService.syncScheduleSnapshot(
       courses: displayCourses,
       settings: _settings,
       currentWeek: _currentWeek,
       semesterStartDate: _settings.semesterStartDate,
       endReminderLeadMillis: _liveEndReminderWindow.inMilliseconds,
     );
+    if (synced) {
+      _lastLiveSnapshotSignature = snapshotSignature;
+    }
   }
 
   Future<void> _syncHomeWidgetSnapshot() async {
@@ -2234,16 +2238,20 @@ class TimetableProvider with ChangeNotifier {
     final snapshot = buildHomeWidgetSnapshot();
     if (snapshot == null) {
       if (_lastHomeWidgetSnapshotSignature != null) {
-        _lastHomeWidgetSnapshotSignature = null;
-        await _homeWidgetService.clearSnapshot();
+        final cleared = await _homeWidgetService.clearSnapshot();
+        if (cleared) {
+          _lastHomeWidgetSnapshotSignature = null;
+        }
       }
       return;
     }
 
     final snapshotSignature = jsonEncode(snapshot.toJson());
     if (_lastHomeWidgetSnapshotSignature != snapshotSignature) {
-      _lastHomeWidgetSnapshotSignature = snapshotSignature;
-      await _homeWidgetService.syncSnapshot(snapshot);
+      final synced = await _homeWidgetService.syncSnapshot(snapshot);
+      if (synced) {
+        _lastHomeWidgetSnapshotSignature = snapshotSignature;
+      }
     }
     final triggerAtMillis = _homeWidgetSnapshotService.buildRefreshTriggers(
       todayCourses: getCoursesForDay(now.weekday, week: snapshot.currentWeek),
