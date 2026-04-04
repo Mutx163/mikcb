@@ -153,6 +153,46 @@ object UmengDiagnosticReporter {
         }.getOrNull()
     }
 
+    fun readLiveDiagnosticsText(
+        context: Context,
+        maxChars: Int = 120_000,
+    ): String? {
+        if (!isLiveDiagnosticsEnabled(context)) {
+            return null
+        }
+        return runCatching {
+            val file = diagnosticLogFile(context)
+            if (!file.exists()) {
+                return@runCatching null
+            }
+            val header = buildString {
+                appendLine("轻屿课表 - 超级岛诊断日志")
+                appendLine("exportedAt=${System.currentTimeMillis()}")
+                buildDiagnosticContext(context).forEach { (key, value) ->
+                    appendLine("$key=${value ?: "null"}")
+                }
+                appendLine("----")
+            }
+            val body = file.readText().trim()
+            if (body.isEmpty()) {
+                return@runCatching null
+            }
+            val combined = (header + body).trim()
+            if (combined.length <= maxChars) {
+                combined
+            } else {
+                val truncatedBody = body.takeLast((maxChars - header.length).coerceAtLeast(0))
+                buildString {
+                    append(header)
+                    appendLine("truncated=true")
+                    appendLine("truncatedHint=日志过长，当前仅显示最新一部分内容")
+                    appendLine("----")
+                    append(truncatedBody.trimStart())
+                }.trim()
+            }
+        }.getOrNull()
+    }
+
     fun clearLiveDiagnostics(context: Context): Boolean {
         if (!isLiveDiagnosticsEnabled(context)) {
             return false
@@ -384,4 +424,3 @@ object UmengDiagnosticReporter {
         }
     }
 }
-

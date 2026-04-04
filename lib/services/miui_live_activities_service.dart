@@ -151,6 +151,10 @@ class MiuiLiveActivitiesService {
     return UmengAnalyticsService.exportLiveDiagnosticsFile();
   }
 
+  Future<String?> readLiveDiagnosticsText() async {
+    return UmengAnalyticsService.readLiveDiagnosticsText();
+  }
+
   Future<bool> clearLiveDiagnostics() async {
     return UmengAnalyticsService.clearLiveDiagnostics();
   }

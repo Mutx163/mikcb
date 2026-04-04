@@ -139,6 +139,21 @@ class UmengAnalyticsService {
     }
   }
 
+  static Future<String?> readLiveDiagnosticsText() async {
+    if (defaultTargetPlatform != TargetPlatform.android) {
+      return null;
+    }
+    try {
+      final result =
+          await _channel.invokeMethod<String>('readLiveDiagnosticsText');
+      return result;
+    } on MissingPluginException {
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   static Future<bool> clearLiveDiagnostics() async {
     if (defaultTargetPlatform != TargetPlatform.android) {
       return false;
