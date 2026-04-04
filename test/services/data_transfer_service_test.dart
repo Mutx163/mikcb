@@ -20,6 +20,20 @@ void main() {
     expect(backup.currentWeek, 3);
   });
 
+  test('backup json clamps current week to semester week count', () {
+    final service = DataTransferService();
+    final json = service.buildBackupJson(
+      profileName: '大二下',
+      courses: const [],
+      settings: TimetableSettings.defaults().copyWith(semesterWeekCount: 16),
+      currentWeek: 20,
+    );
+
+    final backup = service.parseBackupJson(json);
+
+    expect(backup.currentWeek, 16);
+  });
+
   test('full backup json preserves profiles and time schemes', () {
     final service = DataTransferService();
     final json = service.buildFullBackupJson(

@@ -70,4 +70,73 @@ void main() {
     ]);
     expect(snapshot.highlightedCourse?.id, 'ongoing');
   });
+
+  test('widget snapshot treats exact end time as course already finished', () {
+    const service = HomeWidgetSnapshotService();
+    final settings = TimetableSettings.defaults();
+    final now = DateTime(2026, 3, 27, 9, 40);
+    final courses = [
+      Course(
+        id: 'finished-now',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+      Course(
+        id: 'next-course',
+        name: '大学英语',
+        teacher: '李老师',
+        location: 'B203',
+        dayOfWeek: now.weekday,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:10',
+        endTime: '11:50',
+      ),
+    ];
+
+    final snapshot = service.build(
+      profileId: 'profile-1',
+      profileName: '默认课表',
+      currentWeek: 6,
+      settings: settings,
+      todayCourses: courses,
+      now: now,
+    );
+
+    expect(snapshot.state, HomeWidgetSnapshotState.upcoming);
+    expect(snapshot.highlightedCourse?.id, 'next-course');
+    expect(snapshot.nextCourse?.id, 'next-course');
+  });
+
+  test('widget refresh triggers include exact course end boundary', () {
+    const service = HomeWidgetSnapshotService();
+    final now = DateTime(2026, 3, 27, 8, 30);
+    final courses = [
+      Course(
+        id: 'course-1',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    ];
+
+    final triggers = service.buildRefreshTriggers(
+      todayCourses: courses,
+      now: now,
+    );
+
+    expect(triggers,
+        contains(DateTime(2026, 3, 27, 9, 40).millisecondsSinceEpoch));
+  });
 }

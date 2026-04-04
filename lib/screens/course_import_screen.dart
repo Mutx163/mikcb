@@ -338,7 +338,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('识图导入'),
       ),

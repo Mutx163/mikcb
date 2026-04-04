@@ -206,7 +206,7 @@ class TimetableProvider with ChangeNotifier {
       List<Course>.from(profile.courses),
       settings: _settings,
     );
-    _currentWeek = profile.currentWeek;
+    _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
     unawaited(_syncNativeRuntimePreferences());
   }
 
@@ -510,7 +510,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> setCurrentWeek(int week) async {
-    _currentWeek = week;
+    _currentWeek = clampCurrentWeekToSettings(week, _settings);
     await _persistActiveProfileState();
     _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
@@ -1342,7 +1342,7 @@ class TimetableProvider with ChangeNotifier {
         settings: resolvedSettings,
       );
       _settings = resolvedSettings;
-      _currentWeek = backup.currentWeek;
+      _currentWeek = clampCurrentWeekToSettings(backup.currentWeek, _settings);
 
       await _persistActiveProfileState();
       _currentLiveCourseId = null;
@@ -1386,7 +1386,10 @@ class TimetableProvider with ChangeNotifier {
           settings: resolvedSettings,
         ),
         settings: resolvedSettings,
-        currentWeek: backup.currentWeek,
+        currentWeek: clampCurrentWeekToSettings(
+          backup.currentWeek,
+          resolvedSettings,
+        ),
         createdAt: now,
         lastUsedAt: now,
       );
@@ -1622,7 +1625,7 @@ class TimetableProvider with ChangeNotifier {
 
     for (final course in todayCourses) {
       if (currentTime.compareTo(course.startTime) >= 0 &&
-          currentTime.compareTo(course.endTime) <= 0) {
+          currentTime.compareTo(course.endTime) < 0) {
         return course;
       }
     }

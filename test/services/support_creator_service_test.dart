@@ -28,7 +28,8 @@ void main() {
 
     expect(data.donors.single.name, 'Mirror Donor');
     expect(requests, hasLength(1));
-    expect(requests.single.toString(), startsWith('https://mirror.example.com/'));
+    expect(
+        requests.single.toString(), startsWith('https://mirror.example.com/'));
   });
 
   test('fetchDonors falls back to raw GitHub when mirror request fails',
@@ -59,5 +60,27 @@ void main() {
       requests.map((request) => request.host).toList(),
       ['mirror.example.com', 'raw.githubusercontent.com'],
     );
+  });
+
+  test('fetchDonors decodes utf8 donor names correctly', () async {
+    final client = MockClient((request) async {
+      final body = utf8.encode(jsonEncode({
+        'donors': [
+          {'name': '轻屿同学'},
+        ],
+      }));
+      return http.Response.bytes(
+        body,
+        200,
+        headers: const {
+          'content-type': 'application/json',
+        },
+      );
+    });
+
+    final service = SupportCreatorService(client: client);
+    final data = await service.fetchDonors();
+
+    expect(data.donors.single.name, '轻屿同学');
   });
 }

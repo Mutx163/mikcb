@@ -262,7 +262,7 @@ class StorageService {
 
     for (final course in todayCourses) {
       if (currentTime.compareTo(course.startTime) >= 0 &&
-          currentTime.compareTo(course.endTime) <= 0) {
+          currentTime.compareTo(course.endTime) < 0) {
         return course;
       }
     }

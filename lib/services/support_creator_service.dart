@@ -93,7 +93,7 @@ class SupportCreatorService {
           lastError = Exception('HTTP ${response.statusCode}');
           continue;
         }
-        final decoded = jsonDecode(response.body);
+        final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         if (decoded is! Map) {
           throw Exception('鸣谢名单格式不正确');
         }

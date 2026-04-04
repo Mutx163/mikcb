@@ -37,4 +37,22 @@ void main() {
     expect(restored.createdAt, DateTime(2026, 3, 22, 9));
     expect(restored.lastUsedAt, DateTime(2026, 3, 22, 10));
   });
+
+  test('timetable profile clamps restored current week to semester length', () {
+    final restored = TimetableProfile.fromJson({
+      'id': 'profile-1',
+      'name': '大一上',
+      'courses': const [],
+      'settings': TimetableSettings.defaults()
+          .copyWith(
+            semesterWeekCount: 12,
+          )
+          .toJson(),
+      'currentWeek': 20,
+      'createdAt': '2026-03-22T09:00:00.000',
+      'lastUsedAt': '2026-03-22T10:00:00.000',
+    });
+
+    expect(restored.currentWeek, 12);
+  });
 }

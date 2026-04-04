@@ -206,12 +206,12 @@ class HomeWidgetSnapshotService {
         triggers.add(start.millisecondsSinceEpoch);
       }
       if (end != null && end.isAfter(now)) {
-        triggers.add(end.millisecondsSinceEpoch + 1000);
+        triggers.add(end.millisecondsSinceEpoch);
       }
     }
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     if (nextMidnight.isAfter(now)) {
-      triggers.add(nextMidnight.millisecondsSinceEpoch + 1000);
+      triggers.add(nextMidnight.millisecondsSinceEpoch);
     }
     final sorted = triggers.toList()..sort();
     return sorted;
@@ -224,7 +224,7 @@ class HomeWidgetSnapshotService {
       if (start == null || end == null) {
         continue;
       }
-      if (!now.isBefore(start) && !now.isAfter(end)) {
+      if (!now.isBefore(start) && now.isBefore(end)) {
         return course;
       }
     }

@@ -189,4 +189,73 @@ void main() {
 
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('custom week grid wraps earlier on narrow screens',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.binding.setSurfaceSize(const Size(320, 800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: AddCourseScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('自定义周'));
+    await tester.pumpAndSettle();
+
+    final weekOne = find.widgetWithText(FilledButton, '1');
+    final weekFive = find.widgetWithText(FilledButton, '5');
+
+    expect(weekOne, findsOneWidget);
+    expect(weekFive, findsOneWidget);
+    expect(tester.getTopLeft(weekFive).dy,
+        greaterThan(tester.getTopLeft(weekOne).dy));
+    expect(tester.getSize(weekOne).height, greaterThanOrEqualTo(44));
+  });
+
+  testWidgets('range week filter uses compact parity chips', (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const MaterialApp(
+          home: AddCourseScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, -900));
+    await tester.pumpAndSettle();
+
+    expect(find.text('全部'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNWidgets(3));
+
+    await tester.tap(find.widgetWithText(ChoiceChip, '单周'));
+    await tester.pumpAndSettle();
+
+    final selectedChip = tester.widget<ChoiceChip>(
+      find.widgetWithText(ChoiceChip, '单周'),
+    );
+    expect(selectedChip.selected, isTrue);
+    expect(find.text('只保留范围内的单周。'), findsOneWidget);
+  });
 }
