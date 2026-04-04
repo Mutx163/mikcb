@@ -13,6 +13,70 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Calendar
 
+internal fun liveSchedulerCourseIsInWeek(
+    week: Int,
+    startWeek: Int,
+    endWeek: Int,
+    isOddWeek: Boolean,
+    isEvenWeek: Boolean,
+    customWeeks: List<Int>?,
+): Boolean {
+    val normalizedCustomWeeks = customWeeks
+        ?.distinct()
+        ?.sorted()
+        ?.takeIf { it.isNotEmpty() }
+    if (normalizedCustomWeeks != null) {
+        return normalizedCustomWeeks.contains(week)
+    }
+    if (week < startWeek || week > endWeek) {
+        return false
+    }
+    if (isOddWeek && week % 2 == 0) {
+        return false
+    }
+    if (isEvenWeek && week % 2 != 0) {
+        return false
+    }
+    return true
+}
+
+internal fun liveSchedulerCalculateWeekForDate(
+    semesterStartMillis: Long?,
+    currentWeek: Int,
+    dateMillis: Long,
+    semesterWeekCount: Int? = null,
+): Int {
+    if (semesterStartMillis == null) {
+        return currentWeek
+    }
+    val normalizedDate = Calendar.getInstance().apply {
+        timeInMillis = dateMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        add(Calendar.DAY_OF_YEAR, -(get(Calendar.DAY_OF_WEEK).toWeekday() - 1))
+    }
+    val normalizedStart = Calendar.getInstance().apply {
+        timeInMillis = semesterStartMillis
+        set(Calendar.HOUR_OF_DAY, 0)
+        set(Calendar.MINUTE, 0)
+        set(Calendar.SECOND, 0)
+        set(Calendar.MILLISECOND, 0)
+        add(Calendar.DAY_OF_YEAR, -(get(Calendar.DAY_OF_WEEK).toWeekday() - 1))
+    }
+    val diffDays =
+        ((normalizedDate.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
+    val week = (diffDays / 7) + 1
+    if (week < 1) {
+        return 1
+    }
+    if (semesterWeekCount != null && week > semesterWeekCount) {
+        return semesterWeekCount
+    }
+    return week
+}
+
 private data class NativeSectionTime(
     val startTime: String,
     val endTime: String,
@@ -33,24 +97,24 @@ private data class NativeCourse(
     val endWeek: Int,
     val isOddWeek: Boolean,
     val isEvenWeek: Boolean,
+    val customWeeks: List<Int>?,
     val note: String?,
 ) {
     fun isInWeek(week: Int): Boolean {
-        if (week < startWeek || week > endWeek) {
-            return false
-        }
-        if (isOddWeek && week % 2 == 0) {
-            return false
-        }
-        if (isEvenWeek && week % 2 != 0) {
-            return false
-        }
-        return true
+        return liveSchedulerCourseIsInWeek(
+            week = week,
+            startWeek = startWeek,
+            endWeek = endWeek,
+            isOddWeek = isOddWeek,
+            isEvenWeek = isEvenWeek,
+            customWeeks = customWeeks,
+        )
     }
 }
 
 private data class NativeLiveSettings(
     val sections: List<NativeSectionTime>,
+    val semesterWeekCount: Int,
     val liveShowCourseName: Boolean,
     val liveShowLocation: Boolean,
     val liveShowCountdown: Boolean,
@@ -176,6 +240,28 @@ private fun normalizeNullableText(value: String?): String? {
 }
 
 private fun normalizeText(value: String?): String = normalizeNullableText(value) ?: ""
+
+private fun parseIntList(raw: Any?): List<Int>? {
+    return when (raw) {
+        is JSONArray -> buildList {
+            for (index in 0 until raw.length()) {
+                val value = raw.opt(index)
+                when (value) {
+                    is Number -> add(value.toInt())
+                    is String -> value.toIntOrNull()?.let(::add)
+                }
+            }
+        }.takeIf { it.isNotEmpty() }
+        is List<*> -> raw.mapNotNull {
+            when (it) {
+                is Number -> it.toInt()
+                is String -> it.toIntOrNull()
+                else -> null
+            }
+        }.takeIf { it.isNotEmpty() }
+        else -> null
+    }
+}
 
 object LiveUpdateScheduler {
     private const val TAG = "LiveUpdateScheduler"
@@ -441,6 +527,7 @@ object LiveUpdateScheduler {
         }
         val settings = NativeLiveSettings(
             sections = sections,
+            semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20),
             liveShowCourseName = settingsJson.optBoolean("liveShowCourseName", true),
             liveShowLocation = settingsJson.optBoolean("liveShowLocation", true),
             liveShowCountdown = settingsJson.optBoolean("liveShowCountdown", true),
@@ -606,6 +693,7 @@ object LiveUpdateScheduler {
                 endWeek = courseJson.optInt("endWeek", 16),
                 isOddWeek = courseJson.optBoolean("isOddWeek", false),
                 isEvenWeek = courseJson.optBoolean("isEvenWeek", false),
+                customWeeks = parseIntList(courseJson.opt("customWeeks")),
                 note = normalizeNullableText(courseJson.opt("note")?.toString()),
             )
         }
@@ -696,6 +784,7 @@ object LiveUpdateScheduler {
             endWeek = (data["endWeek"] as? Number)?.toInt() ?: 16,
             isOddWeek = data["isOddWeek"] as? Boolean ?: false,
             isEvenWeek = data["isEvenWeek"] as? Boolean ?: false,
+            customWeeks = parseIntList(data["customWeeks"]),
             note = normalizeNullableText(data["note"] as? String),
         )
     }
@@ -1206,25 +1295,12 @@ object LiveUpdateScheduler {
         snapshot: NativeScheduleSnapshot,
         dateCalendar: Calendar,
     ): Int {
-        val semesterStartMillis = snapshot.semesterStartMillis ?: return snapshot.currentWeek
-        val normalizedDate = Calendar.getInstance().apply {
-            timeInMillis = dateCalendar.timeInMillis
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val normalizedStart = Calendar.getInstance().apply {
-            timeInMillis = semesterStartMillis
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
-        }
-        val diffDays =
-            ((normalizedDate.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
-        val week = (diffDays / 7) + 1
-        return if (week < 1) 1 else week
+        return liveSchedulerCalculateWeekForDate(
+            semesterStartMillis = snapshot.semesterStartMillis,
+            currentWeek = snapshot.currentWeek,
+            dateMillis = dateCalendar.timeInMillis,
+            semesterWeekCount = snapshot.settings.semesterWeekCount,
+        )
     }
 
     private fun buildCourseDateTimeMillis(
@@ -1406,4 +1482,3 @@ private fun Int.toWeekday(): Int {
         else -> 1
     }
 }
-
