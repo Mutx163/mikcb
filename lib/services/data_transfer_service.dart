@@ -75,16 +75,20 @@ class DataTransferService {
     if (rawSettings is! Map) {
       throw const FormatException('缺少设置数据');
     }
+    final settings = TimetableSettings.fromJson(
+      Map<String, dynamic>.from(rawSettings),
+    );
 
     return AppDataBackup(
       profileName: (json['profileName'] as String?)?.trim().isEmpty == true
           ? null
           : json['profileName'] as String?,
       courses: rawCourses,
-      settings: TimetableSettings.fromJson(
-        Map<String, dynamic>.from(rawSettings),
+      settings: settings,
+      currentWeek: clampCurrentWeekToSettings(
+        ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
+        settings,
       ),
-      currentWeek: ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
       exportedAt: DateTime.tryParse((json['exportedAt'] as String?) ?? '') ??
           DateTime.now(),
     );

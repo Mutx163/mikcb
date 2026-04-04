@@ -934,6 +934,8 @@ class _LiveTestingSettingsScreen extends StatefulWidget {
 
 class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     with WidgetsBindingObserver {
+  static const Duration _autoRefreshInterval = Duration(seconds: 1);
+
   final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
   Map<String, dynamic>? _debugStatus;
   bool _loadingDebugStatus = true;
@@ -942,14 +944,19 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   Timer? _autoRefreshTimer;
   bool _refreshInFlight = false;
   bool _isAppResumed = true;
+  bool _autoRefreshEnabled = true;
+  DateTime? _lastDebugStatusUpdatedAt;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_refreshDebugStatus(showLoading: true));
-    _autoRefreshTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {
+        return;
+      }
+      if (!_autoRefreshEnabled) {
         return;
       }
       unawaited(_refreshDebugStatus());
@@ -984,6 +991,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       setState(() {
         _debugStatus = status;
         _loadingDebugStatus = false;
+        _lastDebugStatusUpdatedAt = DateTime.now();
       });
     } finally {
       _refreshInFlight = false;
@@ -1076,7 +1084,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final switches = _debugSectionMap(_debugStatus?['switches']);
     final display = _debugSectionMap(_debugStatus?['display']);
     final notification = _debugSectionMap(_debugStatus?['notification']);
-    final recentDiagnostics = _debugSectionMap(_debugStatus?['recentDiagnostics']);
+    final recentDiagnostics =
+        _debugSectionMap(_debugStatus?['recentDiagnostics']);
 
     final serviceRunning = summary['serviceRunning'] == true;
     final isActuallyPromotable = summary['isActuallyPromotable'] == true;
@@ -1085,6 +1094,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final rawDebugJson = _debugStatus == null
         ? ''
         : JsonEncoder.withIndent('  ').convert(_debugStatus);
+    final refreshedAt = _lastDebugStatusUpdatedAt;
+    final refreshedAtText = refreshedAt == null
+        ? '尚未刷新'
+        : '${refreshedAt.hour.toString().padLeft(2, '0')}:${refreshedAt.minute.toString().padLeft(2, '0')}:${refreshedAt.second.toString().padLeft(2, '0')}';
 
     return Scaffold(
       appBar: AppBar(title: const Text('测试与诊断')),
@@ -1100,7 +1113,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 FilledButton.tonalIcon(
                   onPressed: () async {
                     await _showTestOptions(context);
-                    await Future<void>.delayed(const Duration(milliseconds: 300));
+                    await Future<void>.delayed(
+                        const Duration(milliseconds: 300));
                     await _refreshDebugStatus(showLoading: true);
                   },
                   icon: const Icon(Icons.science_outlined),
@@ -1158,9 +1172,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           ? Icons.verified_outlined
                           : Icons.warning_amber_rounded,
                       label: statusText,
-                      color: isActuallyPromotable
-                          ? Colors.green
-                          : Colors.orange,
+                      color:
+                          isActuallyPromotable ? Colors.green : Colors.orange,
                     ),
                   ],
                 ),
@@ -1179,36 +1192,63 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      FilledButton.tonalIcon(
-                        onPressed:
-                            _loadingDebugStatus
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          FilledButton.tonalIcon(
+                            onPressed: _loadingDebugStatus
                                 ? null
                                 : () => _refreshDebugStatus(showLoading: true),
-                        icon: _loadingDebugStatus
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.refresh_rounded),
-                        label: Text(_loadingDebugStatus ? '刷新中' : '刷新诊断'),
+                            icon: _loadingDebugStatus
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.refresh_rounded),
+                            label: Text(_loadingDebugStatus ? '刷新中' : '刷新诊断'),
+                          ),
+                          FilledButton.tonalIcon(
+                            onPressed: _exportingDiagnostics
+                                ? null
+                                : _exportLiveDiagnostics,
+                            icon: _exportingDiagnostics
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.ios_share_rounded),
+                            label:
+                                Text(_exportingDiagnostics ? '导出中' : '导出并分享日志'),
+                          ),
+                        ],
                       ),
-                      FilledButton.tonalIcon(
-                        onPressed:
-                            _exportingDiagnostics ? null : _exportLiveDiagnostics,
-                        icon: _exportingDiagnostics
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.ios_share_rounded),
-                        label:
-                            Text(_exportingDiagnostics ? '导出中' : '导出并分享日志'),
+                      const SizedBox(height: 8),
+                      SwitchListTile.adaptive(
+                        contentPadding: EdgeInsets.zero,
+                        value: _autoRefreshEnabled,
+                        onChanged: (value) {
+                          setState(() {
+                            _autoRefreshEnabled = value;
+                          });
+                        },
+                        title: const Text('自动刷新'),
+                        subtitle: Text(
+                          _autoRefreshEnabled
+                              ? '每 ${_autoRefreshInterval.inSeconds} 秒自动拉取一次诊断状态'
+                              : '关闭后只在手动刷新时更新，便于稳定查看当前状态',
+                        ),
+                      ),
+                      Text(
+                        '上次刷新：$refreshedAtText',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
                   ),
@@ -1236,13 +1276,21 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
             const SizedBox(height: 16),
             _SettingsSectionCard(
               title: '原始调试数据',
-              subtitle: '完整原始数据，用于直接核对原生侧所有上岛字段。',
-              child: SelectableText(
-                rawDebugJson,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      height: 1.4,
-                      fontFamily: 'monospace',
-                    ),
+              subtitle: '默认折叠，排查时再展开核对完整原生字段。',
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(top: 8),
+                title: const Text('展开原始 JSON'),
+                subtitle: const Text('避免大段原始字段一直占满页面'),
+                children: [
+                  SelectableText(
+                    rawDebugJson,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          height: 1.4,
+                          fontFamily: 'monospace',
+                        ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 16),
@@ -1255,7 +1303,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               runSpacing: 12,
               children: [
                 FilledButton.tonalIcon(
-                  onPressed: _clearingDiagnostics ? null : _clearLiveDiagnostics,
+                  onPressed:
+                      _clearingDiagnostics ? null : _clearLiveDiagnostics,
                   icon: _clearingDiagnostics
                       ? const SizedBox(
                           width: 16,

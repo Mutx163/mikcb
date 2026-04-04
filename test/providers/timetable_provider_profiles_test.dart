@@ -101,6 +101,30 @@ void main() {
     expect(provider.activeProfile?.name, '默认课表');
   });
 
+  test('importing backup clamps current week to imported semester week count',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final content = provider.dataTransferService.buildBackupJson(
+      profileName: '导入课表',
+      courses: const [],
+      settings: TimetableSettings.defaults().copyWith(
+        semesterWeekCount: 14,
+      ),
+      currentWeek: 20,
+    );
+
+    final result = await provider.importAppDataBackup(content);
+
+    expect(result, isNull);
+    expect(provider.currentWeek, 14);
+    expect(provider.activeProfile?.currentWeek, 14);
+  });
+
   test('course conflict map only marks actual overlapping weeks', () async {
     final provider = TimetableProvider(
       autoInitialize: false,

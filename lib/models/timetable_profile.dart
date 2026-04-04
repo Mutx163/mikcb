@@ -1,6 +1,18 @@
 import 'course.dart';
 import 'timetable_settings.dart';
 
+int clampCurrentWeekToSettings(int week, TimetableSettings settings) {
+  final maxWeek =
+      settings.semesterWeekCount < 1 ? 1 : settings.semesterWeekCount;
+  if (week < 1) {
+    return 1;
+  }
+  if (week > maxWeek) {
+    return maxWeek;
+  }
+  return week;
+}
+
 class TimetableProfile {
   final String id;
   final String name;
@@ -42,10 +54,14 @@ class TimetableProfile {
       id: json['id'] as String,
       name: json['name'] as String? ?? '未命名课表',
       courses: (json['courses'] as List<dynamic>? ?? const [])
-          .map((item) => Course.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+              (item) => Course.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
       settings: settings,
-      currentWeek: ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
+      currentWeek: clampCurrentWeekToSettings(
+        ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
+        settings,
+      ),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       lastUsedAt: DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??

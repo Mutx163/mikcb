@@ -8,6 +8,8 @@ import '../providers/timetable_provider.dart';
 
 enum _WeekSelectionMode { range, custom }
 
+enum _RangeWeekFilter { all, odd, even }
+
 enum CourseEditorMode { singleLesson, recurring }
 
 class AddCourseScreen extends StatefulWidget {
@@ -601,6 +603,81 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _selectedColor = course.color;
   }
 
+  Widget _buildResponsiveFieldPair({
+    required Widget leading,
+    required Widget trailing,
+    double spacing = 16,
+    double breakpoint = 360,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < breakpoint) {
+          return Column(
+            children: [
+              leading,
+              SizedBox(height: spacing),
+              trailing,
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: leading),
+            SizedBox(width: spacing),
+            Expanded(child: trailing),
+          ],
+        );
+      },
+    );
+  }
+
+  _RangeWeekFilter get _rangeWeekFilter {
+    if (_isOddWeek) {
+      return _RangeWeekFilter.odd;
+    }
+    if (_isEvenWeek) {
+      return _RangeWeekFilter.even;
+    }
+    return _RangeWeekFilter.all;
+  }
+
+  void _setRangeWeekFilter(_RangeWeekFilter filter) {
+    setState(() {
+      _isOddWeek = filter == _RangeWeekFilter.odd;
+      _isEvenWeek = filter == _RangeWeekFilter.even;
+    });
+  }
+
+  Widget _buildRangeWeekFilterChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onPressed,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return ChoiceChip(
+      label: Text(label),
+      selected: selected,
+      showCheckmark: false,
+      selectedColor: colorScheme.primaryContainer,
+      backgroundColor: colorScheme.surfaceContainerHighest,
+      side: BorderSide(
+        color: selected ? colorScheme.primary : colorScheme.outlineVariant,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
+      labelStyle: theme.textTheme.labelLarge?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: selected
+            ? colorScheme.onPrimaryContainer
+            : colorScheme.onSurfaceVariant,
+      ),
+      onSelected: (_) => onPressed(),
+    );
+  }
+
   Widget _buildTimeSection(
     TimetableProvider provider,
     TimetableSettings settings,
@@ -641,6 +718,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
+              isExpanded: true,
               value: _selectedTimeSchemeOverrideId ??
                   _followProfileTimeSchemeValue,
               decoration: const InputDecoration(
@@ -651,12 +729,40 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               items: [
                 DropdownMenuItem(
                   value: _followProfileTimeSchemeValue,
-                  child: Text('跟随当前课表（$followLabel）'),
+                  child: Text(
+                    '跟随当前课表（$followLabel）',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 ...provider.timeSchemes.map(
                   (scheme) => DropdownMenuItem(
                     value: scheme.id,
-                    child: Text(scheme.name),
+                    child: Text(
+                      scheme.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+              selectedItemBuilder: (context) => [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '跟随当前课表（$followLabel）',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                ...provider.timeSchemes.map(
+                  (scheme) => Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      scheme.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ),
               ],
@@ -707,55 +813,50 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               },
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _startSection,
-                    decoration: const InputDecoration(
-                      labelText: '开始节次',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: sectionNumbers.map((section) {
-                      return DropdownMenuItem(
-                        value: section,
-                        child: Text('第 $section 节'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _startSection = value!;
-                        if (_endSection < _startSection) {
-                          _endSection = _startSection;
-                        }
-                      });
-                    },
-                  ),
+            _buildResponsiveFieldPair(
+              leading: DropdownButtonFormField<int>(
+                isExpanded: true,
+                value: _startSection,
+                decoration: const InputDecoration(
+                  labelText: '开始节次',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    value: _endSection,
-                    decoration: const InputDecoration(
-                      labelText: '结束节次',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: sectionNumbers
-                        .where((section) => section >= _startSection)
-                        .map((section) {
-                      return DropdownMenuItem(
-                        value: section,
-                        child: Text('第 $section 节'),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _endSection = value!;
-                      });
-                    },
-                  ),
+                items: sectionNumbers.map((section) {
+                  return DropdownMenuItem(
+                    value: section,
+                    child: Text('第 $section 节'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _startSection = value!;
+                    if (_endSection < _startSection) {
+                      _endSection = _startSection;
+                    }
+                  });
+                },
+              ),
+              trailing: DropdownButtonFormField<int>(
+                isExpanded: true,
+                value: _endSection,
+                decoration: const InputDecoration(
+                  labelText: '结束节次',
+                  border: OutlineInputBorder(),
                 ),
-              ],
+                items: sectionNumbers
+                    .where((section) => section >= _startSection)
+                    .map((section) {
+                  return DropdownMenuItem(
+                    value: section,
+                    child: Text('第 $section 节'),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _endSection = value!;
+                  });
+                },
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -876,139 +977,157 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 16),
             if (_weekSelectionMode == _WeekSelectionMode.range) ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _startWeek,
-                      decoration: const InputDecoration(
-                        labelText: '开始周',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: availableWeeks.map((week) {
-                        return DropdownMenuItem(
-                          value: week,
-                          child: Text('第 $week 周'),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _startWeek = value!;
-                          if (_endWeek < _startWeek) {
-                            _endWeek = _startWeek;
-                          }
-                        });
-                      },
-                    ),
+              _buildResponsiveFieldPair(
+                leading: DropdownButtonFormField<int>(
+                  isExpanded: true,
+                  value: _startWeek,
+                  decoration: const InputDecoration(
+                    labelText: '开始周',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<int>(
-                      value: _endWeek,
-                      decoration: const InputDecoration(
-                        labelText: '结束周',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: availableWeeks
-                          .where((week) => week >= _startWeek)
-                          .map((week) {
-                        return DropdownMenuItem(
-                          value: week,
-                          child: Text('第 $week 周'),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _endWeek = value!;
-                        });
-                      },
-                    ),
+                  items: availableWeeks.map((week) {
+                    return DropdownMenuItem(
+                      value: week,
+                      child: Text('第 $week 周'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _startWeek = value!;
+                      if (_endWeek < _startWeek) {
+                        _endWeek = _startWeek;
+                      }
+                    });
+                  },
+                ),
+                trailing: DropdownButtonFormField<int>(
+                  isExpanded: true,
+                  value: _endWeek,
+                  decoration: const InputDecoration(
+                    labelText: '结束周',
+                    border: OutlineInputBorder(),
                   ),
-                ],
+                  items: availableWeeks
+                      .where((week) => week >= _startWeek)
+                      .map((week) {
+                    return DropdownMenuItem(
+                      value: week,
+                      child: Text('第 $week 周'),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _endWeek = value!;
+                    });
+                  },
+                ),
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: CheckboxListTile(
-                      title: const Text('单周'),
-                      value: _isOddWeek,
-                      onChanged: (value) {
-                        setState(() {
-                          _isOddWeek = value!;
-                          if (_isOddWeek) _isEvenWeek = false;
-                        });
-                      },
-                      controlAffinity: ListTileControlAffinity.leading,
+              _buildResponsiveFieldPair(
+                leading: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildRangeWeekFilterChip(
+                      label: '全部',
+                      selected: _rangeWeekFilter == _RangeWeekFilter.all,
+                      onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.all),
                     ),
-                  ),
-                  Expanded(
-                    child: CheckboxListTile(
-                      title: const Text('双周'),
-                      value: _isEvenWeek,
-                      onChanged: (value) {
-                        setState(() {
-                          _isEvenWeek = value!;
-                          if (_isEvenWeek) _isOddWeek = false;
-                        });
-                      },
-                      controlAffinity: ListTileControlAffinity.leading,
+                    _buildRangeWeekFilterChip(
+                      label: '单周',
+                      selected: _rangeWeekFilter == _RangeWeekFilter.odd,
+                      onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.odd),
                     ),
+                    _buildRangeWeekFilterChip(
+                      label: '双周',
+                      selected: _rangeWeekFilter == _RangeWeekFilter.even,
+                      onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.even),
+                    ),
+                  ],
+                ),
+                trailing: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    _rangeWeekFilter == _RangeWeekFilter.all
+                        ? '按开始周到结束周连续排课。'
+                        : _rangeWeekFilter == _RangeWeekFilter.odd
+                            ? '只保留范围内的单周。'
+                            : '只保留范围内的双周。',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                ],
+                ),
               ),
             ] else ...[
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: availableWeeks.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 6,
-                  mainAxisSpacing: 8,
-                  crossAxisSpacing: 8,
-                  childAspectRatio: 1.7,
-                ),
-                itemBuilder: (context, index) {
-                  final week = availableWeeks[index];
-                  final isSelected = _selectedCustomWeeks.contains(week);
-                  return FilledButton.tonal(
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: isSelected
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest,
-                      foregroundColor: isSelected
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
-                      side: BorderSide(
-                        color: isSelected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.outlineVariant,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final theme = Theme.of(context);
+                  final colorScheme = theme.colorScheme;
+                  final width = constraints.maxWidth;
+                  final crossAxisCount = width < 340
+                      ? 4
+                      : width < 420
+                          ? 5
+                          : 6;
+                  final availableWidth = width - (crossAxisCount - 1) * 8;
+                  final tileWidth = availableWidth / crossAxisCount;
+                  final targetMinHeight = width < 340 ? 46.0 : 44.0;
+                  final childAspectRatio = tileWidth / targetMinHeight;
+                  return GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: availableWeeks.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: childAspectRatio,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        if (isSelected) {
-                          if (_selectedCustomWeeks.length > 1) {
-                            _selectedCustomWeeks.remove(week);
-                          }
-                        } else {
-                          _selectedCustomWeeks.add(week);
-                        }
-                      });
+                    itemBuilder: (context, index) {
+                      final week = availableWeeks[index];
+                      final isSelected = _selectedCustomWeeks.contains(week);
+                      return FilledButton.tonal(
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(48, 44),
+                          tapTargetSize: MaterialTapTargetSize.padded,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 10,
+                          ),
+                          backgroundColor: isSelected
+                              ? colorScheme.primaryContainer
+                              : colorScheme.surfaceContainerHighest,
+                          foregroundColor: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant,
+                          side: BorderSide(
+                            color: isSelected
+                                ? colorScheme.primary
+                                : colorScheme.outlineVariant,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            if (isSelected) {
+                              if (_selectedCustomWeeks.length > 1) {
+                                _selectedCustomWeeks.remove(week);
+                              }
+                            } else {
+                              _selectedCustomWeeks.add(week);
+                            }
+                          });
+                        },
+                        child: Text(
+                          '$week',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      );
                     },
-                    child: Text(
-                      '$week',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
                   );
                 },
               ),
