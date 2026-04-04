@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -270,15 +271,10 @@ class AppUpdateService {
           .timeout(timeout);
 
       if (response.statusCode == 405 || response.statusCode == 403) {
-        response = await _client
-            .get(
-              uri,
-              headers: const {
-                'User-Agent': 'mikcb-app',
-                'Range': 'bytes=0-0',
-              },
-            )
-            .timeout(timeout);
+        response = http.Response(
+          '',
+          await _probeRangeRequestStatusCode(uri, timeout: timeout),
+        );
       }
 
       stopwatch.stop();
@@ -296,6 +292,24 @@ class AppUpdateService {
         elapsed: stopwatch.elapsed,
         message: error.runtimeType.toString(),
       );
+    }
+  }
+
+  Future<int> _probeRangeRequestStatusCode(
+    Uri uri, {
+    required Duration timeout,
+  }) async {
+    final request = http.Request('GET', uri)
+      ..headers.addAll(const {
+        'User-Agent': 'mikcb-app',
+        'Range': 'bytes=0-0',
+      });
+    final response = await _client.send(request).timeout(timeout);
+    final subscription = response.stream.listen(null);
+    try {
+      return response.statusCode;
+    } finally {
+      await subscription.cancel();
     }
   }
 

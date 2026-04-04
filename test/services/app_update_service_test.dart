@@ -1,11 +1,50 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:university_timetable/services/app_update_service.dart';
+
+class _CountingProbeClient extends http.BaseClient {
+  final int totalBytes;
+  int streamedBytes = 0;
+  Map<String, String>? lastGetHeaders;
+
+  _CountingProbeClient({
+    required this.totalBytes,
+  });
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (request.method == 'HEAD') {
+      return http.StreamedResponse(
+        Stream<List<int>>.empty(),
+        405,
+        request: request,
+      );
+    }
+    if (request.method == 'GET') {
+      lastGetHeaders = Map<String, String>.from(request.headers);
+      return http.StreamedResponse(_streamBody(), 200, request: request);
+    }
+    throw UnsupportedError('Unexpected method: ${request.method}');
+  }
+
+  Stream<List<int>> _streamBody() async* {
+    const chunkSize = 1024 * 1024;
+    var remaining = totalBytes;
+    while (remaining > 0) {
+      final size = remaining > chunkSize ? chunkSize : remaining;
+      streamedBytes += size;
+      yield Uint8List(size);
+      remaining -= size;
+      await Future<void>.delayed(Duration.zero);
+    }
+  }
+}
 
 void main() {
   test('include prerelease picks highest version even if not first in list',
@@ -235,5 +274,18 @@ void main() {
 
     expect(result.isSuccess, isTrue);
     expect(result.statusCode, 206);
+  });
+
+  test('probe download does not buffer the full body when range is ignored',
+      () async {
+    final client = _CountingProbeClient(totalBytes: 3 * 1024 * 1024);
+    final service = AppUpdateService(client: client);
+
+    final result = await service.probeDownloadUrl('https://example.com/app.apk');
+
+    expect(result.isSuccess, isTrue);
+    expect(result.statusCode, 200);
+    expect(client.lastGetHeaders?['Range'], 'bytes=0-0');
+    expect(client.streamedBytes, lessThan(client.totalBytes));
   });
 }

@@ -73,9 +73,9 @@ class SupportCreatorService {
   }) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
     final candidateUrls = <String>[
-      _donorsUrl,
       if (normalizedMirrorPrefix != null)
         '$normalizedMirrorPrefix${normalizedMirrorPrefix.endsWith('/') ? '' : '/'}$_donorsUrl',
+      _donorsUrl,
     ];
 
     Object? lastError;
