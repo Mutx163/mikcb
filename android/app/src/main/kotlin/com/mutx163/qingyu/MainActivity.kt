@@ -8,6 +8,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.ContentValues
@@ -249,6 +250,18 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, HOME_WIDGET_CHANNEL)
             .setMethodCallHandler { call, result ->
                 when (call.method) {
+                    "canRequestPinWidget" -> {
+                        result.success(canRequestPinWidget())
+                    }
+                    "requestPinWidget" -> {
+                        val arguments = call.arguments as? Map<*, *>
+                        val widgetType = arguments?.get("widgetType") as? String
+                        if (widgetType.isNullOrBlank()) {
+                            result.error("INVALID_ARGUMENTS", "Missing widget type", null)
+                        } else {
+                            result.success(requestPinWidget(widgetType))
+                        }
+                    }
                     "syncSnapshot" -> {
                         val data = call.arguments as? Map<String, Any?>
                         if (data != null) {
@@ -349,6 +362,42 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun canRequestPinWidget(): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return false
+        }
+        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
+        return appWidgetManager?.isRequestPinAppWidgetSupported == true
+    }
+
+    private fun requestPinWidget(widgetType: String): String {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return "unsupported"
+        }
+        val appWidgetManager = getSystemService(AppWidgetManager::class.java)
+            ?: return "unsupported"
+        if (!appWidgetManager.isRequestPinAppWidgetSupported) {
+            return "unsupported"
+        }
+        val provider = resolveWidgetProvider(widgetType) ?: return "invalid_widget_type"
+        return if (appWidgetManager.requestPinAppWidget(provider, null, null)) {
+            "requested"
+        } else {
+            "failed"
+        }
+    }
+
+    private fun resolveWidgetProvider(widgetType: String): ComponentName? {
+        val providerClass = when (widgetType) {
+            "compact" -> TodayCompactWidgetProvider::class.java
+            "mini_list" -> TodayMiniListWidgetProvider::class.java
+            "medium" -> TodayMediumWidgetProvider::class.java
+            "large" -> TodayLargeWidgetProvider::class.java
+            else -> null
+        } ?: return null
+        return ComponentName(this, providerClass)
     }
 
     private fun enqueueSystemDownload(

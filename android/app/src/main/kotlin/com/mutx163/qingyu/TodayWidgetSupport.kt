@@ -291,6 +291,7 @@ object TodayWidgetSupport {
     fun backgroundRes(style: String, cornerRadius: Int): Int {
         val radius = normalizedCornerRadius(cornerRadius)
         return when (style) {
+            "glass" -> glassBackgroundRes(radius)
             "gradient" -> gradientBackgroundRes(radius)
             else -> solidBackgroundRes(radius)
         }
@@ -388,9 +389,9 @@ object TodayWidgetSupport {
     fun secondaryCourses(snapshot: TodayWidgetSnapshotInfo, limit: Int): List<TodayWidgetCourseInfo> {
         val highlightedId = snapshot.highlightedCourse?.id
         val courses = if (highlightedId == null) {
-            snapshot.todayCourses
+            snapshot.visibleTodayCourses
         } else {
-            snapshot.todayCourses.filterNot { it.id == highlightedId }
+            snapshot.visibleTodayCourses.filterNot { it.id == highlightedId }
         }
         return courses.take(limit)
     }
@@ -589,6 +590,30 @@ object TodayWidgetSupport {
 
     private fun normalizedCornerRadius(cornerRadius: Int): Int {
         return (cornerRadius.coerceIn(0, 36) / 2) * 2
+    }
+
+    private fun glassBackgroundRes(radius: Int): Int {
+        return when (radius) {
+            0 -> R.drawable.widget_today_bg_glass_r00
+            2 -> R.drawable.widget_today_bg_glass_r02
+            4 -> R.drawable.widget_today_bg_glass_r04
+            6 -> R.drawable.widget_today_bg_glass_r06
+            8 -> R.drawable.widget_today_bg_glass_r08
+            10 -> R.drawable.widget_today_bg_glass_r10
+            12 -> R.drawable.widget_today_bg_glass_r12
+            14 -> R.drawable.widget_today_bg_glass_r14
+            16 -> R.drawable.widget_today_bg_glass_r16
+            18 -> R.drawable.widget_today_bg_glass_r18
+            20 -> R.drawable.widget_today_bg_glass_r20
+            22 -> R.drawable.widget_today_bg_glass_r22
+            24 -> R.drawable.widget_today_bg_glass_r24
+            26 -> R.drawable.widget_today_bg_glass_r26
+            28 -> R.drawable.widget_today_bg_glass_r28
+            30 -> R.drawable.widget_today_bg_glass_r30
+            32 -> R.drawable.widget_today_bg_glass_r32
+            34 -> R.drawable.widget_today_bg_glass_r34
+            else -> R.drawable.widget_today_bg_glass_r36
+        }
     }
 
     private fun solidBackgroundRes(radius: Int): Int {
