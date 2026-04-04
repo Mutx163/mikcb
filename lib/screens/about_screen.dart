@@ -13,6 +13,7 @@ import '../services/app_analytics.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
+import 'live_diagnostics_log_viewer_screen.dart';
 
 enum AboutUpdatePrimaryAction {
   openReleasePage,
@@ -1064,6 +1065,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     label: const Text('导出超级岛诊断日志'),
                   ),
                   FilledButton.tonalIcon(
+                    onPressed: _openLiveDiagnosticsViewer,
+                    icon: const Icon(Icons.article_outlined),
+                    label: const Text('查看手机日志'),
+                  ),
+                  FilledButton.tonalIcon(
                     onPressed: _clearLiveDiagnostics,
                     icon: const Icon(Icons.restart_alt_rounded),
                     label: const Text('清空并重新收集'),
@@ -1142,6 +1148,28 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(value ? '已开启超级岛诊断日志' : '已关闭超级岛诊断日志'),
+      ),
+    );
+  }
+
+  Future<void> _openLiveDiagnosticsViewer() async {
+    final rawLog = await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    if (!mounted) {
+      return;
+    }
+    if (rawLog == null || rawLog.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前还没有可查看的超级岛诊断日志')),
+      );
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LiveDiagnosticsLogViewerScreen(
+          title: '超级岛诊断日志',
+          rawLog: rawLog,
+        ),
       ),
     );
   }

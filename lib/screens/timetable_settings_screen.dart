@@ -16,6 +16,7 @@ import '../widgets/course_card.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 import 'live_settings_subpages.dart';
+import 'live_diagnostics_log_viewer_screen.dart';
 import 'time_scheme_bottom_sheet.dart';
 import 'user_guide_screen.dart';
 
@@ -1003,6 +1004,25 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     }
   }
 
+  Future<void> _openLiveDiagnosticsViewer() async {
+    final rawLog = await _liveService.readLiveDiagnosticsText();
+    if (!mounted) return;
+    if (rawLog == null || rawLog.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('当前还没有可查看的超级岛诊断日志')),
+      );
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LiveDiagnosticsLogViewerScreen(
+          title: '超级岛诊断日志',
+          rawLog: rawLog,
+        ),
+      ),
+    );
+  }
+
   Future<void> _exportLiveDiagnostics() async {
     if (_exportingDiagnostics) return;
     setState(() {
@@ -1313,6 +1333,11 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         )
                       : const Icon(Icons.delete_outline_rounded),
                   label: Text(_clearingDiagnostics ? '清空中' : '清空日志'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: _openLiveDiagnosticsViewer,
+                  icon: const Icon(Icons.article_outlined),
+                  label: const Text('查看手机日志'),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: () {

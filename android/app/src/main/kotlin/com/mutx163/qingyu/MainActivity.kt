@@ -232,6 +232,11 @@ class MainActivity : FlutterActivity() {
                             UmengDiagnosticReporter.exportLiveDiagnosticsFile(applicationContext)
                         )
                     }
+                    "readLiveDiagnosticsText" -> {
+                        result.success(
+                            UmengDiagnosticReporter.readLiveDiagnosticsText(applicationContext)
+                        )
+                    }
                     "clearLiveDiagnostics" -> {
                         result.success(
                             UmengDiagnosticReporter.clearLiveDiagnostics(applicationContext)
@@ -2731,4 +2736,3 @@ class LiveUpdateService : Service() {
         return stageDelay.coerceIn(1_000L, 60_000L)
     }
 }
-
