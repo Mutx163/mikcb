@@ -13,6 +13,7 @@ enum AppUpdateMirrorPreset {
 }
 
 enum WidgetBackgroundStyle {
+  glass,
   solid,
   gradient,
 }
@@ -126,11 +127,13 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
 
 extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
   String get value => switch (this) {
+        WidgetBackgroundStyle.glass => 'glass',
         WidgetBackgroundStyle.solid => 'solid',
         WidgetBackgroundStyle.gradient => 'gradient',
       };
 
   String get label => switch (this) {
+        WidgetBackgroundStyle.glass => '半透明玻璃感',
         WidgetBackgroundStyle.solid => '纯色卡片',
         WidgetBackgroundStyle.gradient => '渐变卡片',
       };

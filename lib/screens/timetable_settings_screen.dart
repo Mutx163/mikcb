@@ -10,6 +10,7 @@ import 'package:share_plus/share_plus.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../widgets/course_card.dart';
@@ -1699,15 +1700,20 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   static const double _defaultWidgetHeightAdjustment = -11;
   static const double _defaultWidgetCornerRadius = 22;
 
+  final HomeWidgetService _homeWidgetService = HomeWidgetService();
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   bool _isPersisting = false;
+  bool _isCheckingPinSupport = true;
+  bool _canRequestPinWidget = false;
   TimetableSettings? _pendingPersist;
+  final Set<HomeWidgetPinTarget> _pinningTargets = <HomeWidgetPinTarget>{};
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+    _loadPinWidgetSupport();
   }
 
   @override
@@ -1739,6 +1745,31 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   Text(
                     '首批支持 2×2、2×4、4×4 三种尺寸。点击小组件会直接打开首页，课程开始和结束时会主动刷新。',
                     style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '快速添加到桌面',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _isCheckingPinSupport
+                        ? '正在检查当前桌面是否支持应用内添加小组件…'
+                        : (_canRequestPinWidget
+                            ? '支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面。'
+                            : '当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加。'),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
+                      _buildPinWidgetButton(HomeWidgetPinTarget.miniList22),
+                      _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
+                      _buildPinWidgetButton(HomeWidgetPinTarget.large44),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<WidgetBackgroundStyle>(
@@ -1788,7 +1819,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('隐藏已上完课程'),
-                    subtitle: const Text('开启后，2×2 和 4×4 课程列表只显示还没结束的课程。'),
+                    subtitle: const Text('开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。'),
                     value: _draft.widgetHideCompletedCourses,
                     onChanged: (value) {
                       _updateDraft(
@@ -1940,6 +1971,57 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       });
       return;
     }
+  }
+
+  Future<void> _loadPinWidgetSupport() async {
+    final supported = await _homeWidgetService.canRequestPinWidget();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _canRequestPinWidget = supported;
+      _isCheckingPinSupport = false;
+    });
+  }
+
+  Widget _buildPinWidgetButton(HomeWidgetPinTarget target) {
+    final isLoading = _pinningTargets.contains(target);
+    return OutlinedButton.icon(
+      onPressed: isLoading ? null : () => _requestPinWidget(target),
+      icon: isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : const Icon(Icons.add_box_outlined),
+      label: Text(target.label),
+    );
+  }
+
+  Future<void> _requestPinWidget(HomeWidgetPinTarget target) async {
+    setState(() {
+      _pinningTargets.add(target);
+    });
+    final result = await _homeWidgetService.requestPinWidget(target);
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _pinningTargets.remove(target);
+    });
+
+    final message = switch (result) {
+      HomeWidgetPinRequestResult.requested =>
+        '已发起“${target.label}”添加请求，请在系统弹窗里确认并放到桌面。',
+      HomeWidgetPinRequestResult.unsupported =>
+        '当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
+      HomeWidgetPinRequestResult.invalidWidgetType =>
+        '小组件类型无效，请稍后重试。',
+      HomeWidgetPinRequestResult.failed =>
+        '发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
+    };
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
