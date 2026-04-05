@@ -1,15 +1,23 @@
 import 'dart:convert';
 
+import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:uuid/uuid.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../models/course.dart';
+import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_week_alignment_service.dart';
+import '../services/warehouse_import_preferences_service.dart';
+import '../services/warehouse_repository_service.dart';
 
 class CourseImportScreen extends StatelessWidget {
   const CourseImportScreen({super.key});
@@ -75,6 +83,17 @@ class CourseImportScreen extends StatelessWidget {
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const AiImageCourseImportScreen(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _ImportEntryCard(
+            icon: Icons.school_outlined,
+            title: '教务系统导入',
+            subtitle: '从 qingyu_warehouse 读取学校适配器，先浏览学校与适配器。',
+            footer: '当前先打通资源仓读取、学校列表和适配器详情展示；脚本执行和真正导入会在下一阶段接入。',
+            onTap: () => _openImportPage<bool>(
+              context,
+              builder: (_) => const WarehouseCourseImportScreen(),
             ),
           ),
         ],
@@ -224,16 +243,18 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         return;
       }
 
-      final replaceExisting = await _askReplaceExisting(
-        context,
-        title: '导入课程',
-        content: '导入 ${file.name} 时，是否替换现有课程？',
-      );
+      final provider = context.read<TimetableProvider>();
+      final replaceExisting = provider.courses.isEmpty
+          ? true
+          : await _askReplaceExisting(
+              context,
+              title: '导入课程',
+              content: '导入 ${file.name} 时，是否替换现有课程？',
+            );
       if (replaceExisting == null || !mounted) {
         return;
       }
 
-      final provider = context.read<TimetableProvider>();
       final content = utf8.decode(bytes, allowMalformed: true);
       final parsedResult = _icsImportService.parseWakeUpSchedule(content);
       if (parsedResult.courses.isEmpty) {
@@ -290,7 +311,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            importedCount > 0 ? '已导入 $importedCount 条课程' : '未识别到可导入课程',
+            importedCount > 0
+                ? (replaceExisting
+                    ? '已覆盖导入 $importedCount 条课程'
+                    : '已更新课表：新增或更新 $importedCount 条课程')
+                : '没有需要新增或更新的课程',
           ),
         ),
       );
@@ -979,16 +1004,18 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         return;
       }
 
-      final replaceExisting = await _askReplaceExisting(
-        context,
-        title: '导入 AI 解析结果',
-        content: '是否用当前这份 AI 解析结果替换现有课程？',
-      );
+      final provider = context.read<TimetableProvider>();
+      final replaceExisting = provider.courses.isEmpty
+          ? true
+          : await _askReplaceExisting(
+              context,
+              title: '导入 AI 解析结果',
+              content: '是否用当前这份 AI 解析结果替换现有课程？',
+            );
       if (replaceExisting == null || !mounted) {
         return;
       }
 
-      final provider = context.read<TimetableProvider>();
       final semesterConfig = await _pickImportSemesterConfig(
         context,
         initialSemesterStartDate: provider.settings.semesterStartDate ??
@@ -1035,8 +1062,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         SnackBar(
           content: Text(
             importedCount > 0
-                ? '已导入 $importedCount 条课程$warningSuffix'
-                : '没有可导入的课程数据',
+                ? (replaceExisting
+                    ? '已覆盖导入 $importedCount 条课程$warningSuffix'
+                    : '已更新课表：新增或更新 $importedCount 条课程$warningSuffix')
+                : '没有需要新增或更新的课程',
           ),
         ),
       );
@@ -1050,6 +1079,1817 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         });
       }
     }
+  }
+}
+
+class WarehouseCourseImportScreen extends StatefulWidget {
+  const WarehouseCourseImportScreen({super.key});
+
+  @override
+  State<WarehouseCourseImportScreen> createState() =>
+      _WarehouseCourseImportScreenState();
+}
+
+class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScreen> {
+  static final WarehouseRepositorySource _defaultSource =
+      WarehouseRepositorySource.fromGitHubUrl(
+    'https://github.com/Mutx163/qingyu_warehouse',
+  );
+
+  final WarehouseRepositoryService _repositoryService =
+      WarehouseRepositoryService();
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
+  late Future<WarehouseRootIndex> _rootIndexFuture;
+  List<String> _recentSchoolIds = const [];
+  WarehouseFetchOptions _currentFetchOptions() {
+    final settings = context.read<TimetableProvider>().settings;
+    return WarehouseFetchOptions.fromSettings(settings);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _rootIndexFuture = _repositoryService.fetchRootIndex(
+      _defaultSource,
+      options: _currentFetchOptions(),
+    );
+    _loadRecentSchoolIds();
+  }
+
+  Future<void> _loadRecentSchoolIds() async {
+    final ids = await _preferencesService.getRecentSchoolIds();
+    if (!mounted) return;
+    setState(() {
+      _recentSchoolIds = ids;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('教务系统导入'),
+      ),
+      body: FutureBuilder<WarehouseRootIndex>(
+        future: _rootIndexFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                _WarehouseIntroCard(
+                  title: '教务系统导入',
+                  subtitle: '当前接的是轻屿课表自己的适配资源仓，先浏览学校与适配器，后续再接脚本执行与真正导入。',
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '暂时无法读取适配仓',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${snapshot.error}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _rootIndexFuture = _repositoryService.fetchRootIndex(
+                                _defaultSource,
+                                options: _currentFetchOptions(),
+                              );
+                            });
+                          },
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('重新读取'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          }
+
+          final allSchools = [...?snapshot.data?.schools]
+            ..sort((left, right) {
+              final initialCompare = left.initial.compareTo(right.initial);
+              if (initialCompare != 0) return initialCompare;
+              return left.name.compareTo(right.name);
+            });
+          final beans = _schoolsToBeans(allSchools, _recentSchoolIds);
+          final indexTags = beans
+              .map((bean) => bean.getSuspensionTag())
+              .toSet()
+              .toList(growable: false);
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: _WarehouseIntroCard(
+                  title: '教务系统导入',
+                  subtitle:
+                      '当前从 qingyu_warehouse 拉取学校与适配器索引。先选学校，再看适配器详情；脚本执行导入会在下一阶段接入。',
+                  chips: [
+                    '仓库：qingyu_warehouse',
+                    '学校/工具：${beans.length} 项',
+                    '当前阶段：只读浏览',
+                  ],
+                ),
+              ),
+              Expanded(
+                child: AzListView(
+                  data: beans,
+                  itemCount: beans.length,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  indexBarData: indexTags,
+                  indexBarOptions: IndexBarOptions(
+                    needRebuild: true,
+                    hapticFeedback: true,
+                    textStyle: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w700,
+                        ) ??
+                        const TextStyle(fontSize: 11),
+                    selectTextStyle: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ) ??
+                        const TextStyle(fontSize: 11),
+                    selectItemDecoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    indexHintDecoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    indexHintTextStyle: theme.textTheme.headlineMedium?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w800,
+                        ) ??
+                        const TextStyle(fontSize: 28),
+                  ),
+                  indexHintBuilder: (context, tag) => Container(
+                    width: 72,
+                    height: 72,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Text(
+                      tag,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  itemBuilder: (context, index) {
+                    final bean = beans[index];
+                    return _WarehouseSchoolCard(
+                      school: bean.school,
+                      isRecent: bean.isRecent,
+                      onTap: () async {
+                        final imported = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            settings: RouteSettings(
+                              name: '/courses/import/warehouse/${bean.school.id}',
+                            ),
+                            builder: (_) => WarehouseSchoolAdaptersScreen(
+                              source: _defaultSource,
+                              school: bean.school,
+                              fetchOptions: _currentFetchOptions(),
+                            ),
+                          ),
+                        );
+                        if (imported == true && context.mounted) {
+                          Navigator.of(context).pop(true);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class WarehouseSchoolAdaptersScreen extends StatefulWidget {
+  final WarehouseRepositorySource source;
+  final WarehouseSchoolEntry school;
+  final WarehouseFetchOptions fetchOptions;
+
+  const WarehouseSchoolAdaptersScreen({
+    super.key,
+    required this.source,
+    required this.school,
+    required this.fetchOptions,
+  });
+
+  @override
+  State<WarehouseSchoolAdaptersScreen> createState() =>
+      _WarehouseSchoolAdaptersScreenState();
+}
+
+class _WarehouseSchoolAdaptersScreenState
+    extends State<WarehouseSchoolAdaptersScreen> {
+  final WarehouseRepositoryService _repositoryService =
+      WarehouseRepositoryService();
+  late Future<WarehouseAdaptersIndex> _adaptersFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _adaptersFuture = _repositoryService.fetchAdaptersIndex(
+      widget.source,
+      widget.school,
+      options: widget.fetchOptions,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.school.name),
+      ),
+      body: FutureBuilder<WarehouseAdaptersIndex>(
+        future: _adaptersFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  '${snapshot.error}',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          final adapters = snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: adapters.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final adapter = adapters[index];
+              return _WarehouseAdapterCard(
+                adapter: adapter,
+                onImport: adapter.importUrl.isEmpty
+                    ? null
+                    : () async {
+                        final imported = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute(
+                            settings: const RouteSettings(
+                              name: '/courses/import/warehouse/login',
+                            ),
+                            builder: (_) => WarehouseAdapterWebLoginScreen(
+                              title: adapter.adapterName,
+                              initialUrl: adapter.importUrl,
+                              source: widget.source,
+                              school: widget.school,
+                              adapter: adapter,
+                              fetchOptions: widget.fetchOptions,
+                            ),
+                          ),
+                        );
+                        if (imported == true && context.mounted) {
+                          Navigator.of(context).pop(true);
+                        }
+                      },
+                onInfo: () async {
+                  final imported = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      settings: RouteSettings(
+                        name:
+                            '/courses/import/warehouse/${widget.school.id}/${adapter.adapterId}',
+                      ),
+                      builder: (_) => WarehouseAdapterDetailScreen(
+                        source: widget.source,
+                        school: widget.school,
+                        adapter: adapter,
+                        fetchOptions: widget.fetchOptions,
+                      ),
+                    ),
+                  );
+                  if (imported == true && context.mounted) {
+                    Navigator.of(context).pop(true);
+                  }
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class WarehouseAdapterDetailScreen extends StatefulWidget {
+  final WarehouseRepositorySource source;
+  final WarehouseSchoolEntry school;
+  final WarehouseAdapterEntry adapter;
+  final WarehouseFetchOptions fetchOptions;
+
+  const WarehouseAdapterDetailScreen({
+    super.key,
+    required this.source,
+    required this.school,
+    required this.adapter,
+    required this.fetchOptions,
+  });
+
+  @override
+  State<WarehouseAdapterDetailScreen> createState() =>
+      _WarehouseAdapterDetailScreenState();
+}
+
+class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScreen> {
+  final WarehouseRepositoryService _repositoryService =
+      WarehouseRepositoryService();
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
+  late Future<String> _scriptFuture;
+  String? _customImportUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _scriptFuture = _repositoryService.fetchAdapterScript(
+      widget.source,
+      school: widget.school,
+      adapter: widget.adapter,
+      options: widget.fetchOptions,
+    );
+    _loadCustomImportUrl();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final adapter = widget.adapter;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(adapter.adapterName),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _WarehouseIntroCard(
+            title: adapter.adapterName,
+            subtitle: adapter.description.isEmpty
+                ? '当前先展示适配器元数据与脚本可读取状态，后续再接实际登录与导入执行。'
+                : '',
+            chips: [
+              '学校：${widget.school.name}',
+              '类别：${adapter.category}',
+              '维护者：${adapter.maintainer}',
+            ],
+            markdown: adapter.description.isEmpty ? null : adapter.description,
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '适配器信息',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _DetailLine(label: 'adapter_id', value: adapter.adapterId),
+                  _DetailLine(label: '脚本路径', value: adapter.assetJsPath),
+                  _DetailLine(
+                    label: '登录入口',
+                    value: _effectiveImportUrl.isEmpty ? '未配置' : _effectiveImportUrl,
+                  ),
+                  if ((_customImportUrl ?? '').isNotEmpty)
+                    const _DetailLine(label: '说明', value: '当前使用你手动覆盖的登录地址'),
+                  _DetailLine(label: '仓库', value: widget.source.repositoryUrl),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          FutureBuilder<String>(
+            future: _scriptFuture,
+            builder: (context, snapshot) {
+              final readable = snapshot.connectionState == ConnectionState.done &&
+                  !snapshot.hasError &&
+                  (snapshot.data?.trim().isNotEmpty ?? false);
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '脚本状态',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (snapshot.connectionState == ConnectionState.waiting)
+                        const LinearProgressIndicator(minHeight: 3)
+                      else if (readable)
+                        Text(
+                          '脚本已成功读取，长度 ${snapshot.data!.length} 字符。下一阶段将接入脚本执行环境与登录流程。',
+                          style: theme.textTheme.bodyMedium,
+                        )
+                      else
+                        Text(
+                          snapshot.hasError ? '${snapshot.error}' : '脚本为空',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.error,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          if (adapter.importUrl.isNotEmpty) ...[
+            FilledButton.icon(
+              onPressed: _openInAppLogin,
+              icon: const Icon(Icons.web_rounded),
+              label: const Text('应用内打开登录入口'),
+            ),
+            const SizedBox(height: 10),
+          ],
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: _effectiveImportUrl.isEmpty
+                    ? null
+                    : () => _openImportUrl(_effectiveImportUrl),
+                icon: const Icon(Icons.open_in_new_rounded),
+                label: const Text('系统浏览器打开'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _effectiveImportUrl.isEmpty
+                    ? null
+                    : () => _copyText(
+                          _effectiveImportUrl,
+                          successMessage: '已复制教务登录地址',
+                        ),
+                icon: const Icon(Icons.link_rounded),
+                label: const Text('复制登录地址'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _copyText(
+                  widget.source
+                      .buildRawFileUri(
+                        'resources/${widget.school.resourceFolder}/${adapter.assetJsPath}',
+                      )
+                      .toString(),
+                  successMessage: '已复制脚本原始地址',
+                ),
+                icon: const Icon(Icons.code_rounded),
+                label: const Text('复制脚本地址'),
+              ),
+              OutlinedButton.icon(
+                onPressed: _editCustomImportUrl,
+                icon: const Icon(Icons.edit_road_rounded),
+                label: Text(
+                  (_customImportUrl ?? '').isEmpty ? '自定义登录地址' : '修改自定义地址',
+                ),
+              ),
+              if ((_customImportUrl ?? '').isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: _clearCustomImportUrl,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: const Text('恢复仓库地址'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String get _effectiveImportUrl =>
+      (_customImportUrl ?? '').trim().isNotEmpty
+          ? _customImportUrl!.trim()
+          : widget.adapter.importUrl;
+
+  Future<void> _loadCustomImportUrl() async {
+    final custom = await _preferencesService.getCustomImportUrl(
+      widget.adapter.adapterId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _customImportUrl = custom;
+    });
+  }
+
+  Future<void> _openImportUrl(String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (!mounted) {
+        return;
+      }
+      _showLightTip(context, '登录入口地址无效');
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _openInAppLogin() async {
+    final uri = Uri.tryParse(_effectiveImportUrl);
+    if (uri == null) {
+      if (!mounted) {
+        return;
+      }
+      _showLightTip(context, '登录入口地址无效');
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/courses/import/warehouse/login'),
+        builder: (_) => WarehouseAdapterWebLoginScreen(
+          title: widget.adapter.adapterName,
+          initialUrl: uri.toString(),
+          source: widget.source,
+          school: widget.school,
+          adapter: widget.adapter,
+          fetchOptions: widget.fetchOptions,
+        ),
+      ),
+    ).then((imported) {
+      if (imported == true && mounted) {
+        Navigator.of(context).pop(true);
+      }
+    });
+  }
+
+  Future<void> _editCustomImportUrl() async {
+    final controller = TextEditingController(text: _effectiveImportUrl);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('自定义登录地址'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: '登录地址',
+            hintText: 'http(s)://...',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text.trim()),
+            child: const Text('保存'),
+          ),
+        ],
+      ),
+    );
+    if (result == null || result.trim().isEmpty) return;
+    final uri = Uri.tryParse(result.trim());
+    if (uri == null || uri.host.isEmpty) {
+      if (!mounted) return;
+      _showLightTip(context, '登录地址格式不正确');
+      return;
+    }
+    await _preferencesService.setCustomImportUrl(
+      widget.adapter.adapterId,
+      result.trim(),
+    );
+    if (!mounted) return;
+    setState(() {
+      _customImportUrl = result.trim();
+    });
+    _showLightTip(context, '已保存自定义登录地址');
+  }
+
+  Future<void> _clearCustomImportUrl() async {
+    await _preferencesService.clearCustomImportUrl(widget.adapter.adapterId);
+    if (!mounted) return;
+    setState(() {
+      _customImportUrl = null;
+    });
+    _showLightTip(context, '已恢复仓库里的登录地址');
+  }
+
+  Future<void> _copyText(
+    String value, {
+    required String successMessage,
+  }) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) {
+      return;
+    }
+    _showLightTip(context, successMessage);
+  }
+}
+
+class WarehouseAdapterWebLoginScreen extends StatefulWidget {
+  final String title;
+  final String initialUrl;
+  final WarehouseRepositorySource source;
+  final WarehouseSchoolEntry school;
+  final WarehouseAdapterEntry adapter;
+  final WarehouseFetchOptions fetchOptions;
+
+  const WarehouseAdapterWebLoginScreen({
+    super.key,
+    required this.title,
+    required this.initialUrl,
+    required this.source,
+    required this.school,
+    required this.adapter,
+    required this.fetchOptions,
+  });
+
+  @override
+  State<WarehouseAdapterWebLoginScreen> createState() =>
+      _WarehouseAdapterWebLoginScreenState();
+}
+
+class _WarehouseAdapterWebLoginScreenState
+    extends State<WarehouseAdapterWebLoginScreen> {
+  final WarehouseRepositoryService _repositoryService =
+      WarehouseRepositoryService();
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
+  final ImportWeekAlignmentService _weekAlignmentService =
+      const ImportWeekAlignmentService();
+  late final WebViewController _controller;
+  late final TextEditingController _addressController;
+  final FocusNode _addressFocusNode = FocusNode();
+  int _loadingProgress = 0;
+  String? _currentUrl;
+  bool _isExecutingImport = false;
+  String? _lastScriptStatus;
+  WarehouseRememberedLogin? _rememberedLogin;
+  WarehouseRememberedLogin? _latestLoginCandidate;
+  bool _hasPromptedAutofill = false;
+  bool _hasPromptedSave = false;
+  bool _isPromptShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUrl = widget.initialUrl;
+    _addressController = TextEditingController(text: widget.initialUrl);
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        'QingyuBridge',
+        onMessageReceived: (message) {
+          _handleBridgeMessage(message.message);
+        },
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (progress) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _loadingProgress = progress;
+            });
+          },
+          onPageStarted: (url) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _currentUrl = url;
+              if (!_addressFocusNode.hasFocus) {
+                _addressController.text = url;
+              }
+            });
+          },
+          onPageFinished: (url) {
+            if (!mounted) {
+              return;
+            }
+            setState(() {
+              _currentUrl = url;
+              _loadingProgress = 100;
+              if (!_addressFocusNode.hasFocus) {
+                _addressController.text = url;
+              }
+            });
+            _installLoginWatcher();
+            _autofillRememberedLoginIfNeeded();
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.initialUrl));
+    _loadRememberedLogin();
+  }
+
+  @override
+  void dispose() {
+    _addressController.dispose();
+    _addressFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          IconButton(
+            tooltip: '执行导入脚本',
+            onPressed: _isExecutingImport ? null : _executeImportScript,
+            icon: _isExecutingImport
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.play_arrow_rounded),
+          ),
+          IconButton(
+            tooltip: '记住当前输入',
+            onPressed: _rememberCurrentLogin,
+            icon: const Icon(Icons.save_outlined),
+          ),
+          IconButton(
+            tooltip: '填入已记住',
+            onPressed:
+                _rememberedLogin == null ? null : _autofillRememberedLogin,
+            icon: const Icon(Icons.password_rounded),
+          ),
+          IconButton(
+            tooltip: '清除记住',
+            onPressed: _rememberedLogin == null ? null : _clearRememberedLogin,
+            icon: const Icon(Icons.delete_outline_rounded),
+          ),
+          IconButton(
+            tooltip: '刷新',
+            onPressed: _controller.reload,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
+          IconButton(
+            tooltip: '复制当前地址',
+            onPressed: () async {
+              final messenger = ScaffoldMessenger.of(context);
+              final value = _currentUrl ?? widget.initialUrl;
+              await Clipboard.setData(ClipboardData(text: value));
+              if (!mounted) {
+                return;
+              }
+              messenger.showSnackBar(
+                const SnackBar(content: Text('已复制当前地址')),
+              );
+            },
+            icon: const Icon(Icons.link_rounded),
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            color: colorScheme.surfaceContainerLowest,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '先在这里完成登录。当前阶段先提供登录承载页，脚本执行导入将在下一阶段接入。',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _addressController,
+                        focusNode: _addressFocusNode,
+                        keyboardType: TextInputType.url,
+                        textInputAction: TextInputAction.go,
+                        decoration: InputDecoration(
+                          isDense: true,
+                          hintText: '输入或修改网页地址',
+                          prefixIcon: const Icon(Icons.language_rounded, size: 18),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        onSubmitted: (_) => _loadAddressBarUrl(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: _loadAddressBarUrl,
+                      child: const Text('前往'),
+                    ),
+                  ],
+                ),
+                if ((_lastScriptStatus ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _lastScriptStatus!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ] else if (_rememberedLogin != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '已记住账号：${_rememberedLogin!.username}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          if (_loadingProgress < 100)
+            LinearProgressIndicator(value: _loadingProgress / 100),
+          Expanded(
+            child: WebViewWidget(controller: _controller),
+          ),
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              child: FilledButton.icon(
+                onPressed: _isExecutingImport ? null : _executeImportScript,
+                icon: _isExecutingImport
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_rounded),
+                label: Text(_isExecutingImport ? '导入中...' : '执行导入脚本'),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _loadAddressBarUrl() async {
+    final text = _addressController.text.trim();
+    final uri = Uri.tryParse(text);
+    if (uri == null || uri.host.isEmpty) {
+      if (!mounted) return;
+      _showLightTip(context, '网页地址格式不正确');
+      return;
+    }
+    _addressFocusNode.unfocus();
+    setState(() {
+      _currentUrl = uri.toString();
+      _loadingProgress = 0;
+    });
+    await _controller.loadRequest(uri);
+  }
+
+  Future<void> _installLoginWatcher() async {
+    try {
+      await _controller.runJavaScript('''
+(() => {
+  const collect = () => {
+    const textInputs = Array.from(document.querySelectorAll('input')).filter((input) => {
+      const type = (input.type || 'text').toLowerCase();
+      return ['text','email','tel','number'].includes(type) && !input.disabled;
+    });
+    const passwordInput = Array.from(document.querySelectorAll('input[type="password"]')).find((input) => !input.disabled);
+    QingyuBridge.postMessage(JSON.stringify({
+      type: 'loginState',
+      username: textInputs[0] ? String(textInputs[0].value || '') : '',
+      password: passwordInput ? String(passwordInput.value || '') : '',
+      hasPasswordField: !!passwordInput
+    }));
+  };
+  if (!window.__qingyuLoginWatcherInstalled) {
+    window.__qingyuLoginWatcherInstalled = true;
+    document.addEventListener('input', (event) => {
+      if (event.target && event.target.tagName === 'INPUT') collect();
+    }, true);
+    document.addEventListener('change', (event) => {
+      if (event.target && event.target.tagName === 'INPUT') collect();
+    }, true);
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const text = (target.innerText || target.textContent || target.value || '').trim().toLowerCase();
+      if (/登录|login|sign in|signin|进入教务|提交/.test(text)) {
+        collect();
+        QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
+      }
+    }, true);
+    document.addEventListener('submit', () => {
+      collect();
+      QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
+    }, true);
+  }
+  collect();
+})();
+''');
+    } catch (_) {}
+  }
+
+  Future<void> _executeImportScript() async {
+    setState(() {
+      _isExecutingImport = true;
+      _lastScriptStatus = '正在读取并注入适配脚本…';
+    });
+    try {
+      final script = await _repositoryService.fetchAdapterScript(
+        widget.source,
+        school: widget.school,
+        adapter: widget.adapter,
+        options: widget.fetchOptions,
+      );
+      final wrappedScript = '''
+(() => {
+  window.__qingyuConfirmResolvers = window.__qingyuConfirmResolvers || {};
+  window.AndroidBridge = {
+    showToast: (msg) => QingyuBridge.postMessage(JSON.stringify({type: 'toast', message: String(msg ?? '')})),
+    notifyTaskCompletion: () => QingyuBridge.postMessage(JSON.stringify({type: 'complete'}))
+  };
+  window.AndroidBridgePromise = {
+    showAlert: async (title, message, confirmText) => {
+      const requestId = 'confirm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      return await new Promise((resolve) => {
+        window.__qingyuConfirmResolvers[requestId] = resolve;
+        QingyuBridge.postMessage(JSON.stringify({
+          type: 'confirm',
+          requestId,
+          title: String(title ?? ''),
+          message: String(message ?? ''),
+          confirmText: String(confirmText ?? '确认')
+        }));
+      });
+    },
+    saveImportedCourses: async (json) => {
+      QingyuBridge.postMessage(JSON.stringify({type: 'courses', payload: String(json ?? '[]')}));
+      return true;
+    }
+  };
+  try {
+    $script
+  } catch (error) {
+    QingyuBridge.postMessage(JSON.stringify({type: 'error', message: String(error)}));
+  }
+})();
+''';
+      await _controller.runJavaScript(wrappedScript);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _lastScriptStatus = '脚本已注入，等待页面解析返回课程。';
+      });
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _isExecutingImport = false;
+        _lastScriptStatus = '脚本注入失败';
+      });
+      _showLightTip(context, '执行失败：$error');
+    }
+  }
+
+  Future<void> _handleBridgeMessage(String rawMessage) async {
+    Map<String, dynamic>? message;
+    try {
+      message = jsonDecode(rawMessage) as Map<String, dynamic>;
+    } catch (_) {
+      return;
+    }
+
+    final type = message['type'] as String? ?? '';
+    switch (type) {
+      case 'loginState':
+        await _handleLoginStateMessage(message);
+        break;
+      case 'loginAttempt':
+        await _handleLoginAttempt();
+        break;
+      case 'toast':
+        if (!mounted) return;
+        _showLightTip(context, (message['message'] as String?) ?? '');
+        break;
+      case 'confirm':
+        await _showScriptConfirmDialog(message);
+        break;
+      case 'error':
+        if (!mounted) return;
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = '脚本执行失败';
+        });
+        _showLightTip(context, (message['message'] as String?) ?? '脚本执行失败');
+        break;
+      case 'courses':
+        await _handleImportedCoursesJson((message['payload'] as String?) ?? '[]');
+        break;
+      case 'complete':
+        if (!mounted) return;
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = '导入流程已结束';
+        });
+        break;
+    }
+  }
+
+  Future<void> _showScriptConfirmDialog(Map<String, dynamic> message) async {
+    final requestId = (message['requestId'] as String?) ?? '';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text((message['title'] as String?)?.trim().isNotEmpty == true
+            ? (message['title'] as String)
+            : '确认导入'),
+        content: Text((message['message'] as String?) ?? '是否继续？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text((message['confirmText'] as String?) ?? '确认'),
+          ),
+        ],
+      ),
+    );
+    await _controller.runJavaScript(
+      "window.__qingyuConfirmResolvers['$requestId']?.(${confirmed == true}); delete window.__qingyuConfirmResolvers['$requestId'];",
+    );
+  }
+
+  Future<void> _handleImportedCoursesJson(String payload) async {
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is! List) {
+        throw const FormatException('课程数据格式不正确');
+      }
+      final parsedCourses = _parseWarehouseCourses(decoded);
+      if (parsedCourses.isEmpty) {
+        throw const FormatException('脚本没有返回可导入课程');
+      }
+
+      final provider = context.read<TimetableProvider>();
+      final replaceExisting = provider.courses.isEmpty
+          ? true
+          : await _askReplaceExisting(
+              context,
+              title: '导入课程',
+              content: '检测到 ${parsedCourses.length} 条课程，是否替换现有课程？',
+            );
+      if (replaceExisting == null || !mounted) {
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = '已取消导入';
+        });
+        return;
+      }
+
+      final semesterConfig = await _pickImportSemesterConfig(
+        context,
+        initialSemesterStartDate:
+            provider.settings.semesterStartDate ?? DateTime.now(),
+        initialFirstCourseWeek: 1,
+        title: '确认开学日期和周次对应',
+        subtitle: '教务脚本已返回课程周次，请确认校历开学日期；如果学校前几周没有课，可把“课表第 1 周”对应到校历后面的周次。',
+      );
+      if (semesterConfig == null || !mounted) {
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = '已取消导入';
+        });
+        return;
+      }
+
+      final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
+        parsedCourses,
+        firstCourseWeek: semesterConfig.firstCourseWeek,
+      );
+      final requiredSectionCount =
+          provider.previewImportedCourseRequiredSectionCount(
+        alignedCourses,
+        replaceExisting: replaceExisting,
+      );
+      final capacityReady = await _ensureSectionCapacity(
+        context,
+        requiredSectionCount: requiredSectionCount,
+        provider: provider,
+      );
+      if (!capacityReady || !mounted) {
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = '导入已中止';
+        });
+        return;
+      }
+
+      final importedCount = await provider.importParsedCourses(
+        alignedCourses,
+        replaceExisting: replaceExisting,
+        semesterStart: semesterConfig.semesterStartDate,
+        source: 'warehouse',
+      );
+      if (!mounted) {
+        return;
+      }
+      await _preferencesService.addRecentSchool(widget.school.id);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _lastScriptStatus = importedCount > 0
+            ? '已更新课表：新增或更新 $importedCount 条课程'
+            : '没有需要新增或更新的课程';
+      });
+      final navigator = Navigator.of(context);
+      _showLightTip(
+        context,
+        importedCount > 0
+            ? '已更新课表：新增或更新 $importedCount 条课程'
+            : '没有需要新增或更新的课程',
+      );
+      if (importedCount > 0) {
+        navigator.pop(true);
+      } else {
+        setState(() {
+          _isExecutingImport = false;
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isExecutingImport = false;
+        _lastScriptStatus = '导入失败';
+      });
+      _showLightTip(context, '导入失败：$error');
+    }
+  }
+
+  List<Course> _parseWarehouseCourses(List<dynamic> rawCourses) {
+    final courses = <Course>[];
+    for (final item in rawCourses) {
+      if (item is! Map) {
+        continue;
+      }
+      final map = Map<String, dynamic>.from(item.cast<String, dynamic>());
+      final name = (map['name'] as String? ?? '').trim();
+      final teacher = (map['teacher'] as String? ?? '').trim();
+      final location =
+          (map['position'] as String? ?? map['location'] as String? ?? '').trim();
+      final day = (map['day'] as num?)?.toInt();
+      final startSection = (map['startSection'] as num?)?.toInt();
+      final endSection = (map['endSection'] as num?)?.toInt();
+      final weeks = (map['weeks'] as List<dynamic>?)
+          ?.map((item) => (item as num).toInt())
+          .where((item) => item > 0)
+          .toSet()
+          .toList()
+        ?..sort();
+      if (name.isEmpty ||
+          day == null ||
+          startSection == null ||
+          endSection == null ||
+          weeks == null ||
+          weeks.isEmpty) {
+        continue;
+      }
+      courses.add(
+        Course(
+          id: const Uuid().v4(),
+          name: name,
+          teacher: teacher.isEmpty ? '未知' : teacher,
+          location: location.isEmpty ? '未知地点' : location,
+          dayOfWeek: day,
+          startSection: startSection,
+          endSection: endSection,
+          startTime: '',
+          endTime: '',
+          customWeeks: weeks,
+        ),
+      );
+    }
+    return courses;
+  }
+
+  Future<void> _handleLoginStateMessage(Map<String, dynamic> message) async {
+    final hasPasswordField = message['hasPasswordField'] == true;
+    if (!hasPasswordField || _isPromptShowing) {
+      return;
+    }
+    final candidate = WarehouseRememberedLogin(
+      username: (message['username'] as String? ?? '').trim(),
+      password: (message['password'] as String? ?? '').trim(),
+    );
+    _latestLoginCandidate = candidate;
+
+    if (_rememberedLogin != null &&
+        !_hasPromptedAutofill &&
+        candidate.username.isEmpty &&
+        candidate.password.isEmpty) {
+      _hasPromptedAutofill = true;
+      _isPromptShowing = true;
+      final shouldAutofill = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('自动填入账号密码？'),
+          content: Text('检测到你之前保存过账号：${_rememberedLogin!.username}。是否自动填入？'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('暂不'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('自动填入'),
+            ),
+          ],
+        ),
+      );
+      _isPromptShowing = false;
+      if (shouldAutofill == true) {
+        await _autofillRememberedLogin();
+      }
+      return;
+    }
+
+  }
+
+  Future<void> _handleLoginAttempt() async {
+    final candidate = _latestLoginCandidate;
+    if (candidate == null ||
+        _rememberedLogin != null ||
+        _hasPromptedSave ||
+        _isPromptShowing ||
+        candidate.username.isEmpty ||
+        candidate.password.isEmpty) {
+      return;
+    }
+    _hasPromptedSave = true;
+    _isPromptShowing = true;
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('记住密码？'),
+        content: Text('检测到你正在登录账号 ${candidate.username}。是否记住账号密码，下次自动填入？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('不记住'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('记住并自动填入'),
+          ),
+        ],
+      ),
+    );
+    _isPromptShowing = false;
+    if (shouldSave == true) {
+      await _preferencesService.setRememberedLogin(
+        widget.adapter.adapterId,
+        candidate,
+      );
+      if (!mounted) return;
+      setState(() {
+        _rememberedLogin = candidate;
+        _lastScriptStatus = '已记住账号密码，下次可自动填入';
+      });
+    }
+  }
+
+  Future<void> _loadRememberedLogin() async {
+    final login = await _preferencesService.getRememberedLogin(
+      widget.adapter.adapterId,
+    );
+    if (!mounted) return;
+    setState(() {
+      _rememberedLogin = login;
+    });
+  }
+
+  Future<void> _autofillRememberedLoginIfNeeded() async {
+    if (_rememberedLogin == null || _hasPromptedAutofill || _isPromptShowing) {
+      return;
+    }
+  }
+
+  Future<void> _autofillRememberedLogin() async {
+    final login = _rememberedLogin;
+    if (login == null) return;
+    final js = '''
+(() => {
+  const textInputs = Array.from(document.querySelectorAll('input')).filter((input) => {
+    const type = (input.type || 'text').toLowerCase();
+    return ['text','email','tel','number'].includes(type) && !input.disabled;
+  });
+  const passwordInput = Array.from(document.querySelectorAll('input[type="password"]')).find((input) => !input.disabled);
+  if (textInputs[0]) {
+    textInputs[0].focus();
+    textInputs[0].value = ${jsonEncode(login.username)};
+    textInputs[0].dispatchEvent(new Event('input', { bubbles: true }));
+    textInputs[0].dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (passwordInput) {
+    passwordInput.focus();
+    passwordInput.value = ${jsonEncode(login.password)};
+    passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+    passwordInput.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+})();
+''';
+    await _controller.runJavaScript(js);
+    if (!mounted) return;
+    setState(() {
+      _lastScriptStatus = '已自动填入记住的账号密码';
+    });
+  }
+
+  Future<void> _rememberCurrentLogin() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult('''
+(() => {
+  const textInputs = Array.from(document.querySelectorAll('input')).filter((input) => {
+    const type = (input.type || 'text').toLowerCase();
+    return ['text','email','tel','number'].includes(type) && !input.disabled;
+  });
+  const passwordInput = Array.from(document.querySelectorAll('input[type="password"]')).find((input) => !input.disabled);
+  return JSON.stringify({
+    username: textInputs[0] ? String(textInputs[0].value || '') : '',
+    password: passwordInput ? String(passwordInput.value || '') : ''
+  });
+})();
+''');
+      final normalized = _normalizeJavaScriptResult(raw);
+      final decoded = jsonDecode(normalized);
+      if (decoded is! Map<String, dynamic>) {
+        throw const FormatException('当前页面没有可识别的登录输入框');
+      }
+      final login = WarehouseRememberedLogin.fromJson(decoded);
+      if (login.username.isEmpty && login.password.isEmpty) {
+        if (!mounted) return;
+        _showLightTip(context, '当前页面没有识别到账号或密码输入内容');
+        return;
+      }
+      await _preferencesService.setRememberedLogin(
+        widget.adapter.adapterId,
+        login,
+      );
+      if (!mounted) return;
+      setState(() {
+        _rememberedLogin = login;
+        _lastScriptStatus = '已记住当前输入的账号密码';
+      });
+      _showLightTip(context, '已记住当前输入的账号密码');
+    } catch (error) {
+      if (!mounted) return;
+      _showLightTip(context, '记住失败：$error');
+    }
+  }
+
+  Future<void> _clearRememberedLogin() async {
+    await _preferencesService.clearRememberedLogin(widget.adapter.adapterId);
+    if (!mounted) return;
+    setState(() {
+      _rememberedLogin = null;
+      _lastScriptStatus = '已清除记住的账号密码';
+    });
+    _showLightTip(context, '已清除记住的账号密码');
+  }
+}
+
+class _WarehouseIntroCard extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final List<String> chips;
+  final String? markdown;
+
+  const _WarehouseIntroCard({
+    required this.title,
+    required this.subtitle,
+    this.chips = const [],
+    this.markdown,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorScheme.primaryContainer,
+            colorScheme.surfaceContainerHighest,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (subtitle.isNotEmpty)
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          if ((markdown ?? '').trim().isNotEmpty) ...[
+            if (subtitle.isNotEmpty) const SizedBox(height: 8),
+            MarkdownBody(
+              data: markdown!,
+              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                p: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.45,
+                ),
+              ),
+            ),
+          ],
+          if (chips.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: chips
+                  .map(
+                    (item) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        item,
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _WarehouseAdapterCard extends StatelessWidget {
+  final WarehouseAdapterEntry adapter;
+  final Future<void> Function()? onImport;
+  final Future<void> Function() onInfo;
+
+  const _WarehouseAdapterCard({
+    required this.adapter,
+    required this.onImport,
+    required this.onInfo,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(
+                    Icons.extension_outlined,
+                    color: colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        adapter.adapterName,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '类别：${adapter.category} · 维护者：${adapter.maintainer}',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (adapter.description.trim().isNotEmpty) ...[
+              const SizedBox(height: 12),
+              MarkdownBody(
+                data: adapter.description,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: onImport,
+                    icon: const Icon(Icons.web_rounded),
+                    label: Text(
+                      adapter.importUrl.isEmpty ? '未配置登录入口' : '网页登录导入',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton.icon(
+                  onPressed: onInfo,
+                  icon: const Icon(Icons.info_outline_rounded),
+                  label: const Text('查看信息'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _WarehouseSchoolCard extends StatelessWidget {
+  final WarehouseSchoolEntry school;
+  final bool isRecent;
+  final VoidCallback onTap;
+
+  const _WarehouseSchoolCard({
+    required this.school,
+    this.isRecent = false,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Material(
+      color: colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(24),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  school.initial,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      school.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (isRecent) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '最近',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            '资源目录：${school.resourceFolder}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WarehouseSchoolBean extends ISuspensionBean {
+  final WarehouseSchoolEntry school;
+  final String tag;
+  final bool isRecent;
+
+  _WarehouseSchoolBean({
+    required this.school,
+    required this.tag,
+    required this.isRecent,
+  });
+
+  @override
+  String getSuspensionTag() => tag;
+}
+
+List<_WarehouseSchoolBean> _schoolsToBeans(
+  List<WarehouseSchoolEntry> schools,
+  List<String> recentSchoolIds,
+) {
+  final recentOrdered = recentSchoolIds
+      .map((id) => schools.where((school) => school.id == id).firstOrNull)
+      .whereType<WarehouseSchoolEntry>()
+      .toList(growable: false);
+  final remaining = schools
+      .where((school) => !recentSchoolIds.contains(school.id))
+      .toList(growable: false);
+  final beans = <_WarehouseSchoolBean>[
+    ...recentOrdered.map(
+      (school) => _WarehouseSchoolBean(
+        school: school,
+        tag: '★',
+        isRecent: true,
+      ),
+    ),
+    ...remaining.map(
+      (school) => _WarehouseSchoolBean(
+        school: school,
+        tag: school.initial.trim().isEmpty
+            ? '#'
+            : school.initial.trim().toUpperCase(),
+        isRecent: false,
+      ),
+    ),
+  ];
+  SuspensionUtil.setShowSuspensionStatus(beans);
+  return beans;
+}
+
+class _DetailLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _DetailLine({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 2),
+          SelectableText(
+            value,
+            style: theme.textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1636,19 +3476,19 @@ Future<bool?> _askReplaceExisting(
     builder: (context) {
       return AlertDialog(
         title: Text(title),
-        content: Text(content),
+        content: Text('$content\n\n建议日常更新课表时优先使用“更新课表（保留本地信息）”。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('取消'),
           ),
-          TextButton(
+          FilledButton.tonal(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('追加导入'),
+            child: const Text('更新课表（推荐）'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('替换现有'),
+            child: const Text('覆盖导入'),
           ),
         ],
       );
@@ -1717,4 +3557,71 @@ String _formatDate(DateTime date) {
   final month = date.month.toString().padLeft(2, '0');
   final day = date.day.toString().padLeft(2, '0');
   return '$year-$month-$day';
+}
+
+String _normalizeJavaScriptResult(Object? raw) {
+  if (raw == null) {
+    return '';
+  }
+  final text = raw.toString();
+  try {
+    final decoded = jsonDecode(text);
+    if (decoded is String) {
+      return decoded;
+    }
+  } catch (_) {}
+  return text;
+}
+
+void _showLightTip(BuildContext context, String message) {
+  if (message.trim().isEmpty) {
+    return;
+  }
+  final overlay = Overlay.of(context, rootOverlay: true);
+  final theme = Theme.of(context);
+  final colorScheme = theme.colorScheme;
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (context) => Positioned(
+      top: MediaQuery.of(context).padding.top + 16,
+      left: 16,
+      right: 16,
+      child: IgnorePointer(
+        child: Material(
+          color: Colors.transparent,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: colorScheme.inverseSurface.withValues(alpha: 0.96),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onInverseSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  overlay.insert(entry);
+  Future<void>.delayed(const Duration(milliseconds: 1500)).then((_) {
+    entry.remove();
+  });
 }
