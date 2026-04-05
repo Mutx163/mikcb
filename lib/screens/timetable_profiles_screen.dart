@@ -27,92 +27,235 @@ class TimetableProfilesScreen extends StatelessWidget {
           body: ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: profiles.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final profile = profiles[index];
               final isActive = profile.id == activeProfileId;
+              final theme = Theme.of(context);
+              final colorScheme = theme.colorScheme;
               return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Text('${index + 1}'),
-                  ),
-                  title: Text(
-                    profile.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: Text(
-                    '${profile.courses.length} 门课程 · 第 ${profile.currentWeek} 周',
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      switch (value) {
-                        case 'switch':
-                          await provider.switchProfile(profile.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('已切换到 ${profile.name}')),
-                            );
-                          }
-                          break;
-                        case 'rename':
-                          await _renameProfile(context, profile.id, profile.name);
-                          break;
-                        case 'duplicate':
-                          await provider.switchProfile(profile.id);
-                          await provider.duplicateActiveProfile();
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已复制当前课表')),
-                            );
-                          }
-                          break;
-                        case 'clear':
-                          await _clearActiveProfileCourses(
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: isActive
+                      ? null
+                      : () => _switchProfile(
                             context,
+                            profile.id,
                             profile.name,
-                          );
-                          break;
-                        case 'delete':
-                          await _deleteProfile(context, profile.id, profile.name);
-                          break;
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      if (!isActive)
-                        const PopupMenuItem(
-                          value: 'switch',
-                          child: Text('切换到此课表'),
+                          ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: (isActive
+                                        ? colorScheme.primary
+                                        : colorScheme.secondaryContainer)
+                                    .withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${index + 1}',
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  color: isActive
+                                      ? colorScheme.primary
+                                      : colorScheme.onSecondaryContainer,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    profile.name,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        theme.textTheme.titleMedium?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${profile.courses.length} 门课程 · 第 ${profile.currentWeek} 周',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuButton<String>(
+                              tooltip: '更多操作',
+                              onSelected: (value) async {
+                                switch (value) {
+                                  case 'switch':
+                                    await _switchProfile(
+                                      context,
+                                      profile.id,
+                                      profile.name,
+                                    );
+                                    break;
+                                  case 'rename':
+                                    await _renameProfile(
+                                      context,
+                                      profile.id,
+                                      profile.name,
+                                    );
+                                    break;
+                                  case 'duplicate':
+                                    await provider.switchProfile(profile.id);
+                                    await provider.duplicateActiveProfile();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text('已复制当前课表'),
+                                        ),
+                                      );
+                                    }
+                                    break;
+                                  case 'clear':
+                                    await _clearActiveProfileCourses(
+                                      context,
+                                      profile.name,
+                                    );
+                                    break;
+                                  case 'delete':
+                                    await _deleteProfile(
+                                      context,
+                                      profile.id,
+                                      profile.name,
+                                    );
+                                    break;
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                if (!isActive)
+                                  const PopupMenuItem(
+                                    value: 'switch',
+                                    child: Text('切换到此课表'),
+                                  ),
+                                const PopupMenuItem(
+                                  value: 'rename',
+                                  child: Text('重命名'),
+                                ),
+                                const PopupMenuItem(
+                                  value: 'duplicate',
+                                  child: Text('复制'),
+                                ),
+                                if (isActive || profiles.length > 1)
+                                  const PopupMenuDivider(),
+                                if (isActive)
+                                  PopupMenuItem(
+                                    value: 'clear',
+                                    enabled: profile.courses.isNotEmpty,
+                                    child: Text(
+                                      '清空课程',
+                                      style: TextStyle(
+                                        color: colorScheme.error,
+                                      ),
+                                    ),
+                                  ),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  enabled: profiles.length > 1,
+                                  child: Text(
+                                    '删除',
+                                    style: TextStyle(
+                                      color: profiles.length > 1
+                                          ? colorScheme.error
+                                          : colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      const PopupMenuItem(
-                        value: 'rename',
-                        child: Text('重命名'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'duplicate',
-                        child: Text('复制'),
-                      ),
-                      if (isActive)
-                        PopupMenuItem(
-                          value: 'clear',
-                          enabled: profile.courses.isNotEmpty,
-                          child: const Text('清空课程'),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonal(
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(0, 36),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: isActive
+                                    ? null
+                                    : () => _switchProfile(
+                                          context,
+                                          profile.id,
+                                          profile.name,
+                                        ),
+                                child: Text(
+                                  isActive ? '正在使用' : '切换到此课表',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                minimumSize: const Size(0, 36),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 8,
+                                ),
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              onPressed: () => _renameProfile(
+                                context,
+                                profile.id,
+                                profile.name,
+                              ),
+                              icon: const Icon(Icons.edit_outlined),
+                              label: const Text('重命名'),
+                            ),
+                          ],
                         ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        enabled: profiles.length > 1,
-                        child: const Text('删除'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  onTap: isActive ? null : () => provider.switchProfile(profile.id),
-                  selected: isActive,
                 ),
               );
             },
           ),
         );
       },
+    );
+  }
+
+  Future<void> _switchProfile(
+    BuildContext context,
+    String profileId,
+    String profileName,
+  ) async {
+    await context.read<TimetableProvider>().switchProfile(profileId);
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('已切换到 $profileName')),
     );
   }
 

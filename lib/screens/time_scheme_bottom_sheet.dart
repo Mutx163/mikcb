@@ -101,29 +101,52 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final provider = context.watch<TimetableProvider>();
     final schemes = provider.timeSchemes;
     final currentSchemeId = provider.activeTimeScheme?.id;
+    final activeSchemeName = provider.activeTimeScheme?.name ?? '未选择';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Expanded(
-              child: Text(
-                '时间模板',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '时间模板',
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _TimeSchemeInfoChip(label: '当前', value: activeSchemeName),
+                        _TimeSchemeInfoChip(
+                          label: '数量',
+                          value: '${schemes.length} 套',
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            FilledButton.tonalIcon(
-              onPressed: _createScheme,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('新建'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '直接切换、新建、复制、编辑节次和删除模板都在这里完成。',
-          style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(width: 12),
+              FilledButton.tonalIcon(
+                onPressed: _createScheme,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('新建'),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 12),
         Expanded(
@@ -135,64 +158,11 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               final isCurrent = scheme.id == currentSchemeId;
               final usage = _buildUsageInfo(provider, scheme.id);
 
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    child: Icon(
-                      isCurrent
-                          ? Icons.schedule_rounded
-                          : Icons.access_time_rounded,
-                    ),
-                  ),
-                  title: Text(
-                    scheme.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  subtitle: _buildUsageSubtitle(
-                    context,
-                    scheme: scheme,
-                    usage: usage,
-                  ),
-                  trailing: PopupMenuButton<String>(
-                    onSelected: (value) => _handleSchemeMenu(
-                      context,
-                      scheme,
-                      usage,
-                      value,
-                    ),
-                    itemBuilder: (context) => [
-                      if (!usage.isUnused)
-                        const PopupMenuItem(
-                          value: 'usage',
-                          child: Text('查看使用情况'),
-                        ),
-                      if (!isCurrent)
-                        const PopupMenuItem(
-                          value: 'apply',
-                          child: Text('应用到当前课表'),
-                        ),
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('编辑节次'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'rename',
-                        child: Text('重命名'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'duplicate',
-                        child: Text('复制'),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        enabled: usage.isUnused,
-                        child: const Text('删除'),
-                      ),
-                    ],
-                  ),
-                  onTap: isCurrent ? null : () => _applyScheme(scheme.id),
-                ),
+              return _buildSchemeCard(
+                context,
+                scheme: scheme,
+                usage: usage,
+                isCurrent: isCurrent,
               );
             },
           ),
@@ -208,6 +178,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         provider.timeSchemes.firstWhere((item) => item.id == schemeId);
     final isActive = provider.activeTimeScheme?.id == schemeId;
     final usage = _buildUsageInfo(provider, schemeId);
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,6 +224,26 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           border: OutlineInputBorder(),
                           labelText: '模板名称',
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          if (isActive)
+                            const _TimeSchemeBadge(
+                              text: '当前使用',
+                              icon: Icons.check_circle_outline_rounded,
+                            ),
+                          _TimeSchemeInfoChip(
+                            label: '课表',
+                            value: '${usage.profileCount} 个',
+                          ),
+                          _TimeSchemeInfoChip(
+                            label: '课程',
+                            value: '${usage.courseCount} 节',
+                          ),
+                        ],
                       ),
                       if (isActive || usage.courseCount > 0) ...[
                         const SizedBox(height: 8),
@@ -328,15 +320,68 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                       const SizedBox(height: 12),
                       ...List.generate(_sections.length, (index) {
                         final section = _sections[index];
-                        return ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          title: Text('第 ${index + 1} 节'),
-                          subtitle:
-                              Text('${section.startTime} - ${section.endTime}'),
-                          trailing: IconButton(
-                            tooltip: '编辑时间',
-                            onPressed: () => _editSectionTime(index),
-                            icon: const Icon(Icons.edit_outlined),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: colorScheme.outlineVariant,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  color: colorScheme.primary.withValues(
+                                    alpha: 0.10,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '第 ${index + 1} 节',
+                                      style:
+                                          theme.textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${section.startTime} - ${section.endTime}',
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: '编辑时间',
+                                onPressed: () => _editSectionTime(index),
+                                icon: const Icon(Icons.edit_outlined),
+                              ),
+                            ],
                           ),
                         );
                       }),
@@ -624,30 +669,141 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     );
   }
 
-  Widget _buildUsageSubtitle(
+  Widget _buildSchemeCard(
     BuildContext context, {
     required TimeScheme scheme,
     required _TimeSchemeUsageInfo usage,
+    required bool isCurrent,
   }) {
-    final summary =
-        '${scheme.sectionCount} 节 · ${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''} · ${usage.profileCount} 个课表 · ${usage.courseCount} 节课程';
-    final preview = usage.courseReferencePreview;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(summary),
-        if (preview != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            preview,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: isCurrent ? null : () => _applyScheme(scheme.id),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: (isCurrent
+                              ? colorScheme.primary
+                              : colorScheme.secondaryContainer)
+                          .withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Icon(
+                      isCurrent
+                          ? Icons.schedule_rounded
+                          : Icons.access_time_rounded,
+                      color: isCurrent
+                          ? colorScheme.primary
+                          : colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          scheme.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            if (isCurrent)
+                              const _TimeSchemeBadge(
+                                text: '当前使用',
+                                icon: Icons.check_circle_outline_rounded,
+                              ),
+                            _TimeSchemeInfoChip(
+                              label: '节数',
+                              value: '${scheme.sectionCount} 节',
+                            ),
+                            _TimeSchemeInfoChip(
+                              label: '课表',
+                              value: '${usage.profileCount} 个',
+                            ),
+                            _TimeSchemeInfoChip(
+                              label: '课程',
+                              value: '${usage.courseCount} 节',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    onSelected: (value) =>
+                        _handleSchemeMenu(context, scheme, usage, value),
+                    itemBuilder: (context) => [
+                      if (!usage.isUnused)
+                        const PopupMenuItem(
+                          value: 'usage',
+                          child: Text('查看使用情况'),
+                        ),
+                      if (!isCurrent)
+                        const PopupMenuItem(
+                          value: 'apply',
+                          child: Text('应用到当前课表'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Text('编辑节次'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'rename',
+                        child: Text('重命名'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'duplicate',
+                        child: Text('复制'),
+                      ),
+                      PopupMenuItem(
+                        value: 'delete',
+                        enabled: usage.isUnused,
+                        child: const Text('删除'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                '${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+              if (usage.courseReferencePreview != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  usage.courseReferencePreview!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
           ),
-        ],
-      ],
+        ),
+      ),
     );
   }
 
@@ -909,6 +1065,73 @@ class _TimeSchemeUsageInfo {
       return '课程引用：${courseReferences.first}';
     }
     return '课程引用：${courseReferences.take(2).join('；')} 等 $courseCount 节课程';
+  }
+}
+
+class _TimeSchemeInfoChip extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _TimeSchemeInfoChip({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $value',
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _TimeSchemeBadge extends StatelessWidget {
+  final String text;
+  final IconData icon;
+
+  const _TimeSchemeBadge({
+    required this.text,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: colorScheme.primary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
