@@ -16,9 +16,11 @@ import '../services/umeng_analytics_service.dart';
 import '../widgets/course_card.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
+import 'feedback_screen.dart';
 import 'live_settings_subpages.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
-import 'time_scheme_bottom_sheet.dart';
+import 'time_scheme_management_screen.dart';
+import 'timetable_profiles_screen.dart';
 import 'user_guide_screen.dart';
 
 class TimetableSettingsScreen extends StatelessWidget {
@@ -29,6 +31,96 @@ class TimetableSettingsScreen extends StatelessWidget {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         final settings = provider.settings;
+        void openAppearance() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/appearance'),
+              builder: (_) => const _AppearanceSettingsScreen(),
+            ),
+          );
+        }
+
+        void openLiveSettings() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/live'),
+              builder: (_) => const _LiveSettingsScreen(),
+            ),
+          );
+        }
+
+        void openLayoutSettings() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/layout'),
+              builder: (_) => const _LayoutSettingsScreen(),
+            ),
+          );
+        }
+
+        void openHomeWidgetSettings() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/home-widget'),
+              builder: (_) => const _HomeWidgetSettingsScreen(),
+            ),
+          );
+        }
+
+        void openDataTransfer() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/data-transfer'),
+              builder: (_) => const DataTransferScreen(),
+            ),
+          );
+        }
+
+        void openUserGuide() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/user-guide'),
+              builder: (_) => const UserGuideScreen(),
+            ),
+          );
+        }
+
+        void openAbout() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/about'),
+              builder: (_) => const AboutScreen(),
+            ),
+          );
+        }
+
+        void openFeedback() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/feedback'),
+              builder: (_) => const FeedbackScreen(),
+            ),
+          );
+        }
+
+        void openProfiles() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/profiles'),
+              builder: (_) => const TimetableProfilesScreen(),
+            ),
+          );
+        }
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('课表设置'),
@@ -46,8 +138,9 @@ class TimetableSettingsScreen extends StatelessWidget {
                     : () => _syncCurrentWeek(context),
                 onPickSemesterWeekCount: () => _pickSemesterWeekCount(context),
               ),
-              const SizedBox(height: 16),
-              Card(
+              const SizedBox(height: 8),
+              _SettingsSectionCard(
+                title: '日常使用',
                 child: Column(
                   children: [
                     _SettingsEntryTile(
@@ -57,67 +150,14 @@ class TimetableSettingsScreen extends StatelessWidget {
                       trailing: _ColorDot(
                         color: _colorFromHex(settings.themeSeedColor),
                       ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                                name: '/settings/appearance'),
-                            builder: (_) => const _AppearanceSettingsScreen(),
-                          ),
-                        );
-                      },
+                      onTap: openAppearance,
                     ),
-                    const Divider(height: 1),
-                    _SettingsEntryTile(
-                      icon: Icons.notifications_active_outlined,
-                      title: '超级岛与通知',
-                      subtitle: '提醒时段、岛展示、通知栏和显示内容',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings:
-                                const RouteSettings(name: '/settings/live'),
-                            builder: (_) => const _LiveSettingsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _SettingsEntryTile(
-                      icon: Icons.schedule_rounded,
-                      title: '时间模板',
-                      subtitle: settings.activeTimeSchemeId == null
-                          ? '给当前课表快速切换一套节次时间'
-                          : '当前：${provider.activeTimeScheme?.name ?? "未选择"}',
-                      trailing: Text(
-                        '${provider.activeTimeScheme?.sectionCount ?? settings.sectionCount} 节',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      onTap: () => _openTimeSchemeQuickSwitcher(context),
-                    ),
-                    const Divider(height: 1),
                     _SettingsEntryTile(
                       icon: Icons.view_week_outlined,
                       title: '布局与节次',
                       subtitle: '节次时间、行高、时间列、周末显示与卡片布局',
-                      trailing: Text(
-                        '${settings.sectionCount} 节',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings:
-                                const RouteSettings(name: '/settings/layout'),
-                            builder: (_) => const _LayoutSettingsScreen(),
-                          ),
-                        );
-                      },
+                      onTap: openLayoutSettings,
                     ),
-                    const Divider(height: 1),
                     _SettingsEntryTile(
                       icon: Icons.widgets_outlined,
                       title: '桌面小组件',
@@ -126,67 +166,89 @@ class TimetableSettingsScreen extends StatelessWidget {
                         settings.widgetBackgroundStyle.label,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                                name: '/settings/home-widget'),
-                            builder: (_) => const _HomeWidgetSettingsScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _SettingsEntryTile(
-                      icon: Icons.swap_horiz_rounded,
-                      title: '数据备份与迁移',
-                      subtitle: '导出完整课表文件，给别人直接导入使用',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                                name: '/settings/data-transfer'),
-                            builder: (_) => const DataTransferScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _SettingsEntryTile(
-                      icon: Icons.menu_book_outlined,
-                      title: '使用引导与权限',
-                      subtitle: '简称建议、通知、自启动、电池策略',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(name: '/user-guide'),
-                            builder: (_) => const UserGuideScreen(),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    _SettingsEntryTile(
-                      icon: Icons.info_outline_rounded,
-                      title: '关于软件',
-                      subtitle: '开源说明、版本信息和 GitHub',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(name: '/about'),
-                            builder: (_) => const AboutScreen(),
-                          ),
-                        );
-                      },
+                      onTap: openHomeWidgetSettings,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Divider(height: 12),
+              ),
+              _SettingsSectionCard(
+                title: '提醒与通知',
+                child: Column(
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.notifications_active_outlined,
+                      title: '超级岛与通知',
+                      subtitle: '提醒时段、岛展示、通知栏和显示内容',
+                      onTap: openLiveSettings,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.menu_book_outlined,
+                      title: '使用引导与权限',
+                      subtitle: '简称建议、通知、自启动、电池策略',
+                      onTap: openUserGuide,
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Divider(height: 12),
+              ),
+              _SettingsSectionCard(
+                title: '课表管理',
+                child: Column(
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.layers_outlined,
+                      title: '课表管理',
+                      subtitle: '新建、切换、复制、重命名和删除课表',
+                      onTap: openProfiles,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.schedule_rounded,
+                      title: '时间模板',
+                      subtitle: settings.activeTimeSchemeId == null
+                          ? '切换、编辑节次、复制和管理时间模板'
+                          : '当前：${provider.activeTimeScheme?.name ?? "未选择"} · 切换、编辑节次和复制',
+                      onTap: () => _openTimeSchemeQuickSwitcher(context),
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: '数据备份与迁移',
+                      subtitle: '导出完整课表文件，给别人直接导入使用',
+                      onTap: openDataTransfer,
+                    ),
+                  ],
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Divider(height: 12),
+              ),
+              _SettingsSectionCard(
+                title: '关于与支持',
+                child: Column(
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: '问题反馈',
+                      subtitle: 'Issue、社区渠道和建议反馈入口',
+                      onTap: openFeedback,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.info_outline_rounded,
+                      title: '关于软件',
+                      subtitle: '开源说明、版本更新和 GitHub 仓库',
+                      onTap: openAbout,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
             ],
           ),
         );
@@ -284,7 +346,13 @@ class TimetableSettingsScreen extends StatelessWidget {
   }
 
   Future<void> _openTimeSchemeQuickSwitcher(BuildContext context) async {
-    await showTimeSchemeBottomSheet(context);
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/settings/time-schemes'),
+        builder: (_) => const TimeSchemeManagementScreen(),
+      ),
+    );
   }
 }
 
@@ -312,38 +380,39 @@ class _SemesterOverviewCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   child: Image.asset(
                     'assets/branding/launcher_icon.png',
-                    width: 44,
-                    height: 44,
+                    width: 36,
+                    height: 36,
                     fit: BoxFit.cover,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '当前第 $currentWeek 周 / 共 $semesterWeekCount 周',
-                        style: theme.textTheme.titleMedium?.copyWith(
+                        style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         semesterStartDate == null
-                            ? '设置开学日期后，可更准确地同步当前周和课表日期。'
+                            ? '未设置开学日期'
                             : '开学日期：${_formatDate(semesterStartDate!)}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                       ),
@@ -352,27 +421,51 @@ class _SemesterOverviewCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              runSpacing: 8,
+              runSpacing: 6,
               children: [
-                FilledButton.tonalIcon(
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: onPickSemesterStartDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    semesterStartDate == null ? '设置开学日期' : '修改开学日期',
+                    semesterStartDate == null ? '设置开学日期' : '开学日期',
                   ),
                 ),
-                FilledButton.tonalIcon(
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: onSyncCurrentWeek,
                   icon: const Icon(Icons.sync_outlined),
                   label: const Text('同步当前周'),
                 ),
-                FilledButton.tonalIcon(
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: onPickSemesterWeekCount,
                   icon: const Icon(Icons.view_week_outlined),
-                  label: Text('学期周数 $semesterWeekCount'),
+                  label: Text('$semesterWeekCount 周'),
                 ),
               ],
             ),
@@ -839,7 +932,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
-                const Divider(height: 1),
                 _SettingsEntryTile(
                   icon: Icons.upcoming_outlined,
                   title: '上课前提醒显示',
@@ -860,7 +952,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
-                const Divider(height: 1),
                 _SettingsEntryTile(
                   icon: Icons.timelapse_rounded,
                   title: '课中/下课提醒显示',
@@ -881,7 +972,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
-                const Divider(height: 1),
                 _SettingsEntryTile(
                   icon: Icons.shield_outlined,
                   title: '后台保活',
@@ -899,7 +989,6 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                     });
                   },
                 ),
-                const Divider(height: 1),
                 _SettingsEntryTile(
                   icon: Icons.science_outlined,
                   title: '测试与诊断',
@@ -2904,6 +2993,7 @@ class _SettingsEntryTile extends StatelessWidget {
           return Colors.transparent;
         }),
         child: ListTile(
+          contentPadding: EdgeInsets.zero,
           leading: Icon(icon),
           title: Text(title),
           subtitle: Text(subtitle),
@@ -2946,35 +3036,38 @@ class _PreviewPlacement {
 
 class _SettingsSectionCard extends StatelessWidget {
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget child;
 
   const _SettingsSectionCard({
     required this.title,
-    required this.subtitle,
     required this.child,
+    this.subtitle,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 6),
-            Text(
-              subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 12),
+            if (subtitle != null) ...[
+              const SizedBox(height: 3),
+              Text(
+                subtitle!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 6),
+            ] else
+              const SizedBox(height: 4),
             child,
           ],
         ),
