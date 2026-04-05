@@ -1755,6 +1755,13 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
 
 class _WarehouseAdapterWebLoginScreenState
     extends State<WarehouseAdapterWebLoginScreen> {
+  static const String _desktopUserAgent =
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+  static const String _mobileUserAgent =
+      'Mozilla/5.0 (Linux; Android 14; 25060RK16C) AppleWebKit/537.36 '
+      '(KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36';
+
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
@@ -1773,6 +1780,7 @@ class _WarehouseAdapterWebLoginScreenState
   bool _hasPromptedAutofill = false;
   bool _hasPromptedSave = false;
   bool _isPromptShowing = false;
+  bool _useDesktopMode = true;
 
   @override
   void initState() {
@@ -1781,6 +1789,7 @@ class _WarehouseAdapterWebLoginScreenState
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setUserAgent(_desktopUserAgent)
       ..addJavaScriptChannel(
         'QingyuBridge',
         onMessageReceived: (message) {
@@ -1855,6 +1864,15 @@ class _WarehouseAdapterWebLoginScreenState
                 : const Icon(Icons.play_arrow_rounded),
           ),
           IconButton(
+            tooltip: _useDesktopMode ? '切换到手机网页' : '切换到电脑网页',
+            onPressed: _toggleWebPageMode,
+            icon: Icon(
+              _useDesktopMode
+                  ? Icons.smartphone_rounded
+                  : Icons.desktop_windows_rounded,
+            ),
+          ),
+          IconButton(
             tooltip: '记住当前输入',
             onPressed: _rememberCurrentLogin,
             icon: const Icon(Icons.save_outlined),
@@ -1905,6 +1923,14 @@ class _WarehouseAdapterWebLoginScreenState
                   '先在这里完成登录。当前阶段先提供登录承载页，脚本执行导入将在下一阶段接入。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _useDesktopMode ? '当前：电脑网页' : '当前：手机网页',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1999,6 +2025,21 @@ class _WarehouseAdapterWebLoginScreenState
       _loadingProgress = 0;
     });
     await _controller.loadRequest(uri);
+  }
+
+  Future<void> _toggleWebPageMode() async {
+    final nextDesktopMode = !_useDesktopMode;
+    setState(() {
+      _useDesktopMode = nextDesktopMode;
+      _loadingProgress = 0;
+    });
+    await _controller.setUserAgent(
+      nextDesktopMode ? _desktopUserAgent : _mobileUserAgent,
+    );
+    final target = Uri.tryParse(_currentUrl ?? widget.initialUrl);
+    if (target != null) {
+      await _controller.loadRequest(target);
+    }
   }
 
   Future<void> _installLoginWatcher() async {

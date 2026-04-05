@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
@@ -5,14 +7,17 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
+import '../services/warehouse_repository_service.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
 
 enum AboutUpdatePrimaryAction {
@@ -252,6 +257,20 @@ class _AboutScreenState extends State<AboutScreen> {
                               '如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。',
                         ),
                       ],
+                    );
+                  },
+                ),
+                _AboutNavTile(
+                  icon: Icons.group_outlined,
+                  title: '代码贡献者',
+                  subtitle: '开发人员与教务导入适配者名单',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        settings: const RouteSettings(name: '/about/contributors'),
+                        builder: (_) => const ContributorsScreen(),
+                      ),
                     );
                   },
                 ),
@@ -1902,6 +1921,323 @@ class ReleaseNotesMarkdown extends StatelessWidget {
       selectable: true,
       styleSheet: MarkdownStyleSheet.fromTheme(theme),
       onTapLink: (text, href, title) => onTapLink?.call(href),
+    );
+  }
+}
+
+class ContributorsScreen extends StatefulWidget {
+  const ContributorsScreen({super.key});
+
+  @override
+  State<ContributorsScreen> createState() => _ContributorsScreenState();
+}
+
+class _ContributorsScreenState extends State<ContributorsScreen> {
+  static final WarehouseRepositorySource _warehouseSource =
+      WarehouseRepositorySource.fromGitHubUrl(
+    'https://github.com/Mutx163/qingyu_warehouse',
+  );
+  static const String _maintainersCacheKey = 'warehouse_maintainers_cache_v1';
+
+  final WarehouseRepositoryService _repositoryService =
+      WarehouseRepositoryService();
+  List<_WarehouseMaintainerGroup> _maintainers = const [];
+  bool _isLoadingMaintainers = true;
+  String? _maintainersError;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMaintainers();
+  }
+
+  Future<List<_WarehouseMaintainerGroup>> _fetchMaintainersFromWarehouse() async {
+    final settings = context.read<TimetableProvider>().settings;
+    final options = WarehouseFetchOptions.fromSettings(settings);
+    final rootIndex = await _repositoryService.fetchRootIndex(
+      _warehouseSource,
+      options: options,
+    );
+    final groups = <String, List<String>>{};
+
+    final futures = rootIndex.schools.map((school) async {
+      try {
+        final adapters = await _repositoryService.fetchAdaptersIndex(
+          _warehouseSource,
+          school,
+          options: options,
+        );
+        return adapters.adapters
+            .where((adapter) => adapter.maintainer.trim().isNotEmpty)
+            .map(
+              (adapter) => (
+                adapter.maintainer.trim(),
+                '${school.name} · ${adapter.adapterName}',
+              ),
+            )
+            .toList(growable: false);
+      } catch (_) {
+        return const <(String, String)>[];
+      }
+    }).toList(growable: false);
+
+    final results = await Future.wait(futures);
+    for (final entries in results) {
+      for (final (maintainer, label) in entries) {
+        groups.putIfAbsent(maintainer, () => <String>[]);
+        groups[maintainer]!.add(label);
+      }
+    }
+
+    final result = groups.entries
+        .map(
+          (entry) => _WarehouseMaintainerGroup(
+            name: entry.key,
+            adapterLabels: [...entry.value]..sort(),
+          ),
+        )
+        .toList(growable: false)
+      ..sort((left, right) => left.name.compareTo(right.name));
+    return result;
+  }
+
+  Future<void> _loadMaintainers() async {
+    final cached = await _readMaintainersCache();
+    if (!mounted) return;
+    if (cached.isNotEmpty) {
+      setState(() {
+        _maintainers = cached;
+        _isLoadingMaintainers = true;
+        _maintainersError = null;
+      });
+    }
+    try {
+      final fresh = await _fetchMaintainersFromWarehouse();
+      if (!mounted) return;
+      setState(() {
+        _maintainers = fresh;
+        _isLoadingMaintainers = false;
+        _maintainersError = null;
+      });
+      await _writeMaintainersCache(fresh);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingMaintainers = false;
+        _maintainersError = '$error';
+      });
+    }
+  }
+
+  Future<List<_WarehouseMaintainerGroup>> _readMaintainersCache() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_maintainersCacheKey);
+    if (raw == null || raw.isEmpty) {
+      return const [];
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) {
+        return const [];
+      }
+      return decoded
+          .whereType<Map>()
+          .map(
+            (item) => _WarehouseMaintainerGroup(
+              name: item['name'] as String? ?? '',
+              adapterLabels: (item['adapterLabels'] as List<dynamic>? ?? const [])
+                  .whereType<String>()
+                  .toList(),
+            ),
+          )
+          .where((item) => item.name.isNotEmpty)
+          .toList(growable: false);
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<void> _writeMaintainersCache(
+    List<_WarehouseMaintainerGroup> groups,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _maintainersCacheKey,
+      jsonEncode(
+        groups
+            .map(
+              (group) => {
+                'name': group.name,
+                'adapterLabels': group.adapterLabels,
+              },
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('代码贡献者'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '开发人员',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const _ContributorRow(
+                    name: 'Mutx163',
+                    subtitle: '轻屿课表开发与维护',
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '教务导入适配者',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      if (_isLoadingMaintainers)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '以下名单来自 qingyu_warehouse 适配仓的 maintainer 字段汇总。若本地已有缓存，会先显示缓存，再后台刷新。',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_maintainersError != null && _maintainers.isEmpty)
+                    Text(
+                      '暂时无法读取适配者名单：$_maintainersError',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.error,
+                      ),
+                    )
+                  else if (_maintainers.isEmpty)
+                    Text(
+                      '当前还没有读取到适配者信息。',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    ..._maintainers.map(
+                      (group) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _ContributorRow(
+                          name: group.name,
+                          subtitle: '${group.adapterLabels.length} 个适配项',
+                          details: group.adapterLabels,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WarehouseMaintainerGroup {
+  final String name;
+  final List<String> adapterLabels;
+
+  const _WarehouseMaintainerGroup({
+    required this.name,
+    required this.adapterLabels,
+  });
+}
+
+class _ContributorRow extends StatelessWidget {
+  final String name;
+  final String subtitle;
+  final List<String> details;
+
+  const _ContributorRow({
+    required this.name,
+    required this.subtitle,
+    this.details = const [],
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (details.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...details.map(
+              (detail) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Text(
+                  '• $detail',
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
