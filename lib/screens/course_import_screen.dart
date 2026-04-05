@@ -11,6 +11,8 @@ import 'package:uuid/uuid.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../models/course.dart';
+import '../models/time_scheme.dart';
+import '../models/timetable_settings.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/ai_course_import_service.dart';
@@ -1789,6 +1791,7 @@ class _WarehouseAdapterWebLoginScreenState
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..enableZoom(true)
       ..setUserAgent(_desktopUserAgent)
       ..addJavaScriptChannel(
         'QingyuBridge',
@@ -2101,7 +2104,7 @@ class _WarehouseAdapterWebLoginScreenState
       );
       final wrappedScript = '''
 (() => {
-  window.__qingyuConfirmResolvers = window.__qingyuConfirmResolvers || {};
+  window.__qingyuResolvers = window.__qingyuResolvers || {};
   window.AndroidBridge = {
     showToast: (msg) => QingyuBridge.postMessage(JSON.stringify({type: 'toast', message: String(msg ?? '')})),
     notifyTaskCompletion: () => QingyuBridge.postMessage(JSON.stringify({type: 'complete'}))
@@ -2110,13 +2113,62 @@ class _WarehouseAdapterWebLoginScreenState
     showAlert: async (title, message, confirmText) => {
       const requestId = 'confirm_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       return await new Promise((resolve) => {
-        window.__qingyuConfirmResolvers[requestId] = resolve;
+        window.__qingyuResolvers[requestId] = resolve;
         QingyuBridge.postMessage(JSON.stringify({
           type: 'confirm',
           requestId,
           title: String(title ?? ''),
           message: String(message ?? ''),
           confirmText: String(confirmText ?? '确认')
+        }));
+      });
+    },
+    showPrompt: async (title, message, defaultValue, validatorName) => {
+      const requestId = 'prompt_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      return await new Promise((resolve) => {
+        window.__qingyuResolvers[requestId] = resolve;
+        QingyuBridge.postMessage(JSON.stringify({
+          type: 'prompt',
+          requestId,
+          title: String(title ?? ''),
+          message: String(message ?? ''),
+          defaultValue: String(defaultValue ?? ''),
+          validatorName: String(validatorName ?? '')
+        }));
+      });
+    },
+    showSingleSelection: async (title, optionsJson, selectedIndex) => {
+      const requestId = 'single_selection_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      return await new Promise((resolve) => {
+        window.__qingyuResolvers[requestId] = resolve;
+        QingyuBridge.postMessage(JSON.stringify({
+          type: 'singleSelection',
+          requestId,
+          title: String(title ?? ''),
+          optionsJson: String(optionsJson ?? '[]'),
+          selectedIndex: Number(selectedIndex ?? 0)
+        }));
+      });
+    },
+    saveCourseConfig: async (json) => {
+      const requestId = 'course_config_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      return await new Promise((resolve) => {
+        window.__qingyuResolvers[requestId] = resolve;
+        QingyuBridge.postMessage(JSON.stringify({
+          type: 'saveCourseConfig',
+          requestId,
+          payload: String(json ?? '{}')
+        }));
+      });
+    },
+    savePresetTimeSlots: async (json) => {
+      const requestId = 'preset_time_slots_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      return await new Promise((resolve) => {
+        window.__qingyuResolvers[requestId] = resolve;
+        QingyuBridge.postMessage(JSON.stringify({
+          type: 'savePresetTimeSlots',
+          requestId,
+          payload: String(json ?? '[]')
         }));
       });
     },
@@ -2174,6 +2226,18 @@ class _WarehouseAdapterWebLoginScreenState
       case 'confirm':
         await _showScriptConfirmDialog(message);
         break;
+      case 'prompt':
+        await _showScriptPromptDialog(message);
+        break;
+      case 'singleSelection':
+        await _showScriptSingleSelectionDialog(message);
+        break;
+      case 'saveCourseConfig':
+        await _handleSaveCourseConfig(message);
+        break;
+      case 'savePresetTimeSlots':
+        await _handleSavePresetTimeSlots(message);
+        break;
       case 'error':
         if (!mounted) return;
         setState(() {
@@ -2216,8 +2280,196 @@ class _WarehouseAdapterWebLoginScreenState
         ],
       ),
     );
+    await _resolveJavaScriptRequest(requestId, confirmed == true);
+  }
+
+  Future<void> _showScriptPromptDialog(Map<String, dynamic> message) async {
+    final requestId = (message['requestId'] as String?) ?? '';
+    final validatorName = (message['validatorName'] as String?) ?? '';
+    final controller = TextEditingController(
+      text: (message['defaultValue'] as String?) ?? '',
+    );
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text((message['title'] as String?) ?? '请输入'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text((message['message'] as String?) ?? ''),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final text = controller.text.trim();
+              if (validatorName == 'validateYearInput' &&
+                  !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
+                _showLightTip(context, '请输入四位数字的学年');
+                return;
+              }
+              Navigator.pop(context, text);
+            },
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    await _resolveJavaScriptRequest(requestId, result);
+  }
+
+  Future<void> _showScriptSingleSelectionDialog(
+    Map<String, dynamic> message,
+  ) async {
+    final requestId = (message['requestId'] as String?) ?? '';
+    final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
+    final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
+    List<String> options = const [];
+    try {
+      final decoded = jsonDecode(optionsRaw);
+      if (decoded is List) {
+        options = decoded.map((item) => item.toString()).toList(growable: false);
+      }
+    } catch (_) {}
+    var currentSelection =
+        selectedIndex.clamp(0, options.isEmpty ? 0 : options.length - 1);
+    final result = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text((message['title'] as String?) ?? '请选择'),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(options.length, (index) {
+              return RadioListTile<int>(
+                value: index,
+                groupValue: currentSelection,
+                title: Text(options[index]),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    currentSelection = value;
+                  });
+                },
+              );
+            }),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, currentSelection),
+            child: const Text('确定'),
+          ),
+        ],
+      ),
+    );
+    await _resolveJavaScriptRequest(requestId, result);
+  }
+
+  Future<void> _handleSaveCourseConfig(Map<String, dynamic> message) async {
+    final requestId = (message['requestId'] as String?) ?? '';
+    try {
+      final decoded = jsonDecode((message['payload'] as String?) ?? '{}');
+      if (decoded is! Map) {
+        throw const FormatException('课程配置格式不正确');
+      }
+      final provider = context.read<TimetableProvider>();
+      final semesterTotalWeeks =
+          (decoded['semesterTotalWeeks'] as num?)?.toInt();
+      if (semesterTotalWeeks != null && semesterTotalWeeks > 0) {
+        final result = await provider.updateTimetableSettings(
+          provider.settings.copyWith(
+            semesterWeekCount: semesterTotalWeeks,
+          ),
+        );
+        if (result != null) {
+          throw FormatException(result);
+        }
+      }
+      await _resolveJavaScriptRequest(requestId, true);
+    } catch (error) {
+      if (!mounted) return;
+      _showLightTip(context, '保存课程配置失败：$error');
+      await _resolveJavaScriptRequest(requestId, false);
+    }
+  }
+
+  Future<void> _handleSavePresetTimeSlots(Map<String, dynamic> message) async {
+    final requestId = (message['requestId'] as String?) ?? '';
+    try {
+      final decoded = jsonDecode((message['payload'] as String?) ?? '[]');
+      if (decoded is! List) {
+        throw const FormatException('节次时间格式不正确');
+      }
+      final sections = decoded
+          .whereType<Map>()
+          .map(
+            (item) => SectionTime(
+              startTime: item['startTime']?.toString() ?? '',
+              endTime: item['endTime']?.toString() ?? '',
+            ),
+          )
+          .where((item) => item.startTime.isNotEmpty && item.endTime.isNotEmpty)
+          .toList(growable: false);
+      if (sections.isEmpty) {
+        throw const FormatException('没有可保存的节次时间');
+      }
+      final provider = context.read<TimetableProvider>();
+      final schemeName = '${widget.school.name} 教务导入时间';
+      TimeScheme? existingScheme;
+      for (final scheme in provider.timeSchemes) {
+        if (scheme.name == schemeName) {
+          existingScheme = scheme;
+          break;
+        }
+      }
+      if (existingScheme == null) {
+        final created = await provider.createTimeScheme(
+          name: schemeName,
+          sections: sections,
+          applyToActiveProfile: true,
+        );
+        await provider.applyTimeScheme(created.id);
+      } else {
+        final result = await provider.updateTimeScheme(
+          schemeId: existingScheme.id,
+          name: existingScheme.name,
+          sections: sections,
+        );
+        if (result != null) {
+          throw FormatException(result);
+        }
+        await provider.applyTimeScheme(existingScheme.id);
+      }
+      await _resolveJavaScriptRequest(requestId, true);
+    } catch (error) {
+      if (!mounted) return;
+      _showLightTip(context, '保存节次时间失败：$error');
+      await _resolveJavaScriptRequest(requestId, false);
+    }
+  }
+
+  Future<void> _resolveJavaScriptRequest(String requestId, Object? value) async {
+    final encoded = jsonEncode(value);
     await _controller.runJavaScript(
-      "window.__qingyuConfirmResolvers['$requestId']?.(${confirmed == true}); delete window.__qingyuConfirmResolvers['$requestId'];",
+      "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
+      "window.__qingyuResolvers['$requestId']?.($encoded); "
+      "delete window.__qingyuResolvers['$requestId'];",
     );
   }
 
