@@ -1225,8 +1225,25 @@ class TimetableProvider with ChangeNotifier {
       return 0;
     }
 
-    final mergedCourses =
-        replaceExisting ? importedCourses : [..._courses, ...importedCourses];
+    final ImportedCourseSyncResult? syncResult;
+    final List<Course> mergedCourses;
+    final int effectiveImportedCount;
+    if (replaceExisting) {
+      final dedupedImportedCourses = dedupeImportedCourses(importedCourses);
+      mergedCourses = dedupedImportedCourses;
+      effectiveImportedCount = dedupedImportedCourses.length;
+      syncResult = null;
+    } else {
+      syncResult = syncImportedCourses(
+        existingCourses: _courses,
+        importedCourses: importedCourses,
+      );
+      if (syncResult.addedCount == 0 && syncResult.updatedCount == 0) {
+        return 0;
+      }
+      mergedCourses = syncResult.mergedCourses;
+      effectiveImportedCount = syncResult.addedCount + syncResult.updatedCount;
+    }
 
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       mergedCourses,
@@ -1248,13 +1265,17 @@ class TimetableProvider with ChangeNotifier {
     _analytics.logEventLater(
       name: 'schedule_imported',
       parameters: {
-        'imported_course_count': importedCourses.length,
+        'imported_course_count': effectiveImportedCount,
         'replace_existing': replaceExisting ? 1 : 0,
         'source': source,
+        if (syncResult != null) ...{
+          'sync_added_count': syncResult.addedCount,
+          'sync_updated_count': syncResult.updatedCount,
+        },
       },
     );
     await _updateLiveActivity();
-    return importedCourses.length;
+    return effectiveImportedCount;
   }
 
   List<SectionTime> _buildExpandedSections(
@@ -2376,4 +2397,272 @@ class TimetableProvider with ChangeNotifier {
         return _settings.liveEnableBeforeEnd;
     }
   }
+}
+
+@visibleForTesting
+String buildImportedCourseDedupKey(Course course) {
+  final weeks = [...course.activeWeeks]..sort();
+  return [
+    course.name.trim().toLowerCase(),
+    course.teacher.trim().toLowerCase(),
+    course.location.trim().toLowerCase(),
+    course.dayOfWeek.toString(),
+    course.startSection.toString(),
+    course.endSection.toString(),
+    weeks.join(','),
+  ].join('|');
+}
+
+@visibleForTesting
+List<Course> dedupeImportedCourses(
+  List<Course> importedCourses, {
+  List<Course> existingCourses = const [],
+}) {
+  final keys = existingCourses.map(buildImportedCourseDedupKey).toSet();
+  final result = <Course>[];
+  for (final course in importedCourses) {
+    final key = buildImportedCourseDedupKey(course);
+    if (keys.add(key)) {
+      result.add(course);
+    }
+  }
+  return result;
+}
+
+class ImportedCourseSyncResult {
+  final List<Course> mergedCourses;
+  final int addedCount;
+  final int updatedCount;
+
+  const ImportedCourseSyncResult({
+    required this.mergedCourses,
+    required this.addedCount,
+    required this.updatedCount,
+  });
+}
+
+@visibleForTesting
+Course mergeImportedCourseWithExisting(Course existing, Course imported) {
+  return imported.copyWith(
+    id: existing.id,
+    name: imported.name.trim().isEmpty ? existing.name : imported.name,
+    teacher: imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    location:
+        imported.location.trim().isEmpty ? existing.location : imported.location,
+    shortName: existing.shortName,
+    color: existing.color,
+    courseNature: existing.courseNature,
+    description: existing.description,
+    note: existing.note,
+    timeSchemeIdOverride: existing.timeSchemeIdOverride,
+  );
+}
+
+@visibleForTesting
+Course mergeImportedSharedFieldsIntoExistingSchedule(
+  Course existing,
+  Course imported,
+) {
+  return existing.copyWith(
+    name: imported.name.trim().isEmpty ? existing.name : imported.name,
+    teacher: imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    location:
+        imported.location.trim().isEmpty ? existing.location : imported.location,
+    shortName: existing.shortName,
+    color: existing.color,
+    courseNature: existing.courseNature,
+    description: existing.description,
+    note: existing.note,
+    timeSchemeIdOverride: existing.timeSchemeIdOverride,
+  );
+}
+
+@visibleForTesting
+ImportedCourseSyncResult syncImportedCourses({
+  required List<Course> existingCourses,
+  required List<Course> importedCourses,
+}) {
+  final dedupedImported = dedupeImportedCourses(importedCourses);
+  final merged = List<Course>.from(existingCourses);
+  final matchedExistingIds = <String>{};
+  var addedCount = 0;
+  var updatedCount = 0;
+
+  for (final imported in dedupedImported) {
+    final groupedMatchIndices = _findGroupedImportedCourseMatchIndices(
+      merged,
+      imported,
+      matchedExistingIds,
+    );
+    if (groupedMatchIndices.isNotEmpty) {
+      for (final index in groupedMatchIndices) {
+        final existing = merged[index];
+        matchedExistingIds.add(existing.id);
+        merged[index] = mergeImportedSharedFieldsIntoExistingSchedule(
+          existing,
+          imported,
+        );
+        updatedCount += 1;
+      }
+      continue;
+    }
+
+    var matchedIndex = _findExactImportedCourseMatchIndex(
+      merged,
+      imported,
+      matchedExistingIds,
+    );
+    matchedIndex = matchedIndex != -1
+        ? matchedIndex
+        : _findSoftImportedCourseMatchIndex(
+            merged,
+            imported,
+            matchedExistingIds,
+          );
+
+    if (matchedIndex != -1) {
+      final existing = merged[matchedIndex];
+      matchedExistingIds.add(existing.id);
+      merged[matchedIndex] = mergeImportedCourseWithExisting(existing, imported);
+      updatedCount += 1;
+    } else {
+      merged.add(imported);
+      addedCount += 1;
+    }
+  }
+
+  return ImportedCourseSyncResult(
+    mergedCourses: merged,
+    addedCount: addedCount,
+    updatedCount: updatedCount,
+  );
+}
+
+int _findExactImportedCourseMatchIndex(
+  List<Course> existingCourses,
+  Course imported,
+  Set<String> matchedExistingIds,
+) {
+  final importedKey = _buildImportedCourseExactMatchKey(imported);
+  for (var index = 0; index < existingCourses.length; index++) {
+    final existing = existingCourses[index];
+    if (matchedExistingIds.contains(existing.id)) {
+      continue;
+    }
+    if (_buildImportedCourseExactMatchKey(existing) == importedKey) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+int _findSoftImportedCourseMatchIndex(
+  List<Course> existingCourses,
+  Course imported,
+  Set<String> matchedExistingIds,
+) {
+  var bestIndex = -1;
+  var bestScore = 0.0;
+  for (var index = 0; index < existingCourses.length; index++) {
+    final existing = existingCourses[index];
+    if (matchedExistingIds.contains(existing.id)) {
+      continue;
+    }
+    if (existing.name.trim().toLowerCase() != imported.name.trim().toLowerCase()) {
+      continue;
+    }
+    if (existing.sectionCount != imported.sectionCount) {
+      continue;
+    }
+    final overlapScore = _weekOverlapScore(existing.activeWeeks, imported.activeWeeks);
+    if (overlapScore < 0.5) {
+      continue;
+    }
+    final teacherBonus = existing.teacher.trim().isNotEmpty &&
+            imported.teacher.trim().isNotEmpty &&
+            existing.teacher.trim().toLowerCase() ==
+                imported.teacher.trim().toLowerCase()
+        ? 0.2
+        : 0.0;
+    final locationBonus = existing.location.trim().isNotEmpty &&
+            imported.location.trim().isNotEmpty &&
+            existing.location.trim().toLowerCase() ==
+                imported.location.trim().toLowerCase()
+        ? 0.1
+        : 0.0;
+    final score = overlapScore + teacherBonus + locationBonus;
+    if (score > bestScore) {
+      bestScore = score;
+      bestIndex = index;
+    }
+  }
+  return bestIndex;
+}
+
+String _buildImportedCourseExactMatchKey(Course course) {
+  final weeks = [...course.activeWeeks]..sort();
+  return [
+    course.name.trim().toLowerCase(),
+    course.dayOfWeek.toString(),
+    course.startSection.toString(),
+    course.endSection.toString(),
+    weeks.join(','),
+  ].join('|');
+}
+
+List<int> _findGroupedImportedCourseMatchIndices(
+  List<Course> existingCourses,
+  Course imported,
+  Set<String> matchedExistingIds,
+) {
+  final importedWeeks = {...imported.activeWeeks}..removeWhere((week) => week < 1);
+  if (importedWeeks.isEmpty) {
+    return const <int>[];
+  }
+  final indices = <int>[];
+  final coveredWeeks = <int>{};
+  for (var index = 0; index < existingCourses.length; index++) {
+    final existing = existingCourses[index];
+    if (matchedExistingIds.contains(existing.id)) {
+      continue;
+    }
+    if (!_hasSameStructuralKey(existing, imported)) {
+      continue;
+    }
+    final existingWeeks = {...existing.activeWeeks}..removeWhere((week) => week < 1);
+    if (existingWeeks.isEmpty) {
+      continue;
+    }
+    if (!importedWeeks.containsAll(existingWeeks)) {
+      continue;
+    }
+    indices.add(index);
+    coveredWeeks.addAll(existingWeeks);
+  }
+  if (indices.length <= 1) {
+    return const <int>[];
+  }
+  if (coveredWeeks.length != importedWeeks.length ||
+      !coveredWeeks.containsAll(importedWeeks)) {
+    return const <int>[];
+  }
+  return indices;
+}
+
+bool _hasSameStructuralKey(Course left, Course right) {
+  return left.name.trim().toLowerCase() == right.name.trim().toLowerCase() &&
+      left.dayOfWeek == right.dayOfWeek &&
+      left.startSection == right.startSection &&
+      left.endSection == right.endSection;
+}
+
+double _weekOverlapScore(List<int> left, List<int> right) {
+  if (left.isEmpty || right.isEmpty) {
+    return 0;
+  }
+  final leftSet = left.toSet();
+  final rightSet = right.toSet();
+  final intersection = leftSet.intersection(rightSet).length;
+  final base = leftSet.length > rightSet.length ? leftSet.length : rightSet.length;
+  return base == 0 ? 0 : intersection / base;
 }
