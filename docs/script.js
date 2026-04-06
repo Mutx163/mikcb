@@ -89,6 +89,401 @@ restoreScrollPositionOnReload();
 window.addEventListener("pagehide", saveScrollPosition);
 window.addEventListener("beforeunload", saveScrollPosition);
 
+const googleAnalyticsMeasurementId =
+  document
+    .querySelector('meta[name="google-analytics-measurement-id"]')
+    ?.getAttribute("content")
+    ?.trim() || "";
+const isGoogleAnalyticsEnabled = /^G-[A-Z0-9]+$/i.test(
+  googleAnalyticsMeasurementId
+);
+const isDoNotTrackEnabled =
+  navigator.doNotTrack === "1" ||
+  window.doNotTrack === "1" ||
+  navigator.msDoNotTrack === "1";
+const canSendAnalytics = isGoogleAnalyticsEnabled && !isDoNotTrackEnabled;
+let googleAnalyticsSetupPromise = null;
+
+function ensureGoogleAnalytics() {
+  if (!canSendAnalytics) {
+    return Promise.resolve(false);
+  }
+
+  if (googleAnalyticsSetupPromise) {
+    return googleAnalyticsSetupPromise;
+  }
+
+  googleAnalyticsSetupPromise = new Promise((resolve, reject) => {
+    window.dataLayer = window.dataLayer || [];
+    if (typeof window.gtag !== "function") {
+      window.gtag = function gtag() {
+        window.dataLayer.push(arguments);
+      };
+    }
+
+    const finishSetup = () => {
+      window.gtag("js", new Date());
+      window.gtag("config", googleAnalyticsMeasurementId);
+      resolve(true);
+    };
+
+    const existingScript = document.querySelector(
+      'script[data-google-analytics-loader="true"]'
+    );
+    if (existingScript) {
+      if (existingScript.dataset.failed === "true") {
+        existingScript.remove();
+      } else if (existingScript.dataset.loaded === "true") {
+        finishSetup();
+        return;
+      } else {
+        existingScript.addEventListener("load", finishSetup, { once: true });
+        existingScript.addEventListener(
+          "error",
+          () => reject(new Error("Google Analytics 加载失败")),
+          { once: true }
+        );
+        return;
+      }
+    }
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(
+      googleAnalyticsMeasurementId
+    )}`;
+    script.dataset.googleAnalyticsLoader = "true";
+    script.addEventListener(
+      "load",
+      () => {
+        script.dataset.loaded = "true";
+        finishSetup();
+      },
+      { once: true }
+    );
+    script.addEventListener(
+      "error",
+      () => {
+        script.dataset.failed = "true";
+        script.remove();
+        reject(new Error("Google Analytics 加载失败"));
+      },
+      { once: true }
+    );
+    document.head.appendChild(script);
+  }).catch((error) => {
+    googleAnalyticsSetupPromise = null;
+    return Promise.reject(error);
+  });
+
+  return googleAnalyticsSetupPromise;
+}
+
+function getDownloadFileName(url) {
+  try {
+    const pathname = new URL(url, window.location.href).pathname;
+    return decodeURIComponent(pathname.split("/").pop() || "");
+  } catch (error) {
+    return "";
+  }
+}
+
+function sanitizeUrlForAnalytics(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch (error) {
+    return "";
+  }
+}
+
+function getSafePageLocation() {
+  return sanitizeUrlForAnalytics(window.location.href);
+}
+
+function isSafeExternalUrl(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch (error) {
+    return false;
+  }
+}
+
+function trackGoogleAnalyticsEvent(eventName, params = {}, onComplete) {
+  if (!canSendAnalytics) {
+    onComplete?.();
+    return;
+  }
+
+  ensureGoogleAnalytics()
+    .then(() => {
+      const payload = {
+        page_location: getSafePageLocation(),
+        page_title: document.title,
+        ...params,
+      };
+
+      if (typeof onComplete === "function") {
+        let completed = false;
+        const finish = () => {
+          if (completed) {
+            return;
+          }
+          completed = true;
+          onComplete();
+        };
+        payload.event_callback = finish;
+        payload.event_timeout = 1200;
+        window.setTimeout(finish, 1200);
+      }
+
+      window.gtag("event", eventName, payload);
+    })
+    .catch(() => {
+      onComplete?.();
+    });
+}
+
+function buildDownloadAnalyticsPayload(source, url, channel = "stable") {
+  const releaseData = getReleaseDataByChannel(channel);
+  return {
+    download_source: source,
+    release_channel: channel,
+    release_version: releaseData?.version || "",
+    file_name: getDownloadFileName(url),
+    link_url: sanitizeUrlForAnalytics(url),
+    download_resolved: url && url !== fallbackReleasePage ? 1 : 0,
+  };
+}
+
+void ensureGoogleAnalytics();
+
+const analyticsSiteVariant = "docs";
+const analyticsSessionStorageKey = "mikcb-docs-analytics-session";
+const analyticsSeenSections = new Set();
+const sectionLabelMap = {
+  top: "顶部",
+  overview: "概览",
+  experience: "体验",
+  features: "能力",
+  "time-template": "时间模板",
+  platform: "平台",
+  download: "下载",
+};
+
+function getAnalyticsSessionId() {
+  try {
+    const existing = window.sessionStorage?.getItem(analyticsSessionStorageKey);
+    if (existing) {
+      return existing;
+    }
+    const generated = `s_${Date.now().toString(36)}_${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
+    window.sessionStorage?.setItem(analyticsSessionStorageKey, generated);
+    return generated;
+  } catch (error) {
+    return `s_${Date.now().toString(36)}`;
+  }
+}
+
+const analyticsSessionId = getAnalyticsSessionId();
+
+function normalizeAnalyticsValue(value, maxLength = 120) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) {
+    return "";
+  }
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function getSectionLabel(sectionId) {
+  return sectionLabelMap[sectionId] || normalizeAnalyticsValue(sectionId) || "未命名区块";
+}
+
+function inferElementSurfaceLabel(element) {
+  const node = element instanceof Element ? element : null;
+  if (!node) {
+    return "未知区域";
+  }
+  if (node.closest(".release-dialog") || node.closest("#release-modal")) {
+    return "下载弹窗";
+  }
+  if (node.closest(".global-nav")) {
+    return "顶部导航";
+  }
+  if (node.closest(".hero-section")) {
+    return "首屏";
+  }
+  if (node.closest("#download")) {
+    return "下载区";
+  }
+  if (node.closest("footer")) {
+    return "页脚";
+  }
+  const section = node.closest("section[id]");
+  if (section?.id) {
+    return getSectionLabel(section.id);
+  }
+  return "页面主体";
+}
+
+function getElementLabel(element) {
+  if (!(element instanceof Element)) {
+    return "";
+  }
+  return normalizeAnalyticsValue(
+    element.getAttribute("aria-label") ||
+      element.getAttribute("title") ||
+      element.textContent
+  );
+}
+
+function buildAnalyticsParams(params = {}) {
+  return {
+    site_variant: analyticsSiteVariant,
+    session_id: analyticsSessionId,
+    page_path: window.location.pathname || "/",
+    page_language: document.documentElement.lang || "zh-CN",
+    ...params,
+  };
+}
+
+function trackStructuredEvent(eventName, params = {}, onComplete) {
+  trackGoogleAnalyticsEvent(
+    eventName,
+    buildAnalyticsParams(params),
+    onComplete
+  );
+}
+
+function trackSectionView(sectionId) {
+  if (!sectionId || analyticsSeenSections.has(sectionId)) {
+    return;
+  }
+  analyticsSeenSections.add(sectionId);
+  trackStructuredEvent("section_view", {
+    section_id: sectionId,
+    section_label: getSectionLabel(sectionId),
+  });
+}
+
+function openTrackedUrl(url, { newTab = true } = {}) {
+  if (!url || !isSafeExternalUrl(url)) {
+    return;
+  }
+  if (newTab) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+  window.location.assign(url);
+}
+
+function bindSectionViewTracking() {
+  const trackables = [
+    { id: "top", element: document.querySelector(".hero-section") },
+    ...Array.from(document.querySelectorAll("main section[id]")).map((element) => ({
+      id: element.id,
+      element,
+    })),
+  ].filter((item) => item.id && item.element);
+
+  if (!trackables.length) {
+    return;
+  }
+
+  if ("IntersectionObserver" in window) {
+    const tracker = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.target instanceof HTMLElement) {
+            trackSectionView(entry.target.dataset.analyticsSectionId || "");
+          }
+        });
+      },
+      {
+        threshold: 0.45,
+      }
+    );
+
+    trackables.forEach((item) => {
+      item.element.dataset.analyticsSectionId = item.id;
+      tracker.observe(item.element);
+    });
+    return;
+  }
+
+  trackables.forEach((item) => {
+    trackSectionView(item.id);
+  });
+}
+
+function bindGeneralAnalytics() {
+  navSectionLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      const targetId = (link.getAttribute("href") || "").replace(/^#/, "");
+      trackStructuredEvent("nav_link_click", {
+        target_section_id: targetId,
+        target_section_label: getSectionLabel(targetId),
+        ui_label: getElementLabel(link),
+        ui_surface_label: inferElementSurfaceLabel(link),
+      });
+    });
+  });
+
+  navToggle?.addEventListener("click", () => {
+    const expanded = navToggle.getAttribute("aria-expanded") === "true";
+    trackStructuredEvent("nav_menu_toggle", {
+      menu_state: expanded ? "opened" : "closed",
+      ui_surface_label: "顶部导航",
+      ui_label: "导航菜单",
+    });
+  });
+
+  document
+    .querySelectorAll(
+      'a[href="https://github.com/Mutx163/mikcb"], a[href="https://github.com/Mutx163/mikcb/releases"]'
+    )
+    .forEach((link) => {
+      if (
+        link === releaseGithubDownload ||
+        link === releaseMirrorDownload ||
+        link === releasePageLink
+      ) {
+        return;
+      }
+      link.addEventListener("click", (event) => {
+        const targetUrl = link.href || fallbackReleasePage;
+        trackStructuredEvent("outbound_repo_click", {
+          destination_host: "github.com",
+          destination_path: normalizeAnalyticsValue(
+            new URL(targetUrl).pathname,
+            160
+          ),
+          ui_label: getElementLabel(link),
+          ui_surface_label: inferElementSurfaceLabel(link),
+          link_url: sanitizeUrlForAnalytics(targetUrl),
+        });
+      });
+    });
+
+  releasePageLink?.addEventListener("click", (event) => {
+    const targetUrl = releasePageLink.href || fallbackReleasePage;
+    trackStructuredEvent("release_page_click", {
+      release_channel: activeReleaseChannel,
+      release_channel_label:
+        getReleaseDataByChannel(activeReleaseChannel)?.channelLabel ||
+        activeReleaseChannel,
+      ui_surface_label: "下载弹窗",
+      ui_label: getElementLabel(releasePageLink),
+      link_url: sanitizeUrlForAnalytics(targetUrl),
+    });
+  });
+
+  bindSectionViewTracking();
+}
+
 const yearEl = document.getElementById("year");
 if (yearEl) {
   yearEl.textContent = String(new Date().getFullYear());
@@ -368,6 +763,11 @@ function normalizeReleaseRecord(release, channelLabel) {
   const downloadUrl = pickDownloadUrl(release.assets) || releaseUrl;
   const version = normalizeVersion(release.tag_name || release.name);
   const title = release.name || release.tag_name || "最新版本";
+  const primaryAsset = Array.isArray(release.assets)
+    ? release.assets.find((asset) =>
+        String(asset?.name || "").toLowerCase().endsWith(".apk")
+      ) || release.assets[0]
+    : null;
   return {
     channelLabel: release.prerelease ? "预发布" : channelLabel,
     version,
@@ -380,6 +780,8 @@ function normalizeReleaseRecord(release, channelLabel) {
     ]),
     releaseUrl,
     downloadUrl,
+    assetName: String(primaryAsset?.name || ""),
+    assetCount: Array.isArray(release.assets) ? release.assets.length : 0,
   };
 }
 
@@ -477,6 +879,16 @@ function renderReleaseData(channel = activeReleaseChannel) {
   releaseMirrorDownload.href = buildMirrorUrl(releaseData.downloadUrl);
   releasePageLink.href = releaseData.releaseUrl;
   updateReleaseChannelTabs();
+}
+
+function getMirrorCandidateByPrefix(prefix) {
+  return (
+    mirrorCandidates.find((candidate) => candidate.prefix === prefix) || {
+      key: "unknown",
+      label: "未知镜像",
+      prefix,
+    }
+  );
 }
 
 async function probeMirrorCandidate(candidate, probeTarget) {
@@ -583,6 +995,9 @@ async function resolveBestMirrorPrefix(downloadUrl) {
 }
 
 function triggerDownload(url) {
+  if (!isSafeExternalUrl(url)) {
+    return;
+  }
   if (!url || url === fallbackReleasePage) {
     window.location.assign(fallbackReleasePage);
     return;
@@ -619,16 +1034,71 @@ async function ensureReleaseDownloadUrl(channel = "stable") {
 async function startMirrorDownload(button, channel = "stable") {
   setMirrorButtonLoading(button, true);
   let targetUrl = fallbackReleasePage;
+  const releaseData = getReleaseDataByChannel(channel);
+  trackStructuredEvent("app_download_intent", {
+    download_source: "mirror",
+    release_channel: channel,
+    release_channel_label: releaseData?.channelLabel || channel,
+    release_version: releaseData?.version || "",
+    ui_surface_label: "下载弹窗",
+    ui_label: getElementLabel(button),
+  });
   try {
     updateMirrorPrewarmState("正在准备下载...");
     targetUrl = (await ensureReleaseDownloadUrl(channel)) || fallbackReleasePage;
     updateMirrorPrewarmState("正在连接下载线路...");
     const bestPrefix = await resolveBestMirrorPrefix(targetUrl);
     const finalUrl = buildMirrorUrl(targetUrl, bestPrefix);
+    const mirrorCandidate = getMirrorCandidateByPrefix(bestPrefix);
+    trackStructuredEvent("mirror_resolution", {
+      resolution_state: "resolved",
+      release_channel: channel,
+      release_channel_label: releaseData?.channelLabel || channel,
+      release_version: releaseData?.version || "",
+      mirror_provider: mirrorCandidate.key,
+      mirror_provider_label: mirrorCandidate.label,
+      link_url: finalUrl,
+    });
+    trackStructuredEvent(
+      "app_download",
+      {
+        ...buildDownloadAnalyticsPayload("mirror", finalUrl, channel),
+        release_channel_label: releaseData?.channelLabel || channel,
+        release_title: releaseData?.title || "",
+        release_asset_name: releaseData?.assetName || "",
+        release_asset_count: releaseData?.assetCount || 0,
+        mirror_provider: mirrorCandidate.key,
+        mirror_provider_label: mirrorCandidate.label,
+        download_fallback: 0,
+      }
+    );
     triggerDownload(finalUrl);
     updateMirrorPrewarmState("已开始下载，可切换 GitHub 原版。");
   } catch (error) {
     const fallbackUrl = buildMirrorUrl(targetUrl, defaultMirrorPrefix);
+    const mirrorCandidate = getMirrorCandidateByPrefix(defaultMirrorPrefix);
+    trackStructuredEvent("mirror_resolution", {
+      resolution_state: "fallback",
+      release_channel: channel,
+      release_channel_label: releaseData?.channelLabel || channel,
+      release_version: releaseData?.version || "",
+      mirror_provider: mirrorCandidate.key,
+      mirror_provider_label: mirrorCandidate.label,
+      link_url: fallbackUrl,
+    });
+    trackStructuredEvent(
+      "app_download",
+      {
+        ...buildDownloadAnalyticsPayload("mirror", fallbackUrl, channel),
+        release_channel_label: releaseData?.channelLabel || channel,
+        release_title: releaseData?.title || "",
+        release_asset_name: releaseData?.assetName || "",
+        release_asset_count: releaseData?.assetCount || 0,
+        mirror_provider: mirrorCandidate.key,
+        mirror_provider_label: mirrorCandidate.label,
+        download_fallback: 1,
+      }
+    );
     triggerDownload(fallbackUrl);
     updateMirrorPrewarmState("已切到默认线路，可改用 GitHub 原版。");
   } finally {
@@ -706,6 +1176,14 @@ const releaseCacheTtlMs = 15 * 1000;
 
 async function loadLatestRelease() {
   if (releaseLoaded && Date.now() - releaseLoadedAt < releaseCacheTtlMs) {
+    trackStructuredEvent("release_data_load", {
+      load_state: "cache_hit",
+      release_channel: activeReleaseChannel,
+      release_channel_label:
+        getReleaseDataByChannel(activeReleaseChannel)?.channelLabel ||
+        activeReleaseChannel,
+      release_version: getReleaseDataByChannel(activeReleaseChannel)?.version || "",
+    });
     return {
       stable: stableReleaseData,
       prerelease: prereleaseReleaseData,
@@ -717,6 +1195,10 @@ async function loadLatestRelease() {
   }
 
   setReleaseLoadingState();
+  trackStructuredEvent("release_data_load", {
+    load_state: "start",
+    load_source: "network",
+  });
 
   releaseLoadPromise = (async () => {
     try {
@@ -754,13 +1236,24 @@ async function loadLatestRelease() {
       renderReleaseData(activeReleaseChannel);
       releaseLoaded = true;
       releaseLoadedAt = Date.now();
+      trackStructuredEvent("release_data_load", {
+        load_state: "success",
+        load_source: "network",
+        stable_version: stableReleaseData?.version || "",
+        prerelease_version: prereleaseReleaseData?.version || "",
+        has_prerelease: hasUsablePrerelease() ? 1 : 0,
+      });
       updateMirrorPrewarmState("已从 GitHub 读取版本信息。");
-      void prewarmReleaseDownloads();
       return {
         stable: stableReleaseData,
         prerelease: prereleaseReleaseData,
       };
     } catch (error) {
+      trackStructuredEvent("release_data_load", {
+        load_state: "error",
+        load_source: "network",
+        error_name: normalizeAnalyticsValue(error?.message || "unknown", 80),
+      });
       setReleaseErrorState();
       return null;
     } finally {
@@ -771,7 +1264,7 @@ async function loadLatestRelease() {
   return releaseLoadPromise;
 }
 
-function openReleaseModal() {
+function openReleaseModal(triggerContext = {}) {
   if (!releaseModal || !releaseDialog) {
     return;
   }
@@ -782,17 +1275,29 @@ function openReleaseModal() {
   window.setTimeout(() => {
     (releaseCloseButton || releaseDialog).focus();
   }, 0);
-  void prewarmGlobalMirror();
+  trackStructuredEvent("release_modal_open", {
+    trigger_label: normalizeAnalyticsValue(triggerContext.label || ""),
+    trigger_surface_label: normalizeAnalyticsValue(
+      triggerContext.surface || "未知区域"
+    ),
+  });
   void loadLatestRelease();
 }
 
-function closeReleaseModal() {
-  if (!releaseModal) {
+function closeReleaseModal(reason = "button") {
+  if (!releaseModal || !releaseModal.classList.contains("is-open")) {
     return;
   }
   releaseModal.classList.remove("is-open");
   releaseModal.setAttribute("aria-hidden", "true");
   document.body.style.overflow = "";
+  trackStructuredEvent("release_modal_close", {
+    close_reason: reason,
+    release_channel: activeReleaseChannel,
+    release_channel_label:
+      getReleaseDataByChannel(activeReleaseChannel)?.channelLabel ||
+      activeReleaseChannel,
+  });
   if (lastFocusedElement instanceof HTMLElement) {
     lastFocusedElement.focus();
   }
@@ -801,12 +1306,15 @@ function closeReleaseModal() {
 releaseOpenButtons.forEach((button) => {
   button.addEventListener("click", (event) => {
     event.preventDefault();
-    openReleaseModal();
+    openReleaseModal({
+      label: getElementLabel(button),
+      surface: inferElementSurfaceLabel(button),
+    });
   });
 });
 
 releaseCloseButtons.forEach((button) => {
-  button.addEventListener("click", closeReleaseModal);
+  button.addEventListener("click", () => closeReleaseModal("button"));
 });
 
 releaseChannelTabs.forEach((tab) => {
@@ -818,6 +1326,14 @@ releaseChannelTabs.forEach((tab) => {
     if (channel === "prerelease" && !prereleaseReleaseData) {
       return;
     }
+    trackStructuredEvent("release_channel_switch", {
+      previous_channel: activeReleaseChannel,
+      next_channel: channel,
+      next_channel_label:
+        getReleaseDataByChannel(channel)?.channelLabel || channel,
+      ui_surface_label: "下载弹窗",
+      ui_label: getElementLabel(tab),
+    });
     renderReleaseData(channel);
   });
 });
@@ -827,9 +1343,40 @@ releaseMirrorDownload?.addEventListener("click", async (event) => {
   await startMirrorDownload(releaseMirrorDownload, activeReleaseChannel);
 });
 
+releaseGithubDownload?.addEventListener("click", (event) => {
+  const targetUrl = releaseGithubDownload.href || fallbackReleasePage;
+  const releaseData = getReleaseDataByChannel(activeReleaseChannel);
+  trackStructuredEvent("app_download_intent", {
+    download_source: "github",
+    release_channel: activeReleaseChannel,
+    release_channel_label: releaseData?.channelLabel || activeReleaseChannel,
+    release_version: releaseData?.version || "",
+    ui_surface_label: "下载弹窗",
+    ui_label: getElementLabel(releaseGithubDownload),
+  });
+  trackStructuredEvent(
+    "app_download",
+    {
+      ...buildDownloadAnalyticsPayload(
+        "github",
+        targetUrl,
+        activeReleaseChannel
+      ),
+      release_channel_label: releaseData?.channelLabel || activeReleaseChannel,
+      release_title: releaseData?.title || "",
+      release_asset_name: releaseData?.assetName || "",
+      release_asset_count: releaseData?.assetCount || 0,
+      download_fallback: 0,
+    }
+  );
+  closeReleaseModal("download");
+});
+
+bindGeneralAnalytics();
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
-    closeReleaseModal();
+    closeReleaseModal("escape");
   }
 
   if (event.key !== "Tab" || !releaseModal?.classList.contains("is-open")) {
