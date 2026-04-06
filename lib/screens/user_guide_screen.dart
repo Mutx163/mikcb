@@ -555,18 +555,35 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ),
             const SizedBox(height: 8),
             Text(
-              '当前版本还没有直接连接教务系统导入，所以首次导入通常有两条路。',
+              '当前版本已经支持部分学校的教务系统网页登录导入；如果你的学校还没适配，也还有其他迁移方式。',
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
             _buildNumberedLine(
               '1',
-              '先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。',
+              '优先进入“导入课程 > 教务系统导入”，选择学校和适配器后，直接在应用内打开教务网页完成导入。',
             ),
             const SizedBox(height: 8),
             _buildNumberedLine(
               '2',
+              '如果你的学校暂时没有适配，可以先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。',
+            ),
+            const SizedBox(height: 8),
+            _buildNumberedLine(
+              '3',
               '如果别人已经在用本应用，也可以让对方导出完整备份文件，你直接导入就能恢复课程和设置。',
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                '如果你会抓包、网页调试或 JavaScript，也欢迎参与学校教务适配补充，让更多学校能直接导入。',
+                style: theme.textTheme.bodySmall,
+              ),
             ),
           ],
         ),
