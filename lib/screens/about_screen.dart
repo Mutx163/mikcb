@@ -229,6 +229,9 @@ class _AboutScreenState extends State<AboutScreen> {
                       children: const [
                         _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
                         _AboutBullet(
+                          text: '已支持适配学校的教务系统网页登录导入与完整备份迁移',
+                        ),
+                        _AboutBullet(
                           text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示',
                         ),
                         _AboutBullet(
@@ -247,14 +250,21 @@ class _AboutScreenState extends State<AboutScreen> {
                       context,
                       title: '导入与迁移',
                       children: const [
-                        _AboutBullet(text: '当前版本还没有直接连接教务系统导入。'),
                         _AboutBullet(
                           text:
-                              '如果你要从教务系统导入，建议先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。',
+                              '当前版本已经支持适配学校的教务系统网页登录导入；进入“导入课程 > 教务系统导入”后选择学校和适配器即可。',
+                        ),
+                        _AboutBullet(
+                          text:
+                              '如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。',
                         ),
                         _AboutBullet(
                           text:
                               '如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。',
+                        ),
+                        _AboutBullet(
+                          text:
+                              '如果你会抓包、网页调试或 JavaScript，也欢迎去 qingyu_warehouse 参与教务适配补充。',
                         ),
                       ],
                     );
@@ -348,6 +358,11 @@ class _AboutScreenState extends State<AboutScreen> {
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  '如果你想补学校教务导入适配，建议同时查看教务适配仓 qingyu_warehouse。',
+                  style: theme.textTheme.bodyMedium,
+                ),
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -356,6 +371,18 @@ class _AboutScreenState extends State<AboutScreen> {
                         onPressed: _openRepository,
                         icon: const Icon(Icons.open_in_new_rounded),
                         label: const Text('打开 GitHub'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: _openWarehouseRepository,
+                        icon: const Icon(Icons.hub_rounded),
+                        label: const Text('打开教务适配仓'),
                       ),
                     ),
                   ],
@@ -432,6 +459,14 @@ class _AboutScreenState extends State<AboutScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('已复制仓库地址')),
     );
+  }
+
+  Future<void> _openWarehouseRepository() async {
+    final uri = Uri.tryParse('https://github.com/Mutx163/qingyu_warehouse');
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -2170,8 +2205,67 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '参与教务适配',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复。',
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: _openWarehouseRepository,
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text('打开适配仓'),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: _copyWarehouseRepositoryUrl,
+                        icon: const Icon(Icons.copy_all_rounded),
+                        label: const Text('复制仓库地址'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  Future<void> _openWarehouseRepository() async {
+    final uri = Uri.tryParse(_warehouseSource.repositoryUrl);
+    if (uri == null) {
+      return;
+    }
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _copyWarehouseRepositoryUrl() async {
+    await Clipboard.setData(
+      ClipboardData(text: _warehouseSource.repositoryUrl),
+    );
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已复制教务适配仓地址')),
     );
   }
 }
