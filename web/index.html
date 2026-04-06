@@ -8,6 +8,11 @@
       name="description"
       content="轻屿课表是一款为 Android 与 HyperOS 打磨的课表应用，支持多课表、时间模板、桌面小组件、分阶段提醒与超级岛联动。"
     />
+    <!-- 部署前把 content 改成真实的 GA4 Measurement ID，例如 G-XXXXXXXXXX -->
+    <meta
+      name="google-analytics-measurement-id"
+      content="G-W7H7MGWNSC"
+    />
     <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -162,7 +167,7 @@
         </div>
       </section>
 
-      <section class="detail-band detail-band-unified">
+      <section id="time-template" class="detail-band detail-band-unified">
         <div class="section-shell split-layout reveal">
           <div class="split-copy">
             <p class="section-label">时间模板</p>
