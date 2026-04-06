@@ -91,8 +91,8 @@ class CourseImportScreen extends StatelessWidget {
           _ImportEntryCard(
             icon: Icons.school_outlined,
             title: '教务系统导入',
-            subtitle: '从 qingyu_warehouse 读取学校适配器，先浏览学校与适配器。',
-            footer: '当前先打通资源仓读取、学校列表和适配器详情展示；脚本执行和真正导入会在下一阶段接入。',
+            subtitle: '从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程。',
+            footer: '进入后选择学校和适配器，可直接打开教务网页登录并执行导入。',
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const WarehouseCourseImportScreen(),
@@ -1102,8 +1102,10 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
+  final TextEditingController _searchController = TextEditingController();
   late Future<WarehouseRootIndex> _rootIndexFuture;
   List<String> _recentSchoolIds = const [];
+  String _searchQuery = '';
   WarehouseFetchOptions _currentFetchOptions() {
     final settings = context.read<TimetableProvider>().settings;
     return WarehouseFetchOptions.fromSettings(settings);
@@ -1117,6 +1119,12 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
       options: _currentFetchOptions(),
     );
     _loadRecentSchoolIds();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadRecentSchoolIds() async {
@@ -1145,11 +1153,6 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _WarehouseIntroCard(
-                  title: '教务系统导入',
-                  subtitle: '当前接的是轻屿课表自己的适配资源仓，先浏览学校与适配器，后续再接脚本执行与真正导入。',
-                ),
-                const SizedBox(height: 16),
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -1196,106 +1199,180 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
               if (initialCompare != 0) return initialCompare;
               return left.name.compareTo(right.name);
             });
-          final beans = _schoolsToBeans(allSchools, _recentSchoolIds);
+          final filteredSchools = _filterSchools(allSchools, _searchQuery);
+          final beans = _schoolsToBeans(filteredSchools, _recentSchoolIds);
           final indexTags = beans
               .map((bean) => bean.getSuspensionTag())
               .toSet()
               .toList(growable: false);
+          final isSearching = _searchQuery.trim().isNotEmpty;
           return Column(
             children: [
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: _WarehouseIntroCard(
-                  title: '教务系统导入',
-                  subtitle:
-                      '当前从 qingyu_warehouse 拉取学校与适配器索引。先选学校，再看适配器详情；脚本执行导入会在下一阶段接入。',
-                  chips: [
-                    '仓库：qingyu_warehouse',
-                    '学校/工具：${beans.length} 项',
-                    '当前阶段：只读浏览',
-                  ],
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: '搜索学校名称、首字母或代码',
+                    prefixIcon: const Icon(Icons.search_rounded),
+                    suffixIcon: _searchQuery.trim().isEmpty
+                        ? null
+                        : IconButton(
+                            tooltip: '清空',
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                            icon: const Icon(Icons.close_rounded),
+                          ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    isDense: true,
+                    filled: true,
+                    fillColor: colorScheme.surfaceContainerLowest,
+                  ),
                 ),
               ),
               Expanded(
-                child: AzListView(
-                  data: beans,
-                  itemCount: beans.length,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  indexBarData: indexTags,
-                  indexBarOptions: IndexBarOptions(
-                    needRebuild: true,
-                    hapticFeedback: true,
-                    textStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w700,
-                        ) ??
-                        const TextStyle(fontSize: 11),
-                    selectTextStyle: theme.textTheme.labelSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                        ) ??
-                        const TextStyle(fontSize: 11),
-                    selectItemDecoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    indexHintDecoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    indexHintTextStyle: theme.textTheme.headlineMedium?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w800,
-                        ) ??
-                        const TextStyle(fontSize: 28),
-                  ),
-                  indexHintBuilder: (context, tag) => Container(
-                    width: 72,
-                    height: 72,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Text(
-                      tag,
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        color: colorScheme.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  itemBuilder: (context, index) {
-                    final bean = beans[index];
-                    return _WarehouseSchoolCard(
-                      school: bean.school,
-                      isRecent: bean.isRecent,
-                      onTap: () async {
-                        final imported = await Navigator.of(context).push<bool>(
-                          MaterialPageRoute(
-                            settings: RouteSettings(
-                              name: '/courses/import/warehouse/${bean.school.id}',
-                            ),
-                            builder: (_) => WarehouseSchoolAdaptersScreen(
-                              source: _defaultSource,
-                              school: bean.school,
-                              fetchOptions: _currentFetchOptions(),
+                child: beans.isEmpty
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 36,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                isSearching ? '没有找到匹配的学校' : '暂无可用学校',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              if (isSearching) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  '试试学校全称、首字母或仓库里的学校代码。',
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      )
+                    : AzListView(
+                        data: beans,
+                        itemCount: beans.length,
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        indexBarData: isSearching ? const [] : indexTags,
+                        indexBarOptions: IndexBarOptions(
+                          needRebuild: true,
+                          hapticFeedback: true,
+                          textStyle: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w700,
+                              ) ??
+                              const TextStyle(fontSize: 11),
+                          selectTextStyle: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w800,
+                              ) ??
+                              const TextStyle(fontSize: 11),
+                          selectItemDecoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          indexHintDecoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          indexHintTextStyle:
+                              theme.textTheme.headlineMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w800,
+                                  ) ??
+                                  const TextStyle(fontSize: 28),
+                        ),
+                        indexHintBuilder: (context, tag) => Container(
+                          width: 72,
+                          height: 72,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: Text(
+                            tag,
+                            style: theme.textTheme.headlineMedium?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
-                        );
-                        if (imported == true && context.mounted) {
-                          Navigator.of(context).pop(true);
-                        }
-                      },
-                    );
-                  },
-                ),
+                        ),
+                        itemBuilder: (context, index) {
+                          final bean = beans[index];
+                          return _WarehouseSchoolCard(
+                            school: bean.school,
+                            isRecent: bean.isRecent,
+                            onTap: () async {
+                              final imported =
+                                  await Navigator.of(context).push<bool>(
+                                MaterialPageRoute(
+                                  settings: RouteSettings(
+                                    name: '/courses/import/warehouse/${bean.school.id}',
+                                  ),
+                                  builder: (_) => WarehouseSchoolAdaptersScreen(
+                                    source: _defaultSource,
+                                    school: bean.school,
+                                    fetchOptions: _currentFetchOptions(),
+                                  ),
+                                ),
+                              );
+                              if (imported == true && context.mounted) {
+                                Navigator.of(context).pop(true);
+                              }
+                            },
+                          );
+                        },
+                      ),
               ),
             ],
           );
         },
       ),
     );
+  }
+
+  List<WarehouseSchoolEntry> _filterSchools(
+    List<WarehouseSchoolEntry> schools,
+    String query,
+  ) {
+    final keyword = query.trim().toLowerCase();
+    if (keyword.isEmpty) {
+      return schools;
+    }
+    return schools.where((school) {
+      return school.name.toLowerCase().contains(keyword) ||
+          school.id.toLowerCase().contains(keyword) ||
+          school.initial.toLowerCase().contains(keyword) ||
+          school.resourceFolder.toLowerCase().contains(keyword);
+    }).toList(growable: false);
   }
 }
 
@@ -1320,6 +1397,8 @@ class _WarehouseSchoolAdaptersScreenState
     extends State<WarehouseSchoolAdaptersScreen> {
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
   late Future<WarehouseAdaptersIndex> _adaptersFuture;
 
   @override
@@ -1370,28 +1449,10 @@ class _WarehouseSchoolAdaptersScreenState
               final adapter = adapters[index];
               return _WarehouseAdapterCard(
                 adapter: adapter,
-                onImport: adapter.importUrl.isEmpty
-                    ? null
-                    : () async {
-                        final imported = await Navigator.of(context).push<bool>(
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                              name: '/courses/import/warehouse/login',
-                            ),
-                            builder: (_) => WarehouseAdapterWebLoginScreen(
-                              title: adapter.adapterName,
-                              initialUrl: adapter.importUrl,
-                              source: widget.source,
-                              school: widget.school,
-                              adapter: adapter,
-                              fetchOptions: widget.fetchOptions,
-                            ),
-                          ),
-                        );
-                        if (imported == true && context.mounted) {
-                          Navigator.of(context).pop(true);
-                        }
-                      },
+                importButtonLabel: adapter.importUrl.isEmpty
+                    ? '填写网址后导入'
+                    : '网页登录导入',
+                onImport: () => _openAdapterImport(adapter),
                 onInfo: () async {
                   final imported = await Navigator.of(context).push<bool>(
                     MaterialPageRoute(
@@ -1417,6 +1478,57 @@ class _WarehouseSchoolAdaptersScreenState
         },
       ),
     );
+  }
+
+  Future<void> _openAdapterImport(WarehouseAdapterEntry adapter) async {
+    final initialUrl = await _resolveAdapterImportUrl(adapter);
+    if (initialUrl == null || !mounted) {
+      return;
+    }
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/courses/import/warehouse/login'),
+        builder: (_) => WarehouseAdapterWebLoginScreen(
+          title: adapter.adapterName,
+          initialUrl: initialUrl,
+          source: widget.source,
+          school: widget.school,
+          adapter: adapter,
+          fetchOptions: widget.fetchOptions,
+        ),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  Future<String?> _resolveAdapterImportUrl(WarehouseAdapterEntry adapter) async {
+    final custom = await _preferencesService.getCustomImportUrl(
+      adapter.adapterId,
+    );
+    final effectiveUrl = (custom ?? '').trim().isNotEmpty
+        ? custom!.trim()
+        : adapter.importUrl.trim();
+    if (effectiveUrl.isNotEmpty) {
+      return effectiveUrl;
+    }
+    if (!mounted) {
+      return null;
+    }
+    final manualUrl = await _promptWarehouseImportUrl(
+      context,
+      schoolName: widget.school.name,
+      adapterName: adapter.adapterName,
+    );
+    if (manualUrl == null) {
+      return null;
+    }
+    await _preferencesService.setCustomImportUrl(adapter.adapterId, manualUrl);
+    if (mounted) {
+      _showLightTip(context, '已保存教务网址，下次可直接导入');
+    }
+    return manualUrl;
   }
 }
 
@@ -1474,7 +1586,7 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
           _WarehouseIntroCard(
             title: adapter.adapterName,
             subtitle: adapter.description.isEmpty
-                ? '当前先展示适配器元数据与脚本可读取状态，后续再接实际登录与导入执行。'
+                ? '可查看适配器信息、登录入口与脚本状态。'
                 : '',
             chips: [
               '学校：${widget.school.name}',
@@ -1534,7 +1646,7 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
                         const LinearProgressIndicator(minHeight: 3)
                       else if (readable)
                         Text(
-                          '脚本已成功读取，长度 ${snapshot.data!.length} 字符。下一阶段将接入脚本执行环境与登录流程。',
+                          '脚本已成功读取，长度 ${snapshot.data!.length} 字符。',
                           style: theme.textTheme.bodyMedium,
                         )
                       else
@@ -1551,14 +1663,14 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
             },
           ),
           const SizedBox(height: 16),
-          if (adapter.importUrl.isNotEmpty) ...[
-            FilledButton.icon(
-              onPressed: _openInAppLogin,
-              icon: const Icon(Icons.web_rounded),
-              label: const Text('应用内打开登录入口'),
+          FilledButton.icon(
+            onPressed: _openInAppLogin,
+            icon: const Icon(Icons.web_rounded),
+            label: Text(
+              _effectiveImportUrl.isEmpty ? '填写网址后导入' : '应用内打开登录入口',
             ),
-            const SizedBox(height: 10),
-          ],
+          ),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -1603,7 +1715,9 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
                 OutlinedButton.icon(
                   onPressed: _clearCustomImportUrl,
                   icon: const Icon(Icons.restart_alt_rounded),
-                  label: const Text('恢复仓库地址'),
+                  label: Text(
+                    adapter.importUrl.isEmpty ? '清除自定义地址' : '恢复仓库地址',
+                  ),
                 ),
             ],
           ),
@@ -1640,7 +1754,30 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
   }
 
   Future<void> _openInAppLogin() async {
-    final uri = Uri.tryParse(_effectiveImportUrl);
+    var targetUrl = _effectiveImportUrl.trim();
+    if (targetUrl.isEmpty) {
+      final manualUrl = await _promptWarehouseImportUrl(
+        context,
+        schoolName: widget.school.name,
+        adapterName: widget.adapter.adapterName,
+      );
+      if (manualUrl == null) {
+        return;
+      }
+      await _preferencesService.setCustomImportUrl(
+        widget.adapter.adapterId,
+        manualUrl,
+      );
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _customImportUrl = manualUrl;
+      });
+      _showLightTip(context, '已保存教务网址，下次可直接导入');
+      targetUrl = manualUrl;
+    }
+    final uri = Uri.tryParse(targetUrl);
     if (uri == null) {
       if (!mounted) {
         return;
@@ -1653,7 +1790,7 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
         settings: const RouteSettings(name: '/courses/import/warehouse/login'),
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: widget.adapter.adapterName,
-          initialUrl: uri.toString(),
+          initialUrl: targetUrl,
           source: widget.source,
           school: widget.school,
           adapter: widget.adapter,
@@ -1668,45 +1805,20 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
   }
 
   Future<void> _editCustomImportUrl() async {
-    final controller = TextEditingController(text: _effectiveImportUrl);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('自定义登录地址'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '登录地址',
-            hintText: 'http(s)://...',
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('保存'),
-          ),
-        ],
-      ),
+    final result = await _promptWarehouseImportUrl(
+      context,
+      schoolName: widget.school.name,
+      adapterName: widget.adapter.adapterName,
+      initialValue: _effectiveImportUrl,
     );
-    if (result == null || result.trim().isEmpty) return;
-    final uri = Uri.tryParse(result.trim());
-    if (uri == null || uri.host.isEmpty) {
-      if (!mounted) return;
-      _showLightTip(context, '登录地址格式不正确');
-      return;
-    }
+    if (result == null) return;
     await _preferencesService.setCustomImportUrl(
       widget.adapter.adapterId,
-      result.trim(),
+      result,
     );
     if (!mounted) return;
     setState(() {
-      _customImportUrl = result.trim();
+      _customImportUrl = result;
     });
     _showLightTip(context, '已保存自定义登录地址');
   }
@@ -1717,7 +1829,10 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
     setState(() {
       _customImportUrl = null;
     });
-    _showLightTip(context, '已恢复仓库里的登录地址');
+    _showLightTip(
+      context,
+      widget.adapter.importUrl.isEmpty ? '已清除自定义登录地址' : '已恢复仓库里的登录地址',
+    );
   }
 
   Future<void> _copyText(
@@ -1923,7 +2038,7 @@ class _WarehouseAdapterWebLoginScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '先在这里完成登录。当前阶段先提供登录承载页，脚本执行导入将在下一阶段接入。',
+                  '先在这里完成登录，脚本会在当前网页内继续执行导入。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -2907,11 +3022,13 @@ class _WarehouseAdapterCard extends StatelessWidget {
   final WarehouseAdapterEntry adapter;
   final Future<void> Function()? onImport;
   final Future<void> Function() onInfo;
+  final String importButtonLabel;
 
   const _WarehouseAdapterCard({
     required this.adapter,
     required this.onImport,
     required this.onInfo,
+    required this.importButtonLabel,
   });
 
   @override
@@ -2981,9 +3098,7 @@ class _WarehouseAdapterCard extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onImport,
                     icon: const Icon(Icons.web_rounded),
-                    label: Text(
-                      adapter.importUrl.isEmpty ? '未配置登录入口' : '网页登录导入',
-                    ),
+                    label: Text(importButtonLabel),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -3864,6 +3979,66 @@ String _normalizeJavaScriptResult(Object? raw) {
     }
   } catch (_) {}
   return text;
+}
+
+Future<String?> _promptWarehouseImportUrl(
+  BuildContext context, {
+  required String schoolName,
+  required String adapterName,
+  String initialValue = '',
+}) async {
+  final controller = TextEditingController(text: initialValue);
+  final result = await showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('输入教务网址'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            keyboardType: TextInputType.url,
+            decoration: const InputDecoration(
+              labelText: '教务网址',
+              hintText: 'http(s)://...',
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '保存后下次会直接使用，也可以在适配器信息页里修改。',
+            style: Theme.of(dialogContext).textTheme.bodySmall,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('取消'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(dialogContext, controller.text.trim()),
+          child: const Text('保存并继续'),
+        ),
+      ],
+    ),
+  );
+  if (result == null || result.trim().isEmpty) {
+    return null;
+  }
+  final uri = Uri.tryParse(result.trim());
+  if (uri == null || uri.host.isEmpty) {
+    if (!context.mounted) {
+      return null;
+    }
+    _showLightTip(context, '登录地址格式不正确');
+    return null;
+  }
+  return result.trim();
 }
 
 void _showLightTip(BuildContext context, String message) {
