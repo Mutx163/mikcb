@@ -24,6 +24,11 @@ enum AppThemeMode {
   dark,
 }
 
+enum AppFontMode {
+  system,
+  miSans,
+}
+
 enum HomeTitleStyle {
   classic,
   brand,
@@ -94,6 +99,14 @@ const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
 const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
 const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
 
+String _normalizeAppLocaleTag(String? value) {
+  final normalized = (value ?? '').trim();
+  if (normalized.isEmpty || normalized == 'system') {
+    return '';
+  }
+  return normalized.replaceAll('-', '_');
+}
+
 String _normalizeMirrorUrlPrefixValue(String? value) {
   final normalized = (value ?? '').trim();
   if (normalized.isEmpty) {
@@ -163,6 +176,20 @@ extension AppThemeModeX on AppThemeMode {
     return AppThemeMode.values.firstWhere(
       (item) => item.value == value,
       orElse: () => AppThemeMode.system,
+    );
+  }
+}
+
+extension AppFontModeX on AppFontMode {
+  String get value => switch (this) {
+        AppFontMode.system => 'system',
+        AppFontMode.miSans => 'mi_sans',
+      };
+
+  static AppFontMode fromValue(String? value) {
+    return AppFontMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => AppFontMode.system,
     );
   }
 }
@@ -533,8 +560,7 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
         AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
       };
 
-  bool get usesCustomUrl =>
-      this == AppUpdateMirrorPreset.custom;
+  bool get usesCustomUrl => this == AppUpdateMirrorPreset.custom;
 
   static AppUpdateMirrorPreset fromValue(String? value) {
     return AppUpdateMirrorPreset.values.firstWhere(
@@ -546,9 +572,10 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
   static AppUpdateMirrorPreset fromUrlPrefix(String? urlPrefix) {
     final normalized = _normalizeMirrorUrlPrefixValue(urlPrefix);
     if (normalized.isEmpty ||
-        normalized == _normalizeMirrorUrlPrefixValue(
-          defaultAppUpdateMirrorUrlPrefix,
-        )) {
+        normalized ==
+            _normalizeMirrorUrlPrefixValue(
+              defaultAppUpdateMirrorUrlPrefix,
+            )) {
       return AppUpdateMirrorPreset.ghfast;
     }
     if (normalized ==
@@ -746,6 +773,8 @@ class TimetableSettings {
   final double widgetHeightAdjustment;
   final double widgetCornerRadius;
   final AppThemeMode appThemeMode;
+  final AppFontMode appFontMode;
+  final String appLocaleTag;
   final HomeTitleStyle homeTitleStyle;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
@@ -842,6 +871,8 @@ class TimetableSettings {
     this.widgetHeightAdjustment = -11,
     this.widgetCornerRadius = 22,
     this.appThemeMode = AppThemeMode.system,
+    this.appFontMode = AppFontMode.system,
+    this.appLocaleTag = '',
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
@@ -957,6 +988,8 @@ class TimetableSettings {
       widgetHeightAdjustment: -11,
       widgetCornerRadius: 22,
       appThemeMode: AppThemeMode.system,
+      appFontMode: AppFontMode.system,
+      appLocaleTag: '',
       homeTitleStyle: HomeTitleStyle.classic,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
@@ -1058,6 +1091,8 @@ class TimetableSettings {
       'widgetHeightAdjustment': widgetHeightAdjustment,
       'widgetCornerRadius': widgetCornerRadius,
       'appThemeMode': appThemeMode.value,
+      'appFontMode': appFontMode.value,
+      'appLocaleTag': appLocaleTag,
       'homeTitleStyle': homeTitleStyle.value,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
@@ -1211,6 +1246,12 @@ class TimetableSettings {
       appThemeMode: AppThemeModeX.fromValue(
         json['appThemeMode'] as String?,
       ),
+      appFontMode: AppFontModeX.fromValue(
+        json['appFontMode'] as String?,
+      ),
+      appLocaleTag: _normalizeAppLocaleTag(
+        json['appLocaleTag'] as String? ?? json['appLocaleMode'] as String?,
+      ),
       homeTitleStyle: HomeTitleStyleX.fromValue(
         json['homeTitleStyle'] as String?,
       ),
@@ -1351,13 +1392,11 @@ class TimetableSettings {
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
       appUpdateDownloadSource:
           json['appUpdateDownloadSource'] as String? ?? 'mirror',
-      appUpdateMirrorPreset:
-          (rawAppUpdateMirrorPreset == null
-                  ? AppUpdateMirrorPresetX.fromUrlPrefix(
-                      rawAppUpdateMirrorUrlPrefix,
-                    ).value
-                  : AppUpdateMirrorPresetX.fromValue(rawAppUpdateMirrorPreset)
-                      .value),
+      appUpdateMirrorPreset: (rawAppUpdateMirrorPreset == null
+          ? AppUpdateMirrorPresetX.fromUrlPrefix(
+              rawAppUpdateMirrorUrlPrefix,
+            ).value
+          : AppUpdateMirrorPresetX.fromValue(rawAppUpdateMirrorPreset).value),
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
@@ -1404,6 +1443,8 @@ class TimetableSettings {
     double? widgetHeightAdjustment,
     double? widgetCornerRadius,
     AppThemeMode? appThemeMode,
+    AppFontMode? appFontMode,
+    String? appLocaleTag,
     HomeTitleStyle? homeTitleStyle,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
@@ -1519,6 +1560,8 @@ class TimetableSettings {
           widgetHeightAdjustment ?? this.widgetHeightAdjustment,
       widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,
       appThemeMode: appThemeMode ?? this.appThemeMode,
+      appFontMode: appFontMode ?? this.appFontMode,
+      appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -535,13 +536,14 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final previewCardColor = _draft.timetableUseUnifiedCardColor
         ? _draft.timetableUnifiedCardColor
         : _draft.themeSeedColor;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('外观与配色'),
+        title: Text(l10n.appearanceTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -555,8 +557,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '预览',
+                  Text(
+                    l10n.previewTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
@@ -611,7 +613,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                             ),
                             alignment: Alignment.center,
                             child: Text(
-                              '课表背景',
+                              l10n.timetableBackgroundPreview,
                               style: TextStyle(
                                 color: Theme.of(context)
                                     .colorScheme
@@ -629,25 +631,66 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '显示模式',
-            subtitle: '支持跟随系统、浅色模式和深色模式。',
+            title: l10n.displayModeTitle,
+            subtitle: l10n.displayModeSubtitle,
             child: DropdownButtonFormField<AppThemeMode>(
               value: _draft.appThemeMode,
-              decoration: const InputDecoration(
-                labelText: '主题模式',
+              decoration: InputDecoration(
+                labelText: l10n.themeModeLabel,
                 border: OutlineInputBorder(),
               ),
               items: AppThemeMode.values
                   .map(
                     (value) => DropdownMenuItem(
                       value: value,
-                      child: Text(value.label),
+                      child: Text(_themeModeLabel(context, value)),
                     ),
                   )
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
                 _updateDraft(_draft.copyWith(appThemeMode: value));
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
+            title: l10n.fontSectionTitle,
+            subtitle: l10n.fontSectionSubtitle,
+            child: DropdownButtonFormField<AppFontMode>(
+              value: _draft.appFontMode,
+              decoration: InputDecoration(
+                labelText: l10n.fontModeLabel,
+                border: const OutlineInputBorder(),
+              ),
+              items: AppFontMode.values
+                  .map(
+                    (value) => DropdownMenuItem(
+                      value: value,
+                      child: Text(_fontModeLabel(context, value)),
+                    ),
+                  )
+                  .toList(),
+              onChanged: (value) {
+                if (value == null) return;
+                _updateDraft(_draft.copyWith(appFontMode: value));
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          _SettingsSectionCard(
+            title: l10n.languageSectionTitle,
+            subtitle: l10n.languageSectionSubtitle,
+            child: DropdownButtonFormField<String>(
+              value: _draft.appLocaleTag,
+              decoration: InputDecoration(
+                labelText: l10n.languageModeLabel,
+                border: const OutlineInputBorder(),
+              ),
+              items: buildLocaleDropdownItems(context),
+              onChanged: (value) {
+                if (value == null) return;
+                _updateDraft(_draft.copyWith(appLocaleTag: value));
               },
             ),
           ),
@@ -822,6 +865,60 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         _draft = provider.settings;
       });
     }
+  }
+}
+
+String _themeModeLabel(BuildContext context, AppThemeMode mode) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (mode) {
+    AppThemeMode.system => l10n.themeModeSystem,
+    AppThemeMode.light => l10n.themeModeLight,
+    AppThemeMode.dark => l10n.themeModeDark,
+  };
+}
+
+String _fontModeLabel(BuildContext context, AppFontMode mode) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (mode) {
+    AppFontMode.system => l10n.fontModeSystem,
+    AppFontMode.miSans => l10n.fontModeMiSans,
+  };
+}
+
+List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
+  final l10n = AppLocalizations.of(context)!;
+  final items = <DropdownMenuItem<String>>[
+    DropdownMenuItem<String>(
+      value: '',
+      child: Text(l10n.languageModeSystem),
+    ),
+  ];
+  for (final locale in AppLocalizations.supportedLocales) {
+    final tag = locale.countryCode?.isNotEmpty == true
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+    items.add(
+      DropdownMenuItem<String>(
+        value: tag,
+        child: Text(localeLabel(context, locale)),
+      ),
+    );
+  }
+  return items;
+}
+
+String localeLabel(BuildContext context, Locale locale) {
+  final l10n = AppLocalizations.of(context)!;
+  final tag = locale.countryCode?.isNotEmpty == true
+      ? '${locale.languageCode}_${locale.countryCode}'
+      : locale.languageCode;
+  switch (tag) {
+    case 'zh_CN':
+      return l10n.languageModeZhCn;
+    case 'en_US':
+      return l10n.languageModeEnUs;
+    default:
+      return tag;
   }
 }
 
@@ -2105,12 +2202,12 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         '已发起“${target.label}”添加请求，请在系统弹窗里确认并放到桌面。',
       HomeWidgetPinRequestResult.unsupported =>
         '当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
-      HomeWidgetPinRequestResult.invalidWidgetType =>
-        '小组件类型无效，请稍后重试。',
+      HomeWidgetPinRequestResult.invalidWidgetType => '小组件类型无效，请稍后重试。',
       HomeWidgetPinRequestResult.failed =>
         '发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
     };
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

@@ -1,0 +1,90 @@
+{
+  "@@locale": "en",
+  "appTitle": "Qingyu Timetable",
+  "appTitleDebug": "Qingyu Timetable Debug",
+  "appearanceTitle": "Appearance",
+  "previewTitle": "Preview",
+  "timetableBackgroundPreview": "Timetable Background",
+  "displayModeTitle": "Display Mode",
+  "displayModeSubtitle": "Supports system, light, and dark mode.",
+  "themeModeLabel": "Theme Mode",
+  "themeModeSystem": "Follow System",
+  "themeModeLight": "Light",
+  "themeModeDark": "Dark",
+  "fontSectionTitle": "App Font",
+  "fontSectionSubtitle": "Supports system default and MiSans. Falls back automatically if MiSans is unavailable.",
+  "fontModeLabel": "Font",
+  "fontModeSystem": "Phone Default",
+  "fontModeMiSans": "Prefer MiSans",
+  "languageSectionTitle": "App Language",
+  "languageSectionSubtitle": "Follow system or switch manually to supported locales.",
+  "languageModeLabel": "Language",
+  "languageModeSystem": "Follow System",
+  "languageModeZhCn": "Simplified Chinese",
+  "languageModeEnUs": "English",
+  "courseImportTitle": "Import Courses",
+  "chooseImportMethodTitle": "Choose Import Method",
+  "chooseImportMethodSubtitle": "Supports traditional .ics calendar import, AI image import, and warehouse-based academic system import.",
+  "importMethodIcsTitle": ".ics Calendar Import",
+  "importMethodIcsSubtitle": "Best for calendar files exported from apps like WakeUp.",
+  "importMethodIcsFooter": "Pick an .ics file directly. You can append or replace existing courses.",
+  "importMethodAiTitle": "Image Import",
+  "importMethodAiSubtitle": "Best for direct timetable screenshots, including multiple continuous screenshots.",
+  "importMethodAiFooter": "Copy the prompt, send screenshots to the AI expert mode, paste the JSON result back, then choose semester start date.",
+  "importMethodWarehouseTitle": "Academic System Import",
+  "importMethodWarehouseSubtitle": "Read schools and adapters from qingyu_warehouse and import through the web login flow.",
+  "importMethodWarehouseFooter": "Choose a school and adapter, then open the academic system page and run the import.",
+  "icsImportTitle": ".ics Calendar Import",
+  "applicableScenarioTitle": "When to use",
+  "icsScenarioIntro": "If you can already import courses into WakeUp or similar apps and export them as an .ics file, this path is the most stable.",
+  "stepLabel": "Step {step}",
+  "@stepLabel": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "icsStep1Subtitle": "Export an .ics calendar file from another timetable app first.",
+  "icsStep2Subtitle": "Come back here to pick the file and choose append or replace.",
+  "icsStep3Subtitle": "Before importing, confirm the semester start date and which semester week your timetable week 1 maps to.",
+  "supportedFilesTitle": "Supported Files",
+  "supportedFilesSuffix": "The file extension must be .ics.",
+  "supportedFilesImageHint": "If you only have screenshots, go back and choose Image Import instead.",
+  "chooseIcsFileAction": "Choose .ics File",
+  "timetableAppName": "Qingyu Timetable",
+  "switchProfileHint": "Tap to switch timetable",
+  "moreTooltip": "More",
+  "pleaseSetSemesterStartDate": "Please set the semester start date in timetable settings first.",
+  "deleteScheduleTitle": "Delete Schedule",
+  "deleteLessonTitle": "Delete This Lesson",
+  "cancelAction": "Cancel",
+  "deleteAction": "Delete",
+  "deletedCourseMessage": "Deleted: {name}",
+  "@deletedCourseMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "Delete failed",
+  "rescheduleFailed": "Reschedule failed",
+  "timetableManagement": "Timetable Management",
+  "weekLabel": "Week {week}",
+  "@weekLabel": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionLabel": "Section {section}",
+  "@sectionLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  }
+}
