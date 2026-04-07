@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -101,6 +102,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         _scheduleUpdateCheckIfNeeded(provider);
@@ -124,7 +126,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             title: _buildProfileSwitcherTrigger(provider),
             actions: [
               IconButton(
-                tooltip: '更多',
+                tooltip: l10n.moreTooltip,
                 onPressed: _showTopActionsSheet,
                 icon: Stack(
                   clipBehavior: Clip.none,
@@ -187,15 +189,17 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildClassicProfileSwitcherTrigger(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     return GestureDetector(
       key: const ValueKey('profile_switcher_trigger'),
       onTap: _showProfileQuickSwitchSheet,
       behavior: HitTestBehavior.opaque,
-      child: const Text('轻屿课表'),
+      child: Text(l10n.timetableAppName),
     );
   }
 
   Widget _buildBrandProfileSwitcherTrigger(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final activeProfileName = provider.activeProfile?.name.trim();
@@ -211,7 +215,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '轻屿课表',
+              l10n.timetableAppName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: theme.textTheme.headlineSmall?.copyWith(
@@ -222,7 +226,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
             Text(
               (activeProfileName == null || activeProfileName.isEmpty)
-                  ? '点击切换课表'
+                  ? l10n.switchProfileHint
                   : activeProfileName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -899,7 +903,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (provider.settings.semesterStartDate == null) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请先在课表设置里填写开学日期')),
+        SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.pleaseSetSemesterStartDate),
+        ),
       );
       return;
     }
@@ -1366,18 +1373,18 @@ class _TimetableScreenState extends State<TimetableScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('删除排课'),
+        title: Text(AppLocalizations.of(dialogContext)!.deleteScheduleTitle),
         content: Text(
           '确定删除“${course.name}”这条排课吗？\n${course.weekDescription} · ${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除'),
+            child: Text(AppLocalizations.of(dialogContext)!.deleteAction),
           ),
         ],
       ),
@@ -1392,7 +1399,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已删除：${course.name}')),
+      SnackBar(
+        content: Text(
+          AppLocalizations.of(context)!.deletedCourseMessage(course.name),
+        ),
+      ),
     );
   }
 
@@ -1400,7 +1411,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('删除这节课'),
+        title: Text(AppLocalizations.of(dialogContext)!.deleteLessonTitle),
         content: Text(
           '确定删除“${course.name}”在第 $sourceWeek 周的这一节吗？\n'
           '${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
@@ -1408,11 +1419,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('删除'),
+            child: Text(AppLocalizations.of(dialogContext)!.deleteAction),
           ),
         ],
       ),
@@ -1443,7 +1454,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? '删除失败')),
+        SnackBar(
+          content: Text(
+            error.message?.toString() ??
+                AppLocalizations.of(context)!.deleteFailed,
+          ),
+        ),
       );
     }
   }
@@ -1499,7 +1515,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? '调课失败')),
+        SnackBar(
+          content: Text(
+            error.message?.toString() ??
+                AppLocalizations.of(context)!.rescheduleFailed,
+          ),
+        ),
       );
     }
   }
@@ -1695,7 +1716,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                       onPressed: () =>
                           Navigator.of(sheetContext).pop('profiles'),
                       icon: const Icon(Icons.view_week_rounded),
-                      label: const Text('课表管理'),
+                      label: Text(AppLocalizations.of(sheetContext)!
+                          .timetableManagement),
                     ),
                   ),
                 ],
@@ -2214,7 +2236,8 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                   .map(
                     (week) => DropdownMenuItem(
                       value: week,
-                      child: Text('第 $week 周'),
+                      child:
+                          Text(AppLocalizations.of(context)!.weekLabel(week)),
                     ),
                   )
                   .toList(),
@@ -2265,7 +2288,8 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                         .map(
                           (section) => DropdownMenuItem(
                             value: section,
-                            child: Text('第 $section 节'),
+                            child: Text(AppLocalizations.of(context)!
+                                .sectionLabel(section)),
                           ),
                         )
                         .toList(),
@@ -2295,7 +2319,8 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                         .map(
                           (section) => DropdownMenuItem(
                             value: section,
-                            child: Text('第 $section 节'),
+                            child: Text(AppLocalizations.of(context)!
+                                .sectionLabel(section)),
                           ),
                         )
                         .toList(),

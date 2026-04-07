@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -20,17 +22,24 @@ import '../services/ics_import_service.dart';
 import '../services/import_week_alignment_service.dart';
 import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_repository_service.dart';
+import 'feedback_screen.dart';
+
+enum _WarehouseImportMenuAction {
+  feedback,
+  customDebug,
+}
 
 class CourseImportScreen extends StatelessWidget {
   const CourseImportScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('导入课程'),
+        title: Text(l10n.courseImportTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -50,14 +59,14 @@ class CourseImportScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '选择导入方式',
+                  l10n.chooseImportMethodTitle,
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '现在支持传统 .ics 日历导入，也支持把课表截图发给 AI 识别后再粘贴回来导入。',
+                  l10n.chooseImportMethodSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -68,9 +77,9 @@ class CourseImportScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _ImportEntryCard(
             icon: Icons.event_note_rounded,
-            title: '.ics 日历导入',
-            subtitle: '适合从 WakeUp 等课表应用导出的日历文件，流程最短。',
-            footer: '进入后直接选择 .ics 文件，可追加导入或替换现有课程。',
+            title: l10n.importMethodIcsTitle,
+            subtitle: l10n.importMethodIcsSubtitle,
+            footer: l10n.importMethodIcsFooter,
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const IcsCourseImportScreen(),
@@ -79,9 +88,9 @@ class CourseImportScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _ImportEntryCard(
             icon: Icons.auto_awesome_rounded,
-            title: '识图导入',
-            subtitle: '适合直接从课表截图导入，支持 1 张或多张连续截图。',
-            footer: '先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期。',
+            title: l10n.importMethodAiTitle,
+            subtitle: l10n.importMethodAiSubtitle,
+            footer: l10n.importMethodAiFooter,
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const AiImageCourseImportScreen(),
@@ -90,9 +99,9 @@ class CourseImportScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _ImportEntryCard(
             icon: Icons.school_outlined,
-            title: '教务系统导入',
-            subtitle: '从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程。',
-            footer: '进入后选择学校和适配器，可直接打开教务网页登录并执行导入。',
+            title: l10n.importMethodWarehouseTitle,
+            subtitle: l10n.importMethodWarehouseSubtitle,
+            footer: l10n.importMethodWarehouseFooter,
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const WarehouseCourseImportScreen(),
@@ -135,11 +144,12 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('.ics 日历导入'),
+        title: Text(l10n.icsImportTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -151,29 +161,27 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '适用场景',
+                    l10n.applicableScenarioTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳。',
-                  ),
+                  Text(l10n.icsScenarioIntro),
                   const SizedBox(height: 14),
                   _GuideLine(
-                    title: '步骤 1',
-                    subtitle: '先在其他课表应用里导出 .ics 日历文件。',
+                    title: l10n.stepLabel('1'),
+                    subtitle: l10n.icsStep1Subtitle,
                   ),
                   const SizedBox(height: 10),
                   _GuideLine(
-                    title: '步骤 2',
-                    subtitle: '回到这里选择文件，可选“追加导入”或“替换现有”。',
+                    title: l10n.stepLabel('2'),
+                    subtitle: l10n.icsStep2Subtitle,
                   ),
                   const SizedBox(height: 10),
                   _GuideLine(
-                    title: '步骤 3',
-                    subtitle: '导入前还会让你确认开学日期，以及课表第 1 周对应校历第几周。',
+                    title: l10n.stepLabel('3'),
+                    subtitle: l10n.icsStep3Subtitle,
                   ),
                 ],
               ),
@@ -190,15 +198,15 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '支持的文件',
+                  l10n.supportedFilesTitle,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('文件后缀必须是 .ics。'),
+                Text(l10n.supportedFilesSuffix),
                 const SizedBox(height: 4),
-                const Text('如果你手里只有截图，不要走这里，请返回上一页选择“识图导入”。'),
+                Text(l10n.supportedFilesImageHint),
               ],
             ),
           ),
@@ -216,7 +224,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.folder_open_rounded),
-          label: Text(_isImporting ? '导入中...' : '选择 .ics 文件'),
+          label: Text(_isImporting
+              ? '${l10n.icsImportTitle}...'
+              : l10n.chooseIcsFileAction),
         ),
       ),
     );
@@ -292,6 +302,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         alignedCourses,
         replaceExisting: replaceExisting,
       );
+      if (!mounted) {
+        return;
+      }
       final capacityReady = await _ensureSectionCapacity(
         context,
         requiredSectionCount: requiredSectionCount,
@@ -1039,6 +1052,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         alignedCourses,
         replaceExisting: replaceExisting,
       );
+      if (!mounted) {
+        return;
+      }
       final capacityReady = await _ensureSectionCapacity(
         context,
         requiredSectionCount: requiredSectionCount,
@@ -1092,7 +1108,8 @@ class WarehouseCourseImportScreen extends StatefulWidget {
       _WarehouseCourseImportScreenState();
 }
 
-class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScreen> {
+class _WarehouseCourseImportScreenState
+    extends State<WarehouseCourseImportScreen> {
   static final WarehouseRepositorySource _defaultSource =
       WarehouseRepositorySource.fromGitHubUrl(
     'https://github.com/Mutx163/qingyu_warehouse',
@@ -1135,6 +1152,90 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
     });
   }
 
+  Future<void> _handleMoreAction(_WarehouseImportMenuAction action) async {
+    switch (action) {
+      case _WarehouseImportMenuAction.feedback:
+        await _openMissingSchoolFeedbackGuide();
+        break;
+      case _WarehouseImportMenuAction.customDebug:
+        await _openCustomDebugRecords();
+        break;
+    }
+  }
+
+  Future<void> _openMissingSchoolFeedbackGuide() async {
+    final shouldOpen = await showModalBottomSheet<bool>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        final colorScheme = theme.colorScheme;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '学校列表里没有你的学校？',
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '去反馈页提一个 Issue 就行。建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配。',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      child: const Text('稍后再说'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.pop(sheetContext, true),
+                      icon: const Icon(Icons.open_in_new_rounded),
+                      label: const Text('去反馈页'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (shouldOpen == true && mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/feedback'),
+          builder: (_) => const FeedbackScreen(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _openCustomDebugRecords() async {
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings:
+            const RouteSettings(name: '/courses/import/warehouse/custom-debug'),
+        builder: (_) => const WarehouseCustomDebugRecordsScreen(),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -1142,6 +1243,30 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
     return Scaffold(
       appBar: AppBar(
         title: const Text('教务系统导入'),
+        actions: [
+          PopupMenuButton<_WarehouseImportMenuAction>(
+            tooltip: '更多操作',
+            onSelected: _handleMoreAction,
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: _WarehouseImportMenuAction.feedback,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.campaign_outlined),
+                  title: Text('缺少学校？去反馈'),
+                ),
+              ),
+              PopupMenuItem(
+                value: _WarehouseImportMenuAction.customDebug,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.terminal_rounded),
+                  title: Text('自定义调试'),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: FutureBuilder<WarehouseRootIndex>(
         future: _rootIndexFuture,
@@ -1176,7 +1301,8 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
                         OutlinedButton.icon(
                           onPressed: () {
                             setState(() {
-                              _rootIndexFuture = _repositoryService.fetchRootIndex(
+                              _rootIndexFuture =
+                                  _repositoryService.fetchRootIndex(
                                 _defaultSource,
                                 options: _currentFetchOptions(),
                               );
@@ -1193,8 +1319,7 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
             );
           }
 
-          final allSchools = [...?snapshot.data?.schools]
-            ..sort((left, right) {
+          final allSchools = [...?snapshot.data?.schools]..sort((left, right) {
               final initialCompare = left.initial.compareTo(right.initial);
               if (initialCompare != 0) return initialCompare;
               return left.name.compareTo(right.name);
@@ -1335,7 +1460,8 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
                                   await Navigator.of(context).push<bool>(
                                 MaterialPageRoute(
                                   settings: RouteSettings(
-                                    name: '/courses/import/warehouse/${bean.school.id}',
+                                    name:
+                                        '/courses/import/warehouse/${bean.school.id}',
                                   ),
                                   builder: (_) => WarehouseSchoolAdaptersScreen(
                                     source: _defaultSource,
@@ -1374,6 +1500,535 @@ class _WarehouseCourseImportScreenState extends State<WarehouseCourseImportScree
           school.resourceFolder.toLowerCase().contains(keyword);
     }).toList(growable: false);
   }
+}
+
+class WarehouseCustomDebugRecordsScreen extends StatefulWidget {
+  const WarehouseCustomDebugRecordsScreen({super.key});
+
+  @override
+  State<WarehouseCustomDebugRecordsScreen> createState() =>
+      _WarehouseCustomDebugRecordsScreenState();
+}
+
+class _WarehouseCustomDebugRecordsScreenState
+    extends State<WarehouseCustomDebugRecordsScreen> {
+  static const WarehouseRepositorySource _customSource =
+      WarehouseRepositorySource(
+    owner: 'Mutx163',
+    repo: 'qingyu_warehouse',
+  );
+
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
+  List<WarehouseCustomDebugRecord> _records = const [];
+  bool _isLoading = true;
+
+  WarehouseFetchOptions _currentFetchOptions() {
+    final settings = context.read<TimetableProvider>().settings;
+    return WarehouseFetchOptions.fromSettings(settings);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final records = await _preferencesService.getCustomDebugRecords();
+    if (!mounted) return;
+    setState(() {
+      _records = records;
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _openEditor([WarehouseCustomDebugRecord? record]) async {
+    final saved = await Navigator.of(context).push<WarehouseCustomDebugRecord>(
+      MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '/courses/import/warehouse/custom-debug/edit',
+        ),
+        builder: (_) => WarehouseCustomDebugEditScreen(initialRecord: record),
+      ),
+    );
+    if (saved == null || !mounted) {
+      return;
+    }
+    await _loadRecords();
+  }
+
+  Future<void> _deleteRecord(WarehouseCustomDebugRecord record) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('删除调试记录'),
+        content: Text('确认删除“${record.name}”？删除后不会影响已经导入的课程。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+    await _preferencesService.deleteCustomDebugRecord(record.id);
+    if (!mounted) {
+      return;
+    }
+    await _loadRecords();
+    if (!mounted) {
+      return;
+    }
+    _showLightTip(context, '已删除调试记录：${record.name}');
+  }
+
+  Future<void> _openDebug(WarehouseCustomDebugRecord record) async {
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '/courses/import/warehouse/custom-debug/run',
+        ),
+        builder: (_) => WarehouseAdapterWebLoginScreen(
+          title: record.name,
+          initialUrl: record.importUrl,
+          source: _customSource,
+          school: const WarehouseSchoolEntry(
+            id: 'custom-debug',
+            name: '自定义调试',
+            initial: '#',
+            resourceFolder: 'custom-debug',
+          ),
+          adapter: WarehouseAdapterEntry(
+            adapterId: 'custom-debug-${record.id}',
+            adapterName: record.name,
+            category: 'custom_debug',
+            assetJsPath: 'custom/${record.id}.js',
+            importUrl: record.importUrl,
+            maintainer: '本地调试',
+            description: '用户保存的自定义教务调试脚本',
+          ),
+          fetchOptions: _currentFetchOptions(),
+          debugScriptOverride: record.script,
+          debugScriptName: '${record.name}.js',
+        ),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('自定义调试'),
+        actions: [
+          IconButton(
+            tooltip: '新增调试记录',
+            onPressed: () => _openEditor(),
+            icon: const Icon(Icons.add_rounded),
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '这里放你自己的教务调试记录',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '每条记录都可以保存自定义网址和整段脚本。保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口。',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton.icon(
+                          onPressed: () => _openEditor(),
+                          icon: const Icon(Icons.terminal_rounded),
+                          label: const Text('新增调试记录'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (_records.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.inventory_2_outlined,
+                            size: 36,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            '还没有保存的调试记录',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            '先新增一条，把网址和脚本贴进去，以后就能直接复用。',
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  ..._records.map(
+                    (record) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      record.name,
+                                      style:
+                                          theme.textTheme.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    _formatDebugRecordDateTime(
+                                      record.updatedAt,
+                                    ),
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                record.importUrl,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '脚本 ${record.script.length} 字符',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  FilledButton.icon(
+                                    onPressed: () => _openDebug(record),
+                                    icon: const Icon(Icons.play_arrow_rounded),
+                                    label: const Text('开始调试'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _openEditor(record),
+                                    icon: const Icon(Icons.edit_rounded),
+                                    label: const Text('编辑'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () => _deleteRecord(record),
+                                    icon: const Icon(
+                                        Icons.delete_outline_rounded),
+                                    label: const Text('删除'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+    );
+  }
+}
+
+class WarehouseCustomDebugEditScreen extends StatefulWidget {
+  final WarehouseCustomDebugRecord? initialRecord;
+
+  const WarehouseCustomDebugEditScreen({
+    super.key,
+    this.initialRecord,
+  });
+
+  @override
+  State<WarehouseCustomDebugEditScreen> createState() =>
+      _WarehouseCustomDebugEditScreenState();
+}
+
+class _WarehouseCustomDebugEditScreenState
+    extends State<WarehouseCustomDebugEditScreen> {
+  final WarehouseImportPreferencesService _preferencesService =
+      WarehouseImportPreferencesService();
+  late final TextEditingController _nameController;
+  late final TextEditingController _urlController;
+  late final TextEditingController _scriptController;
+  bool _isSaving = false;
+
+  bool get _isEditing => widget.initialRecord != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+      text: widget.initialRecord?.name ?? '',
+    );
+    _urlController = TextEditingController(
+      text: widget.initialRecord?.importUrl ?? '',
+    );
+    _scriptController = TextEditingController(
+      text: widget.initialRecord?.script ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _urlController.dispose();
+    _scriptController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickScriptFromFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['js', 'txt'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty || !mounted) {
+        return;
+      }
+      final file = result.files.single;
+      List<int>? bytes = file.bytes;
+      if (bytes == null && (file.path ?? '').isNotEmpty) {
+        bytes = await File(file.path!).readAsBytes();
+      }
+      if (bytes == null || bytes.isEmpty) {
+        if (mounted) {
+          _showLightTip(context, '无法读取脚本文件');
+        }
+        return;
+      }
+      _scriptController.text = utf8.decode(bytes, allowMalformed: true).trim();
+      if (!mounted) {
+        return;
+      }
+      _showLightTip(context, '已导入脚本文件：${file.name}');
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      _showLightTip(context, '导入脚本文件失败：$error');
+    }
+  }
+
+  Future<void> _saveRecord() async {
+    final name = _nameController.text.trim();
+    final importUrl = _urlController.text.trim();
+    final script = _scriptController.text.trim();
+
+    if (name.isEmpty) {
+      _showLightTip(context, '请先填写调试记录名称');
+      return;
+    }
+    final uri = Uri.tryParse(importUrl);
+    if (importUrl.isEmpty || uri == null || uri.host.isEmpty) {
+      _showLightTip(context, '请输入有效的教务网址');
+      return;
+    }
+    if (script.isEmpty) {
+      _showLightTip(context, '请先填写或导入脚本');
+      return;
+    }
+
+    final now = DateTime.now();
+    final record = (widget.initialRecord ??
+            WarehouseCustomDebugRecord(
+              id: const Uuid().v4(),
+              name: name,
+              importUrl: importUrl,
+              script: script,
+              createdAt: now,
+              updatedAt: now,
+            ))
+        .copyWith(
+      name: name,
+      importUrl: importUrl,
+      script: script,
+      updatedAt: now,
+    );
+
+    setState(() {
+      _isSaving = true;
+    });
+    await _preferencesService.saveCustomDebugRecord(record);
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop(record);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_isEditing ? '编辑调试记录' : '新增调试记录'),
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : _saveRecord,
+            child: Text(_isSaving ? '保存中…' : '保存'),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '一条记录 = 一个网址 + 一段脚本',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '适合你反复调试同一个学校，或者不同学校保留多套脚本。保存后会一直保留，后面可随时修改。',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _nameController,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: '记录名称',
+              hintText: '例如：重庆机电-新版教务',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _urlController,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.next,
+            decoration: const InputDecoration(
+              labelText: '教务网址',
+              hintText: 'https://...',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '调试脚本',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: _pickScriptFromFile,
+                icon: const Icon(Icons.upload_file_rounded),
+                label: const Text('从文件导入'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _scriptController,
+            minLines: 14,
+            maxLines: 24,
+            style: const TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              height: 1.45,
+            ),
+            decoration: const InputDecoration(
+              hintText: '把浏览器扩展导出的完整脚本粘贴到这里',
+              border: OutlineInputBorder(),
+              alignLabelWithHint: true,
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _isSaving ? null : _saveRecord,
+            icon: const Icon(Icons.save_rounded),
+            label: Text(_isSaving ? '保存中…' : '保存调试记录'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatDebugRecordDateTime(DateTime value) {
+  final local = value.toLocal();
+  final year = local.year.toString().padLeft(4, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final day = local.day.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$year-$month-$day $hour:$minute';
 }
 
 class WarehouseSchoolAdaptersScreen extends StatefulWidget {
@@ -1440,7 +2095,8 @@ class _WarehouseSchoolAdaptersScreenState
             );
           }
 
-          final adapters = snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
+          final adapters =
+              snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: adapters.length,
@@ -1449,9 +2105,8 @@ class _WarehouseSchoolAdaptersScreenState
               final adapter = adapters[index];
               return _WarehouseAdapterCard(
                 adapter: adapter,
-                importButtonLabel: adapter.importUrl.isEmpty
-                    ? '填写网址后导入'
-                    : '网页登录导入',
+                importButtonLabel:
+                    adapter.importUrl.isEmpty ? '填写网址后导入' : '网页登录导入',
                 onImport: () => _openAdapterImport(adapter),
                 onInfo: () async {
                   final imported = await Navigator.of(context).push<bool>(
@@ -1503,7 +2158,8 @@ class _WarehouseSchoolAdaptersScreenState
     }
   }
 
-  Future<String?> _resolveAdapterImportUrl(WarehouseAdapterEntry adapter) async {
+  Future<String?> _resolveAdapterImportUrl(
+      WarehouseAdapterEntry adapter) async {
     final custom = await _preferencesService.getCustomImportUrl(
       adapter.adapterId,
     );
@@ -1551,7 +2207,8 @@ class WarehouseAdapterDetailScreen extends StatefulWidget {
       _WarehouseAdapterDetailScreenState();
 }
 
-class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScreen> {
+class _WarehouseAdapterDetailScreenState
+    extends State<WarehouseAdapterDetailScreen> {
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
@@ -1585,9 +2242,7 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
         children: [
           _WarehouseIntroCard(
             title: adapter.adapterName,
-            subtitle: adapter.description.isEmpty
-                ? '可查看适配器信息、登录入口与脚本状态。'
-                : '',
+            subtitle: adapter.description.isEmpty ? '可查看适配器信息、登录入口与脚本状态。' : '',
             chips: [
               '学校：${widget.school.name}',
               '类别：${adapter.category}',
@@ -1613,7 +2268,9 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
                   _DetailLine(label: '脚本路径', value: adapter.assetJsPath),
                   _DetailLine(
                     label: '登录入口',
-                    value: _effectiveImportUrl.isEmpty ? '未配置' : _effectiveImportUrl,
+                    value: _effectiveImportUrl.isEmpty
+                        ? '未配置'
+                        : _effectiveImportUrl,
                   ),
                   if ((_customImportUrl ?? '').isNotEmpty)
                     const _DetailLine(label: '说明', value: '当前使用你手动覆盖的登录地址'),
@@ -1626,9 +2283,10 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
           FutureBuilder<String>(
             future: _scriptFuture,
             builder: (context, snapshot) {
-              final readable = snapshot.connectionState == ConnectionState.done &&
-                  !snapshot.hasError &&
-                  (snapshot.data?.trim().isNotEmpty ?? false);
+              final readable =
+                  snapshot.connectionState == ConnectionState.done &&
+                      !snapshot.hasError &&
+                      (snapshot.data?.trim().isNotEmpty ?? false);
               return Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -1664,7 +2322,7 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
           ),
           const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _openInAppLogin,
+            onPressed: () => _openInAppLogin(),
             icon: const Icon(Icons.web_rounded),
             label: Text(
               _effectiveImportUrl.isEmpty ? '填写网址后导入' : '应用内打开登录入口',
@@ -1726,10 +2384,9 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
     );
   }
 
-  String get _effectiveImportUrl =>
-      (_customImportUrl ?? '').trim().isNotEmpty
-          ? _customImportUrl!.trim()
-          : widget.adapter.importUrl;
+  String get _effectiveImportUrl => (_customImportUrl ?? '').trim().isNotEmpty
+      ? _customImportUrl!.trim()
+      : widget.adapter.importUrl;
 
   Future<void> _loadCustomImportUrl() async {
     final custom = await _preferencesService.getCustomImportUrl(
@@ -1785,7 +2442,8 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
       _showLightTip(context, '登录入口地址无效');
       return;
     }
-    await Navigator.of(context).push(
+    await Navigator.of(context)
+        .push(
       MaterialPageRoute(
         settings: const RouteSettings(name: '/courses/import/warehouse/login'),
         builder: (_) => WarehouseAdapterWebLoginScreen(
@@ -1797,7 +2455,8 @@ class _WarehouseAdapterDetailScreenState extends State<WarehouseAdapterDetailScr
           fetchOptions: widget.fetchOptions,
         ),
       ),
-    ).then((imported) {
+    )
+        .then((imported) {
       if (imported == true && mounted) {
         Navigator.of(context).pop(true);
       }
@@ -1854,6 +2513,8 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   final WarehouseSchoolEntry school;
   final WarehouseAdapterEntry adapter;
   final WarehouseFetchOptions fetchOptions;
+  final String? debugScriptOverride;
+  final String? debugScriptName;
 
   const WarehouseAdapterWebLoginScreen({
     super.key,
@@ -1863,6 +2524,8 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
     required this.school,
     required this.adapter,
     required this.fetchOptions,
+    this.debugScriptOverride,
+    this.debugScriptName,
   });
 
   @override
@@ -1892,6 +2555,10 @@ class _WarehouseAdapterWebLoginScreenState
   String? _currentUrl;
   bool _isExecutingImport = false;
   String? _lastScriptStatus;
+  List<SectionTime>? _pendingImportedSections;
+  String? _pendingImportedSectionsSignature;
+  String? _appliedImportedSectionsSignature;
+  Future<void>? _pendingImportedSectionsApplyFuture;
   WarehouseRememberedLogin? _rememberedLogin;
   WarehouseRememberedLogin? _latestLoginCandidate;
   bool _hasPromptedAutofill = false;
@@ -1899,10 +2566,16 @@ class _WarehouseAdapterWebLoginScreenState
   bool _isPromptShowing = false;
   bool _useDesktopMode = true;
 
+  bool get _isUsingLocalDebugScript =>
+      (widget.debugScriptOverride ?? '').trim().isNotEmpty;
+
   @override
   void initState() {
     super.initState();
     _currentUrl = widget.initialUrl;
+    _lastScriptStatus = _isUsingLocalDebugScript
+        ? '开发者调试模式：当前使用本地脚本 ${widget.debugScriptName ?? ''}'.trim()
+        : null;
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -1960,6 +2633,106 @@ class _WarehouseAdapterWebLoginScreenState
     _addressController.dispose();
     _addressFocusNode.dispose();
     super.dispose();
+  }
+
+  void _resetPendingImportedArtifacts() {
+    _pendingImportedSections = null;
+    _pendingImportedSectionsSignature = null;
+    _appliedImportedSectionsSignature = null;
+    _pendingImportedSectionsApplyFuture = null;
+  }
+
+  String _buildSectionSignature(List<SectionTime> sections) => sections
+      .map((section) => '${section.startTime}-${section.endTime}')
+      .join('|');
+
+  List<SectionTime> _decodeImportedSections(String payload) {
+    final decoded = jsonDecode(payload);
+    if (decoded is! List) {
+      throw const FormatException('节次时间格式不正确');
+    }
+    final sections = decoded
+        .whereType<Map>()
+        .map(
+          (item) => SectionTime(
+            startTime: item['startTime']?.toString() ?? '',
+            endTime: item['endTime']?.toString() ?? '',
+          ),
+        )
+        .where((item) => item.startTime.isNotEmpty && item.endTime.isNotEmpty)
+        .toList(growable: false);
+    if (sections.isEmpty) {
+      throw const FormatException('没有可保存的节次时间');
+    }
+    return sections;
+  }
+
+  Future<void> _waitForCompanionImportSections() async {
+    if (_pendingImportedSections != null) {
+      return;
+    }
+    for (var attempt = 0; attempt < 8; attempt++) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      if (_pendingImportedSections != null) {
+        return;
+      }
+    }
+  }
+
+  Future<void> _applyImportedSections(List<SectionTime> sections) async {
+    final provider = context.read<TimetableProvider>();
+    final schemeName = '${widget.school.name} 教务导入时间';
+    TimeScheme? existingScheme;
+    for (final scheme in provider.timeSchemes) {
+      if (scheme.name == schemeName) {
+        existingScheme = scheme;
+        break;
+      }
+    }
+    if (existingScheme == null) {
+      final created = await provider.createTimeScheme(
+        name: schemeName,
+        sections: sections,
+        applyToActiveProfile: true,
+      );
+      await provider.applyTimeScheme(created.id);
+      return;
+    }
+    final result = await provider.updateTimeScheme(
+      schemeId: existingScheme.id,
+      name: existingScheme.name,
+      sections: sections,
+    );
+    if (result != null) {
+      throw FormatException(result);
+    }
+    await provider.applyTimeScheme(existingScheme.id);
+  }
+
+  Future<void> _applyPendingImportedSectionsIfNeeded() async {
+    final sections = _pendingImportedSections;
+    final signature = _pendingImportedSectionsSignature;
+    if (sections == null || sections.isEmpty) {
+      return;
+    }
+    if (signature != null && signature == _appliedImportedSectionsSignature) {
+      return;
+    }
+    final inFlight = _pendingImportedSectionsApplyFuture;
+    if (inFlight != null) {
+      await inFlight;
+      return;
+    }
+    final future = _applyImportedSections(sections);
+    _pendingImportedSectionsApplyFuture = future;
+    try {
+      await future;
+      _appliedImportedSectionsSignature = signature;
+    } finally {
+      if (identical(_pendingImportedSectionsApplyFuture, future)) {
+        _pendingImportedSectionsApplyFuture = null;
+      }
+    }
   }
 
   @override
@@ -2038,7 +2811,9 @@ class _WarehouseAdapterWebLoginScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '先在这里完成登录，脚本会在当前网页内继续执行导入。',
+                  _isUsingLocalDebugScript
+                      ? '先在这里完成登录，然后执行你选择的本地调试脚本。'
+                      : '先在这里完成登录，脚本会在当前网页内继续执行导入。',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -2051,6 +2826,16 @@ class _WarehouseAdapterWebLoginScreenState
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (_isUsingLocalDebugScript) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    '本地脚本：${widget.debugScriptName ?? '未命名脚本'}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.tertiary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 8),
                 Row(
                   children: [
@@ -2063,7 +2848,8 @@ class _WarehouseAdapterWebLoginScreenState
                         decoration: InputDecoration(
                           isDense: true,
                           hintText: '输入或修改网页地址',
-                          prefixIcon: const Icon(Icons.language_rounded, size: 18),
+                          prefixIcon:
+                              const Icon(Icons.language_rounded, size: 18),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -2120,7 +2906,11 @@ class _WarehouseAdapterWebLoginScreenState
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.download_rounded),
-                label: Text(_isExecutingImport ? '导入中...' : '执行导入脚本'),
+                label: Text(
+                  _isExecutingImport
+                      ? '导入中...'
+                      : (_isUsingLocalDebugScript ? '执行本地调试脚本' : '执行导入脚本'),
+                ),
               ),
             ),
           ),
@@ -2206,17 +2996,21 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _executeImportScript() async {
+    _resetPendingImportedArtifacts();
     setState(() {
       _isExecutingImport = true;
-      _lastScriptStatus = '正在读取并注入适配脚本…';
+      _lastScriptStatus =
+          _isUsingLocalDebugScript ? '正在注入本地调试脚本…' : '正在读取并注入适配脚本…';
     });
     try {
-      final script = await _repositoryService.fetchAdapterScript(
-        widget.source,
-        school: widget.school,
-        adapter: widget.adapter,
-        options: widget.fetchOptions,
-      );
+      final script = _isUsingLocalDebugScript
+          ? widget.debugScriptOverride!.trim()
+          : await _repositoryService.fetchAdapterScript(
+              widget.source,
+              school: widget.school,
+              adapter: widget.adapter,
+              options: widget.fetchOptions,
+            );
       final wrappedScript = '''
 (() => {
   window.__qingyuResolvers = window.__qingyuResolvers || {};
@@ -2304,7 +3098,9 @@ class _WarehouseAdapterWebLoginScreenState
         return;
       }
       setState(() {
-        _lastScriptStatus = '脚本已注入，等待页面解析返回课程。';
+        _lastScriptStatus = _isUsingLocalDebugScript
+            ? '本地调试脚本已注入，等待页面解析返回课程。'
+            : '脚本已注入，等待页面解析返回课程。';
       });
     } catch (error) {
       if (!mounted) {
@@ -2362,7 +3158,8 @@ class _WarehouseAdapterWebLoginScreenState
         _showLightTip(context, (message['message'] as String?) ?? '脚本执行失败');
         break;
       case 'courses':
-        await _handleImportedCoursesJson((message['payload'] as String?) ?? '[]');
+        await _handleImportedCoursesJson(
+            (message['payload'] as String?) ?? '[]');
         break;
       case 'complete':
         if (!mounted) return;
@@ -2454,7 +3251,8 @@ class _WarehouseAdapterWebLoginScreenState
     try {
       final decoded = jsonDecode(optionsRaw);
       if (decoded is List) {
-        options = decoded.map((item) => item.toString()).toList(growable: false);
+        options =
+            decoded.map((item) => item.toString()).toList(growable: false);
       }
     } catch (_) {}
     var currentSelection =
@@ -2527,50 +3325,11 @@ class _WarehouseAdapterWebLoginScreenState
   Future<void> _handleSavePresetTimeSlots(Map<String, dynamic> message) async {
     final requestId = (message['requestId'] as String?) ?? '';
     try {
-      final decoded = jsonDecode((message['payload'] as String?) ?? '[]');
-      if (decoded is! List) {
-        throw const FormatException('节次时间格式不正确');
-      }
-      final sections = decoded
-          .whereType<Map>()
-          .map(
-            (item) => SectionTime(
-              startTime: item['startTime']?.toString() ?? '',
-              endTime: item['endTime']?.toString() ?? '',
-            ),
-          )
-          .where((item) => item.startTime.isNotEmpty && item.endTime.isNotEmpty)
-          .toList(growable: false);
-      if (sections.isEmpty) {
-        throw const FormatException('没有可保存的节次时间');
-      }
-      final provider = context.read<TimetableProvider>();
-      final schemeName = '${widget.school.name} 教务导入时间';
-      TimeScheme? existingScheme;
-      for (final scheme in provider.timeSchemes) {
-        if (scheme.name == schemeName) {
-          existingScheme = scheme;
-          break;
-        }
-      }
-      if (existingScheme == null) {
-        final created = await provider.createTimeScheme(
-          name: schemeName,
-          sections: sections,
-          applyToActiveProfile: true,
-        );
-        await provider.applyTimeScheme(created.id);
-      } else {
-        final result = await provider.updateTimeScheme(
-          schemeId: existingScheme.id,
-          name: existingScheme.name,
-          sections: sections,
-        );
-        if (result != null) {
-          throw FormatException(result);
-        }
-        await provider.applyTimeScheme(existingScheme.id);
-      }
+      final sections =
+          _decodeImportedSections((message['payload'] as String?) ?? '[]');
+      _pendingImportedSections = sections;
+      _pendingImportedSectionsSignature = _buildSectionSignature(sections);
+      await _applyPendingImportedSectionsIfNeeded();
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {
       if (!mounted) return;
@@ -2579,7 +3338,8 @@ class _WarehouseAdapterWebLoginScreenState
     }
   }
 
-  Future<void> _resolveJavaScriptRequest(String requestId, Object? value) async {
+  Future<void> _resolveJavaScriptRequest(
+      String requestId, Object? value) async {
     final encoded = jsonEncode(value);
     await _controller.runJavaScript(
       "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
@@ -2635,11 +3395,25 @@ class _WarehouseAdapterWebLoginScreenState
         parsedCourses,
         firstCourseWeek: semesterConfig.firstCourseWeek,
       );
+      await _waitForCompanionImportSections();
+      if (!mounted) {
+        return;
+      }
+      try {
+        await _applyPendingImportedSectionsIfNeeded();
+      } catch (error) {
+        if (mounted) {
+          _showLightTip(context, '应用脚本返回的时间模板失败：$error');
+        }
+      }
       final requiredSectionCount =
           provider.previewImportedCourseRequiredSectionCount(
         alignedCourses,
         replaceExisting: replaceExisting,
       );
+      if (!mounted) {
+        return;
+      }
       final capacityReady = await _ensureSectionCapacity(
         context,
         requiredSectionCount: requiredSectionCount,
@@ -2674,9 +3448,7 @@ class _WarehouseAdapterWebLoginScreenState
       final navigator = Navigator.of(context);
       _showLightTip(
         context,
-        importedCount > 0
-            ? '已更新课表：新增或更新 $importedCount 条课程'
-            : '没有需要新增或更新的课程',
+        importedCount > 0 ? '已更新课表：新增或更新 $importedCount 条课程' : '没有需要新增或更新的课程',
       );
       if (importedCount > 0) {
         navigator.pop(true);
@@ -2705,7 +3477,8 @@ class _WarehouseAdapterWebLoginScreenState
       final name = (map['name'] as String? ?? '').trim();
       final teacher = (map['teacher'] as String? ?? '').trim();
       final location =
-          (map['position'] as String? ?? map['location'] as String? ?? '').trim();
+          (map['position'] as String? ?? map['location'] as String? ?? '')
+              .trim();
       final day = (map['day'] as num?)?.toInt();
       final startSection = (map['startSection'] as num?)?.toInt();
       final endSection = (map['endSection'] as num?)?.toInt();
@@ -2781,7 +3554,6 @@ class _WarehouseAdapterWebLoginScreenState
       }
       return;
     }
-
   }
 
   Future<void> _handleLoginAttempt() async {
@@ -4020,8 +4792,7 @@ Future<String?> _promptWarehouseImportUrl(
           child: const Text('取消'),
         ),
         FilledButton(
-          onPressed: () =>
-              Navigator.pop(dialogContext, controller.text.trim()),
+          onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
           child: const Text('保存并继续'),
         ),
       ],
@@ -4061,7 +4832,8 @@ void _showLightTip(BuildContext context, String message) {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: colorScheme.inverseSurface.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(14),

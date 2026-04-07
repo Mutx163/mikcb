@@ -1,0 +1,90 @@
+{
+  "@@locale": "zh",
+  "appTitle": "轻屿课表",
+  "appTitleDebug": "轻屿课表调试版",
+  "appearanceTitle": "外观与配色",
+  "previewTitle": "预览",
+  "timetableBackgroundPreview": "课表背景",
+  "displayModeTitle": "显示模式",
+  "displayModeSubtitle": "支持跟随系统、浅色模式和深色模式。",
+  "themeModeLabel": "主题模式",
+  "themeModeSystem": "跟随系统",
+  "themeModeLight": "浅色模式",
+  "themeModeDark": "深色模式",
+  "fontSectionTitle": "应用字体",
+  "fontSectionSubtitle": "支持系统默认字体和 MiSans。MiSans 不可用时会自动回退。",
+  "fontModeLabel": "字体选择",
+  "fontModeSystem": "手机默认字体",
+  "fontModeMiSans": "MiSans（优先）",
+  "languageSectionTitle": "应用语言",
+  "languageSectionSubtitle": "可跟随系统，或手动切换到已适配语言。",
+  "languageModeLabel": "语言选择",
+  "languageModeSystem": "跟随系统",
+  "languageModeZhCn": "简体中文",
+  "languageModeEnUs": "英语",
+  "courseImportTitle": "导入课程",
+  "chooseImportMethodTitle": "选择导入方式",
+  "chooseImportMethodSubtitle": "现在支持传统 .ics 日历导入、识图导入，以及从仓库读取适配器的教务系统导入。",
+  "importMethodIcsTitle": ".ics 日历导入",
+  "importMethodIcsSubtitle": "适合从 WakeUp 等课表应用导出的日历文件，流程最短。",
+  "importMethodIcsFooter": "进入后直接选择 .ics 文件，可追加导入或替换现有课程。",
+  "importMethodAiTitle": "识图导入",
+  "importMethodAiSubtitle": "适合直接从课表截图导入，支持 1 张或多张连续截图。",
+  "importMethodAiFooter": "先复制提示词，再到豆包专家模式发送截图和提示词，把返回的 JSON 复制回来导入，最后选择开学日期。",
+  "importMethodWarehouseTitle": "教务系统导入",
+  "importMethodWarehouseSubtitle": "从 qingyu_warehouse 读取学校与适配器，支持网页登录导入课程。",
+  "importMethodWarehouseFooter": "进入后选择学校和适配器，可直接打开教务网页登录并执行导入。",
+  "icsImportTitle": ".ics 日历导入",
+  "applicableScenarioTitle": "适用场景",
+  "icsScenarioIntro": "如果你已经能在 WakeUp 等课表应用里导入教务系统课程，再导出为 .ics 文件，这条路最稳。",
+  "stepLabel": "步骤 {step}",
+  "@stepLabel": {
+    "placeholders": {
+      "step": {
+        "type": "String"
+      }
+    }
+  },
+  "icsStep1Subtitle": "先在其他课表应用里导出 .ics 日历文件。",
+  "icsStep2Subtitle": "回到这里选择文件，可选“追加导入”或“替换现有”。",
+  "icsStep3Subtitle": "导入前还会让你确认开学日期，以及课表第 1 周对应校历第几周。",
+  "supportedFilesTitle": "支持的文件",
+  "supportedFilesSuffix": "文件后缀必须是 .ics。",
+  "supportedFilesImageHint": "如果你手里只有截图，不要走这里，请返回上一页选择“识图导入”。",
+  "chooseIcsFileAction": "选择 .ics 文件",
+  "timetableAppName": "轻屿课表",
+  "switchProfileHint": "点击切换课表",
+  "moreTooltip": "更多",
+  "pleaseSetSemesterStartDate": "请先在课表设置里填写开学日期",
+  "deleteScheduleTitle": "删除排课",
+  "deleteLessonTitle": "删除这节课",
+  "cancelAction": "取消",
+  "deleteAction": "删除",
+  "deletedCourseMessage": "已删除：{name}",
+  "@deletedCourseMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteFailed": "删除失败",
+  "rescheduleFailed": "调课失败",
+  "timetableManagement": "课表管理",
+  "weekLabel": "第 {week} 周",
+  "@weekLabel": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "sectionLabel": "第 {section} 节",
+  "@sectionLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  }
+}

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -31,13 +32,37 @@ ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   };
 }
 
-ThemeData _buildAppTheme(Color seedColor, Brightness brightness) {
+String? _fontFamilyFromSettings(AppFontMode mode) {
+  return switch (mode) {
+    AppFontMode.system => null,
+    AppFontMode.miSans => 'MiSans',
+  };
+}
+
+Locale? _localeFromSettings(String localeTag) {
+  final normalized = localeTag.trim();
+  if (normalized.isEmpty) {
+    return null;
+  }
+  final parts = normalized.replaceAll('-', '_').split('_');
+  if (parts.length >= 2) {
+    return Locale(parts[0], parts[1]);
+  }
+  return Locale(parts[0]);
+}
+
+ThemeData _buildAppTheme(
+  Color seedColor,
+  Brightness brightness, {
+  String? fontFamily,
+}) {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: seedColor,
     brightness: brightness,
   );
   return ThemeData(
     useMaterial3: true,
+    fontFamily: fontFamily,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: colorScheme.surface,
     appBarTheme: AppBarTheme(
@@ -116,8 +141,6 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  String get _appTitle => kReleaseMode ? '轻屿课表' : '轻屿课表调试版';
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
@@ -129,22 +152,33 @@ class MyApp extends StatelessWidget {
       child: Consumer<TimetableProvider>(
         builder: (context, provider, child) {
           final seedColor = _colorFromHex(provider.settings.themeSeedColor);
+          final fontFamily =
+              _fontFamilyFromSettings(provider.settings.appFontMode);
 
           return MaterialApp(
-            title: _appTitle,
             debugShowCheckedModeBanner: false,
+            onGenerateTitle: (context) => kReleaseMode
+                ? AppLocalizations.of(context)!.appTitle
+                : AppLocalizations.of(context)!.appTitleDebug,
             localizationsDelegates: const [
+              AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,
             ],
-            supportedLocales: const [
-              Locale('zh', 'CN'),
-              Locale('en', 'US'),
-            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: _localeFromSettings(provider.settings.appLocaleTag),
             themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
-            theme: _buildAppTheme(seedColor, Brightness.light),
-            darkTheme: _buildAppTheme(seedColor, Brightness.dark),
+            theme: _buildAppTheme(
+              seedColor,
+              Brightness.light,
+              fontFamily: fontFamily,
+            ),
+            darkTheme: _buildAppTheme(
+              seedColor,
+              Brightness.dark,
+              fontFamily: fontFamily,
+            ),
             home: const AppEntryScreen(),
           );
         },
