@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
@@ -128,6 +129,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
     _normalizeSections(settings);
@@ -140,14 +142,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         actions: [
           if (widget.course != null)
             IconButton(
-              tooltip: '删除课程',
+              tooltip: l10n.deleteCourseTitle,
               onPressed: _confirmDeleteCourse,
               icon: const Icon(Icons.delete_outline_rounded),
             ),
           TextButton(
             onPressed: () => _saveCourse(provider, settings),
             child: Text(
-              '保存',
+              l10n.saveAction,
               style: TextStyle(color: Theme.of(context).colorScheme.primary),
             ),
           ),
@@ -184,16 +186,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('删除课程'),
-        content: Text('确定删除课程“${course.name}”吗？'),
+        title: Text(AppLocalizations.of(context)!.deleteCourseTitle),
+        content: Text(
+          AppLocalizations.of(context)!.confirmDeleteCourseMessage(course.name),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
+            child: Text(AppLocalizations.of(context)!.deleteAction),
           ),
         ],
       ),
@@ -209,7 +213,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('课程已删除')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.courseDeleted)),
     );
   }
 
@@ -292,34 +296,39 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   String _resolveTitle() {
     if (widget.course != null) {
-      return _editorMode == CourseEditorMode.singleLesson ? '编辑单节课' : '编辑课程';
+      return _editorMode == CourseEditorMode.singleLesson
+          ? AppLocalizations.of(context)!.editSingleLessonTitle
+          : AppLocalizations.of(context)!.editCourseTitle;
     }
-    return _editorMode == CourseEditorMode.singleLesson ? '添加单节课' : '添加多节课';
+    return _editorMode == CourseEditorMode.singleLesson
+        ? AppLocalizations.of(context)!.addSingleLessonTitle
+        : AppLocalizations.of(context)!.addCourseTitle;
   }
 
   Widget _buildModeSection(TimetableSettings settings) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '添加方式',
+            Text(
+              l10n.addMethodTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             SegmentedButton<CourseEditorMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: CourseEditorMode.singleLesson,
                   icon: Icon(Icons.looks_one_rounded),
-                  label: Text('单节课'),
+                  label: Text(l10n.singleLessonLabel),
                 ),
                 ButtonSegment(
                   value: CourseEditorMode.recurring,
                   icon: Icon(Icons.view_week_rounded),
-                  label: Text('多节课'),
+                  label: Text(l10n.recurringLessonLabel),
                 ),
               ],
               selected: {_editorMode},
@@ -352,8 +361,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 12),
             Text(
               _editorMode == CourseEditorMode.singleLesson
-                  ? '适合临时补课、调休补上一节，课程只会落在一个周次。'
-                  : '适合同一时间连续上很多周的常规课程。',
+                  ? l10n.singleLessonHint
+                  : l10n.recurringLessonHint,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -363,6 +372,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Widget _buildBasicInfoSection(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     final singleLessonTemplates = _buildSingleLessonTemplates(provider);
     return Card(
       child: Padding(
@@ -370,13 +380,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '共享信息',
+            Text(
+              l10n.sharedInfoTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              '课程名、简称、老师、课程简介、课程性质和颜色会同步到同名课程的其他排课。',
+              l10n.sharedInfoHint,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (widget.course == null &&
@@ -389,17 +399,17 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 )
                     ? _selectedSingleLessonTemplateId
                     : _manualSingleLessonTemplateValue,
-                decoration: const InputDecoration(
-                  labelText: '沿用已有课程',
-                  helperText: '选一个已有课程，自动带入课程名、老师和其他共享信息',
+                decoration: InputDecoration(
+                  labelText: l10n.reuseExistingCourseLabel,
+                  helperText: l10n.reuseExistingCourseHelper,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.auto_awesome_motion_rounded),
                 ),
                 items: [
-                  const DropdownMenuItem(
+                  DropdownMenuItem(
                     value: _manualSingleLessonTemplateValue,
                     child: Text(
-                      '手动填写',
+                      l10n.manualInputLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -416,10 +426,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   ),
                 ],
                 selectedItemBuilder: (context) => [
-                  const Align(
+                  Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '手动填写',
+                      l10n.manualInputLabel,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -460,7 +470,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               if (singleLessonTemplates.isEmpty) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '当前课表里还没有现成课程，先手动录入一门，后面临时加课就能直接选了。',
+                  l10n.noTemplateCoursesHint,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -468,15 +478,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: '课程名称',
-                helperText: '超级岛建议 3 个字以内，显示效果最好',
+              decoration: InputDecoration(
+                labelText: l10n.courseNameLabel,
+                helperText: l10n.courseNameHelper,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.book),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return '请输入课程名称';
+                  return l10n.pleaseEnterCourseName;
                 }
                 return null;
               },
@@ -484,8 +494,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _shortNameController,
-              decoration: const InputDecoration(
-                labelText: '课程简称 (可选)',
+              decoration: InputDecoration(
+                labelText: l10n.courseShortNameOptional,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.short_text),
               ),
@@ -493,8 +503,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _teacherController,
-              decoration: const InputDecoration(
-                labelText: '授课教师',
+              decoration: InputDecoration(
+                labelText: l10n.teacherLabel,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.person),
               ),
@@ -502,8 +512,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<CourseNature>(
               value: _courseNature,
-              decoration: const InputDecoration(
-                labelText: '课程性质',
+              decoration: InputDecoration(
+                labelText: l10n.courseNatureLabel,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.bookmark_added_outlined),
               ),
@@ -527,8 +537,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(
-                labelText: '课程简介 (可选)',
+              decoration: InputDecoration(
+                labelText: l10n.courseDescriptionOptional,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.notes_rounded),
               ),
@@ -682,6 +692,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableProvider provider,
     TimetableSettings settings,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final sectionNumbers =
         List.generate(settings.sectionCount, (index) => index + 1);
     final selectedScheme = _resolveSelectedTimeScheme(provider);
@@ -699,7 +710,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final endTime = effectiveScheme == null
         ? fallbackEndSection.endTime
         : effectiveScheme.sections[_endSection - 1].endTime;
-    final followLabel = provider.activeTimeScheme?.name ?? '当前课表时间';
+    final followLabel =
+        provider.activeTimeScheme?.name ?? AppLocalizations.of(context)!.timetableAppName;
 
     return Card(
       child: Padding(
@@ -707,13 +719,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '当前排课',
+            Text(
+              l10n.currentScheduleTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
-              '这里的星期、节次、教室、周次和单双周只影响当前这一条排课。',
+              l10n.currentScheduleSubtitle,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
@@ -721,8 +733,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               isExpanded: true,
               value: _selectedTimeSchemeOverrideId ??
                   _followProfileTimeSchemeValue,
-              decoration: const InputDecoration(
-                labelText: '上课时间方案',
+              decoration: InputDecoration(
+                labelText: l10n.timeSchemeLabel,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.schedule_rounded),
               ),
@@ -730,7 +742,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 DropdownMenuItem(
                   value: _followProfileTimeSchemeValue,
                   child: Text(
-                    '跟随当前课表（$followLabel）',
+                    l10n.followCurrentTimetableWithName(followLabel),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -750,7 +762,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '跟随当前课表（$followLabel）',
+                    l10n.followCurrentTimetableWithName(followLabel),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -778,8 +790,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 8),
             Text(
               _selectedTimeSchemeOverrideId == null
-                  ? '默认跟随当前课表主时间模板，适合大多数课程。'
-                  : '这门课会单独使用所选时间模板，不跟随当前课表主时间模板。',
+                  ? l10n.followCurrentTimetableDescription
+                  : l10n.overrideTimeSchemeDescription,
               style: Theme.of(context).textTheme.bodySmall,
             ),
             if (validationMessage != null) ...[
@@ -795,8 +807,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               value: _selectedDayOfWeek,
-              decoration: const InputDecoration(
-                labelText: '星期',
+              decoration: InputDecoration(
+                labelText: l10n.weekdayLabel,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.calendar_today),
               ),
@@ -817,14 +829,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               leading: DropdownButtonFormField<int>(
                 isExpanded: true,
                 value: _startSection,
-                decoration: const InputDecoration(
-                  labelText: '开始节次',
+                decoration: InputDecoration(
+                  labelText: l10n.startSectionLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: sectionNumbers.map((section) {
                   return DropdownMenuItem(
                     value: section,
-                    child: Text('第 $section 节'),
+                    child: Text(l10n.sectionLabel(section)),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -839,8 +851,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               trailing: DropdownButtonFormField<int>(
                 isExpanded: true,
                 value: _endSection,
-                decoration: const InputDecoration(
-                  labelText: '结束节次',
+                decoration: InputDecoration(
+                  labelText: l10n.endSectionLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: sectionNumbers
@@ -848,7 +860,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     .map((section) {
                   return DropdownMenuItem(
                     value: section,
-                    child: Text('第 $section 节'),
+                    child: Text(l10n.sectionLabel(section)),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -860,14 +872,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '时间: $startTime - $endTime',
+              l10n.timeRangeLabel(startTime, endTime),
               style: TextStyle(color: Colors.grey.shade600),
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _locationController,
-              decoration: const InputDecoration(
-                labelText: '上课地点',
+              decoration: InputDecoration(
+                labelText: l10n.locationLabel,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on),
               ),
@@ -879,6 +891,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Widget _buildWeekSection(TimetableSettings settings) {
+    final l10n = AppLocalizations.of(context)!;
     final availableWeeks = settings.availableWeeks;
     final selectedWeeks = _selectedCustomWeeks.toList()..sort();
     if (_editorMode == CourseEditorMode.singleLesson) {
@@ -888,20 +901,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '上课周次',
+              Text(
+                l10n.singleLessonWeekTitle,
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
               Text(
-                '单节课只会出现在一个周次里，适合补课、临时加课。',
+                l10n.singleLessonWeekSubtitle,
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _singleWeek,
-                decoration: const InputDecoration(
-                  labelText: '选择周次',
+                decoration: InputDecoration(
+                  labelText: l10n.selectWeekLabel,
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.event_note_rounded),
                 ),
@@ -909,7 +922,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     .map(
                       (week) => DropdownMenuItem(
                         value: week,
-                        child: Text('第 $week 周'),
+                        child: Text(l10n.weekLabel(week)),
                       ),
                     )
                     .toList(),
@@ -933,21 +946,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '周次设置',
+            Text(
+              l10n.weekSettingsTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             SegmentedButton<_WeekSelectionMode>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: _WeekSelectionMode.range,
-                  label: Text('连续周'),
+                  label: Text(l10n.rangeWeeksLabel),
                   icon: Icon(Icons.linear_scale_rounded),
                 ),
                 ButtonSegment(
                   value: _WeekSelectionMode.custom,
-                  label: Text('自定义周'),
+                  label: Text(l10n.customWeeksLabel),
                   icon: Icon(Icons.apps_rounded),
                 ),
               ],
@@ -981,14 +994,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 leading: DropdownButtonFormField<int>(
                   isExpanded: true,
                   value: _startWeek,
-                  decoration: const InputDecoration(
-                    labelText: '开始周',
+                  decoration: InputDecoration(
+                    labelText: l10n.startWeekLabel,
                     border: OutlineInputBorder(),
                   ),
                   items: availableWeeks.map((week) {
                     return DropdownMenuItem(
                       value: week,
-                      child: Text('第 $week 周'),
+                      child: Text(l10n.weekLabel(week)),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -1003,8 +1016,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 trailing: DropdownButtonFormField<int>(
                   isExpanded: true,
                   value: _endWeek,
-                  decoration: const InputDecoration(
-                    labelText: '结束周',
+                  decoration: InputDecoration(
+                    labelText: l10n.endWeekLabel,
                     border: OutlineInputBorder(),
                   ),
                   items: availableWeeks
@@ -1012,7 +1025,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       .map((week) {
                     return DropdownMenuItem(
                       value: week,
-                      child: Text('第 $week 周'),
+                      child: Text(l10n.weekLabel(week)),
                     );
                   }).toList(),
                   onChanged: (value) {
@@ -1029,17 +1042,17 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   runSpacing: 8,
                   children: [
                     _buildRangeWeekFilterChip(
-                      label: '全部',
+                      label: l10n.allWeeksFilter,
                       selected: _rangeWeekFilter == _RangeWeekFilter.all,
                       onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.all),
                     ),
                     _buildRangeWeekFilterChip(
-                      label: '单周',
+                      label: l10n.oddWeeksFilter,
                       selected: _rangeWeekFilter == _RangeWeekFilter.odd,
                       onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.odd),
                     ),
                     _buildRangeWeekFilterChip(
-                      label: '双周',
+                      label: l10n.evenWeeksFilter,
                       selected: _rangeWeekFilter == _RangeWeekFilter.even,
                       onPressed: () => _setRangeWeekFilter(_RangeWeekFilter.even),
                     ),
@@ -1049,10 +1062,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     _rangeWeekFilter == _RangeWeekFilter.all
-                        ? '按开始周到结束周连续排课。'
+                        ? l10n.rangeWeeksAllHint
                         : _rangeWeekFilter == _RangeWeekFilter.odd
-                            ? '只保留范围内的单周。'
-                            : '只保留范围内的双周。',
+                            ? l10n.rangeWeeksOddHint
+                            : l10n.rangeWeeksEvenHint,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -1137,7 +1150,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 runSpacing: 8,
                 children: [
                   ActionChip(
-                    label: const Text('全选'),
+                    label: Text(l10n.selectAllAction),
                     onPressed: () {
                       setState(() {
                         _selectedCustomWeeks = availableWeeks.toSet();
@@ -1145,7 +1158,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     },
                   ),
                   ActionChip(
-                    label: const Text('单周'),
+                    label: Text(l10n.selectOddWeeksAction),
                     onPressed: () {
                       setState(() {
                         _selectedCustomWeeks =
@@ -1154,7 +1167,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     },
                   ),
                   ActionChip(
-                    label: const Text('双周'),
+                    label: Text(l10n.selectEvenWeeksAction),
                     onPressed: () {
                       setState(() {
                         _selectedCustomWeeks =
@@ -1166,7 +1179,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '已选 ${selectedWeeks.length} 周：第${_formatWeekList(selectedWeeks)}周',
+                l10n.selectedWeeksSummary(
+                  selectedWeeks.length,
+                  _formatWeekList(selectedWeeks),
+                ),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
@@ -1177,14 +1193,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Widget _buildColorSection() {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '课程颜色',
+            Text(
+              l10n.courseColorTitle,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -1221,7 +1238,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             OutlinedButton.icon(
               onPressed: _showCustomColorPicker,
               icon: const Icon(Icons.palette_outlined),
-              label: const Text('调色盘自定义颜色'),
+              label: Text(l10n.customPaletteAction),
             ),
           ],
         ),
@@ -1230,6 +1247,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Future<void> _showCustomColorPicker() async {
+    final l10n = AppLocalizations.of(context)!;
     var selected = _parseColor(_selectedColor);
     final hexController = TextEditingController(text: _selectedColor);
 
@@ -1256,7 +1274,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
             final hsv = HSVColor.fromColor(selected);
             return AlertDialog(
-              title: const Text('调色盘'),
+              title: Text(l10n.colorPaletteTitle),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1273,8 +1291,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     const SizedBox(height: 16),
                     TextField(
                       controller: hexController,
-                      decoration: const InputDecoration(
-                        labelText: '颜色 Hex',
+                      decoration: InputDecoration(
+                        labelText: l10n.colorHexLabel,
                         hintText: '#2563EB',
                         border: OutlineInputBorder(),
                       ),
@@ -1330,11 +1348,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('取消'),
+                  child: Text(l10n.cancelAction),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pop(context, _toHex(selected)),
-                  child: const Text('使用这个颜色'),
+                  child: Text(l10n.useThisColor),
                 ),
               ],
             );
@@ -1411,6 +1429,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableProvider provider,
     TimetableSettings settings,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -1434,7 +1453,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       final selectedWeeks = _selectedCustomWeeks.toList()..sort();
       if (selectedWeeks.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('请至少选择一个上课周次')),
+          SnackBar(content: Text(l10n.selectAtLeastOneWeek)),
         );
         return;
       }
@@ -1490,7 +1509,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? '保存失败')),
+        SnackBar(content: Text(error.message?.toString() ?? l10n.saveFailed)),
       );
       return;
     }
@@ -1500,7 +1519,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(widget.course == null ? '课程添加成功' : '课程更新成功')),
+      SnackBar(
+        content: Text(
+          widget.course == null
+              ? l10n.courseAddedSuccess
+              : l10n.courseUpdatedSuccess,
+        ),
+      ),
     );
   }
 }

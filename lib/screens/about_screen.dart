@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -105,6 +106,7 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final settings =
@@ -112,12 +114,14 @@ class _AboutScreenState extends State<AboutScreen> {
       return provider.settings;
     });
     final versionText = _packageInfo == null
-        ? '读取中'
-        : '${_packageInfo!.version} (${_packageInfo!.buildNumber})';
+        ? l10n.loadingText
+        : l10n.versionLabel(
+            '${_packageInfo!.version} (${_packageInfo!.buildNumber})',
+          );
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('关于软件'),
+        title: Text(l10n.aboutTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -160,21 +164,21 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '轻屿课表',
+                    l10n.timetableAppName,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '版本 $versionText',
+                    versionText,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    '一个围绕课表查看、课程提醒和 HyperOS 超级岛体验打磨的 Android 开源项目。',
+                    l10n.aboutHeroSubtitle,
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium,
                   ),
@@ -185,13 +189,14 @@ class _AboutScreenState extends State<AboutScreen> {
                     alignment: WrapAlignment.center,
                     children: [
                       _buildInfoChip(theme, label: '平台', value: 'Android'),
-                      _buildInfoChip(theme, label: '重点', value: 'HyperOS'),
+                      _buildInfoChip(theme, label: l10n.platformLabel, value: 'Android'),
+                      _buildInfoChip(theme, label: l10n.focusLabel, value: 'HyperOS'),
                       _buildInfoChip(
                         theme,
-                        label: '更新',
+                        label: l10n.updateLabel,
                         value: settings.appUpdateIncludePrerelease
-                            ? '含预发布'
-                            : '正式版',
+                            ? l10n.prereleaseIncluded
+                            : l10n.stableOnly,
                       ),
                     ],
                   ),
@@ -205,8 +210,8 @@ class _AboutScreenState extends State<AboutScreen> {
               children: [
                 _AboutNavTile(
                   icon: Icons.system_update_alt_rounded,
-                  title: '版本更新',
-                  subtitle: '检查更新、立即下载，以及测试与诊断入口',
+                  title: l10n.aboutUpdatesTitle,
+                  subtitle: l10n.aboutUpdatesSubtitle,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -220,22 +225,22 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 _AboutNavTile(
                   icon: Icons.flag_outlined,
-                  title: '项目定位',
-                  subtitle: '这是什么、适合谁、核心能力是什么',
+                  title: l10n.aboutPositioningTitle,
+                  subtitle: l10n.aboutPositioningSubtitle,
                   onTap: () {
                     _showInfoSheet(
                       context,
-                      title: '项目定位',
-                      children: const [
-                        _AboutBullet(text: '支持周视图课表、课程增删改、.ics 导入'),
+                      title: l10n.aboutPositioningTitle,
+                      children: [
+                        _AboutBullet(text: l10n.aboutPositioningBullet1),
                         _AboutBullet(
-                          text: '已支持适配学校的教务系统网页登录导入与完整备份迁移',
+                          text: l10n.aboutPositioningBullet2,
                         ),
                         _AboutBullet(
-                          text: '支持实时通知；HyperOS 3.0.300 起支持超级岛 / 焦点通知展示',
+                          text: l10n.aboutPositioningBullet3,
                         ),
                         _AboutBullet(
-                          text: '支持多课表、时间模板、主题色和卡片样式自定义',
+                          text: l10n.aboutPositioningBullet4,
                         ),
                       ],
                     );
@@ -243,28 +248,24 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 _AboutNavTile(
                   icon: Icons.import_export_rounded,
-                  title: '导入与迁移',
-                  subtitle: '当前导入方式、备份恢复和迁移建议',
+                  title: l10n.aboutImportMigrationTitle,
+                  subtitle: l10n.aboutImportMigrationSubtitle,
                   onTap: () {
                     _showInfoSheet(
                       context,
-                      title: '导入与迁移',
-                      children: const [
+                      title: l10n.aboutImportMigrationTitle,
+                      children: [
                         _AboutBullet(
-                          text:
-                              '当前版本已经支持适配学校的教务系统网页登录导入；进入“导入课程 > 教务系统导入”后选择学校和适配器即可。',
+                          text: l10n.aboutImportMigrationBullet1,
                         ),
                         _AboutBullet(
-                          text:
-                              '如果你的学校暂时还没适配，仍然可以先在 WakeUp 等课表应用里导入课程，再导出为日历格式，然后在本应用导入。',
+                          text: l10n.aboutImportMigrationBullet2,
                         ),
                         _AboutBullet(
-                          text:
-                              '如果其他人已经在用本应用，也可以直接让对方导出完整备份文件，你在“数据备份与迁移”里导入即可直接恢复。',
+                          text: l10n.aboutImportMigrationBullet3,
                         ),
                         _AboutBullet(
-                          text:
-                              '如果你会抓包、网页调试或 JavaScript，也欢迎去 qingyu_warehouse 参与教务适配补充。',
+                          text: l10n.aboutImportMigrationBullet4,
                         ),
                       ],
                     );
@@ -272,8 +273,8 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 _AboutNavTile(
                   icon: Icons.group_outlined,
-                  title: '代码贡献者',
-                  subtitle: '开发人员与教务导入适配者名单',
+                  title: l10n.aboutContributorsTitle,
+                  subtitle: l10n.aboutContributorsSubtitle,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -286,8 +287,8 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 _AboutNavTile(
                   icon: Icons.code_rounded,
-                  title: '开源仓库',
-                  subtitle: 'GitHub 仓库地址、源码、Release 和反馈入口',
+                  title: l10n.aboutRepositoryTitle,
+                  subtitle: l10n.aboutRepositorySubtitle,
                   onTap: () {
                     _showRepositorySheet(context, theme);
                   },

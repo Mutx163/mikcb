@@ -22,6 +22,50 @@
   "languageModeSystem": "Follow System",
   "languageModeZhCn": "Simplified Chinese",
   "languageModeEnUs": "English",
+  "settingsTitle": "Timetable Settings",
+  "dailyUsageSectionTitle": "Daily Use",
+  "appearanceEntryTitle": "Appearance",
+  "appearanceEntrySubtitle": "Theme colors, timetable background, and course card colors",
+  "layoutSectionEntryTitle": "Layout & Sections",
+  "layoutSectionEntrySubtitle": "Section times, row height, time column, weekends, and course card layout",
+  "homeWidgetEntryTitle": "Home Widgets",
+  "homeWidgetEntrySubtitle": "Today cards, widget background, and displayed information",
+  "reminderNotificationSectionTitle": "Reminders & Notifications",
+  "userGuideEntryTitle": "Guide & Permissions",
+  "userGuideEntrySubtitle": "Short-name suggestions, notifications, auto-start, and battery policy",
+  "timetableManagementSectionTitle": "Timetable Management",
+  "timeSchemeEntryTitle": "Time Schemes",
+  "timeSchemeEntrySubtitleNoneSelected": "Switch, edit sections, duplicate, and manage time schemes",
+  "timeSchemeEntrySubtitleSelected": "Current: {name} · switch, edit sections, and duplicate",
+  "@timeSchemeEntrySubtitleSelected": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "dataTransferEntryTitle": "Backup & Migration",
+  "dataTransferEntrySubtitle": "Export full timetable files so others can import them directly",
+  "aboutSupportSectionTitle": "About & Support",
+  "feedbackEntryTitle": "Feedback",
+  "feedbackEntrySubtitle": "Issues, community channels, and suggestion entry points",
+  "aboutEntryTitle": "About",
+  "aboutEntrySubtitle": "Open-source info, updates, and repository links",
+  "setSemesterStartDateAction": "Set Semester Start",
+  "semesterStartDateAction": "Semester Start",
+  "syncCurrentWeekAction": "Sync Current Week",
+  "semesterWeekCountAction": "{count} weeks",
+  "@semesterWeekCountAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "selectSemesterWeekCountTitle": "Select Semester Week Count",
+  "selectSemesterWeekCountSubtitle": "Adjust this based on your school’s actual teaching weeks.",
+  "unifiedCourseCardColorTitle": "Use Unified Course Card Color",
+  "unifiedCourseCardColorSubtitle": "If disabled, each course keeps its own color.",
   "courseImportTitle": "Import Courses",
   "chooseImportMethodTitle": "Choose Import Method",
   "chooseImportMethodSubtitle": "Supports traditional .ics calendar import, AI image import, and warehouse-based academic system import.",
@@ -86,5 +130,856 @@
         "type": "int"
       }
     }
-  }
+  },
+  "feedbackTitle": "Feedback",
+  "feedbackIntro": "If you encounter crashes, timetable display issues, import problems, or want to suggest features, you can use the channels below.",
+  "feedbackIssueHint": "For issues with reproduction steps, screenshots, app version, or logs, GitHub Issue is recommended first.",
+  "githubIssueTitle": "GitHub Issue",
+  "githubIssueSubtitle": "Open the repository issue page to submit bugs, suggestions, or review existing reports.",
+  "openIssuePage": "Open Issues",
+  "copyAddress": "Copy Link",
+  "copiedIssueAddress": "Issue link copied",
+  "copyXiaohongshuId": "Copy Xiaohongshu ID",
+  "copiedXiaohongshuId": "Xiaohongshu ID copied",
+  "copyCoolapkId": "Copy Coolapk ID",
+  "copiedCoolapkId": "Coolapk ID copied",
+  "copyQqGroupId": "Copy QQ Group ID",
+  "copiedQqGroupId": "QQ group ID copied",
+  "timetableProfilesTitle": "Timetable Profiles",
+  "createTimetableTooltip": "Create timetable",
+  "coursesAndWeekSummary": "{count} courses · Week {week}",
+  "@coursesAndWeekSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "moreActionsTooltip": "More Actions",
+  "switchToThisTimetable": "Switch to this timetable",
+  "renameAction": "Rename",
+  "duplicateAction": "Duplicate",
+  "clearCoursesAction": "Clear Courses",
+  "usingNow": "Currently Active",
+  "switchedToProfile": "Switched to {name}",
+  "@switchedToProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "createTimetableTitle": "Create Timetable",
+  "timetableNameLabel": "Timetable Name",
+  "timetableNameHint": "e.g. Sophomore Spring",
+  "createAction": "Create",
+  "createdProfile": "Created timetable: {name}",
+  "@createdProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "renameTimetableTitle": "Rename Timetable",
+  "saveAction": "Save",
+  "renamedProfile": "Renamed to {name}",
+  "@renamedProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "clearCurrentTimetableTitle": "Clear Current Timetable",
+  "clearCurrentTimetableMessage": "Clear all courses in “{name}”? Timetable settings will be kept.",
+  "@clearCurrentTimetableMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "clearAction": "Clear",
+  "clearedProfile": "Cleared timetable: {name}",
+  "@clearedProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noCoursesInCurrentProfile": "This timetable has no courses.",
+  "deleteTimetableTitle": "Delete Timetable",
+  "deleteTimetableMessage": "Delete “{name}”?",
+  "@deleteTimetableMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletedProfile": "Deleted timetable: {name}",
+  "@deletedProfile": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "keepAtLeastOneProfile": "Keep at least one timetable",
+  "dataTransferTitle": "Backup & Migration",
+  "fullExportTitle": "Export",
+  "fullExportSubtitle": "Export the current timetable, or export all timetables, time schemes, and the current selection.",
+  "exportCurrentTimetable": "Export Current Timetable",
+  "exportAllData": "Export All Data",
+  "fullImportTitle": "Import",
+  "fullImportSubtitle": "When importing, you can overwrite the current timetable or import it as a new timetable. Export your backup first if possible.",
+  "chooseFileAndImport": "Choose File and Import",
+  "transferOverviewTitle": "Current Backup Contents",
+  "courseCountBullet": "Courses: {count}",
+  "@courseCountBullet": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentTimetableBullet": "Current timetable: {name}",
+  "@currentTimetableBullet": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "allTimetablesBullet": "All timetables: {count}",
+  "@allTimetablesBullet": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeCountBullet": "Time schemes: {count}",
+  "@timeSchemeCountBullet": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentWeekBullet": "Current week: Week {week}",
+  "@currentWeekBullet": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "semesterStartUnsetBullet": "Semester start date: not set",
+  "semesterStartBullet": "Semester start date: {date}",
+  "@semesterStartBullet": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "fileExtensionBullet": "File extension: .{extension}",
+  "@fileExtensionBullet": {
+    "placeholders": {
+      "extension": {
+        "type": "String"
+      }
+    }
+  },
+  "selectImportModeTitle": "Choose Import Mode",
+  "selectImportModeMessage": "You can overwrite the current timetable, or import the backup as a new standalone timetable.",
+  "replaceCurrentTimetable": "Overwrite Current Timetable",
+  "importAsNewTimetable": "Import as New Timetable",
+  "createdNewTimetableAfterImport": "Import succeeded, a new timetable was created",
+  "backupRestoredSuccess": "Import succeeded, backup data restored",
+  "importFailedInvalidFile": "Import failed. Please check whether the file is valid.",
+  "welcomeTitle": "Welcome",
+  "welcomeAppName": "Qingyu Timetable",
+  "welcomeSubtitle": "You can start using the app right away, or import courses / restore a backup first.",
+  "startUsingTitle": "Start Using",
+  "startUsingSubtitle": "Enter the app directly and continue the first-use guide",
+  "importTimetableTitle": "Import Timetable",
+  "importTimetableSubtitle": "Import courses from an .ics file or AI parsing result",
+  "restoreBackupTitle": "Restore from Backup",
+  "restoreBackupSubtitle": "Restore old data from a .mikcb backup file",
+  "viewGuideTitle": "View Guide",
+  "viewGuideSubtitle": "Read permissions, island, and basic setup first",
+  "migrationTitle": "Migrate Old Data",
+  "migrationSafeTitle": "Don’t worry, your data is not lost",
+  "migrationSafeSubtitle": "We changed the app package name, so you may temporarily see two app icons. This is normal. Your old data is still in the old app. Back it up there first, then import it here.",
+  "migrationStep1Title": "Open the old app",
+  "migrationStep1Subtitle": "Go to Backup & Migration and choose Export All Data. Do not export only the current timetable, and do not uninstall the old app first.",
+  "migrationStep2Title": "Save the backup file",
+  "migrationStep2Subtitle": "After exporting, the old app will open the system share sheet. Prefer Save to Files, and store it in the Download folder.",
+  "migrationStep3Title": "Return to this version and import",
+  "migrationStep3Subtitle": "Return to the new version, choose the .mikcb backup file from Download, and restore it. Only uninstall the old app after confirming everything works here.",
+  "migrationNoSaveToFilesTitle": "If “Save to Files” is unavailable",
+  "migrationNoSaveToFilesSubtitle": "You can first share the backup to any WeChat chat, then open the file in WeChat and save it. It usually ends up in Download or the WeiXin folder. Then return here and import that .mikcb file.",
+  "openingOldApp": "Opening old app...",
+  "openOldAppForBackup": "Open old app for backup",
+  "backupDoneGoImport": "I finished backup, continue to import",
+  "startFreshWithoutMigration": "Start fresh without migration",
+  "openOldAppFailed": "Failed to open the old app. Please return to the home screen and open it manually.",
+  "supportCreatorTitle": "Buy the Creator a Coffee",
+  "supportHeroTitle": "Support Qingyu Timetable",
+  "supportHeroSubtitle": "Your support goes directly into timetable maintenance, academic adapter updates, and overall experience improvements.",
+  "supportChipFixes": "Bug Fixes",
+  "supportChipAdapters": "Adapters",
+  "supportChipPolish": "Polish",
+  "supportMethodTitle": "Choose a Support Method",
+  "wechatLabel": "WeChat",
+  "alipayLabel": "Alipay",
+  "supportWeChatHint": "Use WeChat to scan and support the creator",
+  "supportAlipayHint": "Use Alipay to scan and support the creator",
+  "viewLargeImage": "View Large Image",
+  "saveToGallery": "Save to Gallery",
+  "supportCompleteThanks": "Thanks for supporting Qingyu Timetable ❤️",
+  "supportConfirmed": "I’ve Supported",
+  "donorListTitle": "Acknowledgements",
+  "donorListLoadFailed": "The online donor list is temporarily unavailable.",
+  "reloadAction": "Reload",
+  "updatedAtLabel": "Updated at {time}",
+  "@updatedAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "donorListEmpty": "The donor list is still empty. You can edit docs/donors.json and publish again.",
+  "savedToGallery": "Saved to gallery",
+  "saveToGalleryFailed": "Failed to save to gallery",
+  "saveFailedWithError": "Save failed: {error}",
+  "@saveFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "courseOverviewTitle": "Course Overview & Edit",
+  "addNewCourseTooltip": "Add New Course",
+  "emptyCourseOverviewHint": "Long press the timetable or tap the top-right button to add a course",
+  "conflictDetectedMessage": "{count} scheduled entries have actual conflicts. Conflicting items are highlighted below.",
+  "@conflictDetectedMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "conflictCountLabel": "Conflicts: {count}",
+  "@conflictCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduledCountLabel": "{count} entries",
+  "@scheduledCountLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduledCountWithConflictHint": "{count} entries · expand to review conflicts",
+  "@scheduledCountWithConflictHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseTimeSummary": "Time: Weekday {day} · Sections {start}-{end}",
+  "@courseTimeSummary": {
+    "placeholders": {
+      "day": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
+    }
+  },
+  "teacherUnset": "Unknown Teacher",
+  "locationUnset": "Unknown Location",
+  "courseDetailSummary": "{weekDescription}  Teacher: {teacher}  Room: {location}",
+  "@courseDetailSummary": {
+    "placeholders": {
+      "weekDescription": {
+        "type": "String"
+      },
+      "teacher": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "courseDetailSummaryWithConflict": "{weekDescription}  Teacher: {teacher}  Room: {location}\nConflicting courses: {conflictSummary}",
+  "@courseDetailSummaryWithConflict": {
+    "placeholders": {
+      "weekDescription": {
+        "type": "String"
+      },
+      "teacher": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      },
+      "conflictSummary": {
+        "type": "String"
+      }
+    }
+  },
+  "confirmDeleteTitle": "Confirm Delete",
+  "confirmDeleteCourseMessage": "Delete course “{name}”?",
+  "@confirmDeleteCourseMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "currentScheduleTitle": "Current Schedule Entry",
+  "currentScheduleSubtitle": "Weekday, sections, room, weeks, and odd/even settings here only affect this single schedule entry.",
+  "timeSchemeLabel": "Time Scheme",
+  "followCurrentTimetableWithName": "Follow current timetable ({name})",
+  "@followCurrentTimetableWithName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "followCurrentTimetableDescription": "By default this course follows the timetable’s main time scheme, which suits most courses.",
+  "overrideTimeSchemeDescription": "This course will use the selected scheme separately instead of following the timetable’s main schedule.",
+  "weekdayLabel": "Weekday",
+  "startSectionLabel": "Start Section",
+  "endSectionLabel": "End Section",
+  "timeRangeLabel": "Time: {start} - {end}",
+  "@timeRangeLabel": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "locationLabel": "Location",
+  "singleLessonWeekTitle": "Lesson Week",
+  "singleLessonWeekSubtitle": "Single lessons only appear in one week, which is ideal for make-up or temporary classes.",
+  "selectWeekLabel": "Select Week",
+  "weekSettingsTitle": "Week Settings",
+  "rangeWeeksLabel": "Continuous Weeks",
+  "customWeeksLabel": "Custom Weeks",
+  "startWeekLabel": "Start Week",
+  "endWeekLabel": "End Week",
+  "allWeeksFilter": "All",
+  "oddWeeksFilter": "Odd Weeks",
+  "evenWeeksFilter": "Even Weeks",
+  "rangeWeeksAllHint": "Schedule continuously from the start week to the end week.",
+  "rangeWeeksOddHint": "Keep only odd weeks in the selected range.",
+  "rangeWeeksEvenHint": "Keep only even weeks in the selected range.",
+  "selectAllAction": "Select All",
+  "selectOddWeeksAction": "Odd Weeks",
+  "selectEvenWeeksAction": "Even Weeks",
+  "selectedWeeksSummary": "Selected {count} weeks: Week {weeks}",
+  "@selectedWeeksSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "courseColorTitle": "Course Color",
+  "customPaletteAction": "Custom Palette Color",
+  "colorPaletteTitle": "Palette",
+  "colorHexLabel": "Color Hex",
+  "useThisColor": "Use This Color",
+  "selectAtLeastOneWeek": "Please select at least one week.",
+  "saveFailed": "Save failed",
+  "courseAddedSuccess": "Course added successfully",
+  "courseUpdatedSuccess": "Course updated successfully",
+  "aboutTitle": "About",
+  "loadingText": "Loading...",
+  "versionLabel": "Version {version}",
+  "@versionLabel": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutHeroSubtitle": "An open-source Android project focused on timetable viewing, course reminders, and the HyperOS island experience.",
+  "platformLabel": "Platform",
+  "focusLabel": "Focus",
+  "updateLabel": "Updates",
+  "prereleaseIncluded": "Includes prerelease",
+  "stableOnly": "Stable only",
+  "aboutUpdatesTitle": "App Updates",
+  "aboutUpdatesSubtitle": "Check updates, download now, and open testing / diagnostics tools.",
+  "aboutPositioningTitle": "Project Positioning",
+  "aboutPositioningSubtitle": "What it is, who it is for, and its core capabilities.",
+  "aboutPositioningBullet1": "Supports weekly timetable view, course add/edit/delete, and .ics import.",
+  "aboutPositioningBullet2": "Supports academic system web import and full backup migration for adapted schools.",
+  "aboutPositioningBullet3": "Supports live notifications; HyperOS 3.0.300+ supports island / focus notification presentation.",
+  "aboutPositioningBullet4": "Supports multi-timetable profiles, time schemes, theme colors, and card style customization.",
+  "aboutImportMigrationTitle": "Import & Migration",
+  "aboutImportMigrationSubtitle": "Current import methods, backup restore, and migration advice.",
+  "aboutImportMigrationBullet1": "The current version already supports academic system web import for adapted schools; enter Import Courses > Academic System Import, then choose a school and adapter.",
+  "aboutImportMigrationBullet2": "If your school is not adapted yet, you can still import into WakeUp or a similar app first, export as a calendar file, and then import it here.",
+  "aboutImportMigrationBullet3": "If someone else is already using this app, they can export a full backup and you can restore it directly in Backup & Migration.",
+  "aboutImportMigrationBullet4": "If you know packet capture, web debugging, or JavaScript, you are welcome to contribute adapters in qingyu_warehouse.",
+  "aboutContributorsTitle": "Contributors",
+  "aboutContributorsSubtitle": "Developers and academic system adapter contributors.",
+  "aboutRepositoryTitle": "Open Source Repositories",
+  "aboutRepositorySubtitle": "GitHub source, releases, and feedback entry.",
+  "timeSchemeTitle": "Time Schemes",
+  "newSchemeTooltip": "Create Scheme",
+  "timeSchemeSummary": "{sections} sections · {profiles} timetables · {courses} course entries · {overrideCourses} override entries",
+  "@timeSchemeSummary": {
+    "placeholders": {
+      "sections": {
+        "type": "int"
+      },
+      "profiles": {
+        "type": "int"
+      },
+      "courses": {
+        "type": "int"
+      },
+      "overrideCourses": {
+        "type": "int"
+      }
+    }
+  },
+  "viewUsageAction": "View Usage",
+  "applyToCurrentTimetable": "Apply to Current Timetable",
+  "editSectionsAction": "Edit Sections",
+  "createTimeSchemeTitle": "Create Time Scheme",
+  "timeSchemeNameLabel": "Scheme Name",
+  "timeSchemeNameHint": "e.g. Summer Schedule",
+  "renameTimeSchemeTitle": "Rename Time Scheme",
+  "renamedToMessage": "Renamed to {name}",
+  "@renamedToMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteTimeSchemeTitle": "Delete Time Scheme",
+  "deleteTimeSchemeMessage": "Delete “{name}”? A scheme in use cannot be deleted.",
+  "@deleteTimeSchemeMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletedTimeSchemeMessage": "Deleted time scheme: {name}",
+  "@deletedTimeSchemeMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeInUseMessage": "This scheme is currently used by a timetable.",
+  "copiedTimeSchemeMessage": "Time scheme copied",
+  "appliedTimeSchemeMessage": "Applied time scheme: {name}",
+  "@appliedTimeSchemeMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeUsageTitle": "Usage of “{name}”",
+  "@timeSchemeUsageTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeUsageIntro": "Review the total impact first, then decide whether to edit this scheme directly or duplicate it before making changes.",
+  "profileCountLabel": "Profiles",
+  "courseCountLabel": "Courses",
+  "overrideTimeSchemeLabel": "Override Entries",
+  "directlyBoundProfilesTitle": "Profiles directly using this scheme",
+  "directlyBoundProfilesEmpty": "No timetable is directly using this scheme.",
+  "directlyBoundProfilesSubtitle": "Timetables in this list use this scheme as their main time schedule.",
+  "followMainSchemeCoursesTitle": "Courses following the timetable main scheme",
+  "followMainSchemeCoursesEmpty": "No course is indirectly using this scheme via its timetable.",
+  "followMainSchemeCoursesSubtitle": "These courses do not set an override time scheme and follow the timetable’s main schedule.",
+  "overrideSchemeCoursesTitle": "Courses using this as an override scheme",
+  "overrideSchemeCoursesEmpty": "No course is using this scheme as an override.",
+  "overrideSchemeCoursesSubtitle": "These courses will continue using this scheme even if their timetable changes its main schedule.",
+  "closeAction": "Close",
+  "editTimeSchemeTitle": "Edit Time Scheme",
+  "backToSchemeList": "Back to Scheme List",
+  "currentInUse": "Currently Used",
+  "quickGenerateAction": "Quick Generate",
+  "addSectionAction": "Add Section",
+  "removeLastSectionAction": "Remove Last Section",
+  "resetDefaultAction": "Restore Defaults",
+  "sectionTimesTitle": "Section Times",
+  "sectionTimesSubtitle": "If the current timetable is using this scheme, the section count cannot be lower than the maximum section already in use.",
+  "schemeListCurrentLabel": "Current",
+  "schemeListCountLabel": "Count",
+  "quickGenerateTimeSchemeTitle": "Quick Generate Timetable Times",
+  "addBreakRuleAction": "Add Break Rule",
+  "afterSectionLabel": "After Section",
+  "breakDurationMinutesLabel": "Break Duration (min)",
+  "fillNumbersValidationMessage": "Please fill both section count and duration with numbers",
+  "liveSettingsTitle": "Island & Notifications",
+  "liveReminderTimingEntryTitle": "Reminder Timing",
+  "liveReminderTimingEntrySubtitle": "Before class, during class / before end toggles, and when to switch into highlighted reminders.",
+  "liveBeforeClassDisplayEntryTitle": "Before Class Display",
+  "liveDuringEndDisplayEntryTitle": "During Class / Before End Display",
+  "liveKeepAliveEntryTitle": "Keep Alive",
+  "liveKeepAliveEntrySubtitle": "Hide from recents, accessibility keep-alive helper, and permission shortcuts.",
+  "liveTestingEntryTitle": "Testing & Diagnostics",
+  "liveTestingEntrySubtitle": "Send test notifications and inspect island diagnostics logs.",
+  "followBeforeClassSetting": "Follow Before-class Settings",
+  "liveReminderTimingTitle": "Reminder Timing",
+  "liveReminderSwitchesTitle": "Reminder Switches",
+  "liveReminderSwitchesSubtitle": "Different reminder windows can be combined freely; these switches do not replace each other.",
+  "beforeClassReminderTitle": "Before Class Reminder",
+  "beforeClassReminderSubtitle": "Trigger {minutes} minutes before class starts",
+  "@beforeClassReminderSubtitle": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "duringClassReminderTitle": "During Class / Before End Reminder",
+  "duringClassReminderSubtitle": "Only affects the period after class starts and before it ends",
+  "liveClassReminderLeadTitle": "When to switch to highlighted island reminders before class ends",
+  "liveClassReminderLeadOptionImmediate": "Switch immediately when class starts",
+  "liveClassReminderLeadOptionMinutes": "Switch {minutes} min before class ends",
+  "@liveClassReminderLeadOptionMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "liveDisplayModeTitle": "Display Style",
+  "liveDisplayModeSubtitle": "Applies to enabled reminder windows.",
+  "duringClassStatusNotificationTitle": "During-class Status Notification",
+  "duringClassStatusNotificationImmediate": "Keep a status notification after class begins",
+  "duringClassStatusNotificationBeforeEnd": "Keep a regular notification until highlighted reminders begin before class ends",
+  "duringClassStatusNotificationPersistent": "Keep a regular during-class notification, then switch before class ends",
+  "enableIslandDisplayTitle": "Enable Island / Dynamic Presentation",
+  "enableIslandDisplaySubtitle": "Disable this if you never want the app to trigger system island presentation",
+  "liveTimeThresholdTitle": "Timing Thresholds",
+  "liveTimeThresholdSubtitle": "Controls when reminders appear, when highlighted reminders start, and when to switch to second-level countdown.",
+  "beforeClassPopupLabel": "Before-class trigger",
+  "beforeClassMinutesOption": "{minutes} min",
+  "@beforeClassMinutesOption": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "beforeEndSecondsLabel": "Before-end second-level threshold",
+  "beforeEndSecondsOption": "{seconds} sec",
+  "@beforeEndSecondsOption": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "timeCorrectionLabel": "Bell-time correction: {value}",
+  "@timeCorrectionLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "timeCorrectionHelp": "If the school bell is early, shift earlier. If the bell is late, shift later.",
+  "duringEndTimeDisplayLabel": "During-class / before-end time style",
+  "duringEndTimeDisplayHelp": "Choose whether compact reminders show nearest time or the total remaining time.",
+  "liveDisplayContentTitle": "Display Content",
+  "liveDisplayContentSubtitle": "These settings only affect the current stage and do not change the other reminder stage.",
+  "showCourseNameTitle": "Show Course Name",
+  "preferShortNameTitle": "Prefer Short Course Name",
+  "preferShortNameSubtitle": "Short names work best within 3 characters.",
+  "showLocationTitle": "Show Location",
+  "showCountdownTitle": "Show Countdown",
+  "countdownFormatLabel": "Countdown Format",
+  "countdownFormatHelp": "Minute-only styles refresh by minute; second-based styles refresh by second.",
+  "showStageTextTitle": "Show Stage Label",
+  "showStageTextSubtitle": "If countdown is hidden, you can still show labels like before class / in class / before end.",
+  "hidePrefixTextTitle": "Hide Prefix Text",
+  "hidePrefixTextSubtitle": "For example, hide prefixes like “before class”.",
+  "beforeClassQuickActionTitle": "Before-class Quick Action",
+  "beforeClassQuickActionSubtitle": "Only appears in the expanded before-class reminder. Do Not Disturb may open a system permission page on first use.",
+  "settingsTitle": "Timetable Settings",
+  "dailyUsageSectionTitle": "Daily Use",
+  "appearanceEntryTitle": "Appearance",
+  "appearanceEntrySubtitle": "Theme color, timetable background, and course card colors",
+  "layoutEntryTitle": "Layout & Sections",
+  "layoutEntrySubtitle": "Section times, row height, time column, weekend visibility, and card layout",
+  "homeWidgetEntryTitle": "Home Widgets",
+  "remindersSectionTitle": "Reminders & Notifications",
+  "liveGuideEntryTitle": "Guide & Permissions",
+  "liveGuideEntrySubtitle": "Short-name suggestions, notifications, auto-start, and battery policy",
+  "managementSectionTitle": "Timetable Management",
+  "timeSchemeEntryTitle": "Time Schemes",
+  "timeSchemeEntryCurrentPrefix": "Current: {name} · switch, edit sections, and duplicate",
+  "@timeSchemeEntryCurrentPrefix": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeEntrySubtitle": "Switch, edit section times, duplicate, and manage time schemes",
+  "dataTransferEntryTitle": "Backup & Migration",
+  "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
+  "aboutSupportSectionTitle": "About & Support",
+  "feedbackEntryTitle": "Feedback",
+  "feedbackEntrySubtitle": "Issue tracker, community channels, and suggestion entry",
+  "aboutEntryTitle": "About",
+  "aboutEntrySubtitle": "Open source info, version updates, and GitHub repositories",
+  "semesterOverviewCurrentWeek": "Week {current} / {total}",
+  "@semesterOverviewCurrentWeek": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "semesterStartUnset": "Semester start date not set",
+  "semesterStartSet": "Semester start: {date}",
+  "@semesterStartSet": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "setSemesterStartDate": "Set Semester Start",
+  "semesterStartDateLabel": "Semester Start Date",
+  "syncCurrentWeekAction": "Sync Current Week",
+  "semesterWeekCountAction": "{count} weeks",
+  "@semesterWeekCountAction": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncedCurrentWeekMessage": "Synced to week {week}",
+  "@syncedCurrentWeekMessage": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "pickSemesterWeekCountTitle": "Choose Semester Week Count",
+  "pickSemesterWeekCountSubtitle": "Different schools may use different total teaching weeks.",
+  "weekCountItem": "{count} weeks",
+  "@weekCountItem": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "diagnosticsLogIntro": "Supports both Markdown and raw views so you can inspect full logs directly on your phone.",
+  "diagnosticsRawTab": "Raw",
+  "diagnosticsEmptyTitle": "No Logs Yet",
+  "diagnosticsEmptySubtitle": "There are currently no island diagnostics logs to display.",
+  "diagnosticsLogTitleFallback": "Island Diagnostics Log",
+  "diagnosticsDeviceInfoTitle": "Device & Export Info",
+  "diagnosticsContentTitle": "Log Content",
+  "diagnosticsRecentLogsTitle": "Recent Logs",
+  "diagnosticsUnknownCategory": "Uncategorized Event",
+  "diagnosticsExportedAt": "Exported At",
+  "diagnosticsTime": "Time",
+  "diagnosticsCategory": "Category",
+  "diagnosticsMessage": "Message",
+  "diagnosticsStackTrace": "Stack Trace",
+  "firstUseGuideTitle": "First Use Guide",
+  "guideAndPermissionsTitle": "Guide & Permissions",
+  "refreshStatusTooltip": "Refresh Status",
+  "guideHeroTitle": "Finish this page first, then start using the app",
+  "guideHeroSubtitle": "Authorize the essentials on the first screen. Below you’ll also see HyperOS support, short-name setup, and import guidance, so keep scrolling.",
+  "guideChipPermissions": "Permissions",
+  "guideChipShortName": "Short Names",
+  "guideChipImport": "Import Timetable",
+  "guideChipReadyCount": "{count}/3 Ready",
+  "@guideChipReadyCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guideBottomReachedHint": "You’ve reached the end. If everything looks right, you can start using the app now.",
+  "guideScrollHint": "Scroll down to continue. HyperOS support, the permission checklist, short-name setup, and import methods are all below.",
+  "guideRequestNotificationFirst": "Request Notification Permission First",
+  "quickSetupTitle": "Quick Setup",
+  "quickSetupSubtitle": "Put the 5 most important entries first so you don’t need to search for them later.",
+  "quickActionNotificationsTitle": "Notification Settings",
+  "quickActionNotificationsSubtitle": "Make sure notifications can be sent",
+  "quickActionIslandTitle": "Island Permission",
+  "quickActionIslandSubtitle": "Check promoted notifications",
+  "quickActionAutoStartTitle": "Auto Start",
+  "quickActionAutoStartSubtitle": "Avoid background kills",
+  "quickActionBatteryTitle": "Unlimited Battery",
+  "quickActionBatterySubtitle": "Avoid reminder interruption",
+  "quickActionKeepAliveTitle": "Keep-Alive Helper",
+  "quickActionKeepAliveSubtitle": "Improve background stability",
+  "guidePrivacyConsentLabel": "I have read and agree to the Umeng privacy notice",
+  "guideRequireConsentHint": "Please scroll to the end, review the notes, and check consent before starting.",
+  "guideContinueHint": "Keep scrolling to finish the guide.",
+  "exitAppAction": "Exit App",
+  "continueReadingAction": "Continue Reading",
+  "agreeAndStartAction": "Agree and Start",
+  "startUsingAction": "Start Using",
+  "editSingleLessonTitle": "Edit Single Lesson",
+  "editCourseTitle": "Edit Course",
+  "addSingleLessonTitle": "Add Single Lesson",
+  "addCourseTitle": "Add Course",
+  "deleteCourseTitle": "Delete Course",
+  "courseDeleted": "Course deleted",
+  "addMethodTitle": "Add Mode",
+  "singleLessonLabel": "Single Lesson",
+  "recurringLessonLabel": "Recurring Lesson",
+  "singleLessonHint": "Best for make-up classes or temporary one-off lessons.",
+  "recurringLessonHint": "Best for regular classes that repeat over many weeks.",
+  "sharedInfoTitle": "Shared Info",
+  "sharedInfoHint": "Name, short name, teacher, description, nature, and color will sync to other entries with the same course name.",
+  "reuseExistingCourseLabel": "Reuse Existing Course",
+  "reuseExistingCourseHelper": "Pick an existing course to autofill name, teacher, and other shared info",
+  "manualInputLabel": "Enter Manually",
+  "noTemplateCoursesHint": "There are no existing courses yet. Add one manually first, then future temporary lessons can reuse it.",
+  "courseNameLabel": "Course Name",
+  "courseNameHelper": "For island display, 3 Chinese characters or a short name works best.",
+  "pleaseEnterCourseName": "Please enter the course name",
+  "courseShortNameOptional": "Course Short Name (Optional)",
+  "teacherLabel": "Teacher",
+  "courseNatureLabel": "Course Nature",
+  "courseDescriptionOptional": "Course Description (Optional)",
+  "currentScheduleTitle": "Current Schedule Entry",
+  "currentScheduleHint": "Weekday, sections, room, week range, and odd/even settings here only affect this specific entry.",
+  "followProfileTimeScheme": "Follow current timetable ({name})",
+  "@followProfileTimeScheme": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeOverrideLabel": "Class Time Scheme",
+  "startSectionLabel": "Start Section",
+  "endSectionLabel": "End Section",
+  "timeRangeLabel": "Time: {start} - {end}",
+  "@timeRangeLabel": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      }
+    }
+  },
+  "locationLabel": "Location",
+  "lessonWeeksTitle": "Weeks",
+  "singleLessonWeekHint": "A single lesson appears in only one week, ideal for temporary additions or make-up classes.",
+  "selectWeekLabel": "Select Week",
+  "weekSettingsTitle": "Week Settings",
+  "rangeWeekLabel": "Continuous Weeks",
+  "customWeekLabel": "Custom Weeks",
+  "startWeekLabel": "Start Week",
+  "endWeekLabel": "End Week",
+  "allWeeksLabel": "All",
+  "oddWeeksLabel": "Odd Weeks",
+  "evenWeeksLabel": "Even Weeks",
+  "allWeeksHint": "Schedule continuously from the start week to the end week.",
+  "oddWeeksHint": "Keep only odd weeks within the selected range.",
+  "evenWeeksHint": "Keep only even weeks within the selected range.",
+  "selectAllAction": "Select All",
+  "selectedWeeksSummary": "{count} weeks selected: Week {weeks}",
+  "@selectedWeeksSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "courseColorTitle": "Course Color",
+  "customPaletteColor": "Custom Color Picker",
+  "colorPaletteTitle": "Color Palette",
+  "colorHexLabel": "Color Hex",
+  "useThisColor": "Use This Color",
+  "hueLabel": "Hue {value}",
+  "@hueLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "saturationLabel": "Saturation {value}%",
+  "@saturationLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "brightnessLabel": "Brightness {value}%",
+  "@brightnessLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "selectAtLeastOneWeek": "Please select at least one week",
+  "saveFailed": "Save failed",
+  "courseAddedSuccess": "Course added successfully",
+  "courseUpdatedSuccess": "Course updated successfully"
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/timetable_settings.dart';
@@ -27,10 +28,11 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('请作者喝杯咖啡'),
+        title: Text(l10n.supportCreatorTitle),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -53,7 +55,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '鸣谢名单',
+                              l10n.donorListTitle,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
@@ -80,14 +82,14 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '暂时无法加载在线鸣谢名单。',
+                              l10n.donorListLoadFailed,
                               style: theme.textTheme.bodyMedium,
                             ),
                             const SizedBox(height: 12),
                             FilledButton.tonalIcon(
                               onPressed: _reloadDonors,
                               icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('重新加载'),
+                              label: Text(l10n.reloadAction),
                             ),
                           ],
                         ),
@@ -109,6 +111,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   }
 
   Widget _buildHeroCard(BuildContext context, {required bool compact}) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
@@ -144,7 +147,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '支持轻屿课表继续更新',
+                  l10n.supportHeroTitle,
                   style: (compact
                           ? theme.textTheme.titleMedium
                           : theme.textTheme.titleLarge)
@@ -154,7 +157,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  '你的支持会直接用于维护课表、教务导入适配与体验优化。',
+                  l10n.supportHeroSubtitle,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.3,
@@ -164,10 +167,10 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 6,
-                  children: const [
-                    _CompactSupportChip(label: '修复问题'),
-                    _CompactSupportChip(label: '教务适配'),
-                    _CompactSupportChip(label: '体验优化'),
+                  children: [
+                    _CompactSupportChip(label: l10n.supportChipFixes),
+                    _CompactSupportChip(label: l10n.supportChipAdapters),
+                    _CompactSupportChip(label: l10n.supportChipPolish),
                   ],
                 ),
               ],
@@ -179,6 +182,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   }
 
   Widget _buildPaymentCard(BuildContext context, {required bool compact}) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Card(
       child: Padding(
@@ -187,22 +191,22 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '选择支持方式',
+              l10n.supportMethodTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 12),
             SegmentedButton<_SupportMethod>(
-              segments: const [
+              segments: [
                 ButtonSegment<_SupportMethod>(
                   value: _SupportMethod.wechat,
-                  label: Text('微信'),
+                  label: Text(l10n.wechatLabel),
                   icon: Icon(Icons.chat_bubble_outline_rounded),
                 ),
                 ButtonSegment<_SupportMethod>(
                   value: _SupportMethod.alipay,
-                  label: Text('支付宝'),
+                  label: Text(l10n.alipayLabel),
                   icon: Icon(Icons.account_balance_wallet_outlined),
                 ),
               ],
@@ -217,7 +221,9 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
             const SizedBox(height: 12),
             _buildQrCard(
               context,
-              title: _selectedMethod == _SupportMethod.wechat ? '微信' : '支付宝',
+              title: _selectedMethod == _SupportMethod.wechat
+                  ? l10n.wechatLabel
+                  : l10n.alipayLabel,
               assetPath: _selectedMethod == _SupportMethod.wechat
                   ? 'assets/donate/wechatpay.png'
                   : 'assets/donate/alipay.png',
@@ -225,8 +231,8 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   ? 'qingyu_kebiao_wechatpay.png'
                   : 'qingyu_kebiao_alipay.png',
               helperText: _selectedMethod == _SupportMethod.wechat
-                  ? '使用微信扫一扫支持作者'
-                  : '使用支付宝扫一扫支持作者',
+                  ? l10n.supportWeChatHint
+                  : l10n.supportAlipayHint,
               compact: compact,
             ),
             const SizedBox(height: 10),
@@ -234,11 +240,11 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               child: TextButton.icon(
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('感谢你支持轻屿课表继续打磨 ❤️')),
+                    SnackBar(content: Text(l10n.supportCompleteThanks)),
                   );
                 },
                 icon: const Icon(Icons.favorite_border_rounded),
-                label: const Text('我已经支持了'),
+                label: Text(l10n.supportConfirmed),
               ),
             ),
           ],
@@ -324,7 +330,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   assetPath: assetPath,
                 ),
                 icon: const Icon(Icons.fullscreen_rounded, size: 18),
-                label: const Text('查看大图'),
+                label: Text(AppLocalizations.of(context)!.viewLargeImage),
               ),
             ),
             const SizedBox(width: 10),
@@ -335,7 +341,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   fileName: fileName,
                 ),
                 icon: const Icon(Icons.download_rounded, size: 18),
-                label: const Text('保存到相册'),
+                label: Text(AppLocalizations.of(context)!.saveToGallery),
               ),
             ),
           ],
@@ -345,6 +351,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   }
 
   Widget _buildDonorCard(BuildContext context, SupportDonorData data) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final donors = data.donors;
     Widget buildHeader() {
@@ -358,7 +365,9 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      data.title?.isNotEmpty == true ? data.title! : '鸣谢名单',
+                      data.title?.isNotEmpty == true
+                          ? data.title!
+                          : l10n.donorListTitle,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -376,7 +385,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                 ),
               ),
               IconButton(
-                tooltip: '重新加载',
+                tooltip: l10n.reloadAction,
                 onPressed: _reloadDonors,
                 icon: const Icon(Icons.refresh_rounded),
               ),
@@ -385,7 +394,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
           if (data.updatedAt?.isNotEmpty == true) ...[
             const SizedBox(height: 8),
             Text(
-              '更新于 ${data.updatedAt!}',
+              l10n.updatedAtLabel(data.updatedAt!),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -398,7 +407,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     Widget buildDonorList({required bool shrinkWrap}) {
       if (donors.isEmpty) {
         return Text(
-          '名单还没有填写，你可以直接编辑 docs/donors.json 后重新发布。',
+          l10n.donorListEmpty,
           style: theme.textTheme.bodyMedium,
         );
       }
@@ -482,6 +491,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     required String assetPath,
     required String fileName,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final messenger = ScaffoldMessenger.of(context);
     try {
       final saved = await _service.saveAssetImageToGallery(
@@ -493,7 +503,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       }
       messenger.showSnackBar(
         SnackBar(
-          content: Text(saved ? '已保存到相册' : '保存到相册失败'),
+          content: Text(saved ? l10n.savedToGallery : l10n.saveToGalleryFailed),
         ),
       );
     } catch (error) {
@@ -501,7 +511,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         return;
       }
       messenger.showSnackBar(
-        SnackBar(content: Text('保存失败：$error')),
+        SnackBar(content: Text(l10n.saveFailedWithError('$error'))),
       );
     }
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 import '../services/miui_live_activities_service.dart';
@@ -131,6 +132,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
 
     return PopScope(
@@ -139,11 +141,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           appBar: AppBar(
             automaticallyImplyLeading: !widget.requirePrivacyConsent,
             title: Text(
-              widget.requirePrivacyConsent ? '首次使用引导' : '使用引导与权限',
+              widget.requirePrivacyConsent
+                  ? l10n.firstUseGuideTitle
+                  : l10n.guideAndPermissionsTitle,
             ),
             actions: [
               IconButton(
-                tooltip: '刷新状态',
+                tooltip: l10n.refreshStatusTooltip,
                 onPressed: _refreshStatus,
                 icon: const Icon(Icons.refresh),
               ),
@@ -153,9 +157,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
             children: [
-              _buildHeroCard(theme),
+              _buildHeroCard(theme, l10n),
               const SizedBox(height: 16),
-              _buildQuickActionsCard(theme),
+              _buildQuickActionsCard(theme, l10n),
               const SizedBox(height: 16),
               _buildStatusCard(theme),
               const SizedBox(height: 16),
@@ -170,11 +174,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               _buildTipsCard(theme),
             ],
           ),
-          bottomNavigationBar: _buildBottomBar(theme),
+          bottomNavigationBar: _buildBottomBar(theme, l10n),
         ));
   }
 
-  Widget _buildHeroCard(ThemeData theme) {
+  Widget _buildHeroCard(ThemeData theme, AppLocalizations l10n) {
     final colorScheme = theme.colorScheme;
     final readyCount = [
       _hasNotificationPermission,
@@ -218,14 +222,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '先把这页做完，再开始用',
+                      l10n.guideHeroTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '首屏先授权。下面还会明确说明系统版本支持、简称设置和导入方式，记得继续下滑。',
+                      l10n.guideHeroSubtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -240,12 +244,15 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildHeroChip(Icons.security_rounded, '权限准备'),
+              _buildHeroChip(Icons.security_rounded, l10n.guideChipPermissions),
               _buildHeroChip(
                   Icons.system_update_alt_rounded, 'HyperOS 3.0.300+'),
-              _buildHeroChip(Icons.edit_note_rounded, '简称设置'),
-              _buildHeroChip(Icons.import_export_rounded, '导入课表'),
-              _buildHeroChip(Icons.check_circle_rounded, '$readyCount/3 已完成'),
+              _buildHeroChip(Icons.edit_note_rounded, l10n.guideChipShortName),
+              _buildHeroChip(Icons.import_export_rounded, l10n.guideChipImport),
+              _buildHeroChip(
+                Icons.check_circle_rounded,
+                l10n.guideChipReadyCount(readyCount),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -265,8 +272,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 Expanded(
                   child: Text(
                     _isNearBottom
-                        ? '你已经滑到最后了，确认无误后就可以开始使用。'
-                        : '向下滑动继续，下面还有 HyperOS 版本说明、权限清单、简称设置和导入方式。',
+                        ? l10n.guideBottomReachedHint
+                        : l10n.guideScrollHint,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                     ),
@@ -283,7 +290,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 await _service.requestNotificationPermission();
               }),
               icon: const Icon(Icons.notifications_active_outlined),
-              label: const Text('先申请通知权限'),
+              label: Text(l10n.guideRequestNotificationFirst),
             ),
           ),
         ],
@@ -291,7 +298,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  Widget _buildQuickActionsCard(ThemeData theme) {
+  Widget _buildQuickActionsCard(ThemeData theme, AppLocalizations l10n) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -299,14 +306,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '首屏快速设置',
+              l10n.quickSetupTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '先把最关键的 5 个入口放在前面，不用翻到下面再找。',
+              l10n.quickSetupSubtitle,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 14),
@@ -320,33 +327,33 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               children: [
                 _buildQuickActionButton(
                   icon: Icons.notifications_outlined,
-                  title: '通知设置',
-                  subtitle: '先确保能发通知',
+                  title: l10n.quickActionNotificationsTitle,
+                  subtitle: l10n.quickActionNotificationsSubtitle,
                   onTap: () => _runAction(_service.openNotificationSettings),
                 ),
                 _buildQuickActionButton(
                   icon: Icons.star_border_rounded,
-                  title: '超级岛权限',
-                  subtitle: '检查 promoted 通知',
+                  title: l10n.quickActionIslandTitle,
+                  subtitle: l10n.quickActionIslandSubtitle,
                   onTap: () => _runAction(_service.openPromotedSettings),
                 ),
                 _buildQuickActionButton(
                   icon: Icons.play_circle_outline_rounded,
-                  title: '自启动',
-                  subtitle: '避免后台被杀',
+                  title: l10n.quickActionAutoStartTitle,
+                  subtitle: l10n.quickActionAutoStartSubtitle,
                   onTap: () => _runAction(_service.openAutoStartSettings),
                 ),
                 _buildQuickActionButton(
                   icon: Icons.battery_saver_outlined,
-                  title: '电池无限制',
-                  subtitle: '避免提醒中断',
+                  title: l10n.quickActionBatteryTitle,
+                  subtitle: l10n.quickActionBatterySubtitle,
                   onTap: () =>
                       _runAction(_service.openBatteryOptimizationSettings),
                 ),
                 _buildQuickActionButton(
                   icon: Icons.accessibility_new_rounded,
-                  title: '后台保活辅助',
-                  subtitle: '提升后台稳定性',
+                  title: l10n.quickActionKeepAliveTitle,
+                  subtitle: l10n.quickActionKeepAliveSubtitle,
                   onTap: () => _runAction(_service.openAccessibilitySettings),
                 ),
               ],
@@ -729,7 +736,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  Widget _buildBottomBar(ThemeData theme) {
+  Widget _buildBottomBar(ThemeData theme, AppLocalizations l10n) {
     final colorScheme = theme.colorScheme;
     return SafeArea(
       top: false,
@@ -767,7 +774,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                       ),
                       Expanded(
                         child: Text(
-                          '我已阅读并同意友盟相关隐私说明',
+                          l10n.guidePrivacyConsentLabel,
                           style: theme.textTheme.bodyMedium,
                         ),
                       ),
@@ -782,14 +789,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 if (widget.requirePrivacyConsent)
                   TextButton(
                     onPressed: _exitWithoutConsent,
-                    child: const Text('退出应用'),
+                    child: Text(l10n.exitAppAction),
                   ),
                 if (widget.requirePrivacyConsent) const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.requirePrivacyConsent
-                        ? '请先滑到底部阅读说明，并勾选同意后开始使用。'
-                        : '继续下滑查看完整引导内容。',
+                        ? l10n.guideRequireConsentHint
+                        : l10n.guideContinueHint,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -800,7 +807,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   FilledButton.icon(
                     onPressed: _scrollMore,
                     icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    label: const Text('继续查看'),
+                    label: Text(l10n.continueReadingAction),
                   )
                 else
                   FilledButton.icon(
@@ -811,7 +818,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                         : () => Navigator.of(context).maybePop(),
                     icon: const Icon(Icons.check_rounded),
                     label: Text(
-                      widget.requirePrivacyConsent ? '同意并开始使用' : '开始使用',
+                      widget.requirePrivacyConsent
+                          ? l10n.agreeAndStartAction
+                          : l10n.startUsingAction,
                     ),
                   ),
               ],

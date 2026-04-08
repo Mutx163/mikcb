@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/time_scheme.dart';
@@ -39,6 +40,7 @@ class _TimeSchemeManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
         final schemes = provider.timeSchemes;
@@ -46,10 +48,10 @@ class _TimeSchemeManagementScreenState
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('时间模板'),
+            title: Text(l10n.timeSchemeTitle),
             actions: [
               IconButton(
-                tooltip: '新建模板',
+                tooltip: l10n.newSchemeTooltip,
                 onPressed: () => _createScheme(context),
                 icon: const Icon(Icons.add_rounded),
               ),
@@ -82,6 +84,7 @@ class _TimeSchemeManagementScreenState
     required _TimeSchemeUsageSummary usage,
     required bool isActive,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Card(
@@ -130,8 +133,12 @@ class _TimeSchemeManagementScreenState
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          '${scheme.sectionCount} 节 · ${usage.profileCount} 个课表 · '
-                          '${usage.courseCount} 节课程 · ${usage.overrideCourseCount} 节副时间表',
+                          l10n.timeSchemeSummary(
+                            scheme.sectionCount,
+                            usage.profileCount,
+                            usage.courseCount,
+                            usage.overrideCourseCount,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: theme.textTheme.bodySmall?.copyWith(
@@ -142,7 +149,7 @@ class _TimeSchemeManagementScreenState
                     ),
                   ),
                   PopupMenuButton<String>(
-                    tooltip: '更多操作',
+                    tooltip: l10n.moreActionsTooltip,
                     onSelected: (value) async {
                       switch (value) {
                         case 'usage':
@@ -174,18 +181,18 @@ class _TimeSchemeManagementScreenState
                     },
                     itemBuilder: (context) => [
                       if (!usage.isUnused)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'usage',
-                          child: Text('查看使用情况'),
+                          child: Text(l10n.viewUsageAction),
                         ),
                       if (!isActive)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'apply',
-                          child: Text('应用到当前课表'),
+                          child: Text(l10n.applyToCurrentTimetable),
                         ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
-                        child: Text('编辑节次'),
+                        child: Text(l10n.editSectionsAction),
                       ),
                       const PopupMenuItem(
                         value: 'rename',
@@ -232,7 +239,9 @@ class _TimeSchemeManagementScreenState
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       onPressed: isActive ? null : () => _applyScheme(context, scheme),
-                      child: Text(isActive ? '正在使用' : '应用到当前课表'),
+                      child: Text(
+                        isActive ? l10n.usingNow : l10n.applyToCurrentTimetable,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -247,7 +256,7 @@ class _TimeSchemeManagementScreenState
                     ),
                     onPressed: () => _openEditor(scheme.id),
                     icon: const Icon(Icons.edit_outlined),
-                    label: const Text('编辑'),
+                    label: Text(l10n.editSectionsAction),
                   ),
                 ],
               ),
@@ -270,27 +279,28 @@ class _TimeSchemeManagementScreenState
   }
 
   Future<void> _createScheme(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('新建时间模板'),
+        title: Text(l10n.createTimeSchemeTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '模板名称',
-            hintText: '例如：本校夏季作息',
+          decoration: InputDecoration(
+            labelText: l10n.timeSchemeNameLabel,
+            hintText: l10n.timeSchemeNameHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('创建'),
+            child: Text(l10n.createAction),
           ),
         ],
       ),
@@ -310,24 +320,25 @@ class _TimeSchemeManagementScreenState
   }
 
   Future<void> _renameScheme(BuildContext context, TimeScheme scheme) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: scheme.name);
     final name = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('重命名时间模板'),
+        title: Text(l10n.renameTimeSchemeTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: '模板名称'),
+          decoration: InputDecoration(labelText: l10n.timeSchemeNameLabel),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('保存'),
+            child: Text(l10n.saveAction),
           ),
         ],
       ),
@@ -345,24 +356,25 @@ class _TimeSchemeManagementScreenState
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已重命名为 $name')),
+      SnackBar(content: Text(l10n.renamedToMessage(name))),
     );
   }
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('删除时间模板'),
-        content: Text('确定删除“${scheme.name}”吗？正在使用中的模板不能删除。'),
+        title: Text(l10n.deleteTimeSchemeTitle),
+        content: Text(l10n.deleteTimeSchemeMessage(scheme.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
+            child: Text(l10n.deleteAction),
           ),
         ],
       ),
@@ -380,18 +392,23 @@ class _TimeSchemeManagementScreenState
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(deleted ? '已删除时间模板：${scheme.name}' : '该模板正在被课表使用'),
+        content: Text(
+          deleted
+              ? l10n.deletedTimeSchemeMessage(scheme.name)
+              : l10n.timeSchemeInUseMessage,
+        ),
       ),
     );
   }
 
   Future<void> _applyScheme(BuildContext context, TimeScheme scheme) async {
+    final l10n = AppLocalizations.of(context)!;
     await context.read<TimetableProvider>().applyTimeScheme(scheme.id);
     if (!context.mounted) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已应用时间模板：${scheme.name}')),
+      SnackBar(content: Text(l10n.appliedTimeSchemeMessage(scheme.name))),
     );
   }
 
@@ -431,6 +448,7 @@ class _TimeSchemeManagementScreenState
     TimeScheme scheme,
     _TimeSchemeUsageSummary usage,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final directCourseReferences = usage.directCourseReferences;
     final overrideReferences = usage.overrideReferences;
     await showDialog<void>(
@@ -439,7 +457,7 @@ class _TimeSchemeManagementScreenState
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
         return AlertDialog(
-          title: Text('“${scheme.name}”的使用情况'),
+          title: Text(l10n.timeSchemeUsageTitle(scheme.name)),
           content: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
@@ -448,7 +466,7 @@ class _TimeSchemeManagementScreenState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '先看总影响范围，再决定是直接编辑这套模板，还是先复制一套再改。',
+                    l10n.timeSchemeUsageIntro,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -459,36 +477,36 @@ class _TimeSchemeManagementScreenState
                     runSpacing: 8,
                     children: [
                       _TimeSchemeInfoChip(
-                        label: '课表',
+                        label: l10n.profileCountLabel,
                         value: '${usage.profileCount} 个',
                       ),
                       _TimeSchemeInfoChip(
-                        label: '课程',
+                        label: l10n.courseCountLabel,
                         value: '${usage.courseCount} 节',
                       ),
                       _TimeSchemeInfoChip(
-                        label: '副时间表',
+                        label: l10n.overrideTimeSchemeLabel,
                         value: '${usage.overrideCourseCount} 节',
                       ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   _UsageSection(
-                    title: '直接绑定这套模板的课表',
+                    title: l10n.directlyBoundProfilesTitle,
                     subtitle: usage.profileCount == 0
-                        ? '当前没有课表把它作为主时间模板。'
-                        : '这些课表切到这套模板后，默认都会按这套节次时间显示。',
+                        ? l10n.directlyBoundProfilesEmpty
+                        : l10n.directlyBoundProfilesSubtitle,
                     items: usage.profileNames
                         .map((name) => _UsageLine(primary: name))
                         .toList(growable: false),
-                    emptyText: '当前没有课表直接使用这套模板。',
+                    emptyText: l10n.directlyBoundProfilesEmpty,
                   ),
                   const SizedBox(height: 12),
                   _UsageSection(
-                    title: '跟随课表主时间表的课程',
+                    title: l10n.followMainSchemeCoursesTitle,
                     subtitle: directCourseReferences.isEmpty
-                        ? '当前没有课程通过课表主时间表间接使用它。'
-                        : '这些课程没有单独设置副时间表，而是跟着所属课表一起用这套模板。',
+                        ? l10n.followMainSchemeCoursesEmpty
+                        : l10n.followMainSchemeCoursesSubtitle,
                     items: directCourseReferences
                         .map(
                           (reference) => _UsageLine(
@@ -500,14 +518,14 @@ class _TimeSchemeManagementScreenState
                           ),
                         )
                         .toList(growable: false),
-                    emptyText: '当前没有课程通过主时间表跟随它。',
+                    emptyText: l10n.followMainSchemeCoursesEmpty,
                   ),
                   const SizedBox(height: 12),
                   _UsageSection(
-                    title: '把它作为副时间表的课程',
+                    title: l10n.overrideSchemeCoursesTitle,
                     subtitle: overrideReferences.isEmpty
-                        ? '当前没有课程把它作为例外时间表。'
-                        : '这些课程即使所在课表切换了主模板，也会继续单独使用这套时间。',
+                        ? l10n.overrideSchemeCoursesEmpty
+                        : l10n.overrideSchemeCoursesSubtitle,
                     items: overrideReferences
                         .map(
                           (reference) => _UsageLine(
@@ -519,7 +537,7 @@ class _TimeSchemeManagementScreenState
                           ),
                         )
                         .toList(growable: false),
-                    emptyText: '当前没有课程把它作为副时间表。',
+                    emptyText: l10n.overrideSchemeCoursesEmpty,
                   ),
                 ],
               ),
@@ -528,7 +546,7 @@ class _TimeSchemeManagementScreenState
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('关闭'),
+              child: Text(l10n.closeAction),
             ),
           ],
         );
@@ -590,6 +608,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final isActive = provider.activeTimeScheme?.id == widget.schemeId;
     final usage = _buildUsageSummary(provider, widget.schemeId);
@@ -598,11 +617,11 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('编辑时间模板'),
+        title: Text(l10n.editTimeSchemeTitle),
         actions: [
           TextButton(
             onPressed: _save,
-            child: const Text('保存'),
+            child: Text(l10n.saveAction),
           ),
         ],
       ),
@@ -615,16 +634,16 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '模板名称',
+                  Text(
+                    l10n.timeSchemeNameLabel,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _nameController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      labelText: '模板名称',
+                      labelText: l10n.timeSchemeNameLabel,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -633,20 +652,20 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                     runSpacing: 8,
                     children: [
                       if (isActive)
-                        const _TimeSchemeBadge(
-                          text: '当前课表',
+                        _TimeSchemeBadge(
+                          text: l10n.currentInUse,
                           icon: Icons.check_circle_outline_rounded,
                         ),
                       _TimeSchemeInfoChip(
-                        label: '课表',
+                        label: l10n.profileCountLabel,
                         value: '${usage.profileCount} 个',
                       ),
                       _TimeSchemeInfoChip(
-                        label: '课程',
+                        label: l10n.courseCountLabel,
                         value: '${usage.courseCount} 节',
                       ),
                       _TimeSchemeInfoChip(
-                        label: '副时间表',
+                        label: l10n.overrideTimeSchemeLabel,
                         value: '${usage.overrideCourseCount} 节',
                       ),
                     ],
@@ -655,10 +674,10 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                     const SizedBox(height: 8),
                     Text(
                       isActive && usage.courseCount > 0
-                          ? '当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程。'
+                          ? l10n.overrideSchemeCoursesSubtitle
                           : isActive
-                              ? '当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表。'
-                              : '有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程。',
+                              ? l10n.directlyBoundProfilesSubtitle
+                              : l10n.overrideSchemeCoursesSubtitle,
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -682,13 +701,13 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '节次时间',
+                  Text(
+                    l10n.sectionTimesTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '如果当前课表正在使用这套模板，节次数量不能小于已使用的最大节次。',
+                    l10n.sectionTimesSubtitle,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
@@ -699,23 +718,23 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                       FilledButton.tonalIcon(
                         onPressed: _openQuickGenerate,
                         icon: const Icon(Icons.auto_fix_high_rounded),
-                        label: const Text('快捷生成'),
+                        label: Text(l10n.quickGenerateAction),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: _sections.length >= 20 ? null : _addSection,
                         icon: const Icon(Icons.add),
-                        label: const Text('新增一节'),
+                        label: Text(l10n.addSectionAction),
                       ),
                       FilledButton.tonalIcon(
                         onPressed:
                             _sections.length <= 1 ? null : _removeSection,
                         icon: const Icon(Icons.remove),
-                        label: const Text('删除末节'),
+                        label: Text(l10n.removeLastSectionAction),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: _resetSections,
                         icon: const Icon(Icons.restart_alt),
-                        label: const Text('恢复默认'),
+                        label: Text(l10n.resetDefaultAction),
                       ),
                     ],
                   ),

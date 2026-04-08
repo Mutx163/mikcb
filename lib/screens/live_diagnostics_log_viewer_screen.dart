@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 enum DiagnosticsLogViewMode {
@@ -27,6 +28,7 @@ class _LiveDiagnosticsLogViewerScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final markdown = buildDiagnosticsMarkdown(widget.rawLog);
 
     return Scaffold(
@@ -41,7 +43,7 @@ class _LiveDiagnosticsLogViewerScreenState
               children: [
                 Expanded(
                   child: Text(
-                    '支持 Markdown 与原文两种查看方式，排查时可以直接在手机上看完整日志。',
+                    l10n.diagnosticsLogIntro,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: Theme.of(context)
                               .colorScheme
@@ -57,7 +59,7 @@ class _LiveDiagnosticsLogViewerScreenState
             child: Align(
               alignment: Alignment.centerLeft,
               child: SegmentedButton<DiagnosticsLogViewMode>(
-                segments: const [
+                segments: [
                   ButtonSegment(
                     value: DiagnosticsLogViewMode.markdown,
                     icon: Icon(Icons.article_outlined),
@@ -66,7 +68,7 @@ class _LiveDiagnosticsLogViewerScreenState
                   ButtonSegment(
                     value: DiagnosticsLogViewMode.raw,
                     icon: Icon(Icons.code_rounded),
-                    label: Text('原文'),
+                    label: Text(l10n.diagnosticsRawTab),
                   ),
                 ],
                 selected: <DiagnosticsLogViewMode>{_viewMode},
@@ -104,9 +106,10 @@ class _LiveDiagnosticsLogViewerScreenState
 }
 
 String buildDiagnosticsMarkdown(String rawLog) {
+  final zh = _DiagnosticsL10nFallback();
   final text = rawLog.trim();
   if (text.isEmpty) {
-    return '# 暂无日志\n\n当前没有可显示的超级岛诊断日志。';
+    return '# ${zh.emptyTitle}\n\n${zh.emptySubtitle}';
   }
 
   final lines = text.split(RegExp(r'\r?\n'));
@@ -118,13 +121,13 @@ String buildDiagnosticsMarkdown(String rawLog) {
   final sections = _splitDiagnosticSections(bodyLines);
 
   final buffer = StringBuffer();
-  final title = headerLines.isNotEmpty ? headerLines.first.trim() : '超级岛诊断日志';
+  final title = headerLines.isNotEmpty ? headerLines.first.trim() : zh.logTitleFallback;
   buffer.writeln('# $title');
   buffer.writeln();
 
   final headerEntries = _parseIndentedKeyValueBlock(headerLines.skip(1).toList());
   if (headerEntries.isNotEmpty) {
-    buffer.writeln('## 设备与导出信息');
+    buffer.writeln('## ${zh.deviceInfoTitle}');
     buffer.writeln();
     headerEntries.forEach((key, value) {
       buffer.writeln('- **${_prettyKey(key)}**：${_inlineValue(value)}');
@@ -133,7 +136,7 @@ String buildDiagnosticsMarkdown(String rawLog) {
   }
 
   if (sections.isEmpty) {
-    buffer.writeln('## 日志内容');
+    buffer.writeln('## ${zh.contentTitle}');
     buffer.writeln();
     buffer.writeln('```text');
     buffer.writeln(text);
@@ -141,7 +144,7 @@ String buildDiagnosticsMarkdown(String rawLog) {
     return buffer.toString().trim();
   }
 
-  buffer.writeln('## 最近日志');
+  buffer.writeln('## ${zh.recentLogsTitle}');
   buffer.writeln();
 
   for (var i = 0; i < sections.length; i++) {
@@ -149,7 +152,7 @@ String buildDiagnosticsMarkdown(String rawLog) {
     final time = _formatMillis(section['time']);
     final category = section['category']?.trim().isNotEmpty == true
         ? section['category']!.trim()
-        : '未分类事件';
+        : zh.unknownCategory;
     buffer.writeln('### ${i + 1}. $category');
     buffer.writeln();
     if (time != null) {
@@ -247,17 +250,18 @@ Map<String, String> _parseIndentedKeyValueBlock(List<String> lines) {
 }
 
 String _prettyKey(String key) {
+  final zh = _DiagnosticsL10nFallback();
   switch (key) {
     case 'exportedAt':
-      return '导出时间';
+      return zh.exportedAt;
     case 'time':
-      return '时间';
+      return zh.time;
     case 'category':
-      return '类别';
+      return zh.category;
     case 'message':
-      return '消息';
+      return zh.message;
     case 'stackTrace':
-      return '堆栈';
+      return zh.stackTrace;
     case 'throwable':
       return '异常';
     case 'extras':
@@ -271,6 +275,21 @@ String _prettyKey(String key) {
     default:
       return key;
   }
+}
+
+class _DiagnosticsL10nFallback {
+  String get exportedAt => '导出时间';
+  String get time => '时间';
+  String get category => '类别';
+  String get message => '消息';
+  String get stackTrace => '堆栈';
+  String get emptyTitle => '暂无日志';
+  String get emptySubtitle => '当前没有可显示的超级岛诊断日志。';
+  String get logTitleFallback => '超级岛诊断日志';
+  String get deviceInfoTitle => '设备与导出信息';
+  String get contentTitle => '日志内容';
+  String get recentLogsTitle => '最近日志';
+  String get unknownCategory => '未分类事件';
 }
 
 String _inlineValue(String value) {
