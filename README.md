@@ -54,6 +54,16 @@
 - 应用内可读取 GitHub Releases，显示版本号、更新时间和下载入口
 - 发行步骤见 [docs/RELEASE.md](./docs/RELEASE.md)
 
+## 网站与国际化约定
+
+- 当前正式网站目录是 `docs/`，域名配置见 `docs/CNAME`
+- `web/` 不是当前主站发布目录；如果继续做网站 SEO 或落地页调整，优先改 `docs/`
+- 应用国际化当前使用 Flutter 标准 `gen-l10n`
+- 中文源文件为 `lib/l10n/app_zh.arb`
+- 新文案请优先先补到 `app_zh.arb`，再由其他语言文件跟进翻译
+- 新增语言时，直接新增对应的 `app_<locale>.arb`，然后运行 `flutter gen-l10n`
+- 详细协作方式见 [docs/WEB_AND_L10N_WORKFLOW.md](./docs/WEB_AND_L10N_WORKFLOW.md)
+
 ## 运行与构建
 
 本仓库当前只保留 Android 发布和维护所需内容。

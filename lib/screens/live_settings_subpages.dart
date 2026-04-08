@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -102,21 +103,25 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('提醒时段')),
+      appBar: AppBar(title: Text(l10n.liveReminderTimingTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _SectionCard(
-            title: '提醒开关',
-            subtitle: '不同提醒时段可以自由组合；这些开关互不替代。',
+            title: l10n.liveReminderSwitchesTitle,
+            subtitle: l10n.liveReminderSwitchesSubtitle,
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('上课前提醒'),
-                  subtitle:
-                      Text('在课程开始前 ${_draft.liveShowBeforeClassMinutes} 分钟弹出'),
+                  title: Text(l10n.beforeClassReminderTitle),
+                  subtitle: Text(
+                    l10n.beforeClassReminderSubtitle(
+                      _draft.liveShowBeforeClassMinutes,
+                    ),
+                  ),
                   value: _draft.liveEnableBeforeClass,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(liveEnableBeforeClass: value),
@@ -124,8 +129,8 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('课中 / 下课提醒'),
-                  subtitle: const Text('只影响上课后到下课前的展示'),
+                  title: Text(l10n.duringClassReminderTitle),
+                  subtitle: Text(l10n.duringClassReminderSubtitle),
                   value: _draft.liveEnableDuringClass ||
                       _draft.liveEnableBeforeEnd,
                   onChanged: (value) => _updateDraft(
@@ -138,7 +143,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd)
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('下课前多久切到超级岛 / 重点提醒'),
+                    title: Text(l10n.liveClassReminderLeadTitle),
                     subtitle: Text(
                       _draft.liveClassReminderStartMinutes == 0
                           ? '从上课开始就进入重点提醒展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
@@ -153,13 +158,43 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     ),
                     trailing: DropdownButton<int>(
                       value: _draft.liveClassReminderStartMinutes,
-                      items: const [
-                        DropdownMenuItem(value: 0, child: Text('一上课就切换')),
-                        DropdownMenuItem(value: 5, child: Text('下课前 5 分钟切换')),
-                        DropdownMenuItem(value: 10, child: Text('下课前 10 分钟切换')),
-                        DropdownMenuItem(value: 15, child: Text('下课前 15 分钟切换')),
-                        DropdownMenuItem(value: 20, child: Text('下课前 20 分钟切换')),
-                        DropdownMenuItem(value: 30, child: Text('下课前 30 分钟切换')),
+                      items: [
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionImmediate,
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 5,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionMinutes(5),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 10,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionMinutes(10),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 15,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionMinutes(15),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 20,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionMinutes(20),
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 30,
+                          child: Text(
+                            l10n.liveClassReminderLeadOptionMinutes(30),
+                          ),
+                        ),
                       ],
                       onChanged: (value) {
                         if (value == null) return;
@@ -176,19 +211,19 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
           ),
           const SizedBox(height: 16),
           _SectionCard(
-            title: '展示方式',
-            subtitle: '对已启用的提醒时段生效。',
+            title: l10n.liveDisplayModeTitle,
+            subtitle: l10n.liveDisplayModeSubtitle,
             child: Column(
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('课中状态栏通知'),
+                  title: Text(l10n.duringClassStatusNotificationTitle),
                   subtitle: Text(
                     _draft.liveClassReminderStartMinutes == 0
-                        ? '上课后保留状态栏通知'
+                        ? l10n.duringClassStatusNotificationImmediate
                         : _draft.livePromoteDuringClass
-                            ? '在下课提醒开始前保留普通通知文案'
-                            : '上课后持续显示普通课中通知，到下课提醒前再切换',
+                            ? l10n.duringClassStatusNotificationBeforeEnd
+                            : l10n.duringClassStatusNotificationPersistent,
                   ),
                   value: _draft.liveShowDuringClassNotification,
                   onChanged: (value) => _updateDraft(
@@ -197,8 +232,8 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('支持展示超级岛/灵动岛'),
-                  subtitle: const Text('关闭后不会再尝试触发系统超级岛'),
+                  title: Text(l10n.enableIslandDisplayTitle),
+                  subtitle: Text(l10n.enableIslandDisplaySubtitle),
                   value: _draft.livePromoteDuringClass,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(livePromoteDuringClass: value),
@@ -209,19 +244,23 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
           ),
           const SizedBox(height: 16),
           _SectionCard(
-            title: '时间阈值',
-            subtitle: '控制上课前弹出、下课前多久切到超级岛 / 重点提醒，以及最后秒级倒计时。',
+            title: l10n.liveTimeThresholdTitle,
+            subtitle: l10n.liveTimeThresholdSubtitle,
             child: Column(
               children: [
                 DropdownButtonFormField<int>(
                   value: _draft.liveShowBeforeClassMinutes,
-                  decoration: const InputDecoration(
-                    labelText: '上课前弹出时间',
+                  decoration: InputDecoration(
+                    labelText: l10n.beforeClassPopupLabel,
                     border: OutlineInputBorder(),
                   ),
                   items: _beforeClassMinutesOptions
-                      .map((value) => DropdownMenuItem(
-                          value: value, child: Text('$value 分钟')))
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(l10n.beforeClassMinutesOption(value)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
@@ -233,13 +272,17 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int>(
                   value: _draft.liveEndSecondsCountdownThreshold,
-                  decoration: const InputDecoration(
-                    labelText: '下课前秒级提醒阈值',
+                  decoration: InputDecoration(
+                    labelText: l10n.beforeEndSecondsLabel,
                     border: OutlineInputBorder(),
                   ),
                   items: _endSecondsOptions
-                      .map((value) => DropdownMenuItem(
-                          value: value, child: Text('$value 秒')))
+                      .map(
+                        (value) => DropdownMenuItem(
+                          value: value,
+                          child: Text(l10n.beforeEndSecondsOption(value)),
+                        ),
+                      )
                       .toList(),
                   onChanged: (value) {
                     if (value == null) return;
@@ -252,7 +295,9 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  '铃声时间矫正：${_formatLiveTimeCorrection(_draft.liveTimeCorrectionSeconds)}',
+                  l10n.timeCorrectionLabel(
+                    _formatLiveTimeCorrection(_draft.liveTimeCorrectionSeconds),
+                  ),
                 ),
                 Slider(
                   value: _draft.liveTimeCorrectionSeconds
@@ -272,15 +317,15 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   ),
                 ),
                 Text(
-                  '如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。',
+                  l10n.timeCorrectionHelp,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
                   value: _draft.liveDuringEndTimeDisplayMode,
-                  decoration: const InputDecoration(
-                    labelText: '课中 / 下课提醒时间样式',
-                    helperText: '控制紧凑提醒里显示最近时间还是整段总时间',
+                  decoration: InputDecoration(
+                    labelText: l10n.duringEndTimeDisplayLabel,
+                    helperText: l10n.duringEndTimeDisplayHelp,
                     border: OutlineInputBorder(),
                   ),
                   items: LiveDuringClassTimeDisplayMode.values
@@ -384,38 +429,39 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final display = _display;
     final sectionCards = [
       _SectionCard(
-        title: '显示内容',
-        subtitle: '这组设置只影响当前阶段，不会改动另一组提醒显示。',
+        title: l10n.liveDisplayContentTitle,
+        subtitle: l10n.liveDisplayContentSubtitle,
         child: Column(
           children: [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('显示课程名'),
+              title: Text(l10n.showCourseNameTitle),
               value: display.showCourseName,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showCourseName: value)),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('优先显示课程简称'),
-              subtitle: const Text('建议简称控制在 3 个字以内'),
+              title: Text(l10n.preferShortNameTitle),
+              subtitle: Text(l10n.preferShortNameSubtitle),
               value: display.useShortName,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(useShortName: value)),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('显示地点'),
+              title: Text(l10n.showLocationTitle),
               value: display.showLocation,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showLocation: value)),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('显示倒计时'),
+              title: Text(l10n.showCountdownTitle),
               value: display.showCountdown,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showCountdown: value)),
@@ -424,9 +470,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<LiveCountdownTextStyle>(
                 value: display.countdownTextStyle,
-                decoration: const InputDecoration(
-                  labelText: '倒计时格式',
-                  helperText: '纯分钟样式按分钟刷新，带秒样式按秒刷新',
+                decoration: InputDecoration(
+                  labelText: l10n.countdownFormatLabel,
+                  helperText: l10n.countdownFormatHelp,
                   border: OutlineInputBorder(),
                 ),
                 items: LiveCountdownTextStyle.values
@@ -447,16 +493,16 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ],
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('显示阶段状态文案'),
-              subtitle: const Text('关闭倒计时后，可继续显示“即将上课 / 上课中 / 下课提醒”'),
+              title: Text(l10n.showStageTextTitle),
+              subtitle: Text(l10n.showStageTextSubtitle),
               value: display.showStageText,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(showStageText: value)),
             ),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('隐藏前缀文案'),
-              subtitle: const Text('例如隐藏“即将上课”这类前缀'),
+              title: Text(l10n.hidePrefixTextTitle),
+              subtitle: Text(l10n.hidePrefixTextSubtitle),
               value: display.hidePrefixText,
               onChanged: (value) =>
                   _updateDisplay(display.copyWith(hidePrefixText: value)),
@@ -467,12 +513,12 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       if (!widget.forDuringEnd) ...[
         const SizedBox(height: 16),
         _SectionCard(
-          title: '上课前快捷操作',
-          subtitle: '只在上课前提醒的展开通知里显示。免打扰首次可能会跳到系统授权页。',
+          title: l10n.beforeClassQuickActionTitle,
+          subtitle: l10n.beforeClassQuickActionSubtitle,
           child: DropdownButtonFormField<LiveBeforeClassQuickAction>(
             value: _draft.liveBeforeClassQuickAction,
-            decoration: const InputDecoration(
-              labelText: '快捷按钮',
+            decoration: InputDecoration(
+              labelText: l10n.beforeClassQuickActionTitle,
               border: OutlineInputBorder(),
             ),
             items: LiveBeforeClassQuickAction.values

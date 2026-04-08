@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
@@ -10,15 +11,16 @@ class TimetableProfilesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        final l10n = AppLocalizations.of(context)!;
         final profiles = provider.profiles;
         final activeProfileId = provider.activeProfileId;
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('课表管理'),
+            title: Text(l10n.timetableProfilesTitle),
             actions: [
               IconButton(
-                tooltip: '新建课表',
+                tooltip: l10n.createTimetableTooltip,
                 onPressed: () => _createBlankProfile(context),
                 icon: const Icon(Icons.add_rounded),
               ),
@@ -88,7 +90,10 @@ class TimetableProfilesScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${profile.courses.length} 门课程 · 第 ${profile.currentWeek} 周',
+                                    l10n.coursesAndWeekSummary(
+                                      profile.courses.length,
+                                      profile.currentWeek,
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: theme.textTheme.bodySmall?.copyWith(
@@ -99,7 +104,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                               ),
                             ),
                             PopupMenuButton<String>(
-                              tooltip: '更多操作',
+                              tooltip: l10n.moreActionsTooltip,
                               onSelected: (value) async {
                                 switch (value) {
                                   case 'switch':
@@ -145,17 +150,17 @@ class TimetableProfilesScreen extends StatelessWidget {
                               },
                               itemBuilder: (context) => [
                                 if (!isActive)
-                                  const PopupMenuItem(
+                                  PopupMenuItem(
                                     value: 'switch',
-                                    child: Text('切换到此课表'),
+                                    child: Text(l10n.switchToThisTimetable),
                                   ),
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'rename',
-                                  child: Text('重命名'),
+                                  child: Text(l10n.renameAction),
                                 ),
-                                const PopupMenuItem(
+                                PopupMenuItem(
                                   value: 'duplicate',
-                                  child: Text('复制'),
+                                  child: Text(l10n.duplicateAction),
                                 ),
                                 if (isActive || profiles.length > 1)
                                   const PopupMenuDivider(),
@@ -164,7 +169,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                                     value: 'clear',
                                     enabled: profile.courses.isNotEmpty,
                                     child: Text(
-                                      '清空课程',
+                                      l10n.clearCoursesAction,
                                       style: TextStyle(
                                         color: colorScheme.error,
                                       ),
@@ -174,7 +179,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                                   value: 'delete',
                                   enabled: profiles.length > 1,
                                   child: Text(
-                                    '删除',
+                                    l10n.deleteAction,
                                     style: TextStyle(
                                       color: profiles.length > 1
                                           ? colorScheme.error
@@ -208,7 +213,9 @@ class TimetableProfilesScreen extends StatelessWidget {
                                           profile.name,
                                         ),
                                 child: Text(
-                                  isActive ? '正在使用' : '切换到此课表',
+                                  isActive
+                                      ? l10n.usingNow
+                                      : l10n.switchToThisTimetable,
                                 ),
                               ),
                             ),
@@ -220,8 +227,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                                   horizontal: 10,
                                   vertical: 8,
                                 ),
-                                tapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
                               onPressed: () => _renameProfile(
                                 context,
@@ -229,7 +235,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                                 profile.name,
                               ),
                               icon: const Icon(Icons.edit_outlined),
-                              label: const Text('重命名'),
+                              label: Text(l10n.renameAction),
                             ),
                           ],
                         ),
@@ -255,7 +261,9 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已切换到 $profileName')),
+      SnackBar(
+          content: Text(
+              AppLocalizations.of(context)!.switchedToProfile(profileName))),
     );
   }
 
@@ -265,24 +273,23 @@ class TimetableProfilesScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('新建课表'),
+          title: Text(AppLocalizations.of(context)!.createTimetableTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: '课表名称',
-              hintText: '例如：大二下',
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.timetableNameLabel,
+              hintText: AppLocalizations.of(context)!.timetableNameHint,
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancelAction),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(context, controller.text.trim()),
-              child: const Text('创建'),
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: Text(AppLocalizations.of(context)!.createAction),
             ),
           ],
         );
@@ -298,7 +305,8 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已创建课表：$name')),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.createdProfile(name))),
     );
   }
 
@@ -312,21 +320,22 @@ class TimetableProfilesScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('重命名课表'),
+          title: Text(AppLocalizations.of(context)!.renameTimetableTitle),
           content: TextField(
             controller: controller,
             autofocus: true,
-            decoration: const InputDecoration(labelText: '课表名称'),
+            decoration: InputDecoration(
+              labelText: AppLocalizations.of(context)!.timetableNameLabel,
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancelAction),
             ),
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(context, controller.text.trim()),
-              child: const Text('保存'),
+              onPressed: () => Navigator.pop(context, controller.text.trim()),
+              child: Text(AppLocalizations.of(context)!.saveAction),
             ),
           ],
         );
@@ -345,7 +354,8 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已重命名为 $name')),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.renamedProfile(name))),
     );
   }
 
@@ -357,16 +367,19 @@ class TimetableProfilesScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('清空当前课表'),
-          content: Text('确定清空“$profileName”的全部课程吗？课表设置会保留。'),
+          title: Text(AppLocalizations.of(context)!.clearCurrentTimetableTitle),
+          content: Text(
+            AppLocalizations.of(context)!
+                .clearCurrentTimetableMessage(profileName),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancelAction),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('清空'),
+              child: Text(AppLocalizations.of(context)!.clearAction),
             ),
           ],
         );
@@ -384,7 +397,11 @@ class TimetableProfilesScreen extends StatelessWidget {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(cleared ? '已清空课表：$profileName' : '当前课表已经没有课程'),
+        content: Text(
+          cleared
+              ? AppLocalizations.of(context)!.clearedProfile(profileName)
+              : AppLocalizations.of(context)!.noCoursesInCurrentProfile,
+        ),
       ),
     );
   }
@@ -398,16 +415,17 @@ class TimetableProfilesScreen extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('删除课表'),
-          content: Text('确定删除“$name”吗？'),
+          title: Text(AppLocalizations.of(context)!.deleteTimetableTitle),
+          content:
+              Text(AppLocalizations.of(context)!.deleteTimetableMessage(name)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancelAction),
             ),
             TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('删除'),
+              child: Text(AppLocalizations.of(context)!.deleteAction),
             ),
           ],
         );
@@ -424,7 +442,13 @@ class TimetableProfilesScreen extends StatelessWidget {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(success ? '已删除课表：$name' : '至少保留一个课表')),
+      SnackBar(
+        content: Text(
+          success
+              ? AppLocalizations.of(context)!.deletedProfile(name)
+              : AppLocalizations.of(context)!.keepAtLeastOneProfile,
+        ),
+      ),
     );
   }
 }

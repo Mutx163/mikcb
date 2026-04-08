@@ -44,11 +44,22 @@ Locale? _localeFromSettings(String localeTag) {
   if (normalized.isEmpty) {
     return null;
   }
-  final parts = normalized.replaceAll('-', '_').split('_');
-  if (parts.length >= 2) {
-    return Locale(parts[0], parts[1]);
+  final canonical = normalized.replaceAll('-', '_');
+  for (final locale in AppLocalizations.supportedLocales) {
+    final tag = locale.countryCode?.isNotEmpty == true
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+    if (tag.toLowerCase() == canonical.toLowerCase()) {
+      return locale;
+    }
   }
-  return Locale(parts[0]);
+  final languageCode = canonical.split('_').first.toLowerCase();
+  for (final locale in AppLocalizations.supportedLocales) {
+    if (locale.languageCode.toLowerCase() == languageCode) {
+      return locale;
+    }
+  }
+  return Locale(languageCode);
 }
 
 ThemeData _buildAppTheme(

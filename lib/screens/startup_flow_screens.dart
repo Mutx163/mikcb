@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../services/app_migration_service.dart';
 
@@ -19,13 +20,14 @@ class StartupWelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('欢迎使用'),
+        title: Text(l10n.welcomeTitle),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -49,14 +51,14 @@ class StartupWelcomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '轻屿课表',
+                    l10n.welcomeAppName,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '你可以先开始使用，也可以直接导入课程或从备份恢复。',
+                    l10n.welcomeSubtitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -67,31 +69,31 @@ class StartupWelcomeScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _StartupActionTile(
               icon: Icons.rocket_launch_rounded,
-              title: '开始使用',
-              subtitle: '直接进入软件，并继续完成首次使用说明',
+              title: l10n.startUsingTitle,
+              subtitle: l10n.startUsingSubtitle,
               onTap: () => Navigator.pop(context, WelcomeFlowAction.startUsing),
             ),
             const SizedBox(height: 12),
             _StartupActionTile(
               icon: Icons.file_upload_outlined,
-              title: '导入课表',
-              subtitle: '从 .ics 文件或 AI 解析结果导入课程',
+              title: l10n.importTimetableTitle,
+              subtitle: l10n.importTimetableSubtitle,
               onTap: () =>
                   Navigator.pop(context, WelcomeFlowAction.importCourses),
             ),
             const SizedBox(height: 12),
             _StartupActionTile(
               icon: Icons.restore_page_rounded,
-              title: '从备份恢复',
-              subtitle: '从 .mikcb 备份文件恢复旧数据',
+              title: l10n.restoreBackupTitle,
+              subtitle: l10n.restoreBackupSubtitle,
               onTap: () =>
                   Navigator.pop(context, WelcomeFlowAction.restoreBackup),
             ),
             const SizedBox(height: 12),
             _StartupActionTile(
               icon: Icons.menu_book_rounded,
-              title: '查看功能说明',
-              subtitle: '先了解权限、超级岛和基础设置',
+              title: l10n.viewGuideTitle,
+              subtitle: l10n.viewGuideSubtitle,
               onTap: () => Navigator.pop(context, WelcomeFlowAction.viewGuide),
             ),
           ],
@@ -121,13 +123,14 @@ class _PackageMigrationGuideScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: const Text('迁移旧数据'),
+        title: Text(l10n.migrationTitle),
       ),
       body: SafeArea(
         child: Column(
@@ -149,14 +152,14 @@ class _PackageMigrationGuideScreenState
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '别担心，这不是数据丢失',
+                            l10n.migrationSafeTitle,
                             style: theme.textTheme.headlineSmall?.copyWith(
                               fontWeight: FontWeight.w800,
                             ),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            '我们更换了应用包名，所以桌面上会暂时出现两个应用图标，这是正常现象。旧数据仍在旧版应用里，请先去旧版备份，再回到新版导入。',
+                            l10n.migrationSafeSubtitle,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onErrorContainer,
                             ),
@@ -167,23 +170,20 @@ class _PackageMigrationGuideScreenState
                     const SizedBox(height: 20),
                     _MigrationStep(
                       index: 1,
-                      title: '打开旧版应用',
-                      subtitle:
-                          '进入“数据备份与迁移”页面后，请点“导出全部数据”。不要点“导出当前课表”，也不要先卸载旧版。',
+                      title: l10n.migrationStep1Title,
+                      subtitle: l10n.migrationStep1Subtitle,
                     ),
                     const SizedBox(height: 10),
                     _MigrationStep(
                       index: 2,
-                      title: '保存备份文件',
-                      subtitle:
-                          '旧版导出后会弹出系统分享面板。优先选择“保存到文件”，建议存到 下载 / Download 文件夹。',
+                      title: l10n.migrationStep2Title,
+                      subtitle: l10n.migrationStep2Subtitle,
                     ),
                     const SizedBox(height: 10),
                     _MigrationStep(
                       index: 3,
-                      title: '回到当前版本导入',
-                      subtitle:
-                          '回到新版后，通过系统文件选择器到 下载 / Download 文件夹选中 .mikcb 备份文件即可恢复。确认新版数据正常后，再卸载旧版应用。',
+                      title: l10n.migrationStep3Title,
+                      subtitle: l10n.migrationStep3Subtitle,
                     ),
                     const SizedBox(height: 16),
                     Container(
@@ -203,7 +203,7 @@ class _PackageMigrationGuideScreenState
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                '如果没有“保存到文件”',
+                                l10n.migrationNoSaveToFilesTitle,
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -212,7 +212,7 @@ class _PackageMigrationGuideScreenState
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            '可以先分享到微信任意一个聊天，然后在微信里点开这个备份文件并保存。保存后通常会出现在 Download / WeiXin 文件夹里，再回到新版选择这个 .mikcb 文件导入。',
+                            l10n.migrationNoSaveToFilesSubtitle,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
@@ -241,7 +241,9 @@ class _PackageMigrationGuideScreenState
                             )
                           : const Icon(Icons.open_in_new_rounded),
                       label: Text(
-                        _isOpeningOldApp ? '正在打开旧版...' : '打开旧版去备份',
+                        _isOpeningOldApp
+                            ? l10n.openingOldApp
+                            : l10n.openOldAppForBackup,
                       ),
                     ),
                   ),
@@ -254,7 +256,7 @@ class _PackageMigrationGuideScreenState
                         MigrationFlowAction.restoreBackup,
                       ),
                       icon: const Icon(Icons.download_rounded),
-                      label: const Text('我已完成备份，去导入'),
+                      label: Text(l10n.backupDoneGoImport),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -263,7 +265,7 @@ class _PackageMigrationGuideScreenState
                     child: TextButton(
                       onPressed: () =>
                           Navigator.pop(context, MigrationFlowAction.skip),
-                      child: const Text('以全新应用开始，不迁移'),
+                      child: Text(l10n.startFreshWithoutMigration),
                     ),
                   ),
                 ],
@@ -276,6 +278,7 @@ class _PackageMigrationGuideScreenState
   }
 
   Future<void> _openLegacyApp() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isOpeningOldApp = true;
     });
@@ -289,7 +292,7 @@ class _PackageMigrationGuideScreenState
     });
     if (!opened) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('未能打开旧版应用，请手动返回桌面打开旧版')),
+        SnackBar(content: Text(l10n.openOldAppFailed)),
       );
     }
   }

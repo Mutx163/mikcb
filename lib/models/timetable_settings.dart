@@ -104,7 +104,11 @@ String _normalizeAppLocaleTag(String? value) {
   if (normalized.isEmpty || normalized == 'system') {
     return '';
   }
-  return normalized.replaceAll('-', '_');
+  final canonical = normalized.replaceAll('-', '_');
+  final lower = canonical.toLowerCase();
+  if (lower == 'en_us') return 'en';
+  if (lower == 'zh_cn') return 'zh';
+  return canonical;
 }
 
 String _normalizeMirrorUrlPrefixValue(String? value) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
@@ -9,6 +10,7 @@ class CourseOverviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final courses = provider.courses;
     final conflictMap = provider.courseConflictMap;
@@ -23,11 +25,11 @@ class CourseOverviewScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('课程总览与编辑'),
+        title: Text(l10n.courseOverviewTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            tooltip: '添加新课程',
+            tooltip: l10n.addNewCourseTooltip,
             onPressed: () {
               Navigator.push(
                 context,
@@ -41,7 +43,7 @@ class CourseOverviewScreen extends StatelessWidget {
         ],
       ),
       body: courseNames.isEmpty
-          ? const Center(child: Text('长按课表或点击右上角添加课程'))
+          ? Center(child: Text(l10n.emptyCourseOverviewHint))
           : Column(
               children: [
                 if (conflictingCourseCount > 0)
@@ -63,7 +65,7 @@ class CourseOverviewScreen extends StatelessWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '检测到 $conflictingCourseCount 门排课存在实际冲突，课程列表已标记冲突项。',
+                            l10n.conflictDetectedMessage(conflictingCourseCount),
                             style: TextStyle(
                               color: Theme.of(context)
                                   .colorScheme
@@ -129,7 +131,7 @@ class CourseOverviewScreen extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(999),
                                   ),
                                   child: Text(
-                                    '冲突 $groupConflictCount 节',
+                                    l10n.conflictCountLabel(groupConflictCount),
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w700,
@@ -143,8 +145,8 @@ class CourseOverviewScreen extends StatelessWidget {
                           ),
                           subtitle: Text(
                             groupConflictCount > 0
-                                ? '共排课 ${group.length} 节 · 展开查看冲突详情'
-                                : '共排课 ${group.length} 节',
+                                ? l10n.scheduledCountWithConflictHint(group.length)
+                                : l10n.scheduledCountLabel(group.length),
                           ),
                           children: group.map((course) {
                             final conflicts =
@@ -155,12 +157,33 @@ class CourseOverviewScreen extends StatelessWidget {
                             return ListTile(
                               isThreeLine: conflicts.isNotEmpty,
                               title: Text(
-                                '时间: 星期${course.dayOfWeek} 第${course.startSection}-${course.endSection}节',
+                                l10n.courseTimeSummary(
+                                  course.dayOfWeek,
+                                  course.startSection,
+                                  course.endSection,
+                                ),
                               ),
                               subtitle: Text(
                                 conflicts.isEmpty
-                                    ? '${course.weekDescription}  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}'
-                                    : '${course.weekDescription}  教师: ${course.teacher.isNotEmpty ? course.teacher : "未置"}  教室: ${course.location.isNotEmpty ? course.location : "未置"}\n冲突课程: $conflictSummary',
+                                    ? l10n.courseDetailSummary(
+                                        course.weekDescription,
+                                        course.teacher.isNotEmpty
+                                            ? course.teacher
+                                            : l10n.teacherUnset,
+                                        course.location.isNotEmpty
+                                            ? course.location
+                                            : l10n.locationUnset,
+                                      )
+                                    : l10n.courseDetailSummaryWithConflict(
+                                        course.weekDescription,
+                                        course.teacher.isNotEmpty
+                                            ? course.teacher
+                                            : l10n.teacherUnset,
+                                        course.location.isNotEmpty
+                                            ? course.location
+                                            : l10n.locationUnset,
+                                        conflictSummary,
+                                      ),
                               ),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -225,19 +248,24 @@ class CourseOverviewScreen extends StatelessWidget {
     showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-              title: const Text('确认删除'),
-              content: Text('确定要删除课程“${course.name}”吗？'),
+              title: Text(AppLocalizations.of(ctx)!.confirmDeleteTitle),
+              content: Text(
+                AppLocalizations.of(ctx)!.confirmDeleteCourseMessage(course.name),
+              ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('取消'),
+                  child: Text(AppLocalizations.of(ctx)!.cancelAction),
                 ),
                 TextButton(
                   onPressed: () {
                     context.read<TimetableProvider>().deleteCourse(course.id);
                     Navigator.pop(ctx);
                   },
-                  child: const Text('删除', style: TextStyle(color: Colors.red)),
+                  child: Text(
+                    AppLocalizations.of(ctx)!.deleteAction,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               ],
             ));

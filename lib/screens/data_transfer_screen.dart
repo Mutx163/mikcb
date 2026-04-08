@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
@@ -20,13 +21,15 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final theme = Theme.of(context);
-    final activeProfileName = provider.activeProfile?.name ?? '默认课表';
+    final activeProfileName =
+        provider.activeProfile?.name ?? l10n.timetableAppName;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('数据备份与迁移'),
+        title: Text(l10n.dataTransferTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -38,14 +41,14 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '完整导出',
+                    l10n.fullExportTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '支持导出当前课表，或一次导出全部课表、时间模板和当前选中状态。',
+                    l10n.fullExportSubtitle,
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
@@ -55,20 +58,24 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                       runSpacing: 8,
                       children: [
                         FilledButton.icon(
-                          onPressed: _isExporting ? null : _exportCurrentProfile,
+                          onPressed:
+                              _isExporting ? null : _exportCurrentProfile,
                           icon: _isExporting
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.ios_share_rounded),
-                          label: Text(_isExporting ? '导出中...' : '导出当前课表'),
+                          label: Text(_isExporting
+                              ? '${l10n.fullExportTitle}...'
+                              : l10n.exportCurrentTimetable),
                         ),
                         FilledButton.tonalIcon(
                           onPressed: _isExporting ? null : _exportFullData,
                           icon: const Icon(Icons.storage_rounded),
-                          label: const Text('导出全部数据'),
+                          label: Text(l10n.exportAllData),
                         ),
                       ],
                     ),
@@ -85,15 +92,13 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '完整导入',
+                    l10n.fullImportTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    '导入时可以选择覆盖当前课表，或直接导入为一个新课表。建议先导出自己的备份。',
-                  ),
+                  Text(l10n.fullImportSubtitle),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
@@ -106,7 +111,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.download_rounded),
-                      label: Text(_isImporting ? '导入中...' : '选择文件并导入'),
+                      label: Text(_isImporting
+                          ? '${l10n.fullImportTitle}...'
+                          : l10n.chooseFileAndImport),
                     ),
                   ),
                 ],
@@ -121,25 +128,28 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '当前可迁移内容',
+                    l10n.transferOverviewTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _buildBullet('课程数量：${provider.courses.length} 门'),
-                  _buildBullet('当前课表：$activeProfileName'),
-                  _buildBullet('全部课表：${provider.profiles.length} 个'),
-                  _buildBullet('时间模板：${provider.timeSchemes.length} 套'),
-                  _buildBullet('当前周：第 ${provider.currentWeek} 周'),
+                  _buildBullet(l10n.courseCountBullet(provider.courses.length)),
+                  _buildBullet(l10n.currentTimetableBullet(activeProfileName)),
+                  _buildBullet(
+                      l10n.allTimetablesBullet(provider.profiles.length)),
+                  _buildBullet(
+                      l10n.timeSchemeCountBullet(provider.timeSchemes.length)),
+                  _buildBullet(l10n.currentWeekBullet(provider.currentWeek)),
                   _buildBullet(
                     provider.settings.semesterStartDate == null
-                        ? '开学日期：未设置'
-                        : '开学日期：${_formatDate(provider.settings.semesterStartDate!)}',
+                        ? l10n.semesterStartUnsetBullet
+                        : l10n.semesterStartBullet(
+                            _formatDate(provider.settings.semesterStartDate!),
+                          ),
                   ),
-                  _buildBullet(
-                    '文件后缀：.${DataTransferService.fileExtension}',
-                  ),
+                  _buildBullet(l10n
+                      .fileExtensionBullet(DataTransferService.fileExtension)),
                 ],
               ),
             ),
@@ -212,24 +222,23 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('选择导入方式'),
-          content: const Text(
-            '你可以覆盖当前课表，或者把备份导入成一个新的独立课表。',
-          ),
+          title: Text(AppLocalizations.of(context)!.selectImportModeTitle),
+          content: Text(AppLocalizations.of(context)!.selectImportModeMessage),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(context)!.cancelAction),
             ),
             FilledButton(
               onPressed: () =>
                   Navigator.pop(context, _BackupImportMode.replaceCurrent),
-              child: const Text('覆盖当前课表'),
+              child:
+                  Text(AppLocalizations.of(context)!.replaceCurrentTimetable),
             ),
             FilledButton.tonal(
               onPressed: () =>
                   Navigator.pop(context, _BackupImportMode.importAsNew),
-              child: const Text('导入为新课表'),
+              child: Text(AppLocalizations.of(context)!.importAsNewTimetable),
             ),
           ],
         );
@@ -279,8 +288,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
           content: Text(
             message ??
                 (importMode == _BackupImportMode.importAsNew
-                    ? '导入成功，已创建新的课表'
-                    : '导入成功，备份数据已恢复'),
+                    ? AppLocalizations.of(context)!
+                        .createdNewTimetableAfterImport
+                    : AppLocalizations.of(context)!.backupRestoredSuccess),
           ),
         ),
       );
@@ -296,7 +306,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('导入失败，请确认文件有效')),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.importFailedInvalidFile)),
       );
     } finally {
       if (mounted) {

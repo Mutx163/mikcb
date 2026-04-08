@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class FeedbackScreen extends StatelessWidget {
   const FeedbackScreen({super.key});
 
-  static const String _issuesUrl =
-      'https://github.com/Mutx163/mikcb/issues';
+  static const String _issuesUrl = 'https://github.com/Mutx163/mikcb/issues';
   static const String _xiaohongshuId = '4976443029';
   static const String _coolapkId = 'Mutx666';
   static const String _qqGroupId = '1077077989';
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('问题反馈'),
+        title: Text(l10n.feedbackTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -30,12 +31,12 @@ class FeedbackScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '如果你遇到崩溃、课程显示异常、导入问题，或者想提交功能建议，可以通过下面这些渠道反馈。',
+                    l10n.feedbackIntro,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '涉及复现步骤、截图、版本号和日志的问题，建议优先走 GitHub Issue。',
+                    l10n.feedbackIssueHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -47,15 +48,15 @@ class FeedbackScreen extends StatelessWidget {
           const SizedBox(height: 16),
           _FeedbackCard(
             icon: Icons.bug_report_outlined,
-            title: 'GitHub Issue',
-            subtitle: '打开仓库 Issue 页面，可提交问题、建议或查看已有反馈记录。',
-            primaryLabel: '打开 Issue 页面',
+            title: l10n.githubIssueTitle,
+            subtitle: l10n.githubIssueSubtitle,
+            primaryLabel: l10n.openIssuePage,
             onPrimaryTap: () => _openUrl(_issuesUrl),
-            secondaryLabel: '复制地址',
+            secondaryLabel: l10n.copyAddress,
             onSecondaryTap: () => _copyText(
               context,
               _issuesUrl,
-              successMessage: '已复制 Issue 地址',
+              successMessage: l10n.copiedIssueAddress,
             ),
           ),
           const SizedBox(height: 12),
@@ -63,11 +64,11 @@ class FeedbackScreen extends StatelessWidget {
             icon: Icons.forum_outlined,
             title: '小红书',
             subtitle: '作者小红书号：$_xiaohongshuId',
-            primaryLabel: '复制小红书号',
+            primaryLabel: l10n.copyXiaohongshuId,
             onPrimaryTap: () => _copyText(
               context,
               _xiaohongshuId,
-              successMessage: '已复制小红书号',
+              successMessage: l10n.copiedXiaohongshuId,
             ),
           ),
           const SizedBox(height: 12),
@@ -75,11 +76,11 @@ class FeedbackScreen extends StatelessWidget {
             icon: Icons.verified_user_outlined,
             title: '酷安',
             subtitle: '作者酷安号：$_coolapkId',
-            primaryLabel: '复制酷安号',
+            primaryLabel: l10n.copyCoolapkId,
             onPrimaryTap: () => _copyText(
               context,
               _coolapkId,
-              successMessage: '已复制酷安号',
+              successMessage: l10n.copiedCoolapkId,
             ),
           ),
           const SizedBox(height: 12),
@@ -87,11 +88,11 @@ class FeedbackScreen extends StatelessWidget {
             icon: Icons.groups_outlined,
             title: 'QQ群',
             subtitle: 'QQ群号：$_qqGroupId',
-            primaryLabel: '复制群号',
+            primaryLabel: l10n.copyQqGroupId,
             onPrimaryTap: () => _copyText(
               context,
               _qqGroupId,
-              successMessage: '已复制 QQ 群号',
+              successMessage: l10n.copiedQqGroupId,
             ),
           ),
         ],

@@ -31,6 +31,7 @@ class TimetableSettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        final l10n = AppLocalizations.of(context)!;
         final settings = provider.settings;
         void openAppearance() {
           Navigator.push(
@@ -124,7 +125,7 @@ class TimetableSettingsScreen extends StatelessWidget {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('课表设置'),
+            title: Text(l10n.settingsTitle),
           ),
           body: ListView(
             padding: const EdgeInsets.all(16),
@@ -141,13 +142,13 @@ class TimetableSettingsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               _SettingsSectionCard(
-                title: '日常使用',
+                title: l10n.dailyUsageSectionTitle,
                 child: Column(
                   children: [
                     _SettingsEntryTile(
                       icon: Icons.palette_outlined,
-                      title: '外观与配色',
-                      subtitle: '主题色、课表背景、课程卡片颜色',
+                      title: l10n.appearanceEntryTitle,
+                      subtitle: l10n.appearanceEntrySubtitle,
                       trailing: _ColorDot(
                         color: _colorFromHex(settings.themeSeedColor),
                       ),
@@ -155,14 +156,14 @@ class TimetableSettingsScreen extends StatelessWidget {
                     ),
                     _SettingsEntryTile(
                       icon: Icons.view_week_outlined,
-                      title: '布局与节次',
-                      subtitle: '节次时间、行高、时间列、周末显示与卡片布局',
+                      title: l10n.layoutSectionEntryTitle,
+                      subtitle: l10n.layoutSectionEntrySubtitle,
                       onTap: openLayoutSettings,
                     ),
                     _SettingsEntryTile(
                       icon: Icons.widgets_outlined,
-                      title: '桌面小组件',
-                      subtitle: '今日课程卡片、小组件背景与显示信息',
+                      title: l10n.homeWidgetEntryTitle,
+                      subtitle: l10n.homeWidgetEntrySubtitle,
                       trailing: Text(
                         settings.widgetBackgroundStyle.label,
                         style: Theme.of(context).textTheme.bodySmall,
@@ -177,19 +178,19 @@ class TimetableSettingsScreen extends StatelessWidget {
                 child: Divider(height: 12),
               ),
               _SettingsSectionCard(
-                title: '提醒与通知',
+                title: l10n.reminderNotificationSectionTitle,
                 child: Column(
                   children: [
                     _SettingsEntryTile(
                       icon: Icons.notifications_active_outlined,
-                      title: '超级岛与通知',
+                      title: l10n.liveSettingsTitle,
                       subtitle: '提醒时段、岛展示、通知栏和显示内容',
                       onTap: openLiveSettings,
                     ),
                     _SettingsEntryTile(
                       icon: Icons.menu_book_outlined,
-                      title: '使用引导与权限',
-                      subtitle: '简称建议、通知、自启动、电池策略',
+                      title: l10n.userGuideEntryTitle,
+                      subtitle: l10n.userGuideEntrySubtitle,
                       onTap: openUserGuide,
                     ),
                   ],
@@ -200,27 +201,29 @@ class TimetableSettingsScreen extends StatelessWidget {
                 child: Divider(height: 12),
               ),
               _SettingsSectionCard(
-                title: '课表管理',
+                title: l10n.timetableManagementSectionTitle,
                 child: Column(
                   children: [
                     _SettingsEntryTile(
                       icon: Icons.layers_outlined,
-                      title: '课表管理',
+                      title: l10n.timetableManagement,
                       subtitle: '新建、切换、复制、重命名和删除课表',
                       onTap: openProfiles,
                     ),
                     _SettingsEntryTile(
                       icon: Icons.schedule_rounded,
-                      title: '时间模板',
+                      title: l10n.timeSchemeEntryTitle,
                       subtitle: settings.activeTimeSchemeId == null
-                          ? '切换、编辑节次、复制和管理时间模板'
-                          : '当前：${provider.activeTimeScheme?.name ?? "未选择"} · 切换、编辑节次和复制',
+                          ? l10n.timeSchemeEntrySubtitleNoneSelected
+                          : l10n.timeSchemeEntrySubtitleSelected(
+                              provider.activeTimeScheme?.name ?? '',
+                            ),
                       onTap: () => _openTimeSchemeQuickSwitcher(context),
                     ),
                     _SettingsEntryTile(
                       icon: Icons.swap_horiz_rounded,
-                      title: '数据备份与迁移',
-                      subtitle: '导出完整课表文件，给别人直接导入使用',
+                      title: l10n.dataTransferEntryTitle,
+                      subtitle: l10n.dataTransferEntrySubtitle,
                       onTap: openDataTransfer,
                     ),
                   ],
@@ -231,19 +234,19 @@ class TimetableSettingsScreen extends StatelessWidget {
                 child: Divider(height: 12),
               ),
               _SettingsSectionCard(
-                title: '关于与支持',
+                title: l10n.aboutSupportSectionTitle,
                 child: Column(
                   children: [
                     _SettingsEntryTile(
                       icon: Icons.chat_bubble_outline_rounded,
-                      title: '问题反馈',
-                      subtitle: 'Issue、社区渠道和建议反馈入口',
+                      title: l10n.feedbackEntryTitle,
+                      subtitle: l10n.feedbackEntrySubtitle,
                       onTap: openFeedback,
                     ),
                     _SettingsEntryTile(
                       icon: Icons.info_outline_rounded,
-                      title: '关于软件',
-                      subtitle: '开源说明、版本更新和 GitHub 仓库',
+                      title: l10n.aboutEntryTitle,
+                      subtitle: l10n.aboutEntrySubtitle,
                       onTap: openAbout,
                     ),
                   ],
@@ -282,17 +285,19 @@ class TimetableSettingsScreen extends StatelessWidget {
 
   Future<void> _syncCurrentWeek(BuildContext context) async {
     final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
     await provider.syncCurrentWeekWithSemesterStart();
     if (!context.mounted) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已同步到第 ${provider.currentWeek} 周')),
+      SnackBar(content: Text(l10n.currentWeekBullet(provider.currentWeek))),
     );
   }
 
   Future<void> _pickSemesterWeekCount(BuildContext context) async {
     final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final currentWeekCount = provider.settings.semesterWeekCount;
     final selected = await showModalBottomSheet<int>(
       context: context,
@@ -302,16 +307,20 @@ class TimetableSettingsScreen extends StatelessWidget {
             shrinkWrap: true,
             children: [
               const ListTile(
+                title: null,
+                subtitle: null,
+              ),
+              ListTile(
                 title: Text(
-                  '选择学期周数',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                  l10n.selectSemesterWeekCountTitle,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-                subtitle: Text('不同学校可按实际教学周数调整。'),
+                subtitle: Text(l10n.selectSemesterWeekCountSubtitle),
               ),
               ...List.generate(30, (index) {
                 final weekCount = index + 1;
                 return ListTile(
-                  title: Text('$weekCount 周'),
+                  title: Text(l10n.semesterWeekCountAction(weekCount)),
                   trailing: weekCount == currentWeekCount
                       ? const Icon(Icons.check_rounded)
                       : null,
@@ -439,7 +448,9 @@ class _SemesterOverviewCard extends StatelessWidget {
                   onPressed: onPickSemesterStartDate,
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
-                    semesterStartDate == null ? '设置开学日期' : '开学日期',
+                    semesterStartDate == null
+                        ? AppLocalizations.of(context)!.setSemesterStartDateAction
+                        : AppLocalizations.of(context)!.semesterStartDateAction,
                   ),
                 ),
                 OutlinedButton.icon(
@@ -453,7 +464,7 @@ class _SemesterOverviewCard extends StatelessWidget {
                   ),
                   onPressed: onSyncCurrentWeek,
                   icon: const Icon(Icons.sync_outlined),
-                  label: const Text('同步当前周'),
+                  label: Text(AppLocalizations.of(context)!.syncCurrentWeekAction),
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -466,7 +477,10 @@ class _SemesterOverviewCard extends StatelessWidget {
                   ),
                   onPressed: onPickSemesterWeekCount,
                   icon: const Icon(Icons.view_week_outlined),
-                  label: Text('$semesterWeekCount 周'),
+                  label: Text(
+                    AppLocalizations.of(context)!
+                        .semesterWeekCountAction(semesterWeekCount),
+                  ),
                 ),
               ],
             ),
@@ -682,7 +696,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.languageSectionTitle,
             subtitle: l10n.languageSectionSubtitle,
             child: DropdownButtonFormField<String>(
-              value: _draft.appLocaleTag,
+              value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
               decoration: InputDecoration(
                 labelText: l10n.languageModeLabel,
                 border: const OutlineInputBorder(),
@@ -781,8 +795,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text('统一课程卡片颜色'),
-                  subtitle: const Text('关闭后继续使用每门课程自己的颜色'),
+                  title: Text(l10n.unifiedCourseCardColorTitle),
+                  subtitle: Text(l10n.unifiedCourseCardColorSubtitle),
                   value: _draft.timetableUseUnifiedCardColor,
                   onChanged: (value) {
                     _updateDraft(
@@ -887,6 +901,7 @@ String _fontModeLabel(BuildContext context, AppFontMode mode) {
 
 List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
+  final seen = <String>{''};
   final items = <DropdownMenuItem<String>>[
     DropdownMenuItem<String>(
       value: '',
@@ -897,6 +912,9 @@ List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
     final tag = locale.countryCode?.isNotEmpty == true
         ? '${locale.languageCode}_${locale.countryCode}'
         : locale.languageCode;
+    if (!seen.add(tag)) {
+      continue;
+    }
     items.add(
       DropdownMenuItem<String>(
         value: tag,
@@ -913,13 +931,38 @@ String localeLabel(BuildContext context, Locale locale) {
       ? '${locale.languageCode}_${locale.countryCode}'
       : locale.languageCode;
   switch (tag) {
+    case 'zh':
     case 'zh_CN':
       return l10n.languageModeZhCn;
+    case 'en':
     case 'en_US':
       return l10n.languageModeEnUs;
     default:
       return tag;
   }
+}
+
+String normalizeLocaleTagForDropdown(String tag) {
+  final normalized = tag.trim();
+  if (normalized.isEmpty) {
+    return '';
+  }
+  final canonical = normalized.replaceAll('-', '_');
+  final supportedTags = AppLocalizations.supportedLocales
+      .map(
+        (locale) => locale.countryCode?.isNotEmpty == true
+            ? '${locale.languageCode}_${locale.countryCode}'
+            : locale.languageCode,
+      )
+      .toSet();
+  if (supportedTags.contains(canonical)) {
+    return canonical;
+  }
+  final languageCode = canonical.split('_').first;
+  if (supportedTags.contains(languageCode)) {
+    return languageCode;
+  }
+  return '';
 }
 
 class _HomeTitleStylePreview extends StatelessWidget {
