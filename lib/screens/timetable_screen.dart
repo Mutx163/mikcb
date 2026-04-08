@@ -1807,6 +1807,19 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showTopActionsSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final actionTitles = [
+      l10n.homeMenuUpdateTitle,
+      l10n.homeMenuProfilesTitle,
+      l10n.homeMenuOverviewTitle,
+      l10n.homeMenuAddCourseTitle,
+      l10n.homeMenuImportTitle,
+      l10n.homeMenuSettingsTitle,
+      l10n.homeMenuCoffeeTitle,
+      l10n.homeMenuFeedbackTitle,
+    ];
+    final reserveTwoLineTitleSpace = actionTitles.any(
+      (title) => _homeActionNeedsTwoLines(context, title),
+    );
     final selected = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -1824,42 +1837,50 @@ class _TimetableScreenState extends State<TimetableScreen>
                   title: l10n.homeMenuUpdateTitle,
                   badgeText: _hasAvailableUpdate ? l10n.updateLabel : null,
                   accentColor: _hasAvailableUpdate ? colorScheme.primary : null,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('update'),
                 ),
                 _HomeActionButton(
                   icon: Icons.view_week_rounded,
                   title: l10n.homeMenuProfilesTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('profiles'),
                 ),
                 _HomeActionButton(
                   icon: Icons.dashboard_customize_rounded,
                   title: l10n.homeMenuOverviewTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('overview'),
                 ),
                 _HomeActionButton(
                   icon: Icons.add_circle_outline_rounded,
                   title: l10n.homeMenuAddCourseTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('add'),
                 ),
                 _HomeActionButton(
                   icon: Icons.file_upload_outlined,
                   title: l10n.homeMenuImportTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('import'),
                 ),
                 _HomeActionButton(
                   icon: Icons.tune_rounded,
                   title: l10n.homeMenuSettingsTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('settings'),
                 ),
                 _HomeActionButton(
                   icon: Icons.favorite_border_rounded,
                   title: l10n.homeMenuCoffeeTitle,
                   accentColor: colorScheme.secondary,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('coffee'),
                 ),
                 _HomeActionButton(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: l10n.homeMenuFeedbackTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('feedback'),
                 ),
               ],
@@ -1981,6 +2002,24 @@ class _TimetableScreenState extends State<TimetableScreen>
       ),
     );
   }
+
+  bool _homeActionNeedsTwoLines(BuildContext context, String title) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      height: 1.25,
+    );
+    final width = ((MediaQuery.of(context).size.width - 32 - 36) / 4).clamp(
+      72.0,
+      112.0,
+    );
+    final textPainter = TextPainter(
+      text: TextSpan(text: title, style: style),
+      maxLines: 2,
+      textDirection: Directionality.of(context),
+    )..layout(maxWidth: width - 16);
+    return textPainter.computeLineMetrics().length > 1;
+  }
 }
 
 class _HomeActionButton extends StatelessWidget {
@@ -1990,6 +2029,7 @@ class _HomeActionButton extends StatelessWidget {
   final String? badgeText;
   final Color? accentColor;
   final bool enabled;
+  final bool reserveTwoLineTitleSpace;
 
   const _HomeActionButton({
     required this.icon,
@@ -1998,6 +2038,7 @@ class _HomeActionButton extends StatelessWidget {
     this.badgeText,
     this.accentColor,
     this.enabled = true,
+    this.reserveTwoLineTitleSpace = false,
   });
 
   @override
@@ -2013,7 +2054,6 @@ class _HomeActionButton extends StatelessWidget {
     );
     return SizedBox(
       width: width,
-      height: 122,
       child: Material(
         color: theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(22),
@@ -2063,22 +2103,35 @@ class _HomeActionButton extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 34,
-                  child: Center(
-                    child: Text(
-                      title,
-                      maxLines: 2,
-                      textAlign: TextAlign.center,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                        color: enabled ? null : colorScheme.onSurfaceVariant,
+                if (reserveTwoLineTitleSpace)
+                  SizedBox(
+                    height: 34,
+                    child: Center(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          height: 1.25,
+                          color: enabled ? null : colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ),
+                  )
+                else
+                  Text(
+                    title,
+                    maxLines: 2,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      height: 1.25,
+                      color: enabled ? null : colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
