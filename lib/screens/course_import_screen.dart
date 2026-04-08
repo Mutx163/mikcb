@@ -233,6 +233,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
   }
 
   Future<void> _importIcsFile() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isImporting = true;
     });
@@ -250,7 +251,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final bytes = file.bytes;
       if (bytes == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('无法读取所选文件')),
+          SnackBar(content: Text(l10n.importFileReadFailed)),
         );
         return;
       }
@@ -260,8 +261,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           ? true
           : await _askReplaceExisting(
               context,
-              title: '导入课程',
-              content: '导入 ${file.name} 时，是否替换现有课程？',
+              title: l10n.importReplaceExistingTitle,
+              content: l10n.importReplaceExistingMessage(file.name),
             );
       if (replaceExisting == null || !mounted) {
         return;
@@ -271,7 +272,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final parsedResult = _icsImportService.parseWakeUpSchedule(content);
       if (parsedResult.courses.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('未识别到可导入课程')),
+          SnackBar(content: Text(l10n.importNoCoursesRecognized)),
         );
         return;
       }
@@ -286,8 +287,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           firstCourseDate: parsedResult.semesterStart,
         ),
         inferredFirstCourseDate: parsedResult.semesterStart,
-        title: '确认开学日期和周次对应',
-        subtitle: '请选择学校校历的开学日期。系统已根据文件里最早的上课日期给出默认周次对应，你也可以手动调整。',
+        title: l10n.importConfirmSemesterMappingTitle,
+        subtitle: l10n.importConfirmSemesterMappingSubtitleIcs,
       );
       if (semesterConfig == null || !mounted) {
         return;
@@ -328,9 +329,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           content: Text(
             importedCount > 0
                 ? (replaceExisting
-                    ? '已覆盖导入 $importedCount 条课程'
-                    : '已更新课表：新增或更新 $importedCount 条课程')
-                : '没有需要新增或更新的课程',
+                    ? l10n.importOverwriteCount(importedCount)
+                    : l10n.importUpdatedCount(importedCount))
+                : l10n.importNoCourseChanges,
           ),
         ),
       );
@@ -375,12 +376,13 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('识图导入'),
+        title: Text(l10n.aiImportTitle),
       ),
       body: SafeArea(
         top: false,
@@ -433,8 +435,15 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
             );
             final previewSummary = _aiParsedResult == null
                 ? null
-                : '识别到 ${_aiParsedResult!.courses.length} 门课，最高到第 ${_aiParsedResult!.requiredSectionCount} 节'
-                    '${_aiParsedResult!.warnings.isEmpty ? "" : '，${_aiParsedResult!.warnings.length} 条提醒'}';
+                : l10n.aiPreviewSummary(
+                    _aiParsedResult!.courses.length,
+                    _aiParsedResult!.requiredSectionCount,
+                    _aiParsedResult!.warnings.isEmpty
+                        ? ''
+                        : l10n.aiWarningCountSuffix(
+                            _aiParsedResult!.warnings.length,
+                          ),
+                  );
 
             return Padding(
               padding: EdgeInsets.fromLTRB(
@@ -473,7 +482,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '复制提示词 -> 豆包识图 -> 导入',
+                                      l10n.aiWorkflowCompactTitle,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -483,7 +492,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      '豆包专家模式 -> 复制 JSON -> 选择开学日期',
+                                      l10n.aiWorkflowCompactSubtitle,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style:
@@ -497,7 +506,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '复制提示词 -> 豆包识图 -> 粘贴 JSON -> 导入',
+                                      l10n.aiWorkflowTitle,
                                       style:
                                           theme.textTheme.titleMedium?.copyWith(
                                         fontWeight: FontWeight.w800,
@@ -505,7 +514,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                     ),
                                     SizedBox(height: dense ? 4 : 6),
                                     Text(
-                                      '先复制提示词，再到豆包左下角切换为专家模式，把课表截图和提示词一起发过去。把豆包返回的 JSON 复制回这里，点击导入后再选择开学日期。',
+                                      l10n.aiWorkflowSubtitle,
                                       style:
                                           theme.textTheme.bodySmall?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
@@ -528,7 +537,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                 vertical: 6,
                               ),
                             ),
-                            child: const Text('提示词'),
+                            child: Text(l10n.aiPromptShortAction),
                           )
                         else
                           Icon(
@@ -544,7 +553,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 2),
                       child: Text(
-                        '建议豆包专家模式，支持多图，截图需带星期表头。',
+                        l10n.aiExpertModeSuggestion,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall?.copyWith(
@@ -553,25 +562,25 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       ),
                     )
                   else
-                    const Wrap(
+                    Wrap(
                       spacing: 8,
                       runSpacing: 8,
                       children: [
                         _CompactHintChip(
                           icon: Icons.smart_toy_outlined,
-                          label: '先切到豆包专家模式',
+                          label: l10n.aiHintExpertMode,
                         ),
                         _CompactHintChip(
                           icon: Icons.photo_library_outlined,
-                          label: '截图和提示词一起发',
+                          label: l10n.aiHintSendScreenshot,
                         ),
                         _CompactHintChip(
                           icon: Icons.content_copy_rounded,
-                          label: '返回结果复制 JSON',
+                          label: l10n.aiHintCopyJsonBack,
                         ),
                         _CompactHintChip(
                           icon: Icons.event_available_rounded,
-                          label: '导入后再选开学日期',
+                          label: l10n.aiHintPickSemesterAfterImport,
                         ),
                       ],
                     ),
@@ -582,7 +591,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                         Expanded(
                           child: _CompactActionButton(
                             icon: Icons.copy_all_rounded,
-                            label: '复制',
+                            label: l10n.copyAddress,
                             onPressed: _copyAiPrompt,
                           ),
                         ),
@@ -590,7 +599,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                         Expanded(
                           child: _CompactActionButton(
                             icon: Icons.article_outlined,
-                            label: '提示词',
+                            label: l10n.aiPromptShortAction,
                             onPressed: _showPromptSheet,
                           ),
                         ),
@@ -598,7 +607,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                         Expanded(
                           child: _CompactActionButton(
                             icon: Icons.content_paste_rounded,
-                            label: '粘贴',
+                            label: l10n.pasteAction,
                             onPressed: _pasteFromClipboard,
                           ),
                         ),
@@ -606,7 +615,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                         Expanded(
                           child: _CompactActionButton(
                             icon: Icons.clear_rounded,
-                            label: '清空',
+                            label: l10n.clearAction,
                             onPressed: _clearInput,
                           ),
                         ),
@@ -621,26 +630,26 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                           onPressed: _copyAiPrompt,
                           style: compactButtonStyle,
                           icon: const Icon(Icons.copy_all_rounded, size: 18),
-                          label: const Text('复制提示词'),
+                          label: Text(l10n.copyAddress),
                         ),
                         OutlinedButton.icon(
                           onPressed: _showPromptSheet,
                           style: compactButtonStyle,
                           icon: const Icon(Icons.article_outlined, size: 18),
-                          label: const Text('查看提示词'),
+                          label: Text(l10n.aiPromptShortAction),
                         ),
                         FilledButton.tonalIcon(
                           onPressed: _pasteFromClipboard,
                           style: compactButtonStyle,
                           icon:
                               const Icon(Icons.content_paste_rounded, size: 18),
-                          label: const Text('粘贴'),
+                          label: Text(l10n.pasteAction),
                         ),
                         OutlinedButton.icon(
                           onPressed: _clearInput,
                           style: compactButtonStyle,
                           icon: const Icon(Icons.clear_rounded, size: 18),
-                          label: const Text('清空'),
+                          label: Text(l10n.clearAction),
                         ),
                       ],
                     ),
@@ -649,7 +658,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          ultraDense ? 'JSON' : '粘贴 AI 返回的 JSON',
+                          ultraDense
+                              ? l10n.jsonLabelShort
+                              : l10n.aiPasteJsonTitle,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -657,11 +668,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       ),
                       if (_aiParsedResult != null)
                         _CompactStatusChip(
-                          label: '${_aiParsedResult!.courses.length} 门课',
+                          label:
+                              l10n.aiCourseCountChip(_aiParsedResult!.courses.length),
                         ),
                       if (_aiParseError != null)
-                        const _CompactStatusChip(
-                          label: '解析失败',
+                        _CompactStatusChip(
+                          label: l10n.aiParseFailedChip,
                           isError: true,
                         ),
                     ],
@@ -703,8 +715,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.all(ultraDense ? 10 : 14),
                           hintText: ultraDense
-                              ? '粘贴 AI 返回的 JSON'
-                              : '把豆包返回的 JSON 原样粘贴到这里，然后点击导入。支持纯 JSON，也兼容 ```json 代码块。',
+                              ? l10n.aiPasteJsonHintShort
+                              : l10n.aiPasteJsonHintLong,
                         ),
                       ),
                     ),
@@ -715,9 +727,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       icon: Icons.error_outline_rounded,
                       message: _aiParseError!,
                       isError: true,
-                      actionLabel: '详情',
+                      actionLabel: l10n.detailAction,
                       onAction: () => _showMessageSheet(
-                        title: '解析错误',
+                        title: l10n.aiParseErrorTitle,
                         content: _aiParseError!,
                       ),
                     )
@@ -725,14 +737,14 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     _CompactNoticeCard(
                       icon: Icons.check_circle_outline_rounded,
                       message: previewSummary!,
-                      actionLabel: '查看详情',
+                      actionLabel: l10n.viewDetailsAction,
                       onAction: () => _showPreviewSheet(_aiParsedResult!),
                     )
                   else if (!ultraDense)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Text(
-                        '复制提示词 -> 豆包发送截图和提示词 -> 把 JSON 贴回这里 -> 点击导入 -> 选择开学日期。',
+                        l10n.aiWorkflowFooter,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -746,7 +758,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                           onPressed: _previewAiResult,
                           style: compactBottomButtonStyle,
                           icon: const Icon(Icons.preview_rounded),
-                          label: const Text('预览'),
+                          label: Text(l10n.previewAction),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -763,7 +775,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   ),
                                 )
                               : const Icon(Icons.cloud_upload_rounded),
-                          label: Text(_isImporting ? '导入中...' : '确认导入'),
+                          label: Text(
+                            _isImporting
+                                ? '${l10n.importReplaceExistingTitle}...'
+                                : l10n.confirmImportAction,
+                          ),
                         ),
                       ),
                     ],
@@ -778,6 +794,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 
   Future<void> _copyAiPrompt() async {
+    final l10n = AppLocalizations.of(context)!;
     await Clipboard.setData(
       const ClipboardData(text: AiCourseImportService.prompt),
     );
@@ -785,11 +802,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('提示词已复制，去豆包发送截图和提示词')),
+      SnackBar(content: Text(l10n.promptCopiedHint)),
     );
   }
 
   Future<void> _pasteFromClipboard() async {
+    final l10n = AppLocalizations.of(context)!;
     final data = await Clipboard.getData('text/plain');
     final text = data?.text?.trim();
     if (text == null || text.isEmpty) {
@@ -797,7 +815,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('剪贴板里没有可用文本')),
+        SnackBar(content: Text(l10n.clipboardNoText)),
       );
       return;
     }
@@ -820,6 +838,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 
   void _showPromptSheet() {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -835,14 +854,14 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '识图提示词',
+                    l10n.aiPromptSheetTitle,
                     style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '建议使用豆包。先把豆包左下角切换为专家模式，再把下面整段提示词和课表截图一起发过去，让它只返回 JSON。生成后把 JSON 复制回本页，点击导入后再选择开学日期。',
+                    l10n.aiPromptSheetSubtitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -876,6 +895,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 
   void _showPreviewSheet(AiCourseImportParseResult result) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -887,7 +907,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               children: [
                 Text(
-                  '解析预览',
+                  l10n.aiPreviewTitle,
                   style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
                       ),
@@ -950,9 +970,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   AiCourseImportParseResult? _parseAiResult({
     required bool showError,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final content = _aiController.text.trim();
     if (content.isEmpty) {
-      const message = '请先粘贴 AI 返回的 JSON';
+      final message = l10n.aiPasteJsonFirst;
       if (mounted) {
         setState(() {
           _aiParsedResult = null;
@@ -960,7 +981,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         });
         if (showError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(message)),
+            SnackBar(content: Text(message)),
           );
         }
       }
@@ -993,7 +1014,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       }
       return null;
     } catch (_) {
-      const message = '解析失败，请确认粘贴的是完整 JSON';
+      final message = l10n.aiParseFailedIncompleteJson;
       if (mounted) {
         setState(() {
           _aiParsedResult = null;
@@ -1001,7 +1022,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         });
         if (showError) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text(message)),
+            SnackBar(content: Text(message)),
           );
         }
       }
@@ -1010,6 +1031,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 
   Future<void> _importAiResult() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isImporting = true;
     });
@@ -1024,8 +1046,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           ? true
           : await _askReplaceExisting(
               context,
-              title: '导入 AI 解析结果',
-              content: '是否用当前这份 AI 解析结果替换现有课程？',
+              title: l10n.importAiResultTitle,
+              content: l10n.importAiReplaceMessage,
             );
       if (replaceExisting == null || !mounted) {
         return;
@@ -1036,8 +1058,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         initialSemesterStartDate: provider.settings.semesterStartDate ??
             _weekAlignmentService.startOfWeek(DateTime.now()),
         initialFirstCourseWeek: 1,
-        title: '确认开学日期和周次对应',
-        subtitle: '请选择学校校历的开学日期，再确认课表里的第 1 周对应校历第几周。如果学校第一周没课，这里通常要改成第 2 周。',
+        title: l10n.importConfirmSemesterMappingTitle,
+        subtitle: l10n.importConfirmSemesterMappingSubtitleAi,
       );
       if (semesterConfig == null || !mounted) {
         return;
@@ -1074,16 +1096,17 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         return;
       }
 
-      final warningSuffix =
-          result.warnings.isEmpty ? '' : '，另有 ${result.warnings.length} 条识别提醒';
+      final warningSuffix = result.warnings.isEmpty
+          ? ''
+          : l10n.aiWarningExtraSuffix(result.warnings.length);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
             importedCount > 0
                 ? (replaceExisting
-                    ? '已覆盖导入 $importedCount 条课程$warningSuffix'
-                    : '已更新课表：新增或更新 $importedCount 条课程$warningSuffix')
-                : '没有需要新增或更新的课程',
+                    ? l10n.importOverwriteCount(importedCount) + warningSuffix
+                    : l10n.importUpdatedCount(importedCount) + warningSuffix)
+                : l10n.importNoCourseChanges,
           ),
         ),
       );
@@ -1164,6 +1187,7 @@ class _WarehouseCourseImportScreenState
   }
 
   Future<void> _openMissingSchoolFeedbackGuide() async {
+    final l10n = AppLocalizations.of(context)!;
     final shouldOpen = await showModalBottomSheet<bool>(
       context: context,
       showDragHandle: true,
@@ -1178,14 +1202,14 @@ class _WarehouseCourseImportScreenState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '学校列表里没有你的学校？',
+                  l10n.warehouseMissingSchoolTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '去反馈页提一个 Issue 就行。建议一起写上学校名称、教务系统网址、登录后课表页链接或截图，这样更方便补适配。',
+                  l10n.warehouseMissingSchoolSubtitle,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     height: 1.5,
@@ -1198,12 +1222,12 @@ class _WarehouseCourseImportScreenState
                   children: [
                     OutlinedButton(
                       onPressed: () => Navigator.pop(sheetContext, false),
-                      child: const Text('稍后再说'),
+                      child: Text(l10n.laterAction),
                     ),
                     FilledButton.icon(
                       onPressed: () => Navigator.pop(sheetContext, true),
                       icon: const Icon(Icons.open_in_new_rounded),
-                      label: const Text('去反馈页'),
+                      label: Text(l10n.goFeedbackAction),
                     ),
                   ],
                 ),
@@ -1238,30 +1262,31 @@ class _WarehouseCourseImportScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('教务系统导入'),
+        title: Text(l10n.importMethodWarehouseTitle),
         actions: [
           PopupMenuButton<_WarehouseImportMenuAction>(
-            tooltip: '更多操作',
+            tooltip: l10n.moreActionsTooltip,
             onSelected: _handleMoreAction,
-            itemBuilder: (context) => const [
+            itemBuilder: (context) => [
               PopupMenuItem(
                 value: _WarehouseImportMenuAction.feedback,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.campaign_outlined),
-                  title: Text('缺少学校？去反馈'),
+                  leading: const Icon(Icons.campaign_outlined),
+                  title: Text(l10n.warehouseFeedbackMissingSchoolTitle),
                 ),
               ),
               PopupMenuItem(
                 value: _WarehouseImportMenuAction.customDebug,
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.terminal_rounded),
-                  title: Text('自定义调试'),
+                  leading: const Icon(Icons.terminal_rounded),
+                  title: Text(l10n.warehouseCustomDebugTitle),
                 ),
               ),
             ],
@@ -1285,7 +1310,7 @@ class _WarehouseCourseImportScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '暂时无法读取适配仓',
+                          l10n.warehouseRootLoadFailedTitle,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -1309,7 +1334,7 @@ class _WarehouseCourseImportScreenState
                             });
                           },
                           icon: const Icon(Icons.refresh_rounded),
-                          label: const Text('重新读取'),
+                          label: Text(l10n.reloadAction),
                         ),
                       ],
                     ),
@@ -1344,12 +1369,12 @@ class _WarehouseCourseImportScreenState
                   },
                   textInputAction: TextInputAction.search,
                   decoration: InputDecoration(
-                    hintText: '搜索学校名称、首字母或代码',
+                    hintText: l10n.searchSchoolHint,
                     prefixIcon: const Icon(Icons.search_rounded),
                     suffixIcon: _searchQuery.trim().isEmpty
                         ? null
                         : IconButton(
-                            tooltip: '清空',
+                            tooltip: l10n.clearSearchTooltip,
                             onPressed: () {
                               _searchController.clear();
                               setState(() {
@@ -1382,7 +1407,9 @@ class _WarehouseCourseImportScreenState
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                isSearching ? '没有找到匹配的学校' : '暂无可用学校',
+                                isSearching
+                                    ? l10n.noMatchingSchools
+                                    : l10n.noAvailableSchools,
                                 style: theme.textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -1390,7 +1417,7 @@ class _WarehouseCourseImportScreenState
                               if (isSearching) ...[
                                 const SizedBox(height: 6),
                                 Text(
-                                  '试试学校全称、首字母或仓库里的学校代码。',
+                                  l10n.searchSchoolSuggestion,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
                                   ),
@@ -1559,19 +1586,20 @@ class _WarehouseCustomDebugRecordsScreenState
   }
 
   Future<void> _deleteRecord(WarehouseCustomDebugRecord record) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('删除调试记录'),
-        content: Text('确认删除“${record.name}”？删除后不会影响已经导入的课程。'),
+        title: Text(l10n.deleteDebugRecordTitle),
+        content: Text(l10n.deleteDebugRecordMessage(record.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('删除'),
+            child: Text(l10n.deleteAction),
           ),
         ],
       ),
@@ -1587,7 +1615,7 @@ class _WarehouseCustomDebugRecordsScreenState
     if (!mounted) {
       return;
     }
-    _showLightTip(context, '已删除调试记录：${record.name}');
+    _showLightTip(context, l10n.deletedDebugRecord(record.name));
   }
 
   Future<void> _openDebug(WarehouseCustomDebugRecord record) async {
@@ -1602,7 +1630,7 @@ class _WarehouseCustomDebugRecordsScreenState
           source: _customSource,
           school: const WarehouseSchoolEntry(
             id: 'custom-debug',
-            name: '自定义调试',
+            name: 'custom-debug',
             initial: '#',
             resourceFolder: 'custom-debug',
           ),
@@ -1612,8 +1640,8 @@ class _WarehouseCustomDebugRecordsScreenState
             category: 'custom_debug',
             assetJsPath: 'custom/${record.id}.js',
             importUrl: record.importUrl,
-            maintainer: '本地调试',
-            description: '用户保存的自定义教务调试脚本',
+            maintainer: 'custom-debug',
+            description: '',
           ),
           fetchOptions: _currentFetchOptions(),
           debugScriptOverride: record.script,
@@ -1628,14 +1656,15 @@ class _WarehouseCustomDebugRecordsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('自定义调试'),
+        title: Text(l10n.warehouseCustomDebugTitle),
         actions: [
           IconButton(
-            tooltip: '新增调试记录',
+            tooltip: l10n.addDebugRecordTooltip,
             onPressed: () => _openEditor(),
             icon: const Icon(Icons.add_rounded),
           ),
@@ -1653,14 +1682,14 @@ class _WarehouseCustomDebugRecordsScreenState
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '这里放你自己的教务调试记录',
+                          l10n.customDebugIntroTitle,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '每条记录都可以保存自定义网址和整段脚本。保存后下次直接点“开始调试”就能复用，不需要再去某个学校详情页里找入口。',
+                          l10n.customDebugIntroSubtitle,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                             height: 1.5,
@@ -1670,7 +1699,7 @@ class _WarehouseCustomDebugRecordsScreenState
                         FilledButton.icon(
                           onPressed: () => _openEditor(),
                           icon: const Icon(Icons.terminal_rounded),
-                          label: const Text('新增调试记录'),
+                          label: Text(l10n.addDebugRecordAction),
                         ),
                       ],
                     ),
@@ -1690,14 +1719,14 @@ class _WarehouseCustomDebugRecordsScreenState
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            '还没有保存的调试记录',
+                            l10n.noSavedDebugRecords,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '先新增一条，把网址和脚本贴进去，以后就能直接复用。',
+                            l10n.noSavedDebugRecordsHint,
                             textAlign: TextAlign.center,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colorScheme.onSurfaceVariant,
@@ -1747,7 +1776,7 @@ class _WarehouseCustomDebugRecordsScreenState
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '脚本 ${record.script.length} 字符',
+                                l10n.debugScriptLength(record.script.length),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -1760,18 +1789,18 @@ class _WarehouseCustomDebugRecordsScreenState
                                   FilledButton.icon(
                                     onPressed: () => _openDebug(record),
                                     icon: const Icon(Icons.play_arrow_rounded),
-                                    label: const Text('开始调试'),
+                                    label: Text(l10n.startDebugAction),
                                   ),
                                   OutlinedButton.icon(
                                     onPressed: () => _openEditor(record),
                                     icon: const Icon(Icons.edit_rounded),
-                                    label: const Text('编辑'),
+                                    label: Text(l10n.editAction),
                                   ),
                                   OutlinedButton.icon(
                                     onPressed: () => _deleteRecord(record),
                                     icon: const Icon(
                                         Icons.delete_outline_rounded),
-                                    label: const Text('删除'),
+                                    label: Text(l10n.deleteAction),
                                   ),
                                 ],
                               ),
@@ -1834,6 +1863,7 @@ class _WarehouseCustomDebugEditScreenState
   }
 
   Future<void> _pickScriptFromFile() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -1850,7 +1880,7 @@ class _WarehouseCustomDebugEditScreenState
       }
       if (bytes == null || bytes.isEmpty) {
         if (mounted) {
-          _showLightTip(context, '无法读取脚本文件');
+          _showLightTip(context, l10n.scriptFileReadFailed);
         }
         return;
       }
@@ -1858,31 +1888,32 @@ class _WarehouseCustomDebugEditScreenState
       if (!mounted) {
         return;
       }
-      _showLightTip(context, '已导入脚本文件：${file.name}');
+      _showLightTip(context, l10n.scriptFileImported(file.name));
     } catch (error) {
       if (!mounted) {
         return;
       }
-      _showLightTip(context, '导入脚本文件失败：$error');
+      _showLightTip(context, l10n.scriptFileImportFailed('$error'));
     }
   }
 
   Future<void> _saveRecord() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     final importUrl = _urlController.text.trim();
     final script = _scriptController.text.trim();
 
     if (name.isEmpty) {
-      _showLightTip(context, '请先填写调试记录名称');
+      _showLightTip(context, l10n.debugRecordNameRequired);
       return;
     }
     final uri = Uri.tryParse(importUrl);
     if (importUrl.isEmpty || uri == null || uri.host.isEmpty) {
-      _showLightTip(context, '请输入有效的教务网址');
+      _showLightTip(context, l10n.invalidImportUrl);
       return;
     }
     if (script.isEmpty) {
-      _showLightTip(context, '请先填写或导入脚本');
+      _showLightTip(context, l10n.debugScriptRequired);
       return;
     }
 
@@ -1915,15 +1946,18 @@ class _WarehouseCustomDebugEditScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text(_isEditing ? '编辑调试记录' : '新增调试记录'),
+        title: Text(
+          _isEditing ? l10n.editDebugRecordTitle : l10n.addDebugRecordTitle,
+        ),
         actions: [
           TextButton(
             onPressed: _isSaving ? null : _saveRecord,
-            child: Text(_isSaving ? '保存中…' : '保存'),
+            child: Text(_isSaving ? l10n.savingAction : l10n.saveAction),
           ),
         ],
       ),
@@ -1937,14 +1971,14 @@ class _WarehouseCustomDebugEditScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '一条记录 = 一个网址 + 一段脚本',
+                    l10n.debugRecordFormula,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '适合你反复调试同一个学校，或者不同学校保留多套脚本。保存后会一直保留，后面可随时修改。',
+                    l10n.debugRecordFormulaSubtitle,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                       height: 1.5,
@@ -1958,10 +1992,10 @@ class _WarehouseCustomDebugEditScreenState
           TextField(
             controller: _nameController,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '记录名称',
-              hintText: '例如：重庆机电-新版教务',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l10n.debugRecordNameLabel,
+              hintText: l10n.debugRecordNameHint,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -1969,10 +2003,10 @@ class _WarehouseCustomDebugEditScreenState
             controller: _urlController,
             keyboardType: TextInputType.url,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '教务网址',
+            decoration: InputDecoration(
+              labelText: l10n.importUrlLabel,
               hintText: 'https://...',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 12),
@@ -1980,7 +2014,7 @@ class _WarehouseCustomDebugEditScreenState
             children: [
               Expanded(
                 child: Text(
-                  '调试脚本',
+                  l10n.debugScriptLabel,
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
@@ -1989,7 +2023,7 @@ class _WarehouseCustomDebugEditScreenState
               OutlinedButton.icon(
                 onPressed: _pickScriptFromFile,
                 icon: const Icon(Icons.upload_file_rounded),
-                label: const Text('从文件导入'),
+                label: Text(l10n.importFromFileAction),
               ),
             ],
           ),
@@ -2003,9 +2037,9 @@ class _WarehouseCustomDebugEditScreenState
               fontSize: 13,
               height: 1.45,
             ),
-            decoration: const InputDecoration(
-              hintText: '把浏览器扩展导出的完整脚本粘贴到这里',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              hintText: l10n.debugScriptHint,
+              border: const OutlineInputBorder(),
               alignLabelWithHint: true,
             ),
           ),
@@ -2013,7 +2047,9 @@ class _WarehouseCustomDebugEditScreenState
           FilledButton.icon(
             onPressed: _isSaving ? null : _saveRecord,
             icon: const Icon(Icons.save_rounded),
-            label: Text(_isSaving ? '保存中…' : '保存调试记录'),
+            label: Text(
+              _isSaving ? l10n.savingAction : l10n.saveDebugRecordAction,
+            ),
           ),
         ],
       ),
@@ -4405,6 +4441,7 @@ class _AiPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Container(
@@ -4418,18 +4455,18 @@ class _AiPreviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '解析预览',
+            l10n.aiPreviewTitle,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 8),
-          Text('课程数量：${result.courses.length}'),
-          Text('最大节次：第 ${result.requiredSectionCount} 节'),
+          Text(l10n.aiPreviewCourseCount(result.courses.length)),
+          Text(l10n.aiPreviewMaxSection(result.requiredSectionCount)),
           if (result.warnings.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
-              '识别提醒',
+              l10n.aiPreviewWarningsTitle,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -4445,7 +4482,7 @@ class _AiPreviewCard extends StatelessWidget {
           if (result.courses.isNotEmpty) ...[
             const SizedBox(height: 10),
             Text(
-              '课程预览',
+              l10n.aiPreviewCoursesTitle,
               style: theme.textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -4456,7 +4493,7 @@ class _AiPreviewCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '其余 ${result.courses.length - 6} 条将在导入后写入当前课表',
+                  l10n.aiPreviewRemainingCourses(result.courses.length - 6),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),

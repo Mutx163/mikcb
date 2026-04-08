@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../models/time_scheme.dart';
@@ -98,10 +99,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Widget _buildSchemeList(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final schemes = provider.timeSchemes;
     final currentSchemeId = provider.activeTimeScheme?.id;
-    final activeSchemeName = provider.activeTimeScheme?.name ?? '未选择';
+    final activeSchemeName =
+        provider.activeTimeScheme?.name ?? l10n.unsetLabel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,8 +122,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '时间模板',
+                    Text(
+                      l10n.timeSchemeTitle,
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                     ),
@@ -129,10 +132,13 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                       spacing: 8,
                       runSpacing: 8,
                       children: [
-                        _TimeSchemeInfoChip(label: '当前', value: activeSchemeName),
                         _TimeSchemeInfoChip(
-                          label: '数量',
-                          value: '${schemes.length} 套',
+                          label: l10n.schemeListCurrentLabel,
+                          value: activeSchemeName,
+                        ),
+                        _TimeSchemeInfoChip(
+                          label: l10n.schemeListCountLabel,
+                          value: l10n.timeSchemeSetCountValue(schemes.length),
                         ),
                       ],
                     ),
@@ -143,7 +149,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               FilledButton.tonalIcon(
                 onPressed: _createScheme,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('新建'),
+                label: Text(l10n.createAction),
               ),
             ],
           ),
@@ -172,6 +178,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Widget _buildEditor(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final schemeId = _editingSchemeId!;
     final scheme =
@@ -189,12 +196,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
             IconButton(
               onPressed: _stopEditing,
               icon: const Icon(Icons.arrow_back_rounded),
-              tooltip: '返回模板列表',
+              tooltip: l10n.backToSchemeList,
             ),
             const SizedBox(width: 4),
-            const Expanded(
+            Expanded(
               child: Text(
-                '编辑时间模板',
+                l10n.editTimeSchemeTitle,
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ),
@@ -210,8 +217,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '模板名称',
+                      Text(
+                        l10n.timeSchemeNameLabel,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -220,9 +227,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _nameController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           border: OutlineInputBorder(),
-                          labelText: '模板名称',
+                          labelText: l10n.timeSchemeNameLabel,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -231,17 +238,17 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                         runSpacing: 8,
                         children: [
                           if (isActive)
-                            const _TimeSchemeBadge(
-                              text: '当前使用',
+                            _TimeSchemeBadge(
+                              text: l10n.currentInUse,
                               icon: Icons.check_circle_outline_rounded,
                             ),
                           _TimeSchemeInfoChip(
-                            label: '课表',
-                            value: '${usage.profileCount} 个',
+                            label: l10n.profileCountLabel,
+                            value: l10n.profileCountValue(usage.profileCount),
                           ),
                           _TimeSchemeInfoChip(
-                            label: '课程',
-                            value: '${usage.courseCount} 节',
+                            label: l10n.courseCountLabel,
+                            value: l10n.courseSectionCountValue(usage.courseCount),
                           ),
                         ],
                       ),
@@ -249,10 +256,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                         const SizedBox(height: 8),
                         Text(
                           isActive && usage.courseCount > 0
-                              ? '当前课表和部分课程正在使用这套时间模板，保存后会同步更新所有相关课表和课程。'
+                              ? l10n.timeSchemeEditorActiveAndCoursesHint
                               : isActive
-                                  ? '当前课表正在使用这套时间模板，保存后会同步更新所有使用它的课表。'
-                                  : '有课程正在把这套模板作为副时间表使用，保存后会同步更新所有引用课程。',
+                                  ? l10n.timeSchemeEditorActiveHint
+                                  : l10n.timeSchemeEditorOverrideHint,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -276,8 +283,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        '节次时间',
+                      Text(
+                        l10n.sectionTimesTitle,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -285,7 +292,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '如果当前课表或课程正在使用这套模板，节次数量不能小于已使用的最大节次。',
+                        l10n.sectionTimesSubtitle,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
@@ -296,24 +303,24 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           FilledButton.tonalIcon(
                             onPressed: _openQuickGenerate,
                             icon: const Icon(Icons.auto_fix_high_rounded),
-                            label: const Text('快捷生成'),
+                            label: Text(l10n.quickGenerateAction),
                           ),
                           FilledButton.tonalIcon(
                             onPressed:
                                 _sections.length >= 20 ? null : _addSection,
                             icon: const Icon(Icons.add),
-                            label: const Text('新增一节'),
+                            label: Text(l10n.addSectionAction),
                           ),
                           FilledButton.tonalIcon(
                             onPressed:
                                 _sections.length <= 1 ? null : _removeSection,
                             icon: const Icon(Icons.remove),
-                            label: const Text('删除末节'),
+                            label: Text(l10n.removeLastSectionAction),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: _resetSections,
                             icon: const Icon(Icons.restart_alt),
-                            label: const Text('恢复默认'),
+                            label: Text(l10n.resetDefaultAction),
                           ),
                         ],
                       ),
@@ -359,7 +366,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '第 ${index + 1} 节',
+                                      l10n.sectionLabel(index + 1),
                                       style:
                                           theme.textTheme.titleSmall?.copyWith(
                                         fontWeight: FontWeight.w700,
@@ -377,7 +384,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                                 ),
                               ),
                               IconButton(
-                                tooltip: '编辑时间',
+                                tooltip: l10n.editTimeAction,
                                 onPressed: () => _editSectionTime(index),
                                 icon: const Icon(Icons.edit_outlined),
                               ),
@@ -391,7 +398,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                '正在编辑：${scheme.name}',
+                l10n.editingSchemeLabel(scheme.name),
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
@@ -408,6 +415,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     _TimeSchemeUsageInfo usage,
     String value,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     switch (value) {
       case 'apply':
         await _applyScheme(scheme.id);
@@ -425,7 +433,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         await context.read<TimetableProvider>().duplicateTimeScheme(scheme.id);
         if (!mounted) return;
         ScaffoldMessenger.of(this.context).showSnackBar(
-          const SnackBar(content: Text('已复制时间模板')),
+          SnackBar(content: Text(l10n.copiedTimeSchemeShortMessage)),
         );
         break;
       case 'delete':
@@ -460,6 +468,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Future<void> _applyScheme(String schemeId) async {
+    final l10n = AppLocalizations.of(context)!;
     await context.read<TimetableProvider>().applyTimeScheme(schemeId);
     if (!mounted) {
       return;
@@ -467,33 +476,40 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final nextScheme = context.read<TimetableProvider>().activeTimeScheme;
     Navigator.of(context).pop();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已应用时间模板：${nextScheme?.name ?? "未命名模板"}')),
+      SnackBar(
+        content: Text(
+          l10n.appliedTimeSchemeMessage(
+            nextScheme?.name ?? l10n.unnamedTimeScheme,
+          ),
+        ),
+      ),
     );
   }
 
   Future<void> _createScheme() async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
     final name = await showDialog<String>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: const Text('新建时间模板'),
+        title: Text(l10n.createTimeSchemeTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: '模板名称',
-            hintText: '例如：本校夏季作息',
+          decoration: InputDecoration(
+            labelText: l10n.timeSchemeNameLabel,
+            hintText: l10n.timeSchemeNameHint,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('创建'),
+            child: Text(l10n.createAction),
           ),
         ],
       ),
@@ -513,25 +529,26 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Future<void> _renameScheme(TimeScheme scheme) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: scheme.name);
     final name = await showDialog<String>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: const Text('重命名时间模板'),
+        title: Text(l10n.renameTimeSchemeTitle),
         content: TextField(
           controller: controller,
           autofocus: true,
-          decoration: const InputDecoration(labelText: '模板名称'),
+          decoration: InputDecoration(labelText: l10n.timeSchemeNameLabel),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('保存'),
+            child: Text(l10n.saveAction),
           ),
         ],
       ),
@@ -546,25 +563,26 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('已重命名为 $name')),
+      SnackBar(content: Text(l10n.renamedToMessage(name))),
     );
   }
 
   Future<void> _deleteScheme(TimeScheme scheme) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: const Text('删除时间模板'),
-        content: Text('确定删除“${scheme.name}”吗？正在被课表或课程使用的模板不能删除。'),
+        title: Text(l10n.deleteTimeSchemeTitle),
+        content: Text(l10n.deleteTimeSchemeMessage(scheme.name)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
+            child: Text(l10n.deleteAction),
           ),
         ],
       ),
@@ -583,7 +601,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          deleted ? '已删除时间模板：${scheme.name}' : '该模板正在被课表或课程使用',
+          deleted
+              ? l10n.deletedTimeSchemeMessage(scheme.name)
+              : l10n.timeSchemeInUseMessage,
         ),
       ),
     );
@@ -593,11 +613,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     TimeScheme scheme,
     _TimeSchemeUsageInfo usage,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     await showDialog<void>(
       context: context,
       useRootNavigator: true,
       builder: (context) => AlertDialog(
-        title: Text('“${scheme.name}”的使用情况'),
+        title: Text(l10n.timeSchemeUsageTitle(scheme.name)),
         content: SizedBox(
           width: double.maxFinite,
           child: SingleChildScrollView(
@@ -605,7 +626,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('课表使用：${usage.profileCount} 个'),
+                Text('${l10n.profileCountLabel}：${l10n.profileCountValue(usage.profileCount)}'),
                 if (usage.profileNames.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ...usage.profileNames.map(
@@ -616,7 +637,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Text('课程引用：${usage.courseCount} 节'),
+                Text('${l10n.courseCountLabel}：${l10n.courseSectionCountValue(usage.courseCount)}'),
                 if (usage.courseReferences.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ...usage.courseReferences.map(
@@ -633,7 +654,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('关闭'),
+            child: Text(l10n.closeAction),
           ),
         ],
       ),
@@ -644,6 +665,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     TimetableProvider provider,
     String schemeId,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final profileNames = <String>[];
     final courseReferences = <String>[];
     final usages = provider.getTimeSchemeCourseUsages(schemeId);
@@ -656,16 +678,35 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
     for (final usage in usages) {
       final course = usage.course;
-      final usageType = usage.usesOverride ? '副时间表' : '主时间表';
+      final usageType = usage.usesOverride
+          ? l10n.overrideTimeSchemeShortLabel
+          : l10n.mainTimeSchemeLabel;
       courseReferences.add(
-        '${usage.profileName} · ${course.name}'
-        '（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节，$usageType）',
+        l10n.timeSchemeUsageReference(
+          usage.profileName,
+          course.name,
+          _weekdayLabel(context, course.dayOfWeek),
+          course.startSection,
+          course.endSection,
+          usageType,
+        ),
       );
     }
+
+    final previewText = courseReferences.isEmpty
+        ? null
+        : courseReferences.length == 1
+            ? l10n.timeSchemeUsageCourseRefPrefix + courseReferences.first
+            : l10n.timeSchemeUsageCourseRefPrefix +
+                l10n.timeSchemeBottomUsageMulti(
+                  courseReferences.take(2).join('；'),
+                  courseReferences.length,
+                );
 
     return _TimeSchemeUsageInfo(
       profileNames: profileNames,
       courseReferences: courseReferences,
+      courseReferencePreview: previewText,
     );
   }
 
@@ -675,6 +716,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     required _TimeSchemeUsageInfo usage,
     required bool isCurrent,
   }) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Card(
@@ -726,21 +768,21 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           runSpacing: 8,
                           children: [
                             if (isCurrent)
-                              const _TimeSchemeBadge(
-                                text: '当前使用',
+                              _TimeSchemeBadge(
+                                text: AppLocalizations.of(context)!.currentInUse,
                                 icon: Icons.check_circle_outline_rounded,
                               ),
                             _TimeSchemeInfoChip(
-                              label: '节数',
-                              value: '${scheme.sectionCount} 节',
+                              label: AppLocalizations.of(context)!.sectionCountLabel,
+                              value: AppLocalizations.of(context)!.courseSectionCountValue(scheme.sectionCount),
                             ),
                             _TimeSchemeInfoChip(
-                              label: '课表',
-                              value: '${usage.profileCount} 个',
+                              label: AppLocalizations.of(context)!.profileCountLabel,
+                              value: l10n.profileCountValue(usage.profileCount),
                             ),
                             _TimeSchemeInfoChip(
-                              label: '课程',
-                              value: '${usage.courseCount} 节',
+                              label: AppLocalizations.of(context)!.courseCountLabel,
+                              value: l10n.courseSectionCountValue(usage.courseCount),
                             ),
                           ],
                         ),
@@ -752,31 +794,31 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                         _handleSchemeMenu(context, scheme, usage, value),
                     itemBuilder: (context) => [
                       if (!usage.isUnused)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'usage',
-                          child: Text('查看使用情况'),
+                          child: Text(AppLocalizations.of(context)!.viewUsageAction),
                         ),
                       if (!isCurrent)
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'apply',
-                          child: Text('应用到当前课表'),
+                          child: Text(AppLocalizations.of(context)!.applyToCurrentTimetable),
                         ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'edit',
-                        child: Text('编辑节次'),
+                        child: Text(AppLocalizations.of(context)!.editSectionsAction),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'rename',
-                        child: Text('重命名'),
+                        child: Text(AppLocalizations.of(context)!.renameAction),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'duplicate',
-                        child: Text('复制'),
+                        child: Text(AppLocalizations.of(context)!.duplicateAction),
                       ),
                       PopupMenuItem(
                         value: 'delete',
                         enabled: usage.isUnused,
-                        child: const Text('删除'),
+                        child: Text(AppLocalizations.of(context)!.deleteAction),
                       ),
                     ],
                   ),
@@ -784,7 +826,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               ),
               const SizedBox(height: 10),
               Text(
-                '${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
+                scheme.sectionCount > 1
+                    ? AppLocalizations.of(context)!
+                        .timeSchemeStartsAt(scheme.sections.first.displayText)
+                    : scheme.sections.first.displayText,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -807,12 +852,26 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     );
   }
 
-  String _weekdayLabel(int dayOfWeek) {
-    const labels = ['一', '二', '三', '四', '五', '六', '日'];
-    if (dayOfWeek < 1 || dayOfWeek > 7) {
-      return dayOfWeek.toString();
+  String _weekdayLabel(BuildContext context, int dayOfWeek) {
+    final l10n = AppLocalizations.of(context)!;
+    switch (dayOfWeek) {
+      case 1:
+        return l10n.weekdayShortMonday;
+      case 2:
+        return l10n.weekdayShortTuesday;
+      case 3:
+        return l10n.weekdayShortWednesday;
+      case 4:
+        return l10n.weekdayShortThursday;
+      case 5:
+        return l10n.weekdayShortFriday;
+      case 6:
+        return l10n.weekdayShortSaturday;
+      case 7:
+        return l10n.weekdayShortSunday;
+      default:
+        return dayOfWeek.toString();
     }
-    return labels[dayOfWeek - 1];
   }
 
   Future<void> _editSectionTime(int index) async {
@@ -841,10 +900,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final startMinutes = _parseTimeMinutes(editedSection.startTime);
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('结束时间必须晚于开始时间，暂不支持跨 0 点课程'),
-        ),
+        SnackBar(content: Text(l10n.timeRangeValidationNoCrossDay)),
       );
       return;
     }
@@ -953,8 +1011,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         ..text = scheme.name
         ..selection = TextSelection.collapsed(offset: scheme.name.length)
         ..addListener(_scheduleAutoSave);
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('时间模板名称不能为空')),
+        SnackBar(content: Text(l10n.timeSchemeNameEmptyValidation)),
       );
       return;
     }
@@ -1047,25 +1106,17 @@ class _QuickGeneratePreset {
 class _TimeSchemeUsageInfo {
   final List<String> profileNames;
   final List<String> courseReferences;
+  final String? courseReferencePreview;
 
   const _TimeSchemeUsageInfo({
     required this.profileNames,
     required this.courseReferences,
+    this.courseReferencePreview,
   });
 
   int get profileCount => profileNames.length;
   int get courseCount => courseReferences.length;
   bool get isUnused => profileCount == 0 && courseCount == 0;
-
-  String? get courseReferencePreview {
-    if (courseReferences.isEmpty) {
-      return null;
-    }
-    if (courseReferences.length == 1) {
-      return '课程引用：${courseReferences.first}';
-    }
-    return '课程引用：${courseReferences.take(2).join('；')} 等 $courseCount 节课程';
-  }
 }
 
 class _TimeSchemeInfoChip extends StatelessWidget {
@@ -1200,16 +1251,20 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('快捷生成课表时间'),
+      title: Text(l10n.quickGenerateTimeSchemeTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildNumberField(_morningCountController, '上午几节'),
+            _buildNumberField(
+              _morningCountController,
+              l10n.morningSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '早上第一节时间',
+              label: l10n.morningFirstSectionTimeLabel,
               value: _morningStartTime,
               onTap: () => _pickTime(
                 currentValue: _morningStartTime,
@@ -1221,10 +1276,13 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_afternoonCountController, '下午几节'),
+            _buildNumberField(
+              _afternoonCountController,
+              l10n.afternoonSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '下午第一节时间',
+              label: l10n.afternoonFirstSectionTimeLabel,
               value: _afternoonStartTime,
               onTap: () => _pickTime(
                 currentValue: _afternoonStartTime,
@@ -1236,10 +1294,13 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_eveningCountController, '晚上几节'),
+            _buildNumberField(
+              _eveningCountController,
+              l10n.eveningSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '晚上第一节时间',
+              label: l10n.eveningFirstSectionTimeLabel,
               value: _eveningStartTime,
               onTap: () => _pickTime(
                 currentValue: _eveningStartTime,
@@ -1251,14 +1312,20 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_classDurationController, '单节课时长（分钟）'),
+            _buildNumberField(
+              _classDurationController,
+              l10n.classDurationMinutesLabel,
+            ),
             const SizedBox(height: 12),
-            _buildNumberField(_breakDurationController, '小课间时长（分钟）'),
+            _buildNumberField(
+              _breakDurationController,
+              l10n.smallBreakDurationMinutesLabel,
+            ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '大课间规则',
+                l10n.largeBreakRulesTitle,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
@@ -1269,7 +1336,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextButton.icon(
                 onPressed: _addBreakOverride,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('新增大课间规则'),
+                label: Text(l10n.addBreakRuleAction),
               ),
             ),
           ],
@@ -1278,11 +1345,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(l10n.cancelAction),
         ),
         TextButton(
           onPressed: _submit,
-          child: const Text('生成'),
+          child: Text(l10n.generateAction),
         ),
       ],
     );
@@ -1325,10 +1392,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   }
 
   List<Widget> _buildBreakOverrideRows() {
+    final l10n = AppLocalizations.of(context)!;
     if (_breakOverrides.isEmpty) {
       return [
         Text(
-          '未设置大课间规则，将全部使用小课间时长。',
+          l10n.noLargeBreakRulesHint,
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ];
@@ -1344,9 +1412,9 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextFormField(
                 initialValue: '${item.afterSection}',
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: '第几节后',
+                  labelText: l10n.afterSectionLabel,
                 ),
                 onChanged: (value) {
                   item.afterSection = int.tryParse(value) ?? 0;
@@ -1358,9 +1426,9 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextFormField(
                 initialValue: '${item.breakDurationMinutes}',
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: '休息多久(分)',
+                  labelText: l10n.breakDurationMinutesLabel,
                 ),
                 onChanged: (value) {
                   item.breakDurationMinutes = int.tryParse(value) ?? 0;
@@ -1368,7 +1436,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             IconButton(
-              tooltip: '删除规则',
+              tooltip: l10n.deleteRuleTooltip,
               onPressed: () {
                 setState(() {
                   _breakOverrides.removeAt(index);
@@ -1397,6 +1465,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   }
 
   void _submit() {
+    final l10n = AppLocalizations.of(context)!;
     final morningCount = int.tryParse(_morningCountController.text.trim());
     final afternoonCount = int.tryParse(_afternoonCountController.text.trim());
     final eveningCount = int.tryParse(_eveningCountController.text.trim());
@@ -1409,7 +1478,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
         classDuration == null ||
         breakDuration == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请把节数和时长填写为数字')),
+        SnackBar(content: Text(l10n.fillNumbersValidationMessage)),
       );
       return;
     }

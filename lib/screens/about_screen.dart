@@ -188,7 +188,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: [
-                      _buildInfoChip(theme, label: '平台', value: 'Android'),
+                      
                       _buildInfoChip(theme, label: l10n.platformLabel, value: 'Android'),
                       _buildInfoChip(theme, label: l10n.focusLabel, value: 'HyperOS'),
                       _buildInfoChip(
@@ -334,6 +334,7 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   void _showRepositorySheet(BuildContext context, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -347,7 +348,7 @@ class _AboutScreenState extends State<AboutScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '开源仓库',
+                  l10n.aboutRepositorySheetTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w800,
                   ),
@@ -361,7 +362,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '如果你想补学校教务导入适配，建议同时查看教务适配仓 qingyu_warehouse。',
+                  l10n.aboutRepositorySheetHint,
                   style: theme.textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 16),
@@ -371,7 +372,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       child: FilledButton.icon(
                         onPressed: _openRepository,
                         icon: const Icon(Icons.open_in_new_rounded),
-                        label: const Text('打开 GitHub'),
+                        label: Text(l10n.aboutOpenGitHubAction),
                       ),
                     ),
                   ],
@@ -383,7 +384,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       child: FilledButton.tonalIcon(
                         onPressed: _openWarehouseRepository,
                         icon: const Icon(Icons.hub_rounded),
-                        label: const Text('打开教务适配仓'),
+                        label: Text(l10n.aboutOpenWarehouseRepoAction),
                       ),
                     ),
                   ],
@@ -395,7 +396,7 @@ class _AboutScreenState extends State<AboutScreen> {
                       child: FilledButton.tonalIcon(
                         onPressed: _copyRepositoryUrl,
                         icon: const Icon(Icons.copy_all_rounded),
-                        label: const Text('复制地址'),
+                        label: Text(l10n.copyAddress),
                       ),
                     ),
                   ],
@@ -458,7 +459,7 @@ class _AboutScreenState extends State<AboutScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已复制仓库地址')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress)),
     );
   }
 
@@ -510,6 +511,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final settings =
         context.select<TimetableProvider, TimetableSettings>((provider) {
@@ -518,7 +520,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('版本更新'),
+        title: Text(l10n.aboutUpdateScreenTitle),
       ),
       bottomNavigationBar:
           _isDownloading ? _buildDownloadProgressBar(theme) : null,
@@ -536,6 +538,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Widget _buildUpdateCard(ThemeData theme, TimetableSettings settings) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final downloadSource = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
@@ -559,13 +562,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             snapshot.connectionState == ConnectionState.waiting) {
           return _buildUpdateSectionCard(
             theme,
-            title: '更新状态',
+            title: l10n.aboutUpdateStatusTitle,
             trailing: IconButton(
-              tooltip: '重新检查',
+              tooltip: l10n.aboutRefreshCheckTooltip,
               onPressed: widget.packageInfo == null ? null : _refreshUpdate,
               icon: const Icon(Icons.refresh_rounded),
             ),
-            subtitle: '正在检查最新版本信息…',
+            subtitle: l10n.aboutCheckingLatestVersion,
             child: const Padding(
               padding: EdgeInsets.symmetric(vertical: 12),
               child: LinearProgressIndicator(minHeight: 3),
@@ -577,15 +580,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         if (result == null) {
           return _buildUpdateSectionCard(
             theme,
-            title: '更新状态',
+            title: l10n.aboutUpdateStatusTitle,
             trailing: IconButton(
-              tooltip: '重新检查',
+              tooltip: l10n.aboutRefreshCheckTooltip,
               onPressed: widget.packageInfo == null ? null : _refreshUpdate,
               icon: const Icon(Icons.refresh_rounded),
             ),
-            subtitle: '暂时无法读取版本信息，请稍后重试。',
+            subtitle: l10n.aboutReadVersionFailed,
             child: Text(
-              '如果你当前网络访问 GitHub 不稳定，可稍后再试，或切到下面的国内下载方式后重试。',
+              l10n.aboutReadVersionFailedHint,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -611,9 +614,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           downloadUrl: effectiveDownloadUrl,
         );
         final primaryButtonLabel = switch (primaryAction) {
-          AboutUpdatePrimaryAction.openReleasePage => '查看 Release',
-          AboutUpdatePrimaryAction.downloadInApp => '立即下载',
-          AboutUpdatePrimaryAction.openDownloadLink => '打开下载页',
+          AboutUpdatePrimaryAction.openReleasePage => l10n.aboutViewReleaseAction,
+          AboutUpdatePrimaryAction.downloadInApp => l10n.aboutDownloadNowAction,
+          AboutUpdatePrimaryAction.openDownloadLink => l10n.aboutOpenDownloadPageAction,
         };
         final primaryButtonIcon = switch (primaryAction) {
           AboutUpdatePrimaryAction.downloadInApp => Icons.download_rounded,
@@ -626,9 +629,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           children: [
             _buildUpdateSectionCard(
               theme,
-              title: '更新状态',
+              title: l10n.aboutUpdateStatusTitle,
               trailing: IconButton(
-                tooltip: '重新检查',
+                tooltip: l10n.aboutRefreshCheckTooltip,
                 onPressed: widget.packageInfo == null ? null : _refreshUpdate,
                 icon: const Icon(Icons.refresh_rounded),
               ),
@@ -659,19 +662,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     children: [
                       _buildUpdateInfoChip(
                         theme,
-                        label: '当前版本',
+                        label: l10n.aboutCurrentVersionLabel,
                         value: result.currentVersion,
                       ),
                       _buildUpdateInfoChip(
                         theme,
-                        label: '最新版本',
-                        value: release?.version ?? '未发布',
+                        label: l10n.aboutLatestVersionLabel,
+                        value: release?.version ?? l10n.aboutUnreleasedLabel,
                       ),
                       if (release?.isPrerelease == true)
                         _buildUpdateInfoChip(
                           theme,
-                          label: '版本通道',
-                          value: '测试版',
+                          label: l10n.aboutVersionChannelLabel,
+                          value: l10n.aboutPrereleaseChannel,
                         ),
                     ],
                   ),
@@ -679,8 +682,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     const SizedBox(height: 10),
                     Text(
                       result.hasUpdate
-                          ? '你现在只需要点下面的“立即下载”即可。测速、镜像和测试版都已经收进后面的高级选项里。'
-                          : '当前版本已经可正常使用；如果你要体验测试版，可以在后面的高级选项里打开测试版检测。',
+                          ? l10n.aboutUpdateAvailableHint
+                          : l10n.aboutUpdateNoUpdateHint,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -689,7 +692,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   if (release?.updatedAt != null) ...[
                     const SizedBox(height: 10),
                     Text(
-                      '更新时间：${_formatDateTime(release!.updatedAt!)}',
+                      l10n.aboutUpdatedAt(_formatDateTime(release!.updatedAt!)),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -701,10 +704,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             const SizedBox(height: 16),
             _buildUpdateSectionCard(
               theme,
-              title: '立即更新',
+              title: l10n.aboutUpdateNowTitle,
               subtitle: isAndroid
-                  ? '普通使用只需要点一次立即下载。下载慢、下载失败、要换线路时，再去下面的高级选项。'
-                  : '当前平台会直接打开下载页面，不会在应用内安装。',
+                  ? l10n.aboutUpdateNowAndroidSubtitle
+                  : l10n.aboutUpdateNowOtherSubtitle,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -717,8 +720,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                     ),
                     child: Text(
                       downloadSource == AppUpdateDownloadSource.mirror
-                          ? '当前会优先使用国内下载。大多数国内网络直接点“立即下载”就行。'
-                          : '当前会优先使用国际源下载。如果下载慢或打不开，建议先切回“国内下载”。',
+                          ? l10n.aboutMirrorDownloadHint
+                          : l10n.aboutOriginalDownloadHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -752,7 +755,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                                 version: release?.version,
                               ),
                       icon: const Icon(Icons.download_for_offline_rounded),
-                      label: const Text('使用系统下载器下载'),
+                      label: Text(l10n.aboutUseSystemDownloaderAction),
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -761,7 +764,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                         ? () => _openUrl(release?.releaseUrl)
                         : null,
                     icon: const Icon(Icons.new_releases_outlined),
-                    label: const Text('打开 Release 页面'),
+                    label: Text(l10n.aboutOpenReleasePageAction),
                   ),
                 ],
               ),
@@ -769,20 +772,20 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             const SizedBox(height: 16),
             _buildUpdateSectionCard(
               theme,
-              title: '下载方式',
-              subtitle: '默认推荐国内下载。只有你能稳定访问 GitHub 时，再切到国际源下载。',
+              title: l10n.aboutDownloadMethodTitle,
+              subtitle: l10n.aboutDownloadMethodSubtitle,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SegmentedButton<AppUpdateDownloadSource>(
-                    segments: const [
+                    segments: [
                       ButtonSegment<AppUpdateDownloadSource>(
                         value: AppUpdateDownloadSource.mirror,
-                        label: Text('国内下载'),
+                        label: Text(l10n.aboutDownloadMethodMirror),
                       ),
                       ButtonSegment<AppUpdateDownloadSource>(
                         value: AppUpdateDownloadSource.original,
-                        label: Text('国际源下载'),
+                        label: Text(l10n.aboutDownloadMethodOriginal),
                       ),
                     ],
                     selected: {downloadSource},
@@ -803,9 +806,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       downloadSource == AppUpdateDownloadSource.mirror
                           ? recommendedMirrorPreset != null &&
                                   recommendedMirrorPreset != mirrorPreset
-                              ? '当前使用国内下载 · ${mirrorPreset.label}。系统最近测速更推荐“${recommendedMirrorPreset.label}”，需要时可在后面的高级选项里切换。'
-                              : '当前使用国内下载 · ${mirrorPreset.label}。如果下载慢或失败，再到后面的高级选项里测速、换线路或填写自定义地址。'
-                          : '当前使用国际源下载。只有你网络能稳定访问 GitHub 时才建议这样设置；否则请切回国内下载。',
+                              ? l10n.aboutMirrorModeHintRecommended(mirrorPreset.label, recommendedMirrorPreset.label)
+                              : l10n.aboutMirrorModeHintCurrent(mirrorPreset.label)
+                          : l10n.aboutOriginalModeHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -818,8 +821,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               const SizedBox(height: 16),
               _buildUpdateSectionCard(
                 theme,
-                title: '本次更新说明',
-                subtitle: '显示当前检测到版本的 Release 说明。',
+                title: l10n.aboutReleaseNotesTitle,
+                subtitle: l10n.aboutReleaseNotesSubtitle,
                 child: ReleaseNotesMarkdown(
                   data: release!.body.trim(),
                   onTapLink: _openUrl,
@@ -836,6 +839,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     ThemeData theme,
     TimetableSettings settings,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final downloadSource = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
@@ -864,13 +868,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               title: Text(
-                '高级选项',
+                l10n.aboutAdvancedOptionsTitle,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
               ),
               subtitle: Text(
-                '只有下载慢、要手动切线路、或要检测测试版时再展开。',
+                l10n.aboutAdvancedOptionsSubtitle,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -879,7 +883,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    '下载线路与镜像',
+                    l10n.aboutMirrorSectionTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -888,8 +892,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 const SizedBox(height: 8),
                 Text(
                   downloadSource == AppUpdateDownloadSource.mirror
-                      ? '当前使用国内下载。这里可以手动切线路、测速推荐，或填写自定义下载地址。'
-                      : '你现在使用的是国际源下载。下面的线路设置只有在切回“国内下载”后才会生效。',
+                      ? l10n.aboutMirrorSectionMirrorHint
+                      : l10n.aboutMirrorSectionOriginalHint,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -899,7 +903,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   ...AppUpdateMirrorPreset.values.map((preset) {
                     final subtitleText = preset.usesCustomUrl &&
                             settings.appUpdateMirrorUrlPrefix.trim().isEmpty
-                        ? '先填写自定义下载地址'
+                        ? l10n.aboutFillCustomMirrorFirst
                         : preset.description;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -945,7 +949,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          mirrorPreset.usesCustomUrl ? '当前自定义下载地址' : '当前下载线路地址',
+                          mirrorPreset.usesCustomUrl ? l10n.aboutCurrentCustomMirrorTitle : l10n.aboutCurrentMirrorTitle,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -960,8 +964,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                         const SizedBox(height: 10),
                         Text(
                           mirrorPreset.usesCustomUrl
-                              ? '当前正在使用你手动填写的下载地址。'
-                              : '如果当前线路访问失败，可以切到其他内置线路，或改用自定义地址。',
+                              ? l10n.aboutCurrentCustomMirrorHint
+                              : l10n.aboutCurrentMirrorHint,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: colorScheme.onSurfaceVariant,
                           ),
@@ -989,14 +993,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                               : Icons.speed_rounded,
                         ),
                         label: Text(
-                          _isProbingMirrors ? '测速中…' : '测速并推荐',
+                          _isProbingMirrors ? l10n.aboutProbingMirrors : l10n.aboutProbeMirrorsAction,
                         ),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: _editMirrorUrlPrefix,
                         icon: const Icon(Icons.edit_outlined),
                         label: Text(
-                          mirrorPreset.usesCustomUrl ? '修改自定义地址' : '填写自定义地址',
+                          mirrorPreset.usesCustomUrl ? l10n.aboutEditCustomMirrorAction : l10n.aboutSetCustomMirrorAction,
                         ),
                       ),
                       if (recommendedMirrorPreset != null &&
@@ -1007,7 +1011,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                           ),
                           icon: const Icon(Icons.bolt_rounded),
                           label: Text(
-                            '切到推荐：${recommendedMirrorPreset.label}',
+                            l10n.aboutSwitchToRecommendedAction(recommendedMirrorPreset.label),
                           ),
                         ),
                     ],
@@ -1021,7 +1025,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
-                      '当前没有使用国内下载，所以这里的线路设置暂时不会生效。需要的话，请先在上面的“下载方式”里切回国内下载。',
+                      l10n.aboutMirrorDisabledHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -1033,7 +1037,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      '最近测速结果',
+                      l10n.aboutRecentProbeResultsTitle,
                       style: theme.textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
@@ -1046,7 +1050,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                             item.result.isSuccess;
                     final statusText = item.result.isSuccess
                         ? '${item.result.elapsed.inMilliseconds} ms'
-                        : (item.result.message ?? '不可用');
+                        : (item.result.message ?? l10n.aboutUnavailable);
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Container(
@@ -1101,7 +1105,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                                 ),
                                 if (isRecommended)
                                   Text(
-                                    '推荐',
+                                    l10n.aboutRecommended,
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: colorScheme.primary,
                                     ),
@@ -1120,8 +1124,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   onChanged: widget.packageInfo == null
                       ? null
                       : (value) => _updatePrereleasePreference(value),
-                  title: const Text('检测测试版本'),
-                  subtitle: const Text('打开后会把测试版也纳入更新检查；普通使用建议关闭。'),
+                  title: Text(l10n.aboutCheckPrereleaseTitle),
+                  subtitle: Text(l10n.aboutCheckPrereleaseSubtitle),
                 ),
               ],
             ),
@@ -1135,6 +1139,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     ThemeData theme,
     TimetableSettings settings,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
@@ -1142,13 +1147,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           title: Text(
-            '测试与诊断',
+            l10n.aboutDiagnosticsTitle,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
             ),
           ),
           subtitle: Text(
-            '只有遇到“超级岛没弹出”或需要给开发者反馈时再展开。',
+            l10n.aboutDiagnosticsSubtitle,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -1160,8 +1165,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               onChanged: widget.packageInfo == null
                   ? null
                   : (value) => _updateLiveDiagnosticsPreference(value),
-              title: const Text('记录超级岛诊断日志'),
-              subtitle: const Text('打开后会在本地持续记录关键日志，仅用于排查“该弹不弹”等问题。'),
+              title: Text(l10n.aboutRecordDiagnosticsTitle),
+              subtitle: Text(l10n.aboutRecordDiagnosticsSubtitle),
             ),
             if (settings.liveEnableLocalDiagnostics) ...[
               const SizedBox(height: 8),
@@ -1172,17 +1177,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   FilledButton.tonalIcon(
                     onPressed: _exportLiveDiagnostics,
                     icon: const Icon(Icons.ios_share_rounded),
-                    label: const Text('导出诊断日志'),
+                    label: Text(l10n.aboutExportDiagnosticsAction),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _openLiveDiagnosticsViewer,
                     icon: const Icon(Icons.article_outlined),
-                    label: const Text('查看手机日志'),
+                    label: Text(l10n.aboutViewPhoneLogsAction),
                   ),
                   FilledButton.tonalIcon(
                     onPressed: _clearLiveDiagnostics,
                     icon: const Icon(Icons.restart_alt_rounded),
-                    label: const Text('清空并重新收集'),
+                    label: Text(l10n.aboutClearAndRecollectAction),
                   ),
                 ],
               ),
@@ -1278,7 +1283,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(value ? '已开启超级岛诊断日志' : '已关闭超级岛诊断日志'),
+        content: Text(value ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled),
       ),
     );
   }
@@ -1290,7 +1295,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
     if (rawLog == null || rawLog.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('当前还没有可查看的超级岛诊断日志')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
       );
       return;
     }
@@ -1298,7 +1303,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: '超级岛诊断日志',
+          title: AppLocalizations.of(context)!.liveDiagnosticsViewerTitle,
           rawLog: rawLog,
         ),
       ),
@@ -1312,15 +1317,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('还没有可导出的超级岛诊断日志')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet)),
       );
       return;
     }
 
     await Share.shareXFiles(
       [XFile(path)],
-      text: '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。',
-      subject: '轻屿课表 - 超级岛诊断日志',
+      text: AppLocalizations.of(context)!.liveDiagnosticsShareText,
+      subject: AppLocalizations.of(context)!.liveDiagnosticsShareSubject,
     );
   }
 
@@ -1332,7 +1337,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          cleared ? '已清空超级岛诊断日志，后续会重新开始收集' : '清空超级岛诊断日志失败',
+          cleared ? AppLocalizations.of(context)!.liveDiagnosticsCleared : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
         ),
       ),
     );
@@ -1448,6 +1453,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     String originalDownloadUrl, {
     required String customMirrorUrlPrefix,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     if (_buildMirrorPresetCandidates(customMirrorUrlPrefix).isEmpty) {
       return;
     }
@@ -1477,7 +1483,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     });
     if (recommendedPreset == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('测速完成，但暂时没有发现可用镜像线路')),
+        SnackBar(content: Text(l10n.aboutProbeNoMirrorFound)),
       );
       return;
     }
@@ -1493,16 +1499,16 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
     if (recommendedPreset == currentPreset) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('测速完成，当前线路“${currentPreset.label}”已是最快可用线路')),
+        SnackBar(content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label))),
       );
       return;
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('测速完成，推荐切换到“${recommendedPreset.label}”'),
+        content: Text(l10n.aboutProbeRecommendSwitch(recommendedPreset.label)),
         action: SnackBarAction(
-          label: '切换',
+          label: l10n.switchAction,
           onPressed: () {
             _updateMirrorPreset(recommendedPreset);
           },
@@ -1512,6 +1518,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   void _showDownloadFailureSnackBar(String error) {
+    final l10n = AppLocalizations.of(context)!;
     final settings = context.read<TimetableProvider>().settings;
     final source = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
@@ -1520,9 +1527,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (source == AppUpdateDownloadSource.original) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$error，可切到国内镜像后再试'),
+          content: Text(l10n.aboutSwitchToMirrorAfterError(error)),
           action: SnackBarAction(
-            label: '切换',
+            label: l10n.switchAction,
             onPressed: () {
               _updateDownloadSource(AppUpdateDownloadSource.mirror);
             },
@@ -1552,9 +1559,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (fallbackPreset != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('$error，建议切换到“${fallbackPreset.label}”后重试'),
+          content: Text(l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label)),
           action: SnackBarAction(
-            label: '切换',
+            label: l10n.switchAction,
             onPressed: () {
               _updateMirrorPreset(fallbackPreset);
             },
@@ -1570,6 +1577,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Future<void> _editMirrorUrlPrefix() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final controller = TextEditingController(
       text: provider.settings.appUpdateMirrorUrlPrefix,
@@ -1578,11 +1586,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          title: const Text('设置镜像源'),
+          title: Text(l10n.aboutSetMirrorSourceTitle),
           content: TextField(
             controller: controller,
-            decoration: const InputDecoration(
-              labelText: '镜像前缀',
+            decoration: InputDecoration(
+              labelText: l10n.aboutMirrorPrefixLabel,
               hintText: 'https://ghfast.top/',
             ),
             autofocus: true,
@@ -1590,13 +1598,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('取消'),
+              child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.of(dialogContext).pop(controller.text.trim());
               },
-              child: const Text('保存'),
+              child: Text(AppLocalizations.of(dialogContext)!.saveAction),
             ),
           ],
         );
@@ -1611,7 +1619,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final normalizedPrefix = _normalizeMirrorUrlPrefix(result);
     if (normalizedPrefix == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('镜像源格式不正确，请输入完整的 http 或 https 地址')),
+        SnackBar(content: Text(l10n.aboutMirrorPrefixInvalid)),
       );
       return;
     }
@@ -1629,12 +1637,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       _mirrorProbeStates = const [];
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message ?? '镜像源已保存')),
+      SnackBar(content: Text(message ?? l10n.aboutMirrorSaved)),
     );
     _analytics.logEventLater(name: 'update_mirror_saved');
   }
 
   Future<void> _downloadAndInstall(String url) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = AppUpdateDownloadController();
     _analytics.logEventLater(name: 'update_download_started');
     setState(() {
@@ -1672,7 +1681,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       if (error == AppUpdateService.downloadCancelledMessage) {
         _analytics.logEventLater(name: 'update_download_cancelled');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('已取消下载')),
+          SnackBar(content: Text(l10n.aboutDownloadCancelled)),
         );
         return;
       }
@@ -1683,8 +1692,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     _analytics.logEventLater(name: 'update_download_completed');
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('安装包已准备好，已尝试打开安装界面；如果系统没有弹出，请稍后从通知或文件管理器手动安装'),
+      SnackBar(
+        content: Text(l10n.aboutInstallReady),
       ),
     );
   }
@@ -1704,6 +1713,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     required String url,
     String? version,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final normalizedVersion = (version ?? '').trim().replaceAll(' ', '_');
       final fileName = normalizedVersion.isEmpty
@@ -1712,8 +1722,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       final downloadId = await _supportService.enqueueSystemDownload(
         url: url,
         fileName: fileName,
-        title: '轻屿课表更新包',
-        description: '已交给系统下载管理器下载，完成后可直接从系统通知安装。',
+        title: l10n.aboutUpdatePackageTitle,
+        description: l10n.aboutUpdatePackageDescription,
       );
       if (!mounted) {
         return;
@@ -1725,8 +1735,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         },
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('已交给系统下载管理器，请在系统通知或下载列表里查看进度'),
+        SnackBar(
+          content: Text(l10n.aboutSystemDownloaderQueued),
         ),
       );
     } on PlatformException catch (error) {
@@ -1739,7 +1749,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           content: Text(
             error.message?.trim().isNotEmpty == true
                 ? error.message!
-                : '调用系统下载管理器失败',
+                : l10n.aboutSystemDownloaderFailed,
           ),
         ),
       );
@@ -1749,7 +1759,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       }
       _analytics.logEventLater(name: 'update_system_download_failed');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('调用系统下载管理器失败')),
+        SnackBar(content: Text(l10n.aboutSystemDownloaderFailed)),
       );
     }
   }
@@ -1856,16 +1866,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Widget _buildDownloadProgressBar(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final totalBytes = _downloadTotalBytes;
     final progress = totalBytes == null || totalBytes <= 0
         ? null
         : _downloadedBytes / totalBytes;
     final progressText = _isCancellingDownload
-        ? '正在取消下载…'
+        ? l10n.aboutDownloadCancelling
         : progress == null
-            ? '正在下载更新 ${_formatBytes(_downloadedBytes)}'
-            : '正在下载更新 ${(progress * 100).toStringAsFixed(1)}%';
+            ? l10n.aboutDownloadingBytes(_formatBytes(_downloadedBytes))
+            : l10n.aboutDownloadingPercent((progress * 100).toStringAsFixed(1));
     return SafeArea(
       top: false,
       child: Container(
@@ -1899,7 +1910,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             if (progress == null && _downloadedBytes > 0) ...[
               const SizedBox(height: 4),
               Text(
-                '镜像源未返回文件总大小，先显示已下载体积',
+                l10n.aboutMirrorUnknownSizeHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -1919,7 +1930,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: TextButton.icon(
                 onPressed: _isCancellingDownload ? null : _cancelDownload,
                 icon: const Icon(Icons.close_rounded),
-                label: Text(_isCancellingDownload ? '正在取消…' : '取消下载'),
+                label: Text(_isCancellingDownload ? l10n.aboutDownloadCancelling : l10n.aboutCancelDownloadAction),
               ),
             ),
           ],
@@ -2114,11 +2125,12 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('代码贡献者'),
+        title: Text(l10n.aboutContributorsScreenTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -2130,15 +2142,15 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '开发人员',
+                    l10n.aboutDevelopersTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 10),
-                  const _ContributorRow(
+                  _ContributorRow(
                     name: 'Mutx163',
-                    subtitle: '轻屿课表开发与维护',
+                    subtitle: l10n.aboutDeveloperMaintainerSubtitle,
                   ),
                 ],
               ),
@@ -2155,7 +2167,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          '教务导入适配者',
+                          l10n.aboutWarehouseMaintainersTitle,
                           style: theme.textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -2171,7 +2183,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '以下名单来自 qingyu_warehouse 适配仓的 maintainer 字段汇总。若本地已有缓存，会先显示缓存，再后台刷新。',
+                    l10n.aboutWarehouseMaintainersIntro,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
@@ -2179,14 +2191,14 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                   const SizedBox(height: 12),
                   if (_maintainersError != null && _maintainers.isEmpty)
                     Text(
-                      '暂时无法读取适配者名单：$_maintainersError',
+                      l10n.aboutWarehouseMaintainersLoadFailed(_maintainersError!),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.error,
                       ),
                     )
                   else if (_maintainers.isEmpty)
                     Text(
-                      '当前还没有读取到适配者信息。',
+                      l10n.aboutWarehouseMaintainersEmpty,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -2197,7 +2209,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _ContributorRow(
                           name: group.name,
-                          subtitle: '${group.adapterLabels.length} 个适配项',
+                          subtitle: l10n.aboutWarehouseMaintainerCount(group.adapterLabels.length),
                           details: group.adapterLabels,
                         ),
                       ),
@@ -2214,14 +2226,14 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '参与教务适配',
+                    l10n.aboutParticipateWarehouseTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '如果你会抓包、网页调试、JavaScript，或者愿意长期维护自己学校的教务系统，欢迎去 qingyu_warehouse 提交新的学校适配与修复。',
+                    l10n.aboutParticipateWarehouseSubtitle,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 12),
@@ -2232,12 +2244,12 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                       FilledButton.icon(
                         onPressed: _openWarehouseRepository,
                         icon: const Icon(Icons.open_in_new_rounded),
-                        label: const Text('打开适配仓'),
+                        label: Text(l10n.aboutOpenWarehouseRepoAction),
                       ),
                       OutlinedButton.icon(
                         onPressed: _copyWarehouseRepositoryUrl,
                         icon: const Icon(Icons.copy_all_rounded),
-                        label: const Text('复制仓库地址'),
+                        label: Text(l10n.copyAddress),
                       ),
                     ],
                   ),
@@ -2266,7 +2278,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已复制教务适配仓地址')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress)),
     );
   }
 }

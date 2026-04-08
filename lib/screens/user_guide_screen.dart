@@ -246,7 +246,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             children: [
               _buildHeroChip(Icons.security_rounded, l10n.guideChipPermissions),
               _buildHeroChip(
-                  Icons.system_update_alt_rounded, 'HyperOS 3.0.300+'),
+                  Icons.system_update_alt_rounded, l10n.guideHyperOsChip),
               _buildHeroChip(Icons.edit_note_rounded, l10n.guideChipShortName),
               _buildHeroChip(Icons.import_export_rounded, l10n.guideChipImport),
               _buildHeroChip(
@@ -365,6 +365,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildStatusCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     return Card(
       child: Padding(
@@ -373,7 +374,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '当前状态',
+              l10n.guideStatusTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
@@ -384,45 +385,45 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             else ...[
               _buildStatusTile(
                 icon: Icons.notifications_active_outlined,
-                title: '通知权限',
-                value: _hasNotificationPermission ? '已开启' : '未开启',
+                title: l10n.guideStatusNotificationPermission,
+                value: _hasNotificationPermission ? l10n.guideStatusEnabled : l10n.guideStatusDisabled,
                 success: _hasNotificationPermission,
               ),
               _buildStatusTile(
                 icon: Icons.auto_awesome,
-                title: '焦点通知 / 超级岛',
+                title: l10n.guideStatusIslandSupport,
                 value: _canPostPromoted
-                    ? '系统已允许'
-                    : (_hasPromotedPermission ? '已开启但系统暂未确认' : '建议检查'),
+                    ? l10n.guideStatusSystemAllowed
+                    : (_hasPromotedPermission ? l10n.guideStatusEnabledPending : l10n.guideStatusSuggestedCheck),
                 success: _canPostPromoted,
               ),
               _buildStatusTile(
                 icon: Icons.battery_charging_full_outlined,
-                title: '电池优化',
-                value: _isIgnoringBatteryOptimizations ? '无限制' : '仍受限制',
+                title: l10n.guideStatusBatteryOptimization,
+                value: _isIgnoringBatteryOptimizations ? l10n.guideStatusBatteryUnrestricted : l10n.guideStatusBatteryRestricted,
                 success: _isIgnoringBatteryOptimizations,
               ),
               _buildStatusTile(
                 icon: Icons.accessibility_new_rounded,
-                title: '后台保活辅助',
-                value: _isKeepAliveAccessibilityEnabled ? '已开启' : '未开启',
+                title: l10n.guideStatusKeepAlive,
+                value: _isKeepAliveAccessibilityEnabled ? l10n.guideStatusEnabled : l10n.guideStatusDisabled,
                 success: _isKeepAliveAccessibilityEnabled,
               ),
               _buildStatusTile(
                 icon: Icons.phone_android_outlined,
-                title: 'Android 版本',
-                value: _androidVersion > 0 ? 'Android $_androidVersion' : '未识别',
+                title: l10n.guideStatusAndroidVersion,
+                value: _androidVersion > 0 ? 'Android $_androidVersion' : l10n.guideStatusVersionUnknown,
                 success: _androidVersion >= 13,
               ),
               _buildStatusTile(
                 icon: Icons.star_border_rounded,
-                title: '超级岛系统支持',
-                value: '需 HyperOS 3.0.300 及以上',
+                title: l10n.guideStatusIslandSystemSupport,
+                value: l10n.guideStatusIslandSystemRequirement,
                 success: _canPostPromoted,
               ),
               const SizedBox(height: 6),
               Text(
-                '如果你主要想用超级岛，先确认系统版本至少是 HyperOS 3.0.300，再继续把下面权限清单按顺序点完。',
+                l10n.guideStatusIslandHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -435,6 +436,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildPermissionChecklistCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -442,22 +444,22 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '权限清单',
+              l10n.guidePermissionChecklistTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '按这个顺序检查，最省事，也最不容易漏。',
+              l10n.guidePermissionChecklistSubtitle,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
             _buildChecklistTile(
               step: '1',
               icon: Icons.notifications_outlined,
-              title: '申请通知权限',
-              subtitle: '这是所有提醒的前提',
+              title: l10n.guideChecklistRequestNotificationTitle,
+              subtitle: l10n.guideChecklistRequestNotificationSubtitle,
               onTap: () => _runAction(() async {
                 await _service.requestNotificationPermission();
               }),
@@ -465,36 +467,36 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             _buildChecklistTile(
               step: '2',
               icon: Icons.tune,
-              title: '打开通知设置',
-              subtitle: '检查通知总开关、锁屏展示和实时通知权限',
+              title: l10n.guideChecklistOpenNotificationTitle,
+              subtitle: l10n.guideChecklistOpenNotificationSubtitle,
               onTap: () => _runAction(_service.openNotificationSettings),
             ),
             _buildChecklistTile(
               step: '3',
               icon: Icons.star_border,
-              title: '打开焦点通知设置',
-              subtitle: 'HyperOS 3.0.300 及以上再检查 promoted / 超级岛通知',
+              title: l10n.guideChecklistOpenIslandTitle,
+              subtitle: l10n.guideChecklistOpenIslandSubtitle,
               onTap: () => _runAction(_service.openPromotedSettings),
             ),
             _buildChecklistTile(
               step: '4',
               icon: Icons.play_circle_outline,
-              title: '打开自启动设置',
-              subtitle: '允许应用开机自启和后台常驻',
+              title: l10n.guideChecklistOpenAutoStartTitle,
+              subtitle: l10n.guideChecklistOpenAutoStartSubtitle,
               onTap: () => _runAction(_service.openAutoStartSettings),
             ),
             _buildChecklistTile(
               step: '5',
               icon: Icons.battery_saver_outlined,
-              title: '打开电池策略设置',
-              subtitle: '建议改成无限制，避免上课提醒被中断',
+              title: l10n.guideChecklistOpenBatteryTitle,
+              subtitle: l10n.guideChecklistOpenBatterySubtitle,
               onTap: () => _runAction(_service.openBatteryOptimizationSettings),
             ),
             _buildChecklistTile(
               step: '6',
               icon: Icons.accessibility_new_rounded,
-              title: '打开后台保活辅助',
-              subtitle: '进一步提升超级岛和提醒在后台场景下的稳定性',
+              title: l10n.guideChecklistOpenKeepAliveTitle,
+              subtitle: l10n.guideChecklistOpenKeepAliveSubtitle,
               onTap: () => _runAction(_service.openAccessibilitySettings),
             ),
           ],
@@ -504,6 +506,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildShortNameCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -511,19 +514,19 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '课程简称建议',
+              l10n.guideShortNameAdviceTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '超级岛支持显示课程简称。简称不是自动生成的，需要你在课程编辑里自己填写。建议控制在 3 个字以内，显示会更稳定。',
+            Text(
+              l10n.guideShortNameAdviceSubtitle,
             ),
             const SizedBox(height: 12),
-            _buildTipLine('推荐示例', '高数 / 概率 / 数控'),
+            _buildTipLine(l10n.guideShortNameRecommended, l10n.guideShortNameRecommendedExample),
             const SizedBox(height: 6),
-            _buildTipLine('不推荐', '高等数学A(1) / 数控技术及应用'),
+            _buildTipLine(l10n.guideShortNameNotRecommended, l10n.guideShortNameNotRecommendedExample),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -538,7 +541,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   );
                 },
                 icon: const Icon(Icons.edit_outlined),
-                label: const Text('去设置课程简称'),
+                label: Text(l10n.guideSetCourseShortNameAction),
               ),
             ),
           ],
@@ -548,6 +551,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildImportGuideCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -555,30 +559,30 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '课表导入方式',
+              l10n.guideImportMethodsTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              '当前版本已经支持部分学校的教务系统网页登录导入；如果你的学校还没适配，也还有其他迁移方式。',
+              l10n.guideImportMethodsSubtitle,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
             _buildNumberedLine(
               '1',
-              '优先进入“导入课程 > 教务系统导入”，选择学校和适配器后，直接在应用内打开教务网页完成导入。',
+              l10n.guideImportMethodStep1,
             ),
             const SizedBox(height: 8),
             _buildNumberedLine(
               '2',
-              '如果你的学校暂时没有适配，可以先在 WakeUp 等课表应用里导入教务系统课程，再导出日历格式，最后回到本应用导入。',
+              l10n.guideImportMethodStep2,
             ),
             const SizedBox(height: 8),
             _buildNumberedLine(
               '3',
-              '如果别人已经在用本应用，也可以让对方导出完整备份文件，你直接导入就能恢复课程和设置。',
+              l10n.guideImportMethodStep3,
             ),
             const SizedBox(height: 12),
             Container(
@@ -588,7 +592,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                '如果你会抓包、网页调试或 JavaScript，也欢迎参与学校教务适配补充，让更多学校能直接导入。',
+                l10n.guideImportMethodExtra,
                 style: theme.textTheme.bodySmall,
               ),
             ),
@@ -599,6 +603,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildTipsCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -606,24 +611,24 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '最后再看这 3 条',
+              l10n.guideFinalTipsTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              '1. HyperOS 3.0.300 及以上才支持超级岛；如果系统版本不够，应用仍可正常发普通提醒。',
+              l10n.guideFinalTip1,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '2. 先在设置页调整“上课前弹出”和“课中 / 临近下课提醒”的阈值。',
+              l10n.guideFinalTip2,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '3. 完成系统权限设置后，再用测试通知验证；如果岛区还是偶尔消失，优先检查自启动和省电策略。',
+              l10n.guideFinalTip3,
               style: theme.textTheme.bodyMedium,
             ),
           ],
@@ -633,10 +638,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Widget _buildPrivacyConsentCard(ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     final helperText = widget.requirePrivacyConsent
-        ? '你勾选同意后，代表你已阅读并同意上述友盟相关说明、隐私内容与免责提示。'
-        : '这里保留与首次启动一致的隐私、第三方 SDK 与免责说明，方便你随时查看；当前页面不需要再次勾选同意。';
+        ? l10n.guidePrivacyHelperRequireConsent
+        : l10n.guidePrivacyHelperViewOnly;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -644,29 +650,29 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '隐私、第三方 SDK 与免责说明',
+              l10n.guidePrivacySectionTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              '本应用主体功能按本地运行方式设计，课表、时间模板、课程记录和大部分设置默认保存在你的设备本地。',
+              l10n.guidePrivacyParagraph1,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '只有在你主动使用检查更新、下载更新、导入导出等联网功能，或你勾选同意后初始化友盟相关 SDK 时，应用才会与外部服务发生数据交互。',
+              l10n.guidePrivacyParagraph2,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '本应用接入友盟移动统计 SDK、友盟应用性能监控 SDK 以及高级运营分析依赖库。它们的服务用途包括移动统计分析、应用性能监控以及高级运营分析相关能力；只有在你勾选同意后，这些 SDK 才会正式初始化。',
+              l10n.guidePrivacyParagraph3,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '按友盟官方说明，这些 SDK 可能处理的信息包括：设备信息（如 IMEI、MAC、Android ID、OAID、IDFA、OpenUDID、GUID、SIM 卡 IMSI 等）、网络状态、设备标识，以及高级运营分析依赖库涉及的应用列表和地理位置相关信息。',
+              l10n.guidePrivacyParagraph4,
               style: theme.textTheme.bodyMedium,
             ),
             const SizedBox(height: 10),
@@ -680,24 +686,24 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '免责与风险提示',
+                    l10n.guideRiskTitle,
                     style: theme.textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '1. 超级岛、焦点通知、后台提醒和保活效果依赖系统版本、机型、厂商策略、权限、自启动、电池策略等外部条件，无法保证所有设备表现完全一致。',
+                    l10n.guideRiskParagraph1,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '2. 检查更新、镜像下载、系统下载器、导入导出与分享等能力依赖网络环境、第三方服务和系统文件能力；若出现失败、限速或文件异常，请以 Release 页面、你自己保存的备份文件和系统提示为准。',
+                    l10n.guideRiskParagraph2,
                     style: theme.textTheme.bodyMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '3. 在迁移、导入或覆盖数据前，请先自行确认备份文件完整可用，并妥善保管含有课表信息的文件；因用户自行删除、覆盖、分享或保管不当造成的数据问题，需要由用户自行承担相应风险。',
+                    l10n.guideRiskParagraph3,
                     style: theme.textTheme.bodyMedium,
                   ),
                 ],
@@ -722,7 +728,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    '友盟隐私政策：https://www.umeng.com/page/policy',
+                    l10n.guideUmengPrivacyLink,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),

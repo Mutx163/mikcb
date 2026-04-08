@@ -21,14 +21,44 @@ const List<String> _labelColors = [
   '#F9A8D4',
 ];
 
-String _formatLiveTimeCorrection(int seconds) {
+String _formatLiveTimeCorrection(AppLocalizations l10n, int seconds) {
   if (seconds == 0) {
-    return '不矫正';
+    return l10n.liveTimeCorrectionNone;
   }
   if (seconds > 0) {
-    return '整体延后 $seconds 秒';
+    return l10n.liveTimeCorrectionDelay(seconds);
   }
-  return '整体提前 ${seconds.abs()} 秒';
+  return l10n.liveTimeCorrectionAdvance(seconds.abs());
+}
+
+String _buildLiveClassReminderLeadSummary(
+  AppLocalizations l10n,
+  TimetableSettings settings,
+) {
+  if (settings.liveClassReminderStartMinutes == 0) {
+    return l10n.liveClassReminderLeadSummaryImmediate(
+      settings.liveEndSecondsCountdownThreshold,
+    );
+  }
+  if (settings.liveEnableDuringClass &&
+      settings.liveShowDuringClassNotification &&
+      !settings.livePromoteDuringClass) {
+    return l10n.liveClassReminderLeadSummaryKeepNormal(
+      settings.liveClassReminderStartMinutes,
+      settings.liveEndSecondsCountdownThreshold,
+    );
+  }
+  if (settings.liveEnableDuringClass &&
+      settings.liveShowDuringClassNotification) {
+    return l10n.liveClassReminderLeadSummaryIsland(
+      settings.liveClassReminderStartMinutes,
+      settings.liveEndSecondsCountdownThreshold,
+    );
+  }
+  return l10n.liveClassReminderLeadSummaryFocused(
+    settings.liveClassReminderStartMinutes,
+    settings.liveEndSecondsCountdownThreshold,
+  );
 }
 
 class _SectionCard extends StatelessWidget {
@@ -104,6 +134,10 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final timeCorrectionText = _formatLiveTimeCorrection(
+      l10n,
+      _draft.liveTimeCorrectionSeconds,
+    );
     return Scaffold(
       appBar: AppBar(title: Text(l10n.liveReminderTimingTitle)),
       body: ListView(
@@ -141,69 +175,79 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   ),
                 ),
                 if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.liveClassReminderLeadTitle),
-                    subtitle: Text(
-                      _draft.liveClassReminderStartMinutes == 0
-                          ? '从上课开始就进入重点提醒展示，并在距下课 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                          : _draft.liveEnableDuringClass &&
-                                  _draft.liveShowDuringClassNotification &&
-                                  !_draft.livePromoteDuringClass
-                              ? '上课后先保留普通课中通知，在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到重点提醒 / 下课提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                              : _draft.liveEnableDuringClass &&
-                                      _draft.liveShowDuringClassNotification
-                                  ? '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟切到超级岛 / 重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数'
-                                  : '在距下课前 ${_draft.liveClassReminderStartMinutes} 分钟开始展示重点提醒，并在最后 ${_draft.liveEndSecondsCountdownThreshold} 秒切到秒级倒数',
-                    ),
-                    trailing: DropdownButton<int>(
-                      value: _draft.liveClassReminderStartMinutes,
-                      items: [
-                        DropdownMenuItem(
-                          value: 0,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionImmediate,
-                          ),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.liveClassReminderLeadTitle,
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                         ),
-                        DropdownMenuItem(
-                          value: 5,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionMinutes(5),
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _buildLiveClassReminderLeadSummary(l10n, _draft),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        DropdownMenuItem(
-                          value: 10,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionMinutes(10),
+                        const SizedBox(height: 12),
+                        DropdownButtonFormField<int>(
+                          isExpanded: true,
+                          value: _draft.liveClassReminderStartMinutes,
+                          decoration: InputDecoration(
+                            border: const OutlineInputBorder(),
+                            labelText: l10n.liveClassReminderLeadTitle,
                           ),
-                        ),
-                        DropdownMenuItem(
-                          value: 15,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionMinutes(15),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 20,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionMinutes(20),
-                          ),
-                        ),
-                        DropdownMenuItem(
-                          value: 30,
-                          child: Text(
-                            l10n.liveClassReminderLeadOptionMinutes(30),
-                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 0,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionImmediate,
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 5,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionMinutes(5),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 10,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionMinutes(10),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 15,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionMinutes(15),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 20,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionMinutes(20),
+                              ),
+                            ),
+                            DropdownMenuItem(
+                              value: 30,
+                              child: Text(
+                                l10n.liveClassReminderLeadOptionMinutes(30),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                liveClassReminderStartMinutes: value,
+                              ),
+                            );
+                          },
                         ),
                       ],
-                      onChanged: (value) {
-                        if (value == null) return;
-                        _updateDraft(
-                          _draft.copyWith(
-                            liveClassReminderStartMinutes: value,
-                          ),
-                        );
-                      },
                     ),
                   ),
               ],
@@ -295,9 +339,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  l10n.timeCorrectionLabel(
-                    _formatLiveTimeCorrection(_draft.liveTimeCorrectionSeconds),
-                  ),
+                  l10n.timeCorrectionLabel(timeCorrectionText),
                 ),
                 Slider(
                   value: _draft.liveTimeCorrectionSeconds
@@ -306,9 +348,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   min: _timeCorrectionMin,
                   max: _timeCorrectionMax,
                   divisions: (_timeCorrectionMax - _timeCorrectionMin).toInt(),
-                  label: _formatLiveTimeCorrection(
-                    _draft.liveTimeCorrectionSeconds,
-                  ),
+                  label: timeCorrectionText,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(
                       liveTimeCorrectionSeconds: value.round(),
@@ -540,14 +580,14 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       ],
       const SizedBox(height: 16),
       _SectionCard(
-        title: '左侧图标与展开态',
-        subtitle: '左侧文字图、展开态大图标和自定义图片都按当前阶段单独保存。',
+        title: l10n.liveIslandVisualTitle,
+        subtitle: l10n.liveIslandVisualSubtitle,
         child: Column(
           children: [
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('小米岛左侧文字图标'),
-              subtitle: const Text('仅小米手机样式生效，会把课程名或地点生成到左侧图标位。'),
+              title: Text(l10n.liveMiuiLabelImageTitle),
+              subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
               value: display.enableMiuiIslandLabelImage,
               onChanged: (value) => _updateDisplay(
                 display.copyWith(enableMiuiIslandLabelImage: value),
@@ -557,8 +597,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelContent>(
                 value: display.miuiIslandLabelContent,
-                decoration: const InputDecoration(
-                  labelText: '左侧文字内容',
+                decoration: InputDecoration(
+                  labelText: l10n.liveMiuiLabelContentLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: MiuiIslandLabelContent.values
@@ -577,8 +617,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelStyle>(
                 value: display.miuiIslandLabelStyle,
-                decoration: const InputDecoration(
-                  labelText: '左侧图标样式',
+                decoration: InputDecoration(
+                  labelText: l10n.liveMiuiLabelStyleLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: MiuiIslandLabelStyle.values
@@ -596,7 +636,10 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                  '左侧文字大小 ${display.miuiIslandLabelFontSize.toStringAsFixed(0)}'),
+                l10n.liveMiuiLabelFontSizeLabel(
+                  display.miuiIslandLabelFontSize.toStringAsFixed(0),
+                ),
+              ),
               Slider(
                 value: display.miuiIslandLabelFontSize,
                 min: 1,
@@ -610,7 +653,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '左侧文字水平偏移 ${display.miuiIslandLabelOffsetX.toStringAsFixed(1)}',
+                l10n.liveMiuiLabelOffsetXLabel(
+                  display.miuiIslandLabelOffsetX.toStringAsFixed(1),
+                ),
               ),
               Slider(
                 value: display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0),
@@ -625,7 +670,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               Text(
-                '左侧文字垂直偏移 ${display.miuiIslandLabelOffsetY.toStringAsFixed(1)}',
+                l10n.liveMiuiLabelOffsetYLabel(
+                  display.miuiIslandLabelOffsetY.toStringAsFixed(1),
+                ),
               ),
               Slider(
                 value: display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0),
@@ -641,8 +688,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelFontWeight>(
                 value: display.miuiIslandLabelFontWeight,
-                decoration: const InputDecoration(
-                  labelText: '左侧文字粗细',
+                decoration: InputDecoration(
+                  labelText: l10n.liveMiuiLabelFontWeightLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: MiuiIslandLabelFontWeight.values
@@ -661,8 +708,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelRenderQuality>(
                 value: display.miuiIslandLabelRenderQuality,
-                decoration: const InputDecoration(
-                  labelText: '左侧文字清晰度',
+                decoration: InputDecoration(
+                  labelText: l10n.liveMiuiLabelRenderQualityLabel,
                   border: OutlineInputBorder(),
                 ),
                 items: MiuiIslandLabelRenderQuality.values
@@ -702,8 +749,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             ],
             DropdownButtonFormField<MiuiIslandExpandedIconMode>(
               value: display.miuiIslandExpandedIconMode,
-              decoration: const InputDecoration(
-                labelText: '展开态大图标',
+              decoration: InputDecoration(
+                labelText: l10n.liveMiuiExpandedIconLabel,
                 border: OutlineInputBorder(),
               ),
               items: MiuiIslandExpandedIconMode.values
@@ -736,8 +783,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                       icon: const Icon(Icons.image_outlined),
                       label: Text(
                         display.miuiIslandExpandedIconPath == null
-                            ? '选择图片'
-                            : '更换图片',
+                            ? l10n.selectImageAction
+                            : l10n.replaceImageAction,
                       ),
                     ),
                   ),
@@ -771,11 +818,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         children: [
           if (widget.forDuringEnd) ...[
             _SectionCard(
-              title: '配置方式',
-              subtitle: '打开后，课中和下课提醒会完全跟随上课前提醒显示，下面的独立设置暂时不可编辑。',
+              title: l10n.liveDisplayConfigModeTitle,
+              subtitle: l10n.liveDisplayConfigModeSubtitle,
               child: SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('跟随上课前提醒设置'),
+                title: Text(l10n.followBeforeClassDisplayTitle),
                 value: _draft.liveDuringEndFollowBeforeClass,
                 onChanged: (value) => _updateDraft(
                   _draft.copyWith(liveDuringEndFollowBeforeClass: value),
@@ -922,21 +969,22 @@ class _LiveKeepAliveSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('后台保活')),
+      appBar: AppBar(title: Text(l10n.liveKeepAliveTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _SectionCard(
-            title: '保活选项',
-            subtitle: '用于提升超级岛和提醒在后台场景下的稳定性。',
+            title: l10n.liveKeepAliveOptionsTitle,
+            subtitle: l10n.liveKeepAliveOptionsSubtitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('从最近任务中隐藏应用'),
-                  subtitle: const Text('开启后应用会尽量不显示在最近任务列表中。'),
+                  title: Text(l10n.hideFromRecentsTitle),
+                  subtitle: Text(l10n.hideFromRecentsSubtitle),
                   value: _draft.liveHideFromRecents,
                   onChanged: (value) async {
                     final messenger = ScaffoldMessenger.of(context);
@@ -961,15 +1009,15 @@ class _LiveKeepAliveSettingsScreenState
                         ? Theme.of(context).colorScheme.primary
                         : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  title: const Text('轻屿课表后台保活服务'),
+                  title: Text(l10n.keepAliveServiceTitle),
                   subtitle: Text(
                     _enabled
-                        ? '当前已开启。系统会保持后台保活辅助服务处于可用状态。'
-                        : '当前未开启。可进入系统无障碍设置手动打开轻屿课表后台保活服务。',
+                        ? l10n.keepAliveServiceEnabledSubtitle
+                        : l10n.keepAliveServiceDisabledSubtitle,
                   ),
                   trailing: FilledButton.tonal(
                     onPressed: () => _openSettings(),
-                    child: const Text('去开启'),
+                    child: Text(l10n.goEnableAction),
                   ),
                 ),
               ],
