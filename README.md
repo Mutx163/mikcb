@@ -6,16 +6,16 @@
 ![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
 ![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/android-build.yml?branch=main&label=android%20build)
 
-一个为校园场景设计的 Android 课表应用。
+一个面向校园场景的 Android 课表应用。
 
-轻屿课表的重点不是“把课程列出来”，而是把课表、课前提醒、课中状态、下课提醒、桌面小组件和 HyperOS 超级岛尽量接成一条完整链路。它更像一个围绕“今天接下来要上什么课”来优化的日常工具，而不是传统的静态课表页。
+轻屿课表的重点不是单纯展示课程，而是把课表、提醒、通知、小组件和 HyperOS 超级岛串成一条完整链路。它关注的是“接下来要上什么课、现在这节课进行到哪、能不能不打开应用就知道状态”。
 
 ## 项目定位
 
 - 面向 Android 维护，重点适配小米 / HyperOS 设备
 - 适合希望把课程提醒接进系统通知体验的学生用户
 - 支持一人维护多套课表，适合不同学期、身份或课程方案并行管理
-- 支持教务系统网页登录导入、`.ics` 导入、完整备份导出与恢复，方便迁移和分享
+- 支持教务系统网页登录导入、`.ics` 导入、完整备份导出与恢复
 
 ## 核心能力
 
@@ -52,17 +52,7 @@
 - 发布页：<https://github.com/Mutx163/mikcb/releases>
 - 正式包当前以 `arm64-v8a` 为主
 - 应用内可读取 GitHub Releases，显示版本号、更新时间和下载入口
-- 发行步骤见 [docs/RELEASE.md](./docs/RELEASE.md)
-
-## 网站与国际化约定
-
-- 当前正式网站目录是 `docs/`，域名配置见 `docs/CNAME`
-- `web/` 不是当前主站发布目录；如果继续做网站 SEO 或落地页调整，优先改 `docs/`
-- 应用国际化当前使用 Flutter 标准 `gen-l10n`
-- 中文源文件为 `lib/l10n/app_zh.arb`
-- 新文案请优先先补到 `app_zh.arb`，再由其他语言文件跟进翻译
-- 新增语言时，直接新增对应的 `app_<locale>.arb`，然后运行 `flutter gen-l10n`
-- 详细协作方式见 [docs/WEB_AND_L10N_WORKFLOW.md](./docs/WEB_AND_L10N_WORKFLOW.md)
+- 发行流程见 [docs/RELEASE.md](./docs/RELEASE.md)
 
 ## 运行与构建
 
@@ -80,6 +70,12 @@ Android 构建：
 ```bash
 flutter build apk --release --split-per-abi
 ```
+
+## 相关文档
+
+- 产品说明：[docs/PRODUCT.md](./docs/PRODUCT.md)
+- 发布流程：[docs/RELEASE.md](./docs/RELEASE.md)
+- 网站与国际化协作约定：[docs/WEB_AND_L10N_WORKFLOW.md](./docs/WEB_AND_L10N_WORKFLOW.md)
 
 ## 技术栈
 
