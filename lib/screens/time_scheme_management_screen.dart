@@ -170,7 +170,9 @@ class _TimeSchemeManagementScreenState
                               .duplicateTimeScheme(scheme.id);
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('已复制时间模板')),
+                              SnackBar(
+                                content: Text(l10n.copiedTimeSchemeMessage),
+                              ),
                             );
                           }
                           break;
@@ -194,19 +196,19 @@ class _TimeSchemeManagementScreenState
                         value: 'edit',
                         child: Text(l10n.editSectionsAction),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'rename',
-                        child: Text('重命名'),
+                        child: Text(l10n.renameAction),
                       ),
-                      const PopupMenuItem(
+                      PopupMenuItem(
                         value: 'duplicate',
-                        child: Text('复制'),
+                        child: Text(l10n.duplicateAction),
                       ),
                       PopupMenuItem(
                         value: 'delete',
                         enabled: usage.isUnused,
                         child: Text(
-                          '删除',
+                          l10n.deleteAction,
                           style: TextStyle(
                             color: usage.isUnused
                                 ? colorScheme.error
@@ -220,7 +222,9 @@ class _TimeSchemeManagementScreenState
               ),
               const SizedBox(height: 4),
               Text(
-                '${scheme.sections.first.displayText}${scheme.sectionCount > 1 ? ' 起' : ''}',
+                scheme.sectionCount > 1
+                    ? l10n.timeSchemeStartsAt(scheme.sections.first.displayText)
+                    : scheme.sections.first.displayText,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
@@ -416,6 +420,7 @@ class _TimeSchemeManagementScreenState
     TimetableProvider provider,
     String schemeId,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final profileNames = provider.profiles
         .where((profile) => profile.settings.activeTimeSchemeId == schemeId)
         .map((profile) => profile.name)
@@ -426,8 +431,11 @@ class _TimeSchemeManagementScreenState
     final previewText = references.isEmpty
         ? null
         : references.length == 1
-            ? _formatUsageReference(references.first)
-            : '${_formatUsageReference(references.first)} 等 ${references.length} 节课程';
+            ? _formatUsageReference(l10n, references.first)
+            : l10n.timeSchemeBottomUsageMulti(
+                _formatUsageReference(l10n, references.first),
+                references.length,
+              );
     return _TimeSchemeUsageSummary(
       profileNames: profileNames,
       courseReferences: references,
@@ -436,11 +444,22 @@ class _TimeSchemeManagementScreenState
     );
   }
 
-  String _formatUsageReference(TimeSchemeCourseUsageReference reference) {
+  String _formatUsageReference(
+    AppLocalizations l10n,
+    TimeSchemeCourseUsageReference reference,
+  ) {
     final course = reference.course;
-    final usageType = reference.usesOverride ? '副时间表' : '主时间表';
-    return '${reference.profileName} · ${course.name}'
-        '（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节，$usageType）';
+    final usageType = reference.usesOverride
+        ? l10n.overrideTimeSchemeShortLabel
+        : l10n.mainTimeSchemeLabel;
+    return l10n.timeSchemeUsageReference(
+      reference.profileName,
+      course.name,
+      _weekdayLabel(l10n, course.dayOfWeek),
+      course.startSection,
+      course.endSection,
+      usageType,
+    );
   }
 
   Future<void> _showUsageDetails(
@@ -478,15 +497,15 @@ class _TimeSchemeManagementScreenState
                     children: [
                       _TimeSchemeInfoChip(
                         label: l10n.profileCountLabel,
-                        value: '${usage.profileCount} 个',
+                        value: l10n.profileCountValue(usage.profileCount),
                       ),
                       _TimeSchemeInfoChip(
                         label: l10n.courseCountLabel,
-                        value: '${usage.courseCount} 节',
+                        value: l10n.courseSectionCountValue(usage.courseCount),
                       ),
                       _TimeSchemeInfoChip(
                         label: l10n.overrideTimeSchemeLabel,
-                        value: '${usage.overrideCourseCount} 节',
+                        value: l10n.courseSectionCountValue(usage.overrideCourseCount),
                       ),
                     ],
                   ),
@@ -512,9 +531,11 @@ class _TimeSchemeManagementScreenState
                           (reference) => _UsageLine(
                             primary:
                                 '${reference.profileName} · ${reference.course.name}',
-                            secondary:
-                                '周${_weekdayLabel(reference.course.dayOfWeek)} '
-                                '${reference.course.startSection}-${reference.course.endSection}节',
+                            secondary: l10n.weekdaySectionRange(
+                              _weekdayLabel(l10n, reference.course.dayOfWeek),
+                              reference.course.startSection,
+                              reference.course.endSection,
+                            ),
                           ),
                         )
                         .toList(growable: false),
@@ -531,9 +552,11 @@ class _TimeSchemeManagementScreenState
                           (reference) => _UsageLine(
                             primary:
                                 '${reference.profileName} · ${reference.course.name}',
-                            secondary:
-                                '周${_weekdayLabel(reference.course.dayOfWeek)} '
-                                '${reference.course.startSection}-${reference.course.endSection}节',
+                            secondary: l10n.weekdaySectionRange(
+                              _weekdayLabel(l10n, reference.course.dayOfWeek),
+                              reference.course.startSection,
+                              reference.course.endSection,
+                            ),
                           ),
                         )
                         .toList(growable: false),
@@ -554,12 +577,25 @@ class _TimeSchemeManagementScreenState
     );
   }
 
-  String _weekdayLabel(int dayOfWeek) {
-    const labels = ['一', '二', '三', '四', '五', '六', '日'];
-    if (dayOfWeek < 1 || dayOfWeek > 7) {
-      return dayOfWeek.toString();
+  String _weekdayLabel(AppLocalizations l10n, int dayOfWeek) {
+    switch (dayOfWeek) {
+      case 1:
+        return l10n.weekdayShortMonday;
+      case 2:
+        return l10n.weekdayShortTuesday;
+      case 3:
+        return l10n.weekdayShortWednesday;
+      case 4:
+        return l10n.weekdayShortThursday;
+      case 5:
+        return l10n.weekdayShortFriday;
+      case 6:
+        return l10n.weekdayShortSaturday;
+      case 7:
+        return l10n.weekdayShortSunday;
+      default:
+        return dayOfWeek.toString();
     }
-    return labels[dayOfWeek - 1];
   }
 }
 
@@ -658,15 +694,15 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                         ),
                       _TimeSchemeInfoChip(
                         label: l10n.profileCountLabel,
-                        value: '${usage.profileCount} 个',
+                        value: l10n.profileCountValue(usage.profileCount),
                       ),
                       _TimeSchemeInfoChip(
                         label: l10n.courseCountLabel,
-                        value: '${usage.courseCount} 节',
+                        value: l10n.courseSectionCountValue(usage.courseCount),
                       ),
                       _TimeSchemeInfoChip(
                         label: l10n.overrideTimeSchemeLabel,
-                        value: '${usage.overrideCourseCount} 节',
+                        value: l10n.courseSectionCountValue(usage.overrideCourseCount),
                       ),
                     ],
                   ),
@@ -674,10 +710,10 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                     const SizedBox(height: 8),
                     Text(
                       isActive && usage.courseCount > 0
-                          ? l10n.overrideSchemeCoursesSubtitle
+                          ? l10n.timeSchemeEditorActiveAndCoursesHint
                           : isActive
-                              ? l10n.directlyBoundProfilesSubtitle
-                              : l10n.overrideSchemeCoursesSubtitle,
+                              ? l10n.timeSchemeEditorActiveHint
+                              : l10n.timeSchemeEditorOverrideHint,
                       style: theme.textTheme.bodySmall,
                     ),
                   ],
@@ -778,7 +814,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  '第 ${index + 1} 节',
+                                  l10n.sectionLabel(index + 1),
                                   style: theme.textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -794,7 +830,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
                             ),
                           ),
                           IconButton(
-                            tooltip: '编辑时间',
+                            tooltip: l10n.editTimeAction,
                             onPressed: () => _editSectionTime(index),
                             icon: const Icon(Icons.edit_outlined),
                           ),
@@ -835,10 +871,9 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final startMinutes = _parseTimeMinutes(editedSection.startTime);
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('结束时间必须晚于开始时间，暂不支持跨 0 点课程'),
-        ),
+        SnackBar(content: Text(l10n.timeRangeValidationNoCrossDay)),
       );
       return;
     }
@@ -880,6 +915,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     TimetableProvider provider,
     String schemeId,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final profileNames = provider.profiles
         .where((profile) => profile.settings.activeTimeSchemeId == schemeId)
         .map((profile) => profile.name)
@@ -890,8 +926,11 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final previewText = references.isEmpty
         ? null
         : references.length == 1
-            ? _formatUsageReference(references.first)
-            : '${_formatUsageReference(references.first)} 等 ${references.length} 节课程';
+            ? _formatUsageReference(l10n, references.first)
+            : l10n.timeSchemeBottomUsageMulti(
+                _formatUsageReference(l10n, references.first),
+                references.length,
+              );
     return _TimeSchemeUsageSummary(
       profileNames: profileNames,
       courseReferences: references,
@@ -900,19 +939,43 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     );
   }
 
-  String _formatUsageReference(TimeSchemeCourseUsageReference reference) {
+  String _formatUsageReference(
+    AppLocalizations l10n,
+    TimeSchemeCourseUsageReference reference,
+  ) {
     final course = reference.course;
-    final usageType = reference.usesOverride ? '副时间表' : '主时间表';
-    return '${reference.profileName} · ${course.name}'
-        '（周${_weekdayLabel(course.dayOfWeek)} ${course.startSection}-${course.endSection}节，$usageType）';
+    final usageType = reference.usesOverride
+        ? l10n.overrideTimeSchemeShortLabel
+        : l10n.mainTimeSchemeLabel;
+    return l10n.timeSchemeUsageReference(
+      reference.profileName,
+      course.name,
+      _weekdayLabel(l10n, course.dayOfWeek),
+      course.startSection,
+      course.endSection,
+      usageType,
+    );
   }
 
-  String _weekdayLabel(int dayOfWeek) {
-    const labels = ['一', '二', '三', '四', '五', '六', '日'];
-    if (dayOfWeek < 1 || dayOfWeek > 7) {
-      return dayOfWeek.toString();
+  String _weekdayLabel(AppLocalizations l10n, int dayOfWeek) {
+    switch (dayOfWeek) {
+      case 1:
+        return l10n.weekdayShortMonday;
+      case 2:
+        return l10n.weekdayShortTuesday;
+      case 3:
+        return l10n.weekdayShortWednesday;
+      case 4:
+        return l10n.weekdayShortThursday;
+      case 5:
+        return l10n.weekdayShortFriday;
+      case 6:
+        return l10n.weekdayShortSaturday;
+      case 7:
+        return l10n.weekdayShortSunday;
+      default:
+        return dayOfWeek.toString();
     }
-    return labels[dayOfWeek - 1];
   }
 
   Future<void> _openQuickGenerate() async {
@@ -1292,16 +1355,20 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('快捷生成课表时间'),
+      title: Text(l10n.quickGenerateTimeSchemeTitle),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildNumberField(_morningCountController, '上午几节'),
+            _buildNumberField(
+              _morningCountController,
+              l10n.morningSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '早上第一节时间',
+              label: l10n.morningFirstSectionTimeLabel,
               value: _morningStartTime,
               onTap: () => _pickTime(
                 currentValue: _morningStartTime,
@@ -1313,10 +1380,13 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_afternoonCountController, '下午几节'),
+            _buildNumberField(
+              _afternoonCountController,
+              l10n.afternoonSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '下午第一节时间',
+              label: l10n.afternoonFirstSectionTimeLabel,
               value: _afternoonStartTime,
               onTap: () => _pickTime(
                 currentValue: _afternoonStartTime,
@@ -1328,10 +1398,13 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_eveningCountController, '晚上几节'),
+            _buildNumberField(
+              _eveningCountController,
+              l10n.eveningSectionCountLabel,
+            ),
             const SizedBox(height: 12),
             _buildTimeTile(
-              label: '晚上第一节时间',
+              label: l10n.eveningFirstSectionTimeLabel,
               value: _eveningStartTime,
               onTap: () => _pickTime(
                 currentValue: _eveningStartTime,
@@ -1343,14 +1416,20 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildNumberField(_classDurationController, '单节课时长（分钟）'),
+            _buildNumberField(
+              _classDurationController,
+              l10n.classDurationMinutesLabel,
+            ),
             const SizedBox(height: 12),
-            _buildNumberField(_breakDurationController, '小课间时长（分钟）'),
+            _buildNumberField(
+              _breakDurationController,
+              l10n.smallBreakDurationMinutesLabel,
+            ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                '大课间规则',
+                l10n.largeBreakRulesTitle,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
@@ -1361,7 +1440,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextButton.icon(
                 onPressed: _addBreakOverride,
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('新增大课间规则'),
+                label: Text(l10n.addBreakRuleAction),
               ),
             ),
           ],
@@ -1370,11 +1449,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
+          child: Text(l10n.cancelAction),
         ),
         TextButton(
           onPressed: _submit,
-          child: const Text('生成'),
+          child: Text(l10n.generateAction),
         ),
       ],
     );
@@ -1417,10 +1496,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   }
 
   List<Widget> _buildBreakOverrideRows() {
+    final l10n = AppLocalizations.of(context)!;
     if (_breakOverrides.isEmpty) {
       return [
         Text(
-          '未设置大课间规则，将全部使用小课间时长。',
+          l10n.noLargeBreakRulesHint,
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ];
@@ -1436,9 +1516,9 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextFormField(
                 initialValue: '${item.afterSection}',
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: '第几节后',
+                  labelText: l10n.afterSectionLabel,
                 ),
                 onChanged: (value) {
                   item.afterSection = int.tryParse(value) ?? 0;
@@ -1450,9 +1530,9 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               child: TextFormField(
                 initialValue: '${item.breakDurationMinutes}',
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   border: OutlineInputBorder(),
-                  labelText: '休息多久(分)',
+                  labelText: l10n.breakDurationMinutesLabel,
                 ),
                 onChanged: (value) {
                   item.breakDurationMinutes = int.tryParse(value) ?? 0;
@@ -1460,7 +1540,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
               ),
             ),
             IconButton(
-              tooltip: '删除规则',
+              tooltip: l10n.deleteRuleTooltip,
               onPressed: () {
                 setState(() {
                   _breakOverrides.removeAt(index);
@@ -1489,6 +1569,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   }
 
   void _submit() {
+    final l10n = AppLocalizations.of(context)!;
     final morningCount = int.tryParse(_morningCountController.text.trim());
     final afternoonCount = int.tryParse(_afternoonCountController.text.trim());
     final eveningCount = int.tryParse(_eveningCountController.text.trim());
@@ -1501,7 +1582,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
         classDuration == null ||
         breakDuration == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请把节数和时长填写为数字')),
+        SnackBar(content: Text(l10n.fillNumbersValidationMessage)),
       );
       return;
     }

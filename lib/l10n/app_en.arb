@@ -21,11 +21,12 @@
   "languageModeLabel": "Language",
   "languageModeSystem": "Follow System",
   "languageModeZhCn": "Simplified Chinese",
+  "languageModeZhHk": "Traditional Chinese (Hong Kong)",
   "languageModeEnUs": "English",
   "settingsTitle": "Timetable Settings",
   "dailyUsageSectionTitle": "Daily Use",
   "appearanceEntryTitle": "Appearance",
-  "appearanceEntrySubtitle": "Theme colors, timetable background, and course card colors",
+  "appearanceEntrySubtitle": "Theme color, timetable background, and course card colors",
   "layoutSectionEntryTitle": "Layout & Sections",
   "layoutSectionEntrySubtitle": "Section times, row height, time column, weekends, and course card layout",
   "homeWidgetEntryTitle": "Home Widgets",
@@ -45,12 +46,12 @@
     }
   },
   "dataTransferEntryTitle": "Backup & Migration",
-  "dataTransferEntrySubtitle": "Export full timetable files so others can import them directly",
+  "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
   "aboutSupportSectionTitle": "About & Support",
   "feedbackEntryTitle": "Feedback",
-  "feedbackEntrySubtitle": "Issues, community channels, and suggestion entry points",
+  "feedbackEntrySubtitle": "Issue tracker, community channels, and suggestion entry",
   "aboutEntryTitle": "About",
-  "aboutEntrySubtitle": "Open-source info, updates, and repository links",
+  "aboutEntrySubtitle": "Open source info, version updates, and GitHub repositories",
   "setSemesterStartDateAction": "Set Semester Start",
   "semesterStartDateAction": "Semester Start",
   "syncCurrentWeekAction": "Sync Current Week",
@@ -504,7 +505,7 @@
   "selectAllAction": "Select All",
   "selectOddWeeksAction": "Odd Weeks",
   "selectEvenWeeksAction": "Even Weeks",
-  "selectedWeeksSummary": "Selected {count} weeks: Week {weeks}",
+  "selectedWeeksSummary": "{count} weeks selected: Week {weeks}",
   "@selectedWeeksSummary": {
     "placeholders": {
       "count": {
@@ -517,10 +518,10 @@
   },
   "courseColorTitle": "Course Color",
   "customPaletteAction": "Custom Palette Color",
-  "colorPaletteTitle": "Palette",
+  "colorPaletteTitle": "Color Palette",
   "colorHexLabel": "Color Hex",
   "useThisColor": "Use This Color",
-  "selectAtLeastOneWeek": "Please select at least one week.",
+  "selectAtLeastOneWeek": "Please select at least one week",
   "saveFailed": "Save failed",
   "courseAddedSuccess": "Course added successfully",
   "courseUpdatedSuccess": "Course updated successfully",
@@ -657,6 +658,111 @@
   "afterSectionLabel": "After Section",
   "breakDurationMinutesLabel": "Break Duration (min)",
   "fillNumbersValidationMessage": "Please fill both section count and duration with numbers",
+  "sectionCountLabel": "Sections",
+  "timeSchemeEditorActiveAndCoursesHint": "The current timetable and some courses are using this time scheme. Saving will update all related timetables and courses.",
+  "timeSchemeEditorActiveHint": "The current timetable is using this time scheme. Saving will update every timetable that relies on it.",
+  "timeSchemeEditorOverrideHint": "Some courses are using this time scheme as an override. Saving will update every referenced course.",
+  "editTimeAction": "Edit Time",
+  "editingSchemeLabel": "Editing: {name}",
+  "@editingSchemeLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "copiedTimeSchemeShortMessage": "Time scheme copied",
+  "unnamedTimeScheme": "Unnamed Scheme",
+  "unsetLabel": "Not Selected",
+  "timeSchemeUsageCourseRefPrefix": "Course references: ",
+  "mainTimeSchemeLabel": "Main Scheme",
+  "overrideTimeSchemeShortLabel": "Override Scheme",
+  "timeSchemeBottomUsageSingle": "{first}",
+  "@timeSchemeBottomUsageSingle": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      }
+    }
+  },
+  "timeSchemeBottomUsageMulti": "{first} and {count} course entries",
+  "@timeSchemeBottomUsageMulti": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "morningSectionCountLabel": "Morning Sections",
+  "morningFirstSectionTimeLabel": "First Morning Class Time",
+  "afternoonSectionCountLabel": "Afternoon Sections",
+  "afternoonFirstSectionTimeLabel": "First Afternoon Class Time",
+  "eveningSectionCountLabel": "Evening Sections",
+  "eveningFirstSectionTimeLabel": "First Evening Class Time",
+  "classDurationMinutesLabel": "Single Class Duration (min)",
+  "smallBreakDurationMinutesLabel": "Short Break Duration (min)",
+  "largeBreakRulesTitle": "Long Break Rules",
+  "noLargeBreakRulesHint": "No long break rule has been set. The short break duration will be used everywhere.",
+  "deleteRuleTooltip": "Delete Rule",
+  "generateAction": "Generate",
+  "liveMiuiLabelSizePreview": "{value}",
+  "@liveMiuiLabelSizePreview": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "liveIslandVisualTitle": "Left Icon & Expanded View",
+  "liveIslandVisualSubtitle": "The left text icon, expanded large icon, and custom image are all stored separately for the current stage.",
+  "liveMiuiLabelImageTitle": "Xiaomi Island Left Text Icon",
+  "liveMiuiLabelImageSubtitle": "Only effective on Xiaomi-style island layouts. It renders course name or location into the left icon slot.",
+  "liveMiuiLabelContentLabel": "Left Text Content",
+  "liveMiuiLabelStyleLabel": "Left Icon Style",
+  "liveMiuiLabelFontSizeLabel": "Left Text Size {value}",
+  "@liveMiuiLabelFontSizeLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "liveMiuiLabelOffsetXLabel": "Left Text Horizontal Offset {value}",
+  "@liveMiuiLabelOffsetXLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "liveMiuiLabelOffsetYLabel": "Left Text Vertical Offset {value}",
+  "@liveMiuiLabelOffsetYLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "liveMiuiLabelFontWeightLabel": "Left Text Weight",
+  "liveMiuiLabelRenderQualityLabel": "Left Text Render Quality",
+  "liveMiuiExpandedIconLabel": "Expanded Large Icon",
+  "selectImageAction": "Choose Image",
+  "replaceImageAction": "Replace Image",
+  "liveDisplayConfigModeTitle": "Configuration Mode",
+  "liveDisplayConfigModeSubtitle": "When enabled, during-class and before-end reminders fully follow the before-class display settings, and the controls below become read-only.",
+  "followBeforeClassDisplayTitle": "Follow Before-class Display Settings",
+  "liveKeepAliveTitle": "Keep Alive",
+  "liveKeepAliveOptionsTitle": "Keep-alive Options",
+  "liveKeepAliveOptionsSubtitle": "Used to improve island and reminder stability in background scenarios.",
+  "hideFromRecentsTitle": "Hide from Recents",
+  "hideFromRecentsSubtitle": "When enabled, the app will try not to appear in the recent tasks list.",
+  "keepAliveServiceTitle": "Qingyu Timetable Keep-alive Service",
+  "keepAliveServiceEnabledSubtitle": "Currently enabled. The system will keep the accessibility-based keep-alive helper available.",
+  "keepAliveServiceDisabledSubtitle": "Currently disabled. You can open system accessibility settings and enable the Qingyu Timetable keep-alive service manually.",
+  "goEnableAction": "Enable Now",
   "liveSettingsTitle": "Island & Notifications",
   "liveReminderTimingEntryTitle": "Reminder Timing",
   "liveReminderTimingEntrySubtitle": "Before class, during class / before end toggles, and when to switch into highlighted reminders.",
@@ -745,18 +851,12 @@
   "hidePrefixTextSubtitle": "For example, hide prefixes like “before class”.",
   "beforeClassQuickActionTitle": "Before-class Quick Action",
   "beforeClassQuickActionSubtitle": "Only appears in the expanded before-class reminder. Do Not Disturb may open a system permission page on first use.",
-  "settingsTitle": "Timetable Settings",
-  "dailyUsageSectionTitle": "Daily Use",
-  "appearanceEntryTitle": "Appearance",
-  "appearanceEntrySubtitle": "Theme color, timetable background, and course card colors",
   "layoutEntryTitle": "Layout & Sections",
   "layoutEntrySubtitle": "Section times, row height, time column, weekend visibility, and card layout",
-  "homeWidgetEntryTitle": "Home Widgets",
   "remindersSectionTitle": "Reminders & Notifications",
   "liveGuideEntryTitle": "Guide & Permissions",
   "liveGuideEntrySubtitle": "Short-name suggestions, notifications, auto-start, and battery policy",
   "managementSectionTitle": "Timetable Management",
-  "timeSchemeEntryTitle": "Time Schemes",
   "timeSchemeEntryCurrentPrefix": "Current: {name} · switch, edit sections, and duplicate",
   "@timeSchemeEntryCurrentPrefix": {
     "placeholders": {
@@ -766,13 +866,6 @@
     }
   },
   "timeSchemeEntrySubtitle": "Switch, edit section times, duplicate, and manage time schemes",
-  "dataTransferEntryTitle": "Backup & Migration",
-  "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
-  "aboutSupportSectionTitle": "About & Support",
-  "feedbackEntryTitle": "Feedback",
-  "feedbackEntrySubtitle": "Issue tracker, community channels, and suggestion entry",
-  "aboutEntryTitle": "About",
-  "aboutEntrySubtitle": "Open source info, version updates, and GitHub repositories",
   "semesterOverviewCurrentWeek": "Week {current} / {total}",
   "@semesterOverviewCurrentWeek": {
     "placeholders": {
@@ -795,15 +888,6 @@
   },
   "setSemesterStartDate": "Set Semester Start",
   "semesterStartDateLabel": "Semester Start Date",
-  "syncCurrentWeekAction": "Sync Current Week",
-  "semesterWeekCountAction": "{count} weeks",
-  "@semesterWeekCountAction": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "syncedCurrentWeekMessage": "Synced to week {week}",
   "@syncedCurrentWeekMessage": {
     "placeholders": {
@@ -898,7 +982,6 @@
   "teacherLabel": "Teacher",
   "courseNatureLabel": "Course Nature",
   "courseDescriptionOptional": "Course Description (Optional)",
-  "currentScheduleTitle": "Current Schedule Entry",
   "currentScheduleHint": "Weekday, sections, room, week range, and odd/even settings here only affect this specific entry.",
   "followProfileTimeScheme": "Follow current timetable ({name})",
   "@followProfileTimeScheme": {
@@ -909,51 +992,17 @@
     }
   },
   "timeSchemeOverrideLabel": "Class Time Scheme",
-  "startSectionLabel": "Start Section",
-  "endSectionLabel": "End Section",
-  "timeRangeLabel": "Time: {start} - {end}",
-  "@timeRangeLabel": {
-    "placeholders": {
-      "start": {
-        "type": "String"
-      },
-      "end": {
-        "type": "String"
-      }
-    }
-  },
-  "locationLabel": "Location",
   "lessonWeeksTitle": "Weeks",
   "singleLessonWeekHint": "A single lesson appears in only one week, ideal for temporary additions or make-up classes.",
-  "selectWeekLabel": "Select Week",
-  "weekSettingsTitle": "Week Settings",
   "rangeWeekLabel": "Continuous Weeks",
   "customWeekLabel": "Custom Weeks",
-  "startWeekLabel": "Start Week",
-  "endWeekLabel": "End Week",
   "allWeeksLabel": "All",
   "oddWeeksLabel": "Odd Weeks",
   "evenWeeksLabel": "Even Weeks",
   "allWeeksHint": "Schedule continuously from the start week to the end week.",
   "oddWeeksHint": "Keep only odd weeks within the selected range.",
   "evenWeeksHint": "Keep only even weeks within the selected range.",
-  "selectAllAction": "Select All",
-  "selectedWeeksSummary": "{count} weeks selected: Week {weeks}",
-  "@selectedWeeksSummary": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "weeks": {
-        "type": "String"
-      }
-    }
-  },
-  "courseColorTitle": "Course Color",
   "customPaletteColor": "Custom Color Picker",
-  "colorPaletteTitle": "Color Palette",
-  "colorHexLabel": "Color Hex",
-  "useThisColor": "Use This Color",
   "hueLabel": "Hue {value}",
   "@hueLabel": {
     "placeholders": {
@@ -978,8 +1027,1067 @@
       }
     }
   },
-  "selectAtLeastOneWeek": "Please select at least one week",
-  "saveFailed": "Save failed",
-  "courseAddedSuccess": "Course added successfully",
-  "courseUpdatedSuccess": "Course updated successfully"
+  "timeSchemeSetCountValue": "{count} sets",
+  "@timeSchemeSetCountValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "profileCountValue": "{count}",
+  "@profileCountValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseSectionCountValue": "{count}",
+  "@courseSectionCountValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeStartsAt": "Starts at {start}",
+  "@timeSchemeStartsAt": {
+    "placeholders": {
+      "start": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdayShortMonday": "Mon",
+  "weekdayShortTuesday": "Tue",
+  "weekdayShortWednesday": "Wed",
+  "weekdayShortThursday": "Thu",
+  "weekdayShortFriday": "Fri",
+  "weekdayShortSaturday": "Sat",
+  "weekdayShortSunday": "Sun",
+  "weekdaySectionRange": "{weekday} {startSection}-{endSection}",
+  "@weekdaySectionRange": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "timeSchemeUsageReference": "{profileName} · {courseName} ({weekday} {startSection}-{endSection}, {usageType})",
+  "@timeSchemeUsageReference": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      },
+      "courseName": {
+        "type": "String"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "usageType": {
+        "type": "String"
+      }
+    }
+  },
+  "timeRangeValidationNoCrossDay": "End time must be later than start time. Cross-midnight classes are not supported yet.",
+  "timeSchemeNameEmptyValidation": "Time scheme name cannot be empty",
+  "liveTimeCorrectionNone": "No correction",
+  "liveTimeCorrectionDelay": "Delay by {seconds}s",
+  "@liveTimeCorrectionDelay": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTimeCorrectionAdvance": "Advance by {seconds}s",
+  "@liveTimeCorrectionAdvance": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveClassReminderLeadSummaryImmediate": "Switch to the focused reminder as soon as class starts, then show second-level countdown in the last {seconds}s before class ends",
+  "@liveClassReminderLeadSummaryImmediate": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveClassReminderLeadSummaryKeepNormal": "Keep the normal in-class notification first, switch to focused / class-end reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
+  "@liveClassReminderLeadSummaryKeepNormal": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveClassReminderLeadSummaryIsland": "Switch to the Island / focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
+  "@liveClassReminderLeadSummaryIsland": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveClassReminderLeadSummaryFocused": "Start the focused reminder {minutes} minutes before class ends, then show second-level countdown in the last {seconds}s",
+  "@liveClassReminderLeadSummaryFocused": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveSettingsEntrySubtitle": "Reminder timing, Island display, notification bar, and display content",
+  "timetableProfilesEntrySubtitle": "Create, switch, duplicate, rename, and delete timetables",
+  "homeTitleSectionTitle": "Home title",
+  "homeTitleSectionSubtitle": "Controls the style of the timetable switch entry at the top left of the home page.",
+  "homeTitleStyleLabel": "Title style",
+  "themeSeedSectionTitle": "App theme color",
+  "themeSeedSectionSubtitle": "Affects the top bar, accent color, and global primary tone.",
+  "timetableBackgroundColorSectionTitle": "Timetable background color",
+  "timetableBackgroundColorSectionSubtitle": "Only affects the large background of the timetable page.",
+  "defaultTimetablePreviewName": "Default timetable",
+  "beforeClassDisplaySettingsTitle": "Before-class reminder display",
+  "duringEndDisplaySettingsTitle": "In-class / end reminder display",
+  "liveDisplaySummaryShortName": "Short name",
+  "liveDisplaySummaryCourseName": "Course name",
+  "liveDisplaySummaryLocation": "Location",
+  "liveDisplaySummaryCountdown": "Countdown ({style})",
+  "@liveDisplaySummaryCountdown": {
+    "placeholders": {
+      "style": {
+        "type": "String"
+      }
+    }
+  },
+  "liveDisplaySummaryStageText": "Stage text",
+  "liveDisplaySummaryLeftLabelImage": "Left label image",
+  "liveDisplaySummaryMinimal": "Minimal display",
+  "weekdayMon": "Mon",
+  "weekdayTue": "Tue",
+  "weekdayWed": "Wed",
+  "weekdayThu": "Thu",
+  "weekdayFri": "Fri",
+  "weekdaySat": "Sat",
+  "weekdaySun": "Sun",
+  "weekdaySectionSummary": "{weekday} {startSection}-{endSection}",
+  "@weekdaySectionSummary": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "languageModeZhTw": "Traditional Chinese (Taiwan)",
+  "guideHyperOsChip": "HyperOS 3.0.300+",
+  "guideStatusTitle": "Current status",
+  "guideStatusNotificationPermission": "Notification permission",
+  "guideStatusEnabled": "Enabled",
+  "guideStatusDisabled": "Disabled",
+  "guideStatusIslandSupport": "Promoted notification / Island",
+  "guideStatusSystemAllowed": "Allowed by system",
+  "guideStatusEnabledPending": "Enabled but not yet confirmed by system",
+  "guideStatusSuggestedCheck": "Needs checking",
+  "guideStatusBatteryOptimization": "Battery optimization",
+  "guideStatusBatteryUnrestricted": "Unrestricted",
+  "guideStatusBatteryRestricted": "Restricted",
+  "guideStatusKeepAlive": "Background keep-alive helper",
+  "guideStatusAndroidVersion": "Android version",
+  "guideStatusVersionUnknown": "Unknown",
+  "guideStatusIslandSystemSupport": "Island system support",
+  "guideStatusIslandSystemRequirement": "Requires HyperOS 3.0.300 or above",
+  "guideStatusIslandHint": "If you mainly want to use the Island, first make sure your system version is at least HyperOS 3.0.300, then complete the permission checklist below in order.",
+  "guidePermissionChecklistTitle": "Permission checklist",
+  "guidePermissionChecklistSubtitle": "Follow this order for the easiest setup and the lowest chance of missing anything.",
+  "guideChecklistRequestNotificationTitle": "Request notification permission",
+  "guideChecklistRequestNotificationSubtitle": "This is required for all reminders",
+  "guideChecklistOpenNotificationTitle": "Open notification settings",
+  "guideChecklistOpenNotificationSubtitle": "Check the master switch, lock-screen display, and live notification permission",
+  "guideChecklistOpenIslandTitle": "Open promoted notification settings",
+  "guideChecklistOpenIslandSubtitle": "On HyperOS 3.0.300 and above, also check promoted / Island notifications",
+  "guideChecklistOpenAutoStartTitle": "Open auto-start settings",
+  "guideChecklistOpenAutoStartSubtitle": "Allow the app to launch on boot and stay active in the background",
+  "guideChecklistOpenBatteryTitle": "Open battery settings",
+  "guideChecklistOpenBatterySubtitle": "Set it to Unrestricted to avoid missed reminders",
+  "guideChecklistOpenKeepAliveTitle": "Open keep-alive helper",
+  "guideChecklistOpenKeepAliveSubtitle": "Further improves Island and reminder stability in the background",
+  "guideShortNameAdviceTitle": "Course short-name tips",
+  "guideShortNameAdviceSubtitle": "The Island supports course short names. Short names are not generated automatically, so you need to fill them in on the course edit page yourself. Keeping them within 3 characters is usually the most stable.",
+  "guideShortNameRecommended": "Recommended",
+  "guideShortNameNotRecommended": "Not recommended",
+  "guideShortNameRecommendedExample": "Calc / Prob / CNC",
+  "guideShortNameNotRecommendedExample": "Advanced Mathematics A(1) / CNC Technology and Applications",
+  "guideSetCourseShortNameAction": "Set course short name",
+  "guideImportMethodsTitle": "Timetable import methods",
+  "guideImportMethodsSubtitle": "This version already supports web login import for some school systems. If your school is not supported yet, there are still other migration options.",
+  "guideImportMethodStep1": "Go to \"Import Courses > Academic System Import\" first, choose your school and adapter, then complete the import directly in the in-app web page.",
+  "guideImportMethodStep2": "If your school is not supported yet, you can first import courses into WakeUp or another timetable app, export them as a calendar file, and then import them into this app.",
+  "guideImportMethodStep3": "If someone else is already using this app, they can export a full backup and you can import it directly to restore courses and settings.",
+  "guideImportMethodExtra": "If you know packet capture, web debugging, or JavaScript, you are also welcome to help add school adapters so more schools can import directly.",
+  "guideFinalTipsTitle": "Three final tips",
+  "guideFinalTip1": "1. HyperOS 3.0.300 and above is required for the Island. If your system version is lower, the app can still send normal reminders.",
+  "guideFinalTip2": "2. Adjust the before-class popup and in-class / near-end reminder thresholds in Settings first.",
+  "guideFinalTip3": "3. After finishing the system permission setup, use a test notification to verify everything. If the Island still disappears occasionally, check auto-start and battery policy first.",
+  "guidePrivacyHelperRequireConsent": "By checking the box, you confirm that you have read and agreed to the Umeng-related privacy notes, privacy content, and disclaimer above.",
+  "guidePrivacyHelperViewOnly": "This page keeps the same privacy, third-party SDK, and disclaimer information shown during first launch so you can review it at any time. You do not need to agree again here.",
+  "guidePrivacySectionTitle": "Privacy, third-party SDKs, and disclaimer",
+  "guidePrivacyParagraph1": "The core features of this app are designed to run locally. Timetables, time schemes, course records, and most settings are stored on your device by default.",
+  "guidePrivacyParagraph2": "The app only exchanges data with external services when you actively use networked features such as update checks, update downloads, import/export, or when you agree to initialize Umeng-related SDKs.",
+  "guidePrivacyParagraph3": "This app integrates the Umeng Mobile Analytics SDK, Umeng App Performance Monitoring SDK, and advanced operations analytics dependencies. They are used for analytics, app performance monitoring, and advanced operations analysis, and they are initialized only after you agree.",
+  "guidePrivacyParagraph4": "According to Umeng documentation, these SDKs may process information such as device info (IMEI, MAC, Android ID, OAID, IDFA, OpenUDID, GUID, SIM IMSI, etc.), network status, device identifiers, and app list / location-related information used by advanced operations analytics dependencies.",
+  "guideRiskTitle": "Disclaimer and risk notes",
+  "guideRiskParagraph1": "1. Island behavior, promoted notifications, background reminders, and keep-alive effects depend on system version, device model, vendor policy, permissions, auto-start, battery policy, and other external conditions. Consistent behavior across all devices cannot be guaranteed.",
+  "guideRiskParagraph2": "2. Update checks, mirror downloads, system downloader, import/export, and sharing depend on network conditions, third-party services, and system file capabilities. If failures, throttling, or file issues occur, please refer to the Release page, your own backups, and system prompts.",
+  "guideRiskParagraph3": "3. Before migrating, importing, or overwriting data, please confirm that your backup files are complete and usable, and keep files containing timetable information safe. Risks caused by deletion, overwriting, sharing, or improper storage are the user's responsibility.",
+  "guideUmengPrivacyLink": "Umeng Privacy Policy: https://www.umeng.com/page/policy",
+  "liveDiagnosticsUnavailable": "There are no Island diagnostic logs to view yet.",
+  "liveDiagnosticsViewerTitle": "Island diagnostic logs",
+  "liveDiagnosticsShareText": "These are the Island diagnostic logs exported from Qingyu Timetable. They can help investigate issues such as the Island not appearing.",
+  "liveDiagnosticsShareSubject": "Qingyu Timetable - Island diagnostic logs",
+  "liveDiagnosticsSnapshotShareText": "This is the Island status snapshot exported from the current test diagnostics page in Qingyu Timetable. It can help investigate issues such as the Island not appearing.",
+  "liveDiagnosticsSnapshotShareSubject": "Qingyu Timetable - Island status snapshot",
+  "liveDiagnosticsNothingToExport": "There is no log file or status snapshot available to export right now.",
+  "liveDiagnosticsCleared": "Island diagnostic logs have been cleared. Collection will start again afterward.",
+  "liveDiagnosticsClearFailed": "Failed to clear Island diagnostic logs",
+  "liveTestingNotRefreshed": "Not refreshed yet",
+  "liveTestingTitle": "Testing & diagnostics",
+  "liveTestingNotificationTitle": "Test notifications",
+  "liveTestingNotificationSubtitle": "Used to verify the Island, notification bar, and course short-name display.",
+  "liveTestingSendAction": "Send test notification",
+  "liveTestingUmengHint": "The two buttons below are shown only in test builds and are used to verify Umeng U-APM crash and ANR reporting.",
+  "liveTestingCrashAction": "Crash test",
+  "liveTestingAnrAction": "ANR test",
+  "liveTestingIslandStatusTitle": "Island status diagnostics",
+  "liveTestingIslandStatusSubtitle": "This section shows the native live service status, notification build result, and the reason it is not appearing on the Island.",
+  "liveTestingServiceStatusRunning": "Service running",
+  "liveTestingServiceStatusStopped": "Service stopped",
+  "liveTestingNoIslandReasonTitle": "Why it is not on the Island",
+  "liveTestingNoIslandReasonEmpty": "No blocking reason at the moment",
+  "liveTestingRefreshAction": "Refresh diagnostics",
+  "liveTestingRefreshing": "Refreshing",
+  "liveTestingExportAction": "Export and share logs",
+  "liveTestingExporting": "Exporting",
+  "liveTestingAutoRefreshTitle": "Auto refresh",
+  "liveTestingAutoRefreshOn": "Refresh diagnostic status automatically every {seconds} seconds",
+  "@liveTestingAutoRefreshOn": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTestingAutoRefreshOff": "When off, diagnostics update only when you refresh manually so you can inspect the current state more steadily.",
+  "liveTestingRefreshedAt": "Last refreshed: {time}",
+  "@liveTestingRefreshedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "liveTestingSectionEnvironment": "Environment & permissions",
+  "liveTestingSectionService": "Service status",
+  "liveTestingSectionCourse": "Course data",
+  "liveTestingSectionTiming": "Time & stage",
+  "liveTestingSectionSwitches": "Stage switches",
+  "liveTestingSectionDisplay": "Island display config",
+  "liveTestingSectionNotification": "Notification decision result",
+  "liveTestingSectionRecentLogs": "Recent diagnostic logs",
+  "liveTestingRawDataTitle": "Raw debug data",
+  "liveTestingRawDataSubtitle": "Collapsed by default. Expand it only when you need to verify the full native fields.",
+  "liveTestingExpandRawJson": "Expand raw JSON",
+  "liveTestingExpandRawJsonSubtitle": "Prevents large raw payloads from taking over the page",
+  "liveTestingLocalLogsTitle": "Local diagnostic logs",
+  "liveTestingLocalLogsSubtitle": "Export the log file with one tap and share it directly with the developer, or clear it and collect again.",
+  "liveTestingClearLogsAction": "Clear logs",
+  "liveTestingClearingLogs": "Clearing",
+  "liveTestingViewPhoneLogsAction": "View device logs",
+  "liveTestingMoreTesterOptionsAction": "More tester options",
+  "yesLabel": "Yes",
+  "noLabel": "No",
+  "liveTestingCurrentNativeFieldsSubtitle": "Shows the current native diagnostic fields.",
+  "liveTestingCrashSoon": "A Umeng U-APM test crash is about to be triggered. Reopen the app afterward to check whether it was reported.",
+  "liveTestingAnrSoon": "A ~30-second main-thread freeze is about to be triggered. Test outside flutter run, then reopen the app afterward to check Umeng.",
+  "liveTestingNoCourseAvailable": "There is no course available for testing right now.",
+  "liveTestingTestCourseNote": "This note is shown here. You can edit it on the course edit page.",
+  "liveTestingNotificationSent": "A before-class test notification has been sent. It should enter the before-class reminder stage in about 8 seconds.",
+  "sendFailedWithError": "Failed to send: {error}",
+  "@sendFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWidgetSettingsTitle": "Home widgets",
+  "homeWidgetTodayCourseTitle": "Today's course widgets",
+  "homeWidgetTodayCourseSubtitle": "The first batch supports 2×2, 2×4, and 4×4 sizes. Tapping a widget opens the home page directly, and it refreshes automatically when classes start and end.",
+  "homeWidgetQuickAddTitle": "Quick add to home screen",
+  "homeWidgetCheckingPinSupport": "Checking whether the current launcher supports in-app widget pinning…",
+  "homeWidgetPinSupported": "If supported, the system add confirmation will appear directly. It is not a separate permission dialog; once confirmed, the widget will be pinned to the home screen.",
+  "homeWidgetPinUnsupported": "If the current launcher does not support in-app widget pinning, long-press the home screen → Widgets → Qingyu Timetable to add it manually.",
+  "homeWidgetBackgroundStyleLabel": "Background style",
+  "homeWidgetShowLocationTitle": "Show location",
+  "homeWidgetShowLocationSubtitle": "When turned off, the widget secondary info will prioritize week info and course count.",
+  "homeWidgetShowCountdownTitle": "Show countdown",
+  "homeWidgetShowCountdownSubtitle": "The refresh switch is kept for now and will later be used to show remaining time before the next class and during class.",
+  "homeWidgetHideCompletedTitle": "Hide completed classes",
+  "homeWidgetHideCompletedSubtitle": "When enabled, the 2×2, 2×4, and 4×4 course lists show only classes that have not finished yet.",
+  "homeWidgetHeightAdjustTitle": "Card height adjustment",
+  "defaultLabel": "Default",
+  "higherByValue": "Higher by {value}",
+  "@higherByValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "lowerByValue": "Lower by {value}",
+  "@lowerByValue": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWidgetCornerRadiusTitle": "Card corner radius",
+  "homeWidgetDescriptionTitle": "Notes",
+  "homeWidgetDescriptionText": "Widgets currently prioritize today's courses. On days without classes, the full card stays visible instead of turning blank. If you switch timetables or change styles, the home-screen widgets refresh as well.",
+  "homeWidgetPinRequested": "The request to add \"{label}\" has been sent. Please confirm it in the system dialog and place it on the home screen.",
+  "@homeWidgetPinRequested": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWidgetPinUnsupportedManual": "Your current launcher does not support in-app widget pinning. Long-press the home screen → Widgets → Qingyu Timetable, then add \"{label}\" manually.",
+  "@homeWidgetPinUnsupportedManual": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeWidgetInvalidType": "Invalid widget type. Please try again later.",
+  "homeWidgetPinFailedManual": "Failed to request widget pinning. Long-press the home screen → Widgets → Qingyu Timetable, then add \"{label}\" manually.",
+  "@homeWidgetPinFailedManual": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "layoutSettingsTitle": "Layout & sections",
+  "layoutDensityTitle": "Timetable density",
+  "layoutAutoFitHeightTitle": "Auto fill screen height",
+  "layoutAutoFitHeightSubtitle": "When enabled, the page automatically fills to the bottom based on the current section count instead of leaving blank space below.",
+  "layoutHideWeekendsTitle": "Hide weekends",
+  "layoutHideWeekendsSubtitle": "When enabled, only Monday to Friday are shown on the home page and the remaining columns expand automatically.",
+  "layoutEnableHapticsTitle": "Enable in-app haptic feedback",
+  "layoutEnableHapticsSubtitle": "When off, interactions such as page switching no longer trigger light vibration.",
+  "layoutTimeColumnDisplayLabel": "Home page time column",
+  "layoutTimeColumnWidthLabel": "Time column width",
+  "layoutCourseCardGapLabel": "Course card spacing {value}",
+  "@layoutCourseCardGapLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "layoutSectionHeightLabel": "Row height {value}",
+  "@layoutSectionHeightLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "layoutCompactFontSizeLabel": "Compact font size {value}",
+  "@layoutCompactFontSizeLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "layoutCourseCardFontSizeLabel": "Course card font size {value}",
+  "@layoutCourseCardFontSizeLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "layoutCourseCardDisplayTitle": "Course card display",
+  "layoutCourseCardDisplaySubtitle": "Course name, teacher, and classroom are shown by default. Other information can be toggled freely per timetable.",
+  "layoutShowTeacherTitle": "Show teacher",
+  "layoutShowClassroomTitle": "Show classroom",
+  "layoutShowTimeTitle": "Show time",
+  "layoutShowTimeLabelsTitle": "Show class start/end labels",
+  "layoutShowTimeLabelsSubtitle": "When off, only the time points are shown, without the \"start\" / \"end\" labels.",
+  "layoutShowWeeksTitle": "Show weeks",
+  "layoutShowWeeksSubtitle": "For example, weeks 1-16 or odd/even weeks",
+  "layoutShowDescriptionTitle": "Show course description",
+  "layoutShowDescriptionSubtitle": "Off by default and compressed first when space is limited",
+  "layoutShowOtherWeeksTitle": "Show courses outside the current week",
+  "layoutShowOtherWeeksSubtitle": "Off by default. When enabled, courses not in the current week are shown in semi-transparent gray.",
+  "layoutVerticalAlignLabel": "Vertical alignment",
+  "layoutHorizontalAlignLabel": "Horizontal alignment",
+  "layoutShowConflictBadgeTitle": "Show conflict pill on the home page",
+  "layoutShowConflictBadgeSubtitle": "When off, the home timetable no longer shows the \"Conflict\" pill for conflicting courses.",
+  "layoutConflictOpacityLabel": "Conflict course opacity {value}%",
+  "@layoutConflictOpacityLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "layoutConflictOpacitySubtitle": "Conflicting courses are automatically stacked. Lower opacity makes multiple courses visible at the same time.",
+  "layoutTipsText": "Time schemes have been moved to the Settings home page. This page mainly adjusts row height, time column, weekend visibility, and course card layout. If you only want to change the time for the current timetable, duplicate a time scheme first and then apply it.",
+  "currentWeekCompact": "Week {week}",
+  "@currentWeekCompact": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "sampleCourseNumericalControl": "CNC",
+  "sampleCourseAdvancedMath": "Calculus",
+  "sampleTeacherZhang": "Prof. Zhang",
+  "sampleCourseEnglish": "English",
+  "sampleTeacherLi": "Prof. Li",
+  "aboutRepositorySheetTitle": "Open-source repositories",
+  "aboutRepositorySheetHint": "If you want to add academic-system adapters for more schools, you should also check the qingyu_warehouse repository.",
+  "aboutOpenGitHubAction": "Open GitHub",
+  "aboutOpenWarehouseRepoAction": "Open adapter repository",
+  "copiedRepositoryAddress": "Repository address copied",
+  "copiedWarehouseRepositoryAddress": "Adapter repository address copied",
+  "aboutUpdateScreenTitle": "Version updates",
+  "aboutUpdateStatusTitle": "Update status",
+  "aboutRefreshCheckTooltip": "Check again",
+  "aboutCheckingLatestVersion": "Checking the latest version information…",
+  "aboutReadVersionFailed": "Unable to read version information right now. Please try again later.",
+  "aboutReadVersionFailedHint": "If GitHub access is unstable on your network, try again later or switch to the domestic download route below.",
+  "aboutViewReleaseAction": "View Release",
+  "aboutDownloadNowAction": "Download now",
+  "aboutOpenDownloadPageAction": "Open download page",
+  "aboutCurrentVersionLabel": "Current version",
+  "aboutLatestVersionLabel": "Latest version",
+  "aboutUnreleasedLabel": "Not released",
+  "aboutVersionChannelLabel": "Release channel",
+  "aboutPrereleaseChannel": "Prerelease",
+  "aboutUpdateAvailableHint": "You can simply tap \"Download now\" below. Speed test, mirrors, and prerelease options have been moved into Advanced Options.",
+  "aboutUpdateNoUpdateHint": "The current version is already usable. If you want to try prereleases, enable prerelease checks in Advanced Options below.",
+  "aboutUpdatedAt": "Updated at: {time}",
+  "@aboutUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutUpdateNowTitle": "Update now",
+  "aboutUpdateNowAndroidSubtitle": "For normal use, just tap Download now once. If downloading is slow, fails, or you need a different route, use Advanced Options below.",
+  "aboutUpdateNowOtherSubtitle": "On the current platform, the app opens the download page directly instead of installing in-app.",
+  "aboutMirrorDownloadHint": "Domestic download is currently prioritized. On most domestic networks, tapping \"Download now\" is enough.",
+  "aboutOriginalDownloadHint": "International-source download is currently prioritized. If downloading is slow or unreachable, switch back to domestic download.",
+  "aboutUseSystemDownloaderAction": "Use system downloader",
+  "aboutOpenReleasePageAction": "Open Release page",
+  "aboutDownloadMethodTitle": "Download method",
+  "aboutDownloadMethodSubtitle": "Domestic download is recommended by default. Only switch to the international source if you can access GitHub reliably.",
+  "aboutDownloadMethodMirror": "Domestic download",
+  "aboutDownloadMethodOriginal": "International source",
+  "aboutMirrorModeHintRecommended": "Currently using domestic download · {current}. Recent speed tests recommend \"{recommended}\" instead, and you can switch in Advanced Options if needed.",
+  "@aboutMirrorModeHintRecommended": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      },
+      "recommended": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutMirrorModeHintCurrent": "Currently using domestic download · {current}. If downloading is slow or fails, use Advanced Options to test, switch routes, or enter a custom address.",
+  "@aboutMirrorModeHintCurrent": {
+    "placeholders": {
+      "current": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutOriginalModeHint": "You are currently using the international source. This is recommended only if your network can access GitHub reliably; otherwise, switch back to domestic download.",
+  "aboutReleaseNotesTitle": "Release notes",
+  "aboutReleaseNotesSubtitle": "Shows the Release notes of the currently detected version.",
+  "aboutAdvancedOptionsTitle": "Advanced options",
+  "aboutAdvancedOptionsSubtitle": "Expand only when downloads are slow, you need to switch routes manually, or you want prerelease checks.",
+  "aboutMirrorSectionTitle": "Download routes & mirrors",
+  "aboutMirrorSectionMirrorHint": "You are currently using domestic download. Here you can switch routes manually, run speed tests, or enter a custom download address.",
+  "aboutMirrorSectionOriginalHint": "You are currently using the international source. The route settings below take effect only after you switch back to domestic download.",
+  "aboutFillCustomMirrorFirst": "Enter a custom download address first",
+  "aboutCurrentCustomMirrorTitle": "Current custom download address",
+  "aboutCurrentMirrorTitle": "Current download route address",
+  "aboutCurrentCustomMirrorHint": "You are currently using the address you entered manually.",
+  "aboutCurrentMirrorHint": "If the current route fails, switch to another built-in route or use a custom address instead.",
+  "aboutProbeMirrorsAction": "Test speed and recommend",
+  "aboutProbingMirrors": "Testing speed…",
+  "aboutEditCustomMirrorAction": "Edit custom address",
+  "aboutSetCustomMirrorAction": "Enter custom address",
+  "aboutSwitchToRecommendedAction": "Switch to recommended: {label}",
+  "@aboutSwitchToRecommendedAction": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutMirrorDisabledHint": "Domestic download is not currently enabled, so the route settings here will not take effect. Switch back to domestic download first if needed.",
+  "aboutRecentProbeResultsTitle": "Recent speed-test results",
+  "aboutUnavailable": "Unavailable",
+  "aboutRecommended": "Recommended",
+  "aboutCheckPrereleaseTitle": "Check prerelease versions",
+  "aboutCheckPrereleaseSubtitle": "When enabled, prereleases are also included in update checks. It is recommended to keep this off for normal use.",
+  "aboutDiagnosticsTitle": "Testing & diagnostics",
+  "aboutDiagnosticsSubtitle": "Expand this only when the Island does not appear or when you need to send feedback to the developer.",
+  "aboutRecordDiagnosticsTitle": "Record Island diagnostic logs",
+  "aboutRecordDiagnosticsSubtitle": "When enabled, key logs are continuously recorded locally and used only to diagnose issues such as the Island not appearing when it should.",
+  "aboutExportDiagnosticsAction": "Export diagnostic logs",
+  "aboutViewPhoneLogsAction": "View device logs",
+  "aboutClearAndRecollectAction": "Clear and collect again",
+  "aboutLiveDiagnosticsEnabled": "Island diagnostic logs enabled",
+  "aboutLiveDiagnosticsDisabled": "Island diagnostic logs disabled",
+  "aboutNoDiagnosticsExportYet": "There are no Island diagnostic logs to export yet.",
+  "aboutProbeNoMirrorFound": "Speed test finished, but no available mirror route was found yet.",
+  "aboutProbeCurrentFastest": "Speed test finished. The current route \"{label}\" is already the fastest available one.",
+  "@aboutProbeCurrentFastest": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutProbeRecommendSwitch": "Speed test finished. Recommended switch: \"{label}\".",
+  "@aboutProbeRecommendSwitch": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "switchAction": "Switch",
+  "aboutSwitchToMirrorAfterError": "{error}. You can switch to a domestic mirror and try again.",
+  "@aboutSwitchToMirrorAfterError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSwitchPresetAfterError": "{error}. It is recommended to switch to \"{label}\" and try again.",
+  "@aboutSwitchPresetAfterError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      },
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutSetMirrorSourceTitle": "Set mirror source",
+  "aboutMirrorPrefixLabel": "Mirror prefix",
+  "aboutMirrorPrefixInvalid": "Invalid mirror source format. Please enter a complete http or https address.",
+  "aboutMirrorSaved": "Mirror source saved",
+  "aboutDownloadCancelled": "Download cancelled",
+  "aboutInstallReady": "The installation package is ready and the installer page has been opened. If no system prompt appears, install it later from notifications or your file manager.",
+  "aboutUpdatePackageTitle": "Qingyu Timetable update package",
+  "aboutUpdatePackageDescription": "The download has been handed to the system download manager. You can install it directly from the system notification once it finishes.",
+  "aboutSystemDownloaderQueued": "The task has been handed to the system download manager. Check progress in the system notification or download list.",
+  "aboutSystemDownloaderFailed": "Failed to call the system download manager",
+  "aboutDownloadCancelling": "Cancelling download…",
+  "aboutDownloadingBytes": "Downloading update {value}",
+  "@aboutDownloadingBytes": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutDownloadingPercent": "Downloading update {value}%",
+  "@aboutDownloadingPercent": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutMirrorUnknownSizeHint": "The mirror did not return a total file size yet, so only the downloaded size is shown for now.",
+  "aboutCancelDownloadAction": "Cancel download",
+  "aboutContributorsScreenTitle": "Contributors",
+  "aboutDevelopersTitle": "Developers",
+  "aboutDeveloperMaintainerSubtitle": "Qingyu Timetable development and maintenance",
+  "aboutWarehouseMaintainersTitle": "Academic-system adapter maintainers",
+  "aboutWarehouseMaintainersIntro": "The names below are summarized from the maintainer field in the qingyu_warehouse adapter repository. If cached data already exists locally, the cache is shown first and then refreshed in the background.",
+  "aboutWarehouseMaintainersLoadFailed": "Unable to read the maintainer list right now: {error}",
+  "@aboutWarehouseMaintainersLoadFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "aboutWarehouseMaintainersEmpty": "No maintainer information has been loaded yet.",
+  "aboutWarehouseMaintainerCount": "{count} adapter items",
+  "@aboutWarehouseMaintainerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutParticipateWarehouseTitle": "Contribute adapters",
+  "aboutParticipateWarehouseSubtitle": "If you know packet capture, web debugging, JavaScript, or are willing to maintain your school's academic system long-term, you are welcome to submit new school adapters and fixes to qingyu_warehouse.",
+  "importFileReadFailed": "Unable to read the selected file",
+  "importReplaceExistingTitle": "Import courses",
+  "importReplaceExistingMessage": "When importing {name}, replace existing courses?",
+  "@importReplaceExistingMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "importNoCoursesRecognized": "No importable courses were recognized",
+  "importConfirmSemesterMappingTitle": "Confirm semester start date and week mapping",
+  "importConfirmSemesterMappingSubtitleIcs": "Please select the semester start date in your school calendar. The system has inferred a default week mapping from the earliest class date in the file, and you can still adjust it manually.",
+  "importOverwriteCount": "Imported and replaced {count} course entries",
+  "@importOverwriteCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importUpdatedCount": "Timetable updated: added or updated {count} course entries",
+  "@importUpdatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importNoCourseChanges": "There are no new or updated courses to import",
+  "aiImportTitle": "Image-based import",
+  "aiPreviewSummary": "Recognized {courseCount} courses, up to section {sectionCount}{warningSuffix}",
+  "@aiPreviewSummary": {
+    "placeholders": {
+      "courseCount": {
+        "type": "int"
+      },
+      "sectionCount": {
+        "type": "int"
+      },
+      "warningSuffix": {
+        "type": "String"
+      }
+    }
+  },
+  "aiWarningCountSuffix": ", {count} warnings",
+  "@aiWarningCountSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiWorkflowCompactTitle": "Copy prompt -> Doubao OCR -> Import",
+  "aiWorkflowCompactSubtitle": "Doubao Expert Mode -> Copy JSON -> Choose semester date",
+  "aiWorkflowTitle": "Copy prompt -> Doubao OCR -> Paste JSON -> Import",
+  "aiWorkflowSubtitle": "Copy the prompt first, switch Doubao to Expert Mode from the lower-left corner, then send both the timetable screenshots and the prompt together. Copy the JSON returned by Doubao back here, then choose the semester date after tapping Import.",
+  "aiPromptShortAction": "Prompt",
+  "aiExpertModeSuggestion": "Doubao Expert Mode is recommended. Multiple images are supported, and screenshots should include weekday headers.",
+  "aiHintExpertMode": "Switch Doubao to Expert Mode first",
+  "aiHintSendScreenshot": "Send screenshots together with the prompt",
+  "aiHintCopyJsonBack": "Copy the returned JSON",
+  "aiHintPickSemesterAfterImport": "Choose semester date after import",
+  "jsonLabelShort": "JSON",
+  "aiPasteJsonTitle": "Paste the JSON returned by AI",
+  "aiCourseCountChip": "{count} courses",
+  "@aiCourseCountChip": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiParseFailedChip": "Parse failed",
+  "aiPasteJsonHintShort": "Paste the JSON returned by AI",
+  "aiPasteJsonHintLong": "Paste the JSON returned by Doubao here exactly as-is, then tap Import. Pure JSON is supported, and ```json code blocks are also accepted.",
+  "detailAction": "Details",
+  "aiParseErrorTitle": "Parse error",
+  "viewDetailsAction": "View details",
+  "aiWorkflowFooter": "Copy the prompt -> send screenshots and prompt to Doubao -> paste the JSON back here -> tap Import -> choose semester date.",
+  "previewAction": "Preview",
+  "confirmImportAction": "Confirm import",
+  "promptCopiedHint": "Prompt copied. Go to Doubao and send the screenshots with the prompt.",
+  "clipboardNoText": "There is no usable text in the clipboard",
+  "aiPromptSheetTitle": "OCR prompt",
+  "aiPromptSheetSubtitle": "Doubao is recommended. Switch it to Expert Mode first, then send the full prompt below together with the timetable screenshots so it returns JSON only. After generation, copy the JSON back to this page and choose the semester date after tapping Import.",
+  "aiPreviewTitle": "Parse preview",
+  "aiPasteJsonFirst": "Please paste the JSON returned by AI first",
+  "aiParseFailedIncompleteJson": "Parsing failed. Please make sure you pasted the complete JSON.",
+  "importAiResultTitle": "Import AI parsing result",
+  "importAiReplaceMessage": "Replace the existing courses with the current AI parsing result?",
+  "importConfirmSemesterMappingSubtitleAi": "Please choose the semester start date from your school calendar, then confirm which calendar week corresponds to Week 1 in the timetable. If there are no classes in the first week, this usually needs to be changed to Week 2.",
+  "aiWarningExtraSuffix": ", plus {count} recognition warnings",
+  "@aiWarningExtraSuffix": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pasteAction": "Paste",
+  "importConfirmSemesterMappingSubtitleWarehouse": "The academic-system script has returned course weeks. Please confirm the semester start date in the school calendar; if there are no classes in the first few weeks, you can map timetable Week 1 to a later calendar week.",
+  "aiPreviewCourseCount": "Course count: {count}",
+  "@aiPreviewCourseCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "aiPreviewMaxSection": "Max section: {section}",
+  "@aiPreviewMaxSection": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  },
+  "aiPreviewWarningsTitle": "Recognition warnings",
+  "aiPreviewCoursesTitle": "Course preview",
+  "aiPreviewRemainingCourses": "The remaining {count} entries will be written into the current timetable after import.",
+  "@aiPreviewRemainingCourses": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "warehouseMissingSchoolTitle": "Cannot find your school in the list?",
+  "warehouseMissingSchoolSubtitle": "Just open the feedback page and file an Issue. It helps a lot if you include the school name, academic-system URL, logged-in timetable page link, or screenshots.",
+  "laterAction": "Maybe later",
+  "goFeedbackAction": "Go to feedback",
+  "warehouseFeedbackMissingSchoolTitle": "Missing school? Go to feedback",
+  "warehouseCustomDebugTitle": "Custom debug",
+  "warehouseRootLoadFailedTitle": "Unable to read the adapter repository right now",
+  "searchSchoolHint": "Search school name, initials, or code",
+  "clearSearchTooltip": "Clear",
+  "noMatchingSchools": "No matching school found",
+  "noAvailableSchools": "No schools available yet",
+  "searchSchoolSuggestion": "Try the full school name, initials, or the school code used in the repository.",
+  "deleteDebugRecordTitle": "Delete debug record",
+  "deleteDebugRecordMessage": "Delete \"{name}\"? This will not affect courses that have already been imported.",
+  "@deleteDebugRecordMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deletedDebugRecord": "Deleted debug record: {name}",
+  "@deletedDebugRecord": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "customDebugName": "Custom debug",
+  "localDebugMaintainer": "Local debug",
+  "customDebugDescription": "User-saved custom academic-system debug script",
+  "addDebugRecordTooltip": "Add debug record",
+  "customDebugIntroTitle": "Keep your own academic-system debug records here",
+  "customDebugIntroSubtitle": "Each record can save a custom URL and a full script. Once saved, you can tap \"Start debug\" next time to reuse it directly instead of searching for the entry from a school detail page again.",
+  "addDebugRecordAction": "Add debug record",
+  "noSavedDebugRecords": "No saved debug records yet",
+  "noSavedDebugRecordsHint": "Add one first and paste the URL and script in. After that, you can reuse it directly.",
+  "debugScriptLength": "Script {count} chars",
+  "@debugScriptLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "startDebugAction": "Start debug",
+  "editAction": "Edit",
+  "scriptFileReadFailed": "Unable to read the script file",
+  "scriptFileImported": "Imported script file: {name}",
+  "@scriptFileImported": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "scriptFileImportFailed": "Failed to import script file: {error}",
+  "@scriptFileImportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "debugRecordNameRequired": "Please enter a debug record name first",
+  "invalidImportUrl": "Please enter a valid academic-system URL",
+  "debugScriptRequired": "Please enter or import a script first",
+  "editDebugRecordTitle": "Edit debug record",
+  "addDebugRecordTitle": "Add debug record",
+  "savingAction": "Saving…",
+  "debugRecordFormula": "One record = one URL + one script",
+  "debugRecordFormulaSubtitle": "Useful when you repeatedly debug the same school or keep multiple script sets for different schools. Records remain saved and can be edited at any time.",
+  "debugRecordNameLabel": "Record name",
+  "debugRecordNameHint": "Example: Chongqing Jidian - new system",
+  "importUrlLabel": "Academic-system URL",
+  "debugScriptLabel": "Debug script",
+  "importFromFileAction": "Import from file",
+  "debugScriptHint": "Paste the full script exported by the browser extension here",
+  "saveDebugRecordAction": "Save debug record",
+  "fillUrlThenImport": "Enter URL before importing",
+  "webLoginImport": "Web login import",
+  "savedImportUrlHint": "Academic-system URL saved. You can import directly next time.",
+  "adapterIntroSubtitle": "You can view adapter info, the login entry, and script status here.",
+  "schoolLabel": "School",
+  "categoryLabel": "Category",
+  "maintainerLabel": "Maintainer",
+  "adapterInfoTitle": "Adapter info",
+  "scriptPathLabel": "Script path",
+  "loginEntryLabel": "Login entry",
+  "unsetConfigLabel": "Not configured",
+  "adapterOverrideImportUrlHint": "The manually overridden login address is currently in use.",
+  "repositoryLabel": "Repository",
+  "scriptStatusTitle": "Script status",
+  "scriptLoadedLength": "Script loaded successfully. Length: {count} chars.",
+  "@scriptLoadedLength": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scriptEmpty": "Script is empty",
+  "openLoginInAppAction": "Open login page in app",
+  "openInSystemBrowserAction": "Open in system browser",
+  "copiedImportLoginUrl": "Academic-system login URL copied",
+  "copyLoginAddressAction": "Copy login address",
+  "copiedScriptRawUrl": "Raw script URL copied",
+  "copyScriptAddressAction": "Copy script address",
+  "customLoginAddressAction": "Custom login address",
+  "editCustomLoginAddressAction": "Edit custom login address",
+  "clearCustomLoginAddressAction": "Clear custom address",
+  "restoreRepositoryAddressAction": "Restore repository address",
+  "invalidLoginEntryUrl": "Invalid login entry URL",
+  "savedCustomLoginAddress": "Custom login address saved",
+  "clearedCustomLoginAddress": "Custom login address cleared",
+  "restoredRepositoryImportUrl": "Repository login address restored",
+  "backToCurrentWeekAction": "Back",
+  "nonCurrentWeekLabel": "Not this week",
+  "conflictLabel": "Conflict",
+  "selectWeekTitle": "Select week",
+  "availableWeeksCount": "{count} weeks",
+  "@availableWeeksCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goToWeekLabel": "Week {week}",
+  "@goToWeekLabel": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "homeMenuUpdateTitle": "Software update",
+  "homeMenuProfilesTitle": "Timetables",
+  "homeMenuOverviewTitle": "Course overview",
+  "homeMenuAddCourseTitle": "Add course",
+  "homeMenuImportTitle": "Import courses",
+  "homeMenuSettingsTitle": "Timetable settings",
+  "homeMenuCoffeeTitle": "Buy me a coffee",
+  "homeMenuFeedbackTitle": "Feedback",
+  "switchTimetableTitle": "Switch timetable",
+  "switchTimetableSubtitleEmpty": "Tap a timetable below to switch the current view immediately.",
+  "switchTimetableSubtitleCurrent": "Current: {name}. Tap a timetable below to switch immediately.",
+  "@switchTimetableSubtitleCurrent": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "shortNamePrefix": "Short name: {value}",
+  "@shortNamePrefix": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "teacherPrefix": "Teacher: {value}",
+  "@teacherPrefix": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "locationPrefix": "Location: {value}",
+  "@locationPrefix": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "courseDialogCurrentWeekHint": "You are viewing Week {week}. You can reschedule this class occurrence directly.",
+  "@courseDialogCurrentWeekHint": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseDialogNotThisWeekHint": "You are viewing Week {week}, but this course does not occur this week, so it cannot be rescheduled as the current-week occurrence.",
+  "@courseDialogNotThisWeekHint": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "editActionShort": "Edit",
+  "rescheduleAction": "Reschedule",
+  "deleteActionShort": "Delete",
+  "deleteModeTitle": "Delete mode",
+  "deleteModeSubtitle": "You can delete the whole schedule entry or just the single occurrence shown for the current week.",
+  "deleteCourseAction": "Delete course",
+  "deleteOccurrenceAction": "Delete occurrence",
+  "deleteModeHintCurrentWeek": "\"Delete course\" removes all weeks of this schedule entry; \"Delete occurrence\" removes only the occurrence in Week {week}.",
+  "@deleteModeHintCurrentWeek": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteModeHintUnavailable": "This card is not an actual occurrence in Week {week}, so only the whole schedule entry can be deleted.",
+  "@deleteModeHintUnavailable": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteScheduleConfirmMessage": "Delete the schedule entry \"{name}\"?\n{detail}",
+  "@deleteScheduleConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteOccurrenceConfirmMessage": "Delete the occurrence of \"{name}\" in Week {week}?\n{detail}",
+  "@deleteOccurrenceConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "week": {
+        "type": "int"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "occurrenceDeletedMessage": "Deleted the occurrence in Week {week}",
+  "@occurrenceDeletedMessage": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "noChangesDetected": "No changes detected",
+  "rescheduleCurrentOccurrenceTitle": "Reschedule this week's occurrence",
+  "rescheduleCurrentOccurrenceSubtitle": "Only the occurrence in Week {week} will be adjusted. The original class in that week will be removed automatically, while other weeks stay unchanged.",
+  "@rescheduleCurrentOccurrenceSubtitle": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "rescheduleTargetWeekLabel": "Move to week",
+  "weekdayFieldLabel": "Weekday",
+  "startSectionFieldLabel": "Start section",
+  "endSectionFieldLabel": "End section",
+  "courseLocationFieldLabel": "Class location",
+  "confirmRescheduleAction": "Confirm reschedule",
+  "homeTitleStyleClassicLabel": "Classic text",
+  "homeTitleStyleBrandLabel": "Large logo",
+  "homeTitleStyleClassicDescription": "Keeps the original title style with text only; tap it to switch timetables.",
+  "homeTitleStyleBrandDescription": "Shows a large logo and the smaller timetable name for a stronger branded look.",
+  "widgetBackgroundStyleGlass": "Translucent glass",
+  "widgetBackgroundStyleSolid": "Solid card",
+  "widgetBackgroundStyleGradient": "Gradient card",
+  "homeWidgetTargetCompact22": "Main card 2×2",
+  "homeWidgetTargetMiniList22": "Mini list 2×2",
+  "homeWidgetTargetMedium24": "Overview 2×4",
+  "homeWidgetTargetLarge44": "List 4×4"
 }

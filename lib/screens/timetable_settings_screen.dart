@@ -184,7 +184,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                     _SettingsEntryTile(
                       icon: Icons.notifications_active_outlined,
                       title: l10n.liveSettingsTitle,
-                      subtitle: '提醒时段、岛展示、通知栏和显示内容',
+                      subtitle: l10n.liveSettingsEntrySubtitle,
                       onTap: openLiveSettings,
                     ),
                     _SettingsEntryTile(
@@ -207,7 +207,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                     _SettingsEntryTile(
                       icon: Icons.layers_outlined,
                       title: l10n.timetableManagement,
-                      subtitle: '新建、切换、复制、重命名和删除课表',
+                      subtitle: l10n.timetableProfilesEntrySubtitle,
                       onTap: openProfiles,
                     ),
                     _SettingsEntryTile(
@@ -385,6 +385,7 @@ class _SemesterOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -412,7 +413,7 @@ class _SemesterOverviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '当前第 $currentWeek 周 / 共 $semesterWeekCount 周',
+                        l10n.semesterOverviewCurrentWeek(currentWeek, semesterWeekCount),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -420,8 +421,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         semesterStartDate == null
-                            ? '未设置开学日期'
-                            : '开学日期：${_formatDate(semesterStartDate!)}',
+                            ? l10n.semesterStartUnset
+                            : l10n.semesterStartSet(_formatDate(semesterStartDate!)),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -595,12 +596,12 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             padding: const EdgeInsets.all(10),
-                            child: const Column(
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '数控',
+                                  l10n.sampleCourseNumericalControl,
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w700,
@@ -710,22 +711,22 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '首页标题',
-            subtitle: '控制首页左上角课表切换入口的样式。',
+            title: l10n.homeTitleSectionTitle,
+            subtitle: l10n.homeTitleSectionSubtitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<HomeTitleStyle>(
                   value: _draft.homeTitleStyle,
-                  decoration: const InputDecoration(
-                    labelText: '标题样式',
+                  decoration: InputDecoration(
+                    labelText: l10n.homeTitleStyleLabel,
                     border: OutlineInputBorder(),
                   ),
                   items: HomeTitleStyle.values
                       .map(
                         (value) => DropdownMenuItem(
                           value: value,
-                          child: Text(value.label),
+                          child: Text(_homeTitleStyleLabel(context, value)),
                         ),
                       )
                       .toList(),
@@ -740,7 +741,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 _HomeTitleStylePreview(style: _draft.homeTitleStyle),
                 const SizedBox(height: 8),
                 Text(
-                  _draft.homeTitleStyle.description,
+                  _homeTitleStyleDescription(context, _draft.homeTitleStyle),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -748,8 +749,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '应用主题色',
-            subtitle: '影响顶部栏、强调色和全局主色调。',
+            title: l10n.themeSeedSectionTitle,
+            subtitle: l10n.themeSeedSectionSubtitle,
             child: Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -768,8 +769,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '课表背景色',
-            subtitle: '只作用于课表页面的大背景。',
+            title: l10n.timetableBackgroundColorSectionTitle,
+            subtitle: l10n.timetableBackgroundColorSectionSubtitle,
             child: Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -934,6 +935,10 @@ String localeLabel(BuildContext context, Locale locale) {
     case 'zh':
     case 'zh_CN':
       return l10n.languageModeZhCn;
+    case 'zh_HK':
+      return l10n.languageModeZhHk;
+    case 'zh_TW':
+      return l10n.languageModeZhTw;
     case 'en':
     case 'en_US':
       return l10n.languageModeEnUs;
@@ -965,6 +970,42 @@ String normalizeLocaleTagForDropdown(String tag) {
   return '';
 }
 
+
+String _homeTitleStyleLabel(BuildContext context, HomeTitleStyle style) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (style) {
+    HomeTitleStyle.classic => l10n.homeTitleStyleClassicLabel,
+    HomeTitleStyle.brand => l10n.homeTitleStyleBrandLabel,
+  };
+}
+
+String _homeTitleStyleDescription(BuildContext context, HomeTitleStyle style) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (style) {
+    HomeTitleStyle.classic => l10n.homeTitleStyleClassicDescription,
+    HomeTitleStyle.brand => l10n.homeTitleStyleBrandDescription,
+  };
+}
+
+String _widgetBackgroundStyleLabel(BuildContext context, WidgetBackgroundStyle style) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (style) {
+    WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
+    WidgetBackgroundStyle.solid => l10n.widgetBackgroundStyleSolid,
+    WidgetBackgroundStyle.gradient => l10n.widgetBackgroundStyleGradient,
+  };
+}
+
+String _homeWidgetTargetLabel(BuildContext context, HomeWidgetPinTarget target) {
+  final l10n = AppLocalizations.of(context)!;
+  return switch (target) {
+    HomeWidgetPinTarget.compact22 => l10n.homeWidgetTargetCompact22,
+    HomeWidgetPinTarget.miniList22 => l10n.homeWidgetTargetMiniList22,
+    HomeWidgetPinTarget.medium24 => l10n.homeWidgetTargetMedium24,
+    HomeWidgetPinTarget.large44 => l10n.homeWidgetTargetLarge44,
+  };
+}
+
 class _HomeTitleStylePreview extends StatelessWidget {
   final HomeTitleStyle style;
 
@@ -979,7 +1020,7 @@ class _HomeTitleStylePreview extends StatelessWidget {
     switch (style) {
       case HomeTitleStyle.classic:
         child = Text(
-          '轻屿课表',
+          AppLocalizations.of(context)!.appTitle,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w600,
           ),
@@ -987,17 +1028,17 @@ class _HomeTitleStylePreview extends StatelessWidget {
       case HomeTitleStyle.brand:
         child = Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Text(
-              '轻屿课表',
+              AppLocalizations.of(context)!.appTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.w900,
                 height: 1.0,
               ),
             ),
             Text(
-              '默认课表',
+              AppLocalizations.of(context)!.defaultTimetablePreviewName,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
@@ -1015,7 +1056,7 @@ class _HomeTitleStylePreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Align(
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.center,
         child: child,
       ),
     );
@@ -1040,14 +1081,15 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final beforeClassSummary =
-        _liveDisplaySummary(_draft.beforeClassDisplaySettings);
+        _liveDisplaySummary(context, _draft.beforeClassDisplaySettings);
     final duringEndSummary = _draft.liveDuringEndFollowBeforeClass
-        ? '跟随上课前提醒'
-        : _liveDisplaySummary(_draft.duringEndDisplaySettings);
+        ? l10n.followBeforeClassSetting
+        : _liveDisplaySummary(context, _draft.duringEndDisplaySettings);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('超级岛与通知'),
+        title: Text(l10n.liveSettingsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1057,8 +1099,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
               children: [
                 _SettingsEntryTile(
                   icon: Icons.alarm_outlined,
-                  title: '提醒时段',
-                  subtitle: '上课前、课中/下课提醒开关，以及下课前多久切到超级岛 / 重点提醒',
+                  title: l10n.liveReminderTimingTitle,
+                  subtitle: l10n.liveReminderTimingEntrySubtitle,
                   onTap: () async {
                     await Navigator.push(
                       context,
@@ -1074,14 +1116,14 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 _SettingsEntryTile(
                   icon: Icons.upcoming_outlined,
-                  title: '上课前提醒显示',
+                  title: l10n.beforeClassDisplaySettingsTitle,
                   subtitle: beforeClassSummary,
                   onTap: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const LiveDisplaySettingsScreen(
-                          title: '上课前提醒显示',
+                        builder: (_) => LiveDisplaySettingsScreen(
+                          title: l10n.beforeClassDisplaySettingsTitle,
                           forDuringEnd: false,
                         ),
                       ),
@@ -1094,14 +1136,14 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 _SettingsEntryTile(
                   icon: Icons.timelapse_rounded,
-                  title: '课中/下课提醒显示',
+                  title: l10n.duringEndDisplaySettingsTitle,
                   subtitle: duringEndSummary,
                   onTap: () async {
                     await Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const LiveDisplaySettingsScreen(
-                          title: '课中/下课提醒显示',
+                        builder: (_) => LiveDisplaySettingsScreen(
+                          title: l10n.duringEndDisplaySettingsTitle,
                           forDuringEnd: true,
                         ),
                       ),
@@ -1114,8 +1156,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 _SettingsEntryTile(
                   icon: Icons.shield_outlined,
-                  title: '后台保活',
-                  subtitle: '隐藏后台、后台保活辅助服务和权限入口',
+                  title: l10n.liveKeepAliveTitle,
+                  subtitle: l10n.liveKeepAliveEntrySubtitle,
                   onTap: () async {
                     await Navigator.push(
                       context,
@@ -1131,8 +1173,8 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
                 ),
                 _SettingsEntryTile(
                   icon: Icons.science_outlined,
-                  title: '测试与诊断',
-                  subtitle: '发送测试通知，检查超级岛和本地诊断日志',
+                  title: l10n.liveTestingEntryTitle,
+                  subtitle: l10n.liveTestingEntrySubtitle,
                   onTap: () async {
                     await Navigator.push(
                       context,
@@ -1239,14 +1281,14 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     if (!mounted) return;
     if (rawLog == null || rawLog.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('当前还没有可查看的超级岛诊断日志')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
       );
       return;
     }
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: '超级岛诊断日志',
+          title: AppLocalizations.of(context)!.liveDiagnosticsViewerTitle,
           rawLog: rawLog,
         ),
       ),
@@ -1254,6 +1296,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   }
 
   Future<void> _exportLiveDiagnostics() async {
+    final l10n = AppLocalizations.of(context)!;
     if (_exportingDiagnostics) return;
     setState(() {
       _exportingDiagnostics = true;
@@ -1261,12 +1304,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final logPath = await _liveService.exportLiveDiagnosticsFile();
     if (!mounted) return;
     var exportPath = logPath;
-    var shareText = '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。';
-    var shareSubject = '轻屿课表 - 超级岛诊断日志';
+    var shareText = l10n.liveDiagnosticsShareText;
+    var shareSubject = l10n.liveDiagnosticsShareSubject;
     if ((exportPath == null || exportPath.isEmpty) && _debugStatus != null) {
       exportPath = await _exportCurrentDebugSnapshot();
-      shareText = '这是轻屿课表当前测试诊断页导出的超级岛状态快照，可用于排查“超级岛没有弹出”等问题。';
-      shareSubject = '轻屿课表 - 超级岛状态快照';
+      shareText = l10n.liveDiagnosticsSnapshotShareText;
+      shareSubject = l10n.liveDiagnosticsSnapshotShareSubject;
     }
     if (!mounted) return;
     setState(() {
@@ -1274,7 +1317,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     });
     if (exportPath == null || exportPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('当前没有可导出的日志文件，也没有可导出的状态快照')),
+        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsNothingToExport)),
       );
       return;
     }
@@ -1318,7 +1361,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          cleared ? '已清空超级岛诊断日志，后续会重新开始收集' : '清空超级岛诊断日志失败',
+          cleared ? AppLocalizations.of(context)!.liveDiagnosticsCleared : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
         ),
       ),
     );
@@ -1326,6 +1369,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final summary = _debugSectionMap(_debugStatus?['summary']);
     final environment = _debugSectionMap(_debugStatus?['environment']);
     final service = _debugSectionMap(_debugStatus?['service']);
@@ -1337,6 +1381,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final recentDiagnostics =
         _debugSectionMap(_debugStatus?['recentDiagnostics']);
 
+    _debugL10nContext = context;
     final serviceRunning = summary['serviceRunning'] == true;
     final isActuallyPromotable = summary['isActuallyPromotable'] == true;
     final statusText = _debugValueText(summary['statusText']);
@@ -1346,17 +1391,17 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         : JsonEncoder.withIndent('  ').convert(_debugStatus);
     final refreshedAt = _lastDebugStatusUpdatedAt;
     final refreshedAtText = refreshedAt == null
-        ? '尚未刷新'
+        ? l10n.liveTestingNotRefreshed
         : '${refreshedAt.hour.toString().padLeft(2, '0')}:${refreshedAt.minute.toString().padLeft(2, '0')}:${refreshedAt.second.toString().padLeft(2, '0')}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('测试与诊断')),
+      appBar: AppBar(title: Text(l10n.liveTestingTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _SettingsSectionCard(
-            title: '测试通知',
-            subtitle: '用于验证超级岛、通知栏和课程简称等显示效果。',
+            title: l10n.liveTestingNotificationTitle,
+            subtitle: l10n.liveTestingNotificationSubtitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1368,12 +1413,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                     await _refreshDebugStatus(showLoading: true);
                   },
                   icon: const Icon(Icons.science_outlined),
-                  label: const Text('发送测试通知'),
+                  label: Text(l10n.liveTestingSendAction),
                 ),
                 if (!kReleaseMode) ...[
                   const SizedBox(height: 12),
                   Text(
-                    '下面两个按钮仅测试版显示，用于验证友盟 U-APM 崩溃和卡顿上报。',
+                    l10n.liveTestingUmengHint,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
@@ -1384,12 +1429,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                       FilledButton.tonalIcon(
                         onPressed: () => _triggerUmengTestCrash(context),
                         icon: const Icon(Icons.warning_amber_rounded),
-                        label: const Text('崩溃测试'),
+                        label: Text(l10n.liveTestingCrashAction),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: () => _triggerUmengTestAnr(context),
                         icon: const Icon(Icons.hourglass_bottom_rounded),
-                        label: const Text('异常卡顿测试'),
+                        label: Text(l10n.liveTestingAnrAction),
                       ),
                     ],
                   ),
@@ -1399,8 +1444,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           ),
           const SizedBox(height: 16),
           _SettingsSectionCard(
-            title: '上岛状态诊断',
-            subtitle: '这里直接显示原生实时服务、通知构造结果和不上岛原因。',
+            title: l10n.liveTestingIslandStatusTitle,
+            subtitle: l10n.liveTestingIslandStatusSubtitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1412,7 +1457,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                       icon: serviceRunning
                           ? Icons.play_circle_outline_rounded
                           : Icons.stop_circle_outlined,
-                      label: '服务${serviceRunning ? "运行中" : "未运行"}',
+                      label: serviceRunning ? l10n.liveTestingServiceStatusRunning : l10n.liveTestingServiceStatusStopped,
                       color: serviceRunning
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outline,
@@ -1429,14 +1474,14 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '不上岛原因',
+                  l10n.liveTestingNoIslandReasonTitle,
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
                       ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  notIslandReason.isEmpty ? '当前无拦截原因' : notIslandReason,
+                  notIslandReason.isEmpty ? l10n.liveTestingNoIslandReasonEmpty : notIslandReason,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
@@ -1461,7 +1506,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                         strokeWidth: 2),
                                   )
                                 : const Icon(Icons.refresh_rounded),
-                            label: Text(_loadingDebugStatus ? '刷新中' : '刷新诊断'),
+                            label: Text(_loadingDebugStatus ? l10n.liveTestingRefreshing : l10n.liveTestingRefreshAction),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: _exportingDiagnostics
@@ -1476,7 +1521,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                   )
                                 : const Icon(Icons.ios_share_rounded),
                             label:
-                                Text(_exportingDiagnostics ? '导出中' : '导出并分享日志'),
+                                Text(_exportingDiagnostics ? l10n.liveTestingExporting : l10n.liveTestingExportAction),
                           ),
                         ],
                       ),
@@ -1489,15 +1534,15 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                             _autoRefreshEnabled = value;
                           });
                         },
-                        title: const Text('自动刷新'),
+                        title: Text(l10n.liveTestingAutoRefreshTitle),
                         subtitle: Text(
                           _autoRefreshEnabled
-                              ? '每 ${_autoRefreshInterval.inSeconds} 秒自动拉取一次诊断状态'
-                              : '关闭后只在手动刷新时更新，便于稳定查看当前状态',
+                              ? l10n.liveTestingAutoRefreshOn(_autoRefreshInterval.inSeconds)
+                              : l10n.liveTestingAutoRefreshOff,
                         ),
                       ),
                       Text(
-                        '上次刷新：$refreshedAtText',
+                        l10n.liveTestingRefreshedAt(refreshedAtText),
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -1508,30 +1553,30 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           ),
           const SizedBox(height: 16),
           if (_debugStatus != null) ...[
-            _DebugSectionCard(title: '环境与权限', data: environment),
+            _DebugSectionCard(title: l10n.liveTestingSectionEnvironment, data: environment),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '服务状态', data: service),
+            _DebugSectionCard(title: l10n.liveTestingSectionService, data: service),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '课程数据', data: course),
+            _DebugSectionCard(title: l10n.liveTestingSectionCourse, data: course),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '时间与阶段', data: timing),
+            _DebugSectionCard(title: l10n.liveTestingSectionTiming, data: timing),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '阶段开关', data: switches),
+            _DebugSectionCard(title: l10n.liveTestingSectionSwitches, data: switches),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '岛显示配置', data: display),
+            _DebugSectionCard(title: l10n.liveTestingSectionDisplay, data: display),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '通知判定结果', data: notification),
+            _DebugSectionCard(title: l10n.liveTestingSectionNotification, data: notification),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: '最近诊断日志', data: recentDiagnostics),
+            _DebugSectionCard(title: l10n.liveTestingSectionRecentLogs, data: recentDiagnostics),
             const SizedBox(height: 16),
             _SettingsSectionCard(
-              title: '原始调试数据',
-              subtitle: '默认折叠，排查时再展开核对完整原生字段。',
+              title: l10n.liveTestingRawDataTitle,
+              subtitle: l10n.liveTestingRawDataSubtitle,
               child: ExpansionTile(
                 tilePadding: EdgeInsets.zero,
                 childrenPadding: const EdgeInsets.only(top: 8),
-                title: const Text('展开原始 JSON'),
-                subtitle: const Text('避免大段原始字段一直占满页面'),
+                title: Text(l10n.liveTestingExpandRawJson),
+                subtitle: Text(l10n.liveTestingExpandRawJsonSubtitle),
                 children: [
                   SelectableText(
                     rawDebugJson,
@@ -1546,8 +1591,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
             const SizedBox(height: 16),
           ],
           _SettingsSectionCard(
-            title: '本地诊断日志',
-            subtitle: '一键导出日志文件，直接通过系统分享发给开发者；也可以清空后重新收集。',
+            title: l10n.liveTestingLocalLogsTitle,
+            subtitle: l10n.liveTestingLocalLogsSubtitle,
             child: Wrap(
               spacing: 12,
               runSpacing: 12,
@@ -1562,12 +1607,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.delete_outline_rounded),
-                  label: Text(_clearingDiagnostics ? '清空中' : '清空日志'),
+                  label: Text(_clearingDiagnostics ? l10n.liveTestingClearingLogs : l10n.liveTestingClearLogsAction),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _openLiveDiagnosticsViewer,
                   icon: const Icon(Icons.article_outlined),
-                  label: const Text('查看手机日志'),
+                  label: Text(l10n.liveTestingViewPhoneLogsAction),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: () {
@@ -1577,7 +1622,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                     );
                   },
                   icon: const Icon(Icons.info_outline_rounded),
-                  label: const Text('更多测试者选项'),
+                  label: Text(l10n.liveTestingMoreTesterOptionsAction),
                 ),
               ],
             ),
@@ -1587,6 +1632,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     );
   }
 }
+
+BuildContext? _debugL10nContext;
 
 Map<String, dynamic> _debugSectionMap(dynamic value) {
   if (value is Map) {
@@ -1599,7 +1646,7 @@ Map<String, dynamic> _debugSectionMap(dynamic value) {
 
 String _debugValueText(dynamic value) {
   if (value == null) return '';
-  if (value is bool) return value ? '是' : '否';
+  if (value is bool) return value ? AppLocalizations.of(_debugL10nContext!)!.yesLabel : AppLocalizations.of(_debugL10nContext!)!.noLabel;
   return value.toString();
 }
 
@@ -1653,7 +1700,7 @@ class _DebugSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsSectionCard(
       title: title,
-      subtitle: '显示当前原生诊断字段。',
+      subtitle: AppLocalizations.of(context)!.liveTestingCurrentNativeFieldsSubtitle,
       child: Column(
         children: data.entries
             .map(
@@ -1713,7 +1760,7 @@ class _DebugValueRow extends StatelessWidget {
 Future<void> _triggerUmengTestCrash(BuildContext context) async {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text('即将触发友盟 U-APM 测试崩溃，请重新打开应用查看后台是否收到上报')),
+    SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingCrashSoon)),
   );
   await Future<void>.delayed(const Duration(milliseconds: 300));
   await UmengAnalyticsService.triggerTestCrash();
@@ -1722,8 +1769,8 @@ Future<void> _triggerUmengTestCrash(BuildContext context) async {
 Future<void> _triggerUmengTestAnr(BuildContext context) async {
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(
-      content: Text('即将触发约 30 秒主线程卡死，请脱离 flutter run 测试，并在卡死后重新打开应用查看友盟后台'),
+    SnackBar(
+      content: Text(AppLocalizations.of(context)!.liveTestingAnrSoon),
       duration: Duration(seconds: 4),
     ),
   );
@@ -1732,6 +1779,7 @@ Future<void> _triggerUmengTestAnr(BuildContext context) async {
 }
 
 Future<void> _showTestOptions(BuildContext context) async {
+  final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
   const beforeClassLead = Duration(seconds: 8);
   const totalCourseDuration = Duration(minutes: 3);
@@ -1764,7 +1812,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('当前没有可测试的课程')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingNoCourseAvailable)),
     );
     return;
   }
@@ -1800,7 +1848,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     startTime: formatTime(start),
     endTime: formatTime(end),
     color: baseCourse.color,
-    note: '此处显示备注。可以在课程编辑页进行设置。',
+    note: l10n.liveTestingTestCourseNote,
   );
 
   if (!context.mounted) return;
@@ -1893,7 +1941,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('已发送上课提醒测试通知，约 8 秒内会进入上课前提醒阶段')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingNotificationSent)),
     );
   } catch (e, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
@@ -1905,7 +1953,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('发送失败: $e')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.sendFailedWithError('$e'))),
     );
   }
 }
@@ -1953,9 +2001,10 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('桌面小组件'),
+        title: Text(l10n.homeWidgetSettingsTitle),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -1966,27 +2015,27 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '今日课程组件',
+                  Text(
+                    l10n.homeWidgetTodayCourseTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '首批支持 2×2、2×4、4×4 三种尺寸。点击小组件会直接打开首页，课程开始和结束时会主动刷新。',
+                    l10n.homeWidgetTodayCourseSubtitle,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '快速添加到桌面',
+                    l10n.homeWidgetQuickAddTitle,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _isCheckingPinSupport
-                        ? '正在检查当前桌面是否支持应用内添加小组件…'
+                        ? l10n.homeWidgetCheckingPinSupport
                         : (_canRequestPinWidget
-                            ? '支持的话会直接弹出系统添加确认，不是单独的权限弹窗；确认后即可固定到桌面。'
-                            : '当前桌面不支持应用内直接添加时，仍可长按桌面 → 小组件 → 轻屿课表 手动添加。'),
+                            ? l10n.homeWidgetPinSupported
+                            : l10n.homeWidgetPinUnsupported),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
@@ -2003,15 +2052,17 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<WidgetBackgroundStyle>(
                     value: _draft.widgetBackgroundStyle,
-                    decoration: const InputDecoration(
-                      labelText: '背景样式',
+                    decoration: InputDecoration(
+                      labelText: l10n.homeWidgetBackgroundStyleLabel,
                       border: OutlineInputBorder(),
                     ),
                     items: WidgetBackgroundStyle.values
                         .map(
                           (value) => DropdownMenuItem(
                             value: value,
-                            child: Text(value.label),
+                            child: Text(
+                              _widgetBackgroundStyleLabel(context, value),
+                            ),
                           ),
                         )
                         .toList(),
@@ -2025,8 +2076,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   const SizedBox(height: 12),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('显示地点'),
-                    subtitle: const Text('关闭后，小组件次级信息会优先显示周次和课程数量。'),
+                    title: Text(l10n.homeWidgetShowLocationTitle),
+                    subtitle: Text(l10n.homeWidgetShowLocationSubtitle),
                     value: _draft.widgetShowLocation,
                     onChanged: (value) {
                       _updateDraft(
@@ -2036,8 +2087,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('显示倒计时'),
-                    subtitle: const Text('先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。'),
+                    title: Text(l10n.homeWidgetShowCountdownTitle),
+                    subtitle: Text(l10n.homeWidgetShowCountdownSubtitle),
                     value: _draft.widgetShowCountdown,
                     onChanged: (value) {
                       _updateDraft(
@@ -2047,8 +2098,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('隐藏已上完课程'),
-                    subtitle: const Text('开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。'),
+                    title: Text(l10n.homeWidgetHideCompletedTitle),
+                    subtitle: Text(l10n.homeWidgetHideCompletedSubtitle),
                     value: _draft.widgetHideCompletedCourses,
                     onChanged: (value) {
                       _updateDraft(
@@ -2058,18 +2109,18 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '卡片高度微调',
+                    l10n.homeWidgetHeightAdjustTitle,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 4),
                   Text(
                     _draft.widgetHeightAdjustment ==
                             _defaultWidgetHeightAdjustment
-                        ? '默认'
+                        ? l10n.defaultLabel
                         : (_draft.widgetHeightAdjustment >
                                 _defaultWidgetHeightAdjustment
-                            ? '更高 ${(_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment).toStringAsFixed(0)}'
-                            : '更矮 ${(_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment).toStringAsFixed(0)}'),
+                            ? l10n.higherByValue((_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment).toStringAsFixed(0))
+                            : l10n.lowerByValue((_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment).toStringAsFixed(0))),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Slider(
@@ -2093,7 +2144,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '卡片圆角',
+                    l10n.homeWidgetCornerRadiusTitle,
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                   const SizedBox(height: 4),
@@ -2131,13 +2182,13 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '说明',
+                  Text(
+                    l10n.homeWidgetDescriptionTitle,
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '小组件目前优先展示今日课程。无课状态会保持完整卡片，不会出现空白；如果你切换课表或修改样式，桌面组件也会跟着刷新。',
+                    l10n.homeWidgetDescriptionText,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -2224,7 +2275,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : const Icon(Icons.add_box_outlined),
-      label: Text(target.label),
+      label: Text(_homeWidgetTargetLabel(context, target)),
     );
   }
 
@@ -2242,12 +2293,12 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 
     final message = switch (result) {
       HomeWidgetPinRequestResult.requested =>
-        '已发起“${target.label}”添加请求，请在系统弹窗里确认并放到桌面。',
+        AppLocalizations.of(context)!.homeWidgetPinRequested(_homeWidgetTargetLabel(context, target)),
       HomeWidgetPinRequestResult.unsupported =>
-        '当前系统桌面不支持应用内直接添加小组件，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
-      HomeWidgetPinRequestResult.invalidWidgetType => '小组件类型无效，请稍后重试。',
+        AppLocalizations.of(context)!.homeWidgetPinUnsupportedManual(_homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.invalidWidgetType => AppLocalizations.of(context)!.homeWidgetInvalidType,
       HomeWidgetPinRequestResult.failed =>
-        '发起添加失败，请长按桌面 → 小组件 → 轻屿课表，再手动添加“${target.label}”。',
+        AppLocalizations.of(context)!.homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
     };
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -2258,15 +2309,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   late TimetableSettings _draft;
   Timer? _autoSaveTimer;
   Future<void> _saveQueue = Future<void>.value();
-  final List<String> _weekDays = const [
-    '周一',
-    '周二',
-    '周三',
-    '周四',
-    '周五',
-    '周六',
-    '周日',
-  ];
 
   @override
   void initState() {
@@ -2282,10 +2324,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('布局与节次'),
+        title: Text(l10n.layoutSettingsTitle),
       ),
       body: Column(
         children: [
@@ -2303,16 +2346,16 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '课表密度',
+                        Text(
+                          l10n.layoutDensityTitle,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 12),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('自动充满屏幕高度'),
-                          subtitle: const Text('开启后会按当前节数自动铺满页面底部，不再保留下方空隙。'),
+                          title: Text(l10n.layoutAutoFitHeightTitle),
+                          subtitle: Text(l10n.layoutAutoFitHeightSubtitle),
                           value: _draft.timetableAutoFitSectionHeight,
                           onChanged: (value) {
                             _updateDraft(
@@ -2324,8 +2367,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('隐藏周六周日'),
-                          subtitle: const Text('开启后首页只显示周一到周五，剩余列宽会自动铺满。'),
+                          title: Text(l10n.layoutHideWeekendsTitle),
+                          subtitle: Text(l10n.layoutHideWeekendsSubtitle),
                           value: _draft.timetableHideWeekends,
                           onChanged: (value) {
                             _updateDraft(
@@ -2335,8 +2378,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('启用应用内震动反馈'),
-                          subtitle: const Text('关闭后，页码切换等交互不再触发轻微震动。'),
+                          title: Text(l10n.layoutEnableHapticsTitle),
+                          subtitle: Text(l10n.layoutEnableHapticsSubtitle),
                           value: _draft.enableHaptics,
                           onChanged: (value) {
                             _updateDraft(_draft.copyWith(enableHaptics: value));
@@ -2345,8 +2388,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SectionTimeDisplayMode>(
                           value: _draft.timetableSectionTimeDisplayMode,
-                          decoration: const InputDecoration(
-                            labelText: '首页时间列显示',
+                          decoration: InputDecoration(
+                            labelText: l10n.layoutTimeColumnDisplayLabel,
                             border: OutlineInputBorder(),
                           ),
                           items: SectionTimeDisplayMode.values
@@ -2369,8 +2412,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         const SizedBox(height: 16),
                         DropdownButtonFormField<TimetableTimeColumnWidthMode>(
                           value: _draft.timetableTimeColumnWidthMode,
-                          decoration: const InputDecoration(
-                            labelText: '时间栏宽度',
+                          decoration: InputDecoration(
+                            labelText: l10n.layoutTimeColumnWidthLabel,
                             border: OutlineInputBorder(),
                           ),
                           items: TimetableTimeColumnWidthMode.values
@@ -2392,7 +2435,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          '课程卡片间距 ${_draft.timetableCourseCardGap.toStringAsFixed(1)}',
+                          l10n.layoutCourseCardGapLabel(_draft.timetableCourseCardGap.toStringAsFixed(1)),
                         ),
                         Slider(
                           value: _draft.timetableCourseCardGap.clamp(0.0, 3.0),
@@ -2409,7 +2452,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text('课表行高 ${_draft.sectionHeight.toStringAsFixed(0)}'),
+                        Text(l10n.layoutSectionHeightLabel(_draft.sectionHeight.toStringAsFixed(0))),
                         Slider(
                           value: _draft.sectionHeight,
                           min: 48,
@@ -2427,7 +2470,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                            '紧凑字号 ${_draft.compactFontSize.toStringAsFixed(1)}'),
+                            l10n.layoutCompactFontSizeLabel(_draft.compactFontSize.toStringAsFixed(1))),
                         Slider(
                           value: _draft.compactFontSize,
                           min: 7,
@@ -2443,7 +2486,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                            '课程卡片字号 ${_draft.courseCardFontSize.toStringAsFixed(1)}'),
+                            l10n.layoutCourseCardFontSizeLabel(_draft.courseCardFontSize.toStringAsFixed(1))),
                         Slider(
                           value: _draft.courseCardFontSize,
                           min: 7,
@@ -2468,20 +2511,20 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '课程卡片显示',
+                        Text(
+                          l10n.layoutCourseCardDisplayTitle,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '默认显示课程名、老师和教室；其他信息可按课表自由开关组合。',
+                          l10n.layoutCourseCardDisplaySubtitle,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                         const SizedBox(height: 12),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示课程名'),
+                          title: Text(l10n.showCourseNameTitle),
                           value: _draft.courseCardShowName,
                           onChanged: (value) {
                             _updateDraft(
@@ -2491,7 +2534,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示老师'),
+                          title: Text(l10n.layoutShowTeacherTitle),
                           value: _draft.courseCardShowTeacher,
                           onChanged: (value) {
                             _updateDraft(
@@ -2501,7 +2544,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示教室'),
+                          title: Text(l10n.layoutShowClassroomTitle),
                           value: _draft.courseCardShowLocation,
                           onChanged: (value) {
                             _updateDraft(
@@ -2511,7 +2554,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示时间'),
+                          title: Text(l10n.layoutShowTimeTitle),
                           value: _draft.courseCardShowTime,
                           onChanged: (value) {
                             _updateDraft(
@@ -2521,8 +2564,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示上课/下课字样'),
-                          subtitle: const Text('关闭后仅显示时间点，不显示“上课”“下课”文字。'),
+                          title: Text(l10n.layoutShowTimeLabelsTitle),
+                          subtitle: Text(l10n.layoutShowTimeLabelsSubtitle),
                           value: _draft.courseCardShowTimeLabels,
                           onChanged: _draft.courseCardShowTime
                               ? (value) {
@@ -2536,8 +2579,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示周数'),
-                          subtitle: const Text('例如第 1-16 周、单双周'),
+                          title: Text(l10n.layoutShowWeeksTitle),
+                          subtitle: Text(l10n.layoutShowWeeksSubtitle),
                           value: _draft.courseCardShowWeeks,
                           onChanged: (value) {
                             _updateDraft(
@@ -2547,8 +2590,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示课程简介'),
-                          subtitle: const Text('默认关闭，空间不足时会最先被压缩'),
+                          title: Text(l10n.layoutShowDescriptionTitle),
+                          subtitle: Text(l10n.layoutShowDescriptionSubtitle),
                           value: _draft.courseCardShowDescription,
                           onChanged: (value) {
                             _updateDraft(
@@ -2560,8 +2603,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         SwitchListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: const Text('显示非本周课程'),
-                          subtitle: const Text('默认关闭，开启后会用灰色半透明显示不在当前周的课程'),
+                          title: Text(l10n.layoutShowOtherWeeksTitle),
+                          subtitle: Text(l10n.layoutShowOtherWeeksSubtitle),
                           value: _draft.timetableShowNonCurrentWeekCourses,
                           onChanged: (value) {
                             _updateDraft(
@@ -2574,8 +2617,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         const SizedBox(height: 12),
                         DropdownButtonFormField<CourseCardVerticalAlign>(
                           value: _draft.courseCardVerticalAlign,
-                          decoration: const InputDecoration(
-                            labelText: '垂直排版',
+                          decoration: InputDecoration(
+                            labelText: l10n.layoutVerticalAlignLabel,
                             border: OutlineInputBorder(),
                           ),
                           items: CourseCardVerticalAlign.values
@@ -2598,8 +2641,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         const SizedBox(height: 16),
                         DropdownButtonFormField<CourseCardHorizontalAlign>(
                           value: _draft.courseCardHorizontalAlign,
-                          decoration: const InputDecoration(
-                            labelText: '水平排版',
+                          decoration: InputDecoration(
+                            labelText: l10n.layoutHorizontalAlignLabel,
                             border: OutlineInputBorder(),
                           ),
                           items: CourseCardHorizontalAlign.values
@@ -2625,8 +2668,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 ),
                 Card(
                   child: SwitchListTile(
-                    title: const Text('首页显示冲突小胶囊'),
-                    subtitle: const Text('关闭后，首页课表不再对冲突课程显示“冲突”小胶囊。'),
+                    title: Text(l10n.layoutShowConflictBadgeTitle),
+                    subtitle: Text(l10n.layoutShowConflictBadgeSubtitle),
                     value: _draft.showConflictBadgeOnTimetable,
                     onChanged: (value) {
                       _updateDraft(
@@ -2643,12 +2686,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '冲突课程透明度 ${(_draft.timetableConflictCourseOpacity * 100).round()}%',
+                          l10n.layoutConflictOpacityLabel((_draft.timetableConflictCourseOpacity * 100).round()),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '冲突课程会自动层叠显示，调低透明度后能同时看到多节课。',
+                          l10n.layoutConflictOpacitySubtitle,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                         const SizedBox(height: 12),
@@ -2679,14 +2722,14 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          '说明',
+                        Text(
+                          l10n.homeWidgetDescriptionTitle,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '时间模板已移到设置首页。这里主要调课表行高、时间列、周末显示和课程卡片布局；如果你想只改当前课表的时间，先在时间模板里复制一套再应用。',
+                          l10n.layoutTipsText,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -2702,6 +2745,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 
   Widget _buildLayoutPreviewCard(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
     final preview = _buildLayoutPreviewData(provider);
     final colorScheme = Theme.of(context).colorScheme;
     final sections = provider.settings.sections
@@ -2739,7 +2783,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       width: timeColumnWidth,
                       child: Center(
                         child: Text(
-                          '${provider.currentWeek}周',
+                          l10n.currentWeekCompact(provider.currentWeek),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 10,
@@ -2882,6 +2926,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 
   _LayoutPreviewData _buildLayoutPreviewData(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final weekDays = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
     final currentWeek = provider.currentWeek;
     final visibleDays = _draft.timetableHideWeekends
         ? const [1, 2, 3, 4, 5]
@@ -2906,7 +2952,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       });
 
     final dayTitles = visibleDays
-        .map((dayOfWeek) => _weekDays[dayOfWeek - 1])
+        .map((dayOfWeek) => weekDays[dayOfWeek - 1])
         .toList(growable: false);
 
     if (currentWeekCourses.isNotEmpty) {
@@ -2952,9 +2998,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     final samples = [
       Course(
         id: 'layout-preview-1',
-        name: '高数',
-        shortName: '高数',
-        teacher: '张老师',
+        name: l10n.sampleCourseAdvancedMath,
+        shortName: l10n.sampleCourseAdvancedMath,
+        teacher: l10n.sampleTeacherZhang,
         location: 'A101',
         dayOfWeek: 1,
         startSection: 1,
@@ -2965,9 +3011,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       ),
       Course(
         id: 'layout-preview-2',
-        name: '英语',
-        shortName: '英语',
-        teacher: '李老师',
+        name: l10n.sampleCourseEnglish,
+        shortName: l10n.sampleCourseEnglish,
+        teacher: l10n.sampleTeacherLi,
         location: 'B203',
         dayOfWeek: 2,
         startSection: 2,
@@ -3281,24 +3327,25 @@ class _ColorDot extends StatelessWidget {
   }
 }
 
-String _liveDisplaySummary(LiveDisplaySettings settings) {
+String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
+  final l10n = AppLocalizations.of(context)!;
   final parts = <String>[];
   if (settings.showCourseName) {
-    parts.add(settings.useShortName ? '简称' : '课程名');
+    parts.add(settings.useShortName ? l10n.liveDisplaySummaryShortName : l10n.liveDisplaySummaryCourseName);
   }
   if (settings.showLocation) {
-    parts.add('地点');
+    parts.add(l10n.liveDisplaySummaryLocation);
   }
   if (settings.showCountdown) {
-    parts.add('倒计时·${settings.countdownTextStyle.label}');
+    parts.add(l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label));
   } else if (settings.showStageText) {
-    parts.add('阶段文案');
+    parts.add(l10n.liveDisplaySummaryStageText);
   }
   if (settings.enableMiuiIslandLabelImage) {
-    parts.add('左侧文字图');
+    parts.add(l10n.liveDisplaySummaryLeftLabelImage);
   }
   if (parts.isEmpty) {
-    return '显示项较少';
+    return l10n.liveDisplaySummaryMinimal;
   }
   return parts.join(' / ');
 }

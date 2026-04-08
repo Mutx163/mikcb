@@ -37,16 +37,6 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const int _minWeek = 1;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
 
-  final List<String> _weekDays = const [
-    '周一',
-    '周二',
-    '周三',
-    '周四',
-    '周五',
-    '周六',
-    '周日'
-  ];
-
   late final PageController _weekPageController;
   bool _isSyncingWeekPage = false;
   int? _pendingSyncedWeek;
@@ -181,6 +171,27 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  List<String> _weekdayLabels(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return [
+      l10n.weekdayMon,
+      l10n.weekdayTue,
+      l10n.weekdayWed,
+      l10n.weekdayThu,
+      l10n.weekdayFri,
+      l10n.weekdaySat,
+      l10n.weekdaySun,
+    ];
+  }
+
+  String _weekdayLabel(BuildContext context, int dayOfWeek) {
+    final labels = _weekdayLabels(context);
+    if (dayOfWeek < 1 || dayOfWeek > labels.length) {
+      return dayOfWeek.toString();
+    }
+    return labels[dayOfWeek - 1];
+  }
+
   Widget _buildProfileSwitcherTrigger(TimetableProvider provider) {
     return switch (provider.settings.homeTitleStyle) {
       HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(provider),
@@ -247,6 +258,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings,
     double timeColumnWidth,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final currentSemesterWeek = _resolveCurrentSemesterWeek(settings);
     final canReturnToCurrentWeek =
@@ -277,7 +289,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       vertical: 2,
                     ),
                     child: Text(
-                      '$week周',
+                      l10n.currentWeekCompact(week),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 10,
@@ -303,7 +315,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                             vertical: 1,
                           ),
                           child: Text(
-                            '回本周',
+                            l10n.backToCurrentWeekAction,
                             maxLines: 1,
                             softWrap: false,
                             overflow: TextOverflow.visible,
@@ -340,7 +352,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      _weekDays[dayOfWeek - 1],
+                      _weekdayLabel(context, dayOfWeek),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 10,
@@ -1133,6 +1145,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showCourseActions(Course course, int week) async {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final courseColor = _colorFromHex(course.color, colorScheme.primary);
     final canReschedule = course.isInWeek(week);
@@ -1193,7 +1206,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4),
                                     child: Text(
-                                      '简称：${course.shortName!.trim()}',
+                                      l10n.shortNamePrefix(
+                                        course.shortName!.trim(),
+                                      ),
                                       style:
                                           theme.textTheme.bodySmall?.copyWith(
                                         color:
@@ -1208,7 +1223,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                       const SizedBox(height: 14),
                       Text(
-                        '${_weekDays[course.dayOfWeek - 1]} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+                        '${_weekdayLabel(context, course.dayOfWeek)} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -1221,22 +1236,22 @@ class _TimetableScreenState extends State<TimetableScreen>
                       if (course.teacher.trim().isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '老师：${course.teacher.trim()}',
+                          l10n.teacherPrefix(course.teacher.trim()),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
                       if (course.location.trim().isNotEmpty) ...[
                         const SizedBox(height: 6),
                         Text(
-                          '地点：${course.location.trim()}',
+                          l10n.locationPrefix(course.location.trim()),
                           style: theme.textTheme.bodySmall,
                         ),
                       ],
                       const SizedBox(height: 10),
                       Text(
                         canReschedule
-                            ? '当前查看第 $week 周，可直接对这一周这节课调课。'
-                            : '当前查看第 $week 周，这门课这周没有上课，因此不能按“本周这节”调课。',
+                            ? l10n.courseDialogCurrentWeekHint(week)
+                            : l10n.courseDialogNotThisWeekHint(week),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -1251,18 +1266,18 @@ class _TimetableScreenState extends State<TimetableScreen>
                   children: [
                     _HomeActionButton(
                       icon: Icons.edit_rounded,
-                      title: '编辑',
+                      title: l10n.editActionShort,
                       onTap: () => Navigator.of(sheetContext).pop('edit'),
                     ),
                     _HomeActionButton(
                       icon: Icons.swap_horiz_rounded,
-                      title: '调课',
+                      title: l10n.rescheduleAction,
                       enabled: canReschedule,
                       onTap: () => Navigator.of(sheetContext).pop('reschedule'),
                     ),
                     _HomeActionButton(
                       icon: Icons.delete_outline_rounded,
-                      title: '删除',
+                      title: l10n.deleteActionShort,
                       accentColor: theme.colorScheme.error,
                       onTap: () => Navigator.of(sheetContext).pop('delete'),
                     ),
@@ -1293,6 +1308,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showDeleteCourseOptions(Course course, int week) async {
+    final l10n = AppLocalizations.of(context)!;
     final canDeleteOccurrence = course.isInWeek(week);
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -1307,8 +1323,8 @@ class _TimetableScreenState extends State<TimetableScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '删除方式',
+                Text(
+                  l10n.deleteModeTitle,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1316,7 +1332,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '你可以删掉整条排课，也可以只删当前看到的这一周这一节。',
+                  l10n.deleteModeSubtitle,
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
@@ -1326,13 +1342,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                   children: [
                     _HomeActionButton(
                       icon: Icons.delete_sweep_rounded,
-                      title: '删这个课',
+                      title: l10n.deleteCourseAction,
                       accentColor: theme.colorScheme.error,
                       onTap: () => Navigator.of(sheetContext).pop('course'),
                     ),
                     _HomeActionButton(
                       icon: Icons.remove_circle_outline_rounded,
-                      title: '删这节课',
+                      title: l10n.deleteOccurrenceAction,
                       accentColor: theme.colorScheme.error,
                       enabled: canDeleteOccurrence,
                       onTap: () => Navigator.of(sheetContext).pop('occurrence'),
@@ -1342,8 +1358,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                 const SizedBox(height: 12),
                 Text(
                   canDeleteOccurrence
-                      ? '“删这个课”会删除这条排课的全部周次；“删这节课”只会删除第 $week 周这一次。'
-                      : '当前卡片不是第 $week 周的实际排课，所以只能删除整条排课。',
+                      ? l10n.deleteModeHintCurrentWeek(week)
+                      : l10n.deleteModeHintUnavailable(week),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1370,12 +1386,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _confirmDeleteCourse(Course course) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(AppLocalizations.of(dialogContext)!.deleteScheduleTitle),
         content: Text(
-          '确定删除“${course.name}”这条排课吗？\n${course.weekDescription} · ${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节',
+          l10n.deleteScheduleConfirmMessage(
+            course.name,
+            '${course.weekDescription} · ${_weekdayLabel(context, course.dayOfWeek)} 第${course.startSection}-${course.endSection}节',
+          ),
         ),
         actions: [
           TextButton(
@@ -1408,13 +1428,17 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _confirmDeleteOccurrence(Course course, int sourceWeek) async {
+    final l10n = AppLocalizations.of(context)!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(AppLocalizations.of(dialogContext)!.deleteLessonTitle),
         content: Text(
-          '确定删除“${course.name}”在第 $sourceWeek 周的这一节吗？\n'
-          '${_weekDays[course.dayOfWeek - 1]} 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+          l10n.deleteOccurrenceConfirmMessage(
+            course.name,
+            sourceWeek,
+            '${_weekdayLabel(context, course.dayOfWeek)} 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+          ),
         ),
         actions: [
           TextButton(
@@ -1445,7 +1469,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            changed ? '已删除第 $sourceWeek 周这节课' : '未检测到变更',
+            changed
+                ? l10n.occurrenceDeletedMessage(sourceWeek)
+                : l10n.noChangesDetected,
           ),
         ),
       );
@@ -1468,8 +1494,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     Course course, {
     required int sourceWeek,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
+    final weekdayLabels = _weekdayLabels(context);
 
     final draft = await showModalBottomSheet<_CourseRescheduleDraft>(
       context: context,
@@ -1480,7 +1508,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         course: course,
         sourceWeek: sourceWeek,
         settings: settings,
-        weekDays: _weekDays,
+        weekDays: weekdayLabels,
       ),
     );
 
@@ -1505,8 +1533,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         SnackBar(
           content: Text(
             changed
-                ? '已调到第 ${draft.targetWeek} 周 ${_weekDays[draft.targetDayOfWeek - 1]} 第${draft.targetStartSection}-${draft.targetEndSection}节'
-                : '未检测到变更',
+                ? '已调到${l10n.weekLabel(draft.targetWeek)} ${_weekdayLabel(context, draft.targetDayOfWeek)} 第${draft.targetStartSection}-${draft.targetEndSection}节'
+                : l10n.noChangesDetected,
           ),
         ),
       );
@@ -1602,6 +1630,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showProfileQuickSwitchSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -1656,9 +1685,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                '切换课表',
-                                style: TextStyle(
+                              Text(
+                                l10n.switchTimetableTitle,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                 ),
@@ -1666,8 +1695,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                               const SizedBox(height: 4),
                               Text(
                                 activeProfile == null
-                                    ? '点击下面的课表，立即切换当前视图。'
-                                    : '当前：${activeProfile.name}，点击下面的课表立即切换。',
+                                    ? l10n.switchTimetableSubtitleEmpty
+                                    : l10n.switchTimetableSubtitleCurrent(
+                                        activeProfile.name,
+                                      ),
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                 ),
@@ -1774,6 +1805,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showTopActionsSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -1789,45 +1821,45 @@ class _TimetableScreenState extends State<TimetableScreen>
               children: [
                 _HomeActionButton(
                   icon: Icons.system_update_alt_rounded,
-                  title: '软件更新',
-                  badgeText: _hasAvailableUpdate ? '更新' : null,
+                  title: l10n.homeMenuUpdateTitle,
+                  badgeText: _hasAvailableUpdate ? l10n.updateLabel : null,
                   accentColor: _hasAvailableUpdate ? colorScheme.primary : null,
                   onTap: () => Navigator.of(sheetContext).pop('update'),
                 ),
                 _HomeActionButton(
                   icon: Icons.view_week_rounded,
-                  title: '课表管理',
+                  title: l10n.homeMenuProfilesTitle,
                   onTap: () => Navigator.of(sheetContext).pop('profiles'),
                 ),
                 _HomeActionButton(
                   icon: Icons.dashboard_customize_rounded,
-                  title: '课程总览',
+                  title: l10n.homeMenuOverviewTitle,
                   onTap: () => Navigator.of(sheetContext).pop('overview'),
                 ),
                 _HomeActionButton(
                   icon: Icons.add_circle_outline_rounded,
-                  title: '添加课程',
+                  title: l10n.homeMenuAddCourseTitle,
                   onTap: () => Navigator.of(sheetContext).pop('add'),
                 ),
                 _HomeActionButton(
                   icon: Icons.file_upload_outlined,
-                  title: '导入课程',
+                  title: l10n.homeMenuImportTitle,
                   onTap: () => Navigator.of(sheetContext).pop('import'),
                 ),
                 _HomeActionButton(
                   icon: Icons.tune_rounded,
-                  title: '课表设置',
+                  title: l10n.homeMenuSettingsTitle,
                   onTap: () => Navigator.of(sheetContext).pop('settings'),
                 ),
                 _HomeActionButton(
                   icon: Icons.favorite_border_rounded,
-                  title: '请喝咖啡',
+                  title: l10n.homeMenuCoffeeTitle,
                   accentColor: colorScheme.secondary,
                   onTap: () => Navigator.of(sheetContext).pop('coffee'),
                 ),
                 _HomeActionButton(
                   icon: Icons.chat_bubble_outline_rounded,
-                  title: '问题反馈',
+                  title: l10n.homeMenuFeedbackTitle,
                   onTap: () => Navigator.of(sheetContext).pop('feedback'),
                 ),
               ],
@@ -1981,6 +2013,7 @@ class _HomeActionButton extends StatelessWidget {
     );
     return SizedBox(
       width: width,
+      height: 122,
       child: Material(
         color: theme.colorScheme.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(22),
@@ -2030,15 +2063,20 @@ class _HomeActionButton extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 10),
-                Text(
-                  title,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                    color: enabled ? null : colorScheme.onSurfaceVariant,
+                SizedBox(
+                  height: 34,
+                  child: Center(
+                    child: Text(
+                      title,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
+                        color: enabled ? null : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -2201,6 +2239,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final sectionNumbers =
         List.generate(widget.settings.sectionCount, (index) => index + 1);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
@@ -2212,8 +2251,8 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '调本周这节课',
+            Text(
+              l10n.rescheduleCurrentOccurrenceTitle,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -2221,15 +2260,15 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
             ),
             const SizedBox(height: 8),
             Text(
-              '只调整第 ${widget.sourceWeek} 周这一节，原课程在这一周会自动移除，其他周保持不变。',
+              l10n.rescheduleCurrentOccurrenceSubtitle(widget.sourceWeek),
               style: Theme.of(context).textTheme.bodySmall,
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               value: _targetWeek,
-              decoration: const InputDecoration(
-                labelText: '调到第几周',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.rescheduleTargetWeekLabel,
+                border: const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.calendar_month_rounded),
               ),
               items: widget.settings.availableWeeks
@@ -2253,9 +2292,9 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
               value: _targetDayOfWeek,
-              decoration: const InputDecoration(
-                labelText: '星期',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.weekdayFieldLabel,
+                border: const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.event_available_rounded),
               ),
               items: List.generate(
@@ -2280,9 +2319,9 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     value: _targetStartSection,
-                    decoration: const InputDecoration(
-                      labelText: '开始节次',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.startSectionFieldLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     items: sectionNumbers
                         .map(
@@ -2310,9 +2349,9 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     value: _targetEndSection,
-                    decoration: const InputDecoration(
-                      labelText: '结束节次',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.endSectionFieldLabel,
+                      border: const OutlineInputBorder(),
                     ),
                     items: sectionNumbers
                         .where((section) => section >= _targetStartSection)
@@ -2339,9 +2378,9 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
             const SizedBox(height: 16),
             TextField(
               controller: _locationController,
-              decoration: const InputDecoration(
-                labelText: '上课地点',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.courseLocationFieldLabel,
+                border: const OutlineInputBorder(),
                 prefixIcon: Icon(Icons.location_on_outlined),
               ),
             ),
@@ -2351,7 +2390,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('取消'),
+                    child: Text(l10n.cancelAction),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2368,7 +2407,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                         ),
                       );
                     },
-                    child: const Text('确认调课'),
+                    child: Text(l10n.confirmRescheduleAction),
                   ),
                 ),
               ],

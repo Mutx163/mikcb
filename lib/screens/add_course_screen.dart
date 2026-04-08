@@ -62,15 +62,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
   static const String _followProfileTimeSchemeValue = '__follow_profile__';
 
-  final List<String> _weekDays = const [
-    '周一',
-    '周二',
-    '周三',
-    '周四',
-    '周五',
-    '周六',
-    '周日'
+  List<String> _weekdayLabels(AppLocalizations l10n) => [
+    l10n.weekdayMon,
+    l10n.weekdayTue,
+    l10n.weekdayWed,
+    l10n.weekdayThu,
+    l10n.weekdayFri,
+    l10n.weekdaySat,
+    l10n.weekdaySun,
   ];
+
   final List<String> _colors = const [
     '#2196F3',
     '#4CAF50',
@@ -693,6 +694,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableSettings settings,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final weekDays = _weekdayLabels(l10n);
     final sectionNumbers =
         List.generate(settings.sectionCount, (index) => index + 1);
     final selectedScheme = _resolveSelectedTimeScheme(provider);
@@ -812,10 +814,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.calendar_today),
               ),
-              items: List.generate(_weekDays.length, (index) {
+              items: List.generate(weekDays.length, (index) {
                 return DropdownMenuItem(
                   value: index + 1,
-                  child: Text(_weekDays[index]),
+                  child: Text(weekDays[index]),
                 );
               }),
               onChanged: (value) {
@@ -1303,7 +1305,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       },
                     ),
                     const SizedBox(height: 16),
-                    Text('色相 ${hsv.hue.round()}'),
+                    Text(l10n.hueLabel(hsv.hue.round())),
                     Slider(
                       value: hsv.hue,
                       min: 0,
@@ -1316,7 +1318,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         });
                       },
                     ),
-                    Text('饱和度 ${(hsv.saturation * 100).round()}%'),
+                    Text(l10n.saturationLabel((hsv.saturation * 100).round())),
                     Slider(
                       value: hsv.saturation,
                       min: 0,
@@ -1329,7 +1331,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         });
                       },
                     ),
-                    Text('明度 ${(hsv.value * 100).round()}%'),
+                    Text(l10n.brightnessLabel((hsv.value * 100).round())),
                     Slider(
                       value: hsv.value,
                       min: 0,
