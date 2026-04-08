@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/screens/course_import_screen.dart';
+import '../helpers_test_app.dart';
 
 void main() {
   testWidgets('ai import screen keeps keyboard-aware resizing enabled', (
     tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      const TestApp(
         home: AiImageCourseImportScreen(),
       ),
     );

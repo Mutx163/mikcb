@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
+import '../helpers_test_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -37,7 +38,7 @@ void main() {
       'settings guide still shows privacy and disclaimer without consent controls',
       (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      const TestApp(
         home: UserGuideScreen(),
       ),
     );
@@ -58,7 +59,7 @@ void main() {
 
   testWidgets('first-run guide keeps consent checkbox visible', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
+      const TestApp(
         home: UserGuideScreen(requirePrivacyConsent: true),
       ),
     );

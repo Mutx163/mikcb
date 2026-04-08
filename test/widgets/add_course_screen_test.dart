@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
+import '../helpers_test_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +55,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: MaterialApp(
+        child: TestApp(
           home: AddCourseScreen(course: course),
         ),
       ),
@@ -75,7 +76,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
+        child: const TestApp(
           home: AddCourseScreen(
             mode: CourseEditorMode.singleLesson,
             initialWeek: 4,
@@ -117,7 +118,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
+        child: const TestApp(
           home: AddCourseScreen(
             mode: CourseEditorMode.singleLesson,
             initialWeek: 4,
@@ -171,7 +172,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
+        child: const TestApp(
           home: AddCourseScreen(
             mode: CourseEditorMode.singleLesson,
             initialWeek: 4,
@@ -204,7 +205,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
+        child: const TestApp(
           home: AddCourseScreen(),
         ),
       ),
@@ -236,7 +237,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const MaterialApp(
+        child: const TestApp(
           home: AddCourseScreen(),
         ),
       ),
