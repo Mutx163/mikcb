@@ -117,7 +117,7 @@
             <span class="title-line">清楚一点。</span>
           </h1>
           <p class="hero-subtitle">
-            把课表、分阶段提醒、桌面小组件和 HyperOS 超级岛整理成一套系统体验。打开手机，就能立刻知道今天上到哪、下一节什么时候开始。
+            把课表、教务导入、分阶段提醒、桌面小组件和 HyperOS 超级岛整理成一套系统体验。打开手机，就能立刻知道今天上到哪、下一节什么时候开始，也能更快把学校课表导进来。
           </p>
           <div class="hero-links">
             <button
@@ -155,9 +155,8 @@
             </article>
           </div>
           <div class="hero-trust-row">
-            <span>开源维护中</span>
-            <span>正式版与预发布持续更新</span>
-            <span>通过 GitHub Releases 分发</span>
+            <span id="hero-stars">GitHub Star 读取中</span>
+            <span>开源维护中 · 正式版与预发布持续更新</span>
           </div>
         </div>
       </section>
@@ -171,8 +170,25 @@
               <span class="title-line">也是看清今天。</span>
             </h2>
             <p>
-              你反复确认的，往往不是今天有什么课，而是还有多久开始、现在到哪一节、下一节在哪里。轻屿课表围绕这些时刻重新组织信息，让查看、提醒和切换都更自然。
+              你反复确认的，往往不是今天有什么课，而是还有多久开始、现在到哪一节、下一节在哪里。轻屿课表围绕这些时刻重新组织信息，让查看、提醒、切换和导入都更自然。
             </p>
+          </div>
+          <div class="import-focus-grid">
+            <article class="import-focus-card">
+              <small>教务导入</small>
+              <strong>支持学校教务课表导入</strong>
+              <p>优先面向“不要手动录课”的真实需求，支持已适配学校的网页登录导入。</p>
+            </article>
+            <article class="import-focus-card">
+              <small>.ics 导入</small>
+              <strong>支持日历课表快速迁移</strong>
+              <p>如果学校没有教务适配，也能先通过 .ics、备份恢复等方式把课表迁进来。</p>
+            </article>
+            <article class="import-focus-card">
+              <small>后续维护</small>
+              <strong>导入后还能继续改</strong>
+              <p>导入只是开始，后面还能调课、补课、改单独时间模板，不会被导入结果锁死。</p>
+            </article>
           </div>
           <div class="spec-grid">
             <article>
@@ -295,10 +311,10 @@
         <div class="section-shell reveal">
           <div class="headline-block">
             <p class="section-label">平台</p>
-            <h2>专注 Android。重点适配 HyperOS。</h2>
-            <p>
-              轻屿课表从一开始就更关注 Android 通知链路、HyperOS 超级岛、小组件和真实使用稳定性，而不是追求泛平台外观上的一致。
-            </p>
+          <h2>专注 Android。重点适配 HyperOS。</h2>
+          <p>
+            轻屿课表从一开始就更关注 Android 通知链路、HyperOS 超级岛、小组件和真实使用稳定性，而不是追求泛平台外观上的一致。下载安装前，你也能先看清最低系统版本和安装包架构。
+          </p>
           </div>
           <div class="platform-panels">
             <article class="platform-panel">
@@ -309,6 +325,10 @@
               <h3>数据迁移</h3>
               <p>支持 .ics 导入、完整备份导出与恢复，也支持版本更新与预发布检测。</p>
             </article>
+            <article class="platform-panel">
+              <h3>安装兼容</h3>
+              <p>最低支持 Android 8.0（API 26）。当前官网提供 Android <strong>arm64-v8a</strong> 安装包，暂不提供 32 位 armeabi-v7a 或 x86 / x86_64 版本。</p>
+            </article>
           </div>
         </div>
       </section>
@@ -318,8 +338,49 @@
           <p class="section-label">下载</p>
           <h2>从 GitHub Releases 开始体验。</h2>
           <p>
-            当前发布以 Android arm64-v8a 为主。国内网络建议优先使用国内下载；如果你想拿原始 GitHub 包，也可以直接走 GitHub 原版入口。
+            当前发布以 Android arm64-v8a 为主。国内网络建议优先使用国内下载；如果你想拿原始 GitHub 包，也可以直接走 GitHub 原版入口。下载前先看兼容信息、导入能力和最近更新，能更快判断这版值不值得装。
           </p>
+          <div class="download-detail-grid">
+            <article class="download-detail-card">
+              <small>安装兼容</small>
+              <strong>先看能不能装</strong>
+              <ul class="detail-list">
+                <li>最低系统：Android 8.0 / API 26</li>
+                <li>当前官网安装包：Android arm64-v8a</li>
+                <li>暂不提供：32 位 armeabi-v7a、x86、x86_64</li>
+              </ul>
+            </article>
+            <article class="download-detail-card">
+              <small>课表导入</small>
+              <strong>先看能不能快速导课</strong>
+              <ul class="detail-list">
+                <li>支持已适配学校的教务网页登录导入</li>
+                <li>支持 .ics 导入、备份恢复与后续手动调整</li>
+                <li>如果学校暂未适配，也还能先用迁移方案顶上</li>
+              </ul>
+            </article>
+            <article class="download-detail-card">
+              <small>最近更新</small>
+              <strong>先看新版本带来了什么</strong>
+              <ul class="detail-list" id="latest-stable-highlights">
+                <li>正在读取最近版本更新内容…</li>
+              </ul>
+            </article>
+            <article class="download-detail-card">
+              <small>信任背书</small>
+              <strong>先看项目活跃度</strong>
+              <div class="trust-metrics-grid">
+                <div class="trust-metric">
+                  <span class="trust-metric-value" id="trust-stars">读取中</span>
+                  <span class="trust-metric-label">GitHub Stars</span>
+                </div>
+                <div class="trust-metric">
+                  <span class="trust-metric-value" id="trust-releases">读取中</span>
+                  <span class="trust-metric-label">公开版本数</span>
+                </div>
+              </div>
+            </article>
+          </div>
           <div class="download-summary-grid">
             <article class="download-summary-card">
               <strong>适合直接安装</strong>
@@ -370,6 +431,30 @@
 
     <footer class="site-footer">
       <div class="footer-inner">
+        <div class="footer-meta-grid">
+          <section class="footer-meta-card">
+            <small>合规信息</small>
+            <strong>下载前也能先看清隐私与使用规则</strong>
+            <div class="footer-links">
+              <a href="./privacy.html">隐私政策</a>
+              <a href="./terms.html">用户协议</a>
+            </div>
+          </section>
+          <section class="footer-meta-card">
+            <small>开源参与</small>
+            <strong>感兴趣的开发者可以直接了解协议与参与方式</strong>
+            <div class="footer-links">
+              <a
+                href="https://github.com/Mutx163/mikcb/blob/main/LICENSE"
+                target="_blank"
+                rel="noreferrer"
+              >
+                开源协议 GPL-3.0
+              </a>
+              <a href="./contributing.html">贡献指南</a>
+            </div>
+          </section>
+        </div>
         <div class="footer-links">
           <a
             href="https://github.com/Mutx163/mikcb/releases"

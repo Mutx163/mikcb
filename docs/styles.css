@@ -392,6 +392,92 @@ main {
   margin-top: 46px;
 }
 
+.import-focus-grid,
+.download-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.download-detail-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 28px;
+}
+
+.import-focus-card,
+.download-detail-card {
+  padding: 24px 22px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.import-focus-card small,
+.download-detail-card small {
+  display: block;
+  color: var(--blue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.import-focus-card strong,
+.download-detail-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1.12rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.import-focus-card p {
+  margin: 10px 0 0;
+  color: var(--text-soft);
+  line-height: 1.6;
+}
+
+.detail-list {
+  margin: 14px 0 0;
+  padding-left: 18px;
+  color: var(--text-soft);
+}
+
+.detail-list li + li {
+  margin-top: 8px;
+}
+
+.trust-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.trust-metric {
+  padding: 14px 12px;
+  border-radius: 18px;
+  background: var(--surface-alt);
+  text-align: center;
+}
+
+.trust-metric-value {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.trust-metric-label {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-soft);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
 .spec-grid article,
 .platform-panel {
   padding: 28px 24px;
@@ -859,6 +945,37 @@ main {
   padding: 20px 0 28px;
 }
 
+.footer-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.footer-meta-card {
+  padding: 20px 22px;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.footer-meta-card small {
+  display: block;
+  color: var(--blue);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.footer-meta-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
 .site-footer p {
   margin: 0;
   color: var(--text-soft);
@@ -877,6 +994,34 @@ main {
   color: var(--blue);
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+.detail-page {
+  padding: 72px 0;
+}
+
+.detail-page h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.policy-content {
+  max-width: 780px;
+  margin-top: 20px;
+}
+
+.policy-content h2 {
+  margin: 28px 0 10px;
+  font-size: 1.18rem;
+  line-height: 1.35;
+}
+
+.policy-content p {
+  margin: 0;
+  color: var(--text-soft);
+  line-height: 1.7;
 }
 
 .reveal {
@@ -911,11 +1056,14 @@ main {
 
 @media (max-width: 1060px) {
   .spec-grid,
+  .import-focus-grid,
+  .download-detail-grid,
   .download-summary-grid,
   .platform-panels,
   .hero-proof-grid,
   .experience-showcase,
   .template-grid,
+  .footer-meta-grid,
   .split-layout,
   .split-layout-reverse {
     grid-template-columns: 1fr;
@@ -1063,9 +1211,15 @@ main {
   .detail-band-unified .section-shell,
   .download-shell,
   .spec-grid article,
+  .import-focus-card,
+  .download-detail-card,
   .platform-panel,
   .feature-item {
     padding: 24px 20px;
+  }
+
+  .trust-metrics-grid {
+    grid-template-columns: 1fr;
   }
 
   .split-layout {
