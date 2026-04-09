@@ -575,15 +575,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       ),
       bottomNavigationBar:
           _isDownloading ? _buildDownloadProgressBar(theme) : null,
-      body: ListView(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: [
-          _buildUpdateCard(theme, settings),
-          const SizedBox(height: 16),
-          _buildAdvancedOptionsCard(theme, settings),
-          const SizedBox(height: 16),
-          _buildDiagnosticsCard(theme, settings),
-        ],
+        child: Column(
+          children: [
+            _buildUpdateCard(theme, settings),
+            const SizedBox(height: 16),
+            _buildAdvancedOptionsCard(theme, settings),
+            const SizedBox(height: 16),
+            _buildDiagnosticsCard(theme, settings),
+          ],
+        ),
       ),
     );
   }
@@ -921,6 +923,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           child: Theme(
             data: theme.copyWith(dividerColor: Colors.transparent),
             child: ExpansionTile(
+              maintainState: true,
               tilePadding: const EdgeInsets.symmetric(horizontal: 16),
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               title: Text(
@@ -956,43 +959,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 ),
                 const SizedBox(height: 12),
                 if (downloadSource == AppUpdateDownloadSource.mirror) ...[
-                  ...AppUpdateMirrorPreset.values.map((preset) {
-                    final subtitleText = preset.usesCustomUrl &&
-                            settings.appUpdateMirrorUrlPrefix.trim().isEmpty
-                        ? l10n.aboutFillCustomMirrorFirst
-                        : preset.description;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Material(
-                        color: mirrorPreset == preset
-                            ? colorScheme.primaryContainer
-                            : colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(16),
-                        child: RadioListTile<AppUpdateMirrorPreset>(
-                          value: preset,
-                          groupValue: mirrorPreset,
-                          title: Text(preset.label),
-                          subtitle: Text(subtitleText),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          onChanged: (value) {
-                            if (value == null) {
-                              return;
-                            }
-                            if (value.usesCustomUrl &&
-                                settings.appUpdateMirrorUrlPrefix
-                                    .trim()
-                                    .isEmpty) {
-                              _editMirrorUrlPrefix();
-                              return;
-                            }
-                            _updateMirrorPreset(value);
-                          },
-                        ),
-                      ),
-                    );
-                  }),
+                  ...AppUpdateMirrorPreset.values.map(
+                    (preset) => _buildMirrorPresetTile(
+                      theme,
+                      settings: settings,
+                      preset: preset,
+                      currentPreset: mirrorPreset,
+                      recommendedPreset: recommendedMirrorPreset,
+                    ),
+                  ),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
@@ -1065,18 +1040,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                               : l10n.aboutSetCustomMirrorAction,
                         ),
                       ),
-                      if (recommendedMirrorPreset != null &&
-                          recommendedMirrorPreset != mirrorPreset)
-                        FilledButton.tonalIcon(
-                          onPressed: () => _updateMirrorPreset(
-                            recommendedMirrorPreset,
-                          ),
-                          icon: const Icon(Icons.bolt_rounded),
-                          label: Text(
-                            l10n.aboutSwitchToRecommendedAction(
-                                recommendedMirrorPreset.label),
-                          ),
-                        ),
                     ],
                   ),
                 ] else ...[
@@ -1094,92 +1057,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       ),
                     ),
                   ),
-                ],
-                if (_mirrorProbeStates.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      l10n.aboutRecentProbeResultsTitle,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  ..._mirrorProbeStates.map((item) {
-                    final isRecommended =
-                        item.preset == recommendedMirrorPreset &&
-                            item.result.isSuccess;
-                    final statusText = item.result.isSuccess
-                        ? '${item.result.elapsed.inMilliseconds} ms'
-                        : (item.result.message ?? l10n.aboutUnavailable);
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surfaceContainerLowest,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isRecommended
-                                ? colorScheme.primary
-                                : colorScheme.outlineVariant,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.preset.label,
-                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item.prefix,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  statusText,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: item.result.isSuccess
-                                        ? colorScheme.primary
-                                        : colorScheme.error,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                if (isRecommended)
-                                  Text(
-                                    l10n.aboutRecommended,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.primary,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
                 ],
                 SwitchListTile.adaptive(
                   contentPadding: EdgeInsets.zero,
@@ -1207,6 +1084,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       child: Theme(
         data: theme.copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
+          maintainState: true,
           tilePadding: const EdgeInsets.symmetric(horizontal: 16),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           title: Text(
@@ -1476,6 +1354,175 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       parameters: {
         'preset': preset.value,
       },
+    );
+  }
+
+  _MirrorProbeState? _findMirrorProbeState(AppUpdateMirrorPreset preset) {
+    for (final item in _mirrorProbeStates) {
+      if (item.preset == preset) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handleMirrorPresetTap(
+    AppUpdateMirrorPreset preset,
+    TimetableSettings settings,
+  ) async {
+    if (preset.usesCustomUrl &&
+        settings.appUpdateMirrorUrlPrefix.trim().isEmpty) {
+      await _editMirrorUrlPrefix();
+      return;
+    }
+    await _updateMirrorPreset(preset);
+  }
+
+  Widget _buildMirrorStatusBadge(
+    ThemeData theme, {
+    required String label,
+    required Color backgroundColor,
+    required Color foregroundColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: foregroundColor,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMirrorPresetTile(
+    ThemeData theme, {
+    required TimetableSettings settings,
+    required AppUpdateMirrorPreset preset,
+    required AppUpdateMirrorPreset currentPreset,
+    required AppUpdateMirrorPreset? recommendedPreset,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = theme.colorScheme;
+    final probeState = _findMirrorProbeState(preset);
+    final isSelected = currentPreset == preset;
+    final isRecommended =
+        recommendedPreset == preset && probeState?.result.isSuccess == true;
+    final subtitleText =
+        preset.usesCustomUrl && settings.appUpdateMirrorUrlPrefix.trim().isEmpty
+            ? l10n.aboutFillCustomMirrorFirst
+            : (preset.usesCustomUrl
+                ? resolveAppUpdateMirrorUrlPrefix(
+                    preset: preset,
+                    customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+                  )
+                : preset.description);
+    final statusText = probeState == null
+        ? null
+        : probeState.result.isSuccess
+            ? '${probeState.result.elapsed.inMilliseconds} ms'
+            : (probeState.result.message ?? l10n.aboutUnavailable);
+    final statusColor = probeState == null
+        ? colorScheme.onSurfaceVariant
+        : probeState.result.isSuccess
+            ? colorScheme.primary
+            : colorScheme.error;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _handleMirrorPresetTap(preset, settings),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Radio<AppUpdateMirrorPreset>(
+                  value: preset,
+                  groupValue: currentPreset,
+                  onChanged: (_) => _handleMirrorPresetTap(preset, settings),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            preset.label,
+                            style: theme.textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          if (isSelected)
+                            _buildMirrorStatusBadge(
+                              theme,
+                              label: l10n.schemeListCurrentLabel,
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: colorScheme.onPrimary,
+                            ),
+                          if (isRecommended)
+                            _buildMirrorStatusBadge(
+                              theme,
+                              label: l10n.aboutRecommended,
+                              backgroundColor: colorScheme.secondaryContainer,
+                              foregroundColor: colorScheme.onSecondaryContainer,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        subtitleText,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      if (statusText != null) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              probeState!.result.isSuccess
+                                  ? Icons.speed_rounded
+                                  : Icons.error_outline_rounded,
+                              size: 16,
+                              color: statusColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                statusText,
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
