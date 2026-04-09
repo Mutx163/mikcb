@@ -15,6 +15,7 @@ import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
+import '../services/app_log_service.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
@@ -188,9 +189,10 @@ class _AboutScreenState extends State<AboutScreen> {
                     runSpacing: 8,
                     alignment: WrapAlignment.center,
                     children: [
-                      
-                      _buildInfoChip(theme, label: l10n.platformLabel, value: 'Android'),
-                      _buildInfoChip(theme, label: l10n.focusLabel, value: 'HyperOS'),
+                      _buildInfoChip(theme,
+                          label: l10n.platformLabel, value: 'Android'),
+                      _buildInfoChip(theme,
+                          label: l10n.focusLabel, value: 'HyperOS'),
                       _buildInfoChip(
                         theme,
                         label: l10n.updateLabel,
@@ -279,7 +281,8 @@ class _AboutScreenState extends State<AboutScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        settings: const RouteSettings(name: '/about/contributors'),
+                        settings:
+                            const RouteSettings(name: '/about/contributors'),
                         builder: (_) => const ContributorsScreen(),
                       ),
                     );
@@ -292,6 +295,12 @@ class _AboutScreenState extends State<AboutScreen> {
                   onTap: () {
                     _showRepositorySheet(context, theme);
                   },
+                ),
+                _AboutNavTile(
+                  icon: Icons.article_outlined,
+                  title: l10n.aboutAppLogsTitle,
+                  subtitle: l10n.aboutAppLogsSubtitle,
+                  onTap: _openAppLogsPage,
                 ),
               ],
             ),
@@ -409,6 +418,47 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
+  Future<void> _openAppLogsPage() async {
+    final settings = context.read<TimetableProvider>().settings;
+    final l10n = AppLocalizations.of(context)!;
+    final nativeRawLog =
+        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final rawLog = await AppLogService.instance.readMergedLogsText(
+      nativeRawLog: nativeRawLog,
+    );
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LiveDiagnosticsLogViewerScreen(
+          title: AppLocalizations.of(context)!.aboutAppLogsTitle,
+          rawLog: rawLog,
+          isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+          onExport: (text) async {
+            final path = await AppLogService.instance.exportMergedLogsFile(
+              nativeRawLog: nativeRawLog,
+            );
+            if (path == null || path.isEmpty) {
+              return;
+            }
+            await Share.shareXFiles(
+              [XFile(path)],
+              text: l10n.appLogsShareText,
+              subject: l10n.appLogsShareSubject,
+            );
+          },
+          onClear: () async {
+            final clearedAppLogs = await AppLogService.instance.clearAppLogs();
+            final clearedNativeLogs =
+                await MiuiLiveActivitiesService().clearLiveDiagnostics();
+            return clearedAppLogs || clearedNativeLogs;
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoChip(
     ThemeData theme, {
     required String label,
@@ -459,7 +509,8 @@ class _AboutScreenState extends State<AboutScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress)),
+      SnackBar(
+          content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress)),
     );
   }
 
@@ -614,9 +665,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           downloadUrl: effectiveDownloadUrl,
         );
         final primaryButtonLabel = switch (primaryAction) {
-          AboutUpdatePrimaryAction.openReleasePage => l10n.aboutViewReleaseAction,
+          AboutUpdatePrimaryAction.openReleasePage =>
+            l10n.aboutViewReleaseAction,
           AboutUpdatePrimaryAction.downloadInApp => l10n.aboutDownloadNowAction,
-          AboutUpdatePrimaryAction.openDownloadLink => l10n.aboutOpenDownloadPageAction,
+          AboutUpdatePrimaryAction.openDownloadLink =>
+            l10n.aboutOpenDownloadPageAction,
         };
         final primaryButtonIcon = switch (primaryAction) {
           AboutUpdatePrimaryAction.downloadInApp => Icons.download_rounded,
@@ -806,8 +859,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       downloadSource == AppUpdateDownloadSource.mirror
                           ? recommendedMirrorPreset != null &&
                                   recommendedMirrorPreset != mirrorPreset
-                              ? l10n.aboutMirrorModeHintRecommended(mirrorPreset.label, recommendedMirrorPreset.label)
-                              : l10n.aboutMirrorModeHintCurrent(mirrorPreset.label)
+                              ? l10n.aboutMirrorModeHintRecommended(
+                                  mirrorPreset.label,
+                                  recommendedMirrorPreset.label)
+                              : l10n.aboutMirrorModeHintCurrent(
+                                  mirrorPreset.label)
                           : l10n.aboutOriginalModeHint,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
@@ -949,7 +1005,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          mirrorPreset.usesCustomUrl ? l10n.aboutCurrentCustomMirrorTitle : l10n.aboutCurrentMirrorTitle,
+                          mirrorPreset.usesCustomUrl
+                              ? l10n.aboutCurrentCustomMirrorTitle
+                              : l10n.aboutCurrentMirrorTitle,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
@@ -993,14 +1051,18 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                               : Icons.speed_rounded,
                         ),
                         label: Text(
-                          _isProbingMirrors ? l10n.aboutProbingMirrors : l10n.aboutProbeMirrorsAction,
+                          _isProbingMirrors
+                              ? l10n.aboutProbingMirrors
+                              : l10n.aboutProbeMirrorsAction,
                         ),
                       ),
                       FilledButton.tonalIcon(
                         onPressed: _editMirrorUrlPrefix,
                         icon: const Icon(Icons.edit_outlined),
                         label: Text(
-                          mirrorPreset.usesCustomUrl ? l10n.aboutEditCustomMirrorAction : l10n.aboutSetCustomMirrorAction,
+                          mirrorPreset.usesCustomUrl
+                              ? l10n.aboutEditCustomMirrorAction
+                              : l10n.aboutSetCustomMirrorAction,
                         ),
                       ),
                       if (recommendedMirrorPreset != null &&
@@ -1011,7 +1073,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                           ),
                           icon: const Icon(Icons.bolt_rounded),
                           label: Text(
-                            l10n.aboutSwitchToRecommendedAction(recommendedMirrorPreset.label),
+                            l10n.aboutSwitchToRecommendedAction(
+                                recommendedMirrorPreset.label),
                           ),
                         ),
                     ],
@@ -1231,13 +1294,23 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     _analytics.logEventLater(name: 'update_check_requested');
+    final settings = context.read<TimetableProvider>().settings;
+    final downloadSource = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
     setState(() {
       _updateFuture = _updateService.checkForUpdates(
         currentVersion: widget.packageInfo!.version,
-        includePrerelease: context
-            .read<TimetableProvider>()
-            .settings
-            .appUpdateIncludePrerelease,
+        includePrerelease: settings.appUpdateIncludePrerelease,
+        preferredSource: downloadSource,
+        mirrorUrlPrefix: effectiveMirrorUrlPrefix,
       );
     });
   }
@@ -1283,64 +1356,79 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(value ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled),
+        content: Text(value
+            ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
+            : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled),
       ),
     );
   }
 
   Future<void> _openLiveDiagnosticsViewer() async {
-    final rawLog = await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final settings = context.read<TimetableProvider>().settings;
+    final nativeRawLog =
+        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final rawLog = await AppLogService.instance.readMergedLogsText(
+      nativeRawLog: nativeRawLog,
+    );
     if (!mounted) {
       return;
     }
-    if (rawLog == null || rawLog.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
-      );
-      return;
-    }
-
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: AppLocalizations.of(context)!.liveDiagnosticsViewerTitle,
+          title: AppLocalizations.of(context)!.aboutAppLogsTitle,
           rawLog: rawLog,
+          isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+          onExport: _exportLiveDiagnostics,
+          onClear: _clearLiveDiagnostics,
         ),
       ),
     );
   }
 
-  Future<void> _exportLiveDiagnostics() async {
-    final path = await MiuiLiveActivitiesService().exportLiveDiagnosticsFile();
+  Future<void> _exportLiveDiagnostics([String? _]) async {
+    final nativeRawLog =
+        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final path = await AppLogService.instance.exportMergedLogsFile(
+      nativeRawLog: nativeRawLog,
+    );
     if (!mounted) {
       return;
     }
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet)),
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet)),
       );
       return;
     }
 
     await Share.shareXFiles(
       [XFile(path)],
-      text: AppLocalizations.of(context)!.liveDiagnosticsShareText,
-      subject: AppLocalizations.of(context)!.liveDiagnosticsShareSubject,
+      text: AppLocalizations.of(context)!.appLogsShareText,
+      subject: AppLocalizations.of(context)!.appLogsShareSubject,
     );
   }
 
-  Future<void> _clearLiveDiagnostics() async {
-    final cleared = await MiuiLiveActivitiesService().clearLiveDiagnostics();
+  Future<bool> _clearLiveDiagnostics() async {
+    final clearedAppLogs = await AppLogService.instance.clearAppLogs();
+    final clearedNativeLogs =
+        await MiuiLiveActivitiesService().clearLiveDiagnostics();
+    final cleared = clearedAppLogs || clearedNativeLogs;
     if (!mounted) {
-      return;
+      return cleared;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          cleared ? AppLocalizations.of(context)!.liveDiagnosticsCleared : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
+          cleared
+              ? AppLocalizations.of(context)!.liveDiagnosticsCleared
+              : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
         ),
       ),
     );
+    return cleared;
   }
 
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
@@ -1499,7 +1587,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
     if (recommendedPreset == currentPreset) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label))),
+        SnackBar(
+            content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label))),
       );
       return;
     }
@@ -1559,7 +1648,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (fallbackPreset != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label)),
+          content: Text(
+              l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label)),
           action: SnackBarAction(
             label: l10n.switchAction,
             onPressed: () {
@@ -1930,7 +2020,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: TextButton.icon(
                 onPressed: _isCancellingDownload ? null : _cancelDownload,
                 icon: const Icon(Icons.close_rounded),
-                label: Text(_isCancellingDownload ? l10n.aboutDownloadCancelling : l10n.aboutCancelDownloadAction),
+                label: Text(_isCancellingDownload
+                    ? l10n.aboutDownloadCancelling
+                    : l10n.aboutCancelDownloadAction),
               ),
             ),
           ],
@@ -1998,7 +2090,8 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
     _loadMaintainers();
   }
 
-  Future<List<_WarehouseMaintainerGroup>> _fetchMaintainersFromWarehouse() async {
+  Future<List<_WarehouseMaintainerGroup>>
+      _fetchMaintainersFromWarehouse() async {
     final settings = context.read<TimetableProvider>().settings;
     final options = WarehouseFetchOptions.fromSettings(settings);
     final rootIndex = await _repositoryService.fetchRootIndex(
@@ -2092,9 +2185,10 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
           .map(
             (item) => _WarehouseMaintainerGroup(
               name: item['name'] as String? ?? '',
-              adapterLabels: (item['adapterLabels'] as List<dynamic>? ?? const [])
-                  .whereType<String>()
-                  .toList(),
+              adapterLabels:
+                  (item['adapterLabels'] as List<dynamic>? ?? const [])
+                      .whereType<String>()
+                      .toList(),
             ),
           )
           .where((item) => item.name.isNotEmpty)
@@ -2191,7 +2285,8 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                   const SizedBox(height: 12),
                   if (_maintainersError != null && _maintainers.isEmpty)
                     Text(
-                      l10n.aboutWarehouseMaintainersLoadFailed(_maintainersError!),
+                      l10n.aboutWarehouseMaintainersLoadFailed(
+                          _maintainersError!),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.error,
                       ),
@@ -2209,7 +2304,8 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _ContributorRow(
                           name: group.name,
-                          subtitle: l10n.aboutWarehouseMaintainerCount(group.adapterLabels.length),
+                          subtitle: l10n.aboutWarehouseMaintainerCount(
+                              group.adapterLabels.length),
                           details: group.adapterLabels,
                         ),
                       ),
@@ -2278,7 +2374,9 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress)),
+      SnackBar(
+          content: Text(
+              AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress)),
     );
   }
 }

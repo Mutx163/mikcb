@@ -589,6 +589,18 @@
   "aboutContributorsTitle": "代碼貢獻者",
   "aboutContributorsSubtitle": "開發人員與教務匯入適配者名單",
   "aboutRepositoryTitle": "開源倉庫",
+  "aboutAppLogsTitle": "應用日誌",
+  "aboutAppLogsSubtitle": "查看整個軟體的 error / warn / info / debug / verbose 全等級日誌",
+  "appLogsShareText": "這是輕嶼課表匯出的應用日誌，包含整個軟體的本地執行記錄，可用於排查更新、匯入、通知、頁面與崩潰問題。",
+  "appLogsShareSubject": "輕嶼課表 - 應用日誌",
+  "appLogsRecordingEnabled": "正在記錄應用日誌",
+  "appLogsRecordingDisabled": "應用日誌記錄已關閉",
+  "appLogsCopyAction": "複製日誌",
+  "appLogsCopied": "已複製目前日誌",
+  "appLogsExportAction": "匯出日誌",
+  "appLogsClearAction": "清空日誌",
+  "appLogsCleared": "已清空應用日誌",
+  "appLogsClearFailed": "清空應用日誌失敗",
   "aboutRepositorySubtitle": "GitHub 倉庫地址、源碼、Release 和反饋入口",
   "timeSchemeTitle": "時間範本",
   "newSchemeTooltip": "新建範本",
@@ -939,6 +951,29 @@
   },
   "diagnosticsLogIntro": "支持 Markdown 與原文兩種查看方式，排查時可以直接在手機上看完整日誌。",
   "diagnosticsRawTab": "原文",
+  "diagnosticsStructuredTab": "結構化",
+  "diagnosticsLevelLabel": "等級",
+  "diagnosticsLevelAll": "全部",
+  "diagnosticsLevelError": "錯誤",
+  "diagnosticsLevelWarn": "警告",
+  "diagnosticsLevelInfo": "資訊",
+  "diagnosticsLevelDebug": "除錯",
+  "diagnosticsLevelVerbose": "詳細",
+  "diagnosticsShowingCount": "顯示 {shown} / {total} 條日誌",
+  "@diagnosticsShowingCount": {
+    "placeholders": {
+      "shown": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "diagnosticsNoMatchingTitle": "目前篩選下沒有日誌",
+  "diagnosticsNoMatchingSubtitle": "可切換回「全部」，或改看原文繼續排查。",
+  "diagnosticsLevelInferred": "推斷等級",
+  "diagnosticsRawFilteredHint": "原文視圖會跟隨目前等級篩選，只顯示對應日誌區塊。",
   "diagnosticsEmptyTitle": "暫無日誌",
   "diagnosticsEmptySubtitle": "目前沒有有可顯示的超級島診斷日誌。",
   "diagnosticsLogTitleFallback": "超級島診斷日誌",
@@ -1586,7 +1621,7 @@
   "aboutCheckPrereleaseSubtitle": "打開後会把測試版也纳入更新檢查；普通使用建議關閉。",
   "aboutDiagnosticsTitle": "測試與診斷",
   "aboutDiagnosticsSubtitle": "只有遇到“超級島没弹出”或需要给開發者反饋時再展開。",
-  "aboutRecordDiagnosticsTitle": "記錄超級島診斷日誌",
+  "aboutRecordDiagnosticsTitle": "記錄應用日誌",
   "aboutRecordDiagnosticsSubtitle": "打開後会在本地持续記錄關键日誌，僅用于排查“该弹不弹”等問題。",
   "aboutExportDiagnosticsAction": "匯出診斷日誌",
   "aboutViewPhoneLogsAction": "查看手机日誌",

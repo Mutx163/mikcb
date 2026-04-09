@@ -21,6 +21,8 @@ class StorageService {
       'has_handled_package_migration';
   static const String _hidePrefixDefaultMigrationKey =
       'did_migrate_live_hide_prefix_default';
+  static const String _appLogsDefaultMigrationKey =
+      'did_migrate_app_logs_default';
 
   static final StorageService _instance = StorageService._internal();
   factory StorageService() => _instance;
@@ -149,6 +151,16 @@ class StorageService {
   Future<void> setHandledPackageMigration(bool value) async {
     if (_prefs == null) await init();
     await _prefs?.setBool(_hasHandledPackageMigrationKey, value);
+  }
+
+  Future<bool> hasMigratedAppLogsDefault() async {
+    if (_prefs == null) await init();
+    return _prefs?.getBool(_appLogsDefaultMigrationKey) ?? false;
+  }
+
+  Future<void> setMigratedAppLogsDefault(bool value) async {
+    if (_prefs == null) await init();
+    await _prefs?.setBool(_appLogsDefaultMigrationKey, value);
   }
 
   Future<bool> isAppDataEffectivelyEmpty() async {

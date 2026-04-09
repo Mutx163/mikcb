@@ -15,6 +15,18 @@ import java.util.concurrent.ConcurrentHashMap
 
 object UmengDiagnosticReporter {
     private const val TAG = "UmengDiagnostic"
+    private const val LEVEL_ERROR = "error"
+    private const val LEVEL_WARN = "warn"
+    private const val LEVEL_INFO = "info"
+    private const val LEVEL_DEBUG = "debug"
+    private const val LEVEL_VERBOSE = "verbose"
+    private val SUPPORTED_LEVELS = setOf(
+        LEVEL_ERROR,
+        LEVEL_WARN,
+        LEVEL_INFO,
+        LEVEL_DEBUG,
+        LEVEL_VERBOSE,
+    )
     private const val FLUTTER_PREFS_NAME = "FlutterSharedPreferences"
     private const val KEY_ACCEPTED_PRIVACY_POLICY = "flutter.accepted_privacy_policy"
     private const val KEY_TIMETABLE_SETTINGS = "flutter.timetable_settings"
@@ -33,6 +45,7 @@ object UmengDiagnosticReporter {
         context: Context,
         category: String,
         message: String,
+        level: String? = null,
         extras: Map<String, Any?> = emptyMap(),
     ) {
         if (!isLiveDiagnosticsEnabled(context) || !hasPrivacyConsent(context)) {
@@ -40,6 +53,9 @@ object UmengDiagnosticReporter {
         }
         try {
             val payload = buildString {
+                appendLine(
+                    "level=${normalizeLevel(level, category = category, message = message, defaultLevel = LEVEL_INFO)}"
+                )
                 appendLine("category=$category")
                 appendLine("message=$message")
                 if (extras.isNotEmpty()) {
@@ -59,6 +75,7 @@ object UmengDiagnosticReporter {
         context: Context,
         category: String,
         message: String,
+        level: String? = null,
         throwable: Throwable? = null,
         stackTrace: String? = null,
         dedupeKey: String = category,
@@ -73,6 +90,17 @@ object UmengDiagnosticReporter {
 
         try {
             val payload = buildString {
+                appendLine(
+                    "level=${normalizeLevel(
+                        level,
+                        category = category,
+                        message = message,
+                        defaultLevel = if (throwable != null || !stackTrace.isNullOrBlank() || extras["error"] != null) LEVEL_ERROR else LEVEL_WARN,
+                        hasThrowable = throwable != null,
+                        hasStackTrace = !stackTrace.isNullOrBlank(),
+                        hasExplicitError = extras["error"] != null,
+                    )}"
+                )
                 appendLine("category=$category")
                 appendLine("message=$message")
                 val diagnosticContext = buildDiagnosticContext(context)
@@ -113,6 +141,7 @@ object UmengDiagnosticReporter {
             appendToLocalFile(
                 context = context,
                 payload = buildString {
+                    appendLine("level=$LEVEL_INFO")
                     appendLine("category=diagnostics_enabled")
                     appendLine("message=Live diagnostics logging enabled")
                 }.trim()
@@ -130,6 +159,7 @@ object UmengDiagnosticReporter {
                 appendToLocalFile(
                     context = context,
                     payload = buildString {
+                        appendLine("level=$LEVEL_INFO")
                         appendLine("category=diagnostics_bootstrap")
                         appendLine("message=Export requested before any explicit diagnostic events were recorded")
                     }.trim()
@@ -205,6 +235,7 @@ object UmengDiagnosticReporter {
             appendToLocalFile(
                 context = context,
                 payload = buildString {
+                    appendLine("level=$LEVEL_INFO")
                     appendLine("category=diagnostics_cleared")
                     appendLine("message=Live diagnostics log cleared and restarted")
                 }.trim()
@@ -252,6 +283,36 @@ object UmengDiagnosticReporter {
         }
         lastReportedAt[dedupeKey] = now
         return false
+    }
+
+    private fun normalizeLevel(
+        level: String?,
+        category: String,
+        message: String,
+        defaultLevel: String,
+        hasThrowable: Boolean = false,
+        hasStackTrace: Boolean = false,
+        hasExplicitError: Boolean = false,
+    ): String {
+        val normalized = level
+            ?.trim()
+            ?.lowercase()
+            ?.takeIf { it in SUPPORTED_LEVELS }
+        if (normalized != null) {
+            return normalized
+        }
+        if (hasThrowable || hasStackTrace || hasExplicitError) {
+            return LEVEL_ERROR
+        }
+        val source = "$category $message".lowercase()
+        return when {
+            "error" in source || "exception" in source || "fatal" in source || "crash" in source -> LEVEL_ERROR
+            "warn" in source || "warning" in source -> LEVEL_WARN
+            "verbose" in source || "trace" in source -> LEVEL_VERBOSE
+            "debug" in source -> LEVEL_DEBUG
+            "info" in source -> LEVEL_INFO
+            else -> defaultLevel
+        }
     }
 
     private fun appendToLocalFile(context: Context, payload: String) {

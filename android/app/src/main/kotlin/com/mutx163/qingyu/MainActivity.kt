@@ -195,6 +195,7 @@ class MainActivity : FlutterActivity() {
                             context = applicationContext,
                             category = data["category"] as? String ?: "flutter_diagnostic",
                             message = data["message"] as? String ?: "",
+                            level = data["level"] as? String,
                             stackTrace = data["stackTrace"] as? String,
                             dedupeKey = data["dedupeKey"] as? String
                                 ?: (data["category"] as? String ?: "flutter_diagnostic"),
@@ -216,6 +217,7 @@ class MainActivity : FlutterActivity() {
                             context = applicationContext,
                             category = data["category"] as? String ?: "flutter_diagnostic_event",
                             message = data["message"] as? String ?: "",
+                            level = data["level"] as? String,
                             extras = extras,
                         )
                         result.success(true)

@@ -32,6 +32,7 @@ workflow 还会做这些事：
 
 - 读取 [pubspec.yaml](D:/Users/34045/Desktop/cursor/flutter/mikcb/pubspec.yaml) 的 `version:`
 - 读取 `docs/releases/v版本号.md`
+- 应用内更新检查会优先读取 `docs/releases/latest.json`，所以每次发版前后都要同步这个文件
 - 用 tag 名覆盖 Android 最终产物的 `versionName`
 - 创建或更新 GitHub Release
 
