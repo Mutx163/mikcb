@@ -75,11 +75,13 @@ class _AppUpdateFetchOutcome {
   final AppReleaseInfo? release;
   final bool saw404;
   final int? statusCode;
+  final bool hadRetryableFailure;
 
   const _AppUpdateFetchOutcome({
     this.release,
     this.saw404 = false,
     this.statusCode,
+    this.hadRetryableFailure = false,
   });
 }
 
@@ -89,31 +91,69 @@ class AppUpdateService {
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
   static const String releasesApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases';
-  static const String docsReleaseManifestUrl =
-      'https://mutx.ccwu.cc/releases/latest.json';
-  static const String rawReleaseManifestUrl =
-      'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/releases/latest.json';
+  static const String releasesPageUrl = '$repositoryUrl/releases';
   static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
   static const String downloadCancelledMessage = '下载已取消';
+  static const Duration _releaseRequestTimeout = Duration(seconds: 4);
+  static const Duration _releasesPageRequestTimeout = Duration(seconds: 6);
+
+  static final RegExp _releaseSectionPattern = RegExp(
+    r'<section\b[^>]*>(.*?)</section>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+  static final RegExp _releaseTagPattern = RegExp(
+    r'href="/Mutx163/mikcb/releases/tag/([^"#?]+)"',
+    caseSensitive: false,
+  );
+  static final RegExp _releaseTitlePattern = RegExp(
+    r'<a[^>]*href="/Mutx163/mikcb/releases/tag/[^"]+"[^>]*>(.*?)</a>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+  static final RegExp _releaseBodyPattern = RegExp(
+    r'<div[^>]*data-test-selector="body-content"[^>]*>(.*?)</div>',
+    caseSensitive: false,
+    dotAll: true,
+  );
+  static final RegExp _releaseUpdatedAtPattern = RegExp(
+    r'<relative-time[^>]*datetime="([^"]+)"',
+    caseSensitive: false,
+  );
+  static final RegExp _expandedAssetsPattern = RegExp(
+    r'src="([^"]+/releases/expanded_assets/[^"]+)"',
+    caseSensitive: false,
+  );
+  static final RegExp _apkDownloadPattern = RegExp(
+    r'href="(/Mutx163/mikcb/releases/download/[^"]+?\.apk)"',
+    caseSensitive: false,
+  );
 
   static const Map<String, String> _releaseHeaders = {
     'Accept': 'application/vnd.github+json, application/json;q=0.9',
     'X-GitHub-Api-Version': '2022-11-28',
     'User-Agent': 'mikcb-app',
   };
+  static const Map<String, String> _releasePageHeaders = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'User-Agent': 'mikcb-app',
+  };
 
   final http.Client _client;
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
   final AppUpdateOpenInstaller _openInstaller;
+  final Duration _releaseApiRequestTimeout;
 
   AppUpdateService({
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
+    Duration releaseApiRequestTimeout = _releaseRequestTimeout,
   })  : _client = client ?? http.Client(),
         _temporaryDirectoryProvider =
             temporaryDirectoryProvider ?? getTemporaryDirectory,
-        _openInstaller = openInstaller ?? OpenFilex.open;
+        _openInstaller = openInstaller ?? OpenFilex.open,
+        _releaseApiRequestTimeout = releaseApiRequestTimeout;
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -121,20 +161,25 @@ class AppUpdateService {
     AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
     String? mirrorUrlPrefix,
   }) async {
-    final manifestCandidates = _buildReleaseManifestCandidates(
-      preferredSource: preferredSource,
-      mirrorUrlPrefix: mirrorUrlPrefix,
-    );
-
     var saw404 = false;
     int? lastStatusCode;
+    var hadRetryableFailure = false;
+
+    final fetches = <Future<_AppUpdateFetchOutcome>>[
+      _fetchFromGitHubApi(
+        includePrerelease: includePrerelease,
+        preferredSource: preferredSource,
+        mirrorUrlPrefix: mirrorUrlPrefix,
+      ),
+      _fetchFromReleasesPage(
+        includePrerelease: includePrerelease,
+      ),
+    ];
 
     try {
-      for (final candidate in manifestCandidates) {
-        final outcome = await _fetchFromManifest(
-          candidate,
-          includePrerelease: includePrerelease,
-        );
+      await for (final outcome in Stream<_AppUpdateFetchOutcome>.fromFutures(
+        fetches,
+      )) {
         if (outcome.release != null) {
           return _buildCheckResult(
             currentVersion: currentVersion,
@@ -142,27 +187,17 @@ class AppUpdateService {
           );
         }
         saw404 = saw404 || outcome.saw404;
-        lastStatusCode = outcome.statusCode ?? lastStatusCode;
+        hadRetryableFailure =
+            hadRetryableFailure || outcome.hadRetryableFailure;
+        if (outcome.statusCode != null && outcome.statusCode != 404) {
+          lastStatusCode = outcome.statusCode;
+        }
       }
-
-      final apiOutcome = await _fetchFromGitHubApi(
-        includePrerelease: includePrerelease,
-        preferredSource: preferredSource,
-        mirrorUrlPrefix: mirrorUrlPrefix,
-      );
-      if (apiOutcome.release != null) {
-        return _buildCheckResult(
-          currentVersion: currentVersion,
-          release: apiOutcome.release!,
-        );
-      }
-      saw404 = saw404 || apiOutcome.saw404;
-      lastStatusCode = apiOutcome.statusCode ?? lastStatusCode;
     } catch (_) {
-      // Fall through to the result builders below.
+      hadRetryableFailure = true;
     }
 
-    if (saw404) {
+    if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
       return AppUpdateCheckResult(
         hasRelease: false,
         hasUpdate: false,
@@ -333,84 +368,40 @@ class AppUpdateService {
     return '$normalizedPrefix$separator$originalUrl';
   }
 
-  List<String> _buildReleaseManifestCandidates({
-    required AppUpdateDownloadSource preferredSource,
-    String? mirrorUrlPrefix,
-  }) {
-    final normalizedSelectedMirror = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final fallbackMirrorUrls = <String?>[
-      _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
-    ];
-
-    final originalCandidates = <String>[
-      docsReleaseManifestUrl,
-      rawReleaseManifestUrl,
-    ];
-    final mirrorCandidates = <String>[
-      if (normalizedSelectedMirror != null)
-        buildDownloadUrl(
-          originalUrl: rawReleaseManifestUrl,
-          source: AppUpdateDownloadSource.mirror,
-          mirrorUrlPrefix: normalizedSelectedMirror,
-        ),
-      ...fallbackMirrorUrls.whereType<String>().map(
-            (prefix) => buildDownloadUrl(
-              originalUrl: rawReleaseManifestUrl,
-              source: AppUpdateDownloadSource.mirror,
-              mirrorUrlPrefix: prefix,
-            ),
-          ),
-    ];
-
-    final ordered = <String>[
-      if (preferredSource == AppUpdateDownloadSource.mirror) ...[
-        ...mirrorCandidates,
-        ...originalCandidates,
-      ] else ...[
-        ...originalCandidates,
-        ...mirrorCandidates,
-      ],
-    ];
-
-    final seen = <String>{};
-    return ordered.where((candidate) {
-      final normalized = candidate.trim();
-      return normalized.isNotEmpty && seen.add(normalized);
-    }).toList(growable: false);
-  }
-
-  Future<_AppUpdateFetchOutcome> _fetchFromManifest(
-    String url, {
+  Future<_AppUpdateFetchOutcome> _fetchFromReleasesPage({
     required bool includePrerelease,
   }) async {
     try {
-      final response = await _client.get(
-        Uri.parse(url),
-        headers: _releaseHeaders,
-      );
+      final response = await _client
+          .get(
+            Uri.parse(releasesPageUrl),
+            headers: _releasePageHeaders,
+          )
+          .timeout(_releasesPageRequestTimeout);
       if (response.statusCode == 404) {
         return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
       }
       if (response.statusCode != 200) {
-        return _AppUpdateFetchOutcome(statusCode: response.statusCode);
-      }
-      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      if (decoded is! Map) {
-        return const _AppUpdateFetchOutcome();
+        return _AppUpdateFetchOutcome(
+          statusCode: response.statusCode,
+          hadRetryableFailure: true,
+        );
       }
 
-      final manifest = Map<String, dynamic>.from(decoded);
-      final release = _pickReleaseFromManifest(
-        manifest,
+      final html = utf8.decode(response.bodyBytes);
+      final release = await _pickLatestEligibleReleaseFromPage(
+        html,
         includePrerelease: includePrerelease,
       );
-      return _AppUpdateFetchOutcome(release: release);
-    } on FormatException {
-      return const _AppUpdateFetchOutcome();
+      if (release != null) {
+        return _AppUpdateFetchOutcome(release: release);
+      }
+
+      return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+    } on TimeoutException {
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     } catch (_) {
-      return const _AppUpdateFetchOutcome();
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     }
   }
 
@@ -419,46 +410,80 @@ class AppUpdateService {
     required AppUpdateDownloadSource preferredSource,
     String? mirrorUrlPrefix,
   }) async {
-    final apiUrl = includePrerelease ? releasesApiUrl : latestReleaseApiUrl;
-
-    for (final candidate in _buildGitHubApiCandidates(
+    final apiUrl = releasesApiUrl;
+    final fetches = _buildGitHubApiCandidates(
       apiUrl,
       preferredSource: preferredSource,
       mirrorUrlPrefix: mirrorUrlPrefix,
+    ).map(
+      (candidate) => _fetchGitHubApiCandidate(
+        candidate,
+        includePrerelease: includePrerelease,
+      ),
+    );
+    var saw404 = false;
+    int? lastStatusCode;
+
+    await for (final outcome in Stream<_AppUpdateFetchOutcome>.fromFutures(
+      fetches,
     )) {
-      try {
-        final response = await _client.get(
-          Uri.parse(candidate),
-          headers: _releaseHeaders,
-        );
-        if (response.statusCode == 404) {
-          return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
-        }
-        if (response.statusCode != 200) {
-          continue;
-        }
-
-        final releaseJson = includePrerelease
-            ? _pickLatestEligibleRelease(
-                jsonDecode(response.body) as List<dynamic>,
-                includePrerelease: true,
-              )
-            : jsonDecode(response.body) as Map<String, dynamic>;
-        if (releaseJson == null) {
-          return const _AppUpdateFetchOutcome();
-        }
-
-        return _AppUpdateFetchOutcome(
-          release: _releaseFromGitHubJson(releaseJson),
-        );
-      } on FormatException {
-        continue;
-      } catch (_) {
-        continue;
+      if (outcome.release != null) {
+        return outcome;
       }
+      saw404 = saw404 || outcome.saw404;
+      lastStatusCode = outcome.statusCode ?? lastStatusCode;
     }
 
-    return const _AppUpdateFetchOutcome();
+    return _AppUpdateFetchOutcome(
+      saw404: saw404,
+      statusCode: lastStatusCode,
+    );
+  }
+
+  Future<_AppUpdateFetchOutcome> _fetchGitHubApiCandidate(
+    String candidate, {
+    required bool includePrerelease,
+  }) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(candidate),
+            headers: _releaseHeaders,
+          )
+          .timeout(_releaseApiRequestTimeout);
+      if (response.statusCode == 404) {
+        return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+      }
+      if (response.statusCode != 200) {
+        return _AppUpdateFetchOutcome(
+          statusCode: response.statusCode,
+          hadRetryableFailure: true,
+        );
+      }
+
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! List) {
+        return const _AppUpdateFetchOutcome();
+      }
+
+      final releaseJson = _pickLatestEligibleRelease(
+        decoded,
+        includePrerelease: includePrerelease,
+      );
+      if (releaseJson == null) {
+        return const _AppUpdateFetchOutcome();
+      }
+
+      return _AppUpdateFetchOutcome(
+        release: _releaseFromGitHubJson(releaseJson),
+      );
+    } on TimeoutException {
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    } on FormatException {
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    } catch (_) {
+      return const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    }
   }
 
   List<String> _buildGitHubApiCandidates(
@@ -523,52 +548,6 @@ class AppUpdateService {
     );
   }
 
-  AppReleaseInfo? _pickReleaseFromManifest(
-    Map<String, dynamic> manifest, {
-    required bool includePrerelease,
-  }) {
-    final stable = _releaseFromManifestEntry(manifest['stable']);
-    final prerelease = _releaseFromManifestEntry(manifest['prerelease']);
-
-    if (!includePrerelease) {
-      return stable;
-    }
-    if (stable == null) {
-      return prerelease;
-    }
-    if (prerelease == null) {
-      return stable;
-    }
-    return _compareVersions(prerelease.version, stable.version) > 0
-        ? prerelease
-        : stable;
-  }
-
-  AppReleaseInfo? _releaseFromManifestEntry(dynamic rawEntry) {
-    if (rawEntry is! Map) {
-      return null;
-    }
-    final entry = Map<String, dynamic>.from(rawEntry);
-    final version = _normalizeVersion((entry['version'] as String?) ?? '');
-    if (version.isEmpty) {
-      return null;
-    }
-    final title = (entry['title'] as String?)?.trim();
-    final releaseUrl = (entry['releaseUrl'] as String?)?.trim();
-    final downloadUrl = (entry['downloadUrl'] as String?)?.trim();
-    final body = (entry['body'] as String?)?.trim() ?? '';
-    return AppReleaseInfo(
-      version: version,
-      title: title?.isNotEmpty == true ? title! : version,
-      body: body,
-      releaseUrl: releaseUrl?.isNotEmpty == true ? releaseUrl! : repositoryUrl,
-      downloadUrl: downloadUrl?.isNotEmpty == true ? downloadUrl : null,
-      updatedAt:
-          DateTime.tryParse((entry['updatedAt'] as String?) ?? '')?.toLocal(),
-      isPrerelease: entry['isPrerelease'] as bool? ?? false,
-    );
-  }
-
   AppReleaseInfo _releaseFromGitHubJson(Map<String, dynamic> releaseJson) {
     final latestVersion = _normalizeVersion(
       (releaseJson['tag_name'] as String?) ??
@@ -628,6 +607,137 @@ class AppUpdateService {
 
     final firstAsset = normalizedAssets.isEmpty ? null : normalizedAssets.first;
     return firstAsset?['browser_download_url'] as String?;
+  }
+
+  bool _hasUsableDownloadUrl(Map<String, dynamic> releaseJson) {
+    return _pickDownloadUrl(
+          releaseJson['assets'] as List<dynamic>? ?? const [],
+        ) !=
+        null;
+  }
+
+  Future<AppReleaseInfo?> _pickLatestEligibleReleaseFromPage(
+    String html, {
+    required bool includePrerelease,
+  }) async {
+    for (final match in _releaseSectionPattern.allMatches(html)) {
+      final block = match.group(1);
+      if (block == null || block.isEmpty) {
+        continue;
+      }
+      final tagMatch = _releaseTagPattern.firstMatch(block);
+      final rawTag = tagMatch?.group(1);
+      if (rawTag == null || rawTag.isEmpty) {
+        continue;
+      }
+
+      final isPrerelease = block.contains('Pre-release');
+      if (!includePrerelease && isPrerelease) {
+        continue;
+      }
+
+      final expandedAssetsUrl = _extractExpandedAssetsUrl(block, rawTag);
+      final downloadUrl = await _fetchApkDownloadUrlFromExpandedAssets(
+        expandedAssetsUrl,
+      );
+      if (downloadUrl == null) {
+        continue;
+      }
+
+      final version = _normalizeVersion(rawTag);
+      final title = _extractReleaseTitle(block) ?? version;
+      return AppReleaseInfo(
+        version: version,
+        title: title,
+        body: _extractReleaseBody(block),
+        releaseUrl: _resolveGitHubUrl('/Mutx163/mikcb/releases/tag/$rawTag'),
+        downloadUrl: downloadUrl,
+        updatedAt: _extractReleaseUpdatedAt(block),
+        isPrerelease: isPrerelease,
+      );
+    }
+
+    return null;
+  }
+
+  String _extractExpandedAssetsUrl(String block, String tag) {
+    final match = _expandedAssetsPattern.firstMatch(block);
+    final expandedAssetsUrl = match?.group(1);
+    if (expandedAssetsUrl != null && expandedAssetsUrl.isNotEmpty) {
+      return expandedAssetsUrl;
+    }
+    final encodedTag = Uri.encodeComponent(tag);
+    return '$repositoryUrl/releases/expanded_assets/$encodedTag';
+  }
+
+  Future<String?> _fetchApkDownloadUrlFromExpandedAssets(String url) async {
+    try {
+      final response = await _client
+          .get(
+            Uri.parse(url),
+            headers: _releasePageHeaders,
+          )
+          .timeout(_releasesPageRequestTimeout);
+      if (response.statusCode != 200) {
+        return null;
+      }
+      final html = utf8.decode(response.bodyBytes);
+      final match = _apkDownloadPattern.firstMatch(html);
+      final assetPath = match?.group(1);
+      if (assetPath == null || assetPath.isEmpty) {
+        return null;
+      }
+      return _resolveGitHubUrl(assetPath);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String? _extractReleaseTitle(String block) {
+    final match = _releaseTitlePattern.firstMatch(block);
+    final rawTitle = match?.group(1);
+    if (rawTitle == null || rawTitle.isEmpty) {
+      return null;
+    }
+    final title = _htmlToPlainText(rawTitle).trim();
+    return title.isEmpty ? null : title;
+  }
+
+  String _extractReleaseBody(String block) {
+    final match = _releaseBodyPattern.firstMatch(block);
+    final rawBody = match?.group(1);
+    if (rawBody == null || rawBody.isEmpty) {
+      return '';
+    }
+    return _htmlToPlainText(rawBody).trim();
+  }
+
+  DateTime? _extractReleaseUpdatedAt(String block) {
+    final match = _releaseUpdatedAtPattern.firstMatch(block);
+    final rawUpdatedAt = match?.group(1);
+    return rawUpdatedAt == null
+        ? null
+        : DateTime.tryParse(rawUpdatedAt)?.toLocal();
+  }
+
+  String _resolveGitHubUrl(String pathOrUrl) {
+    if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://')) {
+      return pathOrUrl;
+    }
+    return 'https://github.com$pathOrUrl';
+  }
+
+  String _htmlToPlainText(String html) {
+    return html
+        .replaceAll(RegExp(r'<br\s*/?>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'</li>', caseSensitive: false), '\n')
+        .replaceAll(RegExp(r'<[^>]+>'), '')
+        .replaceAll('&nbsp;', ' ')
+        .replaceAll('&amp;', '&')
+        .replaceAll('&quot;', '"')
+        .replaceAll('&#39;', "'")
+        .replaceAll('&lt;', '<')
+        .replaceAll('&gt;', '>');
   }
 
   Future<void> _deleteFileIfExists(File file) async {
@@ -802,6 +912,9 @@ class AppUpdateService {
         continue;
       }
       if (!includePrerelease && release['prerelease'] == true) {
+        continue;
+      }
+      if (!_hasUsableDownloadUrl(release)) {
         continue;
       }
 
