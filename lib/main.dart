@@ -15,6 +15,7 @@ import 'screens/course_import_screen.dart';
 import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
+import 'services/app_log_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
@@ -113,10 +114,20 @@ ThemeData _buildAppTheme(
 Future<void> main() async {
   runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
+    unawaited(AppLogService.instance.initialize());
+    WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
       final stackTrace = details.stack ?? StackTrace.current;
+      unawaited(
+        AppLogService.instance.error(
+          'flutter_framework_error',
+          details.exceptionAsString(),
+          error: details.exception,
+          stackTrace: stackTrace,
+        ),
+      );
       unawaited(
         UmengAnalyticsService.reportUnhandledError(
           details.exception,
@@ -127,6 +138,14 @@ Future<void> main() async {
     };
 
     PlatformDispatcher.instance.onError = (error, stackTrace) {
+      unawaited(
+        AppLogService.instance.error(
+          'flutter_platform_error',
+          error.toString(),
+          error: error,
+          stackTrace: stackTrace,
+        ),
+      );
       unawaited(
         UmengAnalyticsService.reportUnhandledError(
           error,
@@ -139,6 +158,14 @@ Future<void> main() async {
 
     runApp(const MyApp());
   }, (error, stackTrace) {
+    unawaited(
+      AppLogService.instance.error(
+        'flutter_zone_error',
+        error.toString(),
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
     unawaited(
       UmengAnalyticsService.reportUnhandledError(
         error,
@@ -190,6 +217,9 @@ class MyApp extends StatelessWidget {
               Brightness.dark,
               fontFamily: fontFamily,
             ),
+            navigatorObservers: <NavigatorObserver>[
+              _AppRouteLogObserver(),
+            ],
             home: const AppEntryScreen(),
           );
         },
@@ -222,6 +252,12 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return;
     }
     _startupHandled = true;
+    unawaited(
+      AppLogService.instance.info(
+        'startup_flow_started',
+        'Startup flow handling started',
+      ),
+    );
 
     await _storageService.init();
     final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
@@ -303,10 +339,17 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
 
     if (hasAcceptedPrivacy && hasSeenGuide) {
+      await AppLogService.instance.updatePrivacyAccepted(true);
       await UmengAnalyticsService.initializeIfNeeded();
       if (!mounted) {
         return;
       }
+      unawaited(
+        AppLogService.instance.info(
+          'startup_flow_completed',
+          'Startup flow completed without onboarding screens',
+        ),
+      );
       setState(() {
         _isBootstrapping = false;
       });
@@ -338,6 +381,12 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return;
     }
 
+    unawaited(
+      AppLogService.instance.info(
+        'startup_flow_completed',
+        'Startup flow completed after guide/onboarding',
+      ),
+    );
     setState(() {
       _isBootstrapping = false;
     });
@@ -366,6 +415,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     if (requirePrivacyConsent) {
       if (accepted == true) {
         await _storageService.setAcceptedPrivacyPolicy(true);
+        await AppLogService.instance.updatePrivacyAccepted(true);
         await UmengAnalyticsService.initializeIfNeeded();
       } else {
         return false;
@@ -493,4 +543,74 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
 enum _BackupImportMode {
   replaceCurrent,
   importAsNew,
+}
+
+class _AppLifecycleLogObserver with WidgetsBindingObserver {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    unawaited(
+      AppLogService.instance.info(
+        'app_lifecycle_state_changed',
+        'App lifecycle changed',
+        extras: {'state': state.name},
+      ),
+    );
+  }
+}
+
+class _AppRouteLogObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _log('route_pushed', route, previousRoute);
+    super.didPush(route, previousRoute);
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    _log('route_popped', route, previousRoute);
+    super.didPop(route, previousRoute);
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
+    unawaited(
+      AppLogService.instance.info(
+        'route_replaced',
+        'Navigator route replaced',
+        extras: {
+          'route': _describeRoute(newRoute),
+          'previousRoute': _describeRoute(oldRoute),
+        },
+      ),
+    );
+    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
+  }
+
+  void _log(
+    String category,
+    Route<dynamic>? route,
+    Route<dynamic>? previousRoute,
+  ) {
+    unawaited(
+      AppLogService.instance.debug(
+        category,
+        'Navigator route changed',
+        extras: {
+          'route': _describeRoute(route),
+          'previousRoute': _describeRoute(previousRoute),
+        },
+      ),
+    );
+  }
+
+  String _describeRoute(Route<dynamic>? route) {
+    if (route == null) {
+      return '';
+    }
+    final name = route.settings.name?.trim();
+    if (name != null && name.isNotEmpty) {
+      return name;
+    }
+    return route.runtimeType.toString();
+  }
 }

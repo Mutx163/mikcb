@@ -1974,10 +1974,23 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     try {
+      final settings = context.read<TimetableProvider>().settings;
+      final downloadSource = AppUpdateDownloadSourceX.fromValue(
+        settings.appUpdateDownloadSource,
+      );
+      final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+        settings.appUpdateMirrorPreset,
+      );
+      final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
+        preset: mirrorPreset,
+        customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+      );
       final packageInfo = await PackageInfo.fromPlatform();
       final result = await _updateService.checkForUpdates(
         currentVersion: packageInfo.version,
         includePrerelease: includePrerelease,
+        preferredSource: downloadSource,
+        mirrorUrlPrefix: effectiveMirrorUrlPrefix,
       );
       if (!mounted) {
         _isCheckingForUpdate = false;

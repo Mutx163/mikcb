@@ -1,0 +1,20 @@
+{
+  "stable": {
+    "version": "1.1.10.20",
+    "title": "v1.1.10.20",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.1.10.20",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.1.10.20/mikcb-1.1.10.20-arm64-v8a.apk",
+    "updatedAt": "2026-04-06T17:33:26Z",
+    "isPrerelease": false,
+    "body": "- 关于界面、使用引导和 README 已同步更新为当前教务系统导入能力，不再保留“暂不支持教务导入”的旧说明。\n- 在应用内合适位置补充了教务适配参与引导，方便会抓包、网页调试或 JavaScript 的用户继续补学校适配。\n- 继续完善教务导入生态说明，让主应用与 `qingyu_warehouse` 适配仓之间的关系更清晰。"
+  },
+  "prerelease": {
+    "version": "1.1.10.24",
+    "title": "v1.1.10.24",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.1.10.24",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.1.10.24/mikcb-1.1.10.24-arm64-v8a.apk",
+    "updatedAt": "2026-04-09T05:13:47Z",
+    "isPrerelease": true,
+    "body": "- 新增“关于 → 应用日志”独立日志页，支持 all / error / warn / info / debug / verbose 等级筛选、结构化 / 原文双视图，以及复制、导出、清空。\n- 补上 AppLogService，全局记录启动、路由、生命周期、Flutter 异常与部分服务失败日志，并和 Android 原生日志合并展示。\n- 更新检查现在优先读取 docs/releases/latest.json，并支持镜像 / GitHub API 回退，降低 VPN 或 GitHub API 不稳定时的检测失败概率。"
+  }
+}

@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'app_log_service.dart';
 import 'home_widget_snapshot_service.dart';
 
 enum HomeWidgetPinTarget {
@@ -35,13 +38,21 @@ class HomeWidgetService {
       return false;
     }
     try {
-      final supported = await _channel.invokeMethod<bool>('canRequestPinWidget');
+      final supported =
+          await _channel.invokeMethod<bool>('canRequestPinWidget');
       return supported ?? false;
     } on MissingPluginException {
       if (kDebugMode) {
         return false;
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_pin_support_failed',
+          'Failed to check pin widget support',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to check pin widget support: $e');
     }
     return false;
@@ -69,6 +80,13 @@ class HomeWidgetService {
         return HomeWidgetPinRequestResult.unsupported;
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_pin_request_failed',
+          'Failed to request pin widget',
+          extras: {'error': '$e', 'target': target.value},
+        ),
+      );
       debugPrint('Failed to request pin widget: $e');
     }
     return HomeWidgetPinRequestResult.failed;
@@ -86,6 +104,13 @@ class HomeWidgetService {
         return true;
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_sync_failed',
+          'Failed to sync home widget snapshot',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to sync home widget snapshot: $e');
     }
     return false;
@@ -100,6 +125,13 @@ class HomeWidgetService {
         return true;
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_clear_failed',
+          'Failed to clear home widget snapshot',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to clear home widget snapshot: $e');
     }
     return false;
@@ -116,6 +148,13 @@ class HomeWidgetService {
         return;
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'home_widget_schedule_failed',
+          'Failed to schedule home widget refresh',
+          extras: {'error': '$e', 'count': triggerAtMillis.length},
+        ),
+      );
       debugPrint('Failed to schedule home widget refresh: $e');
     }
   }

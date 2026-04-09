@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import 'app_log_service.dart';
 import 'umeng_analytics_service.dart';
 
 class MiuiLiveActivitiesService {
@@ -24,6 +25,12 @@ class MiuiLiveActivitiesService {
       await _channel.invokeMethod('initialize');
       _isInitialized = true;
     } catch (e, stackTrace) {
+      await AppLogService.instance.error(
+        'miui_live_initialize_failed',
+        'Failed to initialize MIUI live activities channel',
+        error: e,
+        stackTrace: stackTrace,
+      );
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_flutter_initialize_failed',
         'Failed to initialize MIUI live activities channel',
@@ -75,6 +82,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openPromotedSettings');
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_promoted_settings_failed',
+          'Failed to open promoted settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to open settings: $e');
     }
   }
@@ -83,6 +97,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openNotificationSettings');
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_notification_settings_failed',
+          'Failed to open notification settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to open notification settings: $e');
     }
   }
@@ -91,6 +112,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openAutoStartSettings');
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_autostart_settings_failed',
+          'Failed to open auto-start settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to open auto-start settings: $e');
     }
   }
@@ -99,6 +127,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openBatteryOptimizationSettings');
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_battery_settings_failed',
+          'Failed to open battery optimization settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to open battery optimization settings: $e');
     }
   }
@@ -107,6 +142,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('openAccessibilitySettings');
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_open_accessibility_settings_failed',
+          'Failed to open accessibility settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Failed to open accessibility settings: $e');
     }
   }
@@ -127,6 +169,13 @@ class MiuiLiveActivitiesService {
     try {
       await _channel.invokeMethod('setHideFromRecents', value);
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'miui_live_hide_from_recents_failed',
+          'Failed to update hide-from-recents',
+          extras: {'error': '$e', 'value': value},
+        ),
+      );
       debugPrint('Failed to update hide-from-recents: $e');
     }
   }
@@ -139,11 +188,13 @@ class MiuiLiveActivitiesService {
     String category,
     String message, {
     Map<String, Object?> extras = const {},
+    DiagnosticLogLevel level = DiagnosticLogLevels.info,
   }) async {
     await UmengAnalyticsService.recordDiagnosticEvent(
       category,
       message,
       extras: extras,
+      level: level,
     );
   }
 

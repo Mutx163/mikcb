@@ -7,6 +7,7 @@ import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../services/app_analytics.dart';
+import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
@@ -147,6 +148,23 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     _applyProfileState(activeProfile);
+    final didMigrateAppLogsDefault =
+        await _storageService.hasMigratedAppLogsDefault();
+    if (!didMigrateAppLogsDefault && !_settings.liveEnableLocalDiagnostics) {
+      _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
+      await _persistActiveProfileState();
+      await _storageService.setMigratedAppLogsDefault(true);
+      unawaited(
+        AppLogService.instance.info(
+          'app_logs_default_migrated',
+          'Enabled app log recording during migration',
+          extras: {'profileId': activeProfile.id},
+          force: true,
+        ),
+      );
+    } else if (!didMigrateAppLogsDefault) {
+      await _storageService.setMigratedAppLogsDefault(true);
+    }
     if (_activeProfileId != activeProfile.id) {
       _activeProfileId = activeProfile.id;
       await _storageService.setActiveProfileId(activeProfile.id);
@@ -211,6 +229,9 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _syncNativeRuntimePreferences() async {
+    await AppLogService.instance.updateLoggingEnabled(
+      _settings.liveEnableLocalDiagnostics,
+    );
     await _liveActivitiesService.setLiveDiagnosticsEnabled(
       _settings.liveEnableLocalDiagnostics,
     );
@@ -476,6 +497,13 @@ class TimetableProvider with ChangeNotifier {
       }
       notifyListeners();
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'timetable_load_settings_failed',
+          'Error loading timetable settings',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Error loading timetable settings: $e');
     }
   }
@@ -493,6 +521,13 @@ class TimetableProvider with ChangeNotifier {
         );
       }
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'timetable_load_courses_failed',
+          'Error loading courses',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Error loading courses: $e');
     }
 
@@ -505,6 +540,13 @@ class TimetableProvider with ChangeNotifier {
       _currentWeek = activeProfile?.currentWeek ?? 1;
       notifyListeners();
     } catch (e) {
+      unawaited(
+        AppLogService.instance.warn(
+          'timetable_load_current_week_failed',
+          'Error loading current week',
+          extras: {'error': '$e'},
+        ),
+      );
       debugPrint('Error loading current week: $e');
     }
   }
@@ -2446,9 +2488,11 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
   return imported.copyWith(
     id: existing.id,
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
-    teacher: imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
-    location:
-        imported.location.trim().isEmpty ? existing.location : imported.location,
+    teacher:
+        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    location: imported.location.trim().isEmpty
+        ? existing.location
+        : imported.location,
     shortName: existing.shortName,
     color: existing.color,
     courseNature: existing.courseNature,
@@ -2465,9 +2509,11 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
 ) {
   return existing.copyWith(
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
-    teacher: imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
-    location:
-        imported.location.trim().isEmpty ? existing.location : imported.location,
+    teacher:
+        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    location: imported.location.trim().isEmpty
+        ? existing.location
+        : imported.location,
     shortName: existing.shortName,
     color: existing.color,
     courseNature: existing.courseNature,
@@ -2523,7 +2569,8 @@ ImportedCourseSyncResult syncImportedCourses({
     if (matchedIndex != -1) {
       final existing = merged[matchedIndex];
       matchedExistingIds.add(existing.id);
-      merged[matchedIndex] = mergeImportedCourseWithExisting(existing, imported);
+      merged[matchedIndex] =
+          mergeImportedCourseWithExisting(existing, imported);
       updatedCount += 1;
     } else {
       merged.add(imported);
@@ -2568,13 +2615,15 @@ int _findSoftImportedCourseMatchIndex(
     if (matchedExistingIds.contains(existing.id)) {
       continue;
     }
-    if (existing.name.trim().toLowerCase() != imported.name.trim().toLowerCase()) {
+    if (existing.name.trim().toLowerCase() !=
+        imported.name.trim().toLowerCase()) {
       continue;
     }
     if (existing.sectionCount != imported.sectionCount) {
       continue;
     }
-    final overlapScore = _weekOverlapScore(existing.activeWeeks, imported.activeWeeks);
+    final overlapScore =
+        _weekOverlapScore(existing.activeWeeks, imported.activeWeeks);
     if (overlapScore < 0.5) {
       continue;
     }
@@ -2615,7 +2664,8 @@ List<int> _findGroupedImportedCourseMatchIndices(
   Course imported,
   Set<String> matchedExistingIds,
 ) {
-  final importedWeeks = {...imported.activeWeeks}..removeWhere((week) => week < 1);
+  final importedWeeks = {...imported.activeWeeks}
+    ..removeWhere((week) => week < 1);
   if (importedWeeks.isEmpty) {
     return const <int>[];
   }
@@ -2629,7 +2679,8 @@ List<int> _findGroupedImportedCourseMatchIndices(
     if (!_hasSameStructuralKey(existing, imported)) {
       continue;
     }
-    final existingWeeks = {...existing.activeWeeks}..removeWhere((week) => week < 1);
+    final existingWeeks = {...existing.activeWeeks}
+      ..removeWhere((week) => week < 1);
     if (existingWeeks.isEmpty) {
       continue;
     }
@@ -2663,6 +2714,7 @@ double _weekOverlapScore(List<int> left, List<int> right) {
   final leftSet = left.toSet();
   final rightSet = right.toSet();
   final intersection = leftSet.intersection(rightSet).length;
-  final base = leftSet.length > rightSet.length ? leftSet.length : rightSet.length;
+  final base =
+      leftSet.length > rightSet.length ? leftSet.length : rightSet.length;
   return base == 0 ? 0 : intersection / base;
 }

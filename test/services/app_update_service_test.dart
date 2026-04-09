@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
 
 class _CountingProbeClient extends http.BaseClient {
@@ -204,6 +205,95 @@ void main() {
     expect(result.latestRelease?.version, '1.1.10.4');
   });
 
+  test(
+      'update check prefers configured mirror manifest when mirror source is selected',
+      () async {
+    final requestedUrls = <String>[];
+    final mirrorPrefix = ghproxyCnMirrorUrlPrefix;
+    final client = MockClient((request) async {
+      requestedUrls.add(request.url.toString());
+      if (request.url.toString() ==
+          '$mirrorPrefix${AppUpdateService.rawReleaseManifestUrl}') {
+        return http.Response(
+          jsonEncode({
+            'stable': {
+              'version': '1.2.0',
+              'title': 'v1.2.0',
+              'body': 'stable body',
+              'releaseUrl': 'https://example.com/1.2.0',
+              'downloadUrl': 'https://example.com/1.2.0.apk',
+              'updatedAt': '2026-04-08T10:00:00Z',
+              'isPrerelease': false,
+            },
+          }),
+          200,
+        );
+      }
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.1.0',
+      preferredSource: AppUpdateDownloadSource.mirror,
+      mirrorUrlPrefix: mirrorPrefix,
+    );
+
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.2.0');
+    expect(
+      requestedUrls.first,
+      '$mirrorPrefix${AppUpdateService.rawReleaseManifestUrl}',
+    );
+  });
+
+  test(
+      'update check falls back to mirrored manifest when primary manifest endpoints fail',
+      () async {
+    final requestedUrls = <String>[];
+    final client = MockClient((request) async {
+      final url = request.url.toString();
+      requestedUrls.add(url);
+      if (url == AppUpdateService.docsReleaseManifestUrl ||
+          url == AppUpdateService.rawReleaseManifestUrl) {
+        return http.Response('', 502);
+      }
+      if (url ==
+          '$defaultAppUpdateMirrorUrlPrefix${AppUpdateService.rawReleaseManifestUrl}') {
+        return http.Response(
+          jsonEncode({
+            'stable': {
+              'version': '1.3.0',
+              'title': 'v1.3.0',
+              'body': 'stable body',
+              'releaseUrl': 'https://example.com/1.3.0',
+              'downloadUrl': 'https://example.com/1.3.0.apk',
+              'updatedAt': '2026-04-09T10:00:00Z',
+              'isPrerelease': false,
+            },
+          }),
+          200,
+        );
+      }
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.2.0',
+      preferredSource: AppUpdateDownloadSource.original,
+      mirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
+    );
+
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.3.0');
+    expect(requestedUrls.take(3).toList(), [
+      AppUpdateService.docsReleaseManifestUrl,
+      AppUpdateService.rawReleaseManifestUrl,
+      '$defaultAppUpdateMirrorUrlPrefix${AppUpdateService.rawReleaseManifestUrl}',
+    ]);
+  });
+
   test('download can be cancelled and cleans up partial apk', () async {
     final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -211,8 +301,7 @@ void main() {
     unawaited(() async {
       await for (final request in server) {
         request.response.statusCode = 200;
-        request.response.headers.contentType =
-            ContentType.binary;
+        request.response.headers.contentType = ContentType.binary;
         request.response.headers.contentLength = 12;
         request.response.add(List<int>.filled(4, 1));
         await request.response.flush();
@@ -270,7 +359,8 @@ void main() {
     });
 
     final service = AppUpdateService(client: client);
-    final result = await service.probeDownloadUrl('https://example.com/app.apk');
+    final result =
+        await service.probeDownloadUrl('https://example.com/app.apk');
 
     expect(result.isSuccess, isTrue);
     expect(result.statusCode, 206);
@@ -281,11 +371,88 @@ void main() {
     final client = _CountingProbeClient(totalBytes: 3 * 1024 * 1024);
     final service = AppUpdateService(client: client);
 
-    final result = await service.probeDownloadUrl('https://example.com/app.apk');
+    final result =
+        await service.probeDownloadUrl('https://example.com/app.apk');
 
     expect(result.isSuccess, isTrue);
     expect(result.statusCode, 200);
     expect(client.lastGetHeaders?['Range'], 'bytes=0-0');
     expect(client.streamedBytes, lessThan(client.totalBytes));
+  });
+
+  test('manifest check can prefer the selected mirror source first', () async {
+    final requests = <String>[];
+    final selectedMirror = 'https://mirror.example/';
+    final mirroredManifestUrl =
+        '$selectedMirror${AppUpdateService.rawReleaseManifestUrl}';
+    final client = MockClient((request) async {
+      requests.add(request.url.toString());
+      if (request.url.toString() == mirroredManifestUrl) {
+        return http.Response(
+          jsonEncode({
+            'stable': {
+              'version': '1.2.0',
+              'title': 'v1.2.0',
+              'releaseUrl': 'https://example.com/releases/v1.2.0',
+              'isPrerelease': false,
+            },
+          }),
+          200,
+        );
+      }
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.1.0',
+      preferredSource: AppUpdateDownloadSource.mirror,
+      mirrorUrlPrefix: selectedMirror,
+    );
+
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.2.0');
+    expect(requests.first, mirroredManifestUrl);
+  });
+
+  test('github api falls back to mirrored api when direct api is unavailable',
+      () async {
+    final requests = <String>[];
+    final selectedMirror = 'https://mirror.example/';
+    final mirroredApiUrl =
+        '$selectedMirror${AppUpdateService.latestReleaseApiUrl}';
+    final client = MockClient((request) async {
+      requests.add(request.url.toString());
+      final url = request.url.toString();
+      if (url == AppUpdateService.latestReleaseApiUrl) {
+        return http.Response('', 503);
+      }
+      if (url == mirroredApiUrl) {
+        return http.Response(
+          jsonEncode({
+            'tag_name': 'v1.3.0',
+            'name': 'v1.3.0',
+            'draft': false,
+            'prerelease': false,
+            'html_url': 'https://example.com/1.3.0',
+            'assets': const [],
+            'updated_at': '2026-04-09T10:00:00Z',
+          }),
+          200,
+        );
+      }
+      return http.Response('', 503);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.2.0',
+      mirrorUrlPrefix: selectedMirror,
+    );
+
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.3.0');
+    expect(requests, contains(AppUpdateService.latestReleaseApiUrl));
+    expect(requests, contains(mirroredApiUrl));
   });
 }

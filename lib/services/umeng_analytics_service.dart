@@ -1,6 +1,19 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import 'app_log_service.dart';
+
+typedef DiagnosticLogLevel = String;
+
+abstract final class DiagnosticLogLevels {
+  static const DiagnosticLogLevel all = 'all';
+  static const DiagnosticLogLevel error = 'error';
+  static const DiagnosticLogLevel warn = 'warn';
+  static const DiagnosticLogLevel info = 'info';
+  static const DiagnosticLogLevel debug = 'debug';
+  static const DiagnosticLogLevel verbose = 'verbose';
+}
+
 class UmengAnalyticsService {
   UmengAnalyticsService._();
 
@@ -30,7 +43,14 @@ class UmengAnalyticsService {
     Object error,
     StackTrace stackTrace, {
     String category = 'flutter_unhandled_exception',
+    DiagnosticLogLevel level = DiagnosticLogLevels.error,
   }) async {
+    await AppLogService.instance.error(
+      category,
+      error.toString(),
+      error: error,
+      stackTrace: stackTrace,
+    );
     if (!_initialized || defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
@@ -39,6 +59,7 @@ class UmengAnalyticsService {
       message: error.toString(),
       stackTrace: stackTrace.toString(),
       dedupeKey: '$category:${error.runtimeType}',
+      level: level,
     );
   }
 
@@ -48,7 +69,19 @@ class UmengAnalyticsService {
     Object? error,
     StackTrace? stackTrace,
     String? dedupeKey,
+    DiagnosticLogLevel? level,
   }) async {
+    final effectiveLevel = level ??
+        (error != null || stackTrace != null
+            ? DiagnosticLogLevels.error
+            : DiagnosticLogLevels.warn);
+    await AppLogService.instance.log(
+      level: effectiveLevel,
+      category: category,
+      message: message,
+      error: error,
+      stackTrace: stackTrace,
+    );
     if (!_initialized || defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
@@ -58,6 +91,7 @@ class UmengAnalyticsService {
       stackTrace: stackTrace?.toString(),
       error: error?.toString(),
       dedupeKey: dedupeKey ?? '$category:$message',
+      level: effectiveLevel,
     );
   }
 
@@ -67,6 +101,7 @@ class UmengAnalyticsService {
     String? stackTrace,
     String? error,
     required String dedupeKey,
+    DiagnosticLogLevel? level,
   }) async {
     final now = DateTime.now();
     final lastAt = _lastReportAt[dedupeKey];
@@ -82,6 +117,7 @@ class UmengAnalyticsService {
         'error': error,
         'stackTrace': stackTrace,
         'dedupeKey': dedupeKey,
+        'level': level,
       });
     } on MissingPluginException {
       // Ignore when the platform implementation is unavailable.
@@ -107,7 +143,14 @@ class UmengAnalyticsService {
     String category,
     String message, {
     Map<String, Object?> extras = const {},
+    DiagnosticLogLevel level = DiagnosticLogLevels.info,
   }) async {
+    await AppLogService.instance.log(
+      level: level,
+      category: category,
+      message: message,
+      extras: extras,
+    );
     if (defaultTargetPlatform != TargetPlatform.android) {
       return;
     }
@@ -116,6 +159,7 @@ class UmengAnalyticsService {
         'category': category,
         'message': message,
         'extras': extras,
+        'level': level,
       });
     } on MissingPluginException {
       // Ignore when the platform implementation is unavailable.

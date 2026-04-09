@@ -71,14 +71,36 @@ class AppUpdateDownloadProbeResult {
   });
 }
 
+class _AppUpdateFetchOutcome {
+  final AppReleaseInfo? release;
+  final bool saw404;
+  final int? statusCode;
+
+  const _AppUpdateFetchOutcome({
+    this.release,
+    this.saw404 = false,
+    this.statusCode,
+  });
+}
+
 class AppUpdateService {
   static const String repositoryUrl = 'https://github.com/Mutx163/mikcb';
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
   static const String releasesApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases';
+  static const String docsReleaseManifestUrl =
+      'https://mutx.ccwu.cc/releases/latest.json';
+  static const String rawReleaseManifestUrl =
+      'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/releases/latest.json';
   static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
   static const String downloadCancelledMessage = '下载已取消';
+
+  static const Map<String, String> _releaseHeaders = {
+    'Accept': 'application/vnd.github+json, application/json;q=0.9',
+    'X-GitHub-Api-Version': '2022-11-28',
+    'User-Agent': 'mikcb-app',
+  };
 
   final http.Client _client;
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
@@ -96,92 +118,74 @@ class AppUpdateService {
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
     bool includePrerelease = false,
+    AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
+    String? mirrorUrlPrefix,
   }) async {
+    final manifestCandidates = _buildReleaseManifestCandidates(
+      preferredSource: preferredSource,
+      mirrorUrlPrefix: mirrorUrlPrefix,
+    );
+
+    var saw404 = false;
+    int? lastStatusCode;
+
     try {
-      final apiUrl = includePrerelease ? releasesApiUrl : latestReleaseApiUrl;
-      final response = await _client.get(
-        Uri.parse(apiUrl),
-        headers: const {
-          'Accept': 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent': 'mikcb-app',
-        },
-      );
-
-      if (response.statusCode == 404) {
-        return AppUpdateCheckResult(
-          hasRelease: false,
-          hasUpdate: false,
-          currentVersion: currentVersion,
-          message: '仓库还没有发布 Release。',
+      for (final candidate in manifestCandidates) {
+        final outcome = await _fetchFromManifest(
+          candidate,
+          includePrerelease: includePrerelease,
         );
+        if (outcome.release != null) {
+          return _buildCheckResult(
+            currentVersion: currentVersion,
+            release: outcome.release!,
+          );
+        }
+        saw404 = saw404 || outcome.saw404;
+        lastStatusCode = outcome.statusCode ?? lastStatusCode;
       }
 
-      if (response.statusCode != 200) {
-        return AppUpdateCheckResult(
-          hasRelease: false,
-          hasUpdate: false,
+      final apiOutcome = await _fetchFromGitHubApi(
+        includePrerelease: includePrerelease,
+        preferredSource: preferredSource,
+        mirrorUrlPrefix: mirrorUrlPrefix,
+      );
+      if (apiOutcome.release != null) {
+        return _buildCheckResult(
           currentVersion: currentVersion,
-          message: '检查更新失败（HTTP ${response.statusCode}）。',
+          release: apiOutcome.release!,
         );
       }
-
-      final releaseJson = includePrerelease
-          ? _pickLatestEligibleRelease(
-              jsonDecode(response.body) as List<dynamic>,
-              includePrerelease: true,
-            )
-          : jsonDecode(response.body) as Map<String, dynamic>;
-      if (releaseJson == null) {
-        return AppUpdateCheckResult(
-          hasRelease: false,
-          hasUpdate: false,
-          currentVersion: currentVersion,
-          message: includePrerelease ? '还没有可用的正式版或预发布版本。' : '仓库还没有发布 Release。',
-        );
-      }
-
-      final latestVersion = _normalizeVersion(
-        (releaseJson['tag_name'] as String?) ??
-            (releaseJson['name'] as String?) ??
-            '',
-      );
-      final release = AppReleaseInfo(
-        version: latestVersion,
-        title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
-            ? (releaseJson['name'] as String).trim()
-            : latestVersion,
-        body: (releaseJson['body'] as String?)?.trim() ?? '',
-        releaseUrl: (releaseJson['html_url'] as String?) ?? repositoryUrl,
-        downloadUrl: _pickDownloadUrl(
-          releaseJson['assets'] as List<dynamic>? ?? const [],
-        ),
-        updatedAt: DateTime.tryParse(
-          (releaseJson['updated_at'] as String?) ??
-              (releaseJson['published_at'] as String?) ??
-              '',
-        )?.toLocal(),
-        isPrerelease: releaseJson['prerelease'] as bool? ?? false,
-      );
-
-      final hasUpdate = _compareVersions(latestVersion, currentVersion) > 0;
-      return AppUpdateCheckResult(
-        hasRelease: true,
-        hasUpdate: hasUpdate,
-        currentVersion: currentVersion,
-        latestRelease: release,
-        message: hasUpdate
-            ? (release.isPrerelease ? '发现新的预发布版本' : '发现新版本')
-            : '当前已经是最新版本',
-      );
+      saw404 = saw404 || apiOutcome.saw404;
+      lastStatusCode = apiOutcome.statusCode ?? lastStatusCode;
     } catch (_) {
+      // Fall through to the result builders below.
+    }
+
+    if (saw404) {
       return AppUpdateCheckResult(
         hasRelease: false,
         hasUpdate: false,
         currentVersion: currentVersion,
-        message: '网络异常，暂时无法检查更新。',
+        message: includePrerelease ? '还没有可用的正式版或预发布版本。' : '仓库还没有发布 Release。',
       );
     }
+
+    if (lastStatusCode != null) {
+      return AppUpdateCheckResult(
+        hasRelease: false,
+        hasUpdate: false,
+        currentVersion: currentVersion,
+        message: '检查更新失败（HTTP $lastStatusCode）。',
+      );
+    }
+
+    return AppUpdateCheckResult(
+      hasRelease: false,
+      hasUpdate: false,
+      currentVersion: currentVersion,
+      message: '网络异常，暂时无法检查更新。',
+    );
   }
 
   Future<String?> downloadAndInstallUpdate(
@@ -261,14 +265,12 @@ class AppUpdateService {
 
     final stopwatch = Stopwatch()..start();
     try {
-      var response = await _client
-          .head(
-            uri,
-            headers: const {
-              'User-Agent': 'mikcb-app',
-            },
-          )
-          .timeout(timeout);
+      var response = await _client.head(
+        uri,
+        headers: const {
+          'User-Agent': 'mikcb-app',
+        },
+      ).timeout(timeout);
 
       if (response.statusCode == 405 || response.statusCode == 403) {
         response = http.Response(
@@ -329,6 +331,279 @@ class AppUpdateService {
 
     final separator = normalizedPrefix.endsWith('/') ? '' : '/';
     return '$normalizedPrefix$separator$originalUrl';
+  }
+
+  List<String> _buildReleaseManifestCandidates({
+    required AppUpdateDownloadSource preferredSource,
+    String? mirrorUrlPrefix,
+  }) {
+    final normalizedSelectedMirror = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
+    final fallbackMirrorUrls = <String?>[
+      _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
+    ];
+
+    final originalCandidates = <String>[
+      docsReleaseManifestUrl,
+      rawReleaseManifestUrl,
+    ];
+    final mirrorCandidates = <String>[
+      if (normalizedSelectedMirror != null)
+        buildDownloadUrl(
+          originalUrl: rawReleaseManifestUrl,
+          source: AppUpdateDownloadSource.mirror,
+          mirrorUrlPrefix: normalizedSelectedMirror,
+        ),
+      ...fallbackMirrorUrls.whereType<String>().map(
+            (prefix) => buildDownloadUrl(
+              originalUrl: rawReleaseManifestUrl,
+              source: AppUpdateDownloadSource.mirror,
+              mirrorUrlPrefix: prefix,
+            ),
+          ),
+    ];
+
+    final ordered = <String>[
+      if (preferredSource == AppUpdateDownloadSource.mirror) ...[
+        ...mirrorCandidates,
+        ...originalCandidates,
+      ] else ...[
+        ...originalCandidates,
+        ...mirrorCandidates,
+      ],
+    ];
+
+    final seen = <String>{};
+    return ordered.where((candidate) {
+      final normalized = candidate.trim();
+      return normalized.isNotEmpty && seen.add(normalized);
+    }).toList(growable: false);
+  }
+
+  Future<_AppUpdateFetchOutcome> _fetchFromManifest(
+    String url, {
+    required bool includePrerelease,
+  }) async {
+    try {
+      final response = await _client.get(
+        Uri.parse(url),
+        headers: _releaseHeaders,
+      );
+      if (response.statusCode == 404) {
+        return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+      }
+      if (response.statusCode != 200) {
+        return _AppUpdateFetchOutcome(statusCode: response.statusCode);
+      }
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+      if (decoded is! Map) {
+        return const _AppUpdateFetchOutcome();
+      }
+
+      final manifest = Map<String, dynamic>.from(decoded);
+      final release = _pickReleaseFromManifest(
+        manifest,
+        includePrerelease: includePrerelease,
+      );
+      return _AppUpdateFetchOutcome(release: release);
+    } on FormatException {
+      return const _AppUpdateFetchOutcome();
+    } catch (_) {
+      return const _AppUpdateFetchOutcome();
+    }
+  }
+
+  Future<_AppUpdateFetchOutcome> _fetchFromGitHubApi({
+    required bool includePrerelease,
+    required AppUpdateDownloadSource preferredSource,
+    String? mirrorUrlPrefix,
+  }) async {
+    final apiUrl = includePrerelease ? releasesApiUrl : latestReleaseApiUrl;
+
+    for (final candidate in _buildGitHubApiCandidates(
+      apiUrl,
+      preferredSource: preferredSource,
+      mirrorUrlPrefix: mirrorUrlPrefix,
+    )) {
+      try {
+        final response = await _client.get(
+          Uri.parse(candidate),
+          headers: _releaseHeaders,
+        );
+        if (response.statusCode == 404) {
+          return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
+        }
+        if (response.statusCode != 200) {
+          continue;
+        }
+
+        final releaseJson = includePrerelease
+            ? _pickLatestEligibleRelease(
+                jsonDecode(response.body) as List<dynamic>,
+                includePrerelease: true,
+              )
+            : jsonDecode(response.body) as Map<String, dynamic>;
+        if (releaseJson == null) {
+          return const _AppUpdateFetchOutcome();
+        }
+
+        return _AppUpdateFetchOutcome(
+          release: _releaseFromGitHubJson(releaseJson),
+        );
+      } on FormatException {
+        continue;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    return const _AppUpdateFetchOutcome();
+  }
+
+  List<String> _buildGitHubApiCandidates(
+    String apiUrl, {
+    required AppUpdateDownloadSource preferredSource,
+    String? mirrorUrlPrefix,
+  }) {
+    final normalizedSelectedMirror = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
+    final fallbackMirrorUrls = <String?>[
+      _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
+    ];
+
+    final originalCandidates = <String>[apiUrl];
+    final mirrorCandidates = <String>[
+      if (normalizedSelectedMirror != null)
+        buildDownloadUrl(
+          originalUrl: apiUrl,
+          source: AppUpdateDownloadSource.mirror,
+          mirrorUrlPrefix: normalizedSelectedMirror,
+        ),
+      ...fallbackMirrorUrls.whereType<String>().map(
+            (prefix) => buildDownloadUrl(
+              originalUrl: apiUrl,
+              source: AppUpdateDownloadSource.mirror,
+              mirrorUrlPrefix: prefix,
+            ),
+          ),
+    ];
+
+    final ordered = <String>[
+      if (preferredSource == AppUpdateDownloadSource.mirror) ...[
+        ...mirrorCandidates,
+        ...originalCandidates,
+      ] else ...[
+        ...originalCandidates,
+        ...mirrorCandidates,
+      ],
+    ];
+
+    final seen = <String>{};
+    return ordered.where((candidate) {
+      final normalized = candidate.trim();
+      return normalized.isNotEmpty && seen.add(normalized);
+    }).toList(growable: false);
+  }
+
+  AppUpdateCheckResult _buildCheckResult({
+    required String currentVersion,
+    required AppReleaseInfo release,
+  }) {
+    final hasUpdate = _compareVersions(release.version, currentVersion) > 0;
+    return AppUpdateCheckResult(
+      hasRelease: true,
+      hasUpdate: hasUpdate,
+      currentVersion: currentVersion,
+      latestRelease: release,
+      message: hasUpdate
+          ? (release.isPrerelease ? '发现新的预发布版本' : '发现新版本')
+          : '当前已经是最新版本',
+    );
+  }
+
+  AppReleaseInfo? _pickReleaseFromManifest(
+    Map<String, dynamic> manifest, {
+    required bool includePrerelease,
+  }) {
+    final stable = _releaseFromManifestEntry(manifest['stable']);
+    final prerelease = _releaseFromManifestEntry(manifest['prerelease']);
+
+    if (!includePrerelease) {
+      return stable;
+    }
+    if (stable == null) {
+      return prerelease;
+    }
+    if (prerelease == null) {
+      return stable;
+    }
+    return _compareVersions(prerelease.version, stable.version) > 0
+        ? prerelease
+        : stable;
+  }
+
+  AppReleaseInfo? _releaseFromManifestEntry(dynamic rawEntry) {
+    if (rawEntry is! Map) {
+      return null;
+    }
+    final entry = Map<String, dynamic>.from(rawEntry);
+    final version = _normalizeVersion((entry['version'] as String?) ?? '');
+    if (version.isEmpty) {
+      return null;
+    }
+    final title = (entry['title'] as String?)?.trim();
+    final releaseUrl = (entry['releaseUrl'] as String?)?.trim();
+    final downloadUrl = (entry['downloadUrl'] as String?)?.trim();
+    final body = (entry['body'] as String?)?.trim() ?? '';
+    return AppReleaseInfo(
+      version: version,
+      title: title?.isNotEmpty == true ? title! : version,
+      body: body,
+      releaseUrl: releaseUrl?.isNotEmpty == true ? releaseUrl! : repositoryUrl,
+      downloadUrl: downloadUrl?.isNotEmpty == true ? downloadUrl : null,
+      updatedAt:
+          DateTime.tryParse((entry['updatedAt'] as String?) ?? '')?.toLocal(),
+      isPrerelease: entry['isPrerelease'] as bool? ?? false,
+    );
+  }
+
+  AppReleaseInfo _releaseFromGitHubJson(Map<String, dynamic> releaseJson) {
+    final latestVersion = _normalizeVersion(
+      (releaseJson['tag_name'] as String?) ??
+          (releaseJson['name'] as String?) ??
+          '',
+    );
+    return AppReleaseInfo(
+      version: latestVersion,
+      title: (releaseJson['name'] as String?)?.trim().isNotEmpty == true
+          ? (releaseJson['name'] as String).trim()
+          : latestVersion,
+      body: (releaseJson['body'] as String?)?.trim() ?? '',
+      releaseUrl: (releaseJson['html_url'] as String?) ?? repositoryUrl,
+      downloadUrl: _pickDownloadUrl(
+        releaseJson['assets'] as List<dynamic>? ?? const [],
+      ),
+      updatedAt: DateTime.tryParse(
+        (releaseJson['updated_at'] as String?) ??
+            (releaseJson['published_at'] as String?) ??
+            '',
+      )?.toLocal(),
+      isPrerelease: releaseJson['prerelease'] as bool? ?? false,
+    );
+  }
+
+  String? _normalizeMirrorUrlPrefix(String? prefix) {
+    final candidate = prefix?.trim() ?? '';
+    if (candidate.isEmpty) {
+      return null;
+    }
+    final uri = Uri.tryParse(candidate);
+    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
+      return null;
+    }
+    return candidate;
   }
 
   String? _pickDownloadUrl(List<dynamic> assets) {
@@ -529,45 +804,22 @@ class AppUpdateService {
       if (!includePrerelease && release['prerelease'] == true) {
         continue;
       }
-      final version = _normalizeVersion(
+
+      final candidateVersion = _normalizeVersion(
         (release['tag_name'] as String?) ?? (release['name'] as String?) ?? '',
       );
-      if (version.isEmpty) {
+      if (candidateVersion.isEmpty) {
         continue;
       }
 
-      if (bestRelease == null || bestVersion == null) {
+      if (bestRelease == null ||
+          bestVersion == null ||
+          _compareVersions(candidateVersion, bestVersion) > 0) {
         bestRelease = release;
-        bestVersion = version;
-        continue;
-      }
-
-      final compare = _compareVersions(version, bestVersion);
-      if (compare > 0) {
-        bestRelease = release;
-        bestVersion = version;
-        continue;
-      }
-      if (compare < 0) {
-        continue;
-      }
-
-      final bestUpdatedAt = DateTime.tryParse(
-        (bestRelease['updated_at'] as String?) ??
-            (bestRelease['published_at'] as String?) ??
-            '',
-      );
-      final currentUpdatedAt = DateTime.tryParse(
-        (release['updated_at'] as String?) ??
-            (release['published_at'] as String?) ??
-            '',
-      );
-      if ((currentUpdatedAt?.millisecondsSinceEpoch ?? 0) >
-          (bestUpdatedAt?.millisecondsSinceEpoch ?? 0)) {
-        bestRelease = release;
-        bestVersion = version;
+        bestVersion = candidateVersion;
       }
     }
+
     return bestRelease;
   }
 }
