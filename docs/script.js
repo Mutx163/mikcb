@@ -585,6 +585,7 @@ if ("IntersectionObserver" in window && navSectionLinks.length) {
   }
 }
 
+const repoApiUrl = "https://api.github.com/repos/Mutx163/mikcb";
 const releasesApiUrl =
   "https://api.github.com/repos/Mutx163/mikcb/releases?per_page=8";
 const fallbackReleasePage = "https://github.com/Mutx163/mikcb/releases";
@@ -626,6 +627,10 @@ const releaseChannelSwitch = document.getElementById("release-channel-switch");
 const releaseChannelTabs = Array.from(
   document.querySelectorAll(".release-channel-tab")
 );
+const heroStars = document.getElementById("hero-stars");
+const trustStars = document.getElementById("trust-stars");
+const trustReleases = document.getElementById("trust-releases");
+const latestStableHighlights = document.getElementById("latest-stable-highlights");
 
 let releaseLoaded = false;
 let releaseLoadedAt = 0;
@@ -634,6 +639,8 @@ let lastFocusedElement = null;
 let stableReleaseData = null;
 let prereleaseReleaseData = null;
 let activeReleaseChannel = "stable";
+let trustSignalsLoaded = false;
+let trustSignalsPromise = null;
 const mirrorProbeCache = new Map();
 const mirrorProbePromises = new Map();
 
@@ -743,9 +750,15 @@ function getFocusableElements(container) {
   ).filter((node) => !node.hasAttribute("hidden"));
 }
 
+function hasUsableReleaseDownloadUrl(release) {
+  return Boolean(pickDownloadUrl(release?.assets));
+}
+
 function pickReleaseGroup(releases) {
   const normalizedReleases = Array.isArray(releases) ? releases : [];
-  const published = normalizedReleases.filter((item) => !item?.draft);
+  const published = normalizedReleases.filter(
+    (item) => !item?.draft && hasUsableReleaseDownloadUrl(item)
+  );
   const stable = published.find((item) => item?.prerelease !== true) || null;
   const prerelease = published.find((item) => item?.prerelease === true) || null;
   return {
@@ -773,6 +786,7 @@ function normalizeReleaseRecord(release, channelLabel) {
     version,
     title,
     publishedAt: formatDateTime(release.published_at || release.updated_at),
+    rawBody: release.body || "",
     description: buildReleaseDescription(release.body || "", [
       title,
       version,
@@ -782,7 +796,107 @@ function normalizeReleaseRecord(release, channelLabel) {
     downloadUrl,
     assetName: String(primaryAsset?.name || ""),
     assetCount: Array.isArray(release.assets) ? release.assets.length : 0,
+    assetDownloadCount:
+      Number(primaryAsset?.download_count || 0) ||
+      (Array.isArray(release.assets)
+        ? release.assets.reduce(
+            (sum, asset) => sum + (Number(asset?.download_count || 0) || 0),
+            0
+          )
+        : 0),
   };
+}
+
+function formatCompactCount(value) {
+  const number = Number(value) || 0;
+  if (number >= 10000) {
+    return `${(number / 10000).toFixed(number >= 100000 ? 0 : 1)} 万`;
+  }
+  if (number >= 1000) {
+    return `${(number / 1000).toFixed(number >= 10000 ? 0 : 1)}k`;
+  }
+  return String(number);
+}
+
+function extractReleaseHighlights(rawBody, fallbackDescription) {
+  const lines = String(rawBody || "")
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean)
+    .filter(
+      (line) => !/^#/.test(line) && !/^v\d/i.test(line) && line !== "---"
+    );
+  if (lines.length) {
+    return lines.slice(0, 3);
+  }
+  return [fallbackDescription || "最近版本更新内容会显示在这里。"];
+}
+
+function renderLatestStableHighlights(releaseData) {
+  if (!latestStableHighlights || !releaseData) {
+    return;
+  }
+  const highlights = extractReleaseHighlights(
+    releaseData.rawBody,
+    releaseData.description
+  );
+  latestStableHighlights.innerHTML = "";
+  highlights.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    latestStableHighlights.appendChild(li);
+  });
+}
+
+function renderTrustSignals({
+  stars = 0,
+  releaseCount = 0,
+} = {}) {
+  if (heroStars) {
+    heroStars.textContent = `GitHub Star ${formatCompactCount(stars)}`;
+  }
+  if (trustStars) {
+    trustStars.textContent = formatCompactCount(stars);
+  }
+  if (trustReleases) {
+    trustReleases.textContent = formatCompactCount(releaseCount);
+  }
+}
+
+async function loadTrustSignals(releases = []) {
+  if (trustSignalsLoaded) {
+    return;
+  }
+  if (trustSignalsPromise) {
+    return trustSignalsPromise;
+  }
+
+  trustSignalsPromise = (async () => {
+    try {
+      const response = await fetch(repoApiUrl, {
+        cache: "no-store",
+        headers: {
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const repo = await response.json();
+      renderTrustSignals({
+        stars: Number(repo?.stargazers_count || 0),
+        releaseCount: Array.isArray(releases) ? releases.length : 0,
+      });
+      trustSignalsLoaded = true;
+    } catch (error) {
+      renderTrustSignals();
+    } finally {
+      trustSignalsPromise = null;
+    }
+  })();
+
+  return trustSignalsPromise;
 }
 
 function compareVersionStrings(left, right) {
@@ -1174,6 +1288,47 @@ function setReleaseErrorState() {
 
 const releaseCacheTtlMs = 15 * 1000;
 
+function applyLoadedReleaseGroup({
+  stable,
+  prerelease,
+  releases = [],
+  loadSource,
+  successMessage,
+}) {
+  stableReleaseData = stable;
+  prereleaseReleaseData = prerelease;
+
+  if (!stableReleaseData) {
+    throw new Error("No release data");
+  }
+
+  renderLatestStableHighlights(stableReleaseData);
+  void loadTrustSignals(Array.isArray(releases) ? releases : []);
+
+  if (hasUsablePrerelease()) {
+    activeReleaseChannel =
+      activeReleaseChannel === "prerelease" ? "prerelease" : "stable";
+  } else {
+    activeReleaseChannel = "stable";
+  }
+
+  renderReleaseData(activeReleaseChannel);
+  releaseLoaded = true;
+  releaseLoadedAt = Date.now();
+  trackStructuredEvent("release_data_load", {
+    load_state: "success",
+    load_source: loadSource,
+    stable_version: stableReleaseData?.version || "",
+    prerelease_version: prereleaseReleaseData?.version || "",
+    has_prerelease: hasUsablePrerelease() ? 1 : 0,
+  });
+  updateMirrorPrewarmState(successMessage);
+  return {
+    stable: stableReleaseData,
+    prerelease: prereleaseReleaseData,
+  };
+}
+
 async function loadLatestRelease() {
   if (releaseLoaded && Date.now() - releaseLoadedAt < releaseCacheTtlMs) {
     trackStructuredEvent("release_data_load", {
@@ -1216,38 +1371,16 @@ async function loadLatestRelease() {
 
       const releases = await response.json();
       const grouped = pickReleaseGroup(releases);
-      stableReleaseData = normalizeReleaseRecord(grouped.stable, "正式版");
-      prereleaseReleaseData = normalizeReleaseRecord(
-        grouped.prerelease,
-        "预发布"
-      );
+      const stable = normalizeReleaseRecord(grouped.stable, "正式版");
+      const prerelease = normalizeReleaseRecord(grouped.prerelease, "预发布");
 
-      if (!stableReleaseData) {
-        throw new Error("No release data");
-      }
-
-      if (hasUsablePrerelease()) {
-        activeReleaseChannel =
-          activeReleaseChannel === "prerelease" ? "prerelease" : "stable";
-      } else {
-        activeReleaseChannel = "stable";
-      }
-
-      renderReleaseData(activeReleaseChannel);
-      releaseLoaded = true;
-      releaseLoadedAt = Date.now();
-      trackStructuredEvent("release_data_load", {
-        load_state: "success",
-        load_source: "network",
-        stable_version: stableReleaseData?.version || "",
-        prerelease_version: prereleaseReleaseData?.version || "",
-        has_prerelease: hasUsablePrerelease() ? 1 : 0,
+      return applyLoadedReleaseGroup({
+        stable,
+        prerelease,
+        releases: Array.isArray(releases) ? releases : [],
+        loadSource: "network",
+        successMessage: "已从 GitHub 读取版本信息。",
       });
-      updateMirrorPrewarmState("已从 GitHub 读取版本信息。");
-      return {
-        stable: stableReleaseData,
-        prerelease: prereleaseReleaseData,
-      };
     } catch (error) {
       trackStructuredEvent("release_data_load", {
         load_state: "error",
@@ -1255,6 +1388,11 @@ async function loadLatestRelease() {
         error_name: normalizeAnalyticsValue(error?.message || "unknown", 80),
       });
       setReleaseErrorState();
+      renderLatestStableHighlights({
+        rawBody: "",
+        description: "暂时无法读取最近更新，仍可直接打开 Releases 查看详情。",
+      });
+      void loadTrustSignals([]);
       return null;
     } finally {
       releaseLoadPromise = null;
@@ -1263,6 +1401,8 @@ async function loadLatestRelease() {
 
   return releaseLoadPromise;
 }
+
+void loadTrustSignals([]);
 
 function openReleaseModal(triggerContext = {}) {
   if (!releaseModal || !releaseDialog) {
