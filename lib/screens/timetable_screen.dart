@@ -520,6 +520,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     double sectionHeight,
     double cardInset,
   ) {
+    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
       alpha: 0.45,
@@ -573,9 +574,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                 course: course,
                 overrideColorHex:
                     isCurrentWeekCourse ? overrideCardColor : '#94A3B8',
-                compactOverlineText: isCurrentWeekCourse ? null : '非本周',
-                topRightBadgeText:
-                    isConflicting && showConflictBadge ? '冲突' : null,
+                compactOverlineText:
+                    isCurrentWeekCourse ? null : l10n.nonCurrentWeekLabel,
+                topRightBadgeText: isConflicting && showConflictBadge
+                    ? l10n.conflictLabel
+                    : null,
                 isCompact: true,
                 showName: settings.courseCardShowName,
                 showTeacher: settings.courseCardShowTeacher,
@@ -616,6 +619,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showWeekSelector() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final availableWeeks = provider.settings.availableWeeks;
     final currentSemesterWeek = _resolveCurrentSemesterWeek(provider.settings);
@@ -643,10 +647,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                 children: [
                   Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          '选择周次',
-                          style: TextStyle(
+                          l10n.selectWeekTitle,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -674,13 +678,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                           ),
                           onPressed: () => Navigator.of(sheetContext)
                               .pop(currentSemesterWeek),
-                          child: const Row(
+                          child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.my_location_rounded, size: 18),
-                              SizedBox(width: 6),
+                              const Icon(Icons.my_location_rounded, size: 18),
+                              const SizedBox(width: 6),
                               Text(
-                                '回本周',
+                                l10n.backToCurrentWeekAction,
                                 maxLines: 1,
                                 softWrap: false,
                                 overflow: TextOverflow.fade,
@@ -692,7 +696,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '共 ${availableWeeks.length} 周',
+                    l10n.availableWeeksCount(availableWeeks.length),
                     style: Theme.of(sheetContext).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 16),
@@ -735,7 +739,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                             onPressed: () =>
                                 Navigator.of(sheetContext).pop(week),
                             child: Text(
-                              '第 $week 周',
+                              l10n.goToWeekLabel(week),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
@@ -1075,6 +1079,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showAddCourseSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final selected = await showModalBottomSheet<String>(
       context: context,
@@ -1088,16 +1093,16 @@ class _TimetableScreenState extends State<TimetableScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  '添加课程',
-                  style: TextStyle(
+                Text(
+                  l10n.addCourseSheetTitle,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  '空白课表区域不响应点击。请从这里明确选择是加一节临时课，还是加整学期重复课。',
+                  l10n.addCourseSheetSubtitle,
                   style: Theme.of(sheetContext).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 16),
@@ -1107,12 +1112,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                   children: [
                     _HomeActionButton(
                       icon: Icons.looks_one_rounded,
-                      title: '单节课',
+                      title: l10n.singleLessonLabel,
                       onTap: () => Navigator.of(sheetContext).pop('single'),
                     ),
                     _HomeActionButton(
                       icon: Icons.view_week_rounded,
-                      title: '多节课',
+                      title: l10n.recurringLessonLabel,
                       onTap: () => Navigator.of(sheetContext).pop('recurring'),
                     ),
                   ],
@@ -1146,143 +1151,47 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _showCourseActions(Course course, int week) async {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final courseColor = _colorFromHex(course.color, colorScheme.primary);
-    final canReschedule = course.isInWeek(week);
-    final selected = await showModalBottomSheet<String>(
+    final conflicts = _conflictsForCourseInWeek(course, week);
+    final previewCourses = <Course>[course, ...conflicts];
+    final selected = await showModalBottomSheet<_CourseActionSelection>(
       context: context,
       showDragHandle: true,
+      isScrollControlled: true,
       useSafeArea: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerLowest,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                      color: theme.colorScheme.outlineVariant,
+                for (var index = 0; index < previewCourses.length; index++) ...[
+                  _buildCourseActionPreviewCard(
+                    sheetContext,
+                    previewCourses[index],
+                    badgeText: conflicts.isEmpty ? null : l10n.conflictLabel,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    previewCourses[index].isInWeek(week)
+                        ? l10n.courseDialogCurrentWeekHint(week)
+                        : l10n.courseDialogNotThisWeekHint(week),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: courseColor.withValues(alpha: 0.14),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(
-                              Icons.menu_book_rounded,
-                              color: courseColor,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  course.name,
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                if (course.shortName?.trim().isNotEmpty == true)
-                                  Padding(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    child: Text(
-                                      l10n.shortNamePrefix(
-                                        course.shortName!.trim(),
-                                      ),
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color:
-                                            theme.colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        '${_weekdayLabel(context, course.dayOfWeek)} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        course.weekDescription,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      if (course.teacher.trim().isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.teacherPrefix(course.teacher.trim()),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                      if (course.location.trim().isNotEmpty) ...[
-                        const SizedBox(height: 6),
-                        Text(
-                          l10n.locationPrefix(course.location.trim()),
-                          style: theme.textTheme.bodySmall,
-                        ),
-                      ],
-                      const SizedBox(height: 10),
-                      Text(
-                        canReschedule
-                            ? l10n.courseDialogCurrentWeekHint(week)
-                            : l10n.courseDialogNotThisWeekHint(week),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                  _buildCourseActionButtons(
+                    sheetContext,
+                    previewCourses[index],
+                    week,
                   ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _HomeActionButton(
-                      icon: Icons.edit_rounded,
-                      title: l10n.editActionShort,
-                      onTap: () => Navigator.of(sheetContext).pop('edit'),
-                    ),
-                    _HomeActionButton(
-                      icon: Icons.swap_horiz_rounded,
-                      title: l10n.rescheduleAction,
-                      enabled: canReschedule,
-                      onTap: () => Navigator.of(sheetContext).pop('reschedule'),
-                    ),
-                    _HomeActionButton(
-                      icon: Icons.delete_outline_rounded,
-                      title: l10n.deleteActionShort,
-                      accentColor: theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('delete'),
-                    ),
+                  if (index != previewCourses.length - 1) ...[
+                    const SizedBox(height: 20),
                   ],
-                ),
+                ],
               ],
             ),
           ),
@@ -1294,17 +1203,218 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    switch (selected) {
-      case 'edit':
-        _editCourse(course);
+    switch (selected.action) {
+      case _CourseActionType.edit:
+        _editCourse(selected.course);
         break;
-      case 'reschedule':
-        await _showRescheduleSheet(course, sourceWeek: week);
+      case _CourseActionType.reschedule:
+        await _showRescheduleSheet(selected.course, sourceWeek: week);
         break;
-      case 'delete':
-        await _showDeleteCourseOptions(course, week);
+      case _CourseActionType.delete:
+        await _showDeleteCourseOptions(selected.course, week);
         break;
     }
+  }
+
+  List<Course> _conflictsForCourseInWeek(Course course, int week) {
+    final conflictMap =
+        context.read<TimetableProvider>().courseConflictMapForWeek(week);
+    final seenIds = <String>{};
+    final conflicts = <Course>[];
+    for (final conflict in conflictMap[course.id] ?? const <Course>[]) {
+      if (conflict.id == course.id || !seenIds.add(conflict.id)) {
+        continue;
+      }
+      conflicts.add(conflict);
+    }
+    conflicts.sort((left, right) {
+      final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
+      if (dayCompare != 0) {
+        return dayCompare;
+      }
+      final startCompare = left.startSection.compareTo(right.startSection);
+      if (startCompare != 0) {
+        return startCompare;
+      }
+      return left.id.compareTo(right.id);
+    });
+    return conflicts;
+  }
+
+  Widget _buildCourseActionPreviewCard(
+    BuildContext context,
+    Course course, {
+    String? badgeText,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final courseColor = _colorFromHex(course.color, colorScheme.primary);
+
+    return Container(
+      key: ValueKey('course-action-card-${course.id}'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: courseColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(
+                  Icons.menu_book_rounded,
+                  color: courseColor,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            course.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        if (badgeText != null) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onErrorContainer,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (course.shortName?.trim().isNotEmpty == true)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          l10n.shortNamePrefix(course.shortName!.trim()),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Text(
+            '${_weekdayLabel(context, course.dayOfWeek)} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            course.weekDescription,
+            style: theme.textTheme.bodySmall,
+          ),
+          if (course.teacher.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              l10n.teacherPrefix(course.teacher.trim()),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+          if (course.location.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              l10n.locationPrefix(course.location.trim()),
+              style: theme.textTheme.bodySmall,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCourseActionButtons(
+    BuildContext context,
+    Course course,
+    int week,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final canReschedule = course.isInWeek(week);
+
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        _HomeActionButton(
+          key: ValueKey('course-action-edit-${course.id}'),
+          icon: Icons.edit_rounded,
+          title: l10n.editActionShort,
+          onTap: () => Navigator.of(context).pop(
+            _CourseActionSelection(
+              course: course,
+              action: _CourseActionType.edit,
+            ),
+          ),
+        ),
+        _HomeActionButton(
+          key: ValueKey('course-action-reschedule-${course.id}'),
+          icon: Icons.swap_horiz_rounded,
+          title: l10n.rescheduleAction,
+          enabled: canReschedule,
+          onTap: () => Navigator.of(context).pop(
+            _CourseActionSelection(
+              course: course,
+              action: _CourseActionType.reschedule,
+            ),
+          ),
+        ),
+        _HomeActionButton(
+          key: ValueKey('course-action-delete-${course.id}'),
+          icon: Icons.delete_outline_rounded,
+          title: l10n.deleteActionShort,
+          accentColor: theme.colorScheme.error,
+          onTap: () => Navigator.of(context).pop(
+            _CourseActionSelection(
+              course: course,
+              action: _CourseActionType.delete,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   Future<void> _showDeleteCourseOptions(Course course, int week) async {
@@ -1394,7 +1504,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         content: Text(
           l10n.deleteScheduleConfirmMessage(
             course.name,
-            '${course.weekDescription} · ${_weekdayLabel(context, course.dayOfWeek)} 第${course.startSection}-${course.endSection}节',
+            l10n.courseWeekdaySectionSummary(
+              course.weekDescription,
+              _weekdayLabel(context, course.dayOfWeek),
+              course.startSection,
+              course.endSection,
+            ),
           ),
         ),
         actions: [
@@ -1437,7 +1552,13 @@ class _TimetableScreenState extends State<TimetableScreen>
           l10n.deleteOccurrenceConfirmMessage(
             course.name,
             sourceWeek,
-            '${_weekdayLabel(context, course.dayOfWeek)} 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
+            l10n.weekdaySectionTimeSummary(
+              _weekdayLabel(context, course.dayOfWeek),
+              course.startSection,
+              course.endSection,
+              course.startTime,
+              course.endTime,
+            ),
           ),
         ),
         actions: [
@@ -1533,7 +1654,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         SnackBar(
           content: Text(
             changed
-                ? '已调到${l10n.weekLabel(draft.targetWeek)} ${_weekdayLabel(context, draft.targetDayOfWeek)} 第${draft.targetStartSection}-${draft.targetEndSection}节'
+                ? l10n.rescheduledToMessage(
+                    draft.targetWeek,
+                    _weekdayLabel(context, draft.targetDayOfWeek),
+                    draft.targetStartSection,
+                    draft.targetEndSection,
+                  )
                 : l10n.noChangesDetected,
           ),
         ),
@@ -2035,6 +2161,18 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 }
 
+enum _CourseActionType { edit, reschedule, delete }
+
+class _CourseActionSelection {
+  const _CourseActionSelection({
+    required this.course,
+    required this.action,
+  });
+
+  final Course course;
+  final _CourseActionType action;
+}
+
 class _HomeActionButton extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -2045,6 +2183,7 @@ class _HomeActionButton extends StatelessWidget {
   final bool reserveTwoLineTitleSpace;
 
   const _HomeActionButton({
+    super.key,
     required this.icon,
     required this.title,
     required this.onTap,
@@ -2167,6 +2306,7 @@ class _ProfileQuickSwitchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final accentColor =
@@ -2208,7 +2348,7 @@ class _ProfileQuickSwitchTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${profile.courses.length} 门课',
+                      l10n.courseCountSummary(profile.courses.length),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -2227,7 +2367,7 @@ class _ProfileQuickSwitchTile extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    '当前',
+                    l10n.currentBadge,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: colorScheme.primary,
                       fontWeight: FontWeight.w800,

@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -9,10 +10,8 @@ import '../helpers_test_app.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const homeWidgetChannel =
-      MethodChannel('com.mutx163.qingyu/home_widget');
-  const analyticsChannel =
-      MethodChannel('com.mutx163.qingyu/umeng_analytics');
+  const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
+  const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
@@ -141,6 +140,71 @@ void main() {
 
     expect(find.text('软件工程'), findsOneWidget);
     expect(find.text('计算机网络'), findsOneWidget);
+  });
+
+  testWidgets('tapping a conflicting course shows both course cards',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '软件工程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-b',
+        name: '计算机网络',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 1,
+        startSection: 2,
+        endSection: 3,
+        startTime: '08:55',
+        endTime: '10:35',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('软件工程'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('course-action-card-course-a')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('course-action-card-course-b')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('course-action-edit-course-a')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('course-action-edit-course-b')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('home timetable can show non-current-week courses separately',

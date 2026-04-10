@@ -2124,5 +2124,282 @@
   "homeWidgetTargetCompact22": "Main card 2×2",
   "homeWidgetTargetMiniList22": "Mini list 2×2",
   "homeWidgetTargetMedium24": "Overview 2×4",
-  "homeWidgetTargetLarge44": "List 4×4"
+  "homeWidgetTargetLarge44": "List 4×4",
+  "addCourseSheetTitle": "Add Course",
+  "addCourseSheetSubtitle": "Blank timetable areas do not respond to taps. Choose clearly whether to add a one-off lesson or a recurring course for the whole term.",
+  "courseWeekdaySectionSummary": "{weekDescription} · {weekday} Sections {startSection}-{endSection}",
+  "@courseWeekdaySectionSummary": {
+    "placeholders": {
+      "weekDescription": {
+        "type": "String"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdaySectionTimeSummary": "{weekday} Sections {startSection}-{endSection} · {startTime}-{endTime}",
+  "@weekdaySectionTimeSummary": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "startTime": {
+        "type": "String"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
+  "rescheduledToMessage": "Rescheduled to Week {week} {weekday} Sections {startSection}-{endSection}",
+  "@rescheduledToMessage": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "courseCountSummary": "{count} courses",
+  "@courseCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentBadge": "Current",
+  "feedbackXiaohongshuTitle": "Xiaohongshu",
+  "feedbackXiaohongshuSubtitle": "Xiaohongshu ID: {id}",
+  "@feedbackXiaohongshuSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackCoolapkTitle": "Coolapk",
+  "feedbackCoolapkSubtitle": "Coolapk ID: {id}",
+  "@feedbackCoolapkSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackQqGroupTitle": "QQ Group",
+  "feedbackQqGroupSubtitle": "Group ID: {id}",
+  "@feedbackQqGroupSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "copiedCurrentTimetable": "Current timetable copied",
+  "sectionRangeLabel": "Sections {startSection}-{endSection}",
+  "@sectionRangeLabel": {
+    "placeholders": {
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "classStartsAtLabel": "Starts at {time}",
+  "@classStartsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "classEndsAtLabel": "Ends at {time}",
+  "@classEndsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidSectionTimeFormat": "Invalid section time format",
+  "noSectionTimesToSave": "No section times to save",
+  "warehouseImportedTimeSchemeName": "{schoolName} imported sections",
+  "@warehouseImportedTimeSchemeName": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedScript": "Unnamed script",
+  "localDebugModeScriptStatus": "Local debug mode: {scriptName}",
+  "@localDebugModeScriptStatus": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "executeImportScriptTooltip": "Run import script",
+  "switchToMobileWebTooltip": "Switch to mobile page",
+  "switchToDesktopWebTooltip": "Switch to desktop page",
+  "rememberCurrentInputTooltip": "Remember current input",
+  "fillRememberedTooltip": "Fill remembered account",
+  "clearRememberedTooltip": "Clear remembered account",
+  "copyCurrentAddressTooltip": "Copy current address",
+  "copiedCurrentAddress": "Current address copied",
+  "warehouseLoginHintLocalDebug": "Currently using local debug script mode",
+  "warehouseLoginHintImport": "Log in to the academic system here, then run import",
+  "currentPageModeDesktop": "Current page mode: Desktop",
+  "currentPageModeMobile": "Current page mode: Mobile",
+  "localScriptLabel": "Local script: {scriptName}",
+  "@localScriptLabel": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "webAddressHint": "Enter web address",
+  "goAction": "Go",
+  "rememberedAccountLabel": "Remembered account: {username}",
+  "@rememberedAccountLabel": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "importingAction": "Importing...",
+  "executeLocalDebugScriptAction": "Run local debug script",
+  "executeImportScriptAction": "Run import script",
+  "invalidWebAddress": "Invalid web address",
+  "injectingLocalDebugScript": "Injecting local debug script",
+  "injectingAdapterScript": "Injecting adapter script",
+  "localDebugScriptInjected": "Local debug script injected",
+  "scriptInjected": "Script injected",
+  "scriptInjectionFailed": "Script injection failed",
+  "executeFailedWithError": "Execution failed: {error}",
+  "@executeFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importFlowFinished": "Import flow finished",
+  "defaultContinuePrompt": "Please continue as prompted",
+  "inputRequiredTitle": "Input required",
+  "pleaseEnterFourDigitYear": "Please enter a four-digit year",
+  "pleaseChooseTitle": "Please choose",
+  "invalidCourseConfigFormat": "Invalid course config format",
+  "saveCourseConfigFailedWithError": "Failed to save course config: {error}",
+  "@saveCourseConfigFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saveSectionTimesFailedWithError": "Failed to save section times: {error}",
+  "@saveSectionTimesFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidCourseDataFormat": "Invalid course data format",
+  "noImportableCoursesFromScript": "No importable courses returned by the script",
+  "importCourseCountPrompt": "{count} courses were recognized. Import them?",
+  "@importCourseCountPrompt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importCancelledStatus": "Import cancelled",
+  "applyReturnedTimeSchemeFailed": "Failed to apply returned time scheme: {error}",
+  "@applyReturnedTimeSchemeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importInterruptedStatus": "Import interrupted",
+  "importFailedStatus": "Import failed",
+  "importFailedWithError": "Import failed: {error}",
+  "@importFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownTeacher": "Unknown teacher",
+  "unknownLocation": "Unknown location",
+  "autofillLoginTitle": "Autofill login info",
+  "autofillLoginMessage": "A remembered account {username} was found. Autofill it now?",
+  "@autofillLoginMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "notNowAction": "Not now",
+  "autofillAction": "Autofill",
+  "rememberPasswordTitle": "Remember password",
+  "rememberPasswordMessage": "Remember the login info for {username} and autofill it next time?",
+  "@rememberPasswordMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "dontRememberAction": "Don't remember",
+  "rememberAndAutofillAction": "Remember and autofill",
+  "savedRememberedLoginStatus": "Remembered login saved",
+  "autofilledRememberedLoginStatus": "Remembered login autofilled",
+  "noRecognizedLoginInputs": "No recognized login inputs",
+  "noUsernameOrPasswordRecognized": "No username or password was recognized",
+  "rememberedCurrentLoginStatus": "Current login remembered",
+  "rememberedCurrentLoginSuccess": "Current login remembered",
+  "rememberLoginFailedWithError": "Failed to remember login: {error}",
+  "@rememberLoginFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clearedRememberedLoginStatus": "Remembered login cleared",
+  "clearedRememberedLoginSuccess": "Remembered login cleared"
 }
