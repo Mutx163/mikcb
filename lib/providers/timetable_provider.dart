@@ -1172,9 +1172,7 @@ class TimetableProvider with ChangeNotifier {
       return _settings.sectionCount;
     }
 
-    final mergedCourses =
-        replaceExisting ? importedCourses : [..._courses, ...importedCourses];
-    return mergedCourses
+    return importedCourses
         .map((course) => course.endSection)
         .reduce((left, right) => left > right ? left : right);
   }
@@ -1276,15 +1274,16 @@ class TimetableProvider with ChangeNotifier {
       effectiveImportedCount = dedupedImportedCourses.length;
       syncResult = null;
     } else {
-      syncResult = syncImportedCourses(
+      final replacedCourses = replaceImportedCoursesPreservingLocalFields(
         existingCourses: _courses,
         importedCourses: importedCourses,
       );
-      if (syncResult.addedCount == 0 && syncResult.updatedCount == 0) {
+      if (_courseListsEqual(_courses, replacedCourses)) {
         return 0;
       }
-      mergedCourses = syncResult.mergedCourses;
-      effectiveImportedCount = syncResult.addedCount + syncResult.updatedCount;
+      syncResult = null;
+      mergedCourses = replacedCourses;
+      effectiveImportedCount = replacedCourses.length;
     }
 
     _courses = _syncCoursesWithEffectiveTimeSchemes(
@@ -1630,9 +1629,9 @@ class TimetableProvider with ChangeNotifier {
   }
 
   String _sharedCourseKey(Course course) =>
-      _sharedCourseKeyFromName(course.name);
+      _buildSharedCourseNameKey(course.name);
 
-  String _sharedCourseKeyFromName(String name) => name.trim().toLowerCase();
+  String _sharedCourseKeyFromName(String name) => _buildSharedCourseNameKey(name);
 
   int _calculateWeekForDate(DateTime date) {
     final semesterStart = _settings.semesterStartDate;
@@ -2503,6 +2502,25 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
 }
 
 @visibleForTesting
+Course preserveImportedCourseLocalSharedFields(
+  Course existing,
+  Course imported,
+) {
+  return imported.copyWith(
+    name: imported.name.trim().isEmpty ? existing.name : imported.name,
+    teacher:
+        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    location: imported.location.trim().isEmpty
+        ? existing.location
+        : imported.location,
+    shortName: existing.shortName,
+    color: existing.color,
+    courseNature: existing.courseNature,
+    description: existing.description,
+  );
+}
+
+@visibleForTesting
 Course mergeImportedSharedFieldsIntoExistingSchedule(
   Course existing,
   Course imported,
@@ -2521,6 +2539,74 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
     note: existing.note,
     timeSchemeIdOverride: existing.timeSchemeIdOverride,
   );
+}
+
+@visibleForTesting
+List<Course> replaceImportedCoursesPreservingLocalFields({
+  required List<Course> existingCourses,
+  required List<Course> importedCourses,
+}) {
+  final dedupedImported = dedupeImportedCourses(importedCourses);
+  final existingSharedCoursesByName = <String, Course>{};
+  for (final existing in existingCourses) {
+    existingSharedCoursesByName.putIfAbsent(
+      _buildSharedCourseNameKey(existing.name),
+      () => existing,
+    );
+  }
+
+  final matchedExistingIds = <String>{};
+  final replacedCourses = <Course>[];
+
+  for (final imported in dedupedImported) {
+    var rebuilt = imported;
+    final sharedExisting =
+        existingSharedCoursesByName[_buildSharedCourseNameKey(imported.name)];
+    if (sharedExisting != null) {
+      rebuilt = preserveImportedCourseLocalSharedFields(
+        sharedExisting,
+        rebuilt,
+      );
+    }
+
+    final groupedMatchIndices = _findGroupedImportedCourseMatchIndices(
+      existingCourses,
+      imported,
+      matchedExistingIds,
+    );
+    if (groupedMatchIndices.isNotEmpty) {
+      final existing = existingCourses[groupedMatchIndices.first];
+      matchedExistingIds.addAll(
+        groupedMatchIndices.map((index) => existingCourses[index].id),
+      );
+      rebuilt = mergeImportedCourseWithExisting(existing, rebuilt);
+      replacedCourses.add(rebuilt);
+      continue;
+    }
+
+    var matchedIndex = _findExactImportedCourseMatchIndex(
+      existingCourses,
+      imported,
+      matchedExistingIds,
+    );
+    matchedIndex = matchedIndex != -1
+        ? matchedIndex
+        : _findSoftImportedCourseMatchIndex(
+            existingCourses,
+            imported,
+            matchedExistingIds,
+          );
+
+    if (matchedIndex != -1) {
+      final existing = existingCourses[matchedIndex];
+      matchedExistingIds.add(existing.id);
+      rebuilt = mergeImportedCourseWithExisting(existing, rebuilt);
+    }
+
+    replacedCourses.add(rebuilt);
+  }
+
+  return replacedCourses;
 }
 
 @visibleForTesting
@@ -2584,6 +2670,23 @@ ImportedCourseSyncResult syncImportedCourses({
     updatedCount: updatedCount,
   );
 }
+
+bool _courseListsEqual(List<Course> left, List<Course> right) {
+  if (identical(left, right)) {
+    return true;
+  }
+  if (left.length != right.length) {
+    return false;
+  }
+  for (var index = 0; index < left.length; index++) {
+    if (left[index].toJsonString() != right[index].toJsonString()) {
+      return false;
+    }
+  }
+  return true;
+}
+
+String _buildSharedCourseNameKey(String name) => name.trim().toLowerCase();
 
 int _findExactImportedCourseMatchIndex(
   List<Course> existingCourses,
