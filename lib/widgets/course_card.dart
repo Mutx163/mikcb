@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
@@ -57,14 +58,15 @@ class CourseCard extends StatelessWidget {
     final color = _parseColor(overrideColorHex ?? course.color);
 
     if (isCompact) {
-      return _buildCompactCard(color);
+      return _buildCompactCard(context, color);
     }
 
-    return _buildFullCard(color);
+    return _buildFullCard(context, color);
   }
 
-  Widget _buildFullCard(Color color) {
-    final detailLines = _buildDetailLines();
+  Widget _buildFullCard(BuildContext context, Color color) {
+    final l10n = AppLocalizations.of(context)!;
+    final detailLines = _buildDetailLines(context);
     final titleAlignment = _contentAlignment;
     final titleTextAlign = _textAlign;
 
@@ -126,7 +128,10 @@ class CourseCard extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '第${course.startSection}-${course.endSection}节',
+                                  l10n.sectionRangeLabel(
+                                    course.startSection,
+                                    course.endSection,
+                                  ),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: Colors.white,
@@ -155,8 +160,8 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCompactCard(Color color) {
-    final textLines = _buildCompactTextLines();
+  Widget _buildCompactCard(BuildContext context, Color color) {
+    final textLines = _buildCompactTextLines(context);
     final crossAxisAlignment = _crossAxisAlignment;
     final textAlign = _textAlign;
 
@@ -286,7 +291,7 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildDetailLines() {
+  List<Widget> _buildDetailLines(BuildContext context) {
     final lines = <Widget>[];
     if (showTeacher && course.teacher.trim().isNotEmpty) {
       lines.add(_buildDetailRow(Icons.person, course.teacher));
@@ -300,7 +305,7 @@ class CourseCard extends StatelessWidget {
       lines.add(
         _buildDetailRow(
           Icons.access_time,
-          _buildTimeText(isCompact: false),
+          _buildTimeText(context, isCompact: false),
         ),
       );
     }
@@ -342,7 +347,8 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  List<_CompactTextLine> _buildCompactTextLines() {
+  List<_CompactTextLine> _buildCompactTextLines(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final lines = <_CompactTextLine>[];
     if (compactOverlineText?.trim().isNotEmpty ?? false) {
       lines.add(
@@ -400,7 +406,9 @@ class CourseCard extends StatelessWidget {
     if (showTime) {
       lines.addAll([
         _CompactTextLine(
-          text: showTimeLabels ? '上课 ${course.startTime}' : course.startTime,
+          text: showTimeLabels
+              ? l10n.classStartsAtLabel(course.startTime)
+              : course.startTime,
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
@@ -409,7 +417,9 @@ class CourseCard extends StatelessWidget {
           ),
         ),
         _CompactTextLine(
-          text: showTimeLabels ? '下课 ${course.endTime}' : course.endTime,
+          text: showTimeLabels
+              ? l10n.classEndsAtLabel(course.endTime)
+              : course.endTime,
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
@@ -465,9 +475,13 @@ class CourseCard extends StatelessWidget {
     return course.weekDescription;
   }
 
-  String _buildTimeText({required bool isCompact}) {
-    final start = showTimeLabels ? '上课 ${course.startTime}' : course.startTime;
-    final end = showTimeLabels ? '下课 ${course.endTime}' : course.endTime;
+  String _buildTimeText(BuildContext context, {required bool isCompact}) {
+    final l10n = AppLocalizations.of(context)!;
+    final start = showTimeLabels
+        ? l10n.classStartsAtLabel(course.startTime)
+        : course.startTime;
+    final end =
+        showTimeLabels ? l10n.classEndsAtLabel(course.endTime) : course.endTime;
     return isCompact ? '$start\n$end' : '$start\n$end';
   }
 

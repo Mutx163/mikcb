@@ -152,7 +152,7 @@ class CourseOverviewScreen extends StatelessWidget {
                             final conflicts =
                                 conflictMap[course.id] ?? const [];
                             final conflictSummary =
-                                _buildConflictSummary(conflicts);
+                                _buildConflictSummary(context, conflicts);
 
                             return ListTile(
                               isThreeLine: conflicts.isNotEmpty,
@@ -234,14 +234,28 @@ class CourseOverviewScreen extends StatelessWidget {
     );
   }
 
-  String _buildConflictSummary(List<Course> conflicts) {
+  String _buildConflictSummary(BuildContext context, List<Course> conflicts) {
+    final l10n = AppLocalizations.of(context)!;
     final labels = conflicts
         .map((course) {
-          return '${course.name}(${course.weekDescription} 星期${course.dayOfWeek} ${course.startSection}-${course.endSection}节)';
+          return '${course.name}(${course.weekDescription} ${l10n.weekdaySectionSummary(_weekdayShortLabel(l10n, course.dayOfWeek), course.startSection, course.endSection)})';
         })
         .toSet()
         .toList();
     return labels.join('、');
+  }
+
+  String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
+    return switch (dayOfWeek) {
+      1 => l10n.weekdayShortMonday,
+      2 => l10n.weekdayShortTuesday,
+      3 => l10n.weekdayShortWednesday,
+      4 => l10n.weekdayShortThursday,
+      5 => l10n.weekdayShortFriday,
+      6 => l10n.weekdayShortSaturday,
+      7 => l10n.weekdayShortSunday,
+      _ => dayOfWeek.toString(),
+    };
   }
 
   void _confirmDelete(BuildContext context, Course course) {

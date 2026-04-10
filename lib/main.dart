@@ -434,28 +434,29 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     if (!mounted) {
       return false;
     }
+    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final importMode = forcedMode ??
         await showDialog<_BackupImportMode>(
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('选择导入方式'),
-              content: const Text('你可以覆盖当前课表，或者把备份导入成一个新的独立课表。'),
+              title: Text(l10n.selectImportModeTitle),
+              content: Text(l10n.selectImportModeMessage),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('取消'),
+                  child: Text(l10n.cancelAction),
                 ),
                 FilledButton(
                   onPressed: () =>
                       Navigator.pop(context, _BackupImportMode.replaceCurrent),
-                  child: const Text('覆盖当前课表'),
+                  child: Text(l10n.replaceCurrentTimetable),
                 ),
                 FilledButton.tonal(
                   onPressed: () =>
                       Navigator.pop(context, _BackupImportMode.importAsNew),
-                  child: const Text('导入为新课表'),
+                  child: Text(l10n.importAsNewTimetable),
                 ),
               ],
             );
@@ -479,7 +480,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       final bytes = file.bytes;
       final content = bytes == null ? '' : utf8.decode(bytes);
       if (content.isEmpty) {
-        throw const FormatException('文件读取失败');
+        throw FormatException(l10n.importFileReadFailed);
       }
 
       final message = switch (importMode) {
@@ -497,8 +498,8 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
           content: Text(
             message ??
                 (importMode == _BackupImportMode.importAsNew
-                    ? '导入成功，已创建新的课表'
-                    : '导入成功，备份数据已恢复'),
+                    ? l10n.createdNewTimetableAfterImport
+                    : l10n.backupRestoredSuccess),
           ),
         ),
       );
@@ -512,7 +513,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('导入失败，请确认文件有效')),
+          SnackBar(content: Text(l10n.importFailedInvalidFile)),
         );
       }
     }
