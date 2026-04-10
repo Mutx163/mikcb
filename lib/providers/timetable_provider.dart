@@ -1631,7 +1631,8 @@ class TimetableProvider with ChangeNotifier {
   String _sharedCourseKey(Course course) =>
       _buildSharedCourseNameKey(course.name);
 
-  String _sharedCourseKeyFromName(String name) => _buildSharedCourseNameKey(name);
+  String _sharedCourseKeyFromName(String name) =>
+      _buildSharedCourseNameKey(name);
 
   int _calculateWeekForDate(DateTime date) {
     final semesterStart = _settings.semesterStartDate;

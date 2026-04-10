@@ -37,13 +37,17 @@ Course _course({
 }
 
 void main() {
-  test('dedupeImportedCourses removes duplicates already in existing courses', () {
+  test('dedupeImportedCourses removes duplicates already in existing courses',
+      () {
     final existing = [
-      _course(id: 'a', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1,2,3,4]),
+      _course(
+          id: 'a', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1, 2, 3, 4]),
     ];
     final imported = [
-      _course(id: 'b', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1,2,3,4]),
-      _course(id: 'c', name: '大学英语', day: 2, start: 3, end: 4, weeks: [1,2,3,4]),
+      _course(
+          id: 'b', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1, 2, 3, 4]),
+      _course(
+          id: 'c', name: '大学英语', day: 2, start: 3, end: 4, weeks: [1, 2, 3, 4]),
     ];
 
     final deduped = dedupeImportedCourses(imported, existingCourses: existing);
@@ -54,8 +58,10 @@ void main() {
 
   test('dedupeImportedCourses removes duplicates within imported batch', () {
     final imported = [
-      _course(id: 'a', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1,2,3,4]),
-      _course(id: 'b', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1,2,3,4]),
+      _course(
+          id: 'a', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1, 2, 3, 4]),
+      _course(
+          id: 'b', name: '高等数学', day: 1, start: 1, end: 2, weeks: [1, 2, 3, 4]),
     ];
 
     final deduped = dedupeImportedCourses(imported);
@@ -63,7 +69,9 @@ void main() {
     expect(deduped, hasLength(1));
   });
 
-  test('syncImportedCourses treats rescheduled course as same course and keeps local fields', () {
+  test(
+      'syncImportedCourses treats rescheduled course as same course and keeps local fields',
+      () {
     final existing = [
       _course(
         id: 'a',
@@ -115,7 +123,9 @@ void main() {
     expect(merged.timeSchemeIdOverride, 'scheme_a');
   });
 
-  test('mergeImportedCourseWithExisting keeps teacher and location when imported data is blank', () {
+  test(
+      'mergeImportedCourseWithExisting keeps teacher and location when imported data is blank',
+      () {
     final existing = _course(
       id: 'a',
       name: '大学英语',
@@ -148,7 +158,9 @@ void main() {
     expect(merged.color, '#00FF00');
   });
 
-  test('syncImportedCourses treats split local records and one imported custom-week record as same schedule group', () {
+  test(
+      'syncImportedCourses treats split local records and one imported custom-week record as same schedule group',
+      () {
     final existing = [
       _course(
         id: 'a',
@@ -203,7 +215,9 @@ void main() {
     expect(result.updatedCount, 3);
     expect(result.mergedCourses, hasLength(3));
     expect(
-      result.mergedCourses.map((course) => course.activeWeeks.join(',')).toSet(),
+      result.mergedCourses
+          .map((course) => course.activeWeeks.join(','))
+          .toSet(),
       {'1,2,3,4,5', '7,8', '11,12,13'},
     );
     expect(
@@ -214,5 +228,111 @@ void main() {
       result.mergedCourses.every((course) => course.teacher == '张老师'),
       isTrue,
     );
+  });
+
+  test(
+      'replaceImportedCoursesPreservingLocalFields removes stale courses and keeps local metadata',
+      () {
+    final existing = [
+      _course(
+        id: 'a',
+        name: '高等数学',
+        day: 1,
+        start: 1,
+        end: 2,
+        weeks: [1, 2, 3, 4, 5, 6],
+        teacher: '张老师',
+        location: 'A101',
+        shortName: '高数',
+        color: '#FF0000',
+        note: '本地备注',
+        description: '本地简介',
+        timeSchemeIdOverride: 'scheme_a',
+      ),
+      _course(
+        id: 'stale',
+        name: '线性代数',
+        day: 5,
+        start: 3,
+        end: 4,
+        weeks: [1, 2, 3, 4],
+      ),
+    ];
+    final imported = [
+      _course(
+        id: 'new-a',
+        name: '高等数学',
+        day: 3,
+        start: 3,
+        end: 4,
+        weeks: [1, 2, 3, 4, 5, 6],
+        teacher: '张老师',
+        location: 'B202',
+      ),
+    ];
+
+    final replaced = replaceImportedCoursesPreservingLocalFields(
+      existingCourses: existing,
+      importedCourses: imported,
+    );
+
+    expect(replaced, hasLength(1));
+    expect(replaced.single.id, 'a');
+    expect(replaced.single.name, '高等数学');
+    expect(replaced.single.dayOfWeek, 3);
+    expect(replaced.single.startSection, 3);
+    expect(replaced.single.endSection, 4);
+    expect(replaced.single.location, 'B202');
+    expect(replaced.single.shortName, '高数');
+    expect(replaced.single.color, '#FF0000');
+    expect(replaced.single.note, '本地备注');
+    expect(replaced.single.description, '本地简介');
+    expect(replaced.single.timeSchemeIdOverride, 'scheme_a');
+  });
+
+  test(
+      'replaceImportedCoursesPreservingLocalFields fans shared local fields into split imported schedules',
+      () {
+    final existing = [
+      _course(
+        id: 'a',
+        name: '大学英语',
+        day: 2,
+        start: 3,
+        end: 4,
+        weeks: [1, 2, 3, 4, 5, 6, 7, 8],
+        shortName: '英语',
+        color: '#00FF00',
+        description: '共享简介',
+      ),
+    ];
+    final imported = [
+      _course(
+        id: 'b',
+        name: '大学英语',
+        day: 2,
+        start: 3,
+        end: 4,
+        weeks: [1, 2, 3, 4],
+      ),
+      _course(
+        id: 'c',
+        name: '大学英语',
+        day: 2,
+        start: 3,
+        end: 4,
+        weeks: [5, 6, 7, 8],
+      ),
+    ];
+
+    final replaced = replaceImportedCoursesPreservingLocalFields(
+      existingCourses: existing,
+      importedCourses: imported,
+    );
+
+    expect(replaced, hasLength(2));
+    expect(replaced.map((course) => course.shortName).toSet(), {'英语'});
+    expect(replaced.map((course) => course.color).toSet(), {'#00FF00'});
+    expect(replaced.map((course) => course.description).toSet(), {'共享简介'});
   });
 }
