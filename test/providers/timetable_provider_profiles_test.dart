@@ -1147,4 +1147,77 @@ void main() {
 
     expect(provider.settings.semesterWeekCount, 18);
   });
+
+  test(
+      'import parsed courses updates current timetable by replacement while keeping local metadata',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.addCourse(
+      Course(
+        id: 'course-a',
+        name: '高等数学',
+        shortName: '高数',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        color: '#FF0000',
+        customWeeks: const [1, 2, 3, 4, 5, 6],
+        note: '本地备注',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-stale',
+        name: '线性代数',
+        teacher: '李老师',
+        location: 'C303',
+        dayOfWeek: 5,
+        startSection: 3,
+        endSection: 4,
+        startTime: '14:00',
+        endTime: '15:40',
+        customWeeks: const [1, 2, 3, 4],
+      ),
+    );
+
+    final updatedCount = await provider.importParsedCourses(
+      [
+        Course(
+          id: 'imported-a',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'B202',
+          dayOfWeek: 3,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+          customWeeks: const [1, 2, 3, 4, 5, 6],
+        ),
+      ],
+      replaceExisting: false,
+      source: 'ai',
+    );
+
+    expect(updatedCount, 1);
+    expect(provider.courses, hasLength(1));
+    expect(provider.courses.single.id, 'course-a');
+    expect(provider.courses.single.name, '高等数学');
+    expect(provider.courses.single.dayOfWeek, 3);
+    expect(provider.courses.single.startSection, 3);
+    expect(provider.courses.single.endSection, 4);
+    expect(provider.courses.single.location, 'B202');
+    expect(provider.courses.single.shortName, '高数');
+    expect(provider.courses.single.color, '#FF0000');
+    expect(provider.courses.single.note, '本地备注');
+  });
 }
