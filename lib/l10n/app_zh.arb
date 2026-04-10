@@ -2124,5 +2124,282 @@
   "homeWidgetTargetCompact22": "主卡 2×2",
   "homeWidgetTargetMiniList22": "迷你列表 2×2",
   "homeWidgetTargetMedium24": "概览 2×4",
-  "homeWidgetTargetLarge44": "列表 4×4"
+  "homeWidgetTargetLarge44": "列表 4×4",
+  "addCourseSheetTitle": "添加课程",
+  "addCourseSheetSubtitle": "空白课表区域不响应点击。请从这里明确选择是加一节临时课，还是加整学期重复课。",
+  "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}节",
+  "@courseWeekdaySectionSummary": {
+    "placeholders": {
+      "weekDescription": {
+        "type": "String"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdaySectionTimeSummary": "{weekday} 第{startSection}-{endSection}节 · {startTime}-{endTime}",
+  "@weekdaySectionTimeSummary": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "startTime": {
+        "type": "String"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
+  "rescheduledToMessage": "已调到第 {week} 周 {weekday} 第{startSection}-{endSection}节",
+  "@rescheduledToMessage": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "courseCountSummary": "{count} 门课",
+  "@courseCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentBadge": "当前",
+  "feedbackXiaohongshuTitle": "小红书",
+  "feedbackXiaohongshuSubtitle": "小红书号：{id}",
+  "@feedbackXiaohongshuSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackCoolapkTitle": "酷安",
+  "feedbackCoolapkSubtitle": "酷安号：{id}",
+  "@feedbackCoolapkSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackQqGroupTitle": "QQ 群",
+  "feedbackQqGroupSubtitle": "群号：{id}",
+  "@feedbackQqGroupSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "copiedCurrentTimetable": "已复制当前课表",
+  "sectionRangeLabel": "第{startSection}-{endSection}节",
+  "@sectionRangeLabel": {
+    "placeholders": {
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "classStartsAtLabel": "{time} 开始",
+  "@classStartsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "classEndsAtLabel": "{time} 结束",
+  "@classEndsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidSectionTimeFormat": "节次时间格式不正确",
+  "noSectionTimesToSave": "没有可保存的节次时间",
+  "warehouseImportedTimeSchemeName": "{schoolName} 导入节次",
+  "@warehouseImportedTimeSchemeName": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedScript": "未命名脚本",
+  "localDebugModeScriptStatus": "本地调试模式：{scriptName}",
+  "@localDebugModeScriptStatus": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "executeImportScriptTooltip": "执行导入脚本",
+  "switchToMobileWebTooltip": "切换到移动端页面",
+  "switchToDesktopWebTooltip": "切换到桌面端页面",
+  "rememberCurrentInputTooltip": "记住当前输入",
+  "fillRememberedTooltip": "填充已记住账号",
+  "clearRememberedTooltip": "清除已记住账号",
+  "copyCurrentAddressTooltip": "复制当前地址",
+  "copiedCurrentAddress": "已复制当前地址",
+  "warehouseLoginHintLocalDebug": "当前为本地调试脚本模式",
+  "warehouseLoginHintImport": "在此登录教务系统后执行导入",
+  "currentPageModeDesktop": "当前页面模式：桌面端",
+  "currentPageModeMobile": "当前页面模式：移动端",
+  "localScriptLabel": "本地脚本：{scriptName}",
+  "@localScriptLabel": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "webAddressHint": "输入网页地址",
+  "goAction": "前往",
+  "rememberedAccountLabel": "已记住账号：{username}",
+  "@rememberedAccountLabel": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "importingAction": "导入中...",
+  "executeLocalDebugScriptAction": "执行本地调试脚本",
+  "executeImportScriptAction": "执行导入脚本",
+  "invalidWebAddress": "网页地址无效",
+  "injectingLocalDebugScript": "正在注入本地调试脚本",
+  "injectingAdapterScript": "正在注入适配器脚本",
+  "localDebugScriptInjected": "本地调试脚本已注入",
+  "scriptInjected": "脚本已注入",
+  "scriptInjectionFailed": "脚本注入失败",
+  "executeFailedWithError": "执行失败：{error}",
+  "@executeFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importFlowFinished": "导入流程已完成",
+  "defaultContinuePrompt": "请按提示继续操作",
+  "inputRequiredTitle": "需要输入",
+  "pleaseEnterFourDigitYear": "请输入 4 位年份",
+  "pleaseChooseTitle": "请选择",
+  "invalidCourseConfigFormat": "课程配置格式不正确",
+  "saveCourseConfigFailedWithError": "保存课程配置失败：{error}",
+  "@saveCourseConfigFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saveSectionTimesFailedWithError": "保存节次时间失败：{error}",
+  "@saveSectionTimesFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidCourseDataFormat": "课程数据格式不正确",
+  "noImportableCoursesFromScript": "脚本未返回可导入课程",
+  "importCourseCountPrompt": "识别到 {count} 门课程，是否导入？",
+  "@importCourseCountPrompt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importCancelledStatus": "已取消导入",
+  "applyReturnedTimeSchemeFailed": "应用返回的节次模板失败：{error}",
+  "@applyReturnedTimeSchemeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importInterruptedStatus": "导入已中断",
+  "importFailedStatus": "导入失败",
+  "importFailedWithError": "导入失败：{error}",
+  "@importFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownTeacher": "未知教师",
+  "unknownLocation": "未知地点",
+  "autofillLoginTitle": "自动填充登录信息",
+  "autofillLoginMessage": "检测到已记住账号 {username}，是否自动填充？",
+  "@autofillLoginMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "notNowAction": "暂不",
+  "autofillAction": "自动填充",
+  "rememberPasswordTitle": "记住密码",
+  "rememberPasswordMessage": "是否记住账号 {username} 的登录信息，并在下次自动填充？",
+  "@rememberPasswordMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "dontRememberAction": "不记住",
+  "rememberAndAutofillAction": "记住并自动填充",
+  "savedRememberedLoginStatus": "已保存记住的登录信息",
+  "autofilledRememberedLoginStatus": "已自动填充记住的登录信息",
+  "noRecognizedLoginInputs": "未识别到登录输入项",
+  "noUsernameOrPasswordRecognized": "未识别到用户名或密码",
+  "rememberedCurrentLoginStatus": "已记住当前登录信息",
+  "rememberedCurrentLoginSuccess": "已记住当前登录信息",
+  "rememberLoginFailedWithError": "记住登录信息失败：{error}",
+  "@rememberLoginFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clearedRememberedLoginStatus": "已清除记住的登录信息",
+  "clearedRememberedLoginSuccess": "已清除记住的登录信息"
 }
