@@ -668,8 +668,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       ),
                       if (_aiParsedResult != null)
                         _CompactStatusChip(
-                          label:
-                              l10n.aiCourseCountChip(_aiParsedResult!.courses.length),
+                          label: l10n.aiCourseCountChip(
+                              _aiParsedResult!.courses.length),
                         ),
                       if (_aiParseError != null)
                         _CompactStatusChip(
@@ -2218,7 +2218,7 @@ class _WarehouseSchoolAdaptersScreenState
     }
     await _preferencesService.setCustomImportUrl(adapter.adapterId, manualUrl);
     if (mounted) {
-      _showLightTip(context, '已保存教务网址，下次可直接导入');
+      _showLightTip(context, AppLocalizations.of(context)!.savedImportUrlHint);
     }
     return manualUrl;
   }
@@ -2266,6 +2266,7 @@ class _WarehouseAdapterDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final adapter = widget.adapter;
@@ -2278,11 +2279,12 @@ class _WarehouseAdapterDetailScreenState
         children: [
           _WarehouseIntroCard(
             title: adapter.adapterName,
-            subtitle: adapter.description.isEmpty ? '可查看适配器信息、登录入口与脚本状态。' : '',
+            subtitle:
+                adapter.description.isEmpty ? l10n.adapterIntroSubtitle : '',
             chips: [
-              '学校：${widget.school.name}',
-              '类别：${adapter.category}',
-              '维护者：${adapter.maintainer}',
+              '${l10n.schoolLabel}：${widget.school.name}',
+              '${l10n.categoryLabel}：${adapter.category}',
+              '${l10n.maintainerLabel}：${adapter.maintainer}',
             ],
             markdown: adapter.description.isEmpty ? null : adapter.description,
           ),
@@ -2294,23 +2296,30 @@ class _WarehouseAdapterDetailScreenState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '适配器信息',
+                    l10n.adapterInfoTitle,
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 12),
                   _DetailLine(label: 'adapter_id', value: adapter.adapterId),
-                  _DetailLine(label: '脚本路径', value: adapter.assetJsPath),
                   _DetailLine(
-                    label: '登录入口',
+                      label: l10n.scriptPathLabel, value: adapter.assetJsPath),
+                  _DetailLine(
+                    label: l10n.loginEntryLabel,
                     value: _effectiveImportUrl.isEmpty
-                        ? '未配置'
+                        ? l10n.unsetConfigLabel
                         : _effectiveImportUrl,
                   ),
                   if ((_customImportUrl ?? '').isNotEmpty)
-                    const _DetailLine(label: '说明', value: '当前使用你手动覆盖的登录地址'),
-                  _DetailLine(label: '仓库', value: widget.source.repositoryUrl),
+                    _DetailLine(
+                      label: l10n.homeWidgetDescriptionTitle,
+                      value: l10n.adapterOverrideImportUrlHint,
+                    ),
+                  _DetailLine(
+                    label: l10n.repositoryLabel,
+                    value: widget.source.repositoryUrl,
+                  ),
                 ],
               ),
             ),
@@ -2330,7 +2339,7 @@ class _WarehouseAdapterDetailScreenState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '脚本状态',
+                        l10n.scriptStatusTitle,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -2340,12 +2349,14 @@ class _WarehouseAdapterDetailScreenState
                         const LinearProgressIndicator(minHeight: 3)
                       else if (readable)
                         Text(
-                          '脚本已成功读取，长度 ${snapshot.data!.length} 字符。',
+                          l10n.scriptLoadedLength(snapshot.data!.length),
                           style: theme.textTheme.bodyMedium,
                         )
                       else
                         Text(
-                          snapshot.hasError ? '${snapshot.error}' : '脚本为空',
+                          snapshot.hasError
+                              ? '${snapshot.error}'
+                              : l10n.scriptEmpty,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: colorScheme.error,
                           ),
@@ -2361,7 +2372,9 @@ class _WarehouseAdapterDetailScreenState
             onPressed: () => _openInAppLogin(),
             icon: const Icon(Icons.web_rounded),
             label: Text(
-              _effectiveImportUrl.isEmpty ? '填写网址后导入' : '应用内打开登录入口',
+              _effectiveImportUrl.isEmpty
+                  ? l10n.fillUrlThenImport
+                  : l10n.openLoginInAppAction,
             ),
           ),
           const SizedBox(height: 10),
@@ -2374,17 +2387,17 @@ class _WarehouseAdapterDetailScreenState
                     ? null
                     : () => _openImportUrl(_effectiveImportUrl),
                 icon: const Icon(Icons.open_in_new_rounded),
-                label: const Text('系统浏览器打开'),
+                label: Text(l10n.openInSystemBrowserAction),
               ),
               OutlinedButton.icon(
                 onPressed: _effectiveImportUrl.isEmpty
                     ? null
                     : () => _copyText(
                           _effectiveImportUrl,
-                          successMessage: '已复制教务登录地址',
+                          successMessage: l10n.copiedImportLoginUrl,
                         ),
                 icon: const Icon(Icons.link_rounded),
-                label: const Text('复制登录地址'),
+                label: Text(l10n.copyLoginAddressAction),
               ),
               OutlinedButton.icon(
                 onPressed: () => _copyText(
@@ -2393,16 +2406,18 @@ class _WarehouseAdapterDetailScreenState
                         'resources/${widget.school.resourceFolder}/${adapter.assetJsPath}',
                       )
                       .toString(),
-                  successMessage: '已复制脚本原始地址',
+                  successMessage: l10n.copiedScriptRawUrl,
                 ),
                 icon: const Icon(Icons.code_rounded),
-                label: const Text('复制脚本地址'),
+                label: Text(l10n.copyScriptAddressAction),
               ),
               OutlinedButton.icon(
                 onPressed: _editCustomImportUrl,
                 icon: const Icon(Icons.edit_road_rounded),
                 label: Text(
-                  (_customImportUrl ?? '').isEmpty ? '自定义登录地址' : '修改自定义地址',
+                  (_customImportUrl ?? '').isEmpty
+                      ? l10n.customLoginAddressAction
+                      : l10n.editCustomLoginAddressAction,
                 ),
               ),
               if ((_customImportUrl ?? '').isNotEmpty)
@@ -2410,7 +2425,9 @@ class _WarehouseAdapterDetailScreenState
                   onPressed: _clearCustomImportUrl,
                   icon: const Icon(Icons.restart_alt_rounded),
                   label: Text(
-                    adapter.importUrl.isEmpty ? '清除自定义地址' : '恢复仓库地址',
+                    adapter.importUrl.isEmpty
+                        ? l10n.clearCustomLoginAddressAction
+                        : l10n.restoreRepositoryAddressAction,
                   ),
                 ),
             ],
@@ -2440,7 +2457,8 @@ class _WarehouseAdapterDetailScreenState
       if (!mounted) {
         return;
       }
-      _showLightTip(context, '登录入口地址无效');
+      _showLightTip(
+          context, AppLocalizations.of(context)!.invalidLoginEntryUrl);
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -2467,7 +2485,7 @@ class _WarehouseAdapterDetailScreenState
       setState(() {
         _customImportUrl = manualUrl;
       });
-      _showLightTip(context, '已保存教务网址，下次可直接导入');
+      _showLightTip(context, AppLocalizations.of(context)!.savedImportUrlHint);
       targetUrl = manualUrl;
     }
     final uri = Uri.tryParse(targetUrl);
@@ -2475,7 +2493,8 @@ class _WarehouseAdapterDetailScreenState
       if (!mounted) {
         return;
       }
-      _showLightTip(context, '登录入口地址无效');
+      _showLightTip(
+          context, AppLocalizations.of(context)!.invalidLoginEntryUrl);
       return;
     }
     await Navigator.of(context)
@@ -2515,7 +2534,8 @@ class _WarehouseAdapterDetailScreenState
     setState(() {
       _customImportUrl = result;
     });
-    _showLightTip(context, '已保存自定义登录地址');
+    _showLightTip(
+        context, AppLocalizations.of(context)!.savedCustomLoginAddress);
   }
 
   Future<void> _clearCustomImportUrl() async {
@@ -2526,7 +2546,9 @@ class _WarehouseAdapterDetailScreenState
     });
     _showLightTip(
       context,
-      widget.adapter.importUrl.isEmpty ? '已清除自定义登录地址' : '已恢复仓库里的登录地址',
+      widget.adapter.importUrl.isEmpty
+          ? AppLocalizations.of(context)!.clearedCustomLoginAddress
+          : AppLocalizations.of(context)!.restoredRepositoryImportUrl,
     );
   }
 
@@ -2609,9 +2631,7 @@ class _WarehouseAdapterWebLoginScreenState
   void initState() {
     super.initState();
     _currentUrl = widget.initialUrl;
-    _lastScriptStatus = _isUsingLocalDebugScript
-        ? '开发者调试模式：当前使用本地脚本 ${widget.debugScriptName ?? ''}'.trim()
-        : null;
+    _lastScriptStatus = _isUsingLocalDebugScript ? null : null;
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -2685,7 +2705,8 @@ class _WarehouseAdapterWebLoginScreenState
   List<SectionTime> _decodeImportedSections(String payload) {
     final decoded = jsonDecode(payload);
     if (decoded is! List) {
-      throw const FormatException('节次时间格式不正确');
+      throw FormatException(
+          AppLocalizations.of(context)!.invalidSectionTimeFormat);
     }
     final sections = decoded
         .whereType<Map>()
@@ -2698,7 +2719,7 @@ class _WarehouseAdapterWebLoginScreenState
         .where((item) => item.startTime.isNotEmpty && item.endTime.isNotEmpty)
         .toList(growable: false);
     if (sections.isEmpty) {
-      throw const FormatException('没有可保存的节次时间');
+      throw FormatException(AppLocalizations.of(context)!.noSectionTimesToSave);
     }
     return sections;
   }
@@ -2717,7 +2738,8 @@ class _WarehouseAdapterWebLoginScreenState
 
   Future<void> _applyImportedSections(List<SectionTime> sections) async {
     final provider = context.read<TimetableProvider>();
-    final schemeName = '${widget.school.name} 教务导入时间';
+    final schemeName = AppLocalizations.of(context)!
+        .warehouseImportedTimeSchemeName(widget.school.name);
     TimeScheme? existingScheme;
     for (final scheme in provider.timeSchemes) {
       if (scheme.name == schemeName) {
@@ -2773,14 +2795,23 @@ class _WarehouseAdapterWebLoginScreenState
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final effectiveDebugScriptName =
+        (widget.debugScriptName?.trim().isNotEmpty ?? false)
+            ? widget.debugScriptName!.trim()
+            : l10n.unnamedScript;
+    final currentStatus = _lastScriptStatus ??
+        (_isUsingLocalDebugScript
+            ? l10n.localDebugModeScriptStatus(effectiveDebugScriptName)
+            : null);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
           IconButton(
-            tooltip: '执行导入脚本',
+            tooltip: l10n.executeImportScriptTooltip,
             onPressed: _isExecutingImport ? null : _executeImportScript,
             icon: _isExecutingImport
                 ? const SizedBox(
@@ -2791,7 +2822,9 @@ class _WarehouseAdapterWebLoginScreenState
                 : const Icon(Icons.play_arrow_rounded),
           ),
           IconButton(
-            tooltip: _useDesktopMode ? '切换到手机网页' : '切换到电脑网页',
+            tooltip: _useDesktopMode
+                ? l10n.switchToMobileWebTooltip
+                : l10n.switchToDesktopWebTooltip,
             onPressed: _toggleWebPageMode,
             icon: Icon(
               _useDesktopMode
@@ -2800,28 +2833,28 @@ class _WarehouseAdapterWebLoginScreenState
             ),
           ),
           IconButton(
-            tooltip: '记住当前输入',
+            tooltip: l10n.rememberCurrentInputTooltip,
             onPressed: _rememberCurrentLogin,
             icon: const Icon(Icons.save_outlined),
           ),
           IconButton(
-            tooltip: '填入已记住',
+            tooltip: l10n.fillRememberedTooltip,
             onPressed:
                 _rememberedLogin == null ? null : _autofillRememberedLogin,
             icon: const Icon(Icons.password_rounded),
           ),
           IconButton(
-            tooltip: '清除记住',
+            tooltip: l10n.clearRememberedTooltip,
             onPressed: _rememberedLogin == null ? null : _clearRememberedLogin,
             icon: const Icon(Icons.delete_outline_rounded),
           ),
           IconButton(
-            tooltip: '刷新',
+            tooltip: l10n.reloadAction,
             onPressed: _controller.reload,
             icon: const Icon(Icons.refresh_rounded),
           ),
           IconButton(
-            tooltip: '复制当前地址',
+            tooltip: l10n.copyCurrentAddressTooltip,
             onPressed: () async {
               final messenger = ScaffoldMessenger.of(context);
               final value = _currentUrl ?? widget.initialUrl;
@@ -2830,7 +2863,7 @@ class _WarehouseAdapterWebLoginScreenState
                 return;
               }
               messenger.showSnackBar(
-                const SnackBar(content: Text('已复制当前地址')),
+                SnackBar(content: Text(l10n.copiedCurrentAddress)),
               );
             },
             icon: const Icon(Icons.link_rounded),
@@ -2848,15 +2881,17 @@ class _WarehouseAdapterWebLoginScreenState
               children: [
                 Text(
                   _isUsingLocalDebugScript
-                      ? '先在这里完成登录，然后执行你选择的本地调试脚本。'
-                      : '先在这里完成登录，脚本会在当前网页内继续执行导入。',
+                      ? l10n.warehouseLoginHintLocalDebug
+                      : l10n.warehouseLoginHintImport,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  _useDesktopMode ? '当前：电脑网页' : '当前：手机网页',
+                  _useDesktopMode
+                      ? l10n.currentPageModeDesktop
+                      : l10n.currentPageModeMobile,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: colorScheme.primary,
                     fontWeight: FontWeight.w700,
@@ -2865,7 +2900,7 @@ class _WarehouseAdapterWebLoginScreenState
                 if (_isUsingLocalDebugScript) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '本地脚本：${widget.debugScriptName ?? '未命名脚本'}',
+                    l10n.localScriptLabel(effectiveDebugScriptName),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.tertiary,
                       fontWeight: FontWeight.w700,
@@ -2883,7 +2918,7 @@ class _WarehouseAdapterWebLoginScreenState
                         textInputAction: TextInputAction.go,
                         decoration: InputDecoration(
                           isDense: true,
-                          hintText: '输入或修改网页地址',
+                          hintText: l10n.webAddressHint,
                           prefixIcon:
                               const Icon(Icons.language_rounded, size: 18),
                           border: OutlineInputBorder(
@@ -2900,14 +2935,14 @@ class _WarehouseAdapterWebLoginScreenState
                     const SizedBox(width: 8),
                     FilledButton(
                       onPressed: _loadAddressBarUrl,
-                      child: const Text('前往'),
+                      child: Text(l10n.goAction),
                     ),
                   ],
                 ),
-                if ((_lastScriptStatus ?? '').isNotEmpty) ...[
+                if ((currentStatus ?? '').isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
-                    _lastScriptStatus!,
+                    currentStatus!,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.primary,
                     ),
@@ -2915,7 +2950,7 @@ class _WarehouseAdapterWebLoginScreenState
                 ] else if (_rememberedLogin != null) ...[
                   const SizedBox(height: 6),
                   Text(
-                    '已记住账号：${_rememberedLogin!.username}',
+                    l10n.rememberedAccountLabel(_rememberedLogin!.username),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.primary,
                     ),
@@ -2944,8 +2979,10 @@ class _WarehouseAdapterWebLoginScreenState
                     : const Icon(Icons.download_rounded),
                 label: Text(
                   _isExecutingImport
-                      ? '导入中...'
-                      : (_isUsingLocalDebugScript ? '执行本地调试脚本' : '执行导入脚本'),
+                      ? l10n.importingAction
+                      : (_isUsingLocalDebugScript
+                          ? l10n.executeLocalDebugScriptAction
+                          : l10n.executeImportScriptAction),
                 ),
               ),
             ),
@@ -2960,7 +2997,7 @@ class _WarehouseAdapterWebLoginScreenState
     final uri = Uri.tryParse(text);
     if (uri == null || uri.host.isEmpty) {
       if (!mounted) return;
-      _showLightTip(context, '网页地址格式不正确');
+      _showLightTip(context, AppLocalizations.of(context)!.invalidWebAddress);
       return;
     }
     _addressFocusNode.unfocus();
@@ -3035,8 +3072,9 @@ class _WarehouseAdapterWebLoginScreenState
     _resetPendingImportedArtifacts();
     setState(() {
       _isExecutingImport = true;
-      _lastScriptStatus =
-          _isUsingLocalDebugScript ? '正在注入本地调试脚本…' : '正在读取并注入适配脚本…';
+      _lastScriptStatus = _isUsingLocalDebugScript
+          ? AppLocalizations.of(context)!.injectingLocalDebugScript
+          : AppLocalizations.of(context)!.injectingAdapterScript;
     });
     try {
       final script = _isUsingLocalDebugScript
@@ -3064,7 +3102,7 @@ class _WarehouseAdapterWebLoginScreenState
           requestId,
           title: String(title ?? ''),
           message: String(message ?? ''),
-          confirmText: String(confirmText ?? '确认')
+          confirmText: String(confirmText ?? '${AppLocalizations.of(context)!.confirmImportAction}')
         }));
       });
     },
@@ -3135,8 +3173,8 @@ class _WarehouseAdapterWebLoginScreenState
       }
       setState(() {
         _lastScriptStatus = _isUsingLocalDebugScript
-            ? '本地调试脚本已注入，等待页面解析返回课程。'
-            : '脚本已注入，等待页面解析返回课程。';
+            ? AppLocalizations.of(context)!.localDebugScriptInjected
+            : AppLocalizations.of(context)!.scriptInjected;
       });
     } catch (error) {
       if (!mounted) {
@@ -3144,9 +3182,12 @@ class _WarehouseAdapterWebLoginScreenState
       }
       setState(() {
         _isExecutingImport = false;
-        _lastScriptStatus = '脚本注入失败';
+        _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
       });
-      _showLightTip(context, '执行失败：$error');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.executeFailedWithError('$error'),
+      );
     }
   }
 
@@ -3201,7 +3242,7 @@ class _WarehouseAdapterWebLoginScreenState
         if (!mounted) return;
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = '导入流程已结束';
+          _lastScriptStatus = AppLocalizations.of(context)!.importFlowFinished;
         });
         break;
     }
@@ -3214,16 +3255,22 @@ class _WarehouseAdapterWebLoginScreenState
       builder: (context) => AlertDialog(
         title: Text((message['title'] as String?)?.trim().isNotEmpty == true
             ? (message['title'] as String)
-            : '确认导入'),
-        content: Text((message['message'] as String?) ?? '是否继续？'),
+            : AppLocalizations.of(context)!.confirmImportAction),
+        content: Text(
+          (message['message'] as String?) ??
+              AppLocalizations.of(context)!.defaultContinuePrompt,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text((message['confirmText'] as String?) ?? '确认'),
+            child: Text(
+              (message['confirmText'] as String?) ??
+                  AppLocalizations.of(context)!.confirmImportAction,
+            ),
           ),
         ],
       ),
@@ -3240,7 +3287,10 @@ class _WarehouseAdapterWebLoginScreenState
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text((message['title'] as String?) ?? '请输入'),
+        title: Text(
+          (message['title'] as String?) ??
+              AppLocalizations.of(context)!.inputRequiredTitle,
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3257,19 +3307,22 @@ class _WarehouseAdapterWebLoginScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
           ),
           FilledButton(
             onPressed: () {
               final text = controller.text.trim();
               if (validatorName == 'validateYearInput' &&
                   !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
-                _showLightTip(context, '请输入四位数字的学年');
+                _showLightTip(
+                  context,
+                  AppLocalizations.of(context)!.pleaseEnterFourDigitYear,
+                );
                 return;
               }
               Navigator.pop(context, text);
             },
-            child: const Text('确定'),
+            child: Text(AppLocalizations.of(context)!.saveAction),
           ),
         ],
       ),
@@ -3296,7 +3349,10 @@ class _WarehouseAdapterWebLoginScreenState
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text((message['title'] as String?) ?? '请选择'),
+        title: Text(
+          (message['title'] as String?) ??
+              AppLocalizations.of(context)!.pleaseChooseTitle,
+        ),
         content: StatefulBuilder(
           builder: (context, setState) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -3318,11 +3374,11 @@ class _WarehouseAdapterWebLoginScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, currentSelection),
-            child: const Text('确定'),
+            child: Text(AppLocalizations.of(context)!.saveAction),
           ),
         ],
       ),
@@ -3335,7 +3391,9 @@ class _WarehouseAdapterWebLoginScreenState
     try {
       final decoded = jsonDecode((message['payload'] as String?) ?? '{}');
       if (decoded is! Map) {
-        throw const FormatException('课程配置格式不正确');
+        throw FormatException(
+          AppLocalizations.of(context)!.invalidCourseConfigFormat,
+        );
       }
       final provider = context.read<TimetableProvider>();
       final semesterTotalWeeks =
@@ -3353,7 +3411,10 @@ class _WarehouseAdapterWebLoginScreenState
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {
       if (!mounted) return;
-      _showLightTip(context, '保存课程配置失败：$error');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.saveCourseConfigFailedWithError('$error'),
+      );
       await _resolveJavaScriptRequest(requestId, false);
     }
   }
@@ -3369,7 +3430,10 @@ class _WarehouseAdapterWebLoginScreenState
       await _resolveJavaScriptRequest(requestId, true);
     } catch (error) {
       if (!mounted) return;
-      _showLightTip(context, '保存节次时间失败：$error');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.saveSectionTimesFailedWithError('$error'),
+      );
       await _resolveJavaScriptRequest(requestId, false);
     }
   }
@@ -3388,11 +3452,14 @@ class _WarehouseAdapterWebLoginScreenState
     try {
       final decoded = jsonDecode(payload);
       if (decoded is! List) {
-        throw const FormatException('课程数据格式不正确');
+        throw FormatException(
+            AppLocalizations.of(context)!.invalidCourseDataFormat);
       }
       final parsedCourses = _parseWarehouseCourses(decoded);
       if (parsedCourses.isEmpty) {
-        throw const FormatException('脚本没有返回可导入课程');
+        throw FormatException(
+          AppLocalizations.of(context)!.noImportableCoursesFromScript,
+        );
       }
 
       final provider = context.read<TimetableProvider>();
@@ -3400,13 +3467,15 @@ class _WarehouseAdapterWebLoginScreenState
           ? true
           : await _askReplaceExisting(
               context,
-              title: '导入课程',
-              content: '检测到 ${parsedCourses.length} 条课程，是否替换现有课程？',
+              title: AppLocalizations.of(context)!.courseImportTitle,
+              content: AppLocalizations.of(context)!
+                  .importCourseCountPrompt(parsedCourses.length),
             );
       if (replaceExisting == null || !mounted) {
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = '已取消导入';
+          _lastScriptStatus =
+              AppLocalizations.of(context)!.importCancelledStatus;
         });
         return;
       }
@@ -3416,13 +3485,15 @@ class _WarehouseAdapterWebLoginScreenState
         initialSemesterStartDate:
             provider.settings.semesterStartDate ?? DateTime.now(),
         initialFirstCourseWeek: 1,
-        title: '确认开学日期和周次对应',
-        subtitle: '教务脚本已返回课程周次，请确认校历开学日期；如果学校前几周没有课，可把“课表第 1 周”对应到校历后面的周次。',
+        title: AppLocalizations.of(context)!.importConfirmSemesterMappingTitle,
+        subtitle: AppLocalizations.of(context)!
+            .importConfirmSemesterMappingSubtitleWarehouse,
       );
       if (semesterConfig == null || !mounted) {
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = '已取消导入';
+          _lastScriptStatus =
+              AppLocalizations.of(context)!.importCancelledStatus;
         });
         return;
       }
@@ -3439,7 +3510,11 @@ class _WarehouseAdapterWebLoginScreenState
         await _applyPendingImportedSectionsIfNeeded();
       } catch (error) {
         if (mounted) {
-          _showLightTip(context, '应用脚本返回的时间模板失败：$error');
+          _showLightTip(
+            context,
+            AppLocalizations.of(context)!
+                .applyReturnedTimeSchemeFailed('$error'),
+          );
         }
       }
       final requiredSectionCount =
@@ -3458,7 +3533,8 @@ class _WarehouseAdapterWebLoginScreenState
       if (!capacityReady || !mounted) {
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = '导入已中止';
+          _lastScriptStatus =
+              AppLocalizations.of(context)!.importInterruptedStatus;
         });
         return;
       }
@@ -3478,13 +3554,15 @@ class _WarehouseAdapterWebLoginScreenState
       }
       setState(() {
         _lastScriptStatus = importedCount > 0
-            ? '已更新课表：新增或更新 $importedCount 条课程'
-            : '没有需要新增或更新的课程';
+            ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
+            : AppLocalizations.of(context)!.importNoCourseChanges;
       });
       final navigator = Navigator.of(context);
       _showLightTip(
         context,
-        importedCount > 0 ? '已更新课表：新增或更新 $importedCount 条课程' : '没有需要新增或更新的课程',
+        importedCount > 0
+            ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
+            : AppLocalizations.of(context)!.importNoCourseChanges,
       );
       if (importedCount > 0) {
         navigator.pop(true);
@@ -3497,9 +3575,12 @@ class _WarehouseAdapterWebLoginScreenState
       if (!mounted) return;
       setState(() {
         _isExecutingImport = false;
-        _lastScriptStatus = '导入失败';
+        _lastScriptStatus = AppLocalizations.of(context)!.importFailedStatus;
       });
-      _showLightTip(context, '导入失败：$error');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.importFailedWithError('$error'),
+      );
     }
   }
 
@@ -3536,8 +3617,12 @@ class _WarehouseAdapterWebLoginScreenState
         Course(
           id: const Uuid().v4(),
           name: name,
-          teacher: teacher.isEmpty ? '未知' : teacher,
-          location: location.isEmpty ? '未知地点' : location,
+          teacher: teacher.isEmpty
+              ? AppLocalizations.of(context)!.unknownTeacher
+              : teacher,
+          location: location.isEmpty
+              ? AppLocalizations.of(context)!.unknownLocation
+              : location,
           dayOfWeek: day,
           startSection: startSection,
           endSection: endSection,
@@ -3570,16 +3655,19 @@ class _WarehouseAdapterWebLoginScreenState
       final shouldAutofill = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('自动填入账号密码？'),
-          content: Text('检测到你之前保存过账号：${_rememberedLogin!.username}。是否自动填入？'),
+          title: Text(AppLocalizations.of(context)!.autofillLoginTitle),
+          content: Text(
+            AppLocalizations.of(context)!
+                .autofillLoginMessage(_rememberedLogin!.username),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('暂不'),
+              child: Text(AppLocalizations.of(context)!.notNowAction),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('自动填入'),
+              child: Text(AppLocalizations.of(context)!.autofillAction),
             ),
           ],
         ),
@@ -3607,16 +3695,21 @@ class _WarehouseAdapterWebLoginScreenState
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('记住密码？'),
-        content: Text('检测到你正在登录账号 ${candidate.username}。是否记住账号密码，下次自动填入？'),
+        title: Text(AppLocalizations.of(context)!.rememberPasswordTitle),
+        content: Text(
+          AppLocalizations.of(context)!
+              .rememberPasswordMessage(candidate.username),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('不记住'),
+            child: Text(AppLocalizations.of(context)!.dontRememberAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('记住并自动填入'),
+            child: Text(
+              AppLocalizations.of(context)!.rememberAndAutofillAction,
+            ),
           ),
         ],
       ),
@@ -3630,7 +3723,8 @@ class _WarehouseAdapterWebLoginScreenState
       if (!mounted) return;
       setState(() {
         _rememberedLogin = candidate;
-        _lastScriptStatus = '已记住账号密码，下次可自动填入';
+        _lastScriptStatus =
+            AppLocalizations.of(context)!.savedRememberedLoginStatus;
       });
     }
   }
@@ -3678,7 +3772,8 @@ class _WarehouseAdapterWebLoginScreenState
     await _controller.runJavaScript(js);
     if (!mounted) return;
     setState(() {
-      _lastScriptStatus = '已自动填入记住的账号密码';
+      _lastScriptStatus =
+          AppLocalizations.of(context)!.autofilledRememberedLoginStatus;
     });
   }
 
@@ -3700,12 +3795,16 @@ class _WarehouseAdapterWebLoginScreenState
       final normalized = _normalizeJavaScriptResult(raw);
       final decoded = jsonDecode(normalized);
       if (decoded is! Map<String, dynamic>) {
-        throw const FormatException('当前页面没有可识别的登录输入框');
+        throw FormatException(
+            AppLocalizations.of(context)!.noRecognizedLoginInputs);
       }
       final login = WarehouseRememberedLogin.fromJson(decoded);
       if (login.username.isEmpty && login.password.isEmpty) {
         if (!mounted) return;
-        _showLightTip(context, '当前页面没有识别到账号或密码输入内容');
+        _showLightTip(
+          context,
+          AppLocalizations.of(context)!.noUsernameOrPasswordRecognized,
+        );
         return;
       }
       await _preferencesService.setRememberedLogin(
@@ -3715,12 +3814,19 @@ class _WarehouseAdapterWebLoginScreenState
       if (!mounted) return;
       setState(() {
         _rememberedLogin = login;
-        _lastScriptStatus = '已记住当前输入的账号密码';
+        _lastScriptStatus =
+            AppLocalizations.of(context)!.rememberedCurrentLoginStatus;
       });
-      _showLightTip(context, '已记住当前输入的账号密码');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.rememberedCurrentLoginSuccess,
+      );
     } catch (error) {
       if (!mounted) return;
-      _showLightTip(context, '记住失败：$error');
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.rememberLoginFailedWithError('$error'),
+      );
     }
   }
 
@@ -3729,9 +3835,13 @@ class _WarehouseAdapterWebLoginScreenState
     if (!mounted) return;
     setState(() {
       _rememberedLogin = null;
-      _lastScriptStatus = '已清除记住的账号密码';
+      _lastScriptStatus =
+          AppLocalizations.of(context)!.clearedRememberedLoginStatus;
     });
-    _showLightTip(context, '已清除记住的账号密码');
+    _showLightTip(
+      context,
+      AppLocalizations.of(context)!.clearedRememberedLoginSuccess,
+    );
   }
 }
 

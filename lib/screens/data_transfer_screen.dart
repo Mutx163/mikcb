@@ -267,7 +267,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       final bytes = file.bytes;
       final content = bytes == null ? '' : utf8.decode(bytes);
       if (content.isEmpty) {
-        throw const FormatException('文件读取失败');
+        throw FormatException(AppLocalizations.of(context)!.importFileReadFailed);
       }
       if (!mounted) {
         return;

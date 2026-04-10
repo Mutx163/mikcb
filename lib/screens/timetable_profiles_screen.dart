@@ -127,8 +127,10 @@ class TimetableProfilesScreen extends StatelessWidget {
                                     if (context.mounted) {
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
-                                        const SnackBar(
-                                          content: Text('已复制当前课表'),
+                                        SnackBar(
+                                          content: Text(
+                                            l10n.copiedCurrentTimetable,
+                                          ),
                                         ),
                                       );
                                     }

@@ -62,8 +62,8 @@ class FeedbackScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _FeedbackCard(
             icon: Icons.forum_outlined,
-            title: '小红书',
-            subtitle: '作者小红书号：$_xiaohongshuId',
+            title: l10n.feedbackXiaohongshuTitle,
+            subtitle: l10n.feedbackXiaohongshuSubtitle(_xiaohongshuId),
             primaryLabel: l10n.copyXiaohongshuId,
             onPrimaryTap: () => _copyText(
               context,
@@ -74,8 +74,8 @@ class FeedbackScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _FeedbackCard(
             icon: Icons.verified_user_outlined,
-            title: '酷安',
-            subtitle: '作者酷安号：$_coolapkId',
+            title: l10n.feedbackCoolapkTitle,
+            subtitle: l10n.feedbackCoolapkSubtitle(_coolapkId),
             primaryLabel: l10n.copyCoolapkId,
             onPrimaryTap: () => _copyText(
               context,
@@ -86,8 +86,8 @@ class FeedbackScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _FeedbackCard(
             icon: Icons.groups_outlined,
-            title: 'QQ群',
-            subtitle: 'QQ群号：$_qqGroupId',
+            title: l10n.feedbackQqGroupTitle,
+            subtitle: l10n.feedbackQqGroupSubtitle(_qqGroupId),
             primaryLabel: l10n.copyQqGroupId,
             onPrimaryTap: () => _copyText(
               context,

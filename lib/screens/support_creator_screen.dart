@@ -75,7 +75,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '鸣谢名单',
+                              l10n.donorListTitle,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                               ),
