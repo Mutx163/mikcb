@@ -1,10 +1,40 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import '../helpers_test_app.dart';
+
+Future<void> _pumpScreen(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+void _seedInitializedPrefs() {
+  final now = DateTime(2026, 4, 12);
+  final settings = TimetableSettings.defaults();
+  final profile = TimetableProfile(
+    id: 'profile-1',
+    name: '默认课表',
+    courses: const [],
+    settings: settings,
+    currentWeek: 1,
+    createdAt: now,
+    lastUsedAt: now,
+  );
+  SharedPreferences.setMockInitialValues({
+    'did_migrate_app_logs_default': true,
+    'did_migrate_live_hide_prefix_default': true,
+    'timetable_profiles': jsonEncode([profile.toJson()]),
+    'active_timetable_profile_id': profile.id,
+    'time_schemes': '[]',
+  });
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +43,7 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    _seedInitializedPrefs();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -64,15 +94,13 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     await tester.tap(find.text('超级岛与通知'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await _pumpScreen(tester);
 
     await tester.tap(find.text('测试与诊断'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await _pumpScreen(tester);
 
     expect(find.textContaining('每 1 秒自动拉取一次诊断状态'), findsOneWidget);
     expect(find.textContaining('上次刷新：'), findsOneWidget);
