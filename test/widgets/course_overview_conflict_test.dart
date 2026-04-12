@@ -1,22 +1,50 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/course_overview_screen.dart';
 import '../helpers_test_app.dart';
 
+Future<void> _pumpScreen(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+void _seedInitializedPrefs() {
+  final now = DateTime(2026, 4, 12);
+  final settings = TimetableSettings.defaults();
+  final profile = TimetableProfile(
+    id: 'profile-1',
+    name: '默认课表',
+    courses: const [],
+    settings: settings,
+    currentWeek: 1,
+    createdAt: now,
+    lastUsedAt: now,
+  );
+  SharedPreferences.setMockInitialValues({
+    'did_migrate_app_logs_default': true,
+    'did_migrate_live_hide_prefix_default': true,
+    'timetable_profiles': jsonEncode([profile.toJson()]),
+    'active_timetable_profile_id': profile.id,
+    'time_schemes': '[]',
+  });
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const homeWidgetChannel =
-      MethodChannel('com.mutx163.qingyu/home_widget');
-  const analyticsChannel =
-      MethodChannel('com.mutx163.qingyu/umeng_analytics');
+  const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
+  const analyticsChannel = MethodChannel('com.mutx163.qingyu/umeng_analytics');
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    _seedInitializedPrefs();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -75,13 +103,13 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     expect(find.textContaining('检测到 2 门排课存在实际冲突'), findsOneWidget);
     expect(find.text('冲突 1 节'), findsNWidgets(2));
     expect(find.textContaining('展开查看冲突详情'), findsWidgets);
     await tester.tap(find.text('线性代数'));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     expect(find.textContaining('冲突课程:'), findsOneWidget);
     expect(find.textContaining('第1-16周'), findsOneWidget);
   });
@@ -132,7 +160,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     expect(find.textContaining('检测到'), findsNothing);
     expect(find.textContaining('冲突 '), findsNothing);
