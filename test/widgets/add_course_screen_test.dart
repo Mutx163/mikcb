@@ -1,12 +1,42 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/timetable_profile.dart';
+import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import '../helpers_test_app.dart';
+
+Future<void> _pumpScreen(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 500));
+}
+
+void _seedInitializedPrefs() {
+  final now = DateTime(2026, 4, 12);
+  final settings = TimetableSettings.defaults();
+  final profile = TimetableProfile(
+    id: 'profile-1',
+    name: '默认课表',
+    courses: const [],
+    settings: settings,
+    currentWeek: 1,
+    createdAt: now,
+    lastUsedAt: now,
+  );
+  SharedPreferences.setMockInitialValues({
+    'did_migrate_app_logs_default': true,
+    'did_migrate_live_hide_prefix_default': true,
+    'timetable_profiles': jsonEncode([profile.toJson()]),
+    'active_timetable_profile_id': profile.id,
+    'time_schemes': '[]',
+  });
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +45,7 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
-    SharedPreferences.setMockInitialValues({});
+    _seedInitializedPrefs();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -60,7 +90,7 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    await _pumpScreen(tester);
 
     expect(find.byTooltip('删除课程'), findsOneWidget);
   });
@@ -84,9 +114,9 @@ void main() {
         ),
       ),
     );
-    await tester.pump();
+    await _pumpScreen(tester);
     await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     expect(find.text('添加单节课'), findsOneWidget);
     expect(find.text('上课周次'), findsOneWidget);
@@ -126,14 +156,14 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     await tester.tap(find.text('手动填写'));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     await tester.tap(find.text('大学英语 · 英语 · 李老师').last);
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     await tester.drag(find.byType(ListView), const Offset(0, -400));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     final fieldValues = tester
         .widgetList<EditableText>(find.byType(EditableText))
@@ -180,13 +210,13 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     expect(tester.takeException(), isNull);
 
     await tester.tap(find.text('手动填写'));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     await tester.tap(find.textContaining('大学英语精读与跨文化交流').last);
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     expect(tester.takeException(), isNull);
   });
@@ -210,12 +240,12 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     await tester.drag(find.byType(ListView), const Offset(0, -900));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
     await tester.tap(find.text('自定义周'));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     final weekOne = find.widgetWithText(FilledButton, '1');
     final weekFive = find.widgetWithText(FilledButton, '5');
@@ -242,16 +272,16 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     await tester.drag(find.byType(ListView), const Offset(0, -900));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     expect(find.text('全部'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNWidgets(3));
 
     await tester.tap(find.widgetWithText(ChoiceChip, '单周'));
-    await tester.pumpAndSettle();
+    await _pumpScreen(tester);
 
     final selectedChip = tester.widget<ChoiceChip>(
       find.widgetWithText(ChoiceChip, '单周'),
