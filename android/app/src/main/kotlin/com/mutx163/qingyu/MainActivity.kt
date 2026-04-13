@@ -17,11 +17,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.Icon
 import android.media.AudioManager
@@ -1037,6 +1039,8 @@ class LiveUpdateService : Service() {
     private var miuiIslandLabelFontSize = 14f
     private var miuiIslandLabelOffsetX = 0f
     private var miuiIslandLabelOffsetY = 0f
+    private var miuiIslandLabelLogoPath: String? = null
+    private var miuiIslandLabelLogoCornerRadius = 8f
     private var miuiIslandExpandedIconMode = "app_icon"
     private var miuiIslandExpandedIconPath: String? = null
     private var startAtMillis = 0L
@@ -1146,6 +1150,10 @@ class LiveUpdateService : Service() {
                 intent?.getFloatExtra("miuiIslandLabelOffsetX", 0f) ?: 0f
             miuiIslandLabelOffsetY =
                 intent?.getFloatExtra("miuiIslandLabelOffsetY", 0f) ?: 0f
+            miuiIslandLabelLogoPath =
+                intent?.getStringExtra("miuiIslandLabelLogoPath")?.takeIf { it.isNotBlank() }
+            miuiIslandLabelLogoCornerRadius =
+                intent?.getFloatExtra("miuiIslandLabelLogoCornerRadius", 8f) ?: 8f
             miuiIslandExpandedIconMode =
                 intent?.getStringExtra("miuiIslandExpandedIconMode") ?: "app_icon"
             miuiIslandExpandedIconPath =
@@ -1204,6 +1212,8 @@ class LiveUpdateService : Service() {
                     "miuiIslandLabelFontSize" to miuiIslandLabelFontSize,
                     "miuiIslandLabelOffsetX" to miuiIslandLabelOffsetX,
                     "miuiIslandLabelOffsetY" to miuiIslandLabelOffsetY,
+                    "hasMiuiIslandLabelLogoPath" to (!miuiIslandLabelLogoPath.isNullOrBlank()),
+                    "miuiIslandLabelLogoCornerRadius" to miuiIslandLabelLogoCornerRadius,
                     "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                 )
             )
@@ -1699,6 +1709,8 @@ class LiveUpdateService : Service() {
             miuiIslandLabelFontSize.toString(),
             miuiIslandLabelOffsetX.toString(),
             miuiIslandLabelOffsetY.toString(),
+            miuiIslandLabelLogoPath.orEmpty(),
+            miuiIslandLabelLogoCornerRadius.toString(),
         ).joinToString("|")
         if (cacheKey == cachedIslandBitmapKey && cachedIslandBitmap != null) {
             return cachedIslandBitmap
@@ -1707,6 +1719,8 @@ class LiveUpdateService : Service() {
         val bitmap = buildIslandLabelBitmap(
             text = text,
             includeAppIcon = miuiIslandLabelStyle == "icon_and_text",
+            customIconPath = miuiIslandLabelLogoPath,
+            customIconCornerRadiusDp = miuiIslandLabelLogoCornerRadius,
             fontColorHex = miuiIslandLabelFontColor,
             fontWeight = miuiIslandLabelFontWeight,
             renderQuality = miuiIslandLabelRenderQuality,
@@ -1722,6 +1736,8 @@ class LiveUpdateService : Service() {
     private fun buildIslandLabelBitmap(
         text: String,
         includeAppIcon: Boolean,
+        customIconPath: String?,
+        customIconCornerRadiusDp: Float,
         fontColorHex: String,
         fontWeight: String,
         renderQuality: String,
@@ -1824,15 +1840,30 @@ class LiveUpdateService : Service() {
         val centerY = height / 2f
 
         if (includeAppIcon) {
-            val appIcon = packageManager.getApplicationIcon(packageName)
             val iconTop = ((height - iconSizePx) / 2f).toInt()
-            appIcon.setBounds(
-                horizontalPaddingPx.toInt(),
-                iconTop,
-                horizontalPaddingPx.toInt() + iconSizePx,
-                iconTop + iconSizePx
-            )
-            appIcon.draw(canvas)
+            val customBitmap = customIconPath?.let {
+                decodeSquareBitmap(it, iconSizePx.coerceAtLeast(1))
+            }
+            if (customBitmap != null) {
+                drawRoundedBitmap(
+                    canvas = canvas,
+                    bitmap = customBitmap,
+                    left = horizontalPaddingPx,
+                    top = iconTop.toFloat(),
+                    sizePx = iconSizePx.toFloat(),
+                    cornerRadiusPx = (dp(customIconCornerRadiusDp.coerceIn(0f, 12f)) * renderScale)
+                        .coerceAtMost(iconSizePx / 2f),
+                )
+            } else {
+                val appIcon = packageManager.getApplicationIcon(packageName)
+                appIcon.setBounds(
+                    horizontalPaddingPx.toInt(),
+                    iconTop,
+                    horizontalPaddingPx.toInt() + iconSizePx,
+                    iconTop + iconSizePx
+                )
+                appIcon.draw(canvas)
+            }
             textStartX += iconSizePx + iconGapPx
         } else {
             textStartX = (
@@ -1847,6 +1878,27 @@ class LiveUpdateService : Service() {
         val baseline = centerY - (glyphBounds.top + glyphBounds.bottom) / 2f + verticalOffsetPx
         canvas.drawText(displayText, textStartX, baseline, textPaint)
         return bitmap
+    }
+
+    private fun drawRoundedBitmap(
+        canvas: Canvas,
+        bitmap: Bitmap,
+        left: Float,
+        top: Float,
+        sizePx: Float,
+        cornerRadiusPx: Float,
+    ) {
+        if (cornerRadiusPx <= 0f) {
+            canvas.drawBitmap(bitmap, left, top, null)
+            return
+        }
+        val rect = RectF(left, top, left + sizePx, top + sizePx)
+        val shader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.shader = shader
+            isFilterBitmap = true
+        }
+        canvas.drawRoundRect(rect, cornerRadiusPx, cornerRadiusPx, paint)
     }
 
     private fun parseColorHexOrDefault(colorHex: String?, fallback: Int): Int {
@@ -1925,7 +1977,7 @@ class LiveUpdateService : Service() {
         }
     }
 
-    private fun decodeExpandedIconBitmap(path: String): Bitmap? {
+    private fun decodeSquareBitmap(path: String, targetSize: Int): Bitmap? {
         val source = BitmapFactory.decodeFile(path) ?: return null
         val side = minOf(source.width, source.height)
         if (side <= 0) {
@@ -1938,15 +1990,20 @@ class LiveUpdateService : Service() {
         if (cropped != source) {
             source.recycle()
         }
-        val targetSize = dp(56f).toInt().coerceAtLeast(96)
-        if (cropped.width == targetSize && cropped.height == targetSize) {
+        val resolvedTargetSize = targetSize.coerceAtLeast(1)
+        if (cropped.width == resolvedTargetSize && cropped.height == resolvedTargetSize) {
             return cropped
         }
-        val scaled = Bitmap.createScaledBitmap(cropped, targetSize, targetSize, true)
+        val scaled = Bitmap.createScaledBitmap(cropped, resolvedTargetSize, resolvedTargetSize, true)
         if (scaled != cropped) {
             cropped.recycle()
         }
         return scaled
+    }
+
+    private fun decodeExpandedIconBitmap(path: String): Bitmap? {
+        val targetSize = dp(56f).toInt().coerceAtLeast(96)
+        return decodeSquareBitmap(path, targetSize)
     }
 
     private fun applyExpandedLargeIcon(builder: Notification.Builder) {
@@ -2399,6 +2456,8 @@ class LiveUpdateService : Service() {
                     "miuiIslandLabelFontSize" to miuiIslandLabelFontSize,
                     "miuiIslandLabelOffsetX" to miuiIslandLabelOffsetX,
                     "miuiIslandLabelOffsetY" to miuiIslandLabelOffsetY,
+                    "miuiIslandLabelLogoPath" to miuiIslandLabelLogoPath,
+                    "miuiIslandLabelLogoCornerRadius" to miuiIslandLabelLogoCornerRadius,
                     "miuiIslandExpandedIconMode" to miuiIslandExpandedIconMode,
                     "miuiIslandExpandedIconPath" to miuiIslandExpandedIconPath,
                     "beforeClassQuickAction" to beforeClassQuickAction,

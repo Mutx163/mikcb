@@ -734,6 +734,16 @@
   "liveMiuiLabelImageSubtitle": "Only effective on Xiaomi-style island layouts. It renders course name or location into the left icon slot.",
   "liveMiuiLabelContentLabel": "Left Text Content",
   "liveMiuiLabelStyleLabel": "Left Icon Style",
+  "liveMiuiLabelLogoTitle": "Left Icon Logo",
+  "liveMiuiLabelLogoSubtitle": "Only applies to the icon + text style. If not selected, the app icon remains the fallback.",
+  "liveMiuiLabelLogoCornerRadiusLabel": "Left Icon Corner Radius {value}",
+  "@liveMiuiLabelLogoCornerRadiusLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "liveMiuiLabelFontSizeLabel": "Left Text Size {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {

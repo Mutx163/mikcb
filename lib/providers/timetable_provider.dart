@@ -2241,6 +2241,9 @@ class TimetableProvider with ChangeNotifier {
         miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
         miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
         miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
+        miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
+        miuiIslandLabelLogoCornerRadius:
+            displaySettings.miuiIslandLabelLogoCornerRadius,
         miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
         beforeClassQuickAction: settings.liveBeforeClassQuickAction,

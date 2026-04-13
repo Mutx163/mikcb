@@ -12,6 +12,7 @@ import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
+const String _labelLogoDir = 'miui_label_logos';
 const List<String> _labelColors = [
   '#FFFFFF',
   '#E2E8F0',
@@ -634,6 +635,85 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   );
                 },
               ),
+              if (display.miuiIslandLabelStyle ==
+                  MiuiIslandLabelStyle.iconAndText) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.liveMiuiLabelLogoTitle,
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    l10n.liveMiuiLabelLogoSubtitle,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => _pickLabelLogoImage(display),
+                        icon: const Icon(Icons.image_outlined),
+                        label: Text(
+                          display.miuiIslandLabelLogoPath == null
+                              ? l10n.selectImageAction
+                              : l10n.replaceImageAction,
+                        ),
+                      ),
+                    ),
+                    if (display.miuiIslandLabelLogoPath != null) ...[
+                      const SizedBox(width: 12),
+                      IconButton.outlined(
+                        onPressed: () => _updateDisplay(
+                          display.copyWith(
+                            clearMiuiIslandLabelLogoPath: true,
+                          ),
+                          clearLabelLogoPath: true,
+                        ),
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ],
+                  ],
+                ),
+                if (display.miuiIslandLabelLogoPath != null) ...[
+                  const SizedBox(height: 12),
+                  _ImagePreview(
+                    path: display.miuiIslandLabelLogoPath!,
+                    imageCornerRadius: display.miuiIslandLabelLogoCornerRadius,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.liveMiuiLabelLogoCornerRadiusLabel(
+                      display.miuiIslandLabelLogoCornerRadius
+                          .toStringAsFixed(0),
+                    ),
+                  ),
+                  Slider(
+                    value: display.miuiIslandLabelLogoCornerRadius.clamp(
+                      0.0,
+                      12.0,
+                    ),
+                    min: 0,
+                    max: 12,
+                    divisions: 12,
+                    label: display.miuiIslandLabelLogoCornerRadius
+                        .toStringAsFixed(0),
+                    onChanged: (value) => _updateDisplay(
+                      display.copyWith(
+                        miuiIslandLabelLogoCornerRadius: value,
+                      ),
+                      debounce: true,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+              ],
               const SizedBox(height: 12),
               Text(
                 l10n.liveMiuiLabelFontSizeLabel(
@@ -779,7 +859,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 children: [
                   Expanded(
                     child: FilledButton.tonalIcon(
-                      onPressed: () => _pickImage(display),
+                      onPressed: () => _pickExpandedIconImage(display),
                       icon: const Icon(Icons.image_outlined),
                       label: Text(
                         display.miuiIslandExpandedIconPath == null
@@ -848,15 +928,18 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     LiveDisplaySettings next, {
     bool debounce = false,
     bool clearExpandedIconPath = false,
+    bool clearLabelLogoPath = false,
   }) {
     final nextSettings = widget.forDuringEnd
         ? _draft.copyWithDuringEndDisplaySettings(
             next,
             clearExpandedIconPath: clearExpandedIconPath,
+            clearLabelLogoPath: clearLabelLogoPath,
           )
         : _draft.copyWithBeforeClassDisplaySettings(
             next,
             clearExpandedIconPath: clearExpandedIconPath,
+            clearLabelLogoPath: clearLabelLogoPath,
           );
     _updateDraft(nextSettings, debounce: debounce);
   }
@@ -898,37 +981,64 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     }
   }
 
-  Future<void> _pickImage(LiveDisplaySettings display) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
+  Future<void> _pickExpandedIconImage(LiveDisplaySettings display) async {
+    final targetPath = await _pickAndStoreImage(
+      directoryName: _expandedIconDir,
+      filePrefix: widget.forDuringEnd
+          ? 'during_end_expanded_icon'
+          : 'before_class_expanded_icon',
     );
-    if (!mounted || result == null || result.files.isEmpty) return;
-    final file = result.files.single;
-    final bytes = file.bytes ??
-        (file.path == null ? null : await File(file.path!).readAsBytes());
-    if (bytes == null || bytes.isEmpty) return;
-    final ext = (file.extension?.isNotEmpty ?? false)
-        ? file.extension!.toLowerCase()
-        : 'png';
-    final dir = await getApplicationDocumentsDirectory();
-    final targetDir = Directory(
-      '${dir.path}${Platform.pathSeparator}$_expandedIconDir',
-    );
-    if (!await targetDir.exists()) {
-      await targetDir.create(recursive: true);
-    }
-    final modeSuffix = widget.forDuringEnd ? 'during_end' : 'before_class';
-    final targetPath =
-        '${targetDir.path}${Platform.pathSeparator}${modeSuffix}_expanded_icon.$ext';
-    await File(targetPath).writeAsBytes(bytes, flush: true);
-    if (!mounted) return;
+    if (!mounted || targetPath == null) return;
     _updateDisplay(
       display.copyWith(
         miuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.customImage,
         miuiIslandExpandedIconPath: targetPath,
       ),
     );
+  }
+
+  Future<void> _pickLabelLogoImage(LiveDisplaySettings display) async {
+    final targetPath = await _pickAndStoreImage(
+      directoryName: _labelLogoDir,
+      filePrefix: widget.forDuringEnd
+          ? 'during_end_label_logo'
+          : 'before_class_label_logo',
+    );
+    if (!mounted || targetPath == null) return;
+    _updateDisplay(
+      display.copyWith(
+        miuiIslandLabelLogoPath: targetPath,
+      ),
+    );
+  }
+
+  Future<String?> _pickAndStoreImage({
+    required String directoryName,
+    required String filePrefix,
+  }) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      withData: true,
+    );
+    if (!mounted || result == null || result.files.isEmpty) return null;
+    final file = result.files.single;
+    final bytes = file.bytes ??
+        (file.path == null ? null : await File(file.path!).readAsBytes());
+    if (bytes == null || bytes.isEmpty) return null;
+    final ext = (file.extension?.isNotEmpty ?? false)
+        ? file.extension!.toLowerCase()
+        : 'png';
+    final dir = await getApplicationDocumentsDirectory();
+    final targetDir = Directory(
+      '${dir.path}${Platform.pathSeparator}$directoryName',
+    );
+    if (!await targetDir.exists()) {
+      await targetDir.create(recursive: true);
+    }
+    final targetPath =
+        '${targetDir.path}${Platform.pathSeparator}$filePrefix.$ext';
+    await File(targetPath).writeAsBytes(bytes, flush: true);
+    return targetPath;
   }
 }
 
@@ -1087,8 +1197,12 @@ class _ColorDot extends StatelessWidget {
 
 class _ImagePreview extends StatelessWidget {
   final String path;
+  final double imageCornerRadius;
 
-  const _ImagePreview({required this.path});
+  const _ImagePreview({
+    required this.path,
+    this.imageCornerRadius = 12,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1102,7 +1216,7 @@ class _ImagePreview extends StatelessWidget {
       child: Row(
         children: [
           ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(imageCornerRadius),
             child: file.existsSync()
                 ? Image.file(file, width: 56, height: 56, fit: BoxFit.cover)
                 : Container(

@@ -626,6 +626,8 @@ class LiveDisplaySettings {
   final double miuiIslandLabelFontSize;
   final double miuiIslandLabelOffsetX;
   final double miuiIslandLabelOffsetY;
+  final String? miuiIslandLabelLogoPath;
+  final double miuiIslandLabelLogoCornerRadius;
   final MiuiIslandExpandedIconMode miuiIslandExpandedIconMode;
   final String? miuiIslandExpandedIconPath;
 
@@ -647,6 +649,8 @@ class LiveDisplaySettings {
     required this.miuiIslandLabelFontSize,
     required this.miuiIslandLabelOffsetX,
     required this.miuiIslandLabelOffsetY,
+    required this.miuiIslandLabelLogoPath,
+    required this.miuiIslandLabelLogoCornerRadius,
     required this.miuiIslandExpandedIconMode,
     required this.miuiIslandExpandedIconPath,
   });
@@ -669,6 +673,9 @@ class LiveDisplaySettings {
     double? miuiIslandLabelFontSize,
     double? miuiIslandLabelOffsetX,
     double? miuiIslandLabelOffsetY,
+    String? miuiIslandLabelLogoPath,
+    bool clearMiuiIslandLabelLogoPath = false,
+    double? miuiIslandLabelLogoCornerRadius,
     MiuiIslandExpandedIconMode? miuiIslandExpandedIconMode,
     String? miuiIslandExpandedIconPath,
     bool clearMiuiIslandExpandedIconPath = false,
@@ -700,6 +707,11 @@ class LiveDisplaySettings {
           miuiIslandLabelOffsetX ?? this.miuiIslandLabelOffsetX,
       miuiIslandLabelOffsetY:
           miuiIslandLabelOffsetY ?? this.miuiIslandLabelOffsetY,
+      miuiIslandLabelLogoPath: clearMiuiIslandLabelLogoPath
+          ? null
+          : miuiIslandLabelLogoPath ?? this.miuiIslandLabelLogoPath,
+      miuiIslandLabelLogoCornerRadius: miuiIslandLabelLogoCornerRadius ??
+          this.miuiIslandLabelLogoCornerRadius,
       miuiIslandExpandedIconMode:
           miuiIslandExpandedIconMode ?? this.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: clearMiuiIslandExpandedIconPath
@@ -817,6 +829,8 @@ class TimetableSettings {
   final double liveMiuiIslandLabelFontSize;
   final double liveMiuiIslandLabelOffsetX;
   final double liveMiuiIslandLabelOffsetY;
+  final String? liveMiuiIslandLabelLogoPath;
+  final double liveMiuiIslandLabelLogoCornerRadius;
   final MiuiIslandExpandedIconMode liveMiuiIslandExpandedIconMode;
   final String? liveMiuiIslandExpandedIconPath;
   final MiuiIslandLabelStyle liveDuringEndMiuiIslandLabelStyle;
@@ -827,6 +841,8 @@ class TimetableSettings {
   final double liveDuringEndMiuiIslandLabelFontSize;
   final double liveDuringEndMiuiIslandLabelOffsetX;
   final double liveDuringEndMiuiIslandLabelOffsetY;
+  final String? liveDuringEndMiuiIslandLabelLogoPath;
+  final double liveDuringEndMiuiIslandLabelLogoCornerRadius;
   final MiuiIslandExpandedIconMode liveDuringEndMiuiIslandExpandedIconMode;
   final String? liveDuringEndMiuiIslandExpandedIconPath;
   final int liveShowBeforeClassMinutes;
@@ -917,6 +933,8 @@ class TimetableSettings {
     this.liveMiuiIslandLabelFontSize = 14,
     this.liveMiuiIslandLabelOffsetX = 0,
     this.liveMiuiIslandLabelOffsetY = 0,
+    this.liveMiuiIslandLabelLogoPath,
+    this.liveMiuiIslandLabelLogoCornerRadius = 8,
     this.liveMiuiIslandExpandedIconMode = MiuiIslandExpandedIconMode.appIcon,
     this.liveMiuiIslandExpandedIconPath,
     this.liveDuringEndMiuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
@@ -930,6 +948,8 @@ class TimetableSettings {
     this.liveDuringEndMiuiIslandLabelFontSize = 14,
     this.liveDuringEndMiuiIslandLabelOffsetX = 0,
     this.liveDuringEndMiuiIslandLabelOffsetY = 0,
+    this.liveDuringEndMiuiIslandLabelLogoPath,
+    this.liveDuringEndMiuiIslandLabelLogoCornerRadius = 8,
     this.liveDuringEndMiuiIslandExpandedIconMode =
         MiuiIslandExpandedIconMode.appIcon,
     this.liveDuringEndMiuiIslandExpandedIconPath,
@@ -1032,6 +1052,8 @@ class TimetableSettings {
       liveMiuiIslandLabelFontSize: 14,
       liveMiuiIslandLabelOffsetX: 0,
       liveMiuiIslandLabelOffsetY: 0,
+      liveMiuiIslandLabelLogoPath: null,
+      liveMiuiIslandLabelLogoCornerRadius: 8,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconMode.appIcon,
       liveMiuiIslandExpandedIconPath: null,
       liveDuringEndMiuiIslandLabelStyle: MiuiIslandLabelStyle.textOnly,
@@ -1043,6 +1065,8 @@ class TimetableSettings {
       liveDuringEndMiuiIslandLabelFontSize: 14,
       liveDuringEndMiuiIslandLabelOffsetX: 0,
       liveDuringEndMiuiIslandLabelOffsetY: 0,
+      liveDuringEndMiuiIslandLabelLogoPath: null,
+      liveDuringEndMiuiIslandLabelLogoCornerRadius: 8,
       liveDuringEndMiuiIslandExpandedIconMode:
           MiuiIslandExpandedIconMode.appIcon,
       liveDuringEndMiuiIslandExpandedIconPath: null,
@@ -1137,6 +1161,9 @@ class TimetableSettings {
       'liveMiuiIslandLabelFontSize': liveMiuiIslandLabelFontSize,
       'liveMiuiIslandLabelOffsetX': liveMiuiIslandLabelOffsetX,
       'liveMiuiIslandLabelOffsetY': liveMiuiIslandLabelOffsetY,
+      'liveMiuiIslandLabelLogoPath': liveMiuiIslandLabelLogoPath,
+      'liveMiuiIslandLabelLogoCornerRadius':
+          liveMiuiIslandLabelLogoCornerRadius,
       'liveMiuiIslandExpandedIconMode': liveMiuiIslandExpandedIconMode.value,
       'liveMiuiIslandExpandedIconPath': liveMiuiIslandExpandedIconPath,
       'liveDuringEndMiuiIslandLabelStyle':
@@ -1155,6 +1182,10 @@ class TimetableSettings {
           liveDuringEndMiuiIslandLabelOffsetX,
       'liveDuringEndMiuiIslandLabelOffsetY':
           liveDuringEndMiuiIslandLabelOffsetY,
+      'liveDuringEndMiuiIslandLabelLogoPath':
+          liveDuringEndMiuiIslandLabelLogoPath,
+      'liveDuringEndMiuiIslandLabelLogoCornerRadius':
+          liveDuringEndMiuiIslandLabelLogoCornerRadius,
       'liveDuringEndMiuiIslandExpandedIconMode':
           liveDuringEndMiuiIslandExpandedIconMode.value,
       'liveDuringEndMiuiIslandExpandedIconPath':
@@ -1333,6 +1364,11 @@ class TimetableSettings {
           (json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0,
       liveMiuiIslandLabelOffsetY:
           (json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0,
+      liveMiuiIslandLabelLogoPath:
+          json['liveMiuiIslandLabelLogoPath'] as String?,
+      liveMiuiIslandLabelLogoCornerRadius:
+          (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)?.toDouble() ??
+              8,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
         json['liveMiuiIslandExpandedIconMode'] as String?,
       ),
@@ -1368,6 +1404,15 @@ class TimetableSettings {
       liveDuringEndMiuiIslandLabelOffsetY:
           (json['liveDuringEndMiuiIslandLabelOffsetY'] as num?)?.toDouble() ??
               ((json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0),
+      liveDuringEndMiuiIslandLabelLogoPath:
+          json['liveDuringEndMiuiIslandLabelLogoPath'] as String? ??
+              json['liveMiuiIslandLabelLogoPath'] as String?,
+      liveDuringEndMiuiIslandLabelLogoCornerRadius:
+          (json['liveDuringEndMiuiIslandLabelLogoCornerRadius'] as num?)
+                  ?.toDouble() ??
+              (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)
+                  ?.toDouble() ??
+              8,
       liveDuringEndMiuiIslandExpandedIconMode:
           MiuiIslandExpandedIconModeX.fromValue(
         json['liveDuringEndMiuiIslandExpandedIconMode'] as String? ??
@@ -1487,6 +1532,9 @@ class TimetableSettings {
     double? liveMiuiIslandLabelFontSize,
     double? liveMiuiIslandLabelOffsetX,
     double? liveMiuiIslandLabelOffsetY,
+    String? liveMiuiIslandLabelLogoPath,
+    bool clearLiveMiuiIslandLabelLogoPath = false,
+    double? liveMiuiIslandLabelLogoCornerRadius,
     MiuiIslandExpandedIconMode? liveMiuiIslandExpandedIconMode,
     String? liveMiuiIslandExpandedIconPath,
     bool clearLiveMiuiIslandExpandedIconPath = false,
@@ -1498,6 +1546,9 @@ class TimetableSettings {
     double? liveDuringEndMiuiIslandLabelFontSize,
     double? liveDuringEndMiuiIslandLabelOffsetX,
     double? liveDuringEndMiuiIslandLabelOffsetY,
+    String? liveDuringEndMiuiIslandLabelLogoPath,
+    bool clearLiveDuringEndMiuiIslandLabelLogoPath = false,
+    double? liveDuringEndMiuiIslandLabelLogoCornerRadius,
     MiuiIslandExpandedIconMode? liveDuringEndMiuiIslandExpandedIconMode,
     String? liveDuringEndMiuiIslandExpandedIconPath,
     bool clearLiveDuringEndMiuiIslandExpandedIconPath = false,
@@ -1633,6 +1684,12 @@ class TimetableSettings {
           liveMiuiIslandLabelOffsetX ?? this.liveMiuiIslandLabelOffsetX,
       liveMiuiIslandLabelOffsetY:
           liveMiuiIslandLabelOffsetY ?? this.liveMiuiIslandLabelOffsetY,
+      liveMiuiIslandLabelLogoPath: clearLiveMiuiIslandLabelLogoPath
+          ? null
+          : liveMiuiIslandLabelLogoPath ?? this.liveMiuiIslandLabelLogoPath,
+      liveMiuiIslandLabelLogoCornerRadius:
+          liveMiuiIslandLabelLogoCornerRadius ??
+              this.liveMiuiIslandLabelLogoCornerRadius,
       liveMiuiIslandExpandedIconMode:
           liveMiuiIslandExpandedIconMode ?? this.liveMiuiIslandExpandedIconMode,
       liveMiuiIslandExpandedIconPath: clearLiveMiuiIslandExpandedIconPath
@@ -1662,6 +1719,14 @@ class TimetableSettings {
       liveDuringEndMiuiIslandLabelOffsetY:
           liveDuringEndMiuiIslandLabelOffsetY ??
               this.liveDuringEndMiuiIslandLabelOffsetY,
+      liveDuringEndMiuiIslandLabelLogoPath:
+          clearLiveDuringEndMiuiIslandLabelLogoPath
+              ? null
+              : liveDuringEndMiuiIslandLabelLogoPath ??
+                  this.liveDuringEndMiuiIslandLabelLogoPath,
+      liveDuringEndMiuiIslandLabelLogoCornerRadius:
+          liveDuringEndMiuiIslandLabelLogoCornerRadius ??
+              this.liveDuringEndMiuiIslandLabelLogoCornerRadius,
       liveDuringEndMiuiIslandExpandedIconMode:
           liveDuringEndMiuiIslandExpandedIconMode ??
               this.liveDuringEndMiuiIslandExpandedIconMode,
@@ -1718,6 +1783,8 @@ class TimetableSettings {
         miuiIslandLabelFontSize: liveMiuiIslandLabelFontSize,
         miuiIslandLabelOffsetX: liveMiuiIslandLabelOffsetX,
         miuiIslandLabelOffsetY: liveMiuiIslandLabelOffsetY,
+        miuiIslandLabelLogoPath: liveMiuiIslandLabelLogoPath,
+        miuiIslandLabelLogoCornerRadius: liveMiuiIslandLabelLogoCornerRadius,
         miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
         miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
       );
@@ -1745,6 +1812,9 @@ class TimetableSettings {
               miuiIslandLabelFontSize: liveDuringEndMiuiIslandLabelFontSize,
               miuiIslandLabelOffsetX: liveDuringEndMiuiIslandLabelOffsetX,
               miuiIslandLabelOffsetY: liveDuringEndMiuiIslandLabelOffsetY,
+              miuiIslandLabelLogoPath: liveDuringEndMiuiIslandLabelLogoPath,
+              miuiIslandLabelLogoCornerRadius:
+                  liveDuringEndMiuiIslandLabelLogoCornerRadius,
               miuiIslandExpandedIconMode:
                   liveDuringEndMiuiIslandExpandedIconMode,
               miuiIslandExpandedIconPath:
@@ -1754,6 +1824,7 @@ class TimetableSettings {
   TimetableSettings copyWithBeforeClassDisplaySettings(
     LiveDisplaySettings settings, {
     bool clearExpandedIconPath = false,
+    bool clearLabelLogoPath = false,
   }) {
     return copyWith(
       liveShowCourseName: settings.showCourseName,
@@ -1773,6 +1844,10 @@ class TimetableSettings {
       liveMiuiIslandLabelFontSize: settings.miuiIslandLabelFontSize,
       liveMiuiIslandLabelOffsetX: settings.miuiIslandLabelOffsetX,
       liveMiuiIslandLabelOffsetY: settings.miuiIslandLabelOffsetY,
+      liveMiuiIslandLabelLogoPath: settings.miuiIslandLabelLogoPath,
+      liveMiuiIslandLabelLogoCornerRadius:
+          settings.miuiIslandLabelLogoCornerRadius,
+      clearLiveMiuiIslandLabelLogoPath: clearLabelLogoPath,
       liveMiuiIslandExpandedIconMode: settings.miuiIslandExpandedIconMode,
       liveMiuiIslandExpandedIconPath: settings.miuiIslandExpandedIconPath,
       clearLiveMiuiIslandExpandedIconPath: clearExpandedIconPath,
@@ -1782,6 +1857,7 @@ class TimetableSettings {
   TimetableSettings copyWithDuringEndDisplaySettings(
     LiveDisplaySettings settings, {
     bool clearExpandedIconPath = false,
+    bool clearLabelLogoPath = false,
   }) {
     return copyWith(
       liveDuringEndShowCourseName: settings.showCourseName,
@@ -1804,6 +1880,10 @@ class TimetableSettings {
       liveDuringEndMiuiIslandLabelFontSize: settings.miuiIslandLabelFontSize,
       liveDuringEndMiuiIslandLabelOffsetX: settings.miuiIslandLabelOffsetX,
       liveDuringEndMiuiIslandLabelOffsetY: settings.miuiIslandLabelOffsetY,
+      liveDuringEndMiuiIslandLabelLogoPath: settings.miuiIslandLabelLogoPath,
+      liveDuringEndMiuiIslandLabelLogoCornerRadius:
+          settings.miuiIslandLabelLogoCornerRadius,
+      clearLiveDuringEndMiuiIslandLabelLogoPath: clearLabelLogoPath,
       liveDuringEndMiuiIslandExpandedIconMode:
           settings.miuiIslandExpandedIconMode,
       liveDuringEndMiuiIslandExpandedIconPath:

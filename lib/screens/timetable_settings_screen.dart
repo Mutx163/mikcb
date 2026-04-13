@@ -413,7 +413,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        l10n.semesterOverviewCurrentWeek(currentWeek, semesterWeekCount),
+                        l10n.semesterOverviewCurrentWeek(
+                            currentWeek, semesterWeekCount),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -422,7 +423,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                       Text(
                         semesterStartDate == null
                             ? l10n.semesterStartUnset
-                            : l10n.semesterStartSet(_formatDate(semesterStartDate!)),
+                            : l10n.semesterStartSet(
+                                _formatDate(semesterStartDate!)),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -450,7 +452,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
                     semesterStartDate == null
-                        ? AppLocalizations.of(context)!.setSemesterStartDateAction
+                        ? AppLocalizations.of(context)!
+                            .setSemesterStartDateAction
                         : AppLocalizations.of(context)!.semesterStartDateAction,
                   ),
                 ),
@@ -465,7 +468,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                   ),
                   onPressed: onSyncCurrentWeek,
                   icon: const Icon(Icons.sync_outlined),
-                  label: Text(AppLocalizations.of(context)!.syncCurrentWeekAction),
+                  label:
+                      Text(AppLocalizations.of(context)!.syncCurrentWeekAction),
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -970,7 +974,6 @@ String normalizeLocaleTagForDropdown(String tag) {
   return '';
 }
 
-
 String _homeTitleStyleLabel(BuildContext context, HomeTitleStyle style) {
   final l10n = AppLocalizations.of(context)!;
   return switch (style) {
@@ -987,7 +990,8 @@ String _homeTitleStyleDescription(BuildContext context, HomeTitleStyle style) {
   };
 }
 
-String _widgetBackgroundStyleLabel(BuildContext context, WidgetBackgroundStyle style) {
+String _widgetBackgroundStyleLabel(
+    BuildContext context, WidgetBackgroundStyle style) {
   final l10n = AppLocalizations.of(context)!;
   return switch (style) {
     WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
@@ -996,7 +1000,8 @@ String _widgetBackgroundStyleLabel(BuildContext context, WidgetBackgroundStyle s
   };
 }
 
-String _homeWidgetTargetLabel(BuildContext context, HomeWidgetPinTarget target) {
+String _homeWidgetTargetLabel(
+    BuildContext context, HomeWidgetPinTarget target) {
   final l10n = AppLocalizations.of(context)!;
   return switch (target) {
     HomeWidgetPinTarget.compact22 => l10n.homeWidgetTargetCompact22,
@@ -1281,7 +1286,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     if (!mounted) return;
     if (rawLog == null || rawLog.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
+        SnackBar(
+            content:
+                Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
       );
       return;
     }
@@ -1317,7 +1324,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     });
     if (exportPath == null || exportPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context)!.liveDiagnosticsNothingToExport)),
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.liveDiagnosticsNothingToExport)),
       );
       return;
     }
@@ -1361,7 +1370,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          cleared ? AppLocalizations.of(context)!.liveDiagnosticsCleared : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
+          cleared
+              ? AppLocalizations.of(context)!.liveDiagnosticsCleared
+              : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
         ),
       ),
     );
@@ -1457,7 +1468,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                       icon: serviceRunning
                           ? Icons.play_circle_outline_rounded
                           : Icons.stop_circle_outlined,
-                      label: serviceRunning ? l10n.liveTestingServiceStatusRunning : l10n.liveTestingServiceStatusStopped,
+                      label: serviceRunning
+                          ? l10n.liveTestingServiceStatusRunning
+                          : l10n.liveTestingServiceStatusStopped,
                       color: serviceRunning
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.outline,
@@ -1481,7 +1494,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  notIslandReason.isEmpty ? l10n.liveTestingNoIslandReasonEmpty : notIslandReason,
+                  notIslandReason.isEmpty
+                      ? l10n.liveTestingNoIslandReasonEmpty
+                      : notIslandReason,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: 12),
@@ -1506,7 +1521,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                         strokeWidth: 2),
                                   )
                                 : const Icon(Icons.refresh_rounded),
-                            label: Text(_loadingDebugStatus ? l10n.liveTestingRefreshing : l10n.liveTestingRefreshAction),
+                            label: Text(_loadingDebugStatus
+                                ? l10n.liveTestingRefreshing
+                                : l10n.liveTestingRefreshAction),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: _exportingDiagnostics
@@ -1520,8 +1537,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                         strokeWidth: 2),
                                   )
                                 : const Icon(Icons.ios_share_rounded),
-                            label:
-                                Text(_exportingDiagnostics ? l10n.liveTestingExporting : l10n.liveTestingExportAction),
+                            label: Text(_exportingDiagnostics
+                                ? l10n.liveTestingExporting
+                                : l10n.liveTestingExportAction),
                           ),
                         ],
                       ),
@@ -1537,7 +1555,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         title: Text(l10n.liveTestingAutoRefreshTitle),
                         subtitle: Text(
                           _autoRefreshEnabled
-                              ? l10n.liveTestingAutoRefreshOn(_autoRefreshInterval.inSeconds)
+                              ? l10n.liveTestingAutoRefreshOn(
+                                  _autoRefreshInterval.inSeconds)
                               : l10n.liveTestingAutoRefreshOff,
                         ),
                       ),
@@ -1553,21 +1572,30 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           ),
           const SizedBox(height: 16),
           if (_debugStatus != null) ...[
-            _DebugSectionCard(title: l10n.liveTestingSectionEnvironment, data: environment),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionEnvironment, data: environment),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionService, data: service),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionService, data: service),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionCourse, data: course),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionCourse, data: course),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionTiming, data: timing),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionTiming, data: timing),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionSwitches, data: switches),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionSwitches, data: switches),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionDisplay, data: display),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionDisplay, data: display),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionNotification, data: notification),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionNotification, data: notification),
             const SizedBox(height: 16),
-            _DebugSectionCard(title: l10n.liveTestingSectionRecentLogs, data: recentDiagnostics),
+            _DebugSectionCard(
+                title: l10n.liveTestingSectionRecentLogs,
+                data: recentDiagnostics),
             const SizedBox(height: 16),
             _SettingsSectionCard(
               title: l10n.liveTestingRawDataTitle,
@@ -1607,7 +1635,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.delete_outline_rounded),
-                  label: Text(_clearingDiagnostics ? l10n.liveTestingClearingLogs : l10n.liveTestingClearLogsAction),
+                  label: Text(_clearingDiagnostics
+                      ? l10n.liveTestingClearingLogs
+                      : l10n.liveTestingClearLogsAction),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _openLiveDiagnosticsViewer,
@@ -1646,7 +1676,11 @@ Map<String, dynamic> _debugSectionMap(dynamic value) {
 
 String _debugValueText(dynamic value) {
   if (value == null) return '';
-  if (value is bool) return value ? AppLocalizations.of(_debugL10nContext!)!.yesLabel : AppLocalizations.of(_debugL10nContext!)!.noLabel;
+  if (value is bool) {
+    return value
+        ? AppLocalizations.of(_debugL10nContext!)!.yesLabel
+        : AppLocalizations.of(_debugL10nContext!)!.noLabel;
+  }
   return value.toString();
 }
 
@@ -1700,7 +1734,8 @@ class _DebugSectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _SettingsSectionCard(
       title: title,
-      subtitle: AppLocalizations.of(context)!.liveTestingCurrentNativeFieldsSubtitle,
+      subtitle:
+          AppLocalizations.of(context)!.liveTestingCurrentNativeFieldsSubtitle,
       child: Column(
         children: data.entries
             .map(
@@ -1812,7 +1847,9 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingNoCourseAvailable)),
+      SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.liveTestingNoCourseAvailable)),
     );
     return;
   }
@@ -1920,6 +1957,9 @@ Future<void> _showTestOptions(BuildContext context) async {
       miuiIslandLabelFontSize: displaySettings.miuiIslandLabelFontSize,
       miuiIslandLabelOffsetX: displaySettings.miuiIslandLabelOffsetX,
       miuiIslandLabelOffsetY: displaySettings.miuiIslandLabelOffsetY,
+      miuiIslandLabelLogoPath: displaySettings.miuiIslandLabelLogoPath,
+      miuiIslandLabelLogoCornerRadius:
+          displaySettings.miuiIslandLabelLogoCornerRadius,
       miuiIslandExpandedIconMode: displaySettings.miuiIslandExpandedIconMode,
       miuiIslandExpandedIconPath: displaySettings.miuiIslandExpandedIconPath,
       beforeClassQuickAction: settings.liveBeforeClassQuickAction,
@@ -1941,7 +1981,9 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingNotificationSent)),
+      SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.liveTestingNotificationSent)),
     );
   } catch (e, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
@@ -1953,7 +1995,9 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.sendFailedWithError('$e'))),
+      SnackBar(
+          content:
+              Text(AppLocalizations.of(context)!.sendFailedWithError('$e'))),
     );
   }
 }
@@ -2119,8 +2163,14 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         ? l10n.defaultLabel
                         : (_draft.widgetHeightAdjustment >
                                 _defaultWidgetHeightAdjustment
-                            ? l10n.higherByValue((_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment).toStringAsFixed(0))
-                            : l10n.lowerByValue((_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment).toStringAsFixed(0))),
+                            ? l10n.higherByValue(
+                                (_draft.widgetHeightAdjustment -
+                                        _defaultWidgetHeightAdjustment)
+                                    .toStringAsFixed(0))
+                            : l10n.lowerByValue(
+                                (_defaultWidgetHeightAdjustment -
+                                        _draft.widgetHeightAdjustment)
+                                    .toStringAsFixed(0))),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Slider(
@@ -2292,13 +2342,15 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     });
 
     final message = switch (result) {
-      HomeWidgetPinRequestResult.requested =>
-        AppLocalizations.of(context)!.homeWidgetPinRequested(_homeWidgetTargetLabel(context, target)),
-      HomeWidgetPinRequestResult.unsupported =>
-        AppLocalizations.of(context)!.homeWidgetPinUnsupportedManual(_homeWidgetTargetLabel(context, target)),
-      HomeWidgetPinRequestResult.invalidWidgetType => AppLocalizations.of(context)!.homeWidgetInvalidType,
-      HomeWidgetPinRequestResult.failed =>
-        AppLocalizations.of(context)!.homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.requested => AppLocalizations.of(context)!
+          .homeWidgetPinRequested(_homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.unsupported => AppLocalizations.of(context)!
+          .homeWidgetPinUnsupportedManual(
+              _homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.invalidWidgetType =>
+        AppLocalizations.of(context)!.homeWidgetInvalidType,
+      HomeWidgetPinRequestResult.failed => AppLocalizations.of(context)!
+          .homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
     };
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
@@ -2435,7 +2487,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          l10n.layoutCourseCardGapLabel(_draft.timetableCourseCardGap.toStringAsFixed(1)),
+                          l10n.layoutCourseCardGapLabel(
+                              _draft.timetableCourseCardGap.toStringAsFixed(1)),
                         ),
                         Slider(
                           value: _draft.timetableCourseCardGap.clamp(0.0, 3.0),
@@ -2452,7 +2505,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text(l10n.layoutSectionHeightLabel(_draft.sectionHeight.toStringAsFixed(0))),
+                        Text(l10n.layoutSectionHeightLabel(
+                            _draft.sectionHeight.toStringAsFixed(0))),
                         Slider(
                           value: _draft.sectionHeight,
                           min: 48,
@@ -2469,8 +2523,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                 },
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                            l10n.layoutCompactFontSizeLabel(_draft.compactFontSize.toStringAsFixed(1))),
+                        Text(l10n.layoutCompactFontSizeLabel(
+                            _draft.compactFontSize.toStringAsFixed(1))),
                         Slider(
                           value: _draft.compactFontSize,
                           min: 7,
@@ -2485,8 +2539,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                            l10n.layoutCourseCardFontSizeLabel(_draft.courseCardFontSize.toStringAsFixed(1))),
+                        Text(l10n.layoutCourseCardFontSizeLabel(
+                            _draft.courseCardFontSize.toStringAsFixed(1))),
                         Slider(
                           value: _draft.courseCardFontSize,
                           min: 7,
@@ -2686,7 +2740,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.layoutConflictOpacityLabel((_draft.timetableConflictCourseOpacity * 100).round()),
+                          l10n.layoutConflictOpacityLabel(
+                              (_draft.timetableConflictCourseOpacity * 100)
+                                  .round()),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -2927,7 +2983,15 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
   _LayoutPreviewData _buildLayoutPreviewData(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
-    final weekDays = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
+    final weekDays = [
+      l10n.weekdayMon,
+      l10n.weekdayTue,
+      l10n.weekdayWed,
+      l10n.weekdayThu,
+      l10n.weekdayFri,
+      l10n.weekdaySat,
+      l10n.weekdaySun
+    ];
     final currentWeek = provider.currentWeek;
     final visibleDays = _draft.timetableHideWeekends
         ? const [1, 2, 3, 4, 5]
@@ -3331,13 +3395,16 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
   final l10n = AppLocalizations.of(context)!;
   final parts = <String>[];
   if (settings.showCourseName) {
-    parts.add(settings.useShortName ? l10n.liveDisplaySummaryShortName : l10n.liveDisplaySummaryCourseName);
+    parts.add(settings.useShortName
+        ? l10n.liveDisplaySummaryShortName
+        : l10n.liveDisplaySummaryCourseName);
   }
   if (settings.showLocation) {
     parts.add(l10n.liveDisplaySummaryLocation);
   }
   if (settings.showCountdown) {
-    parts.add(l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label));
+    parts.add(
+        l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label));
   } else if (settings.showStageText) {
     parts.add(l10n.liveDisplaySummaryStageText);
   }
