@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
 
@@ -395,6 +396,49 @@ void main() {
     expect(result, AppUpdateService.downloadCancelledMessage);
     expect(progressEvents, isNotEmpty);
     expect(await apkFile.exists(), isFalse);
+
+    await server.close(force: true);
+    await tempDir.delete(recursive: true);
+  });
+
+  test('download clears stale managed installer apk files before writing',
+      () async {
+    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
+    final staleApk = File('${tempDir.path}/mikcb_update_old.apk');
+    await staleApk.writeAsString('stale');
+    final staleCurrentApk = File('${tempDir.path}/mikcb_update.apk');
+    await staleCurrentApk.writeAsString('old-current');
+
+    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+    unawaited(() async {
+      await for (final request in server) {
+        request.response.statusCode = 200;
+        request.response.headers.contentType = ContentType.binary;
+        request.response.add(List<int>.filled(6, 7));
+        await request.response.close();
+      }
+    }());
+
+    String? openedPath;
+    final service = AppUpdateService(
+      temporaryDirectoryProvider: () async => tempDir,
+      openInstaller: (path) async {
+        openedPath = path;
+        return OpenResult(type: ResultType.done);
+      },
+    );
+
+    final result = await service.downloadAndInstallUpdate(
+      'http://${server.address.host}:${server.port}/app.apk',
+      (_, __) {},
+      null,
+    );
+
+    expect(result, isNull);
+    expect(openedPath, '${tempDir.path}/mikcb_update.apk');
+    expect(await staleApk.exists(), isFalse);
+    expect(await staleCurrentApk.exists(), isTrue);
+    expect(await staleCurrentApk.length(), 6);
 
     await server.close(force: true);
     await tempDir.delete(recursive: true);

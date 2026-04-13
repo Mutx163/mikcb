@@ -670,12 +670,20 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     if (display.miuiIslandLabelLogoPath != null) ...[
                       const SizedBox(width: 12),
                       IconButton.outlined(
-                        onPressed: () => _updateDisplay(
-                          display.copyWith(
-                            clearMiuiIslandLabelLogoPath: true,
-                          ),
-                          clearLabelLogoPath: true,
-                        ),
+                        onPressed: () async {
+                          await _deleteManagedImageArtifacts(
+                            directoryName: _labelLogoDir,
+                            filePrefix: widget.forDuringEnd
+                                ? 'during_end_label_logo'
+                                : 'before_class_label_logo',
+                          );
+                          _updateDisplay(
+                            display.copyWith(
+                              clearMiuiIslandLabelLogoPath: true,
+                            ),
+                            clearLabelLogoPath: true,
+                          );
+                        },
                         icon: const Icon(Icons.delete_outline),
                       ),
                     ],
@@ -841,15 +849,25 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   .toList(),
               onChanged: (value) {
                 if (value == null) return;
-                _updateDisplay(
-                  display.copyWith(
-                    miuiIslandExpandedIconMode: value,
-                    clearMiuiIslandExpandedIconPath:
+                () async {
+                  if (value != MiuiIslandExpandedIconMode.customImage) {
+                    await _deleteManagedImageArtifacts(
+                      directoryName: _expandedIconDir,
+                      filePrefix: widget.forDuringEnd
+                          ? 'during_end_expanded_icon'
+                          : 'before_class_expanded_icon',
+                    );
+                  }
+                  _updateDisplay(
+                    display.copyWith(
+                      miuiIslandExpandedIconMode: value,
+                      clearMiuiIslandExpandedIconPath:
+                          value != MiuiIslandExpandedIconMode.customImage,
+                    ),
+                    clearExpandedIconPath:
                         value != MiuiIslandExpandedIconMode.customImage,
-                  ),
-                  clearExpandedIconPath:
-                      value != MiuiIslandExpandedIconMode.customImage,
-                );
+                  );
+                }();
               },
             ),
             if (display.miuiIslandExpandedIconMode ==
@@ -871,12 +889,20 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   if (display.miuiIslandExpandedIconPath != null) ...[
                     const SizedBox(width: 12),
                     IconButton.outlined(
-                      onPressed: () => _updateDisplay(
-                        display.copyWith(
-                          clearMiuiIslandExpandedIconPath: true,
-                        ),
-                        clearExpandedIconPath: true,
-                      ),
+                      onPressed: () async {
+                        await _deleteManagedImageArtifacts(
+                          directoryName: _expandedIconDir,
+                          filePrefix: widget.forDuringEnd
+                              ? 'during_end_expanded_icon'
+                              : 'before_class_expanded_icon',
+                        );
+                        _updateDisplay(
+                          display.copyWith(
+                            clearMiuiIslandExpandedIconPath: true,
+                          ),
+                          clearExpandedIconPath: true,
+                        );
+                      },
                       icon: const Icon(Icons.delete_outline),
                     ),
                   ],
@@ -1038,7 +1064,47 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final targetPath =
         '${targetDir.path}${Platform.pathSeparator}$filePrefix.$ext';
     await File(targetPath).writeAsBytes(bytes, flush: true);
+    await _deleteManagedImageArtifacts(
+      directoryName: directoryName,
+      filePrefix: filePrefix,
+      preservePath: targetPath,
+    );
     return targetPath;
+  }
+
+  Future<void> _deleteManagedImageArtifacts({
+    required String directoryName,
+    required String filePrefix,
+    String? preservePath,
+  }) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final targetDir = Directory(
+      '${dir.path}${Platform.pathSeparator}$directoryName',
+    );
+    if (!await targetDir.exists()) {
+      return;
+    }
+    final preservedAbsolutePath =
+        preservePath == null ? null : File(preservePath).absolute.path;
+    await for (final entity in targetDir.list()) {
+      if (entity is! File) {
+        continue;
+      }
+      final fileName =
+          entity.uri.pathSegments.isEmpty ? '' : entity.uri.pathSegments.last;
+      if (!fileName.startsWith('$filePrefix.')) {
+        continue;
+      }
+      if (preservedAbsolutePath != null &&
+          entity.absolute.path == preservedAbsolutePath) {
+        continue;
+      }
+      try {
+        if (await entity.exists()) {
+          await entity.delete();
+        }
+      } catch (_) {}
+    }
   }
 }
 
