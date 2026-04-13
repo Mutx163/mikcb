@@ -48,6 +48,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
+import java.io.File
 import java.util.Calendar
 import kotlin.math.ceil
 
@@ -62,6 +63,7 @@ class MainActivity : FlutterActivity() {
         private const val PERMISSION_REQUEST_CODE = 1001
         private const val PREFS_NAME = "native_runtime_prefs"
         private const val KEY_HIDE_FROM_RECENTS = "hide_from_recents"
+        private const val KEY_MANAGED_UPDATE_DOWNLOAD_IDS = "managed_update_download_ids"
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
     }
@@ -417,6 +419,7 @@ class MainActivity : FlutterActivity() {
             fileName?.takeIf { it.isNotBlank() }
                 ?: URLUtil.guessFileName(url, null, "application/vnd.android.package-archive")
         )
+        cleanupManagedUpdateDownloads(downloadManager)
         val request = DownloadManager.Request(Uri.parse(url)).apply {
             setMimeType("application/vnd.android.package-archive")
             setTitle(title?.takeIf { it.isNotBlank() } ?: resolvedFileName)
@@ -434,7 +437,9 @@ class MainActivity : FlutterActivity() {
                 resolvedFileName
             )
         }
-        return downloadManager.enqueue(request)
+        val downloadId = downloadManager.enqueue(request)
+        rememberManagedUpdateDownload(downloadId)
+        return downloadId
     }
 
     private fun sanitizeDownloadFileName(fileName: String): String {
@@ -444,6 +449,47 @@ class MainActivity : FlutterActivity() {
             normalized
         } else {
             "$normalized.apk"
+        }
+    }
+
+    private fun cleanupManagedUpdateDownloads(downloadManager: DownloadManager) {
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val trackedIds = prefs.getStringSet(KEY_MANAGED_UPDATE_DOWNLOAD_IDS, emptySet()).orEmpty()
+        val ids = trackedIds.mapNotNull { it.toLongOrNull() }.toLongArray()
+        if (ids.isNotEmpty()) {
+            runCatching {
+                downloadManager.remove(*ids)
+            }
+        }
+        prefs.edit().remove(KEY_MANAGED_UPDATE_DOWNLOAD_IDS).apply()
+        cleanupManagedUpdateApkFiles()
+    }
+
+    private fun rememberManagedUpdateDownload(downloadId: Long) {
+        getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putStringSet(KEY_MANAGED_UPDATE_DOWNLOAD_IDS, setOf(downloadId.toString()))
+            .apply()
+    }
+
+    private fun cleanupManagedUpdateApkFiles() {
+        val downloadsDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                ?: return
+        val managedApkNamePattern = Regex(
+            "^mikcb(?:_update|_v.+)?\\.apk$",
+            RegexOption.IGNORE_CASE,
+        )
+        downloadsDir.listFiles()?.forEach { file ->
+            if (!file.isFile) {
+                return@forEach
+            }
+            if (!managedApkNamePattern.matches(file.name)) {
+                return@forEach
+            }
+            runCatching {
+                file.delete()
+            }
         }
     }
 

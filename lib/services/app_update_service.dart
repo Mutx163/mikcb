@@ -233,8 +233,10 @@ class AppUpdateService {
     File? file;
     try {
       final tempDir = await _temporaryDirectoryProvider();
+      await _cleanupManagedInstallerFiles(tempDir);
       final savePath = '${tempDir.path}/mikcb_update.apk';
       file = File(savePath);
+      await _deleteFileIfExists(file);
 
       client = HttpClient();
       final request = await client.getUrl(Uri.parse(url));
@@ -282,6 +284,25 @@ class AppUpdateService {
       if (controller?.isCancelled == true && file != null) {
         await _deleteFileIfExists(file);
       }
+    }
+  }
+
+  Future<void> _cleanupManagedInstallerFiles(Directory tempDir) async {
+    if (!await tempDir.exists()) {
+      return;
+    }
+    await for (final entity in tempDir.list()) {
+      if (entity is! File) {
+        continue;
+      }
+      final name =
+          entity.uri.pathSegments.isEmpty ? '' : entity.uri.pathSegments.last;
+      final normalized = name.toLowerCase();
+      if (!normalized.startsWith('mikcb_update') ||
+          !normalized.endsWith('.apk')) {
+        continue;
+      }
+      await _deleteFileIfExists(entity);
     }
   }
 
