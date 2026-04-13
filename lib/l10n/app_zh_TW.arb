@@ -877,6 +877,16 @@
       }
     }
   },
+  "liveMiuiLabelLogoTitle": "左側圖示 Logo",
+  "liveMiuiLabelLogoSubtitle": "僅在「圖示+文字」樣式下生效；未選擇時會繼續使用應用圖示。",
+  "liveMiuiLabelLogoCornerRadiusLabel": "左側圖示圓角 {value}",
+  "@liveMiuiLabelLogoCornerRadiusLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "liveMiuiLabelFontWeightLabel": "左側文字粗細",
   "liveMiuiLabelRenderQualityLabel": "左側文字清晰度",
   "liveMiuiExpandedIconLabel": "展開態大圖示",

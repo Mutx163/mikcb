@@ -853,6 +853,16 @@
   "liveMiuiLabelImageSubtitle": "仅小米手机样式生效，会把课程名或地点生成到左侧图标位。",
   "liveMiuiLabelContentLabel": "左侧文字内容",
   "liveMiuiLabelStyleLabel": "左侧图标样式",
+  "liveMiuiLabelLogoTitle": "左侧图标 Logo",
+  "liveMiuiLabelLogoSubtitle": "仅在“图标+文字”样式下生效；未选择时继续使用应用图标。",
+  "liveMiuiLabelLogoCornerRadiusLabel": "左侧图标圆角 {value}",
+  "@liveMiuiLabelLogoCornerRadiusLabel": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "liveMiuiLabelFontSizeLabel": "左侧文字大小 {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {
