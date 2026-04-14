@@ -5,6 +5,13 @@ on:
     # 监听发布新版本、编辑已发布版本（如从预发布改为正式版）、撤销发布等行为
     types: [published, edited, unpublished, deleted, prereleased, released]
   workflow_dispatch: # 允许在 Actions 面板手动触发
+  schedule:
+    # 每小时第 7 分钟运行一次（避开整点高峰）
+    - cron: '7 * * * *'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   update-json:
