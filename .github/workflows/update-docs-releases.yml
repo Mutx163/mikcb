@@ -1,0 +1,35 @@
+name: Update Docs Releases JSON
+
+on:
+  release:
+    # 监听发布新版本、编辑已发布版本（如从预发布改为正式版）、撤销发布等行为
+    types: [published, edited, unpublished, deleted, prereleased, released]
+  workflow_dispatch: # 允许在 Actions 面板手动触发
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 需要写入代码仓库的权限
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Fetch Latest Releases and Generate JSON
+        run: |
+          echo "Fetching latest 8 releases from GitHub API..."
+          mkdir -p docs/releases
+          curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=8" > docs/releases/latest.json
+
+      - name: Commit and Push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(docs): auto-update releases json"
+          file_pattern: docs/releases/latest.json
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"
