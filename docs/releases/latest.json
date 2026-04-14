@@ -68,7 +68,7 @@
         "state": "uploaded",
         "size": 24135192,
         "digest": "sha256:57c6cfb44203d7d5e48c7bdad7501dd2e63e8200dd58c2cde69dd67e6e32b01f",
-        "download_count": 15,
+        "download_count": 28,
         "created_at": "2026-04-12T15:05:29Z",
         "updated_at": "2026-04-12T15:05:30Z",
         "browser_download_url": "https://github.com/Mutx163/mikcb/releases/download/v1.1.10.28/mikcb-1.1.10.28-arm64-v8a.apk"
@@ -147,7 +147,7 @@
         "state": "uploaded",
         "size": 24003756,
         "digest": "sha256:ad668207db724e7eaa95610156acfb187e8ea11b838e793fb60f65c67442609f",
-        "download_count": 85,
+        "download_count": 87,
         "created_at": "2026-04-09T02:45:14Z",
         "updated_at": "2026-04-09T02:45:15Z",
         "browser_download_url": "https://github.com/Mutx163/mikcb/releases/download/v1.1.10.23/mikcb-1.1.10.23-arm64-v8a.apk"
