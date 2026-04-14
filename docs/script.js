@@ -1358,10 +1358,6 @@ async function loadLatestRelease() {
     try {
       const response = await fetch(releasesApiUrl, {
         cache: "no-store",
-        headers: {
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
       });
 
       if (!response.ok) {
