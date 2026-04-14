@@ -850,12 +850,15 @@ function renderLatestStableHighlights(releaseData) {
 function renderTrustSignals({
   stars = 0,
   releaseCount = 0,
+  showStars = true,
 } = {}) {
   if (heroStars) {
-    heroStars.textContent = `GitHub Star ${formatCompactCount(stars)}`;
+    heroStars.textContent = showStars
+      ? `GitHub Star ${formatCompactCount(stars)}`
+      : "GitHub Star";
   }
   if (trustStars) {
-    trustStars.textContent = formatCompactCount(stars);
+    trustStars.textContent = showStars ? formatCompactCount(stars) : "—";
   }
   if (trustReleases) {
     trustReleases.textContent = formatCompactCount(releaseCount);
@@ -870,7 +873,12 @@ async function loadTrustSignals(releases = []) {
     return trustSignalsPromise;
   }
 
+  const releaseCount = Array.isArray(releases) ? releases.length : 0;
+
   trustSignalsPromise = (async () => {
+    let stars = 0;
+    let showStars = false;
+
     try {
       const response = await fetch(repoApiUrl, {
         cache: "no-store",
@@ -883,16 +891,33 @@ async function loadTrustSignals(releases = []) {
         throw new Error(`HTTP ${response.status}`);
       }
       const repo = await response.json();
-      renderTrustSignals({
-        stars: Number(repo?.stargazers_count || 0),
-        releaseCount: Array.isArray(releases) ? releases.length : 0,
-      });
-      trustSignalsLoaded = true;
+      stars = Number(repo?.stargazers_count || 0);
+      showStars = true;
     } catch (error) {
-      renderTrustSignals();
-    } finally {
-      trustSignalsPromise = null;
+      try {
+        const badgeResponse = await fetch(
+          "https://img.shields.io/github/stars/Mutx163/mikcb.json",
+          { cache: "no-store" }
+        );
+        if (badgeResponse.ok) {
+          const badge = await badgeResponse.json();
+          const raw = badge?.message || badge?.value;
+          if (raw) {
+            const parsed = Number(String(raw).replace(/,/g, ""));
+            if (!Number.isNaN(parsed)) {
+              stars = parsed;
+              showStars = true;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
     }
+
+    renderTrustSignals({ stars, releaseCount, showStars });
+    trustSignalsLoaded = true;
+    trustSignalsPromise = null;
   })();
 
   return trustSignalsPromise;
