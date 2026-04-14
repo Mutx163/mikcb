@@ -1031,25 +1031,28 @@ function getMirrorCandidateByPrefix(prefix) {
 
 async function probeMirrorCandidate(candidate, probeTarget) {
   const probeUrl = buildMirrorUrl(probeTarget, candidate.prefix);
-  const controller = new AbortController();
   const startedAt = performance.now();
-  const timeoutId = window.setTimeout(() => controller.abort(), 1800);
 
-  try {
-    await fetch(probeUrl, {
-      mode: "no-cors",
-      cache: "no-store",
-      signal: controller.signal,
-    });
-    return {
-      ...candidate,
-      duration: performance.now() - startedAt,
-    };
-  } catch (error) {
+  const probePromise = fetch(probeUrl, {
+    mode: "no-cors",
+    cache: "no-store",
+  })
+    .then(() => ({ ok: true }))
+    .catch(() => ({ ok: false }));
+
+  const timeoutPromise = new Promise((resolve) => {
+    window.setTimeout(() => resolve({ ok: false }), 1800);
+  });
+
+  const result = await Promise.race([probePromise, timeoutPromise]);
+  if (!result.ok) {
     return null;
-  } finally {
-    window.clearTimeout(timeoutId);
   }
+
+  return {
+    ...candidate,
+    duration: performance.now() - startedAt,
+  };
 }
 
 function getCachedMirrorPrefix(cacheKey) {
