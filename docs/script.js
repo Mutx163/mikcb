@@ -586,8 +586,7 @@ if ("IntersectionObserver" in window && navSectionLinks.length) {
 }
 
 const repoApiUrl = "https://api.github.com/repos/Mutx163/mikcb";
-const releasesApiUrl =
-  "https://api.github.com/repos/Mutx163/mikcb/releases?per_page=8";
+const releasesApiUrl = "./releases/latest.json";
 const fallbackReleasePage = "https://github.com/Mutx163/mikcb/releases";
 const defaultMirrorPrefix = "https://ghfast.top/";
 const globalMirrorProbeKey = "mikcb-docs-fastest-mirror:__global__";
