@@ -2012,6 +2012,11 @@
       }
     }
   },
+  "todayTimetableTitle": "今日課表",
+  "dayTimetableTitle": "單日時間軸",
+  "backToWeekViewAction": "返回周視圖",
+  "ongoingCourseBadge": "正在上課",
+  "dayViewEmptyTitle": "暫無課程",
   "shortNamePrefix": "簡稱：{value}",
   "@shortNamePrefix": {
     "placeholders": {

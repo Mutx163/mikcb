@@ -2012,6 +2012,11 @@
       }
     }
   },
+  "todayTimetableTitle": "今日课表",
+  "dayTimetableTitle": "单日时间轴",
+  "backToWeekViewAction": "返回周视图",
+  "ongoingCourseBadge": "正在上课",
+  "dayViewEmptyTitle": "暂无课程",
   "shortNamePrefix": "简称：{value}",
   "@shortNamePrefix": {
     "placeholders": {
