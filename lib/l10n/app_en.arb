@@ -2012,6 +2012,11 @@
       }
     }
   },
+  "todayTimetableTitle": "Today's Timetable",
+  "dayTimetableTitle": "Day Timeline",
+  "backToWeekViewAction": "Back to Week View",
+  "ongoingCourseBadge": "In Class",
+  "dayViewEmptyTitle": "No classes today",
   "shortNamePrefix": "Short name: {value}",
   "@shortNamePrefix": {
     "placeholders": {

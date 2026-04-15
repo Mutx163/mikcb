@@ -1695,6 +1695,28 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
+  Course? getCourseInProgress({
+    required int dayOfWeek,
+    int? week,
+    DateTime? now,
+  }) {
+    final reference = now ?? DateTime.now();
+    final targetWeek = week ?? _calculateWeekForDate(reference);
+    final currentMinutes = reference.hour * 60 + reference.minute;
+
+    for (final course in getCoursesForDay(dayOfWeek, week: targetWeek)) {
+      final startMinutes = _parseClockMinutes(_resolveRealTime(course, true));
+      final endMinutes = _parseClockMinutes(_resolveRealTime(course, false));
+      if (startMinutes == null || endMinutes == null) {
+        continue;
+      }
+      if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
+        return resolveCourseDisplayName(course);
+      }
+    }
+    return null;
+  }
+
   Course? getNextCourse() {
     final todayCourses = getTodayCourses();
     final now = DateTime.now();

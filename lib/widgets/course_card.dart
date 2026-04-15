@@ -24,6 +24,7 @@ class CourseCard extends StatelessWidget {
   final String? overrideColorHex;
   final String? compactOverlineText;
   final String? topRightBadgeText;
+  final bool isHighlighted;
 
   const CourseCard({
     super.key,
@@ -46,6 +47,7 @@ class CourseCard extends StatelessWidget {
     this.overrideColorHex,
     this.compactOverlineText,
     this.topRightBadgeText,
+    this.isHighlighted = false,
   });
 
   Color _parseColor(String colorString) {
@@ -72,9 +74,15 @@ class CourseCard extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-      elevation: 2,
+      elevation: isHighlighted ? 6 : 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: isHighlighted
+            ? BorderSide(
+                color: Colors.white.withValues(alpha: 0.92),
+                width: 1.6,
+              )
+            : BorderSide.none,
       ),
       child: InkWell(
         onTap: onTap,
@@ -90,6 +98,15 @@ class CourseCard extends StatelessWidget {
                 color.withValues(alpha: 0.7),
               ],
             ),
+            boxShadow: isHighlighted
+                ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.28),
+                      blurRadius: 16,
+                      offset: const Offset(0, 8),
+                    ),
+                  ]
+                : null,
           ),
           child: Stack(
             children: [
@@ -168,7 +185,7 @@ class CourseCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox.expand(
-        child: Stack(
+              child: Stack(
           fit: StackFit.expand,
           children: [
             Container(
@@ -183,6 +200,21 @@ class CourseCard extends StatelessWidget {
                     color.withValues(alpha: 0.7),
                   ],
                 ),
+                border: isHighlighted
+                    ? Border.all(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        width: 1.2,
+                      )
+                    : null,
+                boxShadow: isHighlighted
+                    ? [
+                        BoxShadow(
+                          color: color.withValues(alpha: 0.24),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ]
+                    : null,
               ),
               padding: EdgeInsets.symmetric(
                 horizontal: 4,

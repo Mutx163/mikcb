@@ -1,3 +1,7 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -44,6 +48,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _hasAvailableUpdate = false;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
+  int? _selectedDayOfWeek;
+  int? _selectedWeekForDayView;
+  int _dayContentSlideDirection = 1;
+  double _daySwipeDragDx = 0;
 
   Color _colorFromHex(String hexColor, Color fallback) {
     try {
@@ -192,6 +200,111 @@ class _TimetableScreenState extends State<TimetableScreen>
     return labels[dayOfWeek - 1];
   }
 
+  bool get _isDayView =>
+      _selectedDayOfWeek != null && _selectedWeekForDayView != null;
+
+  bool _isSelectedDay(int week, int dayOfWeek) {
+    return _isDayView &&
+        _selectedWeekForDayView == week &&
+        _selectedDayOfWeek == dayOfWeek;
+  }
+
+  void _toggleDayView({
+    required int week,
+    required int dayOfWeek,
+    required TimetableSettings settings,
+  }) {
+    final normalizedWeek = _clampWeek(week, settings.semesterWeekCount);
+    final isSameSelection = _isDayView &&
+        _selectedWeekForDayView == normalizedWeek &&
+        _selectedDayOfWeek == dayOfWeek;
+    if (isSameSelection) {
+      _closeDayView(settings);
+      return;
+    }
+    if (_isDayView && _selectedWeekForDayView == normalizedWeek) {
+      _switchDayWithinWeek(settings, dayOfWeek);
+      return;
+    }
+    setState(() {
+      _selectedWeekForDayView = normalizedWeek;
+      _selectedDayOfWeek = dayOfWeek;
+    });
+    _maybeSelectionClick(settings);
+  }
+
+  void _closeDayView(TimetableSettings settings) {
+    if (!_isDayView) {
+      return;
+    }
+    setState(() {
+      _selectedWeekForDayView = null;
+      _selectedDayOfWeek = null;
+    });
+    _maybeSelectionClick(settings);
+  }
+
+  void _switchDayWithinWeek(TimetableSettings settings, int dayOfWeek) {
+    final visibleDays = _visibleDayNumbers(settings);
+    final previousIndex = _selectedDayOfWeek == null
+        ? -1
+        : visibleDays.indexOf(_selectedDayOfWeek!);
+    final nextIndex = visibleDays.indexOf(dayOfWeek);
+    setState(() {
+      _selectedDayOfWeek = dayOfWeek;
+      if (previousIndex != -1 &&
+          nextIndex != -1 &&
+          previousIndex != nextIndex) {
+        _dayContentSlideDirection = nextIndex > previousIndex ? 1 : -1;
+      }
+    });
+    _maybeSelectionClick(settings);
+  }
+
+  Future<void> _handleDayContentSwipe(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    DragEndDetails details,
+  ) async {
+    final velocity = details.primaryVelocity ?? 0;
+    if (_selectedDayOfWeek == null) {
+      return;
+    }
+    final dragDx = _daySwipeDragDx;
+    _daySwipeDragDx = 0;
+    final hasEnoughVelocity = velocity.abs() >= 120;
+    final hasEnoughDistance = dragDx.abs() >= 48;
+    if (!hasEnoughVelocity && !hasEnoughDistance) {
+      return;
+    }
+    final visibleDays = _visibleDayNumbers(settings);
+    final currentIndex = visibleDays.indexOf(_selectedDayOfWeek!);
+    if (currentIndex == -1) {
+      return;
+    }
+    final goNext = hasEnoughVelocity ? velocity < 0 : dragDx < 0;
+    final nextIndex = goNext ? currentIndex + 1 : currentIndex - 1;
+    if (nextIndex < 0 || nextIndex >= visibleDays.length) {
+      final targetWeek = _clampWeek(
+        provider.currentWeek + (goNext ? 1 : -1),
+        provider.settings.semesterWeekCount,
+      );
+      if (targetWeek == provider.currentWeek) {
+        return;
+      }
+      await _jumpToWeek(provider, targetWeek);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _selectedWeekForDayView = targetWeek;
+        _selectedDayOfWeek = goNext ? visibleDays.first : visibleDays.last;
+      });
+      return;
+    }
+    _switchDayWithinWeek(settings, visibleDays[nextIndex]);
+  }
+
   Widget _buildProfileSwitcherTrigger(TimetableProvider provider) {
     return switch (provider.settings.homeTitleStyle) {
       HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(provider),
@@ -334,47 +447,67 @@ class _TimetableScreenState extends State<TimetableScreen>
           ...visibleDays.map((dayOfWeek) {
             final date = _dateForWeekDay(settings, week, dayOfWeek);
             final isToday = date != null && _isSameDate(date, DateTime.now());
+            final isSelected = _isSelectedDay(week, dayOfWeek);
+            final labelColor = (isSelected || isToday)
+                ? colorScheme.primary
+                : colorScheme.onSurface;
+            final subLabelColor = (isSelected || isToday)
+                ? colorScheme.primary.withValues(alpha: isSelected ? 0.9 : 0.78)
+                : colorScheme.onSurfaceVariant;
 
             return Expanded(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
-                margin: const EdgeInsets.symmetric(horizontal: 1),
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isToday ? colorScheme.primary : Colors.transparent,
-                      width: 2,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  key: ValueKey('weekday-header-$week-$dayOfWeek'),
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () => _toggleDayView(
+                    week: week,
+                    dayOfWeek: dayOfWeek,
+                    settings: settings,
+                  ),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                    margin: const EdgeInsets.symmetric(horizontal: 1),
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: (isSelected || isToday)
+                              ? colorScheme.primary
+                              : Colors.transparent,
+                          width: isSelected ? 3 : 2,
+                        ),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          _weekdayLabel(context, dayOfWeek),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isSelected || isToday
+                                ? FontWeight.w800
+                                : FontWeight.w600,
+                            color: labelColor,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          date == null
+                              ? ''
+                              : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                          style: TextStyle(
+                            fontSize: 8.5,
+                            color: subLabelColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      _weekdayLabel(context, dayOfWeek),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isToday ? FontWeight.w800 : FontWeight.w600,
-                        color: isToday
-                            ? colorScheme.primary
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      date == null
-                          ? ''
-                          : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
-                      style: TextStyle(
-                        fontSize: 8.5,
-                        color: isToday
-                            ? colorScheme.primary.withValues(alpha: 0.78)
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             );
@@ -424,14 +557,19 @@ class _TimetableScreenState extends State<TimetableScreen>
                 dayOfWeek,
                 settings,
               );
+              final displayItems = _buildDayCourseDisplayItems(
+                courses: dayCourses,
+                week: week,
+                settings: settings,
+                conflictMap: conflictMap,
+              );
               return SizedBox(
                 width: dayWidth,
                 child: _buildDayColumn(
                   week,
                   dayOfWeek,
-                  dayCourses,
+                  displayItems,
                   settings,
-                  conflictMap,
                   settings.showConflictBadgeOnTimetable,
                   sectionHeight,
                   cardInset,
@@ -489,22 +627,457 @@ class _TimetableScreenState extends State<TimetableScreen>
       week,
       sectionHeight,
     );
+    final isDayViewForWeek = _isDayView && _selectedDayOfWeek != null;
 
-    return Column(
-      children: [
-        _buildWeekDayHeader(
-          provider,
-          week,
-          settings,
-          _resolveTimeColumnWidth(settings),
-        ),
-        Expanded(
-          child: settings.timetableAutoFitSectionHeight
-              ? grid
-              : SingleChildScrollView(
-                  key: PageStorageKey<String>('week-scroll-$week'),
-                  child: grid,
+    return isDayViewForWeek
+        ? _buildDayViewPage(
+            key: ValueKey('day-view-$week'),
+            provider: provider,
+            settings: settings,
+            week: week,
+          )
+        : _buildWeekViewPage(
+            key: ValueKey('week-view-$week'),
+            provider: provider,
+            settings: settings,
+            week: week,
+            grid: grid,
+          );
+  }
+
+  Widget _buildWeekViewPage({
+    required Key key,
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required Widget grid,
+  }) {
+    return KeyedSubtree(
+      key: key,
+      child: Column(
+        children: [
+          _buildWeekDayHeader(
+            provider,
+            week,
+            settings,
+            _resolveTimeColumnWidth(settings),
+          ),
+          Expanded(
+            child: settings.timetableAutoFitSectionHeight
+                ? grid
+                : SingleChildScrollView(
+                    key: PageStorageKey<String>('week-scroll-$week'),
+                    child: grid,
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayViewPage({
+    required Key key,
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+  }) {
+    final selectedDayOfWeek = _selectedDayOfWeek!;
+    final selectedDate = _dateForWeekDay(settings, week, selectedDayOfWeek);
+    final conflictMap = provider.courseConflictMapForWeek(week);
+    final courses = _getCoursesForDay(
+      provider.courses,
+      week,
+      selectedDayOfWeek,
+      settings,
+    );
+    final currentCourse = _isSelectedDayToday(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: selectedDayOfWeek,
+    )
+        ? provider.getCourseInProgress(
+              dayOfWeek: selectedDayOfWeek,
+              week: week,
+            ) ??
+            _findInProgressCourse(courses) ??
+            (courses.length == 1 ? courses.first : null)
+        : null;
+    final displayItems = _buildDayCourseDisplayItems(
+      courses: courses,
+      week: week,
+      settings: settings,
+      conflictMap: conflictMap,
+      currentCourseId: currentCourse?.id,
+    );
+    return KeyedSubtree(
+      key: key,
+      child: Column(
+        key: ValueKey('timetable-day-view-$week'),
+        children: [
+          SizedBox(
+            key: ValueKey('timetable-day-view-$week-$selectedDayOfWeek'),
+          ),
+          _buildWeekDayHeader(
+            provider,
+            week,
+            settings,
+            _resolveTimeColumnWidth(settings),
+          ),
+          const SizedBox(height: 12),
+          _buildDayViewSummary(
+            settings: settings,
+            week: week,
+            dayOfWeek: selectedDayOfWeek,
+            selectedDate: selectedDate,
+            currentCourse: currentCourse,
+            courseCount: displayItems.length,
+            hasCourses: displayItems.isNotEmpty,
+          ),
+          const SizedBox(height: 10),
+          Expanded(
+            child: GestureDetector(
+              key: const ValueKey('day-view-swipe-area'),
+              behavior: HitTestBehavior.opaque,
+              onHorizontalDragStart: (_) {
+                _daySwipeDragDx = 0;
+              },
+              onHorizontalDragUpdate: (details) {
+                _daySwipeDragDx += details.delta.dx;
+              },
+              onHorizontalDragEnd: (details) =>
+                  _handleDayContentSwipe(provider, settings, details),
+              child: AnimatedSwitcher(
+                duration: _weekSlideDuration,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final beginX = _dayContentSlideDirection > 0 ? 0.08 : -0.08;
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: Offset(beginX, 0),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _buildExpandedDayColumnView(
+                  key: ValueKey('day-content-$week-$selectedDayOfWeek'),
+                  provider: provider,
+                  settings: settings,
+                  week: week,
+                  dayOfWeek: selectedDayOfWeek,
                 ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _isSelectedDayToday({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    final resolvedDate = _dateForWeekDay(settings, week, dayOfWeek);
+    if (resolvedDate != null) {
+      return _isSameDate(resolvedDate, DateTime.now());
+    }
+    final now = DateTime.now();
+    return dayOfWeek == now.weekday && week == provider.currentWeek;
+  }
+
+  Widget _buildDayViewSummary({
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+    required DateTime? selectedDate,
+    required Course? currentCourse,
+    required int courseCount,
+    required bool hasCourses,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final expandedLabel = selectedDate == null
+        ? _weekdayLabel(context, dayOfWeek)
+        : '${_weekdayLabel(context, dayOfWeek)} ${selectedDate.month.toString().padLeft(2, '0')}/${selectedDate.day.toString().padLeft(2, '0')}';
+    final summaryText = currentCourse != null
+        ? '${l10n.ongoingCourseBadge} · ${currentCourse.name}'
+        : hasCourses
+            ? '${l10n.weekLabel(week)} · ${l10n.courseCountSummary(courseCount)}'
+            : '${l10n.weekLabel(week)} · ${l10n.dayViewEmptyTitle}';
+
+    return Padding(
+      key: const ValueKey('day-view-summary'),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  expandedLabel,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  summaryText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: currentCourse != null
+                        ? colorScheme.primary
+                        : colorScheme.onSurfaceVariant,
+                    fontWeight: currentCourse != null
+                        ? FontWeight.w800
+                        : FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          TextButton.icon(
+            key: const ValueKey('back-to-week-view-button'),
+            onPressed: () => _closeDayView(settings),
+            icon: const Icon(Icons.keyboard_arrow_up_rounded, size: 18),
+            label: Text(l10n.backToWeekViewAction),
+            style: TextButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDayViewEmptyState({required int week}) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.event_busy_rounded,
+            size: 32,
+            color: colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.dayViewEmptyTitle,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.weekLabel(week),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpandedDayColumnView({
+    required Key key,
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    final courses = _getCoursesForDay(
+      provider.courses,
+      week,
+      dayOfWeek,
+      settings,
+    );
+    final currentCourse = _isSelectedDayToday(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+    )
+        ? provider.getCourseInProgress(
+              dayOfWeek: dayOfWeek,
+              week: week,
+            ) ??
+            _findInProgressCourse(courses) ??
+            (courses.length == 1 ? courses.first : null)
+        : null;
+    final displayItems = _buildDayCourseDisplayItems(
+      courses: courses,
+      week: week,
+      settings: settings,
+      conflictMap: provider.courseConflictMapForWeek(week),
+      currentCourseId: currentCourse?.id,
+    );
+    if (displayItems.isEmpty) {
+      return Padding(
+        key: key,
+        padding: const EdgeInsets.only(bottom: 8),
+        child: _buildDayViewEmptyColumn(
+          week: week,
+          settings: settings,
+        ),
+      );
+    }
+    return ListView.separated(
+      key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
+      padding: const EdgeInsets.only(bottom: 8),
+      itemCount: displayItems.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 10),
+      itemBuilder: (context, itemIndex) {
+        final item = displayItems[itemIndex];
+        return _buildDayAgendaEntry(
+          week: week,
+          settings: settings,
+          item: item,
+        );
+      },
+    );
+  }
+
+  Widget _buildDayViewEmptyColumn({
+    required int week,
+    required TimetableSettings settings,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: _buildDayViewEmptyState(week: week),
+    );
+  }
+
+  Widget _buildDayAgendaEntry({
+    required int week,
+    required TimetableSettings settings,
+    required _DayCourseDisplayItem item,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 72,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.course.startTime,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                item.course.endTime,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                AppLocalizations.of(context)!.sectionRangeLabel(
+                  item.course.startSection,
+                  item.course.endSection,
+                ),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: SizedBox(
+            height: 110,
+            child: OpenContainer<void>(
+              key: ValueKey('day-view-edit-card-${item.course.id}'),
+              tappable: false,
+              transitionType: ContainerTransitionType.fadeThrough,
+              transitionDuration: const Duration(milliseconds: 420),
+              openColor: theme.scaffoldBackgroundColor,
+              closedColor: Colors.transparent,
+              closedElevation: 0,
+              openElevation: 0,
+              closedShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              openShape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              openBuilder: (context, _) => ClipRRect(
+                borderRadius: BorderRadius.circular(28),
+                child: AddCourseScreen(course: item.course),
+              ),
+              closedBuilder: (context, openContainer) {
+                return Opacity(
+                  opacity: item.opacity,
+                  child: CourseCard(
+                    course: item.course,
+                    overrideColorHex:
+                        _resolveDisplayCourseColor(item, settings: settings),
+                    compactOverlineText: _resolveCompactOverlineText(
+                      item,
+                      settings.showConflictBadgeOnTimetable,
+                    ),
+                    topRightBadgeText: _resolveCompactBadgeText(
+                      item,
+                      settings.showConflictBadgeOnTimetable,
+                    ),
+                    isHighlighted: item.isCurrentCourse,
+                    isCompact: true,
+                    showName: settings.courseCardShowName,
+                    showTeacher: settings.courseCardShowTeacher,
+                    showLocation: settings.courseCardShowLocation,
+                    showTime: false,
+                    showTimeLabels: settings.courseCardShowTimeLabels,
+                    showWeeks: settings.courseCardShowWeeks,
+                    showDescription: settings.courseCardShowDescription,
+                    verticalAlign: settings.courseCardVerticalAlign,
+                    horizontalAlign: CourseCardHorizontalAlign.left,
+                    onTap: openContainer,
+                    compactTitleFontSize:
+                        (settings.courseCardFontSize + 1).clamp(9.0, 16.0),
+                    compactSubtitleFontSize:
+                        settings.courseCardFontSize.clamp(8.0, 14.0),
+                    compactVerticalPadding: 10,
+                    compactOuterInset: 0,
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ],
     );
@@ -513,21 +1086,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _buildDayColumn(
     int week,
     int dayOfWeek,
-    List<Course> courses,
+    List<_DayCourseDisplayItem> displayItems,
     TimetableSettings settings,
-    Map<String, List<Course>> conflictMap,
     bool showConflictBadge,
     double sectionHeight,
     double cardInset,
   ) {
-    final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
       alpha: 0.45,
     );
-    final overrideCardColor = settings.timetableUseUnifiedCardColor
-        ? settings.timetableUnifiedCardColor
-        : null;
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
@@ -535,7 +1103,8 @@ class _TimetableScreenState extends State<TimetableScreen>
         sectionIndex < settings.sectionCount;
         sectionIndex++) {
       final section = sectionIndex + 1;
-      final startingCourses = _getCoursesStartingAtSection(courses, section);
+      final startingCourses =
+          _getDisplayItemsStartingAtSection(displayItems, section);
 
       gridLines.add(
         Positioned(
@@ -547,38 +1116,24 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
       );
 
-      for (final course in startingCourses) {
-        final isCurrentWeekCourse = course.isInWeek(week);
-        if (!isCurrentWeekCourse &&
-            _hasCurrentWeekOverlap(courses, course, week)) {
-          continue;
-        }
-        if (!isCurrentWeekCourse &&
-            !_isPreferredNonCurrentCourse(courses, course, week)) {
-          continue;
-        }
-        final isConflicting = conflictMap.containsKey(course.id);
+      for (final item in startingCourses) {
         courseCards.add(
           Positioned(
             top: sectionIndex * sectionHeight,
             left: 0,
             right: 0,
-            height: course.sectionCount * sectionHeight,
+            height: item.course.sectionCount * sectionHeight,
             child: Opacity(
-              opacity: !isCurrentWeekCourse
-                  ? 0.62
-                  : (isConflicting
-                      ? settings.timetableConflictCourseOpacity
-                      : 1),
+              opacity: item.opacity,
               child: CourseCard(
-                course: course,
+                course: item.course,
                 overrideColorHex:
-                    isCurrentWeekCourse ? overrideCardColor : '#94A3B8',
+                    _resolveDisplayCourseColor(item, settings: settings),
                 compactOverlineText:
-                    isCurrentWeekCourse ? null : l10n.nonCurrentWeekLabel,
-                topRightBadgeText: isConflicting && showConflictBadge
-                    ? l10n.conflictLabel
-                    : null,
+                    _resolveCompactOverlineText(item, showConflictBadge),
+                topRightBadgeText:
+                    _resolveCompactBadgeText(item, showConflictBadge),
+                isHighlighted: item.isCurrentCourse,
                 isCompact: true,
                 showName: settings.courseCardShowName,
                 showTeacher: settings.courseCardShowTeacher,
@@ -589,7 +1144,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 showDescription: settings.courseCardShowDescription,
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
-                onTap: () => _showCourseActions(course, week),
+                onTap: () => _showCourseActions(item.course, week),
                 compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize:
                     (settings.courseCardFontSize - 1).clamp(7.0, 14.0),
@@ -770,6 +1325,135 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   List<Course> _getCoursesStartingAtSection(List<Course> courses, int section) {
     return courses.where((course) => course.startSection == section).toList();
+  }
+
+  List<_DayCourseDisplayItem> _getDisplayItemsStartingAtSection(
+    List<_DayCourseDisplayItem> items,
+    int section,
+  ) {
+    return items.where((item) => item.course.startSection == section).toList();
+  }
+
+  Course? _findInProgressCourse(List<Course> courses) {
+    final now = DateTime.now();
+    final currentMinutes = now.hour * 60 + now.minute;
+    for (final course in courses) {
+      final startMinutes = _parseClockMinutes(course.startTime);
+      final endMinutes = _parseClockMinutes(course.endTime);
+      if (startMinutes == null || endMinutes == null) {
+        continue;
+      }
+      if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
+        return course;
+      }
+    }
+    return null;
+  }
+
+  int? _parseClockMinutes(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
+    }
+    return (hour * 60) + minute;
+  }
+
+  List<_DayCourseDisplayItem> _buildDayCourseDisplayItems({
+    required List<Course> courses,
+    required int week,
+    required TimetableSettings settings,
+    required Map<String, List<Course>> conflictMap,
+    String? currentCourseId,
+  }) {
+    return courses.where((course) {
+      final isCurrentWeekCourse = course.isInWeek(week);
+      if (isCurrentWeekCourse) {
+        return true;
+      }
+      if (_hasCurrentWeekOverlap(courses, course, week)) {
+        return false;
+      }
+      return _isPreferredNonCurrentCourse(courses, course, week);
+    }).map((course) {
+      final isCurrentWeekCourse = course.isInWeek(week);
+      final isConflicting = conflictMap.containsKey(course.id);
+      return _DayCourseDisplayItem(
+        course: course,
+        isCurrentWeekCourse: isCurrentWeekCourse,
+        isConflicting: isConflicting,
+        isCurrentCourse: currentCourseId == course.id,
+        opacity: !isCurrentWeekCourse
+            ? 0.62
+            : (isConflicting ? settings.timetableConflictCourseOpacity : 1),
+      );
+    }).toList()
+      ..sort((left, right) {
+        final startCompare =
+            left.course.startSection.compareTo(right.course.startSection);
+        if (startCompare != 0) {
+          return startCompare;
+        }
+        final leftCurrent = left.isCurrentWeekCourse;
+        final rightCurrent = right.isCurrentWeekCourse;
+        if (leftCurrent != rightCurrent) {
+          return leftCurrent ? 1 : -1;
+        }
+        final endCompare =
+            left.course.endSection.compareTo(right.course.endSection);
+        if (endCompare != 0) {
+          return endCompare;
+        }
+        return left.course.id.compareTo(right.course.id);
+      });
+  }
+
+  String? _resolveDisplayCourseColor(
+    _DayCourseDisplayItem item, {
+    required TimetableSettings settings,
+  }) {
+    if (!item.isCurrentWeekCourse) {
+      return '#94A3B8';
+    }
+    return settings.timetableUseUnifiedCardColor
+        ? settings.timetableUnifiedCardColor
+        : null;
+  }
+
+  String? _resolveCompactOverlineText(
+    _DayCourseDisplayItem item,
+    bool showConflictBadge,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    if (!item.isCurrentWeekCourse) {
+      return l10n.nonCurrentWeekLabel;
+    }
+    if (item.isConflicting && showConflictBadge) {
+      return l10n.conflictLabel;
+    }
+    return null;
+  }
+
+  String? _resolveCompactBadgeText(
+    _DayCourseDisplayItem item,
+    bool showConflictBadge,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final labels = <String>[];
+    if (item.isCurrentCourse) {
+      labels.add(l10n.ongoingCourseBadge);
+    }
+    if (item.isConflicting && showConflictBadge) {
+      labels.add(l10n.conflictLabel);
+    }
+    if (labels.isEmpty) {
+      return null;
+    }
+    return labels.join(' · ');
   }
 
   bool _hasCurrentWeekOverlap(List<Course> courses, Course target, int week) {
@@ -999,6 +1683,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         _clampWeek(page + 1, provider.settings.semesterWeekCount);
     if (targetWeek == provider.currentWeek) {
       return;
+    }
+
+    if (_isDayView && _selectedWeekForDayView != targetWeek) {
+      setState(() {
+        _selectedWeekForDayView = targetWeek;
+      });
     }
 
     _isSyncingWeekPage = true;
@@ -1958,25 +2648,25 @@ class _TimetableScreenState extends State<TimetableScreen>
               spacing: 12,
               runSpacing: 12,
               children: [
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.system_update_alt_rounded,
                   title: l10n.homeMenuUpdateTitle,
                   badgeText: _hasAvailableUpdate ? l10n.updateLabel : null,
                   accentColor: _hasAvailableUpdate ? colorScheme.primary : null,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('update'),
+                  pageBuilder: (_) => const _TopMenuUpdatePage(),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.view_week_rounded,
                   title: l10n.homeMenuProfilesTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('profiles'),
+                  pageBuilder: (_) => const TimetableProfilesScreen(),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.dashboard_customize_rounded,
                   title: l10n.homeMenuOverviewTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('overview'),
+                  pageBuilder: (_) => const CourseOverviewScreen(),
                 ),
                 _HomeActionButton(
                   icon: Icons.add_circle_outline_rounded,
@@ -1984,30 +2674,30 @@ class _TimetableScreenState extends State<TimetableScreen>
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   onTap: () => Navigator.of(sheetContext).pop('add'),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.file_upload_outlined,
                   title: l10n.homeMenuImportTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('import'),
+                  pageBuilder: (_) => const CourseImportScreen(),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.tune_rounded,
                   title: l10n.homeMenuSettingsTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('settings'),
+                  pageBuilder: (_) => const TimetableSettingsScreen(),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.favorite_border_rounded,
                   title: l10n.homeMenuCoffeeTitle,
                   accentColor: colorScheme.secondary,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('coffee'),
+                  pageBuilder: (_) => const SupportCreatorScreen(),
                 ),
-                _HomeActionButton(
+                _HomeActionPageButton(
                   icon: Icons.chat_bubble_outline_rounded,
                   title: l10n.homeMenuFeedbackTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('feedback'),
+                  pageBuilder: (_) => const FeedbackScreen(),
                 ),
               ],
             ),
@@ -2019,7 +2709,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!mounted || selected == null) {
       return;
     }
-    _handleTopMenuAction(selected);
+    if (selected == 'add') {
+      _navigateToAddCourse(context);
+    }
   }
 
   void _handleTopMenuAction(String value) {
@@ -2195,6 +2887,92 @@ class _HomeActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _HomeActionButtonBody(
+      icon: icon,
+      title: title,
+      badgeText: badgeText,
+      accentColor: accentColor,
+      enabled: enabled,
+      reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
+      onTap: onTap,
+    );
+  }
+}
+
+class _HomeActionPageButton extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final WidgetBuilder pageBuilder;
+  final String? badgeText;
+  final Color? accentColor;
+  final bool enabled;
+  final bool reserveTwoLineTitleSpace;
+
+  const _HomeActionPageButton({
+    required this.icon,
+    required this.title,
+    required this.pageBuilder,
+    this.badgeText,
+    this.accentColor,
+    this.enabled = true,
+    this.reserveTwoLineTitleSpace = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return OpenContainer<void>(
+      tappable: false,
+      transitionType: ContainerTransitionType.fadeThrough,
+      transitionDuration: const Duration(milliseconds: 420),
+      closedColor: Colors.transparent,
+      middleColor: Colors.transparent,
+      openColor: theme.scaffoldBackgroundColor,
+      closedElevation: 0,
+      openElevation: 0,
+      closedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+      ),
+      openShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      openBuilder: (context, _) => pageBuilder(context),
+      closedBuilder: (context, openContainer) {
+        return _HomeActionButtonBody(
+          icon: icon,
+          title: title,
+          badgeText: badgeText,
+          accentColor: accentColor,
+          enabled: enabled,
+          reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
+          onTap: openContainer,
+        );
+      },
+    );
+  }
+}
+
+class _HomeActionButtonBody extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+  final String? badgeText;
+  final Color? accentColor;
+  final bool enabled;
+  final bool reserveTwoLineTitleSpace;
+
+  const _HomeActionButtonBody({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.badgeText,
+    this.accentColor,
+    this.enabled = true,
+    this.reserveTwoLineTitleSpace = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final highlightColor = enabled
@@ -2211,6 +2989,8 @@ class _HomeActionButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          splashFactory: NoSplash.splashFactory,
           onTap: enabled ? onTap : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
@@ -2289,6 +3069,33 @@ class _HomeActionButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _TopMenuUpdatePage extends StatefulWidget {
+  const _TopMenuUpdatePage();
+
+  @override
+  State<_TopMenuUpdatePage> createState() => _TopMenuUpdatePageState();
+}
+
+class _TopMenuUpdatePageState extends State<_TopMenuUpdatePage> {
+  late final Future<PackageInfo> _packageInfoFuture =
+      PackageInfo.fromPlatform();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: _packageInfoFuture,
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return AboutUpdateScreen(packageInfo: snapshot.data);
+      },
     );
   }
 }
@@ -2400,6 +3207,22 @@ class _CourseRescheduleDraft {
     required this.targetStartSection,
     required this.targetEndSection,
     required this.targetLocation,
+  });
+}
+
+class _DayCourseDisplayItem {
+  final Course course;
+  final bool isCurrentWeekCourse;
+  final bool isConflicting;
+  final bool isCurrentCourse;
+  final double opacity;
+
+  const _DayCourseDisplayItem({
+    required this.course,
+    required this.isCurrentWeekCourse,
+    required this.isConflicting,
+    required this.isCurrentCourse,
+    required this.opacity,
   });
 }
 
