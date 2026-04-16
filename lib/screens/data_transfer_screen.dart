@@ -266,6 +266,9 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
       final bytes = file.bytes;
       final content = bytes == null ? '' : utf8.decode(bytes);
+      if (!mounted) {
+        return;
+      }
       if (content.isEmpty) {
         throw FormatException(AppLocalizations.of(context)!.importFileReadFailed);
       }

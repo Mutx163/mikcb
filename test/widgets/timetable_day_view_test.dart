@@ -270,6 +270,242 @@ void main() {
     expect(find.text('正在上课'), findsNothing);
   });
 
+  testWidgets('back to today jumps to the real current semester week',
+      (tester) async {
+    final now = DateTime.now();
+    final todayWeek = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: todayWeek.subtract(const Duration(days: 7)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(5);
+    await provider.addCourse(
+      Course(
+        id: 'today-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '00:00',
+        endTime: '23:59',
+      ),
+    );
+
+    final anotherDay = now.weekday == 1 ? 2 : 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-5-$anotherDay')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-5-$anotherDay')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('back-to-today-button')));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-2-${now.weekday}')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('back to today jumps from an earlier swiped week in one action',
+      (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(7);
+    await provider.addCourse(
+      Course(
+        id: 'today-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '00:00',
+        endTime: '23:59',
+      ),
+    );
+
+    final anotherDay = now.weekday == 1 ? 2 : 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-7-$anotherDay')));
+    await _pumpTimetableFrame(tester);
+
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-summary')),
+      const Offset(420, 0),
+      warnIfMissed: false,
+    );
+    await _pumpFiniteFrames(tester, count: 10);
+
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-summary')),
+      const Offset(420, 0),
+      warnIfMissed: false,
+    );
+    await _pumpFiniteFrames(tester, count: 10);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-5-$anotherDay')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('back-to-today-button')));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-7-${now.weekday}')),
+      findsOneWidget,
+    );
+    expect(provider.currentWeek, 7);
+  });
+
+  testWidgets('back to today updates day content immediately during week jump',
+      (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(5);
+    await provider.addCourse(
+      Course(
+        id: 'today-course',
+        name: '今日课程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '00:00',
+        endTime: '23:59',
+      ),
+    );
+
+    final anotherDay = now.weekday == 1 ? 2 : 1;
+    await provider.addCourse(
+      Course(
+        id: 'another-day-course',
+        name: '其他日课程',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: anotherDay,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-5-$anotherDay')));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.text('其他日课程'), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('back-to-today-button')));
+    await tester.pump();
+
+    expect(find.text('今日课程'), findsWidgets);
+  });
+
+  testWidgets('week view back to current week jumps in one action',
+      (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(5);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('back-to-current-week-button')));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(provider.currentWeek, 7);
+  });
+
   testWidgets('day view swipe switches week and keeps selected weekday',
       (tester) async {
     final provider = await _createProviderWithTodayCourse();
@@ -396,6 +632,78 @@ void main() {
     expect(
         find.byKey(const ValueKey('timetable-day-view-2-1')), findsOneWidget);
     expect(find.text('下周一课程'), findsWidgets);
+  });
+
+  testWidgets(
+      'day view boundary swipe then continued swipe moves to next day in new week',
+      (tester) async {
+    final provider = await _createProviderWithTodayCourse();
+
+    await provider.addCourse(
+      Course(
+        id: 'week-two-monday',
+        name: '下周一课程',
+        teacher: '王老师',
+        location: 'A201',
+        dayOfWeek: 1,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+        customWeeks: const [2],
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'week-two-tuesday',
+        name: '下周二课程',
+        teacher: '李老师',
+        location: 'B301',
+        dayOfWeek: 2,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+        customWeeks: const [2],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-7')));
+    await _pumpTimetableFrame(tester);
+
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+      const Offset(-420, 0),
+    );
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(
+      find.byKey(const ValueKey('timetable-day-view-2-1')),
+      findsOneWidget,
+    );
+    expect(find.text('下周一课程'), findsWidgets);
+
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+      const Offset(-420, 0),
+    );
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(
+      find.byKey(const ValueKey('timetable-day-view-2-2')),
+      findsOneWidget,
+    );
+    expect(find.text('下周二课程'), findsWidgets);
   });
 
   testWidgets('day view still shows non-current-week courses when enabled',

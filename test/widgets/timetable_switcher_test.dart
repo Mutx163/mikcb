@@ -9,6 +9,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
+import 'package:university_timetable/screens/timetable_profiles_screen.dart';
 import '../helpers_test_app.dart';
 
 Future<void> _pumpTimetableFrame(WidgetTester tester) async {
@@ -152,5 +153,33 @@ void main() {
 
     expect(find.text('课表管理'), findsOneWidget);
     expect(find.text('课程总览'), findsOneWidget);
+  });
+
+  testWidgets('profile switch sheet can open timetable management screen',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('profile_switcher_trigger')));
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.text('课表管理'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.byType(TimetableProfilesScreen), findsOneWidget);
   });
 }
