@@ -2141,8 +2141,8 @@
   "homeWidgetTargetMiniList22": "Mini list 2×2",
   "homeWidgetTargetMedium24": "Overview 2×4",
   "homeWidgetTargetLarge44": "List 4×4",
-  "addCourseSheetTitle": "Add Course",
-  "addCourseSheetSubtitle": "Blank timetable areas do not respond to taps. Choose clearly whether to add a one-off lesson or a recurring course for the whole term.",
+  "addCourseSheetTitle": "Add Content",
+  "addCourseSheetSubtitle": "Blank timetable areas do not respond to taps. Choose clearly whether to add a one-off lesson, a recurring course, or a one-time schedule item.",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} Sections {startSection}-{endSection}",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -2201,6 +2201,38 @@
   "@courseCountSummary": {
     "placeholders": {
       "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAgendaInProgressStatus": "In Class · {minutes} min left",
+  "@dayAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAgendaEndingSoonStatus": "Ending Soon · {minutes} min left",
+  "@dayAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaInProgressStatus": "In Progress · {minutes} min left",
+  "@scheduleAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaEndingSoonStatus": "Ending Soon · {minutes} min left",
+  "@scheduleAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
         "type": "int"
       }
     }
@@ -2417,5 +2449,53 @@
     }
   },
   "clearedRememberedLoginStatus": "Remembered login cleared",
-  "clearedRememberedLoginSuccess": "Remembered login cleared"
+  "clearedRememberedLoginSuccess": "Remembered login cleared",
+  "addScheduleTitle": "Add Schedule",
+  "editScheduleTitle": "Edit Schedule",
+  "addScheduleAction": "Add Schedule",
+  "scheduleTitleLabel": "Schedule Title",
+  "scheduleTitleHint": "For example: team meeting, pickup, office visit",
+  "scheduleTitleRequired": "Please enter a schedule title",
+  "scheduleInfoSectionTitle": "Schedule Info",
+  "scheduleInfoSectionSubtitle": "Schedule items are inserted into the day-view timeline for a specific date and do not change course data.",
+  "scheduleTimeSectionTitle": "Time Arrangement",
+  "scheduleTimeSectionSubtitle": "Choose the exact date and time range for this schedule item.",
+  "scheduleAppearanceSectionTitle": "Appearance",
+  "scheduleAppearanceSectionSubtitle": "Pick a color that makes schedule items easy to distinguish from courses.",
+  "scheduleLocationLabel": "Location",
+  "scheduleLocationHint": "Optional",
+  "scheduleDateLabel": "Date",
+  "scheduleStartDateLabel": "Start Date",
+  "scheduleEndDateLabel": "End Date",
+  "scheduleStartTimeLabel": "Start Time",
+  "scheduleEndTimeLabel": "End Time",
+  "scheduleColorLabel": "Schedule Color",
+  "scheduleNoteLabel": "Note",
+  "scheduleNoteHint": "Optional",
+  "scheduleBadgeLabel": "Schedule",
+  "scheduleCountSummary": "{count} schedules",
+  "@scheduleCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleTimeRangeInvalid": "End time must be later than the start time",
+  "scheduleDateRangeInvalid": "End date cannot be earlier than the start date",
+  "scheduleSingleDayHint": "For same-day schedules, the end time must be later than the start time.",
+  "scheduleCrossDayHint": "Cross-day schedules are sliced into the corresponding day view automatically.",
+  "scheduleSavedHint": "Schedule added",
+  "scheduleUpdatedHint": "Schedule updated",
+  "crossDayBadgeLabel": "Cross-day",
+  "deleteScheduleTitle": "Delete Schedule",
+  "deleteScheduleMessage": "Delete schedule \"{title}\"?",
+  "@deleteScheduleMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeletedHint": "Schedule deleted"
 }

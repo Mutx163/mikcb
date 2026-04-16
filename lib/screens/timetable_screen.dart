@@ -6,16 +6,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
+import '../models/schedule_item.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
+import 'add_schedule_item_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
@@ -54,6 +57,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
   String? _lastSyncedProfileId;
+  Timer? _dayAgendaProgressTimer;
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
   int? _dayViewTransitionSourceWeek;
@@ -84,6 +88,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dayExpandDuration,
     );
+    _dayAgendaProgressTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || !_isDayView) {
+        return;
+      }
+      setState(() {});
+    });
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
@@ -97,6 +107,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.removeObserver(this);
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
+    _dayAgendaProgressTimer?.cancel();
     for (final controller in _dayViewPageControllers.values) {
       controller.dispose();
     }
@@ -331,6 +342,12 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     final shouldAnimateOpen = !_isDayView;
+    _prepareDayViewPageController(
+      settings,
+      normalizedWeek,
+      dayOfWeek,
+      forceRecreate: shouldAnimateOpen,
+    );
     setState(() {
       _selectedWeekForDayView = normalizedWeek;
       _selectedDayOfWeek = dayOfWeek;
@@ -445,10 +462,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   void _prepareDayViewPageController(
     TimetableSettings settings,
     int week,
-    int dayOfWeek,
-  ) {
+    int dayOfWeek, {
+    bool forceRecreate = false,
+  }) {
     final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
     final existing = _dayViewPageControllers[week];
+    if (forceRecreate && existing != null) {
+      existing.dispose();
+      _dayViewPageControllers[week] = PageController(initialPage: targetPage);
+      return;
+    }
     if (existing == null) {
       _dayViewPageControllers[week] = PageController(initialPage: targetPage);
       return;
@@ -1031,35 +1054,39 @@ class _TimetableScreenState extends State<TimetableScreen>
     final selectedDayOfWeek = _displayedDayForWeek(week);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final panel = _buildDayViewPanel(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: selectedDayOfWeek,
+    );
 
     return AnimatedBuilder(
       animation: _dayViewExpandController,
+      child: panel,
       builder: (context, child) {
         final progress = Curves.easeInOutCubicEmphasized.transform(
           _dayViewExpandController.value,
         );
-
-        // When fully expanded, show the day view directly without constraints
-        if (progress > 0.95) {
-          return _buildDayViewPanel(
-            provider: provider,
-            settings: settings,
-            week: week,
-            dayOfWeek: selectedDayOfWeek,
-          );
-        }
-
         final widthFactor = 0.18 + (0.82 * progress);
         final heightFactor = math.max(0.04, progress);
         final translateY = (1 - progress) * -24;
+        final borderRadius = BorderRadius.circular(28 * (1 - progress));
+        final borderColor = Color.lerp(
+          colorScheme.outlineVariant,
+          Colors.transparent,
+          progress,
+        )!;
+        final shadowAlpha =
+            (theme.brightness == Brightness.dark ? 0.08 : 0.06) *
+                (1 - progress);
 
-        // When not fully expanded, show the animated floating card
         return IgnorePointer(
           ignoring: progress < 0.98,
           child: Opacity(
             opacity: Curves.easeOutCubic.transform(progress),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: borderRadius,
               child: Align(
                 alignment: Alignment(_dayViewAnchorAlignmentX, -1),
                 widthFactor: widthFactor,
@@ -1068,23 +1095,19 @@ class _TimetableScreenState extends State<TimetableScreen>
                   offset: Offset(0, translateY),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: colorScheme.surface,
-                      border: Border.all(color: colorScheme.outlineVariant),
+                      color: Colors.transparent,
+                      border: Border.all(color: borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: colorScheme.shadow
-                              .withValues(alpha: 0.08 * (1 - progress)),
+                          color: colorScheme.shadow.withValues(
+                            alpha: shadowAlpha,
+                          ),
                           blurRadius: 28 * (1 - progress),
                           offset: Offset(0, 12 * (1 - progress)),
                         ),
                       ],
                     ),
-                    child: _buildDayViewPanel(
-                      provider: provider,
-                      settings: settings,
-                      week: week,
-                      dayOfWeek: selectedDayOfWeek,
-                    ),
+                    child: child,
                   ),
                 ),
               ),
@@ -1155,13 +1178,38 @@ class _TimetableScreenState extends State<TimetableScreen>
                           week: target.week,
                         )
                       : null;
+                  final currentCourseIds = _isSelectedDayToday(
+                    provider: provider,
+                    settings: settings,
+                    week: target.week,
+                    dayOfWeek: target.dayOfWeek,
+                  )
+                      ? provider
+                          .getCoursesInProgress(
+                            dayOfWeek: target.dayOfWeek,
+                            week: target.week,
+                          )
+                          .map((course) => course.id)
+                          .toSet()
+                      : const <String>{};
                   final displayItems = _buildDayCourseDisplayItems(
                     courses: courses,
                     week: target.week,
                     settings: settings,
                     conflictMap: conflictMap,
-                    currentCourseId: currentCourse?.id,
+                    currentCourseIds: currentCourseIds,
                   );
+                  final agendaItems = _buildDayAgendaItems(
+                    provider: provider,
+                    settings: settings,
+                    week: target.week,
+                    dayOfWeek: target.dayOfWeek,
+                    courseItems: displayItems,
+                  );
+                  final scheduleItems = agendaItems
+                      .where((item) => item.isScheduleItem)
+                      .map((item) => item.scheduleItem!)
+                      .toList(growable: false);
                   final isActivePage = target.week == _selectedWeekForDayView &&
                       target.dayOfWeek == _selectedDayOfWeek;
                   return Column(
@@ -1180,8 +1228,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                           dayOfWeek: target.dayOfWeek,
                           selectedDate: selectedDate,
                           currentCourse: currentCourse,
-                          courseCount: displayItems.length,
-                          hasCourses: displayItems.isNotEmpty,
+                          courseItems: displayItems,
+                          scheduleItems: scheduleItems,
+                          agendaItems: agendaItems,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1221,6 +1270,105 @@ class _TimetableScreenState extends State<TimetableScreen>
     return dayOfWeek == now.weekday && week == provider.currentWeek;
   }
 
+  DateTime _resolveDisplayDateForWeekDay({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    final resolvedDate = _dateForWeekDay(settings, week, dayOfWeek);
+    if (resolvedDate != null) {
+      return resolvedDate;
+    }
+
+    final now = DateTime.now();
+    final normalizedToday = DateTime(now.year, now.month, now.day);
+    final dayDelta =
+        (week - provider.currentWeek) * 7 + dayOfWeek - now.weekday;
+    return normalizedToday.add(Duration(days: dayDelta));
+  }
+
+  List<ScheduleItem> _getScheduleItemsForWeekDay({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+  }) {
+    final targetDate = _resolveDisplayDateForWeekDay(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+    );
+    return provider.getScheduleItemsForDate(targetDate);
+  }
+
+  _DayAgendaItem _buildScheduleAgendaItemForDate({
+    required ScheduleItem item,
+    required DateTime targetDate,
+  }) {
+    final normalizedTargetDate = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+    );
+    final continuesFromPreviousDay =
+        item.startDate.isBefore(normalizedTargetDate);
+    final continuesToNextDay = item.endDate.isAfter(normalizedTargetDate);
+    return _DayAgendaItem.schedule(
+      item,
+      startTime: continuesFromPreviousDay ? '00:00' : item.startTime,
+      endTime: continuesToNextDay ? '23:59' : item.endTime,
+      continuesFromPreviousDay: continuesFromPreviousDay,
+      continuesToNextDay: continuesToNextDay,
+    );
+  }
+
+  List<_DayAgendaItem> _buildDayAgendaItems({
+    required TimetableProvider provider,
+    required TimetableSettings settings,
+    required int week,
+    required int dayOfWeek,
+    required List<_DayCourseDisplayItem> courseItems,
+  }) {
+    final targetDate = _resolveDisplayDateForWeekDay(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+    );
+    final items = <_DayAgendaItem>[
+      ...courseItems.map(_DayAgendaItem.course),
+      ..._getScheduleItemsForWeekDay(
+        provider: provider,
+        settings: settings,
+        week: week,
+        dayOfWeek: dayOfWeek,
+      ).map(
+        (item) => _buildScheduleAgendaItemForDate(
+          item: item,
+          targetDate: targetDate,
+        ),
+      ),
+    ];
+
+    items.sort((left, right) {
+      final startCompare = left.startTime.compareTo(right.startTime);
+      if (startCompare != 0) {
+        return startCompare;
+      }
+      final endCompare = left.endTime.compareTo(right.endTime);
+      if (endCompare != 0) {
+        return endCompare;
+      }
+      if (left.isScheduleItem != right.isScheduleItem) {
+        return left.isScheduleItem ? 1 : -1;
+      }
+      return left.id.compareTo(right.id);
+    });
+    return items;
+  }
+
   Widget _buildDayViewSummary({
     Key? key,
     required TimetableProvider provider,
@@ -1229,8 +1377,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
     required DateTime? selectedDate,
     required Course? currentCourse,
-    required int courseCount,
-    required bool hasCourses,
+    required List<_DayCourseDisplayItem> courseItems,
+    required List<ScheduleItem> scheduleItems,
+    required List<_DayAgendaItem> agendaItems,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
@@ -1241,78 +1390,336 @@ class _TimetableScreenState extends State<TimetableScreen>
       week: week,
       dayOfWeek: dayOfWeek,
     );
-    final summaryText = currentCourse != null
-        ? '${l10n.ongoingCourseBadge} · ${currentCourse.name}'
-        : hasCourses
-            ? l10n.courseCountSummary(courseCount)
-            : l10n.dayViewEmptyTitle;
+    final courseCount = courseItems.length;
+    final scheduleCount = scheduleItems.length;
+    final hasAgenda = agendaItems.isNotEmpty;
+    final currentWeekItems =
+        courseItems.where((item) => item.isCurrentWeekCourse).toList();
+    final nonCurrentWeekCourseCount = courseCount - currentWeekItems.length;
+    final conflictCount =
+        courseItems.where((item) => item.isConflicting).length;
+    final firstAgenda = hasAgenda ? agendaItems.first : null;
+    final lastAgenda = hasAgenda ? agendaItems.last : null;
+    final locale = Localizations.localeOf(context);
+    final localeName = locale.countryCode?.isNotEmpty == true
+        ? '${locale.languageCode}_${locale.countryCode}'
+        : locale.languageCode;
+    final dateLabel = selectedDate != null
+        ? _formatDayViewSummaryDate(
+            selectedDate,
+            dayOfWeek: dayOfWeek,
+            localeName: localeName,
+          )
+        : _weekdayLabel(context, dayOfWeek);
+    final cardColor = theme.brightness == Brightness.dark
+        ? colorScheme.surface
+        : Colors.white;
+    final countBadgeColor = hasAgenda
+        ? colorScheme.primary.withValues(alpha: 0.10)
+        : colorScheme.surfaceContainerHigh;
+    final countBadgeTextColor =
+        hasAgenda ? colorScheme.primary : colorScheme.onSurfaceVariant;
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final selectedDayDate = selectedDate != null
+        ? DateTime(selectedDate.year, selectedDate.month, selectedDate.day)
+        : null;
+    final backToTodayIcon =
+        selectedDayDate != null && selectedDayDate.isBefore(normalizedToday)
+            ? Icons.arrow_forward_rounded
+            : Icons.arrow_back_rounded;
 
-    return Container(
+    return DecoratedBox(
       key: key,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(12),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.12 : 0.05,
+            ),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              summaryText,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (isToday)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            l10n.todayTimetableTitle,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        )
+                      else
+                        TextButton.icon(
+                          key: const ValueKey('back-to-today-button'),
+                          onPressed: () async {
+                            final now = DateTime.now();
+                            final visibleDays = _visibleDayNumbers(settings);
+                            final currentSemesterWeek =
+                                _resolveCurrentSemesterWeek(settings);
+                            if (!visibleDays.contains(now.weekday) ||
+                                currentSemesterWeek == null) {
+                              return;
+                            }
+                            await _animateDayViewToWeek(
+                              provider,
+                              settings,
+                              currentSemesterWeek,
+                              now.weekday,
+                            );
+                          },
+                          style: TextButton.styleFrom(
+                            visualDensity: VisualDensity.compact,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            backgroundColor: colorScheme.primary.withValues(
+                              alpha: 0.08,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(999),
+                              side: BorderSide(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.12,
+                                ),
+                              ),
+                            ),
+                          ),
+                          icon: Icon(
+                            backToTodayIcon,
+                            size: 14,
+                            color: colorScheme.primary,
+                          ),
+                          label: Text(
+                            l10n.backToTodayAction,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      Text(
+                        l10n.weekLabel(week),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('back-to-week-view-button'),
+                  onPressed: () => _closeDayView(settings),
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  tooltip: l10n.backToWeekViewAction,
+                  style: IconButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.all(4),
+                    minimumSize: const Size(28, 28),
+                    foregroundColor: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text(
+              dateLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: currentCourse != null
-                    ? colorScheme.primary
-                    : colorScheme.onSurface,
-                fontWeight: FontWeight.w600,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.1,
+                color: colorScheme.onSurface,
               ),
             ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 5,
+              runSpacing: 6,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: countBadgeColor,
+                    borderRadius: BorderRadius.circular(7),
+                  ),
+                  child: Text(
+                    hasAgenda
+                        ? (courseCount > 0
+                            ? l10n.courseCountSummary(courseCount)
+                            : l10n.scheduleCountSummary(scheduleCount))
+                        : l10n.courseCountSummary(0),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: countBadgeTextColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                if (scheduleCount > 0 && courseCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Text(
+                      l10n.scheduleCountSummary(scheduleCount),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                if (firstAgenda != null) ...[
+                  Text(
+                    l10n.classStartsAtLabel(firstAgenda.startTime),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  Text(
+                    '|',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.outline,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                  Text(
+                    l10n.classEndsAtLabel(lastAgenda!.endTime),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11.5,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            if (currentCourse != null ||
+                conflictCount > 0 ||
+                nonCurrentWeekCourseCount > 0) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  if (currentCourse != null)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.bolt_rounded,
+                      text:
+                          '${l10n.ongoingCourseBadge} · ${currentCourse.name}',
+                      accentColor: colorScheme.primary,
+                    ),
+                  if (conflictCount > 0)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.warning_amber_rounded,
+                      text: l10n.conflictCountLabel(conflictCount),
+                      accentColor: colorScheme.error,
+                    ),
+                  if (nonCurrentWeekCourseCount > 0)
+                    _buildDayViewSummaryChip(
+                      icon: Icons.visibility_rounded,
+                      text:
+                          '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
+                    ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayViewSummaryChip({
+    required IconData icon,
+    required String text,
+    Color? accentColor,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final resolvedAccent = accentColor ?? colorScheme.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: resolvedAccent.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: resolvedAccent,
           ),
-          const SizedBox(width: 8),
-          if (!isToday)
-            FilledButton.tonalIcon(
-              key: const ValueKey('back-to-today-button'),
-              onPressed: () async {
-                final now = DateTime.now();
-                final visibleDays = _visibleDayNumbers(settings);
-                final currentSemesterWeek =
-                    _resolveCurrentSemesterWeek(settings);
-                if (!visibleDays.contains(now.weekday) ||
-                    currentSemesterWeek == null) {
-                  return;
-                }
-                await _animateDayViewToWeek(
-                  provider,
-                  settings,
-                  currentSemesterWeek,
-                  now.weekday,
-                );
-              },
-              icon: const Icon(Icons.today_rounded, size: 18),
-              label: Text(l10n.backToTodayAction),
-              style: FilledButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                minimumSize: const Size(0, 32),
-              ),
-            ),
           const SizedBox(width: 6),
-          IconButton(
-            key: const ValueKey('back-to-week-view-button'),
-            onPressed: () => _closeDayView(settings),
-            icon: const Icon(Icons.close_rounded, size: 20),
-            tooltip: l10n.backToWeekViewAction,
-            style: IconButton.styleFrom(
-              visualDensity: VisualDensity.compact,
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(32, 32),
+          Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: resolvedAccent,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _formatDayViewSummaryDate(
+    DateTime date, {
+    required int dayOfWeek,
+    required String localeName,
+  }) {
+    if (localeName.startsWith('zh')) {
+      return '${date.month}月${date.day}日 ${_weekdayLabel(context, dayOfWeek)}';
+    }
+    final formattedDate = DateFormat.MMMd(localeName).format(date);
+    return '$formattedDate ${_weekdayLabel(context, dayOfWeek)}';
   }
 
   Widget _buildDayViewEmptyState({required int week}) {
@@ -1361,25 +1768,35 @@ class _TimetableScreenState extends State<TimetableScreen>
       dayOfWeek,
       settings,
     );
-    final currentCourse = _isSelectedDayToday(
+    final currentCourseIds = _isSelectedDayToday(
       provider: provider,
       settings: settings,
       week: week,
       dayOfWeek: dayOfWeek,
     )
-        ? provider.getCourseInProgress(
-            dayOfWeek: dayOfWeek,
-            week: week,
-          )
-        : null;
+        ? provider
+            .getCoursesInProgress(
+              dayOfWeek: dayOfWeek,
+              week: week,
+            )
+            .map((course) => course.id)
+            .toSet()
+        : const <String>{};
     final displayItems = _buildDayCourseDisplayItems(
       courses: courses,
       week: week,
       settings: settings,
       conflictMap: provider.courseConflictMapForWeek(week),
-      currentCourseId: currentCourse?.id,
+      currentCourseIds: currentCourseIds,
     );
-    if (displayItems.isEmpty) {
+    final agendaItems = _buildDayAgendaItems(
+      provider: provider,
+      settings: settings,
+      week: week,
+      dayOfWeek: dayOfWeek,
+      courseItems: displayItems,
+    );
+    if (agendaItems.isEmpty) {
       return Padding(
         key: key,
         padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
@@ -1392,10 +1809,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     return ListView.separated(
       key: PageStorageKey<String>('day-agenda-$week-$dayOfWeek'),
       padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-      itemCount: displayItems.length,
+      itemCount: agendaItems.length,
       separatorBuilder: (context, index) => const SizedBox(height: 8),
       itemBuilder: (context, itemIndex) {
-        final item = displayItems[itemIndex];
+        final item = agendaItems[itemIndex];
         return _buildDayAgendaEntry(
           week: week,
           settings: settings,
@@ -1423,119 +1840,840 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _buildDayAgendaEntry({
     required int week,
     required TimetableSettings settings,
-    required _DayCourseDisplayItem item,
+    required _DayAgendaItem item,
   }) {
+    if (item.isScheduleItem) {
+      return _buildScheduleAgendaEntry(item);
+    }
+
+    final courseItem = item.courseItem!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final colorHex = _resolveDisplayCourseColor(item, settings: settings);
-    return SizedBox(
-      height: 110,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
+    final l10n = AppLocalizations.of(context)!;
+    final colorHex = _resolveDisplayCourseColor(courseItem, settings: settings);
+    final resolvedColor =
+        _colorFromHex(colorHex ?? courseItem.course.color, Colors.blue);
+    final palette = _resolveDayAgendaPalette(resolvedColor);
+    final onCardColor = palette.foregroundColor;
+    final statusBadges = <Widget>[
+      if (courseItem.isCurrentCourse)
+        _buildDayAgendaStatusBadge(
+          text: l10n.ongoingCourseBadge,
+          textColor: onCardColor,
+          backgroundColor: Colors.white.withValues(alpha: 0.18),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
-              child: SizedBox(
-                width: 62,
+      if (courseItem.isConflicting && settings.showConflictBadgeOnTimetable)
+        _buildDayAgendaStatusBadge(
+          text: l10n.conflictLabel,
+          textColor: Colors.white,
+          backgroundColor: colorScheme.error,
+        ),
+      if (!courseItem.isCurrentWeekCourse)
+        _buildDayAgendaStatusBadge(
+          text: l10n.nonCurrentWeekLabel,
+          textColor: onCardColor,
+          backgroundColor: Colors.white.withValues(alpha: 0.14),
+        ),
+    ];
+    final cardDecoration = BoxDecoration(
+      color: palette.baseColor,
+      borderRadius: BorderRadius.circular(24),
+      border: courseItem.isConflicting
+          ? Border.all(
+              color: colorScheme.error.withValues(
+                alpha: 0.30,
+              ),
+              width: 1.4,
+            )
+          : null,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          palette.baseColor,
+          if (courseItem.isConflicting)
+            Color.lerp(palette.fillColor, colorScheme.error, 0.12) ??
+                palette.fillColor
+          else
+            palette.fillColor,
+        ],
+      ),
+      boxShadow: [
+        BoxShadow(
+          color:
+              (courseItem.isConflicting ? colorScheme.error : palette.fillColor)
+                  .withValues(alpha: courseItem.isConflicting ? 0.20 : 0.18),
+          blurRadius: courseItem.isConflicting ? 18 : 16,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+    final progressInfo = courseItem.isCurrentCourse
+        ? _resolveDayAgendaProgressInfo(courseItem.course, palette: palette)
+        : null;
+
+    return Opacity(
+      opacity: courseItem.opacity,
+      child: OpenContainer<void>(
+        key: ValueKey('day-view-edit-card-${courseItem.course.id}'),
+        tappable: false,
+        transitionType: ContainerTransitionType.fadeThrough,
+        transitionDuration: const Duration(milliseconds: 420),
+        openColor: theme.scaffoldBackgroundColor,
+        closedColor: Colors.transparent,
+        closedElevation: 0,
+        openElevation: 0,
+        closedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        openShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        openBuilder: (context, _) => ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: AddCourseScreen(course: courseItem.course),
+        ),
+        closedBuilder: (context, openContainer) {
+          final content = progressInfo != null
+              ? _buildCurrentDayAgendaCard(
+                  item: courseItem,
+                  progressInfo: progressInfo,
+                  l10n: l10n,
+                  colorScheme: colorScheme,
+                  openContainer: openContainer,
+                )
+              : _buildDefaultDayAgendaCard(
+                  item: courseItem,
+                  settings: settings,
+                  l10n: l10n,
+                  palette: palette,
+                  statusBadges: statusBadges,
+                  cardDecoration: cardDecoration,
+                  openContainer: openContainer,
+                );
+          return Material(
+            color: Colors.transparent,
+            child: content,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDefaultDayAgendaCard({
+    required _DayCourseDisplayItem item,
+    required TimetableSettings settings,
+    required AppLocalizations l10n,
+    required _DayAgendaPalette palette,
+    required List<Widget> statusBadges,
+    required BoxDecoration cardDecoration,
+    required VoidCallback openContainer,
+  }) {
+    final sectionLabel = l10n.sectionRangeLabel(
+      item.course.startSection,
+      item.course.endSection,
+    );
+    final teacherValue = item.course.teacher.trim().isNotEmpty
+        ? item.course.teacher.trim()
+        : l10n.unknownTeacher;
+    final teacherLine = '${l10n.teacherPrefix(teacherValue)} · $sectionLabel';
+    final locationValue = item.course.location.trim().isNotEmpty
+        ? item.course.location.trim()
+        : l10n.unknownLocation;
+    final locationLine = l10n.locationPrefix(locationValue);
+    return InkWell(
+      onTap: openContainer,
+      borderRadius: BorderRadius.circular(20),
+      child: Ink(
+        decoration: cardDecoration,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${item.course.startTime} - ${item.course.endTime}',
+                          style:
+                              Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...statusBadges,
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                item.course.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: palette.foregroundColor,
+                      fontWeight: FontWeight.w800,
+                      height: 1.10,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              _buildCurrentDayAgendaInfoRow(
+                icon: Icons.person_outline_rounded,
+                text: teacherLine,
+              ),
+              const SizedBox(height: 6),
+              _buildCurrentDayAgendaInfoRow(
+                icon: Icons.location_on_outlined,
+                text: locationLine,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentDayAgendaCard({
+    required _DayCourseDisplayItem item,
+    required _DayAgendaProgressInfo progressInfo,
+    required AppLocalizations l10n,
+    required ColorScheme colorScheme,
+    required VoidCallback openContainer,
+  }) {
+    final theme = Theme.of(context);
+    final sectionLabel = l10n.sectionRangeLabel(
+      item.course.startSection,
+      item.course.endSection,
+    );
+    final teacherValue = item.course.teacher.trim().isNotEmpty
+        ? item.course.teacher.trim()
+        : l10n.unknownTeacher;
+    final teacherLine = '${l10n.teacherPrefix(teacherValue)} · $sectionLabel';
+    final locationValue = item.course.location.trim().isNotEmpty
+        ? item.course.location.trim()
+        : l10n.unknownLocation;
+    final locationLine = l10n.locationPrefix(locationValue);
+    final borderColor = item.isConflicting
+        ? colorScheme.error.withValues(alpha: 0.30)
+        : Colors.transparent;
+
+    return InkWell(
+      onTap: openContainer,
+      borderRadius: BorderRadius.circular(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          key: ValueKey('day-agenda-progress-card-${item.course.id}'),
+          decoration: BoxDecoration(
+            color: progressInfo.baseColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor, width: 1.2),
+            boxShadow: [
+              BoxShadow(
+                color: progressInfo.fillColor.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween<double>(
+                    end: progressInfo.progress.clamp(0.0, 1.0),
+                  ),
+                  duration: const Duration(milliseconds: 1100),
+                  curve: Curves.linear,
+                  builder: (context, animatedProgress, child) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: animatedProgress,
+                      child: child,
+                    );
+                  },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: progressInfo.fillColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.schedule_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${item.course.startTime} - ${item.course.endTime}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildDayAgendaStatusBadge(
+                          text: progressInfo.statusText,
+                          textColor: progressInfo.statusTextColor,
+                          backgroundColor: progressInfo.statusBackgroundColor,
+                        ),
+                        if (item.isConflicting)
+                          _buildDayAgendaStatusBadge(
+                            text: l10n.conflictLabel,
+                            textColor: Colors.white,
+                            backgroundColor: colorScheme.error,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      item.course.startTime,
-                      style: theme.textTheme.titleSmall?.copyWith(
+                      item.course.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.w800,
+                        height: 1.10,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.course.endTime,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const SizedBox(height: 10),
+                    _buildCurrentDayAgendaInfoRow(
+                      icon: Icons.person_outline_rounded,
+                      text: teacherLine,
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      AppLocalizations.of(context)!.sectionRangeLabel(
-                        item.course.startSection,
-                        item.course.endSection,
-                      ),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    _buildCurrentDayAgendaInfoRow(
+                      icon: Icons.location_on_outlined,
+                      text: locationLine,
                     ),
                   ],
                 ),
               ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScheduleAgendaEntry(_DayAgendaItem agendaItem) {
+    final item = agendaItem.scheduleItem!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final baseColor = _colorFromHex(item.color, colorScheme.primary);
+    final cardColor = Color.lerp(baseColor, Colors.black, 0.10) ?? baseColor;
+    final l10n = AppLocalizations.of(context)!;
+    final hasLocation = item.location?.trim().isNotEmpty == true;
+    final hasNote = item.note?.trim().isNotEmpty == true;
+    final isCrossDay = item.endDate.isAfter(item.startDate);
+    final progressInfo = _resolveScheduleAgendaProgressInfo(item, baseColor);
+
+    return OpenContainer<void>(
+      key: ValueKey('day-view-schedule-card-${item.id}'),
+      tappable: false,
+      transitionType: ContainerTransitionType.fadeThrough,
+      transitionDuration: const Duration(milliseconds: 360),
+      openColor: theme.scaffoldBackgroundColor,
+      closedColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      closedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+      ),
+      openShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      openBuilder: (context, _) => ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: AddScheduleItemScreen(scheduleItem: item),
+      ),
+      closedBuilder: (context, openContainer) {
+        if (progressInfo != null) {
+          return Material(
+            color: Colors.transparent,
+            child: _buildCurrentScheduleAgendaCard(
+              item: item,
+              agendaItem: agendaItem,
+              progressInfo: progressInfo,
+              l10n: l10n,
+              colorScheme: colorScheme,
+              openContainer: openContainer,
             ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 8, 8, 8),
-                child: OpenContainer<void>(
-                  key: ValueKey('day-view-edit-card-${item.course.id}'),
-                  tappable: false,
-                  transitionType: ContainerTransitionType.fadeThrough,
-                  transitionDuration: const Duration(milliseconds: 420),
-                  openColor: theme.scaffoldBackgroundColor,
-                  closedColor: Colors.transparent,
-                  closedElevation: 0,
-                  openElevation: 0,
-                  closedShape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  openShape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  openBuilder: (context, _) => ClipRRect(
-                    borderRadius: BorderRadius.circular(28),
-                    child: AddCourseScreen(course: item.course),
-                  ),
-                  closedBuilder: (context, openContainer) {
-                    return Opacity(
-                      opacity: item.opacity,
-                      child: CourseCard(
-                        course: item.course,
-                        overrideColorHex: colorHex,
-                        compactOverlineText: _resolveCompactOverlineText(
-                          item,
-                          settings.showConflictBadgeOnTimetable,
-                        ),
-                        topRightBadgeText: _resolveCompactBadgeText(
-                          item,
-                          settings.showConflictBadgeOnTimetable,
-                        ),
-                        isHighlighted: item.isCurrentCourse,
-                        isCompact: true,
-                        showName: settings.courseCardShowName,
-                        showTeacher: settings.courseCardShowTeacher,
-                        showLocation: settings.courseCardShowLocation,
-                        showTime: false,
-                        showTimeLabels: settings.courseCardShowTimeLabels,
-                        showWeeks: settings.courseCardShowWeeks,
-                        showDescription: settings.courseCardShowDescription,
-                        verticalAlign: settings.courseCardVerticalAlign,
-                        horizontalAlign: CourseCardHorizontalAlign.left,
-                        onTap: openContainer,
-                        compactTitleFontSize:
-                            (settings.courseCardFontSize + 1).clamp(9.0, 16.0),
-                        compactSubtitleFontSize:
-                            settings.courseCardFontSize.clamp(8.0, 14.0),
-                        compactVerticalPadding: 10,
-                        compactOuterInset: 0,
+          );
+        }
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: openContainer,
+            borderRadius: BorderRadius.circular(20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: cardColor,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: cardColor.withValues(alpha: 0.20),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.event_note_rounded,
+                                  size: 13,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  '${agendaItem.startTime} - ${agendaItem.endTime}',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildDayAgendaStatusBadge(
+                            text: l10n.scheduleBadgeLabel,
+                            textColor: Colors.white,
+                            backgroundColor: Colors.white.withValues(alpha: 0.18),
+                          ),
+                          if (isCrossDay)
+                            _buildDayAgendaStatusBadge(
+                              text: l10n.crossDayBadgeLabel,
+                              textColor: Colors.white,
+                              backgroundColor:
+                                  Colors.white.withValues(alpha: 0.18),
+                            ),
+                        ],
                       ),
-                    );
-                  },
+                      const SizedBox(height: 8),
+                      Text(
+                        item.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          height: 1.10,
+                        ),
+                      ),
+                      if (hasLocation) ...[
+                        const SizedBox(height: 10),
+                        _buildCurrentDayAgendaInfoRow(
+                          icon: Icons.location_on_outlined,
+                          text: l10n.locationPrefix(item.location!.trim()),
+                        ),
+                      ],
+                      if (hasNote) ...[
+                        const SizedBox(height: 6),
+                        _buildCurrentDayAgendaInfoRow(
+                          icon: Icons.notes_rounded,
+                          text: item.note!.trim(),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCurrentScheduleAgendaCard({
+    required ScheduleItem item,
+    required _DayAgendaItem agendaItem,
+    required _DayAgendaProgressInfo progressInfo,
+    required AppLocalizations l10n,
+    required ColorScheme colorScheme,
+    required VoidCallback openContainer,
+  }) {
+    final theme = Theme.of(context);
+    final hasLocation = item.location?.trim().isNotEmpty == true;
+    final hasNote = item.note?.trim().isNotEmpty == true;
+    final isCrossDay = item.endDate.isAfter(item.startDate);
+
+    return InkWell(
+      onTap: openContainer,
+      borderRadius: BorderRadius.circular(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
+          key: ValueKey('day-agenda-progress-schedule-card-${item.id}'),
+          decoration: BoxDecoration(
+            color: progressInfo.baseColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: progressInfo.fillColor.withValues(alpha: 0.18),
+                blurRadius: 18,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: TweenAnimationBuilder<double>(
+                  tween:
+                      Tween<double>(end: progressInfo.progress.clamp(0.0, 1.0)),
+                  duration: const Duration(milliseconds: 1100),
+                  curve: Curves.linear,
+                  builder: (context, animatedProgress, child) {
+                    return FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: animatedProgress,
+                      child: child,
+                    );
+                  },
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: progressInfo.fillColor,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.event_note_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                '${agendaItem.startTime} - ${agendaItem.endTime}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        _buildDayAgendaStatusBadge(
+                          text: progressInfo.statusText,
+                          textColor: progressInfo.statusTextColor,
+                          backgroundColor: progressInfo.statusBackgroundColor,
+                        ),
+                        _buildDayAgendaStatusBadge(
+                          text: l10n.scheduleBadgeLabel,
+                          textColor: Colors.white,
+                          backgroundColor: Colors.white.withValues(alpha: 0.18),
+                        ),
+                        if (isCrossDay)
+                          _buildDayAgendaStatusBadge(
+                            text: l10n.crossDayBadgeLabel,
+                            textColor: Colors.white,
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.18),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        height: 1.10,
+                      ),
+                    ),
+                    if (hasLocation) ...[
+                      const SizedBox(height: 10),
+                      _buildCurrentDayAgendaInfoRow(
+                        icon: Icons.location_on_outlined,
+                        text: l10n.locationPrefix(item.location!.trim()),
+                      ),
+                    ],
+                    if (hasNote) ...[
+                      const SizedBox(height: 6),
+                      _buildCurrentDayAgendaInfoRow(
+                        icon: Icons.notes_rounded,
+                        text: item.note!.trim(),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCurrentDayAgendaInfoRow({
+    required IconData icon,
+    required String text,
+  }) {
+    final theme = Theme.of(context);
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.82)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: Colors.white.withValues(alpha: 0.92),
+              fontWeight: FontWeight.w600,
+              fontSize: 11.5,
+              height: 1.15,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  _DayAgendaProgressInfo? _resolveDayAgendaProgressInfo(
+    Course course, {
+    required _DayAgendaPalette palette,
+  }) {
+    final now = DateTime.now();
+    final startMinutes = _parseDayAgendaClockMinutes(course.startTime);
+    final endMinutes = _parseDayAgendaClockMinutes(course.endTime);
+    if (startMinutes == null ||
+        endMinutes == null ||
+        endMinutes <= startMinutes) {
+      return null;
+    }
+    final currentMinutes = now.hour * 60 +
+        now.minute +
+        (now.second / 60) +
+        (now.millisecond / 60000);
+    if (currentMinutes < startMinutes || currentMinutes >= endMinutes) {
+      return null;
+    }
+    final elapsedMinutes = currentMinutes - startMinutes;
+    final totalMinutes = endMinutes - startMinutes;
+    final remainingMinutes = math.max(0, (endMinutes - currentMinutes).ceil());
+    final progress = (elapsedMinutes / totalMinutes).clamp(0.02, 0.98);
+    final isEndingSoon = remainingMinutes <= 10;
+    return _DayAgendaProgressInfo(
+      progress: progress,
+      remainingMinutes: remainingMinutes,
+      statusText: isEndingSoon
+          ? AppLocalizations.of(context)!.dayAgendaEndingSoonStatus(
+              remainingMinutes,
+            )
+          : AppLocalizations.of(context)!.dayAgendaInProgressStatus(
+              remainingMinutes,
+            ),
+      statusBackgroundColor: Colors.white,
+      statusTextColor:
+          isEndingSoon ? const Color(0xFFE05D44) : palette.fillColor,
+      baseColor: palette.baseColor,
+      fillColor: palette.fillColor,
+    );
+  }
+
+  _DayAgendaProgressInfo? _resolveScheduleAgendaProgressInfo(
+    ScheduleItem item,
+    Color background,
+  ) {
+    final now = DateTime.now();
+    final start = _buildScheduleDateTime(item.startDate, item.startTime);
+    final end = _buildScheduleDateTime(item.endDate, item.endTime);
+    if (start == null || end == null || !end.isAfter(start)) {
+      return null;
+    }
+    if (now.isBefore(start) || !now.isBefore(end)) {
+      return null;
+    }
+
+    final fillColor = Color.lerp(background, Colors.black, 0.18) ?? background;
+    final baseColor = Color.lerp(fillColor, Colors.white, 0.10) ?? fillColor;
+    final elapsedMinutes = now.difference(start).inMilliseconds / 60000;
+    final totalMinutes = end.difference(start).inMilliseconds / 60000;
+    final remainingMinutes = math.max(
+      0,
+      end.difference(now).inMinutes +
+          (end.difference(now).inSeconds % 60 > 0 ? 1 : 0),
+    );
+    final progress = (elapsedMinutes / totalMinutes).clamp(0.02, 0.98);
+    final isEndingSoon = remainingMinutes <= 10;
+
+    return _DayAgendaProgressInfo(
+      progress: progress,
+      remainingMinutes: remainingMinutes,
+      statusText: isEndingSoon
+          ? AppLocalizations.of(context)!.scheduleAgendaEndingSoonStatus(
+              remainingMinutes,
+            )
+          : AppLocalizations.of(context)!.scheduleAgendaInProgressStatus(
+              remainingMinutes,
+            ),
+      statusBackgroundColor: Colors.white,
+      statusTextColor: isEndingSoon ? const Color(0xFFE05D44) : fillColor,
+      baseColor: baseColor,
+      fillColor: fillColor,
+    );
+  }
+
+  DateTime? _buildScheduleDateTime(DateTime date, String clock) {
+    final minutes = _parseDayAgendaClockMinutes(clock);
+    if (minutes == null) {
+      return null;
+    }
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      minutes ~/ 60,
+      minutes % 60,
+    );
+  }
+
+  int? _parseDayAgendaClockMinutes(String value) {
+    final parts = value.split(':');
+    if (parts.length != 2) {
+      return null;
+    }
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) {
+      return null;
+    }
+    return hour * 60 + minute;
+  }
+
+  _DayAgendaPalette _resolveDayAgendaPalette(Color background) {
+    final fillColor = Color.lerp(background, Colors.black, 0.22) ?? background;
+    final baseColor = Color.lerp(fillColor, Colors.white, 0.12) ?? fillColor;
+    return _DayAgendaPalette(
+      baseColor: baseColor,
+      fillColor: fillColor,
+      foregroundColor: Colors.white,
+    );
+  }
+
+  Widget _buildDayAgendaStatusBadge({
+    required String text,
+    required Color textColor,
+    required Color backgroundColor,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: textColor,
+          fontWeight: FontWeight.w800,
+          fontSize: 10.5,
+          height: 1.0,
         ),
       ),
     );
@@ -1793,7 +2931,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required TimetableSettings settings,
     required Map<String, List<Course>> conflictMap,
-    String? currentCourseId,
+    Set<String> currentCourseIds = const <String>{},
   }) {
     return courses.where((course) {
       final isCurrentWeekCourse = course.isInWeek(week);
@@ -1811,7 +2949,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         course: course,
         isCurrentWeekCourse: isCurrentWeekCourse,
         isConflicting: isConflicting,
-        isCurrentCourse: currentCourseId == course.id,
+        isCurrentCourse: currentCourseIds.contains(course.id),
         opacity: !isCurrentWeekCourse
             ? 0.62
             : (isConflicting ? settings.timetableConflictCourseOpacity : 1),
@@ -2152,6 +3290,21 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  DateTime _resolveAddScheduleInitialDate(TimetableProvider provider) {
+    if (_isDayView &&
+        _selectedWeekForDayView != null &&
+        _selectedDayOfWeek != null) {
+      return _resolveDisplayDateForWeekDay(
+        provider: provider,
+        settings: provider.settings,
+        week: _selectedWeekForDayView!,
+        dayOfWeek: _selectedDayOfWeek!,
+      );
+    }
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
   Future<void> _showAddCourseSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
@@ -2204,6 +3357,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                       pageBuilder: (_) => AddCourseScreen(
                         mode: CourseEditorMode.recurring,
                         initialWeek: provider.currentWeek,
+                      ),
+                    ),
+                    _HomeActionPageButton(
+                      sheetRoute: ModalRoute.of(sheetContext),
+                      icon: Icons.event_note_rounded,
+                      title: l10n.addScheduleAction,
+                      pageBuilder: (_) => AddScheduleItemScreen(
+                        initialDate: _resolveAddScheduleInitialDate(provider),
                       ),
                     ),
                   ],
@@ -3610,6 +4771,83 @@ class _DayCourseDisplayItem {
     required this.isConflicting,
     required this.isCurrentCourse,
     required this.opacity,
+  });
+}
+
+class _DayAgendaItem {
+  final _DayCourseDisplayItem? courseItem;
+  final ScheduleItem? scheduleItem;
+  final String startTime;
+  final String endTime;
+  final bool continuesFromPreviousDay;
+  final bool continuesToNextDay;
+
+  const _DayAgendaItem._({
+    this.courseItem,
+    this.scheduleItem,
+    required this.startTime,
+    required this.endTime,
+    this.continuesFromPreviousDay = false,
+    this.continuesToNextDay = false,
+  });
+
+  factory _DayAgendaItem.course(_DayCourseDisplayItem item) {
+    return _DayAgendaItem._(
+      courseItem: item,
+      startTime: item.course.startTime,
+      endTime: item.course.endTime,
+    );
+  }
+
+  factory _DayAgendaItem.schedule(
+    ScheduleItem item, {
+    required String startTime,
+    required String endTime,
+    bool continuesFromPreviousDay = false,
+    bool continuesToNextDay = false,
+  }) {
+    return _DayAgendaItem._(
+      scheduleItem: item,
+      startTime: startTime,
+      endTime: endTime,
+      continuesFromPreviousDay: continuesFromPreviousDay,
+      continuesToNextDay: continuesToNextDay,
+    );
+  }
+
+  bool get isScheduleItem => scheduleItem != null;
+  String get id => isScheduleItem ? scheduleItem!.id : courseItem!.course.id;
+}
+
+class _DayAgendaProgressInfo {
+  final double progress;
+  final int remainingMinutes;
+  final String statusText;
+  final Color statusBackgroundColor;
+  final Color statusTextColor;
+  final Color baseColor;
+  final Color fillColor;
+
+  const _DayAgendaProgressInfo({
+    required this.progress,
+    required this.remainingMinutes,
+    required this.statusText,
+    required this.statusBackgroundColor,
+    required this.statusTextColor,
+    required this.baseColor,
+    required this.fillColor,
+  });
+}
+
+class _DayAgendaPalette {
+  final Color baseColor;
+  final Color fillColor;
+  final Color foregroundColor;
+
+  const _DayAgendaPalette({
+    required this.baseColor,
+    required this.fillColor,
+    required this.foregroundColor,
   });
 }
 
