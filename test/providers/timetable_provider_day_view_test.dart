@@ -100,4 +100,45 @@ void main() {
 
     expect(course, isNull);
   });
+
+  test('syncTemporalContext updates current week and today courses together',
+      () async {
+    final provider = await createProvider();
+    await provider.addCourse(
+      Course(
+        id: 'course-mon',
+        name: '周一课程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'course-tue',
+        name: '周二课程',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 2,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    );
+
+    await provider.syncTemporalContext(now: DateTime(2026, 4, 13, 8, 30));
+    expect(provider.currentWeek, 1);
+    expect(provider.currentDayOfWeek, 1);
+    expect(provider.getTodayCourses().map((course) => course.name), ['周一课程']);
+
+    await provider.syncTemporalContext(now: DateTime(2026, 4, 21, 8, 30));
+    expect(provider.currentWeek, 2);
+    expect(provider.currentDayOfWeek, 2);
+    expect(provider.getTodayCourses().map((course) => course.name), ['周二课程']);
+  });
 }

@@ -105,13 +105,14 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && widget.enableUpdateCheck) {
-      _checkForAppUpdate(
-        includePrerelease: context
-            .read<TimetableProvider>()
-            .settings
-            .appUpdateIncludePrerelease,
-      );
+    if (state == AppLifecycleState.resumed) {
+      final provider = context.read<TimetableProvider>();
+      unawaited(provider.syncTemporalContext());
+      if (widget.enableUpdateCheck) {
+        _checkForAppUpdate(
+          includePrerelease: provider.settings.appUpdateIncludePrerelease,
+        );
+      }
     }
   }
 
@@ -776,7 +777,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ? colorScheme.primary
                 : colorScheme.onSurface;
             final subLabelColor = (isSelected || isToday)
-                ? colorScheme.primary.withValues(alpha: isSelected ? 0.9 : 0.78)
+                ? colorScheme.primary.withValues(
+                    alpha: isSelected ? 0.9 : 0.78,
+                  )
                 : colorScheme.onSurfaceVariant;
 
             return Expanded(
@@ -2152,7 +2155,9 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showAddCourseSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final todayWeekday = DateTime.now().weekday;
+    final initialDayOfWeek = _isDayView && _selectedDayOfWeek != null
+        ? _selectedDayOfWeek!
+        : DateTime.now().weekday;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -2189,7 +2194,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       pageBuilder: (_) => AddCourseScreen(
                         mode: CourseEditorMode.singleLesson,
                         initialWeek: provider.currentWeek,
-                        initialDayOfWeek: todayWeekday,
+                        initialDayOfWeek: initialDayOfWeek,
                       ),
                     ),
                     _HomeActionPageButton(

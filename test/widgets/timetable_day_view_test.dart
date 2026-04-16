@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -659,6 +659,42 @@ void main() {
     expect(provider.currentWeek, 7);
   });
 
+  testWidgets('resume syncs week view to current semester week', (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(2);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    expect(provider.currentWeek, 2);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(provider.currentWeek, 7);
+  });
+
   testWidgets('day view summary drag follows the same in-week pager',
       (tester) async {
     final provider = await _createProviderWithTodayCourse();
@@ -1070,5 +1106,48 @@ void main() {
     await _pumpFiniteFrames(tester, count: 12);
 
     expect(find.byType(AddCourseScreen), findsOneWidget);
+  });
+
+  testWidgets('day view add single lesson defaults to selected weekday',
+      (tester) async {
+    final provider = await _createProviderWithTodayCourse();
+    final today = DateTime.now();
+    final targetDay = today.weekday == 1 ? 2 : 1;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-$targetDay')));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.byKey(ValueKey('timetable-day-view-1-$targetDay')), findsOne);
+
+    await tester.tap(find.byTooltip('更多'));
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.text('添加课程'));
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.text('单节课'));
+    await tester.pump();
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(find.byType(AddCourseScreen), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    await _pumpTimetableFrame(tester);
+
+    final weekdayDropdown = tester
+        .widgetList<DropdownButtonFormField<int>>(
+          find.byType(DropdownButtonFormField<int>),
+        )
+        .firstWhere((widget) => widget.decoration.labelText == '星期');
+
+    expect(weekdayDropdown.initialValue, targetDay);
   });
 }

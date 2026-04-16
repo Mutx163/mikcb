@@ -182,9 +182,9 @@ class TimetableProvider with ChangeNotifier {
 
   void _startLiveActivityTick() {
     _liveActivityTimer?.cancel();
-    _updateLiveActivity();
+    unawaited(syncTemporalContext());
     _liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _updateLiveActivity();
+      unawaited(syncTemporalContext());
     });
   }
 
@@ -1547,6 +1547,34 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  Future<bool> syncTemporalContext({
+    DateTime? now,
+  }) async {
+    await initialize();
+    final reference = now ?? DateTime.now();
+    final targetDayOfWeek = reference.weekday;
+    final targetWeek = _calculateWeekForDate(reference);
+    final didChangeWeek = targetWeek != _currentWeek;
+    final didChangeDay = targetDayOfWeek != _currentDayOfWeek;
+
+    if (!didChangeWeek && !didChangeDay) {
+      return false;
+    }
+
+    if (didChangeWeek) {
+      _currentWeek = clampCurrentWeekToSettings(targetWeek, _settings);
+      await _persistActiveProfileState();
+    }
+    if (didChangeDay) {
+      _currentDayOfWeek = targetDayOfWeek;
+    }
+
+    _currentLiveCourseId = null;
+    notifyListeners();
+    await _updateLiveActivity();
+    return true;
+  }
+
   Map<String, List<Course>> _buildCourseConflictMap({int? week}) {
     final conflictMap = <String, List<Course>>{};
 
@@ -2368,13 +2396,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   void updateCurrentDayOfWeek() {
-    final newDay = DateTime.now().weekday;
-    if (newDay != _currentDayOfWeek) {
-      _currentDayOfWeek = newDay;
-      _currentLiveCourseId = null;
-      notifyListeners();
-      _updateLiveActivity();
-    }
+    unawaited(syncTemporalContext());
   }
 
   LiveActivityStage? _resolveLiveActivityStage({
