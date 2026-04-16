@@ -34,6 +34,11 @@ enum HomeTitleStyle {
   brand,
 }
 
+enum TimetableHomeViewMode {
+  week,
+  day,
+}
+
 enum SectionTimeDisplayMode {
   hidden,
   startOnly,
@@ -218,6 +223,20 @@ extension HomeTitleStyleX on HomeTitleStyle {
     return HomeTitleStyle.values.firstWhere(
       (item) => item.value == value,
       orElse: () => HomeTitleStyle.classic,
+    );
+  }
+}
+
+extension TimetableHomeViewModeX on TimetableHomeViewMode {
+  String get value => switch (this) {
+        TimetableHomeViewMode.week => 'week',
+        TimetableHomeViewMode.day => 'day',
+      };
+
+  static TimetableHomeViewMode fromValue(String? value) {
+    return TimetableHomeViewMode.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => TimetableHomeViewMode.week,
     );
   }
 }
@@ -792,6 +811,8 @@ class TimetableSettings {
   final AppFontMode appFontMode;
   final String appLocaleTag;
   final HomeTitleStyle homeTitleStyle;
+  final TimetableHomeViewMode timetableHomeViewMode;
+  final int timetableLastViewedDayOfWeek;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
@@ -894,6 +915,8 @@ class TimetableSettings {
     this.appFontMode = AppFontMode.system,
     this.appLocaleTag = '',
     this.homeTitleStyle = HomeTitleStyle.classic,
+    this.timetableHomeViewMode = TimetableHomeViewMode.week,
+    this.timetableLastViewedDayOfWeek = 1,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
@@ -1015,6 +1038,8 @@ class TimetableSettings {
       appFontMode: AppFontMode.system,
       appLocaleTag: '',
       homeTitleStyle: HomeTitleStyle.classic,
+      timetableHomeViewMode: TimetableHomeViewMode.week,
+      timetableLastViewedDayOfWeek: 1,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
@@ -1122,6 +1147,8 @@ class TimetableSettings {
       'appFontMode': appFontMode.value,
       'appLocaleTag': appLocaleTag,
       'homeTitleStyle': homeTitleStyle.value,
+      'timetableHomeViewMode': timetableHomeViewMode.value,
+      'timetableLastViewedDayOfWeek': timetableLastViewedDayOfWeek,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
@@ -1290,6 +1317,12 @@ class TimetableSettings {
       homeTitleStyle: HomeTitleStyleX.fromValue(
         json['homeTitleStyle'] as String?,
       ),
+      timetableHomeViewMode: TimetableHomeViewModeX.fromValue(
+        json['timetableHomeViewMode'] as String?,
+      ),
+      timetableLastViewedDayOfWeek:
+          ((json['timetableLastViewedDayOfWeek'] as num?)?.toInt() ?? 1)
+              .clamp(1, 7),
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
       ),
@@ -1495,6 +1528,8 @@ class TimetableSettings {
     AppFontMode? appFontMode,
     String? appLocaleTag,
     HomeTitleStyle? homeTitleStyle,
+    TimetableHomeViewMode? timetableHomeViewMode,
+    int? timetableLastViewedDayOfWeek,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
@@ -1618,6 +1653,11 @@ class TimetableSettings {
       appFontMode: appFontMode ?? this.appFontMode,
       appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
+      timetableHomeViewMode:
+          timetableHomeViewMode ?? this.timetableHomeViewMode,
+      timetableLastViewedDayOfWeek:
+          (timetableLastViewedDayOfWeek ?? this.timetableLastViewedDayOfWeek)
+              .clamp(1, 7),
       timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:

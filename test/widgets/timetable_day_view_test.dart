@@ -150,6 +150,49 @@ void main() {
     );
   });
 
+  testWidgets('screen restores saved day view state on launch', (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        timetableHomeViewMode: TimetableHomeViewMode.day,
+        timetableLastViewedDayOfWeek: 3,
+      ),
+    );
+    await provider.setCurrentWeek(2);
+    await provider.addCourse(
+      Course(
+        id: 'saved-day-course',
+        name: '已保存日视图课程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 3,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        customWeeks: const [2],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    expect(
+        find.byKey(const ValueKey('timetable-day-view-2-3')), findsOneWidget);
+    expect(find.text('已保存日视图课程'), findsWidgets);
+  });
+
   testWidgets('tap same weekday again exits day view', (tester) async {
     final provider = await _createProviderWithTodayCourse();
     final today = DateTime.now();
@@ -330,7 +373,7 @@ void main() {
     );
   });
 
-  testWidgets('back to today jumps from an earlier swiped week in one action',
+  testWidgets('back to today jumps from a boundary-swiped earlier week',
       (tester) async {
     final now = DateTime.now();
     final currentWeekStart = _startOfCurrentWeek(now);
@@ -361,8 +404,6 @@ void main() {
       ),
     );
 
-    final anotherDay = now.weekday == 1 ? 2 : 1;
-
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
@@ -373,25 +414,18 @@ void main() {
     );
     await _pumpTimetableFrame(tester);
 
-    await tester.tap(find.byKey(ValueKey('weekday-header-7-$anotherDay')));
+    await tester.tap(find.byKey(const ValueKey('weekday-header-7-1')));
     await _pumpTimetableFrame(tester);
 
     await tester.drag(
-      find.byKey(const ValueKey('day-view-summary')),
+      find.byKey(const ValueKey('day-view-swipe-area')),
       const Offset(420, 0),
       warnIfMissed: false,
     );
-    await _pumpFiniteFrames(tester, count: 10);
-
-    await tester.drag(
-      find.byKey(const ValueKey('day-view-summary')),
-      const Offset(420, 0),
-      warnIfMissed: false,
-    );
-    await _pumpFiniteFrames(tester, count: 10);
+    await _pumpFiniteFrames(tester, count: 12);
 
     expect(
-      find.byKey(ValueKey('timetable-day-view-5-$anotherDay')),
+      find.byKey(const ValueKey('timetable-day-view-6-7')),
       findsOneWidget,
     );
 
@@ -506,10 +540,26 @@ void main() {
     expect(provider.currentWeek, 7);
   });
 
-  testWidgets('day view swipe switches week and keeps selected weekday',
+  testWidgets('day view summary drag follows the same in-week pager',
       (tester) async {
     final provider = await _createProviderWithTodayCourse();
     final today = DateTime.now();
+    final swipesToNextDay = today.weekday < 7;
+    final expectedDay = swipesToNextDay ? today.weekday + 1 : today.weekday - 1;
+
+    await provider.addCourse(
+      Course(
+        id: 'summary-swipe-course',
+        name: '周内切日课程',
+        teacher: '王老师',
+        location: 'C303',
+        dayOfWeek: expectedDay,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
@@ -531,17 +581,16 @@ void main() {
 
     await tester.drag(
       find.byKey(const ValueKey('day-view-summary')),
-      const Offset(-420, 0),
+      swipesToNextDay ? const Offset(-420, 0) : const Offset(420, 0),
       warnIfMissed: false,
     );
     await _pumpFiniteFrames(tester, count: 10);
 
     expect(
-      find.byKey(ValueKey('timetable-day-view-2-${today.weekday}')),
+      find.byKey(ValueKey('timetable-day-view-1-$expectedDay')),
       findsOneWidget,
     );
-    expect(
-        find.byKey(const ValueKey('back-to-week-view-button')), findsWidgets);
+    expect(find.text('周内切日课程'), findsWidgets);
   });
 
   testWidgets('day view content swipe switches selected weekday',
@@ -589,6 +638,86 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('离散数学'), findsWidgets);
+  });
+
+  testWidgets('day view content swipe can continue across multiple weekdays',
+      (tester) async {
+    final provider = await _createProviderWithTodayCourse();
+
+    await provider.addCourse(
+      Course(
+        id: 'tuesday-course',
+        name: '周二课程',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 2,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'wednesday-course',
+        name: '周三课程',
+        teacher: '王老师',
+        location: 'C303',
+        dayOfWeek: 3,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'thursday-course',
+        name: '周四课程',
+        teacher: '周老师',
+        location: 'D404',
+        dayOfWeek: 4,
+        startSection: 7,
+        endSection: 8,
+        startTime: '16:00',
+        endTime: '17:40',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-1')));
+    await _pumpTimetableFrame(tester);
+
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+      const Offset(-420, 0),
+    );
+    await _pumpFiniteFrames(tester, count: 10);
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+      const Offset(-420, 0),
+    );
+    await _pumpFiniteFrames(tester, count: 10);
+    await tester.drag(
+      find.byKey(const ValueKey('day-view-swipe-area')),
+      const Offset(-420, 0),
+    );
+    await _pumpFiniteFrames(tester, count: 10);
+
+    expect(
+      find.byKey(const ValueKey('timetable-day-view-1-4')),
+      findsOneWidget,
+    );
+    expect(find.text('周四课程'), findsWidgets);
   });
 
   testWidgets('day view content swipe at boundary switches week',
