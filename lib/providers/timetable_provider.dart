@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
+import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
@@ -69,6 +70,7 @@ class TimetableProvider with ChangeNotifier {
   final bool _enableLiveActivitySync;
 
   List<Course> _courses = [];
+  List<ScheduleItem> _scheduleItems = [];
   TimetableSettings _settings = TimetableSettings.defaults();
   int _currentWeek = 1;
   List<TimeScheme> _timeSchemes = [];
@@ -85,6 +87,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void>? _initializationFuture;
 
   List<Course> get courses => _courses;
+  List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   TimetableSettings get settings => _settings;
   int get currentWeek => _currentWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
@@ -223,6 +226,9 @@ class TimetableProvider with ChangeNotifier {
     _courses = _syncCoursesWithEffectiveTimeSchemes(
       List<Course>.from(profile.courses),
       settings: _settings,
+    );
+    _scheduleItems = _sortScheduleItems(
+      List<ScheduleItem>.from(profile.scheduleItems),
     );
     _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
     unawaited(_syncNativeRuntimePreferences());
@@ -410,6 +416,7 @@ class TimetableProvider with ChangeNotifier {
 
     _profiles[index] = activeProfile.copyWith(
       courses: List<Course>.from(_courses),
+      scheduleItems: List<ScheduleItem>.from(_scheduleItems),
       settings: _settings,
       currentWeek: _currentWeek,
       lastUsedAt: touchLastUsedAt ? DateTime.now() : activeProfile.lastUsedAt,
@@ -955,6 +962,71 @@ class TimetableProvider with ChangeNotifier {
       },
     );
     _updateLiveActivity();
+  }
+
+  List<ScheduleItem> getScheduleItemsForDate(DateTime date) {
+    final normalizedDate = DateTime(date.year, date.month, date.day);
+    return _scheduleItems
+        .where((item) => item.coversDate(normalizedDate))
+        .toList(growable: false);
+  }
+
+  Future<void> addScheduleItem(ScheduleItem item) async {
+    final normalizedItem = _normalizeScheduleItem(item);
+    _scheduleItems = _sortScheduleItems(
+      <ScheduleItem>[..._scheduleItems, normalizedItem],
+    );
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_item_created',
+      parameters: {
+        'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
+        'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
+      },
+    );
+  }
+
+  Future<void> updateScheduleItem(ScheduleItem item) async {
+    final index = _scheduleItems.indexWhere(
+      (existing) => existing.id == item.id,
+    );
+    if (index == -1) {
+      return;
+    }
+
+    final normalizedItem = _normalizeScheduleItem(item);
+    final nextItems = List<ScheduleItem>.from(_scheduleItems);
+    nextItems[index] = normalizedItem;
+    _scheduleItems = _sortScheduleItems(nextItems);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_item_updated',
+      parameters: {
+        'has_location': normalizedItem.location?.isNotEmpty == true ? 1 : 0,
+        'has_note': normalizedItem.note?.isNotEmpty == true ? 1 : 0,
+      },
+    );
+  }
+
+  Future<void> deleteScheduleItem(String itemId) async {
+    final previousCount = _scheduleItems.length;
+    _scheduleItems = _scheduleItems
+        .where((item) => item.id != itemId)
+        .toList(growable: false);
+    if (_scheduleItems.length == previousCount) {
+      return;
+    }
+
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'schedule_item_deleted',
+      parameters: {
+        'remaining_schedule_item_count': _scheduleItems.length,
+      },
+    );
   }
 
   Future<bool> deleteCourseOccurrence({
@@ -1645,6 +1717,48 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  ScheduleItem _normalizeScheduleItem(ScheduleItem item) {
+    final normalizedStartDate = DateTime(
+      item.startDate.year,
+      item.startDate.month,
+      item.startDate.day,
+    );
+    final normalizedEndDate = DateTime(
+      item.endDate.year,
+      item.endDate.month,
+      item.endDate.day,
+    );
+    return item.copyWith(
+      title: item.title.trim(),
+      location:
+          item.location?.trim().isEmpty == true ? null : item.location?.trim(),
+      note: item.note?.trim().isEmpty == true ? null : item.note?.trim(),
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate.isBefore(normalizedStartDate)
+          ? normalizedStartDate
+          : normalizedEndDate,
+    );
+  }
+
+  List<ScheduleItem> _sortScheduleItems(List<ScheduleItem> source) {
+    source.sort((left, right) {
+      final dateCompare = left.startDate.compareTo(right.startDate);
+      if (dateCompare != 0) {
+        return dateCompare;
+      }
+      final startCompare = left.startTime.compareTo(right.startTime);
+      if (startCompare != 0) {
+        return startCompare;
+      }
+      final endCompare = left.endTime.compareTo(right.endTime);
+      if (endCompare != 0) {
+        return endCompare;
+      }
+      return left.id.compareTo(right.id);
+    });
+    return source;
+  }
+
   Course _applySharedCourseFields(Course target, Course source) {
     return target.copyWith(
       name: source.name,
@@ -1728,9 +1842,23 @@ class TimetableProvider with ChangeNotifier {
     int? week,
     DateTime? now,
   }) {
+    final courses = getCoursesInProgress(
+      dayOfWeek: dayOfWeek,
+      week: week,
+      now: now,
+    );
+    return courses.isEmpty ? null : courses.first;
+  }
+
+  List<Course> getCoursesInProgress({
+    required int dayOfWeek,
+    int? week,
+    DateTime? now,
+  }) {
     final reference = now ?? DateTime.now();
     final targetWeek = week ?? _calculateWeekForDate(reference);
     final currentMinutes = reference.hour * 60 + reference.minute;
+    final matches = <Course>[];
 
     for (final course in getCoursesForDay(dayOfWeek, week: targetWeek)) {
       final startMinutes = _parseClockMinutes(_resolveRealTime(course, true));
@@ -1739,10 +1867,10 @@ class TimetableProvider with ChangeNotifier {
         continue;
       }
       if (currentMinutes >= startMinutes && currentMinutes < endMinutes) {
-        return resolveCourseDisplayName(course);
+        matches.add(resolveCourseDisplayName(course));
       }
     }
-    return null;
+    return matches;
   }
 
   Course? getNextCourse() {

@@ -101,7 +101,7 @@
   "switchProfileHint": "點擊切換課表",
   "moreTooltip": "更多",
   "pleaseSetSemesterStartDate": "請先在課表設定裡填寫開學日期",
-  "deleteScheduleTitle": "刪除排課",
+  "deleteScheduleTitle": "刪除日程",
   "deleteLessonTitle": "刪除這節課",
   "cancelAction": "取消",
   "deleteAction": "刪除",
@@ -2139,5 +2139,362 @@
   "homeWidgetTargetCompact22": "主卡 2×2",
   "homeWidgetTargetMiniList22": "迷你清單 2×2",
   "homeWidgetTargetMedium24": "概覽 2×4",
-  "homeWidgetTargetLarge44": "清單 4×4"
+  "homeWidgetTargetLarge44": "清單 4×4",
+  "dayAgendaInProgressStatus": "進行中 · 剩餘 {minutes} 分鐘",
+  "@dayAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAgendaEndingSoonStatus": "快下課了 · 剩餘 {minutes} 分鐘",
+  "@dayAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaInProgressStatus": "進行中 · 剩餘 {minutes} 分鐘",
+  "@scheduleAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaEndingSoonStatus": "即將結束 · 剩餘 {minutes} 分鐘",
+  "@scheduleAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "addScheduleTitle": "新增日程",
+  "editScheduleTitle": "編輯日程",
+  "addScheduleAction": "新增日程",
+  "addCourseSheetTitle": "新增內容",
+  "addCourseSheetSubtitle": "空白課表區域不響應點擊。請從這裡明確選擇是加一節臨時課、整學期重複課，還是插入一條單次日程。",
+  "scheduleTitleLabel": "日程標題",
+  "scheduleTitleHint": "例如：開組會、辦證件、取快遞",
+  "scheduleTitleRequired": "請輸入日程標題",
+  "scheduleInfoSectionTitle": "日程資訊",
+  "scheduleInfoSectionSubtitle": "日程會按具體日期插入日視圖時間線，不會改動課程本身。",
+  "scheduleTimeSectionTitle": "時間安排",
+  "scheduleTimeSectionSubtitle": "選擇這條日程實際發生的日期和起止時間。",
+  "scheduleAppearanceSectionTitle": "顯示樣式",
+  "scheduleAppearanceSectionSubtitle": "選一個更容易和課程區分的日程顏色。",
+  "scheduleLocationLabel": "地點",
+  "scheduleLocationHint": "選填",
+  "scheduleDateLabel": "日期",
+  "scheduleStartDateLabel": "開始日期",
+  "scheduleEndDateLabel": "結束日期",
+  "scheduleStartTimeLabel": "開始時間",
+  "scheduleEndTimeLabel": "結束時間",
+  "scheduleColorLabel": "日程顏色",
+  "scheduleNoteLabel": "備註",
+  "scheduleNoteHint": "選填",
+  "scheduleBadgeLabel": "日程",
+  "scheduleCountSummary": "日程 {count} 項",
+  "@scheduleCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleTimeRangeInvalid": "結束時間必須晚於開始時間",
+  "scheduleDateRangeInvalid": "結束日期不能早於開始日期",
+  "scheduleSingleDayHint": "同日結束時，結束時間必須晚於開始時間。",
+  "scheduleCrossDayHint": "跨日日程會按當天切片顯示在日視圖時間線裡。",
+  "scheduleSavedHint": "日程已新增",
+  "scheduleUpdatedHint": "日程已更新",
+  "crossDayBadgeLabel": "跨日",
+  "deleteScheduleMessage": "刪除日程「{title}」？",
+  "@deleteScheduleMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeletedHint": "日程已刪除",
+  "backToTodayAction": "回到今天",
+  "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}節",
+  "@courseWeekdaySectionSummary": {
+    "placeholders": {
+      "weekDescription": {
+        "type": "String"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "weekdaySectionTimeSummary": "{weekday} 第{startSection}-{endSection}節 · {startTime}-{endTime}",
+  "@weekdaySectionTimeSummary": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "startTime": {
+        "type": "String"
+      },
+      "endTime": {
+        "type": "String"
+      }
+    }
+  },
+  "rescheduledToMessage": "已調到第 {week} 周 {weekday} 第{startSection}-{endSection}節",
+  "@rescheduledToMessage": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      },
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "courseCountSummary": "{count} 門課",
+  "@courseCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "currentBadge": "當前",
+  "feedbackXiaohongshuTitle": "小紅書",
+  "feedbackXiaohongshuSubtitle": "小紅書号：{id}",
+  "@feedbackXiaohongshuSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackCoolapkTitle": "酷安",
+  "feedbackCoolapkSubtitle": "酷安号：{id}",
+  "@feedbackCoolapkSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "feedbackQqGroupTitle": "QQ 群",
+  "feedbackQqGroupSubtitle": "群号：{id}",
+  "@feedbackQqGroupSubtitle": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "copiedCurrentTimetable": "已複製當前課表",
+  "sectionRangeLabel": "第{startSection}-{endSection}節",
+  "@sectionRangeLabel": {
+    "placeholders": {
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "classStartsAtLabel": "{time} 開始",
+  "@classStartsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "classEndsAtLabel": "{time} 結束",
+  "@classEndsAtLabel": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidSectionTimeFormat": "節次時間格式不正確",
+  "noSectionTimesToSave": "沒有可保存的節次時間",
+  "warehouseImportedTimeSchemeName": "{schoolName} 匯入節次",
+  "@warehouseImportedTimeSchemeName": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      }
+    }
+  },
+  "unnamedScript": "未命名腳本",
+  "localDebugModeScriptStatus": "本地偵錯模式：{scriptName}",
+  "@localDebugModeScriptStatus": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "executeImportScriptTooltip": "執行匯入腳本",
+  "switchToMobileWebTooltip": "切換到移動端頁面",
+  "switchToDesktopWebTooltip": "切換到桌面端頁面",
+  "rememberCurrentInputTooltip": "記住當前輸入",
+  "fillRememberedTooltip": "填充已記住賬號",
+  "clearRememberedTooltip": "清除已記住賬號",
+  "copyCurrentAddressTooltip": "複製當前地址",
+  "copiedCurrentAddress": "已複製當前地址",
+  "warehouseLoginHintLocalDebug": "當前為本地偵錯腳本模式",
+  "warehouseLoginHintImport": "在此登入教務系統後執行匯入",
+  "currentPageModeDesktop": "當前页面模式：桌面端",
+  "currentPageModeMobile": "當前页面模式：移动端",
+  "localScriptLabel": "本地腳本：{scriptName}",
+  "@localScriptLabel": {
+    "placeholders": {
+      "scriptName": {
+        "type": "String"
+      }
+    }
+  },
+  "webAddressHint": "輸入網頁地址",
+  "goAction": "前往",
+  "rememberedAccountLabel": "已記住賬號：{username}",
+  "@rememberedAccountLabel": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "importingAction": "匯入中...",
+  "executeLocalDebugScriptAction": "執行本地偵錯腳本",
+  "executeImportScriptAction": "執行匯入腳本",
+  "invalidWebAddress": "網頁地址無效",
+  "injectingLocalDebugScript": "正在注入本地偵錯腳本",
+  "injectingAdapterScript": "正在注入適配器腳本",
+  "localDebugScriptInjected": "本地偵錯腳本已注入",
+  "scriptInjected": "腳本已注入",
+  "scriptInjectionFailed": "腳本注入失敗",
+  "executeFailedWithError": "執行失敗：{error}",
+  "@executeFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importFlowFinished": "匯入流程已完成",
+  "defaultContinuePrompt": "請按提示繼續操作",
+  "inputRequiredTitle": "需要输入",
+  "pleaseEnterFourDigitYear": "請輸入 4 位年份",
+  "pleaseChooseTitle": "請選擇",
+  "invalidCourseConfigFormat": "課程配置格式不正確",
+  "saveCourseConfigFailedWithError": "保存課程配置失敗：{error}",
+  "@saveCourseConfigFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "saveSectionTimesFailedWithError": "保存節次時間失敗：{error}",
+  "@saveSectionTimesFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "invalidCourseDataFormat": "課程資料格式不正確",
+  "noImportableCoursesFromScript": "腳本未返回可匯入課程",
+  "importCourseCountPrompt": "識別到 {count} 門課程，是否匯入？",
+  "@importCourseCountPrompt": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "importCancelledStatus": "已取消匯入",
+  "applyReturnedTimeSchemeFailed": "應用返回的節次模板失败：{error}",
+  "@applyReturnedTimeSchemeFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "importInterruptedStatus": "匯入已中斷",
+  "importFailedStatus": "匯入失敗",
+  "importFailedWithError": "匯入失敗：{error}",
+  "@importFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "unknownTeacher": "未知教師",
+  "unknownLocation": "未知地點",
+  "autofillLoginTitle": "自動填充登入資訊",
+  "autofillLoginMessage": "檢測到已記住賬號 {username}，是否自動填充？",
+  "@autofillLoginMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "notNowAction": "暫不",
+  "autofillAction": "自動填充",
+  "rememberPasswordTitle": "記住密碼",
+  "rememberPasswordMessage": "是否記住賬號 {username} 的登入資訊，並在下次自動填充？",
+  "@rememberPasswordMessage": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "dontRememberAction": "不記住",
+  "rememberAndAutofillAction": "記住並自動填充",
+  "savedRememberedLoginStatus": "已保存記住的登入資訊",
+  "autofilledRememberedLoginStatus": "已自動填充記住的登入資訊",
+  "noRecognizedLoginInputs": "未識別到登入輸入項",
+  "noUsernameOrPasswordRecognized": "未識別到用戶名或密碼",
+  "rememberedCurrentLoginStatus": "已記住當前登入資訊",
+  "rememberedCurrentLoginSuccess": "已記住當前登入資訊",
+  "rememberLoginFailedWithError": "記住登入資訊失敗：{error}",
+  "@rememberLoginFailedWithError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "clearedRememberedLoginStatus": "已清除記住的登入資訊",
+  "clearedRememberedLoginSuccess": "已清除記住的登入資訊"
 }

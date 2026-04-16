@@ -2141,8 +2141,8 @@
   "homeWidgetTargetMiniList22": "迷你列表 2×2",
   "homeWidgetTargetMedium24": "概览 2×4",
   "homeWidgetTargetLarge44": "列表 4×4",
-  "addCourseSheetTitle": "添加课程",
-  "addCourseSheetSubtitle": "空白课表区域不响应点击。请从这里明确选择是加一节临时课，还是加整学期重复课。",
+  "addCourseSheetTitle": "添加内容",
+  "addCourseSheetSubtitle": "空白课表区域不响应点击。请从这里明确选择是加一节临时课、整学期重复课，还是插入一条单次日程。",
   "courseWeekdaySectionSummary": "{weekDescription} · {weekday} 第{startSection}-{endSection}节",
   "@courseWeekdaySectionSummary": {
     "placeholders": {
@@ -2201,6 +2201,38 @@
   "@courseCountSummary": {
     "placeholders": {
       "count": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAgendaInProgressStatus": "进行中 · 剩余 {minutes} 分钟",
+  "@dayAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "dayAgendaEndingSoonStatus": "快下课了 · 剩余 {minutes} 分钟",
+  "@dayAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaInProgressStatus": "进行中 · 剩余 {minutes} 分钟",
+  "@scheduleAgendaInProgressStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleAgendaEndingSoonStatus": "即将结束 · 剩余 {minutes} 分钟",
+  "@scheduleAgendaEndingSoonStatus": {
+    "placeholders": {
+      "minutes": {
         "type": "int"
       }
     }
@@ -2417,5 +2449,53 @@
     }
   },
   "clearedRememberedLoginStatus": "已清除记住的登录信息",
-  "clearedRememberedLoginSuccess": "已清除记住的登录信息"
+  "clearedRememberedLoginSuccess": "已清除记住的登录信息",
+  "addScheduleTitle": "添加日程",
+  "editScheduleTitle": "编辑日程",
+  "addScheduleAction": "添加日程",
+  "scheduleTitleLabel": "日程标题",
+  "scheduleTitleHint": "例如：开组会、办证件、拿快递",
+  "scheduleTitleRequired": "请输入日程标题",
+  "scheduleInfoSectionTitle": "日程信息",
+  "scheduleInfoSectionSubtitle": "日程会按具体日期插入日视图时间线里，不会改动课程本身。",
+  "scheduleTimeSectionTitle": "时间安排",
+  "scheduleTimeSectionSubtitle": "选择这条日程实际发生的日期和起止时间。",
+  "scheduleAppearanceSectionTitle": "显示样式",
+  "scheduleAppearanceSectionSubtitle": "选择一个更容易和课程区分的日程颜色。",
+  "scheduleLocationLabel": "地点",
+  "scheduleLocationHint": "选填",
+  "scheduleDateLabel": "日期",
+  "scheduleStartDateLabel": "开始日期",
+  "scheduleEndDateLabel": "结束日期",
+  "scheduleStartTimeLabel": "开始时间",
+  "scheduleEndTimeLabel": "结束时间",
+  "scheduleColorLabel": "日程颜色",
+  "scheduleNoteLabel": "备注",
+  "scheduleNoteHint": "选填",
+  "scheduleBadgeLabel": "日程",
+  "scheduleCountSummary": "日程 {count} 项",
+  "@scheduleCountSummary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleTimeRangeInvalid": "结束时间必须晚于开始时间",
+  "scheduleDateRangeInvalid": "结束日期不能早于开始日期",
+  "scheduleSingleDayHint": "同日结束时，结束时间必须晚于开始时间。",
+  "scheduleCrossDayHint": "跨日日程会按当天切片显示在日视图里。",
+  "scheduleSavedHint": "日程已添加",
+  "scheduleUpdatedHint": "日程已更新",
+  "crossDayBadgeLabel": "跨日",
+  "deleteScheduleTitle": "删除日程",
+  "deleteScheduleMessage": "删除日程“{title}”？",
+  "@deleteScheduleMessage": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleDeletedHint": "日程已删除"
 }

@@ -216,6 +216,7 @@ class StorageService {
       Map<String, dynamic>.from(rawProfiles.first as Map),
     );
     return profile.courses.isEmpty &&
+        profile.scheduleItems.isEmpty &&
         profile.currentWeek == 1 &&
         _isSettingsEffectivelyDefault(profile.settings);
   }

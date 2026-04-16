@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,10 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
+import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
+import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
 
 import '../helpers_test_app.dart';
@@ -59,18 +62,31 @@ String _formatClock(int hour, int minute) {
 }
 
 List<SectionTime> _inProgressSections(DateTime now) {
-  final firstStart = now.subtract(const Duration(minutes: 30));
-  final firstEnd = now.subtract(const Duration(minutes: 20));
-  final secondStart = now.subtract(const Duration(minutes: 10));
-  final secondEnd = now.add(const Duration(minutes: 10));
+  final currentMinutes = now.hour * 60 + now.minute;
+  final firstStartMinutes = math.max(0, currentMinutes - 20);
+  final firstEndMinutes = math.max(firstStartMinutes + 1, currentMinutes - 10);
+  final secondStartMinutes = math.max(firstEndMinutes + 1, currentMinutes - 5);
+  final secondEndMinutes = currentMinutes + 10;
   return [
     SectionTime(
-      startTime: _formatClock(firstStart.hour, firstStart.minute),
-      endTime: _formatClock(firstEnd.hour, firstEnd.minute),
+      startTime: _formatClock(
+        firstStartMinutes ~/ 60,
+        firstStartMinutes % 60,
+      ),
+      endTime: _formatClock(
+        firstEndMinutes ~/ 60,
+        firstEndMinutes % 60,
+      ),
     ),
     SectionTime(
-      startTime: _formatClock(secondStart.hour, secondStart.minute),
-      endTime: _formatClock(secondEnd.hour, secondEnd.minute),
+      startTime: _formatClock(
+        secondStartMinutes ~/ 60,
+        secondStartMinutes % 60,
+      ),
+      endTime: _formatClock(
+        secondEndMinutes ~/ 60,
+        secondEndMinutes % 60,
+      ),
     ),
   ];
 }
@@ -327,6 +343,370 @@ void main() {
     expect(find.text('离散数学'), findsWidgets);
   });
 
+  testWidgets('add content sheet includes schedule entry', (tester) async {
+    final provider = await _createProviderWithTodayCourse();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await _pumpFiniteFrames(tester, count: 4);
+    await tester.tap(find.text('添加课程'));
+    await _pumpFiniteFrames(tester, count: 4);
+
+    expect(find.text('添加内容'), findsOneWidget);
+    expect(find.text('添加日程'), findsOneWidget);
+
+    await tester.tap(find.text('添加日程'));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.byType(AddScheduleItemScreen), findsOneWidget);
+  });
+
+  testWidgets('day view interleaves schedule items between courses by time',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final today = DateTime.now();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(today),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addCourse(
+      Course(
+        id: 'morning-course',
+        name: '早课',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: today.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:30',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'afternoon-course',
+        name: '午课',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: today.weekday,
+        startSection: 5,
+        endSection: 6,
+        startTime: '13:00',
+        endTime: '14:30',
+      ),
+    );
+    await provider.addScheduleItem(
+      ScheduleItem(
+        id: 'schedule-middle',
+        title: '领取资料',
+        location: '行政楼',
+        note: '先去前台登记',
+        date: DateTime(today.year, today.month, today.day),
+        startTime: '10:00',
+        endTime: '10:30',
+        createdAt: today,
+        updatedAt: today,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.text('领取资料'), findsOneWidget);
+    expect(find.text('日程'), findsWidgets);
+    expect(
+        find.byKey(const ValueKey('add-schedule-item-button')), findsNothing);
+
+    final morningTop = tester
+        .getTopLeft(
+            find.byKey(const ValueKey('day-view-edit-card-morning-course')))
+        .dy;
+    final scheduleTop = tester
+        .getTopLeft(find
+            .byKey(const ValueKey('day-view-schedule-card-schedule-middle')))
+        .dy;
+    final afternoonTop = tester
+        .getTopLeft(
+          find.byKey(const ValueKey('day-view-edit-card-afternoon-course')),
+        )
+        .dy;
+
+    expect(morningTop, lessThan(scheduleTop));
+    expect(scheduleTop, lessThan(afternoonTop));
+  });
+
+  testWidgets('cross-day schedule appears on each covered day view',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: DateTime(2026, 4, 13),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addScheduleItem(
+      ScheduleItem(
+        id: 'cross-day-schedule',
+        title: '跨夜值班',
+        startDate: DateTime(2026, 4, 16),
+        endDate: DateTime(2026, 4, 17),
+        startTime: '22:30',
+        endTime: '01:30',
+        createdAt: DateTime(2026, 4, 16, 12),
+        updatedAt: DateTime(2026, 4, 16, 12),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-4')));
+    await _pumpTimetableFrame(tester);
+    expect(
+      find.byKey(const ValueKey('day-view-schedule-card-cross-day-schedule')),
+      findsOneWidget,
+    );
+    expect(find.text('跨日'), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-5')));
+    await _pumpTimetableFrame(tester);
+    expect(
+      find.byKey(const ValueKey('day-view-schedule-card-cross-day-schedule')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ongoing schedule uses current progress style', (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final now = DateTime.now();
+    final startInstant = now.subtract(const Duration(minutes: 10));
+    final endInstant = now.add(const Duration(minutes: 20));
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(now),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addScheduleItem(
+      ScheduleItem(
+        id: 'ongoing-schedule',
+        title: '实验室值班',
+        location: '创新楼',
+        startDate: DateTime(
+          startInstant.year,
+          startInstant.month,
+          startInstant.day,
+        ),
+        endDate: DateTime(
+          endInstant.year,
+          endInstant.month,
+          endInstant.day,
+        ),
+        startTime: _formatClock(
+          startInstant.hour,
+          startInstant.minute,
+        ),
+        endTime: _formatClock(
+          endInstant.hour,
+          endInstant.minute,
+        ),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(
+        const ValueKey('day-agenda-progress-schedule-card-ongoing-schedule'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('实验室值班'), findsWidgets);
+  });
+
+  testWidgets('schedule ending soon uses schedule-specific status text',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final now = DateTime.now();
+    final startInstant = now.subtract(const Duration(minutes: 30));
+    final endInstant = now.add(const Duration(minutes: 5));
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(now),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addScheduleItem(
+      ScheduleItem(
+        id: 'ending-soon-schedule',
+        title: '夜间巡检',
+        startDate: DateTime(
+          startInstant.year,
+          startInstant.month,
+          startInstant.day,
+        ),
+        endDate: DateTime(
+          endInstant.year,
+          endInstant.month,
+          endInstant.day,
+        ),
+        startTime: _formatClock(startInstant.hour, startInstant.minute),
+        endTime: _formatClock(endInstant.hour, endInstant.minute),
+        createdAt: now,
+        updatedAt: now,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(find.textContaining('即将结束'), findsWidgets);
+    expect(find.textContaining('快下课了'), findsNothing);
+  });
+
+  testWidgets(
+      'opening another weekday after closing day view does not flash stale content',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(DateTime.now()),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addCourse(
+      Course(
+        id: 'thu-course',
+        name: '周四课程',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 4,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'fri-course',
+        name: '周五课程',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: 5,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-4')));
+    await _pumpTimetableFrame(tester);
+    expect(find.text('周四课程'), findsWidgets);
+
+    await tester.tap(find.byKey(const ValueKey('back-to-week-view-button')));
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(const ValueKey('weekday-header-1-5')));
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('timetable-day-view-1-4')), findsNothing);
+    expect(
+        find.byKey(const ValueKey('timetable-day-view-1-5')), findsOneWidget);
+  });
+
   testWidgets('today day view shows ongoing badge for current course',
       (tester) async {
     final provider = await _createProviderWithTodayCourse();
@@ -345,7 +725,10 @@ void main() {
     await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
     await _pumpTimetableFrame(tester);
 
-    expect(find.textContaining('正在上课'), findsWidgets);
+    expect(
+      find.byKey(const ValueKey('day-agenda-progress-card-today-course')),
+      findsOneWidget,
+    );
     expect(find.text('高等数学'), findsWidgets);
   });
 
@@ -371,7 +754,10 @@ void main() {
       find.byKey(ValueKey('timetable-day-view-1-$anotherDay')),
       findsOneWidget,
     );
-    expect(find.text('正在上课'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('day-agenda-progress-card-today-course')),
+      findsNothing,
+    );
   });
 
   testWidgets(
@@ -428,8 +814,11 @@ void main() {
       find.byKey(ValueKey('timetable-day-view-1-${now.weekday}')),
       findsOneWidget,
     );
-    expect(find.text('正在上课'), findsNothing);
-    expect(find.textContaining('正在上课'), findsNothing);
+    expect(
+      find.byKey(
+          const ValueKey('day-agenda-progress-card-today-course-not-live')),
+      findsNothing,
+    );
   });
 
   testWidgets('back to today jumps to the real current semester week',
@@ -625,6 +1014,79 @@ void main() {
     expect(find.text('今日课程'), findsWidgets);
   });
 
+  testWidgets('back to today button arrow follows relative day direction',
+      (tester) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final pastProvider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await pastProvider.initialize();
+    await pastProvider.updateTimetableSettings(
+      pastProvider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await pastProvider.setCurrentWeek(6);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: pastProvider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.byKey(ValueKey('weekday-header-6-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('back-to-today-button')),
+        matching: find.byIcon(Icons.arrow_forward_rounded),
+      ),
+      findsOneWidget,
+    );
+
+    final futureProvider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await futureProvider.initialize();
+    await futureProvider.updateTimetableSettings(
+      futureProvider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await futureProvider.setCurrentWeek(8);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: futureProvider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+    await tester.tap(find.byKey(ValueKey('weekday-header-8-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('back-to-today-button')),
+        matching: find.byIcon(Icons.arrow_back_rounded),
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('week view back to current week jumps in one action',
       (tester) async {
     final now = DateTime.now();
@@ -659,7 +1121,8 @@ void main() {
     expect(provider.currentWeek, 7);
   });
 
-  testWidgets('resume syncs week view to current semester week', (tester) async {
+  testWidgets('resume syncs week view to current semester week',
+      (tester) async {
     final now = DateTime.now();
     final currentWeekStart = _startOfCurrentWeek(now);
     final provider = TimetableProvider(
@@ -1080,6 +1543,82 @@ void main() {
     expect(find.text('线性代数'), findsWidgets);
     expect(find.text('大学物理'), findsWidgets);
     expect(find.text('冲突'), findsWidgets);
+  });
+
+  testWidgets('conflicting in-progress courses both use current progress style',
+      (tester) async {
+    final now = DateTime.now();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(now),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    final timeScheme = await provider.createTimeScheme(
+      name: '冲突进行中课程',
+      sections: _inProgressSections(now),
+    );
+    final sections = timeScheme.sections;
+
+    await provider.addCourse(
+      Course(
+        id: 'conflict-live-a',
+        name: '线性代数',
+        teacher: '王老师',
+        location: 'B201',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: sections.first.startTime,
+        endTime: sections.last.endTime,
+        timeSchemeIdOverride: timeScheme.id,
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: 'conflict-live-b',
+        name: '大学物理',
+        teacher: '李老师',
+        location: 'B202',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: sections.first.startTime,
+        endTime: sections.last.endTime,
+        timeSchemeIdOverride: timeScheme.id,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(const ValueKey('day-agenda-progress-card-conflict-live-a')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('day-agenda-progress-card-conflict-live-b')),
+      findsOneWidget,
+    );
+    expect(find.text('线性代数'), findsWidgets);
+    expect(find.text('大学物理'), findsWidgets);
   });
 
   testWidgets('day view card tap opens edit screen directly', (tester) async {
