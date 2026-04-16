@@ -38,6 +38,11 @@ void _seedInitializedPrefs() {
   });
 }
 
+String _weekdayLabelForTest(int weekday) {
+  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  return labels[weekday - 1];
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const homeWidgetChannel = MethodChannel('com.mutx163.qingyu/home_widget');
@@ -121,6 +126,34 @@ void main() {
     expect(find.text('添加单节课'), findsOneWidget);
     expect(find.text('上课周次'), findsOneWidget);
     expect(find.text('连续周'), findsNothing);
+  });
+
+  testWidgets('single lesson mode can default to today weekday',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final todayWeekday = DateTime.now().weekday;
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: AddCourseScreen(
+            mode: CourseEditorMode.singleLesson,
+            initialWeek: 4,
+            initialDayOfWeek: todayWeekday,
+          ),
+        ),
+      ),
+    );
+    await _pumpScreen(tester);
+    await tester.drag(find.byType(ListView), const Offset(0, -350));
+    await _pumpScreen(tester);
+
+    expect(find.text(_weekdayLabelForTest(todayWeekday)), findsOneWidget);
   });
 
   testWidgets('single lesson mode can prefill from existing course',

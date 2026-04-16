@@ -1148,11 +1148,9 @@ class _TimetableScreenState extends State<TimetableScreen>
                     dayOfWeek: target.dayOfWeek,
                   )
                       ? provider.getCourseInProgress(
-                            dayOfWeek: target.dayOfWeek,
-                            week: target.week,
-                          ) ??
-                          _findInProgressCourse(courses) ??
-                          (courses.length == 1 ? courses.first : null)
+                          dayOfWeek: target.dayOfWeek,
+                          week: target.week,
+                        )
                       : null;
                   final displayItems = _buildDayCourseDisplayItems(
                     courses: courses,
@@ -1367,11 +1365,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       dayOfWeek: dayOfWeek,
     )
         ? provider.getCourseInProgress(
-              dayOfWeek: dayOfWeek,
-              week: week,
-            ) ??
-            _findInProgressCourse(courses) ??
-            (courses.length == 1 ? courses.first : null)
+            dayOfWeek: dayOfWeek,
+            week: week,
+          )
         : null;
     final displayItems = _buildDayCourseDisplayItems(
       courses: courses,
@@ -1789,35 +1785,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     return items.where((item) => item.course.startSection == section).toList();
   }
 
-  Course? _findInProgressCourse(List<Course> courses) {
-    final now = DateTime.now();
-    final currentMinutes = now.hour * 60 + now.minute;
-    for (final course in courses) {
-      final startMinutes = _parseClockMinutes(course.startTime);
-      final endMinutes = _parseClockMinutes(course.endTime);
-      if (startMinutes == null || endMinutes == null) {
-        continue;
-      }
-      if (currentMinutes >= startMinutes && currentMinutes <= endMinutes) {
-        return course;
-      }
-    }
-    return null;
-  }
-
-  int? _parseClockMinutes(String value) {
-    final parts = value.split(':');
-    if (parts.length != 2) {
-      return null;
-    }
-    final hour = int.tryParse(parts[0]);
-    final minute = int.tryParse(parts[1]);
-    if (hour == null || minute == null) {
-      return null;
-    }
-    return (hour * 60) + minute;
-  }
-
   List<_DayCourseDisplayItem> _buildDayCourseDisplayItems({
     required List<Course> courses,
     required int week,
@@ -2185,6 +2152,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showAddCourseSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
+    final todayWeekday = DateTime.now().weekday;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -2221,6 +2189,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       pageBuilder: (_) => AddCourseScreen(
                         mode: CourseEditorMode.singleLesson,
                         initialWeek: provider.currentWeek,
+                        initialDayOfWeek: todayWeekday,
                       ),
                     ),
                     _HomeActionPageButton(

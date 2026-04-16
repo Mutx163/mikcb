@@ -54,6 +54,61 @@ DateTime _startOfCurrentWeek(DateTime now) {
   return normalized.subtract(Duration(days: normalized.weekday - 1));
 }
 
+String _formatClock(int hour, int minute) {
+  return '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+}
+
+List<SectionTime> _inProgressSections(DateTime now) {
+  final firstStart = now.subtract(const Duration(minutes: 30));
+  final firstEnd = now.subtract(const Duration(minutes: 20));
+  final secondStart = now.subtract(const Duration(minutes: 10));
+  final secondEnd = now.add(const Duration(minutes: 10));
+  return [
+    SectionTime(
+      startTime: _formatClock(firstStart.hour, firstStart.minute),
+      endTime: _formatClock(firstEnd.hour, firstEnd.minute),
+    ),
+    SectionTime(
+      startTime: _formatClock(secondStart.hour, secondStart.minute),
+      endTime: _formatClock(secondEnd.hour, secondEnd.minute),
+    ),
+  ];
+}
+
+List<SectionTime> _outOfProgressSections(DateTime now) {
+  if (now.hour <= 21) {
+    final firstStart = now.add(const Duration(hours: 1));
+    final firstEnd = firstStart.add(const Duration(minutes: 10));
+    final secondStart = firstEnd.add(const Duration(minutes: 10));
+    final secondEnd = secondStart.add(const Duration(minutes: 20));
+    return [
+      SectionTime(
+        startTime: _formatClock(firstStart.hour, firstStart.minute),
+        endTime: _formatClock(firstEnd.hour, firstEnd.minute),
+      ),
+      SectionTime(
+        startTime: _formatClock(secondStart.hour, secondStart.minute),
+        endTime: _formatClock(secondEnd.hour, secondEnd.minute),
+      ),
+    ];
+  }
+
+  final firstStart = now.subtract(const Duration(hours: 2));
+  final firstEnd = firstStart.add(const Duration(minutes: 10));
+  final secondStart = firstEnd.add(const Duration(minutes: 10));
+  final secondEnd = secondStart.add(const Duration(minutes: 20));
+  return [
+    SectionTime(
+      startTime: _formatClock(firstStart.hour, firstStart.minute),
+      endTime: _formatClock(firstEnd.hour, firstEnd.minute),
+    ),
+    SectionTime(
+      startTime: _formatClock(secondStart.hour, secondStart.minute),
+      endTime: _formatClock(secondEnd.hour, secondEnd.minute),
+    ),
+  ];
+}
+
 Future<TimetableProvider> _createProviderWithTodayCourse() async {
   final now = DateTime.now();
   final provider = TimetableProvider(
@@ -69,6 +124,11 @@ Future<TimetableProvider> _createProviderWithTodayCourse() async {
     ),
   );
   await provider.setCurrentWeek(1);
+  final timeScheme = await provider.createTimeScheme(
+    name: '测试进行中课程',
+    sections: _inProgressSections(now),
+  );
+  final sections = timeScheme.sections;
 
   await provider.addCourse(
     Course(
@@ -79,8 +139,9 @@ Future<TimetableProvider> _createProviderWithTodayCourse() async {
       dayOfWeek: now.weekday,
       startSection: 1,
       endSection: 2,
-      startTime: '00:00',
-      endTime: '23:59',
+      startTime: sections.first.startTime,
+      endTime: sections.last.endTime,
+      timeSchemeIdOverride: timeScheme.id,
     ),
   );
   return provider;
@@ -311,6 +372,64 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('正在上课'), findsNothing);
+  });
+
+  testWidgets(
+      'today day view does not show ongoing badge when class is not in progress',
+      (tester) async {
+    final now = DateTime.now();
+    final outOfProgressSections = _outOfProgressSections(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(now),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    final timeScheme = await provider.createTimeScheme(
+      name: '测试非进行中课程',
+      sections: outOfProgressSections,
+    );
+    await provider.addCourse(
+      Course(
+        id: 'today-course-not-live',
+        name: '离散数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: now.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: outOfProgressSections.first.startTime,
+        endTime: outOfProgressSections.last.endTime,
+        timeSchemeIdOverride: timeScheme.id,
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${now.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-${now.weekday}')),
+      findsOneWidget,
+    );
+    expect(find.text('正在上课'), findsNothing);
+    expect(find.textContaining('正在上课'), findsNothing);
   });
 
   testWidgets('back to today jumps to the real current semester week',
