@@ -33,14 +33,14 @@
     "draft": false,
     "immutable": false,
     "prerelease": true,
-    "created_at": "2026-04-16T16:05:35Z",
-    "updated_at": "2026-04-16T16:16:23Z",
+    "created_at": "2026-04-16T16:34:04Z",
+    "updated_at": "2026-04-16T16:43:32Z",
     "published_at": "2026-04-16T16:16:23Z",
     "assets": [
       {
-        "url": "https://api.github.com/repos/Mutx163/mikcb/releases/assets/397902360",
-        "id": 397902360,
-        "node_id": "RA_kwDORsyGbM4Xt4IY",
+        "url": "https://api.github.com/repos/Mutx163/mikcb/releases/assets/397916450",
+        "id": 397916450,
+        "node_id": "RA_kwDORsyGbM4Xt7ki",
         "name": "mikcb-1.2.0.1-arm64-v8a.apk",
         "label": "",
         "uploader": {
@@ -67,10 +67,10 @@
         "content_type": "application/vnd.android.package-archive",
         "state": "uploaded",
         "size": 24348876,
-        "digest": "sha256:0fdf66dd0fa2619279a6f03e0298a15e397b6e449ea992465da8c6744b9edd96",
+        "digest": "sha256:5bb5f906af9a0bef10dede526293df44cac399703c3673aea469da059a778827",
         "download_count": 0,
-        "created_at": "2026-04-16T16:16:22Z",
-        "updated_at": "2026-04-16T16:16:23Z",
+        "created_at": "2026-04-16T16:43:31Z",
+        "updated_at": "2026-04-16T16:43:32Z",
         "browser_download_url": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.1/mikcb-1.2.0.1-arm64-v8a.apk"
       }
     ],
