@@ -182,4 +182,56 @@ void main() {
 
     expect(find.byType(TimetableProfilesScreen), findsOneWidget);
   });
+
+  testWidgets('switching profiles restores each profile timetable view state',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    final defaultProfileId = provider.activeProfileId!;
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        timetableHomeViewMode: TimetableHomeViewMode.day,
+        timetableLastViewedDayOfWeek: 3,
+      ),
+    );
+    await provider.setCurrentWeek(2);
+
+    await provider.createProfile(name: '周视图课表');
+    final weekProfileId = provider.activeProfileId!;
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        timetableHomeViewMode: TimetableHomeViewMode.week,
+      ),
+    );
+
+    await provider.switchProfile(defaultProfileId);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    expect(
+        find.byKey(const ValueKey('timetable-day-view-2-3')), findsOneWidget);
+
+    await provider.switchProfile(weekProfileId);
+    await _pumpTimetableFrame(tester);
+
+    expect(find.byKey(const ValueKey('timetable-day-view-1-3')), findsNothing);
+
+    await provider.switchProfile(defaultProfileId);
+    await _pumpTimetableFrame(tester);
+
+    expect(
+        find.byKey(const ValueKey('timetable-day-view-2-3')), findsOneWidget);
+  });
 }

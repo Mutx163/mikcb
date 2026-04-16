@@ -44,18 +44,20 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
+  final Map<int, PageController> _dayViewPageControllers = {};
   bool _isSyncingWeekPage = false;
+  bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
   bool _hasAvailableUpdate = false;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
+  String? _lastSyncedProfileId;
   int? _selectedDayOfWeek;
   int? _selectedWeekForDayView;
-  int _dayContentSlideDirection = 1;
-  double _daySwipeDragDx = 0;
-  double _daySummarySwipeDragDx = 0;
+  int? _dayViewTransitionSourceWeek;
+  int? _dayViewTransitionSourceDayOfWeek;
   double _dayViewAnchorFraction = 0.5;
   bool _isDaySwipeAnimating = false;
 
@@ -82,6 +84,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dayExpandDuration,
     );
+    _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
         includePrerelease: provider.settings.appUpdateIncludePrerelease,
@@ -94,6 +97,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.removeObserver(this);
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
+    for (final controller in _dayViewPageControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -114,6 +120,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final l10n = AppLocalizations.of(context)!;
     return Consumer<TimetableProvider>(
       builder: (context, provider, child) {
+        _syncViewStateIfNeeded(provider);
         _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(
           provider.currentWeek,
@@ -215,6 +222,72 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool get _isDayView =>
       _selectedDayOfWeek != null && _selectedWeekForDayView != null;
 
+  int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
+    final visibleDays = _visibleDayNumbers(settings);
+    if (visibleDays.contains(storedDayOfWeek)) {
+      return storedDayOfWeek;
+    }
+    return visibleDays.first;
+  }
+
+  void _restoreViewStateFromProvider(TimetableProvider provider) {
+    final settings = provider.settings;
+    final restoredDayOfWeek = _resolveStoredDayOfWeek(
+      settings,
+      settings.timetableLastViewedDayOfWeek,
+    );
+    _lastSyncedProfileId = provider.activeProfileId;
+    _dayViewTransitionSourceWeek = null;
+    _dayViewTransitionSourceDayOfWeek = null;
+    _isSyncingDayViewPage = false;
+    _isDaySwipeAnimating = false;
+    for (final controller in _dayViewPageControllers.values) {
+      controller.dispose();
+    }
+    _dayViewPageControllers.clear();
+    if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
+      _selectedWeekForDayView = provider.currentWeek;
+      _selectedDayOfWeek = restoredDayOfWeek;
+      _dayViewExpandController.value = 1;
+    } else {
+      _selectedWeekForDayView = null;
+      _selectedDayOfWeek = null;
+      _dayViewExpandController.value = 0;
+    }
+  }
+
+  void _syncViewStateIfNeeded(TimetableProvider provider) {
+    if (_lastSyncedProfileId == provider.activeProfileId) {
+      return;
+    }
+    _restoreViewStateFromProvider(provider);
+  }
+
+  void _persistViewState(
+    TimetableProvider provider, {
+    required TimetableHomeViewMode mode,
+    int? dayOfWeek,
+  }) {
+    final resolvedDayOfWeek = _resolveStoredDayOfWeek(
+      provider.settings,
+      dayOfWeek ??
+          _selectedDayOfWeek ??
+          provider.settings.timetableLastViewedDayOfWeek,
+    );
+    if (provider.settings.timetableHomeViewMode == mode &&
+        provider.settings.timetableLastViewedDayOfWeek == resolvedDayOfWeek) {
+      return;
+    }
+    unawaited(
+      provider.updateTimetableSettings(
+        provider.settings.copyWith(
+          timetableHomeViewMode: mode,
+          timetableLastViewedDayOfWeek: resolvedDayOfWeek,
+        ),
+      ),
+    );
+  }
+
   bool _isSelectedDay(int week, int dayOfWeek) {
     return _isDayView &&
         _selectedWeekForDayView == week &&
@@ -253,7 +326,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     if (_isDayView && _selectedWeekForDayView == normalizedWeek) {
-      _switchDayWithinWeek(settings, dayOfWeek);
+      await _switchDayWithinWeek(settings, normalizedWeek, dayOfWeek);
       return;
     }
     final shouldAnimateOpen = !_isDayView;
@@ -261,6 +334,11 @@ class _TimetableScreenState extends State<TimetableScreen>
       _selectedWeekForDayView = normalizedWeek;
       _selectedDayOfWeek = dayOfWeek;
     });
+    _persistViewState(
+      context.read<TimetableProvider>(),
+      mode: TimetableHomeViewMode.day,
+      dayOfWeek: dayOfWeek,
+    );
     _maybeSelectionClick(settings);
     if (shouldAnimateOpen) {
       await _dayViewExpandController.forward(from: 0);
@@ -281,127 +359,273 @@ class _TimetableScreenState extends State<TimetableScreen>
     setState(() {
       _selectedWeekForDayView = null;
       _selectedDayOfWeek = null;
+      _dayViewTransitionSourceWeek = null;
+      _dayViewTransitionSourceDayOfWeek = null;
     });
-  }
-
-  void _switchDayWithinWeek(TimetableSettings settings, int dayOfWeek) {
-    final visibleDays = _visibleDayNumbers(settings);
-    final previousIndex = _selectedDayOfWeek == null
-        ? -1
-        : visibleDays.indexOf(_selectedDayOfWeek!);
-    final nextIndex = visibleDays.indexOf(dayOfWeek);
-    setState(() {
-      _selectedDayOfWeek = dayOfWeek;
-      if (previousIndex != -1 &&
-          nextIndex != -1 &&
-          previousIndex != nextIndex) {
-        _dayContentSlideDirection = nextIndex > previousIndex ? 1 : -1;
-      }
-    });
-    _maybeSelectionClick(settings);
-  }
-
-  Future<void> _handleDayContentSwipe(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    DragEndDetails details,
-  ) async {
-    if (_isDaySwipeAnimating) {
-      return;
-    }
-    final velocity = details.primaryVelocity ?? 0;
-    if (_selectedDayOfWeek == null || _selectedWeekForDayView == null) {
-      return;
-    }
-    final dragDx = _daySwipeDragDx;
-    _daySwipeDragDx = 0;
-    final hasEnoughVelocity = velocity.abs() >= 80;
-    final hasEnoughDistance = dragDx.abs() >= 32;
-    if (!hasEnoughVelocity && !hasEnoughDistance) {
-      return;
-    }
-    final visibleDays = _visibleDayNumbers(settings);
-    final currentIndex = visibleDays.indexOf(_selectedDayOfWeek!);
-    if (currentIndex == -1) {
-      return;
-    }
-    final goNext = hasEnoughVelocity ? velocity < 0 : dragDx < 0;
-    final nextIndex = goNext ? currentIndex + 1 : currentIndex - 1;
-
-    if (nextIndex < 0 || nextIndex >= visibleDays.length) {
-      if (_isDaySwipeAnimating || _isSyncingWeekPage) {
-        return;
-      }
-      _isDaySwipeAnimating = true;
-
-      final currentDisplayedWeek =
-          _selectedWeekForDayView ?? provider.currentWeek;
-      final targetWeek = _clampWeek(
-        currentDisplayedWeek + (goNext ? 1 : -1),
-        provider.settings.semesterWeekCount,
-      );
-      if (targetWeek == currentDisplayedWeek) {
-        _isDaySwipeAnimating = false;
-        return;
-      }
-
-      await _jumpToWeek(provider, targetWeek);
-      if (!mounted) {
-        _isDaySwipeAnimating = false;
-        return;
-      }
-
-      setState(() {
-        _selectedWeekForDayView = targetWeek;
-        _selectedDayOfWeek = goNext ? visibleDays.first : visibleDays.last;
-      });
-      _isDaySwipeAnimating = false;
-      return;
-    }
-    _switchDayWithinWeek(settings, visibleDays[nextIndex]);
-  }
-
-  Future<void> _handleDaySummarySwipe(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    DragEndDetails details,
-  ) async {
-    if (_isDaySwipeAnimating ||
-        _selectedDayOfWeek == null ||
-        _selectedWeekForDayView == null) {
-      return;
-    }
-    final velocity = details.primaryVelocity ?? 0;
-    final dragDx = _daySummarySwipeDragDx;
-    _daySummarySwipeDragDx = 0;
-    final hasEnoughVelocity = velocity.abs() >= 80;
-    final hasEnoughDistance = dragDx.abs() >= 32;
-    if (!hasEnoughVelocity && !hasEnoughDistance) {
-      return;
-    }
-
-    final goNext = hasEnoughVelocity ? velocity < 0 : dragDx < 0;
-    final currentDisplayedWeek = _selectedWeekForDayView!;
-    final targetWeek = _clampWeek(
-      currentDisplayedWeek + (goNext ? 1 : -1),
-      provider.settings.semesterWeekCount,
+    _persistViewState(
+      context.read<TimetableProvider>(),
+      mode: TimetableHomeViewMode.week,
     );
-    if (targetWeek == currentDisplayedWeek) {
+  }
+
+  int _dayViewPageIndexForDay(
+    TimetableSettings settings,
+    int week,
+    int dayOfWeek,
+  ) {
+    final visibleDays = _visibleDayNumbers(settings);
+    final dayIndex = math.max(0, visibleDays.indexOf(dayOfWeek));
+    final hasPreviousWeek = week > _minWeek;
+    return dayIndex + (hasPreviousWeek ? 1 : 0);
+  }
+
+  int _dayViewPageCount(TimetableSettings settings, int week) {
+    final visibleDays = _visibleDayNumbers(settings).length;
+    final hasPreviousWeek = week > _minWeek;
+    final hasNextWeek = week < settings.semesterWeekCount;
+    return visibleDays + (hasPreviousWeek ? 1 : 0) + (hasNextWeek ? 1 : 0);
+  }
+
+  _DayViewPageTarget _dayViewTargetForPage(
+    TimetableSettings settings,
+    int week,
+    int page,
+  ) {
+    final visibleDays = _visibleDayNumbers(settings);
+    final hasPreviousWeek = week > _minWeek;
+    final hasNextWeek = week < settings.semesterWeekCount;
+
+    if (hasPreviousWeek && page == 0) {
+      return _DayViewPageTarget(
+        week: week - 1,
+        dayOfWeek: visibleDays.last,
+        isBoundaryTransition: true,
+      );
+    }
+
+    final dayIndex = page - (hasPreviousWeek ? 1 : 0);
+    if (dayIndex >= 0 && dayIndex < visibleDays.length) {
+      return _DayViewPageTarget(
+        week: week,
+        dayOfWeek: visibleDays[dayIndex],
+      );
+    }
+
+    if (hasNextWeek && page == _dayViewPageCount(settings, week) - 1) {
+      return _DayViewPageTarget(
+        week: week + 1,
+        dayOfWeek: visibleDays.first,
+        isBoundaryTransition: true,
+      );
+    }
+
+    return _DayViewPageTarget(
+      week: week,
+      dayOfWeek: visibleDays.first,
+    );
+  }
+
+  PageController _ensureDayViewPageController(
+    TimetableSettings settings,
+    int week,
+  ) {
+    return _dayViewPageControllers.putIfAbsent(
+      week,
+      () => PageController(
+        initialPage: _dayViewPageIndexForDay(
+          settings,
+          week,
+          _displayedDayForWeek(week),
+        ),
+      ),
+    );
+  }
+
+  void _prepareDayViewPageController(
+    TimetableSettings settings,
+    int week,
+    int dayOfWeek,
+  ) {
+    final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
+    final existing = _dayViewPageControllers[week];
+    if (existing == null) {
+      _dayViewPageControllers[week] = PageController(initialPage: targetPage);
+      return;
+    }
+
+    if (existing.hasClients) {
+      final currentPage = existing.page?.round() ?? existing.initialPage;
+      if (currentPage != targetPage) {
+        existing.jumpToPage(targetPage);
+      }
+      return;
+    }
+
+    existing.dispose();
+    _dayViewPageControllers[week] = PageController(initialPage: targetPage);
+  }
+
+  int _displayedDayForWeek(int week) {
+    if (_dayViewTransitionSourceWeek == week &&
+        _dayViewTransitionSourceDayOfWeek != null) {
+      return _dayViewTransitionSourceDayOfWeek!;
+    }
+    return _selectedDayOfWeek ?? 1;
+  }
+
+  void _syncDayViewPageWithSelection(TimetableSettings settings, int week) {
+    if (_isSyncingDayViewPage) {
+      return;
+    }
+    if (_dayViewTransitionSourceWeek == week) {
+      return;
+    }
+    final controller = _dayViewPageControllers[week];
+    if (controller == null || !controller.hasClients) {
+      return;
+    }
+    final targetPage = _dayViewPageIndexForDay(
+      settings,
+      week,
+      _displayedDayForWeek(week),
+    );
+    final currentPage = controller.page?.round() ?? controller.initialPage;
+    if (currentPage == targetPage) {
+      return;
+    }
+    controller.jumpToPage(targetPage);
+  }
+
+  Future<void> _switchDayWithinWeek(
+    TimetableSettings settings,
+    int week,
+    int dayOfWeek, {
+    bool animate = true,
+  }) async {
+    final controller = _ensureDayViewPageController(settings, week);
+    setState(() {
+      _selectedWeekForDayView = week;
+      _selectedDayOfWeek = dayOfWeek;
+    });
+    _persistViewState(
+      context.read<TimetableProvider>(),
+      mode: TimetableHomeViewMode.day,
+      dayOfWeek: dayOfWeek,
+    );
+    _maybeSelectionClick(settings);
+    if (!controller.hasClients) {
+      return;
+    }
+    final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
+    final currentPage = controller.page?.round() ?? controller.initialPage;
+    if (currentPage == targetPage) {
+      return;
+    }
+    _isSyncingDayViewPage = true;
+    try {
+      if (animate) {
+        await controller.animateToPage(
+          targetPage,
+          duration: _weekSlideDuration,
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        controller.jumpToPage(targetPage);
+      }
+    } finally {
+      _isSyncingDayViewPage = false;
+    }
+  }
+
+  Future<void> _animateDayViewToWeek(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    int targetWeek,
+    int targetDayOfWeek,
+  ) async {
+    if (_selectedWeekForDayView == null || _selectedDayOfWeek == null) {
+      return;
+    }
+    final normalizedTargetWeek =
+        _clampWeek(targetWeek, provider.settings.semesterWeekCount);
+    if (normalizedTargetWeek == _selectedWeekForDayView &&
+        targetDayOfWeek == _selectedDayOfWeek) {
       return;
     }
 
     _isDaySwipeAnimating = true;
     try {
-      await _jumpToWeek(provider, targetWeek);
+      _prepareDayViewPageController(
+        settings,
+        normalizedTargetWeek,
+        targetDayOfWeek,
+      );
+      setState(() {
+        _dayViewTransitionSourceWeek = _selectedWeekForDayView;
+        _dayViewTransitionSourceDayOfWeek = _selectedDayOfWeek;
+        _selectedWeekForDayView = normalizedTargetWeek;
+        _selectedDayOfWeek = targetDayOfWeek;
+      });
+      _persistViewState(
+        provider,
+        mode: TimetableHomeViewMode.day,
+        dayOfWeek: targetDayOfWeek,
+      );
+      if (normalizedTargetWeek == provider.currentWeek) {
+        await _switchDayWithinWeek(
+          settings,
+          normalizedTargetWeek,
+          targetDayOfWeek,
+          animate: false,
+        );
+      } else {
+        await _jumpToWeek(provider, normalizedTargetWeek);
+      }
       if (!mounted) {
         return;
       }
       setState(() {
-        _selectedWeekForDayView = targetWeek;
+        _dayViewTransitionSourceWeek = null;
+        _dayViewTransitionSourceDayOfWeek = null;
       });
     } finally {
       _isDaySwipeAnimating = false;
     }
+  }
+
+  Future<void> _handleDayViewPageChanged(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    int week,
+    int page,
+  ) async {
+    if (_isSyncingDayViewPage || _isDaySwipeAnimating) {
+      return;
+    }
+    final target = _dayViewTargetForPage(settings, week, page);
+    if (target.isBoundaryTransition) {
+      await _animateDayViewToWeek(
+        provider,
+        settings,
+        target.week,
+        target.dayOfWeek,
+      );
+      return;
+    }
+    if (_selectedWeekForDayView == target.week &&
+        _selectedDayOfWeek == target.dayOfWeek) {
+      return;
+    }
+    setState(() {
+      _selectedWeekForDayView = target.week;
+      _selectedDayOfWeek = target.dayOfWeek;
+    });
+    _persistViewState(
+      provider,
+      mode: TimetableHomeViewMode.day,
+      dayOfWeek: target.dayOfWeek,
+    );
+    _maybeSelectionClick(settings);
   }
 
   Widget _buildProfileSwitcherTrigger(TimetableProvider provider) {
@@ -767,7 +991,9 @@ class _TimetableScreenState extends State<TimetableScreen>
             child: grid,
           );
     final shouldShowDayView = _selectedDayOfWeek != null &&
-        (_isDayView || _dayViewExpandController.isAnimating);
+        (_isDayView || _dayViewExpandController.isAnimating) &&
+        (week == _selectedWeekForDayView ||
+            week == _dayViewTransitionSourceWeek);
 
     if (!shouldShowDayView) {
       return weekGrid;
@@ -799,7 +1025,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required int week,
   }) {
-    final selectedDayOfWeek = _selectedDayOfWeek!;
+    final selectedDayOfWeek = _displayedDayForWeek(week);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -872,35 +1098,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required int dayOfWeek,
   }) {
-    final selectedDate = _dateForWeekDay(settings, week, dayOfWeek);
-    final conflictMap = provider.courseConflictMapForWeek(week);
-    final courses = _getCoursesForDay(
-      provider.courses,
-      week,
-      dayOfWeek,
-      settings,
-    );
-    final currentCourse = _isSelectedDayToday(
-      provider: provider,
-      settings: settings,
-      week: week,
-      dayOfWeek: dayOfWeek,
-    )
-        ? provider.getCourseInProgress(
-              dayOfWeek: dayOfWeek,
-              week: week,
-            ) ??
-            _findInProgressCourse(courses) ??
-            (courses.length == 1 ? courses.first : null)
-        : null;
-    final displayItems = _buildDayCourseDisplayItems(
-      courses: courses,
-      week: week,
-      settings: settings,
-      conflictMap: conflictMap,
-      currentCourseId: currentCourse?.id,
-    );
-
     final colorScheme = Theme.of(context).colorScheme;
     final backgroundColor = Theme.of(context).brightness == Brightness.dark
         ? colorScheme.surface
@@ -908,66 +1105,99 @@ class _TimetableScreenState extends State<TimetableScreen>
             provider.settings.timetablePageBackgroundColor,
             colorScheme.surface,
           );
+    final controller = _ensureDayViewPageController(settings, week);
+    _syncDayViewPageWithSelection(settings, week);
+    final pageCount = _dayViewPageCount(settings, week);
 
     return Container(
-      key: ValueKey('timetable-day-view-$week-$dayOfWeek'),
+      key: ValueKey('timetable-day-view-panel-$week'),
       color: backgroundColor,
       child: Column(
         children: [
           const SizedBox(height: 14),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: _buildDayViewSummary(
-              provider: provider,
-              settings: settings,
-              week: week,
-              dayOfWeek: dayOfWeek,
-              selectedDate: selectedDate,
-              currentCourse: currentCourse,
-              courseCount: displayItems.length,
-              hasCourses: displayItems.isNotEmpty,
-            ),
+          SizedBox(
+            key: ValueKey('timetable-day-view-$week-$dayOfWeek'),
           ),
-          const SizedBox(height: 12),
           Expanded(
             child: IgnorePointer(
               ignoring: _isDaySwipeAnimating,
-              child: GestureDetector(
+              child: PageView.builder(
                 key: const ValueKey('day-view-swipe-area'),
-                behavior: HitTestBehavior.opaque,
-                onHorizontalDragStart: (_) {
-                  _daySwipeDragDx = 0;
-                },
-                onHorizontalDragUpdate: (details) {
-                  _daySwipeDragDx += details.delta.dx;
-                },
-                onHorizontalDragEnd: (details) =>
-                    _handleDayContentSwipe(provider, settings, details),
-                child: AnimatedSwitcher(
-                  duration: _weekSlideDuration,
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, animation) {
-                    final beginX = _dayContentSlideDirection > 0 ? 0.08 : -0.08;
-                    return FadeTransition(
-                      opacity: animation,
-                      child: SlideTransition(
-                        position: Tween<Offset>(
-                          begin: Offset(beginX, 0),
-                          end: Offset.zero,
-                        ).animate(animation),
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: _buildExpandedDayColumnView(
-                    key: ValueKey('day-content-$week-$dayOfWeek'),
+                controller: controller,
+                physics:
+                    const PageScrollPhysics(parent: ClampingScrollPhysics()),
+                itemCount: pageCount,
+                onPageChanged: (page) =>
+                    _handleDayViewPageChanged(provider, settings, week, page),
+                itemBuilder: (context, page) {
+                  final target = _dayViewTargetForPage(settings, week, page);
+                  final selectedDate =
+                      _dateForWeekDay(settings, target.week, target.dayOfWeek);
+                  final conflictMap =
+                      provider.courseConflictMapForWeek(target.week);
+                  final courses = _getCoursesForDay(
+                    provider.courses,
+                    target.week,
+                    target.dayOfWeek,
+                    settings,
+                  );
+                  final currentCourse = _isSelectedDayToday(
                     provider: provider,
                     settings: settings,
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                  ),
-                ),
+                    week: target.week,
+                    dayOfWeek: target.dayOfWeek,
+                  )
+                      ? provider.getCourseInProgress(
+                            dayOfWeek: target.dayOfWeek,
+                            week: target.week,
+                          ) ??
+                          _findInProgressCourse(courses) ??
+                          (courses.length == 1 ? courses.first : null)
+                      : null;
+                  final displayItems = _buildDayCourseDisplayItems(
+                    courses: courses,
+                    week: target.week,
+                    settings: settings,
+                    conflictMap: conflictMap,
+                    currentCourseId: currentCourse?.id,
+                  );
+                  final isActivePage = target.week == _selectedWeekForDayView &&
+                      target.dayOfWeek == _selectedDayOfWeek;
+                  return Column(
+                    key: ValueKey(
+                        'day-content-${target.week}-${target.dayOfWeek}'),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
+                        child: _buildDayViewSummary(
+                          key: isActivePage
+                              ? const ValueKey('day-view-summary')
+                              : null,
+                          provider: provider,
+                          settings: settings,
+                          week: target.week,
+                          dayOfWeek: target.dayOfWeek,
+                          selectedDate: selectedDate,
+                          currentCourse: currentCourse,
+                          courseCount: displayItems.length,
+                          hasCourses: displayItems.isNotEmpty,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Expanded(
+                        child: _buildExpandedDayColumnView(
+                          key: ValueKey(
+                            'day-column-${target.week}-${target.dayOfWeek}',
+                          ),
+                          provider: provider,
+                          settings: settings,
+                          week: target.week,
+                          dayOfWeek: target.dayOfWeek,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ),
@@ -991,6 +1221,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildDayViewSummary({
+    Key? key,
     required TimetableProvider provider,
     required TimetableSettings settings,
     required int week,
@@ -1015,80 +1246,70 @@ class _TimetableScreenState extends State<TimetableScreen>
             ? l10n.courseCountSummary(courseCount)
             : l10n.dayViewEmptyTitle;
 
-    return GestureDetector(
-      key: const ValueKey('day-view-summary'),
-      behavior: HitTestBehavior.opaque,
-      onHorizontalDragStart: (_) {
-        _daySummarySwipeDragDx = 0;
-      },
-      onHorizontalDragUpdate: (details) {
-        _daySummarySwipeDragDx += details.delta.dx;
-      },
-      onHorizontalDragEnd: (details) =>
-          _handleDaySummarySwipe(provider, settings, details),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                summaryText,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: currentCourse != null
-                      ? colorScheme.primary
-                      : colorScheme.onSurface,
-                  fontWeight: FontWeight.w600,
-                ),
+    return Container(
+      key: key,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              summaryText,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: currentCourse != null
+                    ? colorScheme.primary
+                    : colorScheme.onSurface,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(width: 8),
-            if (!isToday)
-              FilledButton.tonalIcon(
-                key: const ValueKey('back-to-today-button'),
-                onPressed: () async {
-                  final now = DateTime.now();
-                  final visibleDays = _visibleDayNumbers(settings);
-                  final currentSemesterWeek =
-                      _resolveCurrentSemesterWeek(settings);
-                  if (!visibleDays.contains(now.weekday) ||
-                      currentSemesterWeek == null) {
-                    return;
-                  }
-                  setState(() {
-                    _selectedWeekForDayView = currentSemesterWeek;
-                    _selectedDayOfWeek = now.weekday;
-                  });
-                  await _jumpToWeek(provider, currentSemesterWeek);
-                },
-                icon: const Icon(Icons.today_rounded, size: 18),
-                label: Text(l10n.backToTodayAction),
-                style: FilledButton.styleFrom(
-                  visualDensity: VisualDensity.compact,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: const Size(0, 32),
-                ),
-              ),
-            const SizedBox(width: 6),
-            IconButton(
-              key: const ValueKey('back-to-week-view-button'),
-              onPressed: () => _closeDayView(settings),
-              icon: const Icon(Icons.close_rounded, size: 20),
-              tooltip: l10n.backToWeekViewAction,
-              style: IconButton.styleFrom(
+          ),
+          const SizedBox(width: 8),
+          if (!isToday)
+            FilledButton.tonalIcon(
+              key: const ValueKey('back-to-today-button'),
+              onPressed: () async {
+                final now = DateTime.now();
+                final visibleDays = _visibleDayNumbers(settings);
+                final currentSemesterWeek =
+                    _resolveCurrentSemesterWeek(settings);
+                if (!visibleDays.contains(now.weekday) ||
+                    currentSemesterWeek == null) {
+                  return;
+                }
+                await _animateDayViewToWeek(
+                  provider,
+                  settings,
+                  currentSemesterWeek,
+                  now.weekday,
+                );
+              },
+              icon: const Icon(Icons.today_rounded, size: 18),
+              label: Text(l10n.backToTodayAction),
+              style: FilledButton.styleFrom(
                 visualDensity: VisualDensity.compact,
-                padding: const EdgeInsets.all(8),
-                minimumSize: const Size(32, 32),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                minimumSize: const Size(0, 32),
               ),
             ),
-          ],
-        ),
+          const SizedBox(width: 6),
+          IconButton(
+            key: const ValueKey('back-to-week-view-button'),
+            onPressed: () => _closeDayView(settings),
+            icon: const Icon(Icons.close_rounded, size: 20),
+            tooltip: l10n.backToWeekViewAction,
+            style: IconButton.styleFrom(
+              visualDensity: VisualDensity.compact,
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(32, 32),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1561,10 +1782,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     await _jumpToWeek(provider, selectedWeek);
   }
 
-  List<Course> _getCoursesStartingAtSection(List<Course> courses, int section) {
-    return courses.where((course) => course.startSection == section).toList();
-  }
-
   List<_DayCourseDisplayItem> _getDisplayItemsStartingAtSection(
     List<_DayCourseDisplayItem> items,
     int section,
@@ -1946,26 +2163,6 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _navigateToAddCourse(BuildContext context) async {
     await _showAddCourseSheet();
-  }
-
-  void _openAddCourseEditor({
-    required CourseEditorMode mode,
-    int? initialWeek,
-    int? initialDayOfWeek,
-    int? initialStartSection,
-  }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/course/create'),
-        builder: (context) => AddCourseScreen(
-          mode: mode,
-          initialWeek: initialWeek,
-          initialDayOfWeek: initialDayOfWeek,
-          initialStartSection: initialStartSection,
-        ),
-      ),
-    );
   }
 
   void _editCourse(Course course) {
@@ -2575,16 +2772,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  void _openSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/settings'),
-        builder: (context) => const TimetableSettingsScreen(),
-      ),
-    );
-  }
-
   Widget _buildSectionTimeCell(
     int sectionNumber,
     SectionTime section,
@@ -2639,16 +2826,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     HapticFeedback.selectionClick();
-  }
-
-  void _openProfiles() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/profiles'),
-        builder: (context) => const TimetableProfilesScreen(),
-      ),
-    );
   }
 
   Future<void> _showProfileQuickSwitchSheet() async {
@@ -2804,34 +2981,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     _maybeSelectionClick(provider.settings);
   }
 
-  Future<void> _openUpdatePage() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    if (!mounted) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          settings: const RouteSettings(name: '/about/update'),
-          builder: (context) => AboutUpdateScreen(packageInfo: packageInfo),
-        ),
-      );
-    });
-  }
-
-  void _openSupportCreatorPage() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/support/creator'),
-        builder: (context) => const SupportCreatorScreen(),
-      ),
-    );
-  }
-
   Future<void> _showTopActionsSheet() async {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -2933,47 +3082,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  void _handleTopMenuAction(String value) {
-    switch (value) {
-      case 'update':
-        _openUpdatePage();
-        break;
-      case 'profiles':
-        _openProfiles();
-        break;
-      case 'overview':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            settings: const RouteSettings(name: '/courses/overview'),
-            builder: (context) => const CourseOverviewScreen(),
-          ),
-        );
-        break;
-      case 'import':
-        _openCourseImportPage();
-        break;
-      case 'settings':
-        _openSettings();
-        break;
-      case 'feedback':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            settings: const RouteSettings(name: '/feedback'),
-            builder: (context) => const FeedbackScreen(),
-          ),
-        );
-        break;
-      case 'coffee':
-        _openSupportCreatorPage();
-        break;
-      case 'add':
-        _navigateToAddCourse(context);
-        break;
-    }
-  }
-
   void _scheduleUpdateCheckIfNeeded(TimetableProvider provider) {
     if (!widget.enableUpdateCheck) {
       return;
@@ -3043,16 +3151,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
   }
 
-  Future<void> _openCourseImportPage() async {
-    await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/courses/import'),
-        builder: (context) => const CourseImportScreen(),
-      ),
-    );
-  }
-
   bool _homeActionNeedsTwoLines(BuildContext context, String title) {
     final theme = Theme.of(context);
     final style = theme.textTheme.bodySmall?.copyWith(
@@ -3088,7 +3186,6 @@ class _HomeActionButton extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final String? badgeText;
   final Color? accentColor;
   final bool enabled;
   final bool reserveTwoLineTitleSpace;
@@ -3098,7 +3195,6 @@ class _HomeActionButton extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.onTap,
-    this.badgeText,
     this.accentColor,
     this.enabled = true,
     this.reserveTwoLineTitleSpace = false,
@@ -3109,7 +3205,6 @@ class _HomeActionButton extends StatelessWidget {
     return _HomeActionButtonBody(
       icon: icon,
       title: title,
-      badgeText: badgeText,
       accentColor: accentColor,
       enabled: enabled,
       reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
@@ -3224,7 +3319,6 @@ class _HomeActionPageButton extends StatelessWidget {
   final Route<dynamic>? sheetRoute;
   final String? badgeText;
   final Color? accentColor;
-  final bool enabled;
   final bool reserveTwoLineTitleSpace;
 
   const _HomeActionPageButton({
@@ -3234,7 +3328,6 @@ class _HomeActionPageButton extends StatelessWidget {
     required this.sheetRoute,
     this.badgeText,
     this.accentColor,
-    this.enabled = true,
     this.reserveTwoLineTitleSpace = false,
   });
 
@@ -3247,7 +3340,7 @@ class _HomeActionPageButton extends StatelessWidget {
           title: title,
           badgeText: badgeText,
           accentColor: accentColor,
-          enabled: enabled,
+          enabled: true,
           reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
           onTap: () => _openPopupActionPage(
             buttonContext,
@@ -3515,6 +3608,18 @@ class _CourseRescheduleDraft {
     required this.targetStartSection,
     required this.targetEndSection,
     required this.targetLocation,
+  });
+}
+
+class _DayViewPageTarget {
+  final int week;
+  final int dayOfWeek;
+  final bool isBoundaryTransition;
+
+  const _DayViewPageTarget({
+    required this.week,
+    required this.dayOfWeek,
+    this.isBoundaryTransition = false,
   });
 }
 
