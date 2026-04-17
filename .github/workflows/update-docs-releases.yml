@@ -5,9 +5,6 @@ on:
     # 监听发布新版本、编辑已发布版本（如从预发布改为正式版）、撤销发布等行为
     types: [published, edited, unpublished, deleted, prereleased, released]
   workflow_dispatch: # 允许在 Actions 面板手动触发
-  schedule:
-    # 每小时第 7 分钟运行一次（避开整点高峰）
-    - cron: '7 * * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,7 +20,8 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
 
       - name: Fetch Latest Releases and Generate JSON
         run: |
@@ -31,11 +29,70 @@ jobs:
           mkdir -p docs/releases
           curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
                -H "Accept: application/vnd.github.v3+json" \
-               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=8" > docs/releases/latest.json
+               "https://api.github.com/repos/${{ github.repository }}/releases?per_page=8" > /tmp/releases.json
+          node <<'EOF'
+          const fs = require("fs");
+
+          const releases = JSON.parse(fs.readFileSync("/tmp/releases.json", "utf8"));
+
+          function pickDownloadAsset(assets) {
+            const normalizedAssets = Array.isArray(assets) ? assets : [];
+            const apkAsset = normalizedAssets.find((asset) =>
+              String(asset?.name || "").toLowerCase().endsWith(".apk")
+            );
+            return apkAsset || normalizedAssets[0] || null;
+          }
+
+          function simplifyRelease(release, channelLabel) {
+            if (!release) {
+              return null;
+            }
+
+            const asset = pickDownloadAsset(release.assets);
+            const normalizedAssets = Array.isArray(release.assets) ? release.assets : [];
+            const totalDownloadCount = normalizedAssets.reduce(
+              (sum, item) => sum + (Number(item?.download_count || 0) || 0),
+              0
+            );
+            const versionSource = String(release.tag_name || release.name || "").trim();
+
+            return {
+              channelLabel: release.prerelease ? "预发布" : channelLabel,
+              version: versionSource.replace(/^v/i, ""),
+              title: String(release.name || release.tag_name || "最新版本"),
+              publishedAt: release.published_at || release.updated_at || "",
+              body: String(release.body || ""),
+              releaseUrl: String(release.html_url || ""),
+              downloadUrl: String(asset?.browser_download_url || release.html_url || ""),
+              assetName: String(asset?.name || ""),
+              assetCount: normalizedAssets.length,
+              assetDownloadCount:
+                Number(asset?.download_count || 0) || totalDownloadCount,
+            };
+          }
+
+          const published = Array.isArray(releases)
+            ? releases.filter((release) => !release?.draft && pickDownloadAsset(release?.assets))
+            : [];
+          const stable = published.find((release) => release?.prerelease !== true) || published[0] || null;
+          const prerelease = published.find((release) => release?.prerelease === true) || null;
+
+          const payload = {
+            releaseCount: published.length,
+            stable: simplifyRelease(stable, "正式版"),
+            prerelease: simplifyRelease(prerelease, "预发布"),
+          };
+
+          fs.writeFileSync(
+            "docs/releases/latest.json",
+            `${JSON.stringify(payload, null, 2)}\n`
+          );
+          EOF
 
       - name: Commit and Push changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
+          branch: ${{ github.event.repository.default_branch }}
           commit_message: "chore(docs): auto-update releases json"
           file_pattern: docs/releases/latest.json
           commit_user_name: "github-actions[bot]"
