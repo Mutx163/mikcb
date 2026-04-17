@@ -56,6 +56,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _hasAvailableUpdate = false;
   bool? _lastUpdateCheckIncludePrerelease;
   bool _isCheckingForUpdate = false;
+  TimetableProvider? _lastSyncedProvider;
   String? _lastSyncedProfileId;
   Timer? _dayAgendaProgressTimer;
   int? _selectedDayOfWeek;
@@ -248,6 +249,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       settings,
       settings.timetableLastViewedDayOfWeek,
     );
+    _lastSyncedProvider = provider;
     _lastSyncedProfileId = provider.activeProfileId;
     _dayViewTransitionSourceWeek = null;
     _dayViewTransitionSourceDayOfWeek = null;
@@ -269,7 +271,8 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _syncViewStateIfNeeded(TimetableProvider provider) {
-    if (_lastSyncedProfileId == provider.activeProfileId) {
+    if (identical(_lastSyncedProvider, provider) &&
+        _lastSyncedProfileId == provider.activeProfileId) {
       return;
     }
     _restoreViewStateFromProvider(provider);
@@ -2310,7 +2313,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                           _buildDayAgendaStatusBadge(
                             text: l10n.scheduleBadgeLabel,
                             textColor: Colors.white,
-                            backgroundColor: Colors.white.withValues(alpha: 0.18),
+                            backgroundColor:
+                                Colors.white.withValues(alpha: 0.18),
                           ),
                           if (isCrossDay)
                             _buildDayAgendaStatusBadge(
@@ -3257,6 +3261,16 @@ class _TimetableScreenState extends State<TimetableScreen>
       _pendingSyncedWeek = null;
       if (!mounted || !_weekPageController.hasClients) {
         return;
+      }
+
+      if (_isDayView &&
+          !_isDaySwipeAnimating &&
+          _selectedWeekForDayView != targetPage + 1) {
+        setState(() {
+          _selectedWeekForDayView = targetPage + 1;
+          _dayViewTransitionSourceWeek = null;
+          _dayViewTransitionSourceDayOfWeek = null;
+        });
       }
 
       final currentPage =
