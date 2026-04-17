@@ -1322,6 +1322,64 @@ void main() {
     expect(find.text('离散数学'), findsWidgets);
   });
 
+  testWidgets('weekday header indicator follows day view drag continuously',
+      (tester) async {
+    final provider = await _createProviderWithTodayCourse();
+    final today = DateTime.now();
+    final swipesToNextDay = today.weekday < 7;
+
+    await provider.addCourse(
+      Course(
+        id: 'indicator-follow-course',
+        name: '横杠跟手课程',
+        teacher: '赵老师',
+        location: 'D404',
+        dayOfWeek: swipesToNextDay ? today.weekday + 1 : today.weekday - 1,
+        startSection: 7,
+        endSection: 8,
+        startTime: '16:00',
+        endTime: '17:40',
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    final indicatorFinder =
+        find.byKey(const ValueKey('weekday-selection-indicator-1'));
+    expect(indicatorFinder, findsOneWidget);
+
+    final startX = tester.getCenter(indicatorFinder).dx;
+    final swipeTarget = find.byKey(const ValueKey('day-view-swipe-area'));
+    final gesture = await tester.startGesture(tester.getCenter(swipeTarget));
+    for (var i = 0; i < 4; i++) {
+      await gesture.moveBy(
+        swipesToNextDay ? const Offset(-35, 0) : const Offset(35, 0),
+      );
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+
+    final movedX = tester.getCenter(indicatorFinder).dx;
+    if (swipesToNextDay) {
+      expect(movedX, greaterThan(startX));
+    } else {
+      expect(movedX, lessThan(startX));
+    }
+
+    await gesture.up();
+    await _pumpFiniteFrames(tester, count: 10);
+  });
+
   testWidgets('day view content swipe can continue across multiple weekdays',
       (tester) async {
     final provider = await _createProviderWithTodayCourse();

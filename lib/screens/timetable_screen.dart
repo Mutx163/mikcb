@@ -812,79 +812,198 @@ class _TimetableScreenState extends State<TimetableScreen>
               ],
             ),
           ),
-          ...visibleDays.map((dayOfWeek) {
-            final date = _dateForWeekDay(settings, week, dayOfWeek);
-            final isToday = date != null && _isSameDate(date, DateTime.now());
-            final isSelected = _isSelectedDay(week, dayOfWeek);
-            final labelColor = (isSelected || isToday)
-                ? colorScheme.primary
-                : colorScheme.onSurface;
-            final subLabelColor = (isSelected || isToday)
-                ? colorScheme.primary.withValues(
-                    alpha: isSelected ? 0.9 : 0.78,
-                  )
-                : colorScheme.onSurfaceVariant;
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Row(
+                  children: visibleDays.map((dayOfWeek) {
+                    final date = _dateForWeekDay(settings, week, dayOfWeek);
+                    final isToday =
+                        date != null && _isSameDate(date, DateTime.now());
+                    final isSelected = _isSelectedDay(week, dayOfWeek);
+                    final labelColor = (isSelected || isToday)
+                        ? colorScheme.primary
+                        : colorScheme.onSurface;
+                    final subLabelColor = (isSelected || isToday)
+                        ? colorScheme.primary.withValues(
+                            alpha: isSelected ? 0.9 : 0.78,
+                          )
+                        : colorScheme.onSurfaceVariant;
+                    final showsTodayMarker = isToday && !isSelected;
 
-            return Expanded(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  key: ValueKey('weekday-header-$week-$dayOfWeek'),
-                  borderRadius: BorderRadius.circular(14),
-                  onTapDown: (details) =>
-                      _captureDayViewAnchor(details.globalPosition),
-                  onTap: () => _toggleDayView(
-                    week: week,
-                    dayOfWeek: dayOfWeek,
-                    settings: settings,
-                  ),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    curve: Curves.easeOutCubic,
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: (isSelected || isToday)
-                              ? colorScheme.primary
-                              : Colors.transparent,
-                          width: isSelected ? 3 : 2,
+                    return Expanded(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          key: ValueKey('weekday-header-$week-$dayOfWeek'),
+                          borderRadius: BorderRadius.circular(14),
+                          onTapDown: (details) =>
+                              _captureDayViewAnchor(details.globalPosition),
+                          onTap: () => _toggleDayView(
+                            week: week,
+                            dayOfWeek: dayOfWeek,
+                            settings: settings,
+                          ),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: showsTodayMarker
+                                      ? colorScheme.primary.withValues(
+                                          alpha: 0.35,
+                                        )
+                                      : Colors.transparent,
+                                  width: showsTodayMarker ? 2 : 0,
+                                ),
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  _weekdayLabel(context, dayOfWeek),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: isSelected || isToday
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color: labelColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  date == null
+                                      ? ''
+                                      : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    color: subLabelColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _weekdayLabel(context, dayOfWeek),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: isSelected || isToday
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: labelColor,
+                    );
+                  }).toList(growable: false),
+                ),
+                _buildWeekdaySelectionIndicator(
+                  settings: settings,
+                  week: week,
+                  visibleDays: visibleDays,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeekdaySelectionIndicator({
+    required TimetableSettings settings,
+    required int week,
+    required List<int> visibleDays,
+  }) {
+    final controller = _dayViewPageControllers[week];
+    if (!_shouldShowDayViewOverlay ||
+        _visibleDayViewWeek != week ||
+        controller == null ||
+        visibleDays.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalWidth = constraints.maxWidth;
+          if (totalWidth <= 0) {
+            return const SizedBox.shrink();
+          }
+          final slotWidth = totalWidth / visibleDays.length;
+
+          return AnimatedBuilder(
+            animation: controller,
+            builder: (context, child) {
+              final rawPage = controller.hasClients
+                  ? (controller.page ?? controller.initialPage.toDouble())
+                  : controller.initialPage.toDouble();
+              final rawDayPosition = rawPage - (week > _minWeek ? 1.0 : 0.0);
+              final maxDayIndex = (visibleDays.length - 1).toDouble();
+              final clampedDayPosition =
+                  rawDayPosition.clamp(0.0, maxDayIndex).toDouble();
+              final overflow = rawDayPosition < 0
+                  ? -rawDayPosition
+                  : rawDayPosition > maxDayIndex
+                      ? rawDayPosition - maxDayIndex
+                      : 0.0;
+              final fractionalProgress =
+                  clampedDayPosition - clampedDayPosition.floorToDouble();
+              final betweenDaysProgress =
+                  (1 - (2 * (fractionalProgress - 0.5).abs()))
+                      .clamp(0.0, 1.0)
+                      .toDouble();
+              final betweenDaysCurve = Curves.easeInOutCubicEmphasized
+                  .transform(betweenDaysProgress);
+              final edgeCurve =
+                  Curves.easeOutCubic.transform(overflow.clamp(0.0, 1.0));
+              final morphProgress =
+                  math.max(betweenDaysCurve * 0.55, edgeCurve);
+              final baseWidth = math.min(22.0, slotWidth * 0.34);
+              final indicatorWidth =
+                  baseWidth + (slotWidth * 0.24 * morphProgress);
+              final edgeDirection = rawDayPosition < 0
+                  ? -1.0
+                  : rawDayPosition > maxDayIndex
+                      ? 1.0
+                      : 0.0;
+              final edgePull = slotWidth * 0.10 * edgeCurve * edgeDirection;
+              final centeredLeft = slotWidth * clampedDayPosition +
+                  ((slotWidth - indicatorWidth) / 2);
+              final maxLeft = math.max(0.0, totalWidth - indicatorWidth);
+              final indicatorLeft =
+                  (centeredLeft + edgePull).clamp(0.0, maxLeft).toDouble();
+              final indicatorHeight = 3.0 + (1.4 * morphProgress);
+
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: indicatorLeft,
+                    bottom: 0,
+                    child: DecoratedBox(
+                      key: ValueKey('weekday-selection-indicator-$week'),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.18),
+                            blurRadius: 8 + (8 * morphProgress),
+                            offset: const Offset(0, 2),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          date == null
-                              ? ''
-                              : '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}',
-                          style: TextStyle(
-                            fontSize: 8.5,
-                            color: subLabelColor,
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
+                      child: SizedBox(
+                        width: indicatorWidth,
+                        height: indicatorHeight,
+                      ),
                     ),
                   ),
-                ),
-              ),
-            );
-          }),
-        ],
+                ],
+              );
+            },
+          );
+        },
       ),
     );
   }
