@@ -877,6 +877,13 @@ class MainActivity : FlutterActivity() {
     }
 }
 
+internal fun liveShouldMirrorStatusIntoMiuiFocusHint(
+    sdkInt: Int,
+    shouldPromote: Boolean,
+): Boolean {
+    return !(sdkInt >= 36 && shouldPromote)
+}
+
 class LiveUpdateService : Service() {
     companion object {
         private const val TAG = "LiveUpdateService"
@@ -2259,14 +2266,25 @@ class LiveUpdateService : Service() {
                 .joinToString(" · ")
         }
             
+        val miuiFocusHintText = if (
+            liveShouldMirrorStatusIntoMiuiFocusHint(
+                sdkInt = Build.VERSION.SDK_INT,
+                shouldPromote = shouldPromote,
+            )
+        ) {
+            visibleStatusText
+        } else {
+            ""
+        }
+
         val miuiFocusParam = if (!shouldPromote || isDuringClassStatusBar) {
             null
         } else {
             buildMiuiFocusParam(
                 title = title,
-                remainingText = visibleStatusText,
+                remainingText = miuiFocusHintText,
                 timeRangeText = timeRangeText,
-                bodyContent = if (shouldPromote) promotedContentText else contentText,
+                bodyContent = promotedContentText,
                 visibleLocation = visibleLocation,
             )
         }
@@ -2340,8 +2358,9 @@ class LiveUpdateService : Service() {
             setShowWhen(!shouldPromote)
             setWhen(if (isUpcoming) startAtMillis else endAtMillis)
             setUsesChronometer(false)
-            if (usesProgressExpandedStyle && classProgress != null) {
-                setProgress(classProgress.progressMax, classProgress.progressUnits, false)
+            if (usesProgressExpandedStyle) {
+                val progress = requireNotNull(classProgress)
+                setProgress(progress.progressMax, progress.progressUnits, false)
             } else {
                 setProgress(0, 0, false)
             }
@@ -2375,15 +2394,16 @@ class LiveUpdateService : Service() {
             builder.addAction(buildDismissStatusBarAction())
         }
 
-        if (usesProgressExpandedStyle && classProgress != null) {
+        if (usesProgressExpandedStyle) {
+            val progress = requireNotNull(classProgress)
             builder.setStyle(
                 Notification.ProgressStyle()
                     .setStyledByProgress(true)
-                    .setProgress(classProgress.progressUnits)
+                    .setProgress(progress.progressUnits)
                     .setProgressSegments(
                         listOf(
                             Notification.ProgressStyle.Segment(
-                                classProgress.progressMax
+                                progress.progressMax
                             )
                         )
                     )
@@ -2392,7 +2412,7 @@ class LiveUpdateService : Service() {
                             ?: Icon.createWithResource(this, R.mipmap.ic_launcher)
                     )
                     .setProgressPoints(
-                        classProgress.breakPointUnits.map { point ->
+                        progress.breakPointUnits.map { point ->
                             Notification.ProgressStyle.Point(point)
                         }
                     )
