@@ -806,6 +806,59 @@ function normalizeReleaseRecord(release, channelLabel) {
   };
 }
 
+function normalizeCompactReleaseRecord(release, channelLabel) {
+  if (!release) {
+    return null;
+  }
+
+  const rawBody = String(release.body || release.rawBody || "");
+  const version = normalizeVersion(
+    release.version || release.tagName || release.tag_name || release.title || release.name
+  );
+  const title =
+    String(release.title || release.name || release.tagName || release.tag_name || "").trim() ||
+    (version ? `v${version}` : "最新版本");
+  const releaseUrl = release.releaseUrl || release.html_url || fallbackReleasePage;
+  const downloadUrl = release.downloadUrl || release.browser_download_url || releaseUrl;
+
+  return {
+    channelLabel: String(release.channelLabel || channelLabel),
+    version,
+    title,
+    publishedAt: formatDateTime(
+      release.publishedAt || release.published_at || release.updatedAt || release.updated_at
+    ),
+    rawBody,
+    description: buildReleaseDescription(rawBody, [title, version, `v${version}`]),
+    releaseUrl,
+    downloadUrl,
+    assetName: String(release.assetName || ""),
+    assetCount: Number(release.assetCount || 0) || 0,
+    assetDownloadCount: Number(release.assetDownloadCount || 0) || 0,
+  };
+}
+
+function normalizeStoredReleasePayload(payload) {
+  if (Array.isArray(payload)) {
+    const grouped = pickReleaseGroup(payload);
+    return {
+      stable: normalizeReleaseRecord(grouped.stable, "正式版"),
+      prerelease: normalizeReleaseRecord(grouped.prerelease, "预发布"),
+      releaseCount: payload.length,
+    };
+  }
+
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  return {
+    stable: normalizeCompactReleaseRecord(payload.stable, "正式版"),
+    prerelease: normalizeCompactReleaseRecord(payload.prerelease, "预发布"),
+    releaseCount: Number(payload.releaseCount || 0) || 0,
+  };
+}
+
 function formatCompactCount(value) {
   const number = Number(value) || 0;
   if (number >= 10000) {
@@ -865,7 +918,7 @@ function renderTrustSignals({
   }
 }
 
-async function loadTrustSignals(releases = []) {
+async function loadTrustSignals(releases = 0) {
   if (trustSignalsLoaded) {
     return;
   }
@@ -873,7 +926,9 @@ async function loadTrustSignals(releases = []) {
     return trustSignalsPromise;
   }
 
-  const releaseCount = Array.isArray(releases) ? releases.length : 0;
+  const releaseCount = Array.isArray(releases)
+    ? releases.length
+    : Number(releases || 0) || 0;
 
   trustSignalsPromise = (async () => {
     let stars = 0;
@@ -1318,7 +1373,7 @@ const releaseCacheTtlMs = 15 * 1000;
 function applyLoadedReleaseGroup({
   stable,
   prerelease,
-  releases = [],
+  releaseCount = 0,
   loadSource,
   successMessage,
 }) {
@@ -1330,7 +1385,7 @@ function applyLoadedReleaseGroup({
   }
 
   renderLatestStableHighlights(stableReleaseData);
-  void loadTrustSignals(Array.isArray(releases) ? releases : []);
+  void loadTrustSignals(releaseCount);
 
   if (hasUsablePrerelease()) {
     activeReleaseChannel =
@@ -1393,16 +1448,17 @@ async function loadLatestRelease() {
       }
 
       const releases = await response.json();
-      const grouped = pickReleaseGroup(releases);
-      const stable = normalizeReleaseRecord(grouped.stable, "正式版");
-      const prerelease = normalizeReleaseRecord(grouped.prerelease, "预发布");
+      const normalizedPayload = normalizeStoredReleasePayload(releases);
+      if (!normalizedPayload) {
+        throw new Error("Invalid release payload");
+      }
 
       return applyLoadedReleaseGroup({
-        stable,
-        prerelease,
-        releases: Array.isArray(releases) ? releases : [],
+        stable: normalizedPayload.stable,
+        prerelease: normalizedPayload.prerelease,
+        releaseCount: normalizedPayload.releaseCount,
         loadSource: "network",
-        successMessage: "已从 GitHub 读取版本信息。",
+        successMessage: "已读取最新版本信息。",
       });
     } catch (error) {
       trackStructuredEvent("release_data_load", {
@@ -1415,7 +1471,7 @@ async function loadLatestRelease() {
         rawBody: "",
         description: "暂时无法读取最近更新，仍可直接打开 Releases 查看详情。",
       });
-      void loadTrustSignals([]);
+      void loadTrustSignals(0);
       return null;
     } finally {
       releaseLoadPromise = null;
