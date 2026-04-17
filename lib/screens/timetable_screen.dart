@@ -235,6 +235,17 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool get _isDayView =>
       _selectedDayOfWeek != null && _selectedWeekForDayView != null;
 
+  bool get _shouldShowDayViewOverlay =>
+      _selectedDayOfWeek != null &&
+      (_isDayView || _dayViewExpandController.isAnimating);
+
+  int? get _visibleDayViewWeek {
+    if (_isDaySwipeAnimating && _dayViewTransitionSourceWeek != null) {
+      return _dayViewTransitionSourceWeek;
+    }
+    return _selectedWeekForDayView;
+  }
+
   int _resolveStoredDayOfWeek(TimetableSettings settings, int storedDayOfWeek) {
     final visibleDays = _visibleDayNumbers(settings);
     if (visibleDays.contains(storedDayOfWeek)) {
@@ -568,8 +579,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider,
     TimetableSettings settings,
     int targetWeek,
-    int targetDayOfWeek,
-  ) async {
+    int targetDayOfWeek, {
+    bool animateWeekPage = true,
+  }) async {
     if (_selectedWeekForDayView == null || _selectedDayOfWeek == null) {
       return;
     }
@@ -606,7 +618,11 @@ class _TimetableScreenState extends State<TimetableScreen>
           animate: false,
         );
       } else {
-        await _jumpToWeek(provider, normalizedTargetWeek);
+        await _jumpToWeek(
+          provider,
+          normalizedTargetWeek,
+          animatePage: animateWeekPage,
+        );
       }
       if (!mounted) {
         return;
@@ -636,6 +652,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         settings,
         target.week,
         target.dayOfWeek,
+        animateWeekPage: false,
       );
       return;
     }
@@ -943,24 +960,40 @@ class _TimetableScreenState extends State<TimetableScreen>
     double availableWidth,
     double availableHeight,
   ) {
-    return PageView.builder(
-      controller: _weekPageController,
-      itemCount: settings.semesterWeekCount,
-      allowImplicitScrolling: true,
-      physics: _isDayView
-          ? const NeverScrollableScrollPhysics()
-          : const PageScrollPhysics(parent: ClampingScrollPhysics()),
-      onPageChanged: (page) => _handleWeekPageChanged(page, provider),
-      itemBuilder: (context, index) {
-        final week = index + 1;
-        return _buildWeekPage(
-          provider,
-          settings,
-          availableWidth,
-          availableHeight,
-          week,
-        );
-      },
+    final visibleDayViewWeek = _visibleDayViewWeek;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        PageView.builder(
+          controller: _weekPageController,
+          itemCount: settings.semesterWeekCount,
+          allowImplicitScrolling: true,
+          physics: _isDayView
+              ? const NeverScrollableScrollPhysics()
+              : const PageScrollPhysics(parent: ClampingScrollPhysics()),
+          onPageChanged: (page) => _handleWeekPageChanged(page, provider),
+          itemBuilder: (context, index) {
+            final week = index + 1;
+            return _buildWeekPage(
+              provider,
+              settings,
+              availableWidth,
+              availableHeight,
+              week,
+            );
+          },
+        ),
+        if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
+          Positioned.fill(
+            top: 50,
+            child: _buildAnchoredDayViewOverlay(
+              provider: provider,
+              settings: settings,
+              week: visibleDayViewWeek,
+            ),
+          ),
+      ],
     );
   }
 
@@ -1019,33 +1052,14 @@ class _TimetableScreenState extends State<TimetableScreen>
             key: PageStorageKey<String>('week-scroll-$week'),
             child: grid,
           );
-    final shouldShowDayView = _selectedDayOfWeek != null &&
-        (_isDayView || _dayViewExpandController.isAnimating) &&
-        (week == _selectedWeekForDayView ||
-            week == _dayViewTransitionSourceWeek);
-
-    if (!shouldShowDayView) {
-      return weekGrid;
-    }
-
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        IgnorePointer(
-          ignoring: _isDayView,
-          child: AnimatedOpacity(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            opacity: _isDayView ? 0.18 : 1,
-            child: weekGrid,
-          ),
-        ),
-        _buildAnchoredDayViewOverlay(
-          provider: provider,
-          settings: settings,
-          week: week,
-        ),
-      ],
+    return IgnorePointer(
+      ignoring: _isDayView,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        opacity: _isDayView ? 0.18 : 1,
+        child: weekGrid,
+      ),
     );
   }
 
@@ -3187,7 +3201,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     _maybeSelectionClick(provider.settings);
   }
 
-  Future<void> _jumpToWeek(TimetableProvider provider, int week) async {
+  Future<void> _jumpToWeek(
+    TimetableProvider provider,
+    int week, {
+    bool animatePage = true,
+  }) async {
     if (_isSyncingWeekPage) {
       return;
     }
@@ -3204,13 +3222,18 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     _isSyncingWeekPage = true;
     try {
-      await _weekPageController.animateToPage(
-        targetWeek - 1,
-        duration: (targetWeek - provider.currentWeek).abs() == 1
-            ? _weekSlideDuration
-            : const Duration(milliseconds: 360),
-        curve: Curves.easeOutCubic,
-      );
+      if (animatePage) {
+        await _weekPageController.animateToPage(
+          targetWeek - 1,
+          duration: (targetWeek - provider.currentWeek).abs() == 1
+              ? _weekSlideDuration
+              : const Duration(milliseconds: 360),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        // Day-view boundary swipes already provide the horizontal motion.
+        _weekPageController.jumpToPage(targetWeek - 1);
+      }
       await provider.setCurrentWeek(targetWeek);
     } finally {
       _isSyncingWeekPage = false;
