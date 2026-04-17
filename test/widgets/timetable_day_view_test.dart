@@ -1052,6 +1052,9 @@ void main() {
       findsOneWidget,
     );
 
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
     final futureProvider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -1062,6 +1065,7 @@ void main() {
         semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
         semesterWeekCount: 20,
         timetableHideWeekends: false,
+        timetableHomeViewMode: TimetableHomeViewMode.week,
       ),
     );
     await futureProvider.setCurrentWeek(8);
@@ -1156,6 +1160,66 @@ void main() {
     await _pumpFiniteFrames(tester, count: 12);
 
     expect(provider.currentWeek, 7);
+  });
+
+  testWidgets('external week sync keeps day view attached to the new week',
+      (tester) async {
+    final today = DateTime.now();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: _startOfCurrentWeek(today),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+    await provider.addCourse(
+      Course(
+        id: 'week-two-course',
+        name: '同步后课程',
+        teacher: '周老师',
+        location: 'A201',
+        dayOfWeek: today.weekday,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        customWeeks: const [2],
+      ),
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableScreen(enableUpdateCheck: false),
+        ),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(ValueKey('timetable-day-view-1-${today.weekday}')),
+      findsOneWidget,
+    );
+
+    await provider.setCurrentWeek(2);
+    await _pumpFiniteFrames(tester, count: 10);
+
+    expect(provider.currentWeek, 2);
+    expect(
+      find.byKey(ValueKey('timetable-day-view-2-${today.weekday}')),
+      findsOneWidget,
+    );
+    expect(find.text('同步后课程'), findsWidgets);
   });
 
   testWidgets('day view summary drag follows the same in-week pager',
