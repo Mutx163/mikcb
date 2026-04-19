@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -1445,80 +1445,84 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onTap: () => _handleMirrorPresetTap(preset, settings),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Radio<AppUpdateMirrorPreset>(
-                  value: preset,
-                  groupValue: currentPreset,
-                  onChanged: (_) => _handleMirrorPresetTap(preset, settings),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            preset.label,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          if (isSelected)
-                            _buildMirrorStatusBadge(
-                              theme,
-                              label: l10n.schemeListCurrentLabel,
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: colorScheme.onPrimary,
-                            ),
-                          if (isRecommended)
-                            _buildMirrorStatusBadge(
-                              theme,
-                              label: l10n.aboutRecommended,
-                              backgroundColor: colorScheme.secondaryContainer,
-                              foregroundColor: colorScheme.onSecondaryContainer,
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        subtitleText,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      if (statusText != null) ...[
-                        const SizedBox(height: 8),
-                        Row(
+            child: RadioGroup<AppUpdateMirrorPreset>(
+              groupValue: currentPreset,
+              onChanged: (value) {
+                if (value == null) return;
+                _handleMirrorPresetTap(value, settings);
+              },
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Radio<AppUpdateMirrorPreset>(value: preset),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          crossAxisAlignment: WrapCrossAlignment.center,
                           children: [
-                            Icon(
-                              probeState!.result.isSuccess
-                                  ? Icons.speed_rounded
-                                  : Icons.error_outline_rounded,
-                              size: 16,
-                              color: statusColor,
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                statusText,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: statusColor,
-                                  fontWeight: FontWeight.w700,
-                                ),
+                            Text(
+                              preset.label,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
+                            if (isSelected)
+                              _buildMirrorStatusBadge(
+                                theme,
+                                label: l10n.schemeListCurrentLabel,
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
+                              ),
+                            if (isRecommended)
+                              _buildMirrorStatusBadge(
+                                theme,
+                                label: l10n.aboutRecommended,
+                                backgroundColor: colorScheme.secondaryContainer,
+                                foregroundColor:
+                                    colorScheme.onSecondaryContainer,
+                              ),
                           ],
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          subtitleText,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        if (statusText != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                probeState!.result.isSuccess
+                                    ? Icons.speed_rounded
+                                    : Icons.error_outline_rounded,
+                                size: 16,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  statusText,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -2550,3 +2554,4 @@ class _AboutBullet extends StatelessWidget {
     );
   }
 }
+
