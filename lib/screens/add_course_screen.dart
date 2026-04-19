@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
@@ -395,7 +395,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 isExpanded: true,
-                value: singleLessonTemplates.any(
+                initialValue: singleLessonTemplates.any(
                   (template) => template.id == _selectedSingleLessonTemplateId,
                 )
                     ? _selectedSingleLessonTemplateId
@@ -512,7 +512,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<CourseNature>(
-              value: _courseNature,
+              initialValue: _courseNature,
               decoration: InputDecoration(
                 labelText: l10n.courseNatureLabel,
                 border: OutlineInputBorder(),
@@ -733,7 +733,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               isExpanded: true,
-              value: _selectedTimeSchemeOverrideId ??
+              initialValue: _selectedTimeSchemeOverrideId ??
                   _followProfileTimeSchemeValue,
               decoration: InputDecoration(
                 labelText: l10n.timeSchemeLabel,
@@ -808,7 +808,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ],
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              value: _selectedDayOfWeek,
+              initialValue: _selectedDayOfWeek,
               decoration: InputDecoration(
                 labelText: l10n.weekdayLabel,
                 border: OutlineInputBorder(),
@@ -830,7 +830,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             _buildResponsiveFieldPair(
               leading: DropdownButtonFormField<int>(
                 isExpanded: true,
-                value: _startSection,
+                initialValue: _startSection,
                 decoration: InputDecoration(
                   labelText: l10n.startSectionLabel,
                   border: OutlineInputBorder(),
@@ -852,7 +852,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
               trailing: DropdownButtonFormField<int>(
                 isExpanded: true,
-                value: _endSection,
+                initialValue: _endSection,
                 decoration: InputDecoration(
                   labelText: l10n.endSectionLabel,
                   border: OutlineInputBorder(),
@@ -914,7 +914,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<int>(
-                value: _singleWeek,
+                initialValue: _singleWeek,
                 decoration: InputDecoration(
                   labelText: l10n.selectWeekLabel,
                   border: OutlineInputBorder(),
@@ -995,7 +995,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               _buildResponsiveFieldPair(
                 leading: DropdownButtonFormField<int>(
                   isExpanded: true,
-                  value: _startWeek,
+                  initialValue: _startWeek,
                   decoration: InputDecoration(
                     labelText: l10n.startWeekLabel,
                     border: OutlineInputBorder(),
@@ -1017,7 +1017,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 ),
                 trailing: DropdownButtonFormField<int>(
                   isExpanded: true,
-                  value: _endWeek,
+                  initialValue: _endWeek,
                   decoration: InputDecoration(
                     labelText: l10n.endWeekLabel,
                     border: OutlineInputBorder(),
@@ -1543,3 +1543,4 @@ class _SingleLessonTemplate {
     required this.summary,
   });
 }
+

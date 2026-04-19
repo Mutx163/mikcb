@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -5075,7 +5075,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              value: _targetWeek,
+              initialValue: _targetWeek,
               decoration: InputDecoration(
                 labelText: l10n.rescheduleTargetWeekLabel,
                 border: const OutlineInputBorder(),
@@ -5101,7 +5101,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<int>(
-              value: _targetDayOfWeek,
+              initialValue: _targetDayOfWeek,
               decoration: InputDecoration(
                 labelText: l10n.weekdayFieldLabel,
                 border: const OutlineInputBorder(),
@@ -5128,7 +5128,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _targetStartSection,
+                    initialValue: _targetStartSection,
                     decoration: InputDecoration(
                       labelText: l10n.startSectionFieldLabel,
                       border: const OutlineInputBorder(),
@@ -5158,7 +5158,7 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _targetEndSection,
+                    initialValue: _targetEndSection,
                     decoration: InputDecoration(
                       labelText: l10n.endSectionFieldLabel,
                       border: const OutlineInputBorder(),
@@ -5228,3 +5228,4 @@ class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
     );
   }
 }
+

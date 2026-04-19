@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -196,7 +196,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                         const SizedBox(height: 12),
                         DropdownButtonFormField<int>(
                           isExpanded: true,
-                          value: _draft.liveClassReminderStartMinutes,
+                          initialValue: _draft.liveClassReminderStartMinutes,
                           decoration: InputDecoration(
                             border: const OutlineInputBorder(),
                             labelText: l10n.liveClassReminderLeadTitle,
@@ -294,7 +294,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
             child: Column(
               children: [
                 DropdownButtonFormField<int>(
-                  value: _draft.liveShowBeforeClassMinutes,
+                  initialValue: _draft.liveShowBeforeClassMinutes,
                   decoration: InputDecoration(
                     labelText: l10n.beforeClassPopupLabel,
                     border: OutlineInputBorder(),
@@ -316,7 +316,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<int>(
-                  value: _draft.liveEndSecondsCountdownThreshold,
+                  initialValue: _draft.liveEndSecondsCountdownThreshold,
                   decoration: InputDecoration(
                     labelText: l10n.beforeEndSecondsLabel,
                     border: OutlineInputBorder(),
@@ -363,7 +363,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
-                  value: _draft.liveDuringEndTimeDisplayMode,
+                  initialValue: _draft.liveDuringEndTimeDisplayMode,
                   decoration: InputDecoration(
                     labelText: l10n.duringEndTimeDisplayLabel,
                     helperText: l10n.duringEndTimeDisplayHelp,
@@ -510,7 +510,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             if (display.showCountdown) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<LiveCountdownTextStyle>(
-                value: display.countdownTextStyle,
+                initialValue: display.countdownTextStyle,
                 decoration: InputDecoration(
                   labelText: l10n.countdownFormatLabel,
                   helperText: l10n.countdownFormatHelp,
@@ -557,7 +557,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           title: l10n.beforeClassQuickActionTitle,
           subtitle: l10n.beforeClassQuickActionSubtitle,
           child: DropdownButtonFormField<LiveBeforeClassQuickAction>(
-            value: _draft.liveBeforeClassQuickAction,
+            initialValue: _draft.liveBeforeClassQuickAction,
             decoration: InputDecoration(
               labelText: l10n.beforeClassQuickActionTitle,
               border: OutlineInputBorder(),
@@ -597,7 +597,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             if (display.enableMiuiIslandLabelImage) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelContent>(
-                value: display.miuiIslandLabelContent,
+                initialValue: display.miuiIslandLabelContent,
                 decoration: InputDecoration(
                   labelText: l10n.liveMiuiLabelContentLabel,
                   border: OutlineInputBorder(),
@@ -617,7 +617,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelStyle>(
-                value: display.miuiIslandLabelStyle,
+                initialValue: display.miuiIslandLabelStyle,
                 decoration: InputDecoration(
                   labelText: l10n.liveMiuiLabelStyleLabel,
                   border: OutlineInputBorder(),
@@ -775,7 +775,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelFontWeight>(
-                value: display.miuiIslandLabelFontWeight,
+                initialValue: display.miuiIslandLabelFontWeight,
                 decoration: InputDecoration(
                   labelText: l10n.liveMiuiLabelFontWeightLabel,
                   border: OutlineInputBorder(),
@@ -795,7 +795,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MiuiIslandLabelRenderQuality>(
-                value: display.miuiIslandLabelRenderQuality,
+                initialValue: display.miuiIslandLabelRenderQuality,
                 decoration: InputDecoration(
                   labelText: l10n.liveMiuiLabelRenderQualityLabel,
                   border: OutlineInputBorder(),
@@ -836,7 +836,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               const SizedBox(height: 12),
             ],
             DropdownButtonFormField<MiuiIslandExpandedIconMode>(
-              value: display.miuiIslandExpandedIconMode,
+              initialValue: display.miuiIslandExpandedIconMode,
               decoration: InputDecoration(
                 labelText: l10n.liveMiuiExpandedIconLabel,
                 border: OutlineInputBorder(),
@@ -1313,3 +1313,4 @@ Color _parseColor(String hexColor) {
   final normalized = hexColor.replaceFirst('#', '');
   return Color(int.parse('FF$normalized', radix: 16));
 }
+

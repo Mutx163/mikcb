@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 enum DiagnosticsLogViewMode {
   structured,
@@ -1101,3 +1101,4 @@ String? _formatMillis(String? raw) {
   String two(int value) => value.toString().padLeft(2, '0');
   return '${dateTime.year}-${two(dateTime.month)}-${two(dateTime.day)} ${two(dateTime.hour)}:${two(dateTime.minute)}:${two(dateTime.second)}';
 }
+

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -3069,12 +3069,13 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _executeImportScript() async {
+    final l10n = AppLocalizations.of(context)!;
     _resetPendingImportedArtifacts();
     setState(() {
       _isExecutingImport = true;
       _lastScriptStatus = _isUsingLocalDebugScript
-          ? AppLocalizations.of(context)!.injectingLocalDebugScript
-          : AppLocalizations.of(context)!.injectingAdapterScript;
+          ? l10n.injectingLocalDebugScript
+          : l10n.injectingAdapterScript;
     });
     try {
       final script = _isUsingLocalDebugScript
@@ -3102,7 +3103,7 @@ class _WarehouseAdapterWebLoginScreenState
           requestId,
           title: String(title ?? ''),
           message: String(message ?? ''),
-          confirmText: String(confirmText ?? '${AppLocalizations.of(context)!.confirmImportAction}')
+          confirmText: String(confirmText ?? '${l10n.confirmImportAction}')
         }));
       });
     },
@@ -3354,21 +3355,23 @@ class _WarehouseAdapterWebLoginScreenState
               AppLocalizations.of(context)!.pleaseChooseTitle,
         ),
         content: StatefulBuilder(
-          builder: (context, setState) => Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(options.length, (index) {
-              return RadioListTile<int>(
-                value: index,
-                groupValue: currentSelection,
-                title: Text(options[index]),
-                onChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    currentSelection = value;
-                  });
-                },
-              );
-            }),
+          builder: (context, setState) => RadioGroup<int>(
+            groupValue: currentSelection,
+            onChanged: (value) {
+              if (value == null) return;
+              setState(() {
+                currentSelection = value;
+              });
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(options.length, (index) {
+                return RadioListTile<int>(
+                  value: index,
+                  title: Text(options[index]),
+                );
+              }),
+            ),
           ),
         ),
         actions: [
@@ -3778,6 +3781,7 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _rememberCurrentLogin() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final raw = await _controller.runJavaScriptReturningResult('''
 (() => {
@@ -3792,18 +3796,17 @@ class _WarehouseAdapterWebLoginScreenState
   });
 })();
 ''');
+      if (!mounted) return;
       final normalized = _normalizeJavaScriptResult(raw);
       final decoded = jsonDecode(normalized);
       if (decoded is! Map<String, dynamic>) {
-        throw FormatException(
-            AppLocalizations.of(context)!.noRecognizedLoginInputs);
+        throw FormatException(l10n.noRecognizedLoginInputs);
       }
       final login = WarehouseRememberedLogin.fromJson(decoded);
       if (login.username.isEmpty && login.password.isEmpty) {
-        if (!mounted) return;
         _showLightTip(
           context,
-          AppLocalizations.of(context)!.noUsernameOrPasswordRecognized,
+          l10n.noUsernameOrPasswordRecognized,
         );
         return;
       }
@@ -3814,18 +3817,14 @@ class _WarehouseAdapterWebLoginScreenState
       if (!mounted) return;
       setState(() {
         _rememberedLogin = login;
-        _lastScriptStatus =
-            AppLocalizations.of(context)!.rememberedCurrentLoginStatus;
+        _lastScriptStatus = l10n.rememberedCurrentLoginStatus;
       });
-      _showLightTip(
-        context,
-        AppLocalizations.of(context)!.rememberedCurrentLoginSuccess,
-      );
+      _showLightTip(context, l10n.rememberedCurrentLoginSuccess);
     } catch (error) {
       if (!mounted) return;
       _showLightTip(
         context,
-        AppLocalizations.of(context)!.rememberLoginFailedWithError('$error'),
+        l10n.rememberLoginFailedWithError('$error'),
       );
     }
   }
@@ -4717,7 +4716,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<int>(
-                    value: selectedFirstCourseWeek,
+                    initialValue: selectedFirstCourseWeek,
                     decoration: const InputDecoration(
                       labelText: '课表第 1 周对应校历第几周',
                       border: OutlineInputBorder(),
@@ -5012,3 +5011,4 @@ void _showLightTip(BuildContext context, String message) {
     entry.remove();
   });
 }
+

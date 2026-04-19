@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -653,7 +653,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.displayModeTitle,
             subtitle: l10n.displayModeSubtitle,
             child: DropdownButtonFormField<AppThemeMode>(
-              value: _draft.appThemeMode,
+              initialValue: _draft.appThemeMode,
               decoration: InputDecoration(
                 labelText: l10n.themeModeLabel,
                 border: OutlineInputBorder(),
@@ -677,7 +677,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.fontSectionTitle,
             subtitle: l10n.fontSectionSubtitle,
             child: DropdownButtonFormField<AppFontMode>(
-              value: _draft.appFontMode,
+              initialValue: _draft.appFontMode,
               decoration: InputDecoration(
                 labelText: l10n.fontModeLabel,
                 border: const OutlineInputBorder(),
@@ -701,7 +701,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             title: l10n.languageSectionTitle,
             subtitle: l10n.languageSectionSubtitle,
             child: DropdownButtonFormField<String>(
-              value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
+              initialValue: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
               decoration: InputDecoration(
                 labelText: l10n.languageModeLabel,
                 border: const OutlineInputBorder(),
@@ -721,7 +721,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<HomeTitleStyle>(
-                  value: _draft.homeTitleStyle,
+                  initialValue: _draft.homeTitleStyle,
                   decoration: InputDecoration(
                     labelText: l10n.homeTitleStyleLabel,
                     border: OutlineInputBorder(),
@@ -2095,7 +2095,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<WidgetBackgroundStyle>(
-                    value: _draft.widgetBackgroundStyle,
+                    initialValue: _draft.widgetBackgroundStyle,
                     decoration: InputDecoration(
                       labelText: l10n.homeWidgetBackgroundStyleLabel,
                       border: OutlineInputBorder(),
@@ -2439,7 +2439,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<SectionTimeDisplayMode>(
-                          value: _draft.timetableSectionTimeDisplayMode,
+                          initialValue: _draft.timetableSectionTimeDisplayMode,
                           decoration: InputDecoration(
                             labelText: l10n.layoutTimeColumnDisplayLabel,
                             border: OutlineInputBorder(),
@@ -2463,7 +2463,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<TimetableTimeColumnWidthMode>(
-                          value: _draft.timetableTimeColumnWidthMode,
+                          initialValue: _draft.timetableTimeColumnWidthMode,
                           decoration: InputDecoration(
                             labelText: l10n.layoutTimeColumnWidthLabel,
                             border: OutlineInputBorder(),
@@ -2670,7 +2670,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 12),
                         DropdownButtonFormField<CourseCardVerticalAlign>(
-                          value: _draft.courseCardVerticalAlign,
+                          initialValue: _draft.courseCardVerticalAlign,
                           decoration: InputDecoration(
                             labelText: l10n.layoutVerticalAlignLabel,
                             border: OutlineInputBorder(),
@@ -2694,7 +2694,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         ),
                         const SizedBox(height: 16),
                         DropdownButtonFormField<CourseCardHorizontalAlign>(
-                          value: _draft.courseCardHorizontalAlign,
+                          initialValue: _draft.courseCardHorizontalAlign,
                           decoration: InputDecoration(
                             labelText: l10n.layoutHorizontalAlignLabel,
                             border: OutlineInputBorder(),
@@ -3425,3 +3425,4 @@ Color _colorFromHex(String hexColor) {
 String _formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
+

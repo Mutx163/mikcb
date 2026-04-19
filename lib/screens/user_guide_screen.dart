@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 import '../services/miui_live_activities_service.dart';
@@ -1022,3 +1022,4 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 }
+
