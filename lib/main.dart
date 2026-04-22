@@ -19,10 +19,10 @@ import 'services/app_log_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
+import 'utils/hex_color.dart';
 
 Color _colorFromHex(String hexColor) {
-  final normalized = hexColor.replaceFirst('#', '');
-  return Color(int.parse('FF$normalized', radix: 16));
+  return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {

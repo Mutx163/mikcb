@@ -73,4 +73,23 @@ void main() {
 
     expect(course.weekDescription, '第1-3、5、7-9周');
   });
+
+  test('empty custom weeks fall back to range week description', () {
+    final course = Course(
+      id: 'course-4',
+      name: '概率论',
+      teacher: '赵老师',
+      location: 'D101',
+      dayOfWeek: 4,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+      startWeek: 2,
+      endWeek: 6,
+      customWeeks: const [],
+    );
+
+    expect(course.weekDescription, '第2-6周');
+  });
 }

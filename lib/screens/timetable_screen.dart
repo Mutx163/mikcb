@@ -16,6 +16,7 @@ import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
+import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -67,12 +68,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _isDaySwipeAnimating = false;
 
   Color _colorFromHex(String hexColor, Color fallback) {
-    try {
-      final normalized = hexColor.replaceFirst('#', '');
-      return Color(int.parse('FF$normalized', radix: 16));
-    } catch (_) {
-      return fallback;
-    }
+    return parseHexColorOrFallback(hexColor, fallback: fallback);
   }
 
   @override

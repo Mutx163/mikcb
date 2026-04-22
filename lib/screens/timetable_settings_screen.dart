@@ -14,6 +14,7 @@ import '../providers/timetable_provider.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
+import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
@@ -3418,8 +3419,7 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
 }
 
 Color _colorFromHex(String hexColor) {
-  final normalized = hexColor.replaceFirst('#', '');
-  return Color(int.parse('FF$normalized', radix: 16));
+  return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
 
 String _formatDate(DateTime date) {

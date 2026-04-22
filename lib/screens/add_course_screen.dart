@@ -6,6 +6,7 @@ import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 
 enum _WeekSelectionMode { range, custom }
 
@@ -85,9 +86,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ];
 
   Color _parseColor(String colorHex) {
-    return Color(
-      int.parse('FF${colorHex.replaceFirst('#', '')}', radix: 16),
-    );
+    return parseHexColorOrFallback(colorHex, fallback: const Color(0xFF2196F3));
   }
 
   String _toHex(Color color) {

@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 
 class AddScheduleItemScreen extends StatefulWidget {
   final ScheduleItem? scheduleItem;
@@ -579,8 +580,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }
 
   Color _colorFromHex(String value) {
-    final normalized = value.replaceFirst('#', '');
-    return Color(int.parse('FF$normalized', radix: 16));
+    return parseHexColorOrFallback(value, fallback: const Color(0xFF2196F3));
   }
 }
 
