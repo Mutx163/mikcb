@@ -25,31 +25,33 @@ void main() {
     return provider;
   }
 
-  test('getCourseInProgress returns current course for explicit day and week',
-      () async {
-    final provider = await createProvider();
-    await provider.addCourse(
-      Course(
-        id: 'course-now',
-        name: '高等数学',
-        teacher: '张老师',
-        location: 'A101',
+  test(
+    'getCourseInProgress returns current course for explicit day and week',
+    () async {
+      final provider = await createProvider();
+      await provider.addCourse(
+        Course(
+          id: 'course-now',
+          name: '高等数学',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+
+      final course = provider.getCourseInProgress(
         dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
+        week: 1,
+        now: DateTime(2026, 4, 13, 8, 30),
+      );
 
-    final course = provider.getCourseInProgress(
-      dayOfWeek: 1,
-      week: 1,
-      now: DateTime(2026, 4, 13, 8, 30),
-    );
-
-    expect(course?.name, '高等数学');
-  });
+      expect(course?.name, '高等数学');
+    },
+  );
 
   test('getCourseInProgress returns null before class starts', () async {
     final provider = await createProvider();
@@ -101,44 +103,49 @@ void main() {
     expect(course, isNull);
   });
 
-  test('syncTemporalContext updates current week and today courses together',
-      () async {
-    final provider = await createProvider();
-    await provider.addCourse(
-      Course(
-        id: 'course-mon',
-        name: '周一课程',
-        teacher: '张老师',
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-      ),
-    );
-    await provider.addCourse(
-      Course(
-        id: 'course-tue',
-        name: '周二课程',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 2,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:00',
-        endTime: '11:40',
-      ),
-    );
+  test(
+    'syncTemporalContext preserves viewed week while refreshing today courses',
+    () async {
+      final provider = await createProvider();
+      await provider.addCourse(
+        Course(
+          id: 'course-mon',
+          name: '周一课程',
+          teacher: '张老师',
+          location: 'A101',
+          dayOfWeek: 1,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+        ),
+      );
+      await provider.addCourse(
+        Course(
+          id: 'course-tue',
+          name: '周二课程',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 2,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+        ),
+      );
 
-    await provider.syncTemporalContext(now: DateTime(2026, 4, 13, 8, 30));
-    expect(provider.currentWeek, 1);
-    expect(provider.currentDayOfWeek, 1);
-    expect(provider.getTodayCourses().map((course) => course.name), ['周一课程']);
+      await provider.syncTemporalContext(now: DateTime(2026, 4, 13, 8, 30));
+      expect(provider.currentWeek, 1);
+      expect(provider.currentDateWeek, 1);
+      expect(provider.currentDayOfWeek, 1);
+      expect(provider.getTodayCourses().map((course) => course.name), ['周一课程']);
 
-    await provider.syncTemporalContext(now: DateTime(2026, 4, 21, 8, 30));
-    expect(provider.currentWeek, 2);
-    expect(provider.currentDayOfWeek, 2);
-    expect(provider.getTodayCourses().map((course) => course.name), ['周二课程']);
-  });
+      await provider.setCurrentWeek(6);
+      await provider.syncTemporalContext(now: DateTime(2026, 4, 21, 8, 30));
+      expect(provider.currentWeek, 6);
+      expect(provider.currentDateWeek, 2);
+      expect(provider.currentDayOfWeek, 2);
+      expect(provider.getTodayCourses().map((course) => course.name), ['周二课程']);
+    },
+  );
 }

@@ -32,10 +32,7 @@ class CourseConflict {
   final Course course;
   final Course otherCourse;
 
-  const CourseConflict({
-    required this.course,
-    required this.otherCourse,
-  });
+  const CourseConflict({required this.course, required this.otherCourse});
 }
 
 class TimeSchemeCourseUsageReference {
@@ -73,6 +70,7 @@ class TimetableProvider with ChangeNotifier {
   List<ScheduleItem> _scheduleItems = [];
   TimetableSettings _settings = TimetableSettings.defaults();
   int _currentWeek = 1;
+  int _currentDateWeek = 1;
   List<TimeScheme> _timeSchemes = [];
   List<TimetableProfile> _profiles = [];
   String? _activeProfileId;
@@ -90,6 +88,7 @@ class TimetableProvider with ChangeNotifier {
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   TimetableSettings get settings => _settings;
   int get currentWeek => _currentWeek;
+  int get currentDateWeek => _currentDateWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);
   List<TimetableProfile> get profiles => List.unmodifiable(_profiles);
   String? get activeProfileId => _activeProfileId;
@@ -106,8 +105,8 @@ class TimetableProvider with ChangeNotifier {
   int get maxUsedSection => _courses.isEmpty
       ? 1
       : _courses
-          .map((course) => course.endSection)
-          .reduce((a, b) => a > b ? a : b);
+            .map((course) => course.endSection)
+            .reduce((a, b) => a > b ? a : b);
 
   TimetableProvider({
     StorageService? storageService,
@@ -119,16 +118,16 @@ class TimetableProvider with ChangeNotifier {
     AppAnalytics? analytics,
     bool autoInitialize = true,
     bool enableLiveActivitySync = true,
-  })  : _storageService = storageService ?? StorageService(),
-        _icsImportService = icsImportService ?? IcsImportService(),
-        _liveActivitiesService =
-            liveActivitiesService ?? MiuiLiveActivitiesService(),
-        _dataTransferService = dataTransferService ?? DataTransferService(),
-        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
-        _homeWidgetSnapshotService =
-            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
-        _analytics = analytics ?? AppAnalytics.instance,
-        _enableLiveActivitySync = enableLiveActivitySync {
+  }) : _storageService = storageService ?? StorageService(),
+       _icsImportService = icsImportService ?? IcsImportService(),
+       _liveActivitiesService =
+           liveActivitiesService ?? MiuiLiveActivitiesService(),
+       _dataTransferService = dataTransferService ?? DataTransferService(),
+       _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
+       _homeWidgetSnapshotService =
+           homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
+       _analytics = analytics ?? AppAnalytics.instance,
+       _enableLiveActivitySync = enableLiveActivitySync {
     if (autoInitialize) {
       unawaited(initialize());
     }
@@ -151,8 +150,8 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     _applyProfileState(activeProfile);
-    final didMigrateAppLogsDefault =
-        await _storageService.hasMigratedAppLogsDefault();
+    final didMigrateAppLogsDefault = await _storageService
+        .hasMigratedAppLogsDefault();
     if (!didMigrateAppLogsDefault && !_settings.liveEnableLocalDiagnostics) {
       _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
       await _persistActiveProfileState();
@@ -231,6 +230,7 @@ class TimetableProvider with ChangeNotifier {
       List<ScheduleItem>.from(profile.scheduleItems),
     );
     _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
+    _currentDateWeek = _resolveCurrentDateWeek();
     unawaited(_syncNativeRuntimePreferences());
   }
 
@@ -247,12 +247,14 @@ class TimetableProvider with ChangeNotifier {
   }
 
   TimetableSettings _normalizeSettingsWithTimeScheme(
-      TimetableSettings settings) {
+    TimetableSettings settings,
+  ) {
     final scheme = _getTimeSchemeById(settings.activeTimeSchemeId);
     if (scheme == null) {
       return settings;
     }
-    final hasSameSections = _sectionSignature(settings.sections) ==
+    final hasSameSections =
+        _sectionSignature(settings.sections) ==
         _sectionSignature(scheme.sections);
     if (hasSameSections) {
       return settings;
@@ -263,13 +265,15 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  List<Course> _syncCoursesWithEffectiveTimeSchemes(List<Course> source,
-      {TimetableSettings? settings}) {
+  List<Course> _syncCoursesWithEffectiveTimeSchemes(
+    List<Course> source, {
+    TimetableSettings? settings,
+  }) {
     return source
-        .map((course) => _syncCourseWithEffectiveTimeScheme(
-              course,
-              settings: settings,
-            ))
+        .map(
+          (course) =>
+              _syncCourseWithEffectiveTimeScheme(course, settings: settings),
+        )
         .toList();
   }
 
@@ -330,7 +334,8 @@ class TimetableProvider with ChangeNotifier {
     for (final profile in sourceProfiles) {
       for (final course in profile.courses) {
         final usesOverride = course.timeSchemeIdOverride == schemeId;
-        final followsProfileScheme = course.timeSchemeIdOverride == null &&
+        final followsProfileScheme =
+            course.timeSchemeIdOverride == null &&
             profile.settings.activeTimeSchemeId == schemeId;
         if (!usesOverride && !followsProfileScheme) {
           continue;
@@ -352,10 +357,7 @@ class TimetableProvider with ChangeNotifier {
     String schemeId, {
     List<TimetableProfile>? profiles,
   }) {
-    final usages = getTimeSchemeCourseUsages(
-      schemeId,
-      profiles: profiles,
-    );
+    final usages = getTimeSchemeCourseUsages(schemeId, profiles: profiles);
     if (usages.isEmpty) {
       return 0;
     }
@@ -368,10 +370,7 @@ class TimetableProvider with ChangeNotifier {
     String schemeId, {
     List<TimetableProfile>? profiles,
   }) {
-    final usages = getTimeSchemeCourseUsages(
-      schemeId,
-      profiles: profiles,
-    );
+    final usages = getTimeSchemeCourseUsages(schemeId, profiles: profiles);
     if (usages.isEmpty) {
       return null;
     }
@@ -408,8 +407,9 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
-    final index =
-        _profiles.indexWhere((profile) => profile.id == activeProfile.id);
+    final index = _profiles.indexWhere(
+      (profile) => profile.id == activeProfile.id,
+    );
     if (index == -1) {
       return;
     }
@@ -432,9 +432,7 @@ class TimetableProvider with ChangeNotifier {
   }
 
   String _sectionSignature(List<SectionTime> sections) {
-    return jsonEncode(
-      sections.map((section) => section.toJson()).toList(),
-    );
+    return jsonEncode(sections.map((section) => section.toJson()).toList());
   }
 
   TimetableSettings _buildDefaultSettingsForNewProfile() {
@@ -545,6 +543,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> loadCurrentWeek() async {
     try {
       _currentWeek = activeProfile?.currentWeek ?? 1;
+      _currentDateWeek = _resolveCurrentDateWeek();
       notifyListeners();
     } catch (e) {
       unawaited(
@@ -560,6 +559,9 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> setCurrentWeek(int week) async {
     _currentWeek = clampCurrentWeekToSettings(week, _settings);
+    if (_settings.semesterStartDate == null) {
+      _currentDateWeek = _currentWeek;
+    }
     await _persistActiveProfileState();
     _currentLiveCourseId = null; // 触发超级岛重刷
     notifyListeners();
@@ -630,8 +632,10 @@ class TimetableProvider with ChangeNotifier {
     return updated;
   }
 
-  Future<TimeScheme?> duplicateTimeScheme(String schemeId,
-      {String? name}) async {
+  Future<TimeScheme?> duplicateTimeScheme(
+    String schemeId, {
+    String? name,
+  }) async {
     await initialize();
     final source = _getTimeSchemeById(schemeId);
     if (source == null) {
@@ -731,8 +735,9 @@ class TimetableProvider with ChangeNotifier {
     final isInUse = _profiles.any(
       (profile) =>
           profile.settings.activeTimeSchemeId == schemeId ||
-          profile.courses
-              .any((course) => course.timeSchemeIdOverride == schemeId),
+          profile.courses.any(
+            (course) => course.timeSchemeIdOverride == schemeId,
+          ),
     );
     if (isInUse) {
       return false;
@@ -749,9 +754,7 @@ class TimetableProvider with ChangeNotifier {
     return true;
   }
 
-  Future<TimetableProfile> createProfile({
-    required String name,
-  }) async {
+  Future<TimetableProfile> createProfile({required String name}) async {
     await initialize();
     if (activeProfile != null) {
       await _persistActiveProfileState();
@@ -778,9 +781,7 @@ class TimetableProvider with ChangeNotifier {
     return activeProfile!;
   }
 
-  Future<TimetableProfile?> duplicateActiveProfile({
-    String? name,
-  }) async {
+  Future<TimetableProfile?> duplicateActiveProfile({String? name}) async {
     await initialize();
     final source = activeProfile;
     if (source == null) {
@@ -877,14 +878,15 @@ class TimetableProvider with ChangeNotifier {
     if (validationMessage != null) {
       throw ArgumentError(validationMessage);
     }
-    final normalizedCourse =
-        _syncCourseWithEffectiveTimeScheme(_normalizeCourse(course));
+    final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
+      _normalizeCourse(course),
+    );
     final existingSharedCourse = _courses.cast<Course?>().firstWhere(
-          (item) =>
-              item != null &&
-              _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
-          orElse: () => null,
-        );
+      (item) =>
+          item != null &&
+          _sharedCourseKey(item) == _sharedCourseKey(normalizedCourse),
+      orElse: () => null,
+    );
     final preparedCourse = existingSharedCourse == null
         ? normalizedCourse
         : _applySharedCourseFields(normalizedCourse, existingSharedCourse);
@@ -915,11 +917,13 @@ class TimetableProvider with ChangeNotifier {
       if (validationMessage != null) {
         throw ArgumentError(validationMessage);
       }
-      final normalizedCourse =
-          _syncCourseWithEffectiveTimeScheme(_normalizeCourse(course));
+      final normalizedCourse = _syncCourseWithEffectiveTimeScheme(
+        _normalizeCourse(course),
+      );
       final originalCourse = _courses[index];
-      final previousKey =
-          _sharedCourseKeyFromName(previousSharedName ?? originalCourse.name);
+      final previousKey = _sharedCourseKeyFromName(
+        previousSharedName ?? originalCourse.name,
+      );
       final newKey = _sharedCourseKey(normalizedCourse);
 
       _courses[index] = normalizedCourse;
@@ -942,8 +946,9 @@ class TimetableProvider with ChangeNotifier {
         parameters: {
           'day_of_week': normalizedCourse.dayOfWeek,
           'section_count': normalizedCourse.sectionCount,
-          'has_short_name':
-              normalizedCourse.shortName?.isNotEmpty == true ? 1 : 0,
+          'has_short_name': normalizedCourse.shortName?.isNotEmpty == true
+              ? 1
+              : 0,
         },
       );
       _updateLiveActivity();
@@ -957,9 +962,7 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
     _analytics.logEventLater(
       name: 'course_deleted',
-      parameters: {
-        'remaining_course_count': _courses.length,
-      },
+      parameters: {'remaining_course_count': _courses.length},
     );
     _updateLiveActivity();
   }
@@ -973,9 +976,10 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> addScheduleItem(ScheduleItem item) async {
     final normalizedItem = _normalizeScheduleItem(item);
-    _scheduleItems = _sortScheduleItems(
-      <ScheduleItem>[..._scheduleItems, normalizedItem],
-    );
+    _scheduleItems = _sortScheduleItems(<ScheduleItem>[
+      ..._scheduleItems,
+      normalizedItem,
+    ]);
     await _persistActiveProfileState();
     notifyListeners();
     _analytics.logEventLater(
@@ -1023,9 +1027,7 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
     _analytics.logEventLater(
       name: 'schedule_item_deleted',
-      parameters: {
-        'remaining_schedule_item_count': _scheduleItems.length,
-      },
+      parameters: {'remaining_schedule_item_count': _scheduleItems.length},
     );
   }
 
@@ -1044,10 +1046,9 @@ class TimetableProvider with ChangeNotifier {
       throw ArgumentError('这门课在第 $sourceWeek 周没有排课');
     }
 
-    final remainingWeeks = originalCourse.activeWeeks
-        .where((week) => week != sourceWeek)
-        .toList()
-      ..sort();
+    final remainingWeeks =
+        originalCourse.activeWeeks.where((week) => week != sourceWeek).toList()
+          ..sort();
 
     if (remainingWeeks.isEmpty) {
       _courses.removeAt(index);
@@ -1117,7 +1118,8 @@ class TimetableProvider with ChangeNotifier {
         targetLocation?.trim() ?? originalCourse.location;
     final normalizedTimeSchemeId =
         targetTimeSchemeIdOverride ?? originalCourse.timeSchemeIdOverride;
-    final isNoop = sourceWeek == targetWeek &&
+    final isNoop =
+        sourceWeek == targetWeek &&
         originalCourse.dayOfWeek == targetDayOfWeek &&
         originalCourse.startSection == targetStartSection &&
         originalCourse.endSection == targetEndSection &&
@@ -1127,10 +1129,9 @@ class TimetableProvider with ChangeNotifier {
       return false;
     }
 
-    final remainingWeeks = originalCourse.activeWeeks
-        .where((week) => week != sourceWeek)
-        .toList()
-      ..sort();
+    final remainingWeeks =
+        originalCourse.activeWeeks.where((week) => week != sourceWeek).toList()
+          ..sort();
 
     final movedOccurrence = _syncCourseWithEffectiveTimeScheme(
       _normalizeCourse(
@@ -1195,9 +1196,7 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
     _analytics.logEventLater(
       name: 'courses_cleared',
-      parameters: {
-        'cleared_course_count': clearedCourseCount,
-      },
+      parameters: {'cleared_course_count': clearedCourseCount},
     );
     await _updateLiveActivity();
     return true;
@@ -1206,15 +1205,16 @@ class TimetableProvider with ChangeNotifier {
   Future<String?> updateTimetableSettings(TimetableSettings settings) async {
     final sectionConfigChanged =
         settings.sectionCount != _settings.sectionCount ||
-            _sectionSignature(settings.sections) !=
-                _sectionSignature(_settings.sections) ||
-            settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
+        _sectionSignature(settings.sections) !=
+            _sectionSignature(_settings.sections) ||
+        settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
 
     if (sectionConfigChanged && settings.sectionCount < maxUsedSection) {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
     }
 
     _settings = _normalizeSettingsWithTimeScheme(settings);
+    _currentDateWeek = _resolveCurrentDateWeek();
     await _persistActiveProfileState();
     await _syncNativeRuntimePreferences();
     _lastLiveSnapshotSignature = null;
@@ -1250,7 +1250,8 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<String?> ensureSectionCapacityForImport(
-      int requiredSectionCount) async {
+    int requiredSectionCount,
+  ) async {
     await initialize();
     if (requiredSectionCount <= _settings.sectionCount) {
       return null;
@@ -1276,8 +1277,9 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final usageCount = _profiles
-        .where((profile) =>
-            profile.settings.activeTimeSchemeId == currentScheme.id)
+        .where(
+          (profile) => profile.settings.activeTimeSchemeId == currentScheme.id,
+        )
         .length;
 
     if (usageCount <= 1) {
@@ -1370,8 +1372,12 @@ class TimetableProvider with ChangeNotifier {
           : _settings.semesterWeekCount,
     );
     if (semesterStart != null) {
-      _currentWeek = _calculateWeekForDate(DateTime.now());
+      _currentWeek = _calculateWeekForDate(
+        DateTime.now(),
+        fallbackWeek: _currentWeek,
+      );
     }
+    _currentDateWeek = _resolveCurrentDateWeek();
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
@@ -1577,7 +1583,8 @@ class TimetableProvider with ChangeNotifier {
             ),
           )
           .toList();
-      _activeProfileId = backup.activeProfileId != null &&
+      _activeProfileId =
+          backup.activeProfileId != null &&
               _profiles.any((profile) => profile.id == backup.activeProfileId)
           ? backup.activeProfileId
           : _profiles.first.id;
@@ -1589,7 +1596,8 @@ class TimetableProvider with ChangeNotifier {
       }
 
       _applyProfileState(
-          _profiles.firstWhere((profile) => profile.id == _activeProfileId));
+        _profiles.firstWhere((profile) => profile.id == _activeProfileId),
+      );
       _currentLiveCourseId = null;
       notifyListeners();
       await _updateLiveActivity();
@@ -1612,6 +1620,9 @@ class TimetableProvider with ChangeNotifier {
     final normalizedStart = _startOfWeek(semesterStart);
     final week = (normalizedNow.difference(normalizedStart).inDays ~/ 7) + 1;
     final targetWeek = week < 1 ? 1 : week;
+    _currentDateWeek = targetWeek > _settings.semesterWeekCount
+        ? _settings.semesterWeekCount
+        : targetWeek;
     await setCurrentWeek(
       targetWeek > _settings.semesterWeekCount
           ? _settings.semesterWeekCount
@@ -1619,14 +1630,16 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  Future<bool> syncTemporalContext({
-    DateTime? now,
-  }) async {
+  Future<bool> syncTemporalContext({DateTime? now}) async {
     await initialize();
     final reference = now ?? DateTime.now();
     final targetDayOfWeek = reference.weekday;
-    final targetWeek = _calculateWeekForDate(reference);
-    final didChangeWeek = targetWeek != _currentWeek;
+    final targetWeek = _calculateWeekForDate(
+      reference,
+      fallbackWeek: _currentWeek,
+    );
+    final didChangeWeek =
+        _settings.semesterStartDate != null && targetWeek != _currentDateWeek;
     final didChangeDay = targetDayOfWeek != _currentDayOfWeek;
 
     if (!didChangeWeek && !didChangeDay) {
@@ -1634,8 +1647,7 @@ class TimetableProvider with ChangeNotifier {
     }
 
     if (didChangeWeek) {
-      _currentWeek = clampCurrentWeekToSettings(targetWeek, _settings);
-      await _persistActiveProfileState();
+      _currentDateWeek = clampCurrentWeekToSettings(targetWeek, _settings);
     }
     if (didChangeDay) {
       _currentDayOfWeek = targetDayOfWeek;
@@ -1678,10 +1690,12 @@ class TimetableProvider with ChangeNotifier {
       return false;
     }
 
-    final overlapStartWeek =
-        left.startWeek > right.startWeek ? left.startWeek : right.startWeek;
-    final overlapEndWeek =
-        left.endWeek < right.endWeek ? left.endWeek : right.endWeek;
+    final overlapStartWeek = left.startWeek > right.startWeek
+        ? left.startWeek
+        : right.startWeek;
+    final overlapEndWeek = left.endWeek < right.endWeek
+        ? left.endWeek
+        : right.endWeek;
     if (overlapStartWeek > overlapEndWeek) {
       return false;
     }
@@ -1730,8 +1744,9 @@ class TimetableProvider with ChangeNotifier {
     );
     return item.copyWith(
       title: item.title.trim(),
-      location:
-          item.location?.trim().isEmpty == true ? null : item.location?.trim(),
+      location: item.location?.trim().isEmpty == true
+          ? null
+          : item.location?.trim(),
       note: item.note?.trim().isEmpty == true ? null : item.note?.trim(),
       startDate: normalizedStartDate,
       endDate: normalizedEndDate.isBefore(normalizedStartDate)
@@ -1776,10 +1791,10 @@ class TimetableProvider with ChangeNotifier {
   String _sharedCourseKeyFromName(String name) =>
       _buildSharedCourseNameKey(name);
 
-  int _calculateWeekForDate(DateTime date) {
+  int _calculateWeekForDate(DateTime date, {int? fallbackWeek}) {
     final semesterStart = _settings.semesterStartDate;
     if (semesterStart == null) {
-      return _currentWeek;
+      return fallbackWeek ?? _currentWeek;
     }
 
     final normalizedDate = _startOfWeek(date);
@@ -1792,6 +1807,13 @@ class TimetableProvider with ChangeNotifier {
       return _settings.semesterWeekCount;
     }
     return week;
+  }
+
+  int _resolveCurrentDateWeek() {
+    if (_settings.semesterStartDate == null) {
+      return _currentWeek;
+    }
+    return _calculateWeekForDate(DateTime.now(), fallbackWeek: _currentWeek);
   }
 
   int _maxCourseWeek(List<Course> courses) {
@@ -1812,14 +1834,16 @@ class TimetableProvider with ChangeNotifier {
   List<Course> getCoursesForDay(int dayOfWeek, {int? week}) {
     final targetWeek = week ?? _currentWeek;
     return _courses
-        .where((course) =>
-            course.dayOfWeek == dayOfWeek && course.isInWeek(targetWeek))
+        .where(
+          (course) =>
+              course.dayOfWeek == dayOfWeek && course.isInWeek(targetWeek),
+        )
         .toList()
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
   List<Course> getTodayCourses() {
-    return getCoursesForDay(_currentDayOfWeek);
+    return getCoursesForDay(_currentDayOfWeek, week: _currentDateWeek);
   }
 
   Course? getCurrentCourse() {
@@ -1988,10 +2012,12 @@ class TimetableProvider with ChangeNotifier {
       return const [];
     }
 
-    final sectionStartMinutes =
-        _parseClockMinutes(sections[firstSectionIndex].startTime);
-    final sectionEndMinutes =
-        _parseClockMinutes(sections[lastSectionIndex].endTime);
+    final sectionStartMinutes = _parseClockMinutes(
+      sections[firstSectionIndex].startTime,
+    );
+    final sectionEndMinutes = _parseClockMinutes(
+      sections[lastSectionIndex].endTime,
+    );
     if (sectionStartMinutes == null ||
         sectionEndMinutes == null ||
         sectionEndMinutes <= sectionStartMinutes) {
@@ -2002,9 +2028,11 @@ class TimetableProvider with ChangeNotifier {
     final totalDurationMillis = resolvedEndAtMillis - resolvedStartAtMillis;
     final milestones = <Map<String, dynamic>>[];
 
-    for (var sectionIndex = firstSectionIndex;
-        sectionIndex < lastSectionIndex;
-        sectionIndex++) {
+    for (
+      var sectionIndex = firstSectionIndex;
+      sectionIndex < lastSectionIndex;
+      sectionIndex++
+    ) {
       final currentSection = sections[sectionIndex];
       final nextSection = sections[sectionIndex + 1];
       final currentEndMinutes = _parseClockMinutes(currentSection.endTime);
@@ -2038,8 +2066,10 @@ class TimetableProvider with ChangeNotifier {
       });
     }
 
-    milestones.sort((left, right) =>
-        (left['offsetMillis'] as int).compareTo(right['offsetMillis'] as int));
+    milestones.sort(
+      (left, right) =>
+          (left['offsetMillis'] as int).compareTo(right['offsetMillis'] as int),
+    );
     return milestones;
   }
 
@@ -2135,16 +2165,22 @@ class TimetableProvider with ChangeNotifier {
   }) {
     final currentTime = now ?? DateTime.now();
     final targetWeek = week ?? _calculateWeekForDate(currentTime);
-    final todayCourses =
-        getCoursesForDay(currentTime.weekday, week: targetWeek);
+    final todayCourses = getCoursesForDay(
+      currentTime.weekday,
+      week: targetWeek,
+    );
     if (todayCourses.isEmpty) return null;
 
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
       final startTime = _buildCorrectedCourseDateTime(
-          currentTime, _resolveRealTime(course, true));
+        currentTime,
+        _resolveRealTime(course, true),
+      );
       final endTime = _buildCorrectedCourseDateTime(
-          currentTime, _resolveRealTime(course, false));
+        currentTime,
+        _resolveRealTime(course, false),
+      );
       if (startTime == null || endTime == null) {
         continue;
       }
@@ -2152,12 +2188,15 @@ class TimetableProvider with ChangeNotifier {
       final aheadTime = startTime.subtract(
         Duration(minutes: _settings.liveShowBeforeClassMinutes),
       );
-      final blockedUntil =
-          _resolveBeforeClassBlockedUntil(todayCourses, i, currentTime);
+      final blockedUntil = _resolveBeforeClassBlockedUntil(
+        todayCourses,
+        i,
+        currentTime,
+      );
       final effectiveAheadTime =
           blockedUntil != null && blockedUntil.isAfter(aheadTime)
-              ? blockedUntil
-              : aheadTime;
+          ? blockedUntil
+          : aheadTime;
       final stage = _resolveLiveActivityStage(
         currentTime: currentTime,
         startTime: startTime,
@@ -2165,12 +2204,14 @@ class TimetableProvider with ChangeNotifier {
         aheadTime: effectiveAheadTime,
       );
       if (stage != null) {
-        final nextCourse =
-            i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+        final nextCourse = i + 1 < todayCourses.length
+            ? todayCourses[i + 1]
+            : null;
         return LiveActivityCourseSelection(
           currentCourse: resolveCourseDisplayName(course),
-          nextCourse:
-              nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+          nextCourse: nextCourse == null
+              ? null
+              : resolveCourseDisplayName(nextCourse),
           stage: stage,
         );
       }
@@ -2183,22 +2224,29 @@ class TimetableProvider with ChangeNotifier {
     for (var i = 0; i < todayCourses.length; i++) {
       final course = todayCourses[i];
       final startTime = _buildCorrectedCourseDateTime(
-          currentTime, _resolveRealTime(course, true));
+        currentTime,
+        _resolveRealTime(course, true),
+      );
       if (startTime == null || !startTime.isAfter(currentTime)) {
         continue;
       }
-      final blockedUntil =
-          _resolveBeforeClassBlockedUntil(todayCourses, i, currentTime);
+      final blockedUntil = _resolveBeforeClassBlockedUntil(
+        todayCourses,
+        i,
+        currentTime,
+      );
       if (blockedUntil != null && currentTime.isBefore(blockedUntil)) {
         continue;
       }
 
-      final nextCourse =
-          i + 1 < todayCourses.length ? todayCourses[i + 1] : null;
+      final nextCourse = i + 1 < todayCourses.length
+          ? todayCourses[i + 1]
+          : null;
       return LiveActivityCourseSelection(
         currentCourse: resolveCourseDisplayName(course),
-        nextCourse:
-            nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+        nextCourse: nextCourse == null
+            ? null
+            : resolveCourseDisplayName(nextCourse),
         stage: LiveActivityStage.beforeClass,
       );
     }
@@ -2228,8 +2276,8 @@ class TimetableProvider with ChangeNotifier {
     final maxWeek = _courses.isEmpty
         ? targetWeek
         : _courses
-            .map((course) => course.endWeek)
-            .reduce((a, b) => a > b ? a : b);
+              .map((course) => course.endWeek)
+              .reduce((a, b) => a > b ? a : b);
 
     Course? bestCourse;
     DateTime? bestStartTime;
@@ -2271,30 +2319,33 @@ class TimetableProvider with ChangeNotifier {
     }
     final resolvedWeek = bestWeek;
 
-    final sameDayCourses = _courses
-        .where((course) =>
-            course.dayOfWeek == bestCourse!.dayOfWeek &&
-            course.isInWeek(resolvedWeek))
-        .toList()
-      ..sort((a, b) => a.startSection.compareTo(b.startSection));
-    final currentIndex =
-        sameDayCourses.indexWhere((course) => course.id == bestCourse!.id);
+    final sameDayCourses =
+        _courses
+            .where(
+              (course) =>
+                  course.dayOfWeek == bestCourse!.dayOfWeek &&
+                  course.isInWeek(resolvedWeek),
+            )
+            .toList()
+          ..sort((a, b) => a.startSection.compareTo(b.startSection));
+    final currentIndex = sameDayCourses.indexWhere(
+      (course) => course.id == bestCourse!.id,
+    );
     final nextCourse =
         currentIndex != -1 && currentIndex + 1 < sameDayCourses.length
-            ? sameDayCourses[currentIndex + 1]
-            : null;
+        ? sameDayCourses[currentIndex + 1]
+        : null;
 
     return LiveActivityCourseSelection(
       currentCourse: resolveCourseDisplayName(bestCourse),
-      nextCourse:
-          nextCourse == null ? null : resolveCourseDisplayName(nextCourse),
+      nextCourse: nextCourse == null
+          ? null
+          : resolveCourseDisplayName(nextCourse),
       stage: fallbackStage,
     );
   }
 
-  HomeWidgetSnapshot? buildHomeWidgetSnapshot({
-    DateTime? now,
-  }) {
+  HomeWidgetSnapshot? buildHomeWidgetSnapshot({DateTime? now}) {
     final profile = activeProfile;
     if (profile == null) {
       return null;
@@ -2302,9 +2353,10 @@ class TimetableProvider with ChangeNotifier {
 
     final currentTime = now ?? DateTime.now();
     final targetWeek = _calculateWeekForDate(currentTime);
-    final todayCourses = getCoursesForDay(currentTime.weekday, week: targetWeek)
-        .map(resolveCourseDisplayName)
-        .toList(growable: false);
+    final todayCourses = getCoursesForDay(
+      currentTime.weekday,
+      week: targetWeek,
+    ).map(resolveCourseDisplayName).toList(growable: false);
 
     return _homeWidgetSnapshotService.build(
       profileId: profile.id,
@@ -2316,9 +2368,7 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
-  Future<void> _updateLiveActivity({
-    bool syncScheduleSnapshot = true,
-  }) async {
+  Future<void> _updateLiveActivity({bool syncScheduleSnapshot = true}) async {
     await _syncHomeWidgetSnapshot();
     if (!_enableLiveActivitySync) {
       return;
@@ -2344,8 +2394,8 @@ class TimetableProvider with ChangeNotifier {
       final settings = _settings;
       final displaySettings =
           activeSelection.stage == LiveActivityStage.beforeClass
-              ? settings.beforeClassDisplaySettings
-              : settings.duringEndDisplaySettings;
+          ? settings.beforeClassDisplaySettings
+          : settings.duringEndDisplaySettings;
       final nextCourse = activeSelection.nextCourse;
       final nextCourseKey = nextCourse != null
           ? '${nextCourse.id}:${nextCourse.name}:${nextCourse.startSection}'
@@ -2392,12 +2442,12 @@ class TimetableProvider with ChangeNotifier {
         endSecondsCountdownThreshold: settings.liveEndSecondsCountdownThreshold,
         promoteDuringClass:
             activeSelection.stage == LiveActivityStage.duringClassStatusBar
-                ? false
-                : settings.livePromoteDuringClass,
+            ? false
+            : settings.livePromoteDuringClass,
         showNotificationDuringClass:
             activeSelection.stage == LiveActivityStage.duringClassStatusBar
-                ? true
-                : settings.liveShowDuringClassNotification,
+            ? true
+            : settings.liveShowDuringClassNotification,
         enableBeforeClass: settings.liveEnableBeforeClass,
         enableDuringClass: settings.liveEnableDuringClass,
         enableBeforeEnd: settings.liveEnableBeforeEnd,
@@ -2455,8 +2505,9 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
 
-    final displayCourses =
-        _courses.map(resolveCourseDisplayName).toList(growable: false);
+    final displayCourses = _courses
+        .map(resolveCourseDisplayName)
+        .toList(growable: false);
     final snapshotSignature = jsonEncode({
       'profileId': activeProfile.id,
       'currentWeek': _currentWeek,
@@ -2511,9 +2562,7 @@ class TimetableProvider with ChangeNotifier {
     _liveActivitySuspendedUntil = DateTime.now().add(duration);
   }
 
-  Future<void> refreshLiveActivityNow({
-    bool forceSnapshotSync = false,
-  }) async {
+  Future<void> refreshLiveActivityNow({bool forceSnapshotSync = false}) async {
     await initialize();
     if (forceSnapshotSync) {
       _lastLiveSnapshotSignature = null;
@@ -2663,8 +2712,9 @@ Course mergeImportedCourseWithExisting(Course existing, Course imported) {
   return imported.copyWith(
     id: existing.id,
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
-    teacher:
-        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    teacher: imported.teacher.trim().isEmpty
+        ? existing.teacher
+        : imported.teacher,
     location: imported.location.trim().isEmpty
         ? existing.location
         : imported.location,
@@ -2684,8 +2734,9 @@ Course preserveImportedCourseLocalSharedFields(
 ) {
   return imported.copyWith(
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
-    teacher:
-        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    teacher: imported.teacher.trim().isEmpty
+        ? existing.teacher
+        : imported.teacher,
     location: imported.location.trim().isEmpty
         ? existing.location
         : imported.location,
@@ -2703,8 +2754,9 @@ Course mergeImportedSharedFieldsIntoExistingSchedule(
 ) {
   return existing.copyWith(
     name: imported.name.trim().isEmpty ? existing.name : imported.name,
-    teacher:
-        imported.teacher.trim().isEmpty ? existing.teacher : imported.teacher,
+    teacher: imported.teacher.trim().isEmpty
+        ? existing.teacher
+        : imported.teacher,
     location: imported.location.trim().isEmpty
         ? existing.location
         : imported.location,
@@ -2831,8 +2883,10 @@ ImportedCourseSyncResult syncImportedCourses({
     if (matchedIndex != -1) {
       final existing = merged[matchedIndex];
       matchedExistingIds.add(existing.id);
-      merged[matchedIndex] =
-          mergeImportedCourseWithExisting(existing, imported);
+      merged[matchedIndex] = mergeImportedCourseWithExisting(
+        existing,
+        imported,
+      );
       updatedCount += 1;
     } else {
       merged.add(imported);
@@ -2901,18 +2955,22 @@ int _findSoftImportedCourseMatchIndex(
     if (existing.sectionCount != imported.sectionCount) {
       continue;
     }
-    final overlapScore =
-        _weekOverlapScore(existing.activeWeeks, imported.activeWeeks);
+    final overlapScore = _weekOverlapScore(
+      existing.activeWeeks,
+      imported.activeWeeks,
+    );
     if (overlapScore < 0.5) {
       continue;
     }
-    final teacherBonus = existing.teacher.trim().isNotEmpty &&
+    final teacherBonus =
+        existing.teacher.trim().isNotEmpty &&
             imported.teacher.trim().isNotEmpty &&
             existing.teacher.trim().toLowerCase() ==
                 imported.teacher.trim().toLowerCase()
         ? 0.2
         : 0.0;
-    final locationBonus = existing.location.trim().isNotEmpty &&
+    final locationBonus =
+        existing.location.trim().isNotEmpty &&
             imported.location.trim().isNotEmpty &&
             existing.location.trim().toLowerCase() ==
                 imported.location.trim().toLowerCase()
@@ -2993,7 +3051,8 @@ double _weekOverlapScore(List<int> left, List<int> right) {
   final leftSet = left.toSet();
   final rightSet = right.toSet();
   final intersection = leftSet.intersection(rightSet).length;
-  final base =
-      leftSet.length > rightSet.length ? leftSet.length : rightSet.length;
+  final base = leftSet.length > rightSet.length
+      ? leftSet.length
+      : rightSet.length;
   return base == 0 ? 0 : intersection / base;
 }
