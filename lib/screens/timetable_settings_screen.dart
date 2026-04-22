@@ -2537,6 +2537,41 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                             );
                           },
                         ),
+                        if (_draft.timetableBackToCurrentWeekButtonStyle ==
+                            BackToCurrentWeekButtonStyle.floating) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            l10n.layoutBackToCurrentWeekButtonOpacityLabel(
+                              (_draft.timetableFloatingBackToCurrentWeekButtonOpacity *
+                                      100)
+                                  .round(),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.layoutBackToCurrentWeekButtonOpacitySubtitle,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: 12),
+                          Slider(
+                            value: _draft
+                                .timetableFloatingBackToCurrentWeekButtonOpacity,
+                            min: 0.55,
+                            max: 1.0,
+                            divisions: 9,
+                            label:
+                                '${(_draft.timetableFloatingBackToCurrentWeekButtonOpacity * 100).round()}%',
+                            onChanged: (value) {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  timetableFloatingBackToCurrentWeekButtonOpacity:
+                                      value,
+                                ),
+                                debounce: true,
+                              );
+                            },
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Text(
                           l10n.layoutCourseCardGapLabel(
@@ -3070,8 +3105,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               ),
               if (showsFloatingButton)
                 Positioned(
-                  right: 10,
-                  bottom: 10,
+                  right: 16,
+                  bottom: 18,
                   child: IgnorePointer(
                     child: Container(
                       padding: const EdgeInsets.symmetric(
@@ -3080,7 +3115,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerHigh.withValues(
-                          alpha: 0.96,
+                          alpha: _draft
+                              .timetableFloatingBackToCurrentWeekButtonOpacity,
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(

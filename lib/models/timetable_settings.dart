@@ -747,6 +747,7 @@ class TimetableSettings {
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
   final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
+  final double timetableFloatingBackToCurrentWeekButtonOpacity;
   final int timetableLastViewedDayOfWeek;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
@@ -853,6 +854,7 @@ class TimetableSettings {
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.timetableBackToCurrentWeekButtonStyle =
         BackToCurrentWeekButtonStyle.inline,
+    this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
     this.timetableLastViewedDayOfWeek = 1,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
@@ -978,6 +980,7 @@ class TimetableSettings {
       timetableHomeViewMode: TimetableHomeViewMode.week,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyle.inline,
+      timetableFloatingBackToCurrentWeekButtonOpacity: 0.96,
       timetableLastViewedDayOfWeek: 1,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
@@ -1089,6 +1092,8 @@ class TimetableSettings {
       'timetableHomeViewMode': timetableHomeViewMode.value,
       'timetableBackToCurrentWeekButtonStyle':
           timetableBackToCurrentWeekButtonStyle.value,
+      'timetableFloatingBackToCurrentWeekButtonOpacity':
+          timetableFloatingBackToCurrentWeekButtonOpacity,
       'timetableLastViewedDayOfWeek': timetableLastViewedDayOfWeek,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
@@ -1263,6 +1268,11 @@ class TimetableSettings {
           BackToCurrentWeekButtonStyleX.fromValue(
             json['timetableBackToCurrentWeekButtonStyle'] as String?,
           ),
+      timetableFloatingBackToCurrentWeekButtonOpacity:
+          ((json['timetableFloatingBackToCurrentWeekButtonOpacity'] as num?)
+                      ?.toDouble() ??
+                  0.96)
+              .clamp(0.55, 1.0),
       timetableLastViewedDayOfWeek:
           ((json['timetableLastViewedDayOfWeek'] as num?)?.toInt() ?? 1).clamp(
             1,
@@ -1479,6 +1489,7 @@ class TimetableSettings {
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
     BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
+    double? timetableFloatingBackToCurrentWeekButtonOpacity,
     int? timetableLastViewedDayOfWeek,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
@@ -1610,6 +1621,10 @@ class TimetableSettings {
       timetableBackToCurrentWeekButtonStyle:
           timetableBackToCurrentWeekButtonStyle ??
           this.timetableBackToCurrentWeekButtonStyle,
+      timetableFloatingBackToCurrentWeekButtonOpacity:
+          (timetableFloatingBackToCurrentWeekButtonOpacity ??
+                  this.timetableFloatingBackToCurrentWeekButtonOpacity)
+              .clamp(0.55, 1.0),
       timetableLastViewedDayOfWeek:
           (timetableLastViewedDayOfWeek ?? this.timetableLastViewedDayOfWeek)
               .clamp(1, 7),
