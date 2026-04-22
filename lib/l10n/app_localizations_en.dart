@@ -2765,6 +2765,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Floating bottom-right';
 
   @override
+  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
+    return 'Floating button opacity $value%';
+  }
+
+  @override
+  String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
+      'Only applies to the floating bottom-right style.';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return 'Course card spacing $value';
   }

@@ -2592,6 +2592,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutBackToCurrentWeekButtonStyleFloating => '右下角悬浮';
 
   @override
+  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
+    return '悬浮按钮不透明度 $value%';
+  }
+
+  @override
+  String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只对右下角悬浮样式生效。';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return '课程卡片间距 $value';
   }
@@ -6693,6 +6701,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutBackToCurrentWeekButtonStyleFloating => '右下角懸浮';
 
   @override
+  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
+    return '懸浮按鈕不透明度 $value%';
+  }
+
+  @override
+  String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只對右下角懸浮樣式生效。';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return '課程卡片間距 $value';
   }
@@ -10792,6 +10808,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get layoutBackToCurrentWeekButtonStyleFloating => '右下角懸浮';
+
+  @override
+  String layoutBackToCurrentWeekButtonOpacityLabel(int value) {
+    return '懸浮按鈕不透明度 $value%';
+  }
+
+  @override
+  String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只對右下角懸浮樣式生效。';
 
   @override
   String layoutCourseCardGapLabel(String value) {

@@ -3345,63 +3345,59 @@ class _TimetableScreenState extends State<TimetableScreen>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final buttonOpacity =
+        provider.settings.timetableFloatingBackToCurrentWeekButtonOpacity;
+    final borderRadius = BorderRadius.circular(18);
 
     return SafeArea(
-      minimum: const EdgeInsets.only(right: 12, bottom: 12),
+      minimum: const EdgeInsets.only(right: 20, bottom: 24),
       child: Align(
         alignment: Alignment.bottomRight,
         child: Tooltip(
           message: l10n.backToCurrentWeekAction,
           child: Material(
-            color: Colors.transparent,
+            color: colorScheme.surfaceContainerHigh.withValues(
+              alpha: buttonOpacity,
+            ),
+            elevation: 3,
+            shadowColor: Colors.black.withValues(
+              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.1,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: borderRadius,
+              side: BorderSide(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.65),
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
             child: InkWell(
               key: const ValueKey('back-to-current-week-button'),
               onTap: () => _jumpToCurrentWeek(provider),
-              borderRadius: BorderRadius.circular(18),
-              child: Ink(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHigh.withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.9 : 0.96,
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.65),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(
-                        alpha: theme.brightness == Brightness.dark ? 0.18 : 0.1,
+              borderRadius: borderRadius,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.my_location_rounded,
+                      size: 15,
+                      color: colorScheme.primary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.backToCurrentWeekAction,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: colorScheme.onSurface,
+                        height: 1,
                       ),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
                     ),
                   ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.my_location_rounded,
-                        size: 15,
-                        color: colorScheme.primary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        l10n.backToCurrentWeekAction,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurface,
-                          height: 1,
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),

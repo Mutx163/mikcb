@@ -4787,6 +4787,18 @@ abstract class AppLocalizations {
   /// **'右下角悬浮'**
   String get layoutBackToCurrentWeekButtonStyleFloating;
 
+  /// No description provided for @layoutBackToCurrentWeekButtonOpacityLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮按钮不透明度 {value}%'**
+  String layoutBackToCurrentWeekButtonOpacityLabel(int value);
+
+  /// No description provided for @layoutBackToCurrentWeekButtonOpacitySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'只对右下角悬浮样式生效。'**
+  String get layoutBackToCurrentWeekButtonOpacitySubtitle;
+
   /// No description provided for @layoutCourseCardGapLabel.
   ///
   /// In zh, this message translates to:

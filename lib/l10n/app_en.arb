@@ -1470,6 +1470,15 @@
   "layoutBackToCurrentWeekButtonStyleHelper": "Defaults to the current inline style, or switch to a small floating button in the bottom-right of week view.",
   "layoutBackToCurrentWeekButtonStyleInline": "Inline in time column",
   "layoutBackToCurrentWeekButtonStyleFloating": "Floating bottom-right",
+  "layoutBackToCurrentWeekButtonOpacityLabel": "Floating button opacity {value}%",
+  "@layoutBackToCurrentWeekButtonOpacityLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "layoutBackToCurrentWeekButtonOpacitySubtitle": "Only applies to the floating bottom-right style.",
   "layoutCourseCardGapLabel": "Course card spacing {value}",
   "@layoutCourseCardGapLabel": {
     "placeholders": {

@@ -1470,6 +1470,15 @@
   "layoutBackToCurrentWeekButtonStyleHelper": "默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮。",
   "layoutBackToCurrentWeekButtonStyleInline": "时间栏内嵌",
   "layoutBackToCurrentWeekButtonStyleFloating": "右下角悬浮",
+  "layoutBackToCurrentWeekButtonOpacityLabel": "悬浮按钮不透明度 {value}%",
+  "@layoutBackToCurrentWeekButtonOpacityLabel": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "layoutBackToCurrentWeekButtonOpacitySubtitle": "只对右下角悬浮样式生效。",
   "layoutCourseCardGapLabel": "课程卡片间距 {value}",
   "@layoutCourseCardGapLabel": {
     "placeholders": {

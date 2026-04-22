@@ -31,6 +31,7 @@ void main() {
       settings.timetableBackToCurrentWeekButtonStyle,
       BackToCurrentWeekButtonStyle.inline,
     );
+    expect(settings.timetableFloatingBackToCurrentWeekButtonOpacity, 0.96);
     expect(
       settings.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -117,6 +118,7 @@ void main() {
       restored.timetableBackToCurrentWeekButtonStyle,
       BackToCurrentWeekButtonStyle.inline,
     );
+    expect(restored.timetableFloatingBackToCurrentWeekButtonOpacity, 0.96);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
@@ -205,6 +207,7 @@ void main() {
       homeTitleStyle: HomeTitleStyle.brand,
       timetableBackToCurrentWeekButtonStyle:
           BackToCurrentWeekButtonStyle.floating,
+      timetableFloatingBackToCurrentWeekButtonOpacity: 0.7,
       courseCardVerticalAlign: CourseCardVerticalAlign.spaceEvenly,
       courseCardHorizontalAlign: CourseCardHorizontalAlign.right,
       courseCardFontSize: 10.5,
@@ -261,6 +264,7 @@ void main() {
       restored.timetableBackToCurrentWeekButtonStyle,
       BackToCurrentWeekButtonStyle.floating,
     );
+    expect(restored.timetableFloatingBackToCurrentWeekButtonOpacity, 0.7);
     expect(
       restored.timetableSectionTimeDisplayMode,
       SectionTimeDisplayMode.startAndEnd,
