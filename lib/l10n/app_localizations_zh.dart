@@ -2579,6 +2579,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get layoutTimeColumnWidthLabel => '时间栏宽度';
 
   @override
+  String get layoutBackToCurrentWeekButtonStyleLabel => '“回本周”按钮样式';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleHelper =>
+      '默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮。';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleInline => '时间栏内嵌';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleFloating => '右下角悬浮';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return '课程卡片间距 $value';
   }
@@ -6667,6 +6680,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutTimeColumnWidthLabel => '時間栏宽度';
 
   @override
+  String get layoutBackToCurrentWeekButtonStyleLabel => '「返回本週」按鈕樣式';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleHelper =>
+      '預設維持現在的內嵌樣式；也可以改成周視圖右下角的小型懸浮按鈕。';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleInline => '時間欄內嵌';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleFloating => '右下角懸浮';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return '課程卡片間距 $value';
   }
@@ -10753,6 +10779,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get layoutTimeColumnWidthLabel => '時間栏宽度';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleLabel => '「返回本週」按鈕樣式';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleHelper =>
+      '預設維持現在的內嵌樣式；也可以改成周視圖右下角的小型懸浮按鈕。';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleInline => '時間欄內嵌';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleFloating => '右下角懸浮';
 
   @override
   String layoutCourseCardGapLabel(String value) {

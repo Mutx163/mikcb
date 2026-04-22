@@ -1466,6 +1466,10 @@
   "layoutEnableHapticsSubtitle": "When off, interactions such as page switching no longer trigger light vibration.",
   "layoutTimeColumnDisplayLabel": "Home page time column",
   "layoutTimeColumnWidthLabel": "Time column width",
+  "layoutBackToCurrentWeekButtonStyleLabel": "\"Back to current week\" button style",
+  "layoutBackToCurrentWeekButtonStyleHelper": "Defaults to the current inline style, or switch to a small floating button in the bottom-right of week view.",
+  "layoutBackToCurrentWeekButtonStyleInline": "Inline in time column",
+  "layoutBackToCurrentWeekButtonStyleFloating": "Floating bottom-right",
   "layoutCourseCardGapLabel": "Course card spacing {value}",
   "@layoutCourseCardGapLabel": {
     "placeholders": {

@@ -1,54 +1,24 @@
 import 'dart:convert';
 
-enum AppUpdateDownloadSource {
-  original,
-  mirror,
-}
+enum AppUpdateDownloadSource { original, mirror }
 
-enum AppUpdateMirrorPreset {
-  ghfast,
-  ghproxyCn,
-  ghLlkk,
-  custom,
-}
+enum AppUpdateMirrorPreset { ghfast, ghproxyCn, ghLlkk, custom }
 
-enum WidgetBackgroundStyle {
-  glass,
-  solid,
-  gradient,
-}
+enum WidgetBackgroundStyle { glass, solid, gradient }
 
-enum AppThemeMode {
-  system,
-  light,
-  dark,
-}
+enum AppThemeMode { system, light, dark }
 
-enum AppFontMode {
-  system,
-  miSans,
-}
+enum AppFontMode { system, miSans }
 
-enum HomeTitleStyle {
-  classic,
-  brand,
-}
+enum HomeTitleStyle { classic, brand }
 
-enum TimetableHomeViewMode {
-  week,
-  day,
-}
+enum TimetableHomeViewMode { week, day }
 
-enum SectionTimeDisplayMode {
-  hidden,
-  startOnly,
-  startAndEnd,
-}
+enum BackToCurrentWeekButtonStyle { inline, floating }
 
-enum LiveDuringClassTimeDisplayMode {
-  nearest,
-  total,
-}
+enum SectionTimeDisplayMode { hidden, startOnly, startAndEnd }
+
+enum LiveDuringClassTimeDisplayMode { nearest, total }
 
 enum LiveCountdownTextStyle {
   smart,
@@ -65,40 +35,17 @@ enum LiveCountdownTextStyle {
   secondOnlySlash,
 }
 
-enum MiuiIslandLabelStyle {
-  textOnly,
-  iconAndText,
-}
+enum MiuiIslandLabelStyle { textOnly, iconAndText }
 
-enum MiuiIslandLabelContent {
-  courseName,
-  location,
-  courseNameAndLocation,
-}
+enum MiuiIslandLabelContent { courseName, location, courseNameAndLocation }
 
-enum MiuiIslandLabelFontWeight {
-  regular,
-  medium,
-  bold,
-}
+enum MiuiIslandLabelFontWeight { regular, medium, bold }
 
-enum MiuiIslandLabelRenderQuality {
-  standard,
-  high,
-  ultra,
-}
+enum MiuiIslandLabelRenderQuality { standard, high, ultra }
 
-enum MiuiIslandExpandedIconMode {
-  appIcon,
-  customImage,
-  hidden,
-}
+enum MiuiIslandExpandedIconMode { appIcon, customImage, hidden }
 
-enum LiveBeforeClassQuickAction {
-  none,
-  silent,
-  doNotDisturb,
-}
+enum LiveBeforeClassQuickAction { none, silent, doNotDisturb }
 
 const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
 const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
@@ -128,16 +75,16 @@ String _normalizeMirrorUrlPrefixValue(String? value) {
 
 extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
   String get value => switch (this) {
-        SectionTimeDisplayMode.hidden => 'hidden',
-        SectionTimeDisplayMode.startOnly => 'start_only',
-        SectionTimeDisplayMode.startAndEnd => 'start_and_end',
-      };
+    SectionTimeDisplayMode.hidden => 'hidden',
+    SectionTimeDisplayMode.startOnly => 'start_only',
+    SectionTimeDisplayMode.startAndEnd => 'start_and_end',
+  };
 
   String get label => switch (this) {
-        SectionTimeDisplayMode.hidden => '不显示',
-        SectionTimeDisplayMode.startOnly => '仅显示上课时间',
-        SectionTimeDisplayMode.startAndEnd => '显示上下课时间',
-      };
+    SectionTimeDisplayMode.hidden => '不显示',
+    SectionTimeDisplayMode.startOnly => '仅显示上课时间',
+    SectionTimeDisplayMode.startAndEnd => '显示上下课时间',
+  };
 
   static SectionTimeDisplayMode fromValue(String? value) {
     return SectionTimeDisplayMode.values.firstWhere(
@@ -149,16 +96,16 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
 
 extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
   String get value => switch (this) {
-        WidgetBackgroundStyle.glass => 'glass',
-        WidgetBackgroundStyle.solid => 'solid',
-        WidgetBackgroundStyle.gradient => 'gradient',
-      };
+    WidgetBackgroundStyle.glass => 'glass',
+    WidgetBackgroundStyle.solid => 'solid',
+    WidgetBackgroundStyle.gradient => 'gradient',
+  };
 
   String get label => switch (this) {
-        WidgetBackgroundStyle.glass => '半透明玻璃感',
-        WidgetBackgroundStyle.solid => '纯色卡片',
-        WidgetBackgroundStyle.gradient => '渐变卡片',
-      };
+    WidgetBackgroundStyle.glass => '半透明玻璃感',
+    WidgetBackgroundStyle.solid => '纯色卡片',
+    WidgetBackgroundStyle.gradient => '渐变卡片',
+  };
 
   static WidgetBackgroundStyle fromValue(String? value) {
     return WidgetBackgroundStyle.values.firstWhere(
@@ -170,16 +117,16 @@ extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
 
 extension AppThemeModeX on AppThemeMode {
   String get value => switch (this) {
-        AppThemeMode.system => 'system',
-        AppThemeMode.light => 'light',
-        AppThemeMode.dark => 'dark',
-      };
+    AppThemeMode.system => 'system',
+    AppThemeMode.light => 'light',
+    AppThemeMode.dark => 'dark',
+  };
 
   String get label => switch (this) {
-        AppThemeMode.system => '跟随系统',
-        AppThemeMode.light => '浅色模式',
-        AppThemeMode.dark => '深色模式',
-      };
+    AppThemeMode.system => '跟随系统',
+    AppThemeMode.light => '浅色模式',
+    AppThemeMode.dark => '深色模式',
+  };
 
   static AppThemeMode fromValue(String? value) {
     return AppThemeMode.values.firstWhere(
@@ -191,9 +138,9 @@ extension AppThemeModeX on AppThemeMode {
 
 extension AppFontModeX on AppFontMode {
   String get value => switch (this) {
-        AppFontMode.system => 'system',
-        AppFontMode.miSans => 'mi_sans',
-      };
+    AppFontMode.system => 'system',
+    AppFontMode.miSans => 'mi_sans',
+  };
 
   static AppFontMode fromValue(String? value) {
     return AppFontMode.values.firstWhere(
@@ -205,19 +152,19 @@ extension AppFontModeX on AppFontMode {
 
 extension HomeTitleStyleX on HomeTitleStyle {
   String get value => switch (this) {
-        HomeTitleStyle.classic => 'classic',
-        HomeTitleStyle.brand => 'brand',
-      };
+    HomeTitleStyle.classic => 'classic',
+    HomeTitleStyle.brand => 'brand',
+  };
 
   String get label => switch (this) {
-        HomeTitleStyle.classic => '经典文字',
-        HomeTitleStyle.brand => '大 Logo',
-      };
+    HomeTitleStyle.classic => '经典文字',
+    HomeTitleStyle.brand => '大 Logo',
+  };
 
   String get description => switch (this) {
-        HomeTitleStyle.classic => '保持原本标题样式，只显示文字，点击即可切换课表',
-        HomeTitleStyle.brand => '显示大 Logo 和小课表名称，更强调品牌感',
-      };
+    HomeTitleStyle.classic => '保持原本标题样式，只显示文字，点击即可切换课表',
+    HomeTitleStyle.brand => '显示大 Logo 和小课表名称，更强调品牌感',
+  };
 
   static HomeTitleStyle fromValue(String? value) {
     return HomeTitleStyle.values.firstWhere(
@@ -229,9 +176,9 @@ extension HomeTitleStyleX on HomeTitleStyle {
 
 extension TimetableHomeViewModeX on TimetableHomeViewMode {
   String get value => switch (this) {
-        TimetableHomeViewMode.week => 'week',
-        TimetableHomeViewMode.day => 'day',
-      };
+    TimetableHomeViewMode.week => 'week',
+    TimetableHomeViewMode.day => 'day',
+  };
 
   static TimetableHomeViewMode fromValue(String? value) {
     return TimetableHomeViewMode.values.firstWhere(
@@ -241,16 +188,30 @@ extension TimetableHomeViewModeX on TimetableHomeViewMode {
   }
 }
 
+extension BackToCurrentWeekButtonStyleX on BackToCurrentWeekButtonStyle {
+  String get value => switch (this) {
+    BackToCurrentWeekButtonStyle.inline => 'inline',
+    BackToCurrentWeekButtonStyle.floating => 'floating',
+  };
+
+  static BackToCurrentWeekButtonStyle fromValue(String? value) {
+    return BackToCurrentWeekButtonStyle.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => BackToCurrentWeekButtonStyle.inline,
+    );
+  }
+}
+
 extension LiveDuringClassTimeDisplayModeX on LiveDuringClassTimeDisplayMode {
   String get value => switch (this) {
-        LiveDuringClassTimeDisplayMode.nearest => 'nearest',
-        LiveDuringClassTimeDisplayMode.total => 'total',
-      };
+    LiveDuringClassTimeDisplayMode.nearest => 'nearest',
+    LiveDuringClassTimeDisplayMode.total => 'total',
+  };
 
   String get label => switch (this) {
-        LiveDuringClassTimeDisplayMode.nearest => '最近时间',
-        LiveDuringClassTimeDisplayMode.total => '总时间',
-      };
+    LiveDuringClassTimeDisplayMode.nearest => '最近时间',
+    LiveDuringClassTimeDisplayMode.total => '总时间',
+  };
 
   static LiveDuringClassTimeDisplayMode fromValue(String? value) {
     return LiveDuringClassTimeDisplayMode.values.firstWhere(
@@ -262,47 +223,45 @@ extension LiveDuringClassTimeDisplayModeX on LiveDuringClassTimeDisplayMode {
 
 extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
   String get value => switch (this) {
-        LiveCountdownTextStyle.smart => 'smart',
-        LiveCountdownTextStyle.smartMinS => 'smart_min_s',
-        LiveCountdownTextStyle.minuteSecondCn => 'minute_second_cn',
-        LiveCountdownTextStyle.minuteSecondColon => 'minute_second_colon',
-        LiveCountdownTextStyle.minuteSecondMinS => 'minute_second_min_s',
-        LiveCountdownTextStyle.minuteSecondMinSlashS =>
-          'minute_second_min_slash_s',
-        LiveCountdownTextStyle.minuteOnlyCn => 'minute_only_cn',
-        LiveCountdownTextStyle.minuteOnlyMin => 'minute_only_min',
-        LiveCountdownTextStyle.minuteOnlySlash => 'minute_only_slash',
-        LiveCountdownTextStyle.secondOnlyCn => 'second_only_cn',
-        LiveCountdownTextStyle.secondOnlyShort => 'second_only_short',
-        LiveCountdownTextStyle.secondOnlySlash => 'second_only_slash',
-      };
+    LiveCountdownTextStyle.smart => 'smart',
+    LiveCountdownTextStyle.smartMinS => 'smart_min_s',
+    LiveCountdownTextStyle.minuteSecondCn => 'minute_second_cn',
+    LiveCountdownTextStyle.minuteSecondColon => 'minute_second_colon',
+    LiveCountdownTextStyle.minuteSecondMinS => 'minute_second_min_s',
+    LiveCountdownTextStyle.minuteSecondMinSlashS => 'minute_second_min_slash_s',
+    LiveCountdownTextStyle.minuteOnlyCn => 'minute_only_cn',
+    LiveCountdownTextStyle.minuteOnlyMin => 'minute_only_min',
+    LiveCountdownTextStyle.minuteOnlySlash => 'minute_only_slash',
+    LiveCountdownTextStyle.secondOnlyCn => 'second_only_cn',
+    LiveCountdownTextStyle.secondOnlyShort => 'second_only_short',
+    LiveCountdownTextStyle.secondOnlySlash => 'second_only_slash',
+  };
 
   String get label => switch (this) {
-        LiveCountdownTextStyle.smart => '智能（中文）',
-        LiveCountdownTextStyle.smartMinS => '智能（英文）',
-        LiveCountdownTextStyle.minuteSecondCn => '分秒（5分钟19秒）',
-        LiveCountdownTextStyle.minuteSecondColon => 'mm:ss（05:19）',
-        LiveCountdownTextStyle.minuteSecondMinS => 'min+s（5min19s）',
-        LiveCountdownTextStyle.minuteSecondMinSlashS => 'min/s（5min/19s）',
-        LiveCountdownTextStyle.minuteOnlyCn => '纯分钟（5分钟）',
-        LiveCountdownTextStyle.minuteOnlyMin => 'min（5min）',
-        LiveCountdownTextStyle.minuteOnlySlash => '/min（5/min）',
-        LiveCountdownTextStyle.secondOnlyCn => '纯秒（5秒）',
-        LiveCountdownTextStyle.secondOnlyShort => 's（5s）',
-        LiveCountdownTextStyle.secondOnlySlash => '/s（5/s）',
-      };
+    LiveCountdownTextStyle.smart => '智能（中文）',
+    LiveCountdownTextStyle.smartMinS => '智能（英文）',
+    LiveCountdownTextStyle.minuteSecondCn => '分秒（5分钟19秒）',
+    LiveCountdownTextStyle.minuteSecondColon => 'mm:ss（05:19）',
+    LiveCountdownTextStyle.minuteSecondMinS => 'min+s（5min19s）',
+    LiveCountdownTextStyle.minuteSecondMinSlashS => 'min/s（5min/19s）',
+    LiveCountdownTextStyle.minuteOnlyCn => '纯分钟（5分钟）',
+    LiveCountdownTextStyle.minuteOnlyMin => 'min（5min）',
+    LiveCountdownTextStyle.minuteOnlySlash => '/min（5/min）',
+    LiveCountdownTextStyle.secondOnlyCn => '纯秒（5秒）',
+    LiveCountdownTextStyle.secondOnlyShort => 's（5s）',
+    LiveCountdownTextStyle.secondOnlySlash => '/s（5/s）',
+  };
 
   bool get alwaysShowsSeconds => switch (this) {
-        LiveCountdownTextStyle.minuteSecondCn ||
-        LiveCountdownTextStyle.minuteSecondColon ||
-        LiveCountdownTextStyle.minuteSecondMinS ||
-        LiveCountdownTextStyle.minuteSecondMinSlashS ||
-        LiveCountdownTextStyle.secondOnlyCn ||
-        LiveCountdownTextStyle.secondOnlyShort ||
-        LiveCountdownTextStyle.secondOnlySlash =>
-          true,
-        _ => false,
-      };
+    LiveCountdownTextStyle.minuteSecondCn ||
+    LiveCountdownTextStyle.minuteSecondColon ||
+    LiveCountdownTextStyle.minuteSecondMinS ||
+    LiveCountdownTextStyle.minuteSecondMinSlashS ||
+    LiveCountdownTextStyle.secondOnlyCn ||
+    LiveCountdownTextStyle.secondOnlyShort ||
+    LiveCountdownTextStyle.secondOnlySlash => true,
+    _ => false,
+  };
 
   static LiveCountdownTextStyle fromValue(String? value) {
     return LiveCountdownTextStyle.values.firstWhere(
@@ -314,14 +273,14 @@ extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
 
 extension MiuiIslandLabelStyleX on MiuiIslandLabelStyle {
   String get value => switch (this) {
-        MiuiIslandLabelStyle.textOnly => 'text_only',
-        MiuiIslandLabelStyle.iconAndText => 'icon_and_text',
-      };
+    MiuiIslandLabelStyle.textOnly => 'text_only',
+    MiuiIslandLabelStyle.iconAndText => 'icon_and_text',
+  };
 
   String get label => switch (this) {
-        MiuiIslandLabelStyle.textOnly => '仅文字',
-        MiuiIslandLabelStyle.iconAndText => '图标+文字',
-      };
+    MiuiIslandLabelStyle.textOnly => '仅文字',
+    MiuiIslandLabelStyle.iconAndText => '图标+文字',
+  };
 
   static MiuiIslandLabelStyle fromValue(String? value) {
     return MiuiIslandLabelStyle.values.firstWhere(
@@ -333,17 +292,16 @@ extension MiuiIslandLabelStyleX on MiuiIslandLabelStyle {
 
 extension MiuiIslandLabelContentX on MiuiIslandLabelContent {
   String get value => switch (this) {
-        MiuiIslandLabelContent.courseName => 'course_name',
-        MiuiIslandLabelContent.location => 'location',
-        MiuiIslandLabelContent.courseNameAndLocation =>
-          'course_name_and_location',
-      };
+    MiuiIslandLabelContent.courseName => 'course_name',
+    MiuiIslandLabelContent.location => 'location',
+    MiuiIslandLabelContent.courseNameAndLocation => 'course_name_and_location',
+  };
 
   String get label => switch (this) {
-        MiuiIslandLabelContent.courseName => '课程名',
-        MiuiIslandLabelContent.location => '教室',
-        MiuiIslandLabelContent.courseNameAndLocation => '课程名+教室',
-      };
+    MiuiIslandLabelContent.courseName => '课程名',
+    MiuiIslandLabelContent.location => '教室',
+    MiuiIslandLabelContent.courseNameAndLocation => '课程名+教室',
+  };
 
   static MiuiIslandLabelContent fromValue(String? value) {
     return MiuiIslandLabelContent.values.firstWhere(
@@ -355,16 +313,16 @@ extension MiuiIslandLabelContentX on MiuiIslandLabelContent {
 
 extension MiuiIslandLabelFontWeightX on MiuiIslandLabelFontWeight {
   String get value => switch (this) {
-        MiuiIslandLabelFontWeight.regular => 'regular',
-        MiuiIslandLabelFontWeight.medium => 'medium',
-        MiuiIslandLabelFontWeight.bold => 'bold',
-      };
+    MiuiIslandLabelFontWeight.regular => 'regular',
+    MiuiIslandLabelFontWeight.medium => 'medium',
+    MiuiIslandLabelFontWeight.bold => 'bold',
+  };
 
   String get label => switch (this) {
-        MiuiIslandLabelFontWeight.regular => '常规',
-        MiuiIslandLabelFontWeight.medium => '中等',
-        MiuiIslandLabelFontWeight.bold => '加粗',
-      };
+    MiuiIslandLabelFontWeight.regular => '常规',
+    MiuiIslandLabelFontWeight.medium => '中等',
+    MiuiIslandLabelFontWeight.bold => '加粗',
+  };
 
   static MiuiIslandLabelFontWeight fromValue(String? value) {
     return MiuiIslandLabelFontWeight.values.firstWhere(
@@ -376,16 +334,16 @@ extension MiuiIslandLabelFontWeightX on MiuiIslandLabelFontWeight {
 
 extension MiuiIslandLabelRenderQualityX on MiuiIslandLabelRenderQuality {
   String get value => switch (this) {
-        MiuiIslandLabelRenderQuality.standard => 'standard',
-        MiuiIslandLabelRenderQuality.high => 'high',
-        MiuiIslandLabelRenderQuality.ultra => 'ultra',
-      };
+    MiuiIslandLabelRenderQuality.standard => 'standard',
+    MiuiIslandLabelRenderQuality.high => 'high',
+    MiuiIslandLabelRenderQuality.ultra => 'ultra',
+  };
 
   String get label => switch (this) {
-        MiuiIslandLabelRenderQuality.standard => '标准',
-        MiuiIslandLabelRenderQuality.high => '高清',
-        MiuiIslandLabelRenderQuality.ultra => '超高清',
-      };
+    MiuiIslandLabelRenderQuality.standard => '标准',
+    MiuiIslandLabelRenderQuality.high => '高清',
+    MiuiIslandLabelRenderQuality.ultra => '超高清',
+  };
 
   static MiuiIslandLabelRenderQuality fromValue(String? value) {
     return MiuiIslandLabelRenderQuality.values.firstWhere(
@@ -397,16 +355,16 @@ extension MiuiIslandLabelRenderQualityX on MiuiIslandLabelRenderQuality {
 
 extension MiuiIslandExpandedIconModeX on MiuiIslandExpandedIconMode {
   String get value => switch (this) {
-        MiuiIslandExpandedIconMode.appIcon => 'app_icon',
-        MiuiIslandExpandedIconMode.customImage => 'custom_image',
-        MiuiIslandExpandedIconMode.hidden => 'hidden',
-      };
+    MiuiIslandExpandedIconMode.appIcon => 'app_icon',
+    MiuiIslandExpandedIconMode.customImage => 'custom_image',
+    MiuiIslandExpandedIconMode.hidden => 'hidden',
+  };
 
   String get label => switch (this) {
-        MiuiIslandExpandedIconMode.appIcon => '应用图标',
-        MiuiIslandExpandedIconMode.customImage => '自定义图片',
-        MiuiIslandExpandedIconMode.hidden => '不显示',
-      };
+    MiuiIslandExpandedIconMode.appIcon => '应用图标',
+    MiuiIslandExpandedIconMode.customImage => '自定义图片',
+    MiuiIslandExpandedIconMode.hidden => '不显示',
+  };
 
   static MiuiIslandExpandedIconMode fromValue(String? value) {
     return MiuiIslandExpandedIconMode.values.firstWhere(
@@ -418,16 +376,16 @@ extension MiuiIslandExpandedIconModeX on MiuiIslandExpandedIconMode {
 
 extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
   String get value => switch (this) {
-        LiveBeforeClassQuickAction.none => 'none',
-        LiveBeforeClassQuickAction.silent => 'silent',
-        LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
-      };
+    LiveBeforeClassQuickAction.none => 'none',
+    LiveBeforeClassQuickAction.silent => 'silent',
+    LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
+  };
 
   String get label => switch (this) {
-        LiveBeforeClassQuickAction.none => '不显示',
-        LiveBeforeClassQuickAction.silent => '打开静音',
-        LiveBeforeClassQuickAction.doNotDisturb => '打开免打扰',
-      };
+    LiveBeforeClassQuickAction.none => '不显示',
+    LiveBeforeClassQuickAction.silent => '打开静音',
+    LiveBeforeClassQuickAction.doNotDisturb => '打开免打扰',
+  };
 
   static LiveBeforeClassQuickAction fromValue(String? value) {
     return LiveBeforeClassQuickAction.values.firstWhere(
@@ -437,27 +395,22 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
   }
 }
 
-enum CourseCardVerticalAlign {
-  top,
-  center,
-  bottom,
-  spaceEvenly,
-}
+enum CourseCardVerticalAlign { top, center, bottom, spaceEvenly }
 
 extension CourseCardVerticalAlignX on CourseCardVerticalAlign {
   String get value => switch (this) {
-        CourseCardVerticalAlign.top => 'top',
-        CourseCardVerticalAlign.center => 'center',
-        CourseCardVerticalAlign.bottom => 'bottom',
-        CourseCardVerticalAlign.spaceEvenly => 'space_evenly',
-      };
+    CourseCardVerticalAlign.top => 'top',
+    CourseCardVerticalAlign.center => 'center',
+    CourseCardVerticalAlign.bottom => 'bottom',
+    CourseCardVerticalAlign.spaceEvenly => 'space_evenly',
+  };
 
   String get label => switch (this) {
-        CourseCardVerticalAlign.top => '顶部对齐',
-        CourseCardVerticalAlign.center => '垂直居中',
-        CourseCardVerticalAlign.bottom => '底部对齐',
-        CourseCardVerticalAlign.spaceEvenly => '上下均布',
-      };
+    CourseCardVerticalAlign.top => '顶部对齐',
+    CourseCardVerticalAlign.center => '垂直居中',
+    CourseCardVerticalAlign.bottom => '底部对齐',
+    CourseCardVerticalAlign.spaceEvenly => '上下均布',
+  };
 
   static CourseCardVerticalAlign fromValue(String? value) {
     return CourseCardVerticalAlign.values.firstWhere(
@@ -467,24 +420,20 @@ extension CourseCardVerticalAlignX on CourseCardVerticalAlign {
   }
 }
 
-enum CourseCardHorizontalAlign {
-  left,
-  center,
-  right,
-}
+enum CourseCardHorizontalAlign { left, center, right }
 
 extension CourseCardHorizontalAlignX on CourseCardHorizontalAlign {
   String get value => switch (this) {
-        CourseCardHorizontalAlign.left => 'left',
-        CourseCardHorizontalAlign.center => 'center',
-        CourseCardHorizontalAlign.right => 'right',
-      };
+    CourseCardHorizontalAlign.left => 'left',
+    CourseCardHorizontalAlign.center => 'center',
+    CourseCardHorizontalAlign.right => 'right',
+  };
 
   String get label => switch (this) {
-        CourseCardHorizontalAlign.left => '居左',
-        CourseCardHorizontalAlign.center => '居中',
-        CourseCardHorizontalAlign.right => '居右',
-      };
+    CourseCardHorizontalAlign.left => '居左',
+    CourseCardHorizontalAlign.center => '居中',
+    CourseCardHorizontalAlign.right => '居右',
+  };
 
   static CourseCardHorizontalAlign fromValue(String? value) {
     return CourseCardHorizontalAlign.values.firstWhere(
@@ -494,21 +443,18 @@ extension CourseCardHorizontalAlignX on CourseCardHorizontalAlign {
   }
 }
 
-enum TimetableTimeColumnWidthMode {
-  narrow,
-  wide,
-}
+enum TimetableTimeColumnWidthMode { narrow, wide }
 
 extension TimetableTimeColumnWidthModeX on TimetableTimeColumnWidthMode {
   String get value => switch (this) {
-        TimetableTimeColumnWidthMode.narrow => 'narrow',
-        TimetableTimeColumnWidthMode.wide => 'wide',
-      };
+    TimetableTimeColumnWidthMode.narrow => 'narrow',
+    TimetableTimeColumnWidthMode.wide => 'wide',
+  };
 
   String get label => switch (this) {
-        TimetableTimeColumnWidthMode.narrow => '窄',
-        TimetableTimeColumnWidthMode.wide => '宽',
-      };
+    TimetableTimeColumnWidthMode.narrow => '窄',
+    TimetableTimeColumnWidthMode.wide => '宽',
+  };
 
   static TimetableTimeColumnWidthMode fromValue(String? value) {
     return TimetableTimeColumnWidthMode.values.firstWhere(
@@ -518,21 +464,18 @@ extension TimetableTimeColumnWidthModeX on TimetableTimeColumnWidthMode {
   }
 }
 
-enum TimetableCourseSpacingMode {
-  narrow,
-  wide,
-}
+enum TimetableCourseSpacingMode { narrow, wide }
 
 extension TimetableCourseSpacingModeX on TimetableCourseSpacingMode {
   String get value => switch (this) {
-        TimetableCourseSpacingMode.narrow => 'narrow',
-        TimetableCourseSpacingMode.wide => 'wide',
-      };
+    TimetableCourseSpacingMode.narrow => 'narrow',
+    TimetableCourseSpacingMode.wide => 'wide',
+  };
 
   String get label => switch (this) {
-        TimetableCourseSpacingMode.narrow => '窄',
-        TimetableCourseSpacingMode.wide => '宽',
-      };
+    TimetableCourseSpacingMode.narrow => '窄',
+    TimetableCourseSpacingMode.wide => '宽',
+  };
 
   static TimetableCourseSpacingMode fromValue(String? value) {
     return TimetableCourseSpacingMode.values.firstWhere(
@@ -544,14 +487,14 @@ extension TimetableCourseSpacingModeX on TimetableCourseSpacingMode {
 
 extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   String get value => switch (this) {
-        AppUpdateDownloadSource.original => 'original',
-        AppUpdateDownloadSource.mirror => 'mirror',
-      };
+    AppUpdateDownloadSource.original => 'original',
+    AppUpdateDownloadSource.mirror => 'mirror',
+  };
 
   String get label => switch (this) {
-        AppUpdateDownloadSource.original => 'GitHub 原版',
-        AppUpdateDownloadSource.mirror => '国内镜像',
-      };
+    AppUpdateDownloadSource.original => 'GitHub 原版',
+    AppUpdateDownloadSource.mirror => '国内镜像',
+  };
 
   static AppUpdateDownloadSource fromValue(String? value) {
     return AppUpdateDownloadSource.values.firstWhere(
@@ -563,25 +506,25 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
 
 extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
   String get value => switch (this) {
-        AppUpdateMirrorPreset.ghfast => 'ghfast',
-        AppUpdateMirrorPreset.ghproxyCn => 'ghproxy_cn',
-        AppUpdateMirrorPreset.ghLlkk => 'gh_llkk',
-        AppUpdateMirrorPreset.custom => 'custom',
-      };
+    AppUpdateMirrorPreset.ghfast => 'ghfast',
+    AppUpdateMirrorPreset.ghproxyCn => 'ghproxy_cn',
+    AppUpdateMirrorPreset.ghLlkk => 'gh_llkk',
+    AppUpdateMirrorPreset.custom => 'custom',
+  };
 
   String get label => switch (this) {
-        AppUpdateMirrorPreset.ghfast => '默认镜像',
-        AppUpdateMirrorPreset.ghproxyCn => '备用镜像 1',
-        AppUpdateMirrorPreset.ghLlkk => '备用镜像 2',
-        AppUpdateMirrorPreset.custom => '自定义',
-      };
+    AppUpdateMirrorPreset.ghfast => '默认镜像',
+    AppUpdateMirrorPreset.ghproxyCn => '备用镜像 1',
+    AppUpdateMirrorPreset.ghLlkk => '备用镜像 2',
+    AppUpdateMirrorPreset.custom => '自定义',
+  };
 
   String get description => switch (this) {
-        AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
-        AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
-        AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
-        AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
-      };
+    AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+    AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
+  };
 
   bool get usesCustomUrl => this == AppUpdateMirrorPreset.custom;
 
@@ -596,9 +539,7 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     final normalized = _normalizeMirrorUrlPrefixValue(urlPrefix);
     if (normalized.isEmpty ||
         normalized ==
-            _normalizeMirrorUrlPrefixValue(
-              defaultAppUpdateMirrorUrlPrefix,
-            )) {
+            _normalizeMirrorUrlPrefixValue(defaultAppUpdateMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghfast;
     }
     if (normalized ==
@@ -621,9 +562,10 @@ String resolveAppUpdateMirrorUrlPrefix({
     AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
-    AppUpdateMirrorPreset.custom => normalizedCustomUrlPrefix.isEmpty
-        ? defaultAppUpdateMirrorUrlPrefix
-        : normalizedCustomUrlPrefix,
+    AppUpdateMirrorPreset.custom =>
+      normalizedCustomUrlPrefix.isEmpty
+          ? defaultAppUpdateMirrorUrlPrefix
+          : normalizedCustomUrlPrefix,
   };
 }
 
@@ -729,7 +671,8 @@ class LiveDisplaySettings {
       miuiIslandLabelLogoPath: clearMiuiIslandLabelLogoPath
           ? null
           : miuiIslandLabelLogoPath ?? this.miuiIslandLabelLogoPath,
-      miuiIslandLabelLogoCornerRadius: miuiIslandLabelLogoCornerRadius ??
+      miuiIslandLabelLogoCornerRadius:
+          miuiIslandLabelLogoCornerRadius ??
           this.miuiIslandLabelLogoCornerRadius,
       miuiIslandExpandedIconMode:
           miuiIslandExpandedIconMode ?? this.miuiIslandExpandedIconMode,
@@ -744,16 +687,10 @@ class SectionTime {
   final String startTime;
   final String endTime;
 
-  const SectionTime({
-    required this.startTime,
-    required this.endTime,
-  });
+  const SectionTime({required this.startTime, required this.endTime});
 
   Map<String, dynamic> toJson() {
-    return {
-      'startTime': startTime,
-      'endTime': endTime,
-    };
+    return {'startTime': startTime, 'endTime': endTime};
   }
 
   factory SectionTime.fromJson(Map<String, dynamic> json) {
@@ -763,10 +700,7 @@ class SectionTime {
     );
   }
 
-  SectionTime copyWith({
-    String? startTime,
-    String? endTime,
-  }) {
+  SectionTime copyWith({String? startTime, String? endTime}) {
     return SectionTime(
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
@@ -812,6 +746,7 @@ class TimetableSettings {
   final String appLocaleTag;
   final HomeTitleStyle homeTitleStyle;
   final TimetableHomeViewMode timetableHomeViewMode;
+  final BackToCurrentWeekButtonStyle timetableBackToCurrentWeekButtonStyle;
   final int timetableLastViewedDayOfWeek;
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
@@ -916,6 +851,8 @@ class TimetableSettings {
     this.appLocaleTag = '',
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
+    this.timetableBackToCurrentWeekButtonStyle =
+        BackToCurrentWeekButtonStyle.inline,
     this.timetableLastViewedDayOfWeek = 1,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
@@ -1039,6 +976,8 @@ class TimetableSettings {
       appLocaleTag: '',
       homeTitleStyle: HomeTitleStyle.classic,
       timetableHomeViewMode: TimetableHomeViewMode.week,
+      timetableBackToCurrentWeekButtonStyle:
+          BackToCurrentWeekButtonStyle.inline,
       timetableLastViewedDayOfWeek: 1,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
@@ -1148,6 +1087,8 @@ class TimetableSettings {
       'appLocaleTag': appLocaleTag,
       'homeTitleStyle': homeTitleStyle.value,
       'timetableHomeViewMode': timetableHomeViewMode.value,
+      'timetableBackToCurrentWeekButtonStyle':
+          timetableBackToCurrentWeekButtonStyle.value,
       'timetableLastViewedDayOfWeek': timetableLastViewedDayOfWeek,
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
@@ -1240,13 +1181,15 @@ class TimetableSettings {
     }
     final rawAppUpdateMirrorUrlPrefix =
         json['appUpdateMirrorUrlPrefix'] as String? ??
-            defaultAppUpdateMirrorUrlPrefix;
+        defaultAppUpdateMirrorUrlPrefix;
     final rawAppUpdateMirrorPreset = json['appUpdateMirrorPreset'] as String?;
 
     return TimetableSettings(
       sections: rawSections
-          .map((item) =>
-              SectionTime.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) =>
+                SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
       activeTimeSchemeId: json['activeTimeSchemeId'] as String?,
       sectionHeight: (json['sectionHeight'] as num?)?.toDouble() ?? 68,
@@ -1288,9 +1231,9 @@ class TimetableSettings {
       ),
       timetableCourseCardGap:
           (json['timetableCourseCardGap'] as num?)?.toDouble() ??
-              ((json['timetableCourseSpacingMode'] as String?) == 'wide'
-                  ? 2.0
-                  : 1.25),
+          ((json['timetableCourseSpacingMode'] as String?) == 'wide'
+              ? 2.0
+              : 1.25),
       timetableCourseSpacingMode: TimetableCourseSpacingModeX.fromValue(
         json['timetableCourseSpacingMode'] as String?,
       ),
@@ -1305,12 +1248,8 @@ class TimetableSettings {
           (json['widgetHeightAdjustment'] as num?)?.toDouble() ?? -11,
       widgetCornerRadius:
           (json['widgetCornerRadius'] as num?)?.toDouble() ?? 22,
-      appThemeMode: AppThemeModeX.fromValue(
-        json['appThemeMode'] as String?,
-      ),
-      appFontMode: AppFontModeX.fromValue(
-        json['appFontMode'] as String?,
-      ),
+      appThemeMode: AppThemeModeX.fromValue(json['appThemeMode'] as String?),
+      appFontMode: AppFontModeX.fromValue(json['appFontMode'] as String?),
       appLocaleTag: _normalizeAppLocaleTag(
         json['appLocaleTag'] as String? ?? json['appLocaleMode'] as String?,
       ),
@@ -1320,9 +1259,15 @@ class TimetableSettings {
       timetableHomeViewMode: TimetableHomeViewModeX.fromValue(
         json['timetableHomeViewMode'] as String?,
       ),
+      timetableBackToCurrentWeekButtonStyle:
+          BackToCurrentWeekButtonStyleX.fromValue(
+            json['timetableBackToCurrentWeekButtonStyle'] as String?,
+          ),
       timetableLastViewedDayOfWeek:
-          ((json['timetableLastViewedDayOfWeek'] as num?)?.toInt() ?? 1)
-              .clamp(1, 7),
+          ((json['timetableLastViewedDayOfWeek'] as num?)?.toInt() ?? 1).clamp(
+            1,
+            7,
+          ),
       timetableSectionTimeDisplayMode: SectionTimeDisplayModeX.fromValue(
         json['timetableSectionTimeDisplayMode'] as String?,
       ),
@@ -1344,27 +1289,32 @@ class TimetableSettings {
       liveUseShortName: json['liveUseShortName'] as bool? ?? true,
       liveHidePrefixText: json['liveHidePrefixText'] as bool? ?? true,
       liveDuringClassTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
-          json['liveDuringClassTimeDisplayMode'] as String?),
+        json['liveDuringClassTimeDisplayMode'] as String?,
+      ),
       liveEnableMiuiIslandLabelImage:
           json['liveEnableMiuiIslandLabelImage'] as bool? ?? false,
       liveDuringEndShowCourseName:
           json['liveDuringEndShowCourseName'] as bool? ??
-              (json['liveShowCourseName'] as bool? ?? true),
-      liveDuringEndShowLocation: json['liveDuringEndShowLocation'] as bool? ??
+          (json['liveShowCourseName'] as bool? ?? true),
+      liveDuringEndShowLocation:
+          json['liveDuringEndShowLocation'] as bool? ??
           (json['liveShowLocation'] as bool? ?? true),
-      liveDuringEndShowCountdown: json['liveDuringEndShowCountdown'] as bool? ??
+      liveDuringEndShowCountdown:
+          json['liveDuringEndShowCountdown'] as bool? ??
           (json['liveShowCountdown'] as bool? ?? true),
       liveDuringEndCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
         json['liveDuringEndCountdownTextStyle'] as String? ??
             json['liveCountdownTextStyle'] as String?,
       ),
-      liveDuringEndShowStageText: json['liveDuringEndShowStageText'] as bool? ??
+      liveDuringEndShowStageText:
+          json['liveDuringEndShowStageText'] as bool? ??
           (json['liveShowStageText'] as bool? ?? true),
-      liveDuringEndUseShortName: json['liveDuringEndUseShortName'] as bool? ??
+      liveDuringEndUseShortName:
+          json['liveDuringEndUseShortName'] as bool? ??
           (json['liveUseShortName'] as bool? ?? true),
       liveDuringEndHidePrefixText:
           json['liveDuringEndHidePrefixText'] as bool? ??
-              (json['liveHidePrefixText'] as bool? ?? true),
+          (json['liveHidePrefixText'] as bool? ?? true),
       liveDuringEndFollowBeforeClass:
           json['liveDuringEndFollowBeforeClass'] as bool? ?? true,
       liveDuringEndTimeDisplayMode: LiveDuringClassTimeDisplayModeX.fromValue(
@@ -1373,7 +1323,7 @@ class TimetableSettings {
       ),
       liveDuringEndEnableMiuiIslandLabelImage:
           json['liveDuringEndEnableMiuiIslandLabelImage'] as bool? ??
-              (json['liveEnableMiuiIslandLabelImage'] as bool? ?? false),
+          (json['liveEnableMiuiIslandLabelImage'] as bool? ?? false),
       liveHideFromRecents: json['liveHideFromRecents'] as bool? ?? false,
       liveEnableLocalDiagnostics:
           json['liveEnableLocalDiagnostics'] as bool? ?? false,
@@ -1401,7 +1351,7 @@ class TimetableSettings {
           json['liveMiuiIslandLabelLogoPath'] as String?,
       liveMiuiIslandLabelLogoCornerRadius:
           (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)?.toDouble() ??
-              8,
+          8,
       liveMiuiIslandExpandedIconMode: MiuiIslandExpandedIconModeX.fromValue(
         json['liveMiuiIslandExpandedIconMode'] as String?,
       ),
@@ -1417,43 +1367,42 @@ class TimetableSettings {
       ),
       liveDuringEndMiuiIslandLabelFontColor:
           json['liveDuringEndMiuiIslandLabelFontColor'] as String? ??
-              (json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF'),
+          (json['liveMiuiIslandLabelFontColor'] as String? ?? '#FFFFFF'),
       liveDuringEndMiuiIslandLabelFontWeight:
           MiuiIslandLabelFontWeightX.fromValue(
-        json['liveDuringEndMiuiIslandLabelFontWeight'] as String? ??
-            json['liveMiuiIslandLabelFontWeight'] as String?,
-      ),
+            json['liveDuringEndMiuiIslandLabelFontWeight'] as String? ??
+                json['liveMiuiIslandLabelFontWeight'] as String?,
+          ),
       liveDuringEndMiuiIslandLabelRenderQuality:
           MiuiIslandLabelRenderQualityX.fromValue(
-        json['liveDuringEndMiuiIslandLabelRenderQuality'] as String? ??
-            json['liveMiuiIslandLabelRenderQuality'] as String?,
-      ),
+            json['liveDuringEndMiuiIslandLabelRenderQuality'] as String? ??
+                json['liveMiuiIslandLabelRenderQuality'] as String?,
+          ),
       liveDuringEndMiuiIslandLabelFontSize:
           (json['liveDuringEndMiuiIslandLabelFontSize'] as num?)?.toDouble() ??
-              ((json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14),
+          ((json['liveMiuiIslandLabelFontSize'] as num?)?.toDouble() ?? 14),
       liveDuringEndMiuiIslandLabelOffsetX:
           (json['liveDuringEndMiuiIslandLabelOffsetX'] as num?)?.toDouble() ??
-              ((json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0),
+          ((json['liveMiuiIslandLabelOffsetX'] as num?)?.toDouble() ?? 0),
       liveDuringEndMiuiIslandLabelOffsetY:
           (json['liveDuringEndMiuiIslandLabelOffsetY'] as num?)?.toDouble() ??
-              ((json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0),
+          ((json['liveMiuiIslandLabelOffsetY'] as num?)?.toDouble() ?? 0),
       liveDuringEndMiuiIslandLabelLogoPath:
           json['liveDuringEndMiuiIslandLabelLogoPath'] as String? ??
-              json['liveMiuiIslandLabelLogoPath'] as String?,
+          json['liveMiuiIslandLabelLogoPath'] as String?,
       liveDuringEndMiuiIslandLabelLogoCornerRadius:
           (json['liveDuringEndMiuiIslandLabelLogoCornerRadius'] as num?)
-                  ?.toDouble() ??
-              (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)
-                  ?.toDouble() ??
-              8,
+              ?.toDouble() ??
+          (json['liveMiuiIslandLabelLogoCornerRadius'] as num?)?.toDouble() ??
+          8,
       liveDuringEndMiuiIslandExpandedIconMode:
           MiuiIslandExpandedIconModeX.fromValue(
-        json['liveDuringEndMiuiIslandExpandedIconMode'] as String? ??
-            json['liveMiuiIslandExpandedIconMode'] as String?,
-      ),
+            json['liveDuringEndMiuiIslandExpandedIconMode'] as String? ??
+                json['liveMiuiIslandExpandedIconMode'] as String?,
+          ),
       liveDuringEndMiuiIslandExpandedIconPath:
           json['liveDuringEndMiuiIslandExpandedIconPath'] as String? ??
-              json['liveMiuiIslandExpandedIconPath'] as String?,
+          json['liveMiuiIslandExpandedIconPath'] as String?,
       liveShowBeforeClassMinutes:
           (json['liveShowBeforeClassMinutes'] as num?)?.toInt() ?? 20,
       liveClassReminderStartMinutes:
@@ -1529,6 +1478,7 @@ class TimetableSettings {
     String? appLocaleTag,
     HomeTitleStyle? homeTitleStyle,
     TimetableHomeViewMode? timetableHomeViewMode,
+    BackToCurrentWeekButtonStyle? timetableBackToCurrentWeekButtonStyle,
     int? timetableLastViewedDayOfWeek,
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
@@ -1611,13 +1561,15 @@ class TimetableSettings {
       semesterWeekCount: semesterWeekCount ?? this.semesterWeekCount,
       semesterStartDate: semesterStartDate ?? this.semesterStartDate,
       timetableShowCurrentWeekCourses: true,
-      timetableShowNonCurrentWeekCourses: timetableShowNonCurrentWeekCourses ??
+      timetableShowNonCurrentWeekCourses:
+          timetableShowNonCurrentWeekCourses ??
           this.timetableShowNonCurrentWeekCourses,
       showConflictBadgeOnTimetable:
           showConflictBadgeOnTimetable ?? this.showConflictBadgeOnTimetable,
-      timetableConflictCourseOpacity: (timetableConflictCourseOpacity ??
-              this.timetableConflictCourseOpacity)
-          .clamp(0.2, 1.0),
+      timetableConflictCourseOpacity:
+          (timetableConflictCourseOpacity ??
+                  this.timetableConflictCourseOpacity)
+              .clamp(0.2, 1.0),
       courseCardShowName: courseCardShowName ?? this.courseCardShowName,
       courseCardShowTeacher:
           courseCardShowTeacher ?? this.courseCardShowTeacher,
@@ -1655,10 +1607,14 @@ class TimetableSettings {
       homeTitleStyle: homeTitleStyle ?? this.homeTitleStyle,
       timetableHomeViewMode:
           timetableHomeViewMode ?? this.timetableHomeViewMode,
+      timetableBackToCurrentWeekButtonStyle:
+          timetableBackToCurrentWeekButtonStyle ??
+          this.timetableBackToCurrentWeekButtonStyle,
       timetableLastViewedDayOfWeek:
           (timetableLastViewedDayOfWeek ?? this.timetableLastViewedDayOfWeek)
               .clamp(1, 7),
-      timetableSectionTimeDisplayMode: timetableSectionTimeDisplayMode ??
+      timetableSectionTimeDisplayMode:
+          timetableSectionTimeDisplayMode ??
           this.timetableSectionTimeDisplayMode,
       timetableHideWeekends:
           timetableHideWeekends ?? this.timetableHideWeekends,
@@ -1676,7 +1632,8 @@ class TimetableSettings {
       liveEnableBeforeEnd: liveEnableBeforeEnd ?? this.liveEnableBeforeEnd,
       livePromoteDuringClass:
           livePromoteDuringClass ?? this.livePromoteDuringClass,
-      liveShowDuringClassNotification: liveShowDuringClassNotification ??
+      liveShowDuringClassNotification:
+          liveShowDuringClassNotification ??
           this.liveShowDuringClassNotification,
       liveUseShortName: liveUseShortName ?? this.liveUseShortName,
       liveHidePrefixText: liveHidePrefixText ?? this.liveHidePrefixText,
@@ -1690,7 +1647,8 @@ class TimetableSettings {
           liveDuringEndShowLocation ?? this.liveDuringEndShowLocation,
       liveDuringEndShowCountdown:
           liveDuringEndShowCountdown ?? this.liveDuringEndShowCountdown,
-      liveDuringEndCountdownTextStyle: liveDuringEndCountdownTextStyle ??
+      liveDuringEndCountdownTextStyle:
+          liveDuringEndCountdownTextStyle ??
           this.liveDuringEndCountdownTextStyle,
       liveDuringEndShowStageText:
           liveDuringEndShowStageText ?? this.liveDuringEndShowStageText,
@@ -1704,7 +1662,7 @@ class TimetableSettings {
           liveDuringEndTimeDisplayMode ?? this.liveDuringEndTimeDisplayMode,
       liveDuringEndEnableMiuiIslandLabelImage:
           liveDuringEndEnableMiuiIslandLabelImage ??
-              this.liveDuringEndEnableMiuiIslandLabelImage,
+          this.liveDuringEndEnableMiuiIslandLabelImage,
       liveHideFromRecents: liveHideFromRecents ?? this.liveHideFromRecents,
       liveEnableLocalDiagnostics:
           liveEnableLocalDiagnostics ?? this.liveEnableLocalDiagnostics,
@@ -1716,7 +1674,8 @@ class TimetableSettings {
           liveMiuiIslandLabelFontColor ?? this.liveMiuiIslandLabelFontColor,
       liveMiuiIslandLabelFontWeight:
           liveMiuiIslandLabelFontWeight ?? this.liveMiuiIslandLabelFontWeight,
-      liveMiuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality ??
+      liveMiuiIslandLabelRenderQuality:
+          liveMiuiIslandLabelRenderQuality ??
           this.liveMiuiIslandLabelRenderQuality,
       liveMiuiIslandLabelFontSize:
           liveMiuiIslandLabelFontSize ?? this.liveMiuiIslandLabelFontSize,
@@ -1729,57 +1688,59 @@ class TimetableSettings {
           : liveMiuiIslandLabelLogoPath ?? this.liveMiuiIslandLabelLogoPath,
       liveMiuiIslandLabelLogoCornerRadius:
           liveMiuiIslandLabelLogoCornerRadius ??
-              this.liveMiuiIslandLabelLogoCornerRadius,
+          this.liveMiuiIslandLabelLogoCornerRadius,
       liveMiuiIslandExpandedIconMode:
           liveMiuiIslandExpandedIconMode ?? this.liveMiuiIslandExpandedIconMode,
       liveMiuiIslandExpandedIconPath: clearLiveMiuiIslandExpandedIconPath
           ? null
           : liveMiuiIslandExpandedIconPath ??
-              this.liveMiuiIslandExpandedIconPath,
-      liveDuringEndMiuiIslandLabelStyle: liveDuringEndMiuiIslandLabelStyle ??
+                this.liveMiuiIslandExpandedIconPath,
+      liveDuringEndMiuiIslandLabelStyle:
+          liveDuringEndMiuiIslandLabelStyle ??
           this.liveDuringEndMiuiIslandLabelStyle,
       liveDuringEndMiuiIslandLabelContent:
           liveDuringEndMiuiIslandLabelContent ??
-              this.liveDuringEndMiuiIslandLabelContent,
+          this.liveDuringEndMiuiIslandLabelContent,
       liveDuringEndMiuiIslandLabelFontColor:
           liveDuringEndMiuiIslandLabelFontColor ??
-              this.liveDuringEndMiuiIslandLabelFontColor,
+          this.liveDuringEndMiuiIslandLabelFontColor,
       liveDuringEndMiuiIslandLabelFontWeight:
           liveDuringEndMiuiIslandLabelFontWeight ??
-              this.liveDuringEndMiuiIslandLabelFontWeight,
+          this.liveDuringEndMiuiIslandLabelFontWeight,
       liveDuringEndMiuiIslandLabelRenderQuality:
           liveDuringEndMiuiIslandLabelRenderQuality ??
-              this.liveDuringEndMiuiIslandLabelRenderQuality,
+          this.liveDuringEndMiuiIslandLabelRenderQuality,
       liveDuringEndMiuiIslandLabelFontSize:
           liveDuringEndMiuiIslandLabelFontSize ??
-              this.liveDuringEndMiuiIslandLabelFontSize,
+          this.liveDuringEndMiuiIslandLabelFontSize,
       liveDuringEndMiuiIslandLabelOffsetX:
           liveDuringEndMiuiIslandLabelOffsetX ??
-              this.liveDuringEndMiuiIslandLabelOffsetX,
+          this.liveDuringEndMiuiIslandLabelOffsetX,
       liveDuringEndMiuiIslandLabelOffsetY:
           liveDuringEndMiuiIslandLabelOffsetY ??
-              this.liveDuringEndMiuiIslandLabelOffsetY,
+          this.liveDuringEndMiuiIslandLabelOffsetY,
       liveDuringEndMiuiIslandLabelLogoPath:
           clearLiveDuringEndMiuiIslandLabelLogoPath
-              ? null
-              : liveDuringEndMiuiIslandLabelLogoPath ??
-                  this.liveDuringEndMiuiIslandLabelLogoPath,
+          ? null
+          : liveDuringEndMiuiIslandLabelLogoPath ??
+                this.liveDuringEndMiuiIslandLabelLogoPath,
       liveDuringEndMiuiIslandLabelLogoCornerRadius:
           liveDuringEndMiuiIslandLabelLogoCornerRadius ??
-              this.liveDuringEndMiuiIslandLabelLogoCornerRadius,
+          this.liveDuringEndMiuiIslandLabelLogoCornerRadius,
       liveDuringEndMiuiIslandExpandedIconMode:
           liveDuringEndMiuiIslandExpandedIconMode ??
-              this.liveDuringEndMiuiIslandExpandedIconMode,
+          this.liveDuringEndMiuiIslandExpandedIconMode,
       liveDuringEndMiuiIslandExpandedIconPath:
           clearLiveDuringEndMiuiIslandExpandedIconPath
-              ? null
-              : liveDuringEndMiuiIslandExpandedIconPath ??
-                  this.liveDuringEndMiuiIslandExpandedIconPath,
+          ? null
+          : liveDuringEndMiuiIslandExpandedIconPath ??
+                this.liveDuringEndMiuiIslandExpandedIconPath,
       liveShowBeforeClassMinutes:
           liveShowBeforeClassMinutes ?? this.liveShowBeforeClassMinutes,
       liveClassReminderStartMinutes:
           liveClassReminderStartMinutes ?? this.liveClassReminderStartMinutes,
-      liveEndSecondsCountdownThreshold: liveEndSecondsCountdownThreshold ??
+      liveEndSecondsCountdownThreshold:
+          liveEndSecondsCountdownThreshold ??
           this.liveEndSecondsCountdownThreshold,
       liveTimeCorrectionSeconds:
           liveTimeCorrectionSeconds ?? this.liveTimeCorrectionSeconds,
@@ -1806,60 +1767,57 @@ class TimetableSettings {
   int get sectionCount => sections.length;
 
   LiveDisplaySettings get beforeClassDisplaySettings => LiveDisplaySettings(
-        showCourseName: liveShowCourseName,
-        showLocation: liveShowLocation,
-        showCountdown: liveShowCountdown,
-        countdownTextStyle: liveCountdownTextStyle,
-        showStageText: liveShowStageText,
-        useShortName: liveUseShortName,
-        hidePrefixText: liveHidePrefixText,
-        duringClassTimeDisplayMode: liveDuringClassTimeDisplayMode,
-        enableMiuiIslandLabelImage: liveEnableMiuiIslandLabelImage,
-        miuiIslandLabelStyle: liveMiuiIslandLabelStyle,
-        miuiIslandLabelContent: liveMiuiIslandLabelContent,
-        miuiIslandLabelFontColor: liveMiuiIslandLabelFontColor,
-        miuiIslandLabelFontWeight: liveMiuiIslandLabelFontWeight,
-        miuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality,
-        miuiIslandLabelFontSize: liveMiuiIslandLabelFontSize,
-        miuiIslandLabelOffsetX: liveMiuiIslandLabelOffsetX,
-        miuiIslandLabelOffsetY: liveMiuiIslandLabelOffsetY,
-        miuiIslandLabelLogoPath: liveMiuiIslandLabelLogoPath,
-        miuiIslandLabelLogoCornerRadius: liveMiuiIslandLabelLogoCornerRadius,
-        miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
-        miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
-      );
+    showCourseName: liveShowCourseName,
+    showLocation: liveShowLocation,
+    showCountdown: liveShowCountdown,
+    countdownTextStyle: liveCountdownTextStyle,
+    showStageText: liveShowStageText,
+    useShortName: liveUseShortName,
+    hidePrefixText: liveHidePrefixText,
+    duringClassTimeDisplayMode: liveDuringClassTimeDisplayMode,
+    enableMiuiIslandLabelImage: liveEnableMiuiIslandLabelImage,
+    miuiIslandLabelStyle: liveMiuiIslandLabelStyle,
+    miuiIslandLabelContent: liveMiuiIslandLabelContent,
+    miuiIslandLabelFontColor: liveMiuiIslandLabelFontColor,
+    miuiIslandLabelFontWeight: liveMiuiIslandLabelFontWeight,
+    miuiIslandLabelRenderQuality: liveMiuiIslandLabelRenderQuality,
+    miuiIslandLabelFontSize: liveMiuiIslandLabelFontSize,
+    miuiIslandLabelOffsetX: liveMiuiIslandLabelOffsetX,
+    miuiIslandLabelOffsetY: liveMiuiIslandLabelOffsetY,
+    miuiIslandLabelLogoPath: liveMiuiIslandLabelLogoPath,
+    miuiIslandLabelLogoCornerRadius: liveMiuiIslandLabelLogoCornerRadius,
+    miuiIslandExpandedIconMode: liveMiuiIslandExpandedIconMode,
+    miuiIslandExpandedIconPath: liveMiuiIslandExpandedIconPath,
+  );
 
   LiveDisplaySettings get duringEndDisplaySettings =>
       liveDuringEndFollowBeforeClass
-          ? beforeClassDisplaySettings
-          : LiveDisplaySettings(
-              showCourseName: liveDuringEndShowCourseName,
-              showLocation: liveDuringEndShowLocation,
-              showCountdown: liveDuringEndShowCountdown,
-              countdownTextStyle: liveDuringEndCountdownTextStyle,
-              showStageText: liveDuringEndShowStageText,
-              useShortName: liveDuringEndUseShortName,
-              hidePrefixText: liveDuringEndHidePrefixText,
-              duringClassTimeDisplayMode: liveDuringEndTimeDisplayMode,
-              enableMiuiIslandLabelImage:
-                  liveDuringEndEnableMiuiIslandLabelImage,
-              miuiIslandLabelStyle: liveDuringEndMiuiIslandLabelStyle,
-              miuiIslandLabelContent: liveDuringEndMiuiIslandLabelContent,
-              miuiIslandLabelFontColor: liveDuringEndMiuiIslandLabelFontColor,
-              miuiIslandLabelFontWeight: liveDuringEndMiuiIslandLabelFontWeight,
-              miuiIslandLabelRenderQuality:
-                  liveDuringEndMiuiIslandLabelRenderQuality,
-              miuiIslandLabelFontSize: liveDuringEndMiuiIslandLabelFontSize,
-              miuiIslandLabelOffsetX: liveDuringEndMiuiIslandLabelOffsetX,
-              miuiIslandLabelOffsetY: liveDuringEndMiuiIslandLabelOffsetY,
-              miuiIslandLabelLogoPath: liveDuringEndMiuiIslandLabelLogoPath,
-              miuiIslandLabelLogoCornerRadius:
-                  liveDuringEndMiuiIslandLabelLogoCornerRadius,
-              miuiIslandExpandedIconMode:
-                  liveDuringEndMiuiIslandExpandedIconMode,
-              miuiIslandExpandedIconPath:
-                  liveDuringEndMiuiIslandExpandedIconPath,
-            );
+      ? beforeClassDisplaySettings
+      : LiveDisplaySettings(
+          showCourseName: liveDuringEndShowCourseName,
+          showLocation: liveDuringEndShowLocation,
+          showCountdown: liveDuringEndShowCountdown,
+          countdownTextStyle: liveDuringEndCountdownTextStyle,
+          showStageText: liveDuringEndShowStageText,
+          useShortName: liveDuringEndUseShortName,
+          hidePrefixText: liveDuringEndHidePrefixText,
+          duringClassTimeDisplayMode: liveDuringEndTimeDisplayMode,
+          enableMiuiIslandLabelImage: liveDuringEndEnableMiuiIslandLabelImage,
+          miuiIslandLabelStyle: liveDuringEndMiuiIslandLabelStyle,
+          miuiIslandLabelContent: liveDuringEndMiuiIslandLabelContent,
+          miuiIslandLabelFontColor: liveDuringEndMiuiIslandLabelFontColor,
+          miuiIslandLabelFontWeight: liveDuringEndMiuiIslandLabelFontWeight,
+          miuiIslandLabelRenderQuality:
+              liveDuringEndMiuiIslandLabelRenderQuality,
+          miuiIslandLabelFontSize: liveDuringEndMiuiIslandLabelFontSize,
+          miuiIslandLabelOffsetX: liveDuringEndMiuiIslandLabelOffsetX,
+          miuiIslandLabelOffsetY: liveDuringEndMiuiIslandLabelOffsetY,
+          miuiIslandLabelLogoPath: liveDuringEndMiuiIslandLabelLogoPath,
+          miuiIslandLabelLogoCornerRadius:
+              liveDuringEndMiuiIslandLabelLogoCornerRadius,
+          miuiIslandExpandedIconMode: liveDuringEndMiuiIslandExpandedIconMode,
+          miuiIslandExpandedIconPath: liveDuringEndMiuiIslandExpandedIconPath,
+        );
 
   TimetableSettings copyWithBeforeClassDisplaySettings(
     LiveDisplaySettings settings, {

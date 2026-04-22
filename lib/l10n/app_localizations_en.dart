@@ -2749,6 +2749,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get layoutTimeColumnWidthLabel => 'Time column width';
 
   @override
+  String get layoutBackToCurrentWeekButtonStyleLabel =>
+      '\"Back to current week\" button style';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleHelper =>
+      'Defaults to the current inline style, or switch to a small floating button in the bottom-right of week view.';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleInline =>
+      'Inline in time column';
+
+  @override
+  String get layoutBackToCurrentWeekButtonStyleFloating =>
+      'Floating bottom-right';
+
+  @override
   String layoutCourseCardGapLabel(String value) {
     return 'Course card spacing $value';
   }
