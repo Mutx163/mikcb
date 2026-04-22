@@ -4763,6 +4763,30 @@ abstract class AppLocalizations {
   /// **'时间栏宽度'**
   String get layoutTimeColumnWidthLabel;
 
+  /// No description provided for @layoutBackToCurrentWeekButtonStyleLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'“回本周”按钮样式'**
+  String get layoutBackToCurrentWeekButtonStyleLabel;
+
+  /// No description provided for @layoutBackToCurrentWeekButtonStyleHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认保持现在的内嵌样式；也可以改成周视图右下角的小型悬浮按钮。'**
+  String get layoutBackToCurrentWeekButtonStyleHelper;
+
+  /// No description provided for @layoutBackToCurrentWeekButtonStyleInline.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间栏内嵌'**
+  String get layoutBackToCurrentWeekButtonStyleInline;
+
+  /// No description provided for @layoutBackToCurrentWeekButtonStyleFloating.
+  ///
+  /// In zh, this message translates to:
+  /// **'右下角悬浮'**
+  String get layoutBackToCurrentWeekButtonStyleFloating;
+
   /// No description provided for @layoutCourseCardGapLabel.
   ///
   /// In zh, this message translates to:

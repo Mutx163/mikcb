@@ -1096,6 +1096,46 @@ void main() {
     expect(provider.currentWeek, 7);
   });
 
+  testWidgets('floating back to current week button jumps in one action', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart.subtract(const Duration(days: 42)),
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+        timetableBackToCurrentWeekButtonStyle:
+            BackToCurrentWeekButtonStyle.floating,
+      ),
+    );
+    await provider.setCurrentWeek(5);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableScreen(enableUpdateCheck: false)),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    expect(
+      find.byKey(const ValueKey('back-to-current-week-button')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('back-to-current-week-button')));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(provider.currentWeek, 7);
+  });
+
   testWidgets(
     'resume refreshes temporal context without resetting viewed week',
     (tester) async {

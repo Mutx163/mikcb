@@ -1466,6 +1466,10 @@
   "layoutEnableHapticsSubtitle": "關閉後，頁码切换等交互不再触發輕微震動。",
   "layoutTimeColumnDisplayLabel": "首頁時間列顯示",
   "layoutTimeColumnWidthLabel": "時間栏宽度",
+  "layoutBackToCurrentWeekButtonStyleLabel": "「返回本週」按鈕樣式",
+  "layoutBackToCurrentWeekButtonStyleHelper": "預設維持現在的內嵌樣式；也可以改成周視圖右下角的小型懸浮按鈕。",
+  "layoutBackToCurrentWeekButtonStyleInline": "時間欄內嵌",
+  "layoutBackToCurrentWeekButtonStyleFloating": "右下角懸浮",
   "layoutCourseCardGapLabel": "課程卡片間距 {value}",
   "@layoutCourseCardGapLabel": {
     "placeholders": {

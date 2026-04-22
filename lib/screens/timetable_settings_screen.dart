@@ -125,9 +125,7 @@ class TimetableSettingsScreen extends StatelessWidget {
         }
 
         return Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.settingsTitle),
-          ),
+          appBar: AppBar(title: Text(l10n.settingsTitle)),
           body: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -279,9 +277,9 @@ class TimetableSettingsScreen extends StatelessWidget {
     if (!context.mounted || message == null) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _syncCurrentWeek(BuildContext context) async {
@@ -307,10 +305,7 @@ class TimetableSettingsScreen extends StatelessWidget {
           child: ListView(
             shrinkWrap: true,
             children: [
-              const ListTile(
-                title: null,
-                subtitle: null,
-              ),
+              const ListTile(title: null, subtitle: null),
               ListTile(
                 title: Text(
                   l10n.selectSemesterWeekCountTitle,
@@ -345,9 +340,9 @@ class TimetableSettingsScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
 
@@ -415,7 +410,9 @@ class _SemesterOverviewCard extends StatelessWidget {
                     children: [
                       Text(
                         l10n.semesterOverviewCurrentWeek(
-                            currentWeek, semesterWeekCount),
+                          currentWeek,
+                          semesterWeekCount,
+                        ),
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -425,7 +422,8 @@ class _SemesterOverviewCard extends StatelessWidget {
                         semesterStartDate == null
                             ? l10n.semesterStartUnset
                             : l10n.semesterStartSet(
-                                _formatDate(semesterStartDate!)),
+                                _formatDate(semesterStartDate!),
+                              ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
@@ -453,8 +451,9 @@ class _SemesterOverviewCard extends StatelessWidget {
                   icon: const Icon(Icons.event_outlined),
                   label: Text(
                     semesterStartDate == null
-                        ? AppLocalizations.of(context)!
-                            .setSemesterStartDateAction
+                        ? AppLocalizations.of(
+                            context,
+                          )!.setSemesterStartDateAction
                         : AppLocalizations.of(context)!.semesterStartDateAction,
                   ),
                 ),
@@ -469,8 +468,9 @@ class _SemesterOverviewCard extends StatelessWidget {
                   ),
                   onPressed: onSyncCurrentWeek,
                   icon: const Icon(Icons.sync_outlined),
-                  label:
-                      Text(AppLocalizations.of(context)!.syncCurrentWeekAction),
+                  label: Text(
+                    AppLocalizations.of(context)!.syncCurrentWeekAction,
+                  ),
                 ),
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
@@ -484,8 +484,9 @@ class _SemesterOverviewCard extends StatelessWidget {
                   onPressed: onPickSemesterWeekCount,
                   icon: const Icon(Icons.view_week_outlined),
                   label: Text(
-                    AppLocalizations.of(context)!
-                        .semesterWeekCountAction(semesterWeekCount),
+                    AppLocalizations.of(
+                      context,
+                    )!.semesterWeekCountAction(semesterWeekCount),
                   ),
                 ),
               ],
@@ -562,9 +563,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
         : _draft.themeSeedColor;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.appearanceTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.appearanceTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -584,10 +583,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   const SizedBox(height: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainer
-                          .withValues(alpha: 0.82),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surfaceContainer.withValues(alpha: 0.82),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     padding: const EdgeInsets.all(12),
@@ -625,19 +623,18 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                           child: Container(
                             height: 72,
                             decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .surface
-                                  .withValues(alpha: 0.72),
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.surface.withValues(alpha: 0.72),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             alignment: Alignment.center,
                             child: Text(
                               l10n.timetableBackgroundPreview,
                               style: TextStyle(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -786,9 +783,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                       selected: _draft.timetablePageBackgroundColor == color,
                       onTap: () {
                         _updateDraft(
-                          _draft.copyWith(
-                            timetablePageBackgroundColor: color,
-                          ),
+                          _draft.copyWith(timetablePageBackgroundColor: color),
                         );
                       },
                     ),
@@ -806,9 +801,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   value: _draft.timetableUseUnifiedCardColor,
                   onChanged: (value) {
                     _updateDraft(
-                      _draft.copyWith(
-                        timetableUseUnifiedCardColor: value,
-                      ),
+                      _draft.copyWith(timetableUseUnifiedCardColor: value),
                     );
                   },
                 ),
@@ -878,9 +871,9 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
         _draft = provider.settings;
       });
@@ -909,10 +902,7 @@ List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   final seen = <String>{''};
   final items = <DropdownMenuItem<String>>[
-    DropdownMenuItem<String>(
-      value: '',
-      child: Text(l10n.languageModeSystem),
-    ),
+    DropdownMenuItem<String>(value: '', child: Text(l10n.languageModeSystem)),
   ];
   for (final locale in AppLocalizations.supportedLocales) {
     final tag = locale.countryCode?.isNotEmpty == true
@@ -992,7 +982,9 @@ String _homeTitleStyleDescription(BuildContext context, HomeTitleStyle style) {
 }
 
 String _widgetBackgroundStyleLabel(
-    BuildContext context, WidgetBackgroundStyle style) {
+  BuildContext context,
+  WidgetBackgroundStyle style,
+) {
   final l10n = AppLocalizations.of(context)!;
   return switch (style) {
     WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
@@ -1002,7 +994,9 @@ String _widgetBackgroundStyleLabel(
 }
 
 String _homeWidgetTargetLabel(
-    BuildContext context, HomeWidgetPinTarget target) {
+  BuildContext context,
+  HomeWidgetPinTarget target,
+) {
   final l10n = AppLocalizations.of(context)!;
   return switch (target) {
     HomeWidgetPinTarget.compact22 => l10n.homeWidgetTargetCompact22,
@@ -1061,10 +1055,7 @@ class _HomeTitleStylePreview extends StatelessWidget {
         color: colorScheme.surfaceContainer.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(18),
       ),
-      child: Align(
-        alignment: Alignment.center,
-        child: child,
-      ),
+      child: Align(alignment: Alignment.center, child: child),
     );
   }
 }
@@ -1088,15 +1079,15 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final beforeClassSummary =
-        _liveDisplaySummary(context, _draft.beforeClassDisplaySettings);
+    final beforeClassSummary = _liveDisplaySummary(
+      context,
+      _draft.beforeClassDisplaySettings,
+    );
     final duringEndSummary = _draft.liveDuringEndFollowBeforeClass
         ? l10n.followBeforeClassSetting
         : _liveDisplaySummary(context, _draft.duringEndDisplaySettings);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.liveSettingsTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.liveSettingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -1288,8 +1279,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     if (rawLog == null || rawLog.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content:
-                Text(AppLocalizations.of(context)!.liveDiagnosticsUnavailable)),
+          content: Text(
+            AppLocalizations.of(context)!.liveDiagnosticsUnavailable,
+          ),
+        ),
       );
       return;
     }
@@ -1326,8 +1319,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     if (exportPath == null || exportPath.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.liveDiagnosticsNothingToExport)),
+          content: Text(
+            AppLocalizations.of(context)!.liveDiagnosticsNothingToExport,
+          ),
+        ),
       );
       return;
     }
@@ -1390,8 +1385,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     final switches = _debugSectionMap(_debugStatus?['switches']);
     final display = _debugSectionMap(_debugStatus?['display']);
     final notification = _debugSectionMap(_debugStatus?['notification']);
-    final recentDiagnostics =
-        _debugSectionMap(_debugStatus?['recentDiagnostics']);
+    final recentDiagnostics = _debugSectionMap(
+      _debugStatus?['recentDiagnostics'],
+    );
 
     _debugL10nContext = context;
     final serviceRunning = summary['serviceRunning'] == true;
@@ -1421,7 +1417,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   onPressed: () async {
                     await _showTestOptions(context);
                     await Future<void>.delayed(
-                        const Duration(milliseconds: 300));
+                      const Duration(milliseconds: 300),
+                    );
                     await _refreshDebugStatus(showLoading: true);
                   },
                   icon: const Icon(Icons.science_outlined),
@@ -1481,17 +1478,18 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           ? Icons.verified_outlined
                           : Icons.warning_amber_rounded,
                       label: statusText,
-                      color:
-                          isActuallyPromotable ? Colors.green : Colors.orange,
+                      color: isActuallyPromotable
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
                   l10n.liveTestingNoIslandReasonTitle,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -1519,12 +1517,15 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Icon(Icons.refresh_rounded),
-                            label: Text(_loadingDebugStatus
-                                ? l10n.liveTestingRefreshing
-                                : l10n.liveTestingRefreshAction),
+                            label: Text(
+                              _loadingDebugStatus
+                                  ? l10n.liveTestingRefreshing
+                                  : l10n.liveTestingRefreshAction,
+                            ),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: _exportingDiagnostics
@@ -1535,12 +1536,15 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                                     width: 16,
                                     height: 16,
                                     child: CircularProgressIndicator(
-                                        strokeWidth: 2),
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Icon(Icons.ios_share_rounded),
-                            label: Text(_exportingDiagnostics
-                                ? l10n.liveTestingExporting
-                                : l10n.liveTestingExportAction),
+                            label: Text(
+                              _exportingDiagnostics
+                                  ? l10n.liveTestingExporting
+                                  : l10n.liveTestingExportAction,
+                            ),
                           ),
                         ],
                       ),
@@ -1557,7 +1561,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                         subtitle: Text(
                           _autoRefreshEnabled
                               ? l10n.liveTestingAutoRefreshOn(
-                                  _autoRefreshInterval.inSeconds)
+                                  _autoRefreshInterval.inSeconds,
+                                )
                               : l10n.liveTestingAutoRefreshOff,
                         ),
                       ),
@@ -1574,29 +1579,44 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           const SizedBox(height: 16),
           if (_debugStatus != null) ...[
             _DebugSectionCard(
-                title: l10n.liveTestingSectionEnvironment, data: environment),
+              title: l10n.liveTestingSectionEnvironment,
+              data: environment,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionService, data: service),
+              title: l10n.liveTestingSectionService,
+              data: service,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionCourse, data: course),
+              title: l10n.liveTestingSectionCourse,
+              data: course,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionTiming, data: timing),
+              title: l10n.liveTestingSectionTiming,
+              data: timing,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionSwitches, data: switches),
+              title: l10n.liveTestingSectionSwitches,
+              data: switches,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionDisplay, data: display),
+              title: l10n.liveTestingSectionDisplay,
+              data: display,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionNotification, data: notification),
+              title: l10n.liveTestingSectionNotification,
+              data: notification,
+            ),
             const SizedBox(height: 16),
             _DebugSectionCard(
-                title: l10n.liveTestingSectionRecentLogs,
-                data: recentDiagnostics),
+              title: l10n.liveTestingSectionRecentLogs,
+              data: recentDiagnostics,
+            ),
             const SizedBox(height: 16),
             _SettingsSectionCard(
               title: l10n.liveTestingRawDataTitle,
@@ -1610,9 +1630,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   SelectableText(
                     rawDebugJson,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          height: 1.4,
-                          fontFamily: 'monospace',
-                        ),
+                      height: 1.4,
+                      fontFamily: 'monospace',
+                    ),
                   ),
                 ],
               ),
@@ -1627,8 +1647,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               runSpacing: 12,
               children: [
                 FilledButton.tonalIcon(
-                  onPressed:
-                      _clearingDiagnostics ? null : _clearLiveDiagnostics,
+                  onPressed: _clearingDiagnostics
+                      ? null
+                      : _clearLiveDiagnostics,
                   icon: _clearingDiagnostics
                       ? const SizedBox(
                           width: 16,
@@ -1636,9 +1657,11 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.delete_outline_rounded),
-                  label: Text(_clearingDiagnostics
-                      ? l10n.liveTestingClearingLogs
-                      : l10n.liveTestingClearLogsAction),
+                  label: Text(
+                    _clearingDiagnostics
+                        ? l10n.liveTestingClearingLogs
+                        : l10n.liveTestingClearLogsAction,
+                  ),
                 ),
                 FilledButton.tonalIcon(
                   onPressed: _openLiveDiagnosticsViewer,
@@ -1668,9 +1691,7 @@ BuildContext? _debugL10nContext;
 
 Map<String, dynamic> _debugSectionMap(dynamic value) {
   if (value is Map) {
-    return value.map(
-      (key, item) => MapEntry(key.toString(), item),
-    );
+    return value.map((key, item) => MapEntry(key.toString(), item));
   }
   return const <String, dynamic>{};
 }
@@ -1712,9 +1733,9 @@ class _DebugStatusChip extends StatelessWidget {
           Text(
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1726,17 +1747,15 @@ class _DebugSectionCard extends StatelessWidget {
   final String title;
   final Map<String, dynamic> data;
 
-  const _DebugSectionCard({
-    required this.title,
-    required this.data,
-  });
+  const _DebugSectionCard({required this.title, required this.data});
 
   @override
   Widget build(BuildContext context) {
     return _SettingsSectionCard(
       title: title,
-      subtitle:
-          AppLocalizations.of(context)!.liveTestingCurrentNativeFieldsSubtitle,
+      subtitle: AppLocalizations.of(
+        context,
+      )!.liveTestingCurrentNativeFieldsSubtitle,
       child: Column(
         children: data.entries
             .map(
@@ -1757,10 +1776,7 @@ class _DebugValueRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DebugValueRow({
-    required this.label,
-    required this.value,
-  });
+  const _DebugValueRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1831,10 +1847,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   await liveService.recordDiagnosticEvent(
     'live_update_test_requested',
     'User requested manual live island test notification',
-    extras: {
-      'from': 'settings_screen',
-      'currentWeek': provider.currentWeek,
-    },
+    extras: {'from': 'settings_screen', 'currentWeek': provider.currentWeek},
   );
 
   final selection = provider.getTestLiveActivityCourseSelection(now: now);
@@ -1842,15 +1855,15 @@ Future<void> _showTestOptions(BuildContext context) async {
     await liveService.recordDiagnosticEvent(
       'live_update_test_no_selection',
       'Manual live island test found no eligible course',
-      extras: {
-        'weekday': now.weekday,
-      },
+      extras: {'weekday': now.weekday},
     );
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.liveTestingNoCourseAvailable)),
+        content: Text(
+          AppLocalizations.of(context)!.liveTestingNoCourseAvailable,
+        ),
+      ),
     );
     return;
   }
@@ -1899,8 +1912,9 @@ Future<void> _showTestOptions(BuildContext context) async {
       'live_update_test_suspend_sync',
       'Temporarily suspended scheduled live update sync for manual test',
       extras: {
-        'untilMillis':
-            end.add(const Duration(seconds: 20)).millisecondsSinceEpoch,
+        'untilMillis': end
+            .add(const Duration(seconds: 20))
+            .millisecondsSinceEpoch,
       },
     );
     await liveService.stopLiveUpdate();
@@ -1910,12 +1924,12 @@ Future<void> _showTestOptions(BuildContext context) async {
       startAtMillis: start.millisecondsSinceEpoch,
       endAtMillis: end.millisecondsSinceEpoch,
     );
-    final progressBreakOffsetsMillis =
-        provider.buildLiveProgressBreakOffsetsMillis(
-      baseCourse,
-      startAtMillis: start.millisecondsSinceEpoch,
-      endAtMillis: end.millisecondsSinceEpoch,
-    );
+    final progressBreakOffsetsMillis = provider
+        .buildLiveProgressBreakOffsetsMillis(
+          baseCourse,
+          startAtMillis: start.millisecondsSinceEpoch,
+          endAtMillis: end.millisecondsSinceEpoch,
+        );
     await liveService.recordDiagnosticEvent(
       'live_update_test_starting',
       'Manual live island test is starting native live update',
@@ -1983,8 +1997,10 @@ Future<void> _showTestOptions(BuildContext context) async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.liveTestingNotificationSent)),
+        content: Text(
+          AppLocalizations.of(context)!.liveTestingNotificationSent,
+        ),
+      ),
     );
   } catch (e, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
@@ -1997,8 +2013,8 @@ Future<void> _showTestOptions(BuildContext context) async {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content:
-              Text(AppLocalizations.of(context)!.sendFailedWithError('$e'))),
+        content: Text(AppLocalizations.of(context)!.sendFailedWithError('$e')),
+      ),
     );
   }
 }
@@ -2048,9 +2064,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.homeWidgetSettingsTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.homeWidgetSettingsTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -2079,8 +2093,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     _isCheckingPinSupport
                         ? l10n.homeWidgetCheckingPinSupport
                         : (_canRequestPinWidget
-                            ? l10n.homeWidgetPinSupported
-                            : l10n.homeWidgetPinUnsupported),
+                              ? l10n.homeWidgetPinSupported
+                              : l10n.homeWidgetPinUnsupported),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   const SizedBox(height: 12),
@@ -2125,9 +2139,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     subtitle: Text(l10n.homeWidgetShowLocationSubtitle),
                     value: _draft.widgetShowLocation,
                     onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(widgetShowLocation: value),
-                      );
+                      _updateDraft(_draft.copyWith(widgetShowLocation: value));
                     },
                   ),
                   SwitchListTile(
@@ -2136,9 +2148,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     subtitle: Text(l10n.homeWidgetShowCountdownSubtitle),
                     value: _draft.widgetShowCountdown,
                     onChanged: (value) {
-                      _updateDraft(
-                        _draft.copyWith(widgetShowCountdown: value),
-                      );
+                      _updateDraft(_draft.copyWith(widgetShowCountdown: value));
                     },
                   ),
                   SwitchListTile(
@@ -2163,22 +2173,25 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                             _defaultWidgetHeightAdjustment
                         ? l10n.defaultLabel
                         : (_draft.widgetHeightAdjustment >
-                                _defaultWidgetHeightAdjustment
-                            ? l10n.higherByValue(
-                                (_draft.widgetHeightAdjustment -
-                                        _defaultWidgetHeightAdjustment)
-                                    .toStringAsFixed(0))
-                            : l10n.lowerByValue(
-                                (_defaultWidgetHeightAdjustment -
-                                        _draft.widgetHeightAdjustment)
-                                    .toStringAsFixed(0))),
+                                  _defaultWidgetHeightAdjustment
+                              ? l10n.higherByValue(
+                                  (_draft.widgetHeightAdjustment -
+                                          _defaultWidgetHeightAdjustment)
+                                      .toStringAsFixed(0),
+                                )
+                              : l10n.lowerByValue(
+                                  (_defaultWidgetHeightAdjustment -
+                                          _draft.widgetHeightAdjustment)
+                                      .toStringAsFixed(0),
+                                )),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   Slider(
-                    value: (_draft.widgetHeightAdjustment -
-                            _defaultWidgetHeightAdjustment)
-                        .clamp(-16, 16)
-                        .toDouble(),
+                    value:
+                        (_draft.widgetHeightAdjustment -
+                                _defaultWidgetHeightAdjustment)
+                            .clamp(-16, 16)
+                            .toDouble(),
                     min: -16,
                     max: 16,
                     divisions: 32,
@@ -2294,9 +2307,9 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
         _draft = provider.settings;
       });
@@ -2343,18 +2356,23 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     });
 
     final message = switch (result) {
-      HomeWidgetPinRequestResult.requested => AppLocalizations.of(context)!
-          .homeWidgetPinRequested(_homeWidgetTargetLabel(context, target)),
-      HomeWidgetPinRequestResult.unsupported => AppLocalizations.of(context)!
-          .homeWidgetPinUnsupportedManual(
-              _homeWidgetTargetLabel(context, target)),
-      HomeWidgetPinRequestResult.invalidWidgetType =>
-        AppLocalizations.of(context)!.homeWidgetInvalidType,
-      HomeWidgetPinRequestResult.failed => AppLocalizations.of(context)!
-          .homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.requested => AppLocalizations.of(
+        context,
+      )!.homeWidgetPinRequested(_homeWidgetTargetLabel(context, target)),
+      HomeWidgetPinRequestResult.unsupported =>
+        AppLocalizations.of(context)!.homeWidgetPinUnsupportedManual(
+          _homeWidgetTargetLabel(context, target),
+        ),
+      HomeWidgetPinRequestResult.invalidWidgetType => AppLocalizations.of(
+        context,
+      )!.homeWidgetInvalidType,
+      HomeWidgetPinRequestResult.failed => AppLocalizations.of(
+        context,
+      )!.homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
     };
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -2380,9 +2398,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.layoutSettingsTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.layoutSettingsTitle)),
       body: Column(
         children: [
           Padding(
@@ -2402,7 +2418,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         Text(
                           l10n.layoutDensityTitle,
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         SwitchListTile(
@@ -2487,17 +2505,52 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 16),
+                        DropdownButtonFormField<BackToCurrentWeekButtonStyle>(
+                          initialValue:
+                              _draft.timetableBackToCurrentWeekButtonStyle,
+                          decoration: InputDecoration(
+                            labelText:
+                                l10n.layoutBackToCurrentWeekButtonStyleLabel,
+                            helperText:
+                                l10n.layoutBackToCurrentWeekButtonStyleHelper,
+                            border: const OutlineInputBorder(),
+                          ),
+                          items: BackToCurrentWeekButtonStyle.values
+                              .map(
+                                (value) => DropdownMenuItem(
+                                  value: value,
+                                  child: Text(
+                                    _backToCurrentWeekButtonStyleLabel(
+                                      l10n,
+                                      value,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value == null) return;
+                            _updateDraft(
+                              _draft.copyWith(
+                                timetableBackToCurrentWeekButtonStyle: value,
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
                         Text(
                           l10n.layoutCourseCardGapLabel(
-                              _draft.timetableCourseCardGap.toStringAsFixed(1)),
+                            _draft.timetableCourseCardGap.toStringAsFixed(1),
+                          ),
                         ),
                         Slider(
                           value: _draft.timetableCourseCardGap.clamp(0.0, 3.0),
                           min: 0,
                           max: 3,
                           divisions: 12,
-                          label:
-                              _draft.timetableCourseCardGap.toStringAsFixed(1),
+                          label: _draft.timetableCourseCardGap.toStringAsFixed(
+                            1,
+                          ),
                           onChanged: (value) {
                             _updateDraft(
                               _draft.copyWith(timetableCourseCardGap: value),
@@ -2506,8 +2559,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text(l10n.layoutSectionHeightLabel(
-                            _draft.sectionHeight.toStringAsFixed(0))),
+                        Text(
+                          l10n.layoutSectionHeightLabel(
+                            _draft.sectionHeight.toStringAsFixed(0),
+                          ),
+                        ),
                         Slider(
                           value: _draft.sectionHeight,
                           min: 48,
@@ -2524,8 +2580,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                 },
                         ),
                         const SizedBox(height: 8),
-                        Text(l10n.layoutCompactFontSizeLabel(
-                            _draft.compactFontSize.toStringAsFixed(1))),
+                        Text(
+                          l10n.layoutCompactFontSizeLabel(
+                            _draft.compactFontSize.toStringAsFixed(1),
+                          ),
+                        ),
                         Slider(
                           value: _draft.compactFontSize,
                           min: 7,
@@ -2540,8 +2599,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           },
                         ),
                         const SizedBox(height: 8),
-                        Text(l10n.layoutCourseCardFontSizeLabel(
-                            _draft.courseCardFontSize.toStringAsFixed(1))),
+                        Text(
+                          l10n.layoutCourseCardFontSizeLabel(
+                            _draft.courseCardFontSize.toStringAsFixed(1),
+                          ),
+                        ),
                         Slider(
                           value: _draft.courseCardFontSize,
                           min: 7,
@@ -2569,7 +2631,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         Text(
                           l10n.layoutCourseCardDisplayTitle,
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -2650,9 +2714,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           value: _draft.courseCardShowDescription,
                           onChanged: (value) {
                             _updateDraft(
-                              _draft.copyWith(
-                                courseCardShowDescription: value,
-                              ),
+                              _draft.copyWith(courseCardShowDescription: value),
                             );
                           },
                         ),
@@ -2687,9 +2749,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           onChanged: (value) {
                             if (value == null) return;
                             _updateDraft(
-                              _draft.copyWith(
-                                courseCardVerticalAlign: value,
-                              ),
+                              _draft.copyWith(courseCardVerticalAlign: value),
                             );
                           },
                         ),
@@ -2711,9 +2771,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           onChanged: (value) {
                             if (value == null) return;
                             _updateDraft(
-                              _draft.copyWith(
-                                courseCardHorizontalAlign: value,
-                              ),
+                              _draft.copyWith(courseCardHorizontalAlign: value),
                             );
                           },
                         ),
@@ -2742,8 +2800,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       children: [
                         Text(
                           l10n.layoutConflictOpacityLabel(
-                              (_draft.timetableConflictCourseOpacity * 100)
-                                  .round()),
+                            (_draft.timetableConflictCourseOpacity * 100)
+                                .round(),
+                          ),
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                         const SizedBox(height: 8),
@@ -2782,7 +2841,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                         Text(
                           l10n.homeWidgetDescriptionTitle,
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -2809,7 +2870,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         .skip(preview.baseSection - 1)
         .take(4)
         .toList();
-    final timeColumnWidth = _draft.timetableTimeColumnWidthMode ==
+    final timeColumnWidth =
+        _draft.timetableTimeColumnWidthMode ==
             TimetableTimeColumnWidthMode.narrow
         ? 34.0
         : 40.0;
@@ -2821,165 +2883,259 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final dayWidth = (constraints.maxWidth - timeColumnWidth) /
+          final dayWidth =
+              (constraints.maxWidth - timeColumnWidth) /
               preview.dayTitles.length;
-          return Column(
-            mainAxisSize: MainAxisSize.min,
+          final showsFloatingButton =
+              _draft.timetableBackToCurrentWeekButtonStyle ==
+              BackToCurrentWeekButtonStyle.floating;
+          return Stack(
             children: [
-              Container(
-                height: 50,
-                padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: colorScheme.outlineVariant),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: timeColumnWidth,
-                      child: Center(
-                        child: Text(
-                          l10n.currentWeekCompact(provider.currentWeek),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 50,
+                    padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: colorScheme.outlineVariant),
                       ),
                     ),
-                    for (var dayIndex = 0;
-                        dayIndex < preview.dayTitles.length;
-                        dayIndex++)
-                      SizedBox(
-                        width: dayWidth,
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              preview.dayTitles[dayIndex],
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight:
-                                    preview.visibleDayNumbers[dayIndex] ==
-                                            DateTime.now().weekday
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                color: preview.visibleDayNumbers[dayIndex] ==
-                                        DateTime.now().weekday
-                                    ? colorScheme.primary
-                                    : colorScheme.onSurface,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              _formatPreviewDate(
-                                _previewDateForWeekDay(
-                                  _draft,
-                                  provider.currentWeek,
-                                  preview.visibleDayNumbers[dayIndex],
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: timeColumnWidth,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                l10n.currentWeekCompact(provider.currentWeek),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
-                              style: TextStyle(
-                                fontSize: 8.5,
-                                color: preview.visibleDayNumbers[dayIndex] ==
-                                        DateTime.now().weekday
-                                    ? colorScheme.primary
-                                        .withValues(alpha: 0.78)
-                                    : colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: gridHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: timeColumnWidth,
-                      child: Column(
-                        children: [
-                          for (var i = 0; i < sections.length; i++)
-                            Container(
-                              height: sectionHeight,
-                              alignment: Alignment.center,
-                              child: _buildPreviewSectionTimeCell(
-                                preview.baseSection + i,
-                                sections[i],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    for (var dayIndex = 0;
-                        dayIndex < preview.dayTitles.length;
-                        dayIndex++)
-                      SizedBox(
-                        width: dayWidth,
-                        child: Container(
-                          height: gridHeight,
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerLowest
-                                .withValues(alpha: 0.45),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Stack(
-                            clipBehavior: Clip.antiAlias,
-                            children: [
-                              for (final placement in preview.placements.where(
-                                (item) => item.dayIndex == dayIndex,
-                              ))
-                                Positioned(
-                                  top:
-                                      (placement.startSlot - 1) * sectionHeight,
-                                  left: 0,
-                                  right: 0,
-                                  height: placement.slotSpan * sectionHeight,
-                                  child: CourseCard(
-                                    course: placement.course,
-                                    isCompact: true,
-                                    showName: _draft.courseCardShowName,
-                                    showTeacher: _draft.courseCardShowTeacher,
-                                    showLocation: _draft.courseCardShowLocation,
-                                    showTime: _draft.courseCardShowTime,
-                                    showTimeLabels:
-                                        _draft.courseCardShowTimeLabels,
-                                    showWeeks: _draft.courseCardShowWeeks,
-                                    showDescription:
-                                        _draft.courseCardShowDescription,
-                                    verticalAlign:
-                                        _draft.courseCardVerticalAlign,
-                                    horizontalAlign:
-                                        _draft.courseCardHorizontalAlign,
-                                    compactTitleFontSize:
-                                        _draft.courseCardFontSize,
-                                    compactSubtitleFontSize:
-                                        (_draft.courseCardFontSize - 1)
-                                            .clamp(7.0, 14.0),
-                                    compactVerticalPadding: 4,
-                                    compactOuterInset: cardInset,
+                              if (!showsFloatingButton)
+                                Text(
+                                  l10n.backToCurrentWeekAction,
+                                  style: TextStyle(
+                                    fontSize: 8,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                             ],
                           ),
                         ),
-                      ),
-                  ],
-                ),
+                        for (
+                          var dayIndex = 0;
+                          dayIndex < preview.dayTitles.length;
+                          dayIndex++
+                        )
+                          SizedBox(
+                            width: dayWidth,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  preview.dayTitles[dayIndex],
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                            DateTime.now().weekday
+                                        ? FontWeight.w800
+                                        : FontWeight.w600,
+                                    color:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                            DateTime.now().weekday
+                                        ? colorScheme.primary
+                                        : colorScheme.onSurface,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _formatPreviewDate(
+                                    _previewDateForWeekDay(
+                                      _draft,
+                                      provider.currentWeek,
+                                      preview.visibleDayNumbers[dayIndex],
+                                    ),
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    color:
+                                        preview.visibleDayNumbers[dayIndex] ==
+                                            DateTime.now().weekday
+                                        ? colorScheme.primary.withValues(
+                                            alpha: 0.78,
+                                          )
+                                        : colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(
+                    height: gridHeight,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: timeColumnWidth,
+                          child: Column(
+                            children: [
+                              for (var i = 0; i < sections.length; i++)
+                                Container(
+                                  height: sectionHeight,
+                                  alignment: Alignment.center,
+                                  child: _buildPreviewSectionTimeCell(
+                                    preview.baseSection + i,
+                                    sections[i],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        for (
+                          var dayIndex = 0;
+                          dayIndex < preview.dayTitles.length;
+                          dayIndex++
+                        )
+                          SizedBox(
+                            width: dayWidth,
+                            child: Container(
+                              height: gridHeight,
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerLowest
+                                    .withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Stack(
+                                clipBehavior: Clip.antiAlias,
+                                children: [
+                                  for (final placement
+                                      in preview.placements.where(
+                                        (item) => item.dayIndex == dayIndex,
+                                      ))
+                                    Positioned(
+                                      top:
+                                          (placement.startSlot - 1) *
+                                          sectionHeight,
+                                      left: 0,
+                                      right: 0,
+                                      height:
+                                          placement.slotSpan * sectionHeight,
+                                      child: CourseCard(
+                                        course: placement.course,
+                                        isCompact: true,
+                                        showName: _draft.courseCardShowName,
+                                        showTeacher:
+                                            _draft.courseCardShowTeacher,
+                                        showLocation:
+                                            _draft.courseCardShowLocation,
+                                        showTime: _draft.courseCardShowTime,
+                                        showTimeLabels:
+                                            _draft.courseCardShowTimeLabels,
+                                        showWeeks: _draft.courseCardShowWeeks,
+                                        showDescription:
+                                            _draft.courseCardShowDescription,
+                                        verticalAlign:
+                                            _draft.courseCardVerticalAlign,
+                                        horizontalAlign:
+                                            _draft.courseCardHorizontalAlign,
+                                        compactTitleFontSize:
+                                            _draft.courseCardFontSize,
+                                        compactSubtitleFontSize:
+                                            (_draft.courseCardFontSize - 1)
+                                                .clamp(7.0, 14.0),
+                                        compactVerticalPadding: 4,
+                                        compactOuterInset: cardInset,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              if (showsFloatingButton)
+                Positioned(
+                  right: 10,
+                  bottom: 10,
+                  child: IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh.withValues(
+                          alpha: 0.96,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: colorScheme.outlineVariant.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.my_location_rounded,
+                            size: 13,
+                            color: colorScheme.primary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            l10n.backToCurrentWeekAction,
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                              height: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
             ],
           );
         },
       ),
     );
+  }
+
+  String _backToCurrentWeekButtonStyleLabel(
+    AppLocalizations l10n,
+    BackToCurrentWeekButtonStyle style,
+  ) {
+    return switch (style) {
+      BackToCurrentWeekButtonStyle.inline =>
+        l10n.layoutBackToCurrentWeekButtonStyleInline,
+      BackToCurrentWeekButtonStyle.floating =>
+        l10n.layoutBackToCurrentWeekButtonStyleFloating,
+    };
   }
 
   _LayoutPreviewData _buildLayoutPreviewData(TimetableProvider provider) {
@@ -2991,30 +3147,33 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       l10n.weekdayThu,
       l10n.weekdayFri,
       l10n.weekdaySat,
-      l10n.weekdaySun
+      l10n.weekdaySun,
     ];
     final currentWeek = provider.currentWeek;
     final visibleDays = _draft.timetableHideWeekends
         ? const [1, 2, 3, 4, 5]
         : const [1, 2, 3, 4, 5, 6, 7];
-    final currentWeekCourses = provider.courses
-        .where(
-          (course) =>
-              course.isInWeek(currentWeek) &&
-              visibleDays.contains(course.dayOfWeek),
-        )
-        .toList()
-      ..sort((left, right) {
-        final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
-        if (dayCompare != 0) {
-          return dayCompare;
-        }
-        final sectionCompare = left.startSection.compareTo(right.startSection);
-        if (sectionCompare != 0) {
-          return sectionCompare;
-        }
-        return left.id.compareTo(right.id);
-      });
+    final currentWeekCourses =
+        provider.courses
+            .where(
+              (course) =>
+                  course.isInWeek(currentWeek) &&
+                  visibleDays.contains(course.dayOfWeek),
+            )
+            .toList()
+          ..sort((left, right) {
+            final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
+            if (dayCompare != 0) {
+              return dayCompare;
+            }
+            final sectionCompare = left.startSection.compareTo(
+              right.startSection,
+            );
+            if (sectionCompare != 0) {
+              return sectionCompare;
+            }
+            return left.id.compareTo(right.id);
+          });
 
     final dayTitles = visibleDays
         .map((dayOfWeek) => weekDays[dayOfWeek - 1])
@@ -3035,8 +3194,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         final visibleStartSection = course.startSection < baseSection
             ? baseSection
             : course.startSection;
-        final visibleEndSection =
-            course.endSection > endSection ? endSection : course.endSection;
+        final visibleEndSection = course.endSection > endSection
+            ? endSection
+            : course.endSection;
         final relativeStart = visibleStartSection - baseSection + 1;
         final relativeEnd = visibleEndSection - baseSection + 1;
         placements.add(
@@ -3137,10 +3297,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildPreviewSectionTimeCell(
-    int sectionNumber,
-    SectionTime section,
-  ) {
+  Widget _buildPreviewSectionTimeCell(int sectionNumber, SectionTime section) {
     final compactTextStyle = TextStyle(
       fontSize: (_draft.compactFontSize - 2).clamp(6.0, 10.0),
       color: Colors.grey.shade600,
@@ -3199,9 +3356,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() {
         _draft = provider.settings;
       });
@@ -3313,8 +3470,8 @@ class _SettingsSectionCard extends StatelessWidget {
               Text(
                 subtitle!,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 6),
             ] else
@@ -3354,10 +3511,7 @@ class _SelectableColorChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: outlineColor,
-            width: selected ? 2 : 1,
-          ),
+          border: Border.all(color: outlineColor, width: selected ? 2 : 1),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.22),
@@ -3384,10 +3538,7 @@ class _ColorDot extends StatelessWidget {
     return Container(
       width: 16,
       height: 16,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }
@@ -3396,16 +3547,19 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
   final l10n = AppLocalizations.of(context)!;
   final parts = <String>[];
   if (settings.showCourseName) {
-    parts.add(settings.useShortName
-        ? l10n.liveDisplaySummaryShortName
-        : l10n.liveDisplaySummaryCourseName);
+    parts.add(
+      settings.useShortName
+          ? l10n.liveDisplaySummaryShortName
+          : l10n.liveDisplaySummaryCourseName,
+    );
   }
   if (settings.showLocation) {
     parts.add(l10n.liveDisplaySummaryLocation);
   }
   if (settings.showCountdown) {
     parts.add(
-        l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label));
+      l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label),
+    );
   } else if (settings.showStageText) {
     parts.add(l10n.liveDisplaySummaryStageText);
   }
@@ -3425,4 +3579,3 @@ Color _colorFromHex(String hexColor) {
 String _formatDate(DateTime date) {
   return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 }
-
