@@ -264,8 +264,12 @@ class AppLogService {
     if (settingsJson == null || settingsJson.isEmpty) {
       return TimetableSettings.defaults().liveEnableLocalDiagnostics;
     }
-    return TimetableSettings.fromJsonString(settingsJson)
-        .liveEnableLocalDiagnostics;
+    try {
+      return TimetableSettings.fromJsonString(settingsJson)
+          .liveEnableLocalDiagnostics;
+    } catch (_) {
+      return TimetableSettings.defaults().liveEnableLocalDiagnostics;
+    }
   }
 
   Future<File> _resolveLogFile() async {

@@ -240,6 +240,9 @@ class Course {
   }
 
   String _formatWeekList(List<int> weeks) {
+    if (weeks.isEmpty) {
+      return '';
+    }
     final ranges = <String>[];
     var rangeStart = weeks.first;
     var previous = weeks.first;

@@ -161,40 +161,49 @@ class AppUpdateService {
     AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
     String? mirrorUrlPrefix,
   }) async {
-    var saw404 = false;
-    int? lastStatusCode;
-    var hadRetryableFailure = false;
-
-    final fetches = <Future<_AppUpdateFetchOutcome>>[
-      _fetchFromGitHubApi(
+    _AppUpdateFetchOutcome apiOutcome;
+    try {
+      apiOutcome = await _fetchFromGitHubApi(
         includePrerelease: includePrerelease,
         preferredSource: preferredSource,
         mirrorUrlPrefix: mirrorUrlPrefix,
-      ),
-      _fetchFromReleasesPage(
-        includePrerelease: includePrerelease,
-      ),
-    ];
-
-    try {
-      await for (final outcome in Stream<_AppUpdateFetchOutcome>.fromFutures(
-        fetches,
-      )) {
-        if (outcome.release != null) {
-          return _buildCheckResult(
-            currentVersion: currentVersion,
-            release: outcome.release!,
-          );
-        }
-        saw404 = saw404 || outcome.saw404;
-        hadRetryableFailure =
-            hadRetryableFailure || outcome.hadRetryableFailure;
-        if (outcome.statusCode != null && outcome.statusCode != 404) {
-          lastStatusCode = outcome.statusCode;
-        }
-      }
+      );
     } catch (_) {
-      hadRetryableFailure = true;
+      apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    }
+    if (apiOutcome.release != null) {
+      return _buildCheckResult(
+        currentVersion: currentVersion,
+        release: apiOutcome.release!,
+      );
+    }
+
+    var saw404 = apiOutcome.saw404;
+    int? lastStatusCode;
+    var hadRetryableFailure = apiOutcome.hadRetryableFailure;
+    if (apiOutcome.statusCode != null && apiOutcome.statusCode != 404) {
+      lastStatusCode = apiOutcome.statusCode;
+    }
+
+    _AppUpdateFetchOutcome pageOutcome;
+    try {
+      pageOutcome = await _fetchFromReleasesPage(
+        includePrerelease: includePrerelease,
+      );
+    } catch (_) {
+      pageOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    }
+    if (pageOutcome.release != null) {
+      return _buildCheckResult(
+        currentVersion: currentVersion,
+        release: pageOutcome.release!,
+      );
+    }
+    saw404 = saw404 || pageOutcome.saw404;
+    hadRetryableFailure =
+        hadRetryableFailure || pageOutcome.hadRetryableFailure;
+    if (pageOutcome.statusCode != null && pageOutcome.statusCode != 404) {
+      lastStatusCode = pageOutcome.statusCode;
     }
 
     if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
@@ -431,33 +440,33 @@ class AppUpdateService {
     required AppUpdateDownloadSource preferredSource,
     String? mirrorUrlPrefix,
   }) async {
-    final apiUrl = releasesApiUrl;
-    final fetches = _buildGitHubApiCandidates(
-      apiUrl,
-      preferredSource: preferredSource,
-      mirrorUrlPrefix: mirrorUrlPrefix,
-    ).map(
-      (candidate) => _fetchGitHubApiCandidate(
-        candidate,
-        includePrerelease: includePrerelease,
-      ),
-    );
     var saw404 = false;
     int? lastStatusCode;
+    var hadRetryableFailure = false;
+    final candidates = _buildGitHubApiCandidates(
+      releasesApiUrl,
+      preferredSource: preferredSource,
+      mirrorUrlPrefix: mirrorUrlPrefix,
+    );
 
-    await for (final outcome in Stream<_AppUpdateFetchOutcome>.fromFutures(
-      fetches,
-    )) {
+    for (final candidate in candidates) {
+      final outcome = await _fetchGitHubApiCandidate(
+        candidate,
+        includePrerelease: includePrerelease,
+      );
       if (outcome.release != null) {
         return outcome;
       }
       saw404 = saw404 || outcome.saw404;
+      hadRetryableFailure =
+          hadRetryableFailure || outcome.hadRetryableFailure;
       lastStatusCode = outcome.statusCode ?? lastStatusCode;
     }
 
     return _AppUpdateFetchOutcome(
       saw404: saw404,
       statusCode: lastStatusCode,
+      hadRetryableFailure: hadRetryableFailure,
     );
   }
 

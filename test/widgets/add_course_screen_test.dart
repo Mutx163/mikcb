@@ -100,6 +100,40 @@ void main() {
     expect(find.byTooltip('删除课程'), findsOneWidget);
   });
 
+  testWidgets('editing course with invalid color still renders', (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final course = Course(
+      id: 'course-invalid-color',
+      name: '离散数学',
+      teacher: '周老师',
+      location: 'A201',
+      dayOfWeek: 1,
+      startSection: 1,
+      endSection: 2,
+      startTime: '08:00',
+      endTime: '09:40',
+      color: 'invalid-color',
+    );
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: TestApp(
+          home: AddCourseScreen(course: course),
+        ),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    expect(find.text('离散数学'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('single lesson mode shows simplified week selector',
       (tester) async {
     final provider = TimetableProvider(

@@ -49,6 +49,42 @@ class _CountingProbeClient extends http.BaseClient {
 }
 
 void main() {
+  test('successful GitHub API lookup does not request releases page', () async {
+    final requestedPaths = <String>[];
+    final client = MockClient((request) async {
+      requestedPaths.add(request.url.path);
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.1.11',
+              'name': 'v1.1.11',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.1.11',
+              'assets': const [
+                {
+                  'name': 'mikcb-1.1.11-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/1.1.11.apk',
+                },
+              ],
+              'updated_at': '2026-04-20T09:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      fail('Unexpected url: ${request.url}');
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(currentVersion: '1.1.10');
+
+    expect(result.hasRelease, isTrue);
+    expect(result.latestRelease?.version, '1.1.11');
+    expect(requestedPaths, ['/repos/Mutx163/mikcb/releases']);
+  });
+
   test('include prerelease picks highest version even if not first in list',
       () async {
     final client = MockClient((request) async {

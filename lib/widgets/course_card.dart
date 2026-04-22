@@ -3,6 +3,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../utils/hex_color.dart';
 
 class CourseCard extends StatelessWidget {
   final Course course;
@@ -51,8 +52,7 @@ class CourseCard extends StatelessWidget {
   });
 
   Color _parseColor(String colorString) {
-    final hexColor = colorString.replaceFirst('#', '');
-    return Color(int.parse('FF$hexColor', radix: 16));
+    return parseHexColorOrFallback(colorString, fallback: const Color(0xFF2196F3));
   }
 
   @override

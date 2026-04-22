@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../utils/hex_color.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
 const String _labelLogoDir = 'miui_label_logos';
@@ -1310,7 +1311,6 @@ class _ImagePreview extends StatelessWidget {
 }
 
 Color _parseColor(String hexColor) {
-  final normalized = hexColor.replaceFirst('#', '');
-  return Color(int.parse('FF$normalized', radix: 16));
+  return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
 
