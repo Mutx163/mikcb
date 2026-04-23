@@ -107,7 +107,17 @@ class LiveReminderTimingScreen extends StatefulWidget {
 }
 
 class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
-  static const List<int> _beforeClassMinutesOptions = [1, 5, 10, 15, 20, 30];
+  static const List<int> _beforeClassMinutesOptions = [
+    1,
+    5,
+    10,
+    15,
+    20,
+    30,
+    40,
+    50,
+    60,
+  ];
   static const List<int> _endSecondsOptions = [15, 30, 45, 60, 90];
   static const double _timeCorrectionMin = -30;
   static const double _timeCorrectionMax = 30;
