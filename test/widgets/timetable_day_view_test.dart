@@ -1096,6 +1096,41 @@ void main() {
     expect(provider.currentWeek, 7);
   });
 
+  testWidgets('week view swipe advances week without extra pager resync', (
+    tester,
+  ) async {
+    final now = DateTime.now();
+    final currentWeekStart = _startOfCurrentWeek(now);
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterStartDate: currentWeekStart,
+        semesterWeekCount: 20,
+        timetableHideWeekends: false,
+        timetableHomeViewMode: TimetableHomeViewMode.week,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableScreen(enableUpdateCheck: false)),
+      ),
+    );
+    await _pumpTimetableFrame(tester);
+
+    await tester.drag(find.byType(PageView).first, const Offset(-420, 0));
+    await _pumpFiniteFrames(tester, count: 12);
+
+    expect(provider.currentWeek, 2);
+    expect(find.byKey(const ValueKey('weekday-header-2-1')), findsWidgets);
+  });
+
   testWidgets('floating back to current week button jumps in one action', (
     tester,
   ) async {

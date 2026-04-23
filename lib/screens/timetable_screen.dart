@@ -49,6 +49,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _isSyncingWeekPage = false;
   bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
+  int? _lastObservedWeekPage;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
   bool _hasAvailableUpdate = false;
@@ -78,6 +79,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       initialPage:
           _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
     );
+    _lastObservedWeekPage = _weekPageController.initialPage;
     _dayViewExpandController = AnimationController(
       vsync: this,
       duration: _dayExpandDuration,
@@ -3478,6 +3480,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     int page,
     TimetableProvider provider,
   ) async {
+    _lastObservedWeekPage = page;
     if (_isSyncingWeekPage) {
       return;
     }
@@ -3511,6 +3514,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     final targetPage = _clampWeek(week, maxWeek) - 1;
+    if (_lastObservedWeekPage == targetPage) {
+      return;
+    }
     if (_pendingSyncedWeek == targetPage) {
       return;
     }
@@ -3532,12 +3538,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         });
       }
 
-      final currentPage =
-          _weekPageController.page?.round() ?? _weekPageController.initialPage;
+      final currentPage = _lastObservedWeekPage ?? _weekPageController.initialPage;
       if (currentPage == targetPage) {
         return;
       }
 
+      _lastObservedWeekPage = targetPage;
       _weekPageController.jumpToPage(targetPage);
     });
   }
