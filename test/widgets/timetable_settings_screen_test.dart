@@ -105,4 +105,37 @@ void main() {
     expect(find.textContaining('每 1 秒自动拉取一次诊断状态'), findsOneWidget);
     expect(find.textContaining('上次刷新：'), findsOneWidget);
   });
+
+  testWidgets('before class reminder popup includes 30 to 60 minute options',
+      (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(
+          home: TimetableSettingsScreen(),
+        ),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    await tester.tap(find.text('超级岛与通知'));
+    await _pumpScreen(tester);
+
+    await tester.tap(find.text('提醒时段'));
+    await _pumpScreen(tester);
+
+    await tester.tap(find.text('上课前弹出时间'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('30 分钟').last, findsOneWidget);
+    expect(find.text('40 分钟').last, findsOneWidget);
+    expect(find.text('50 分钟').last, findsOneWidget);
+    expect(find.text('60 分钟').last, findsOneWidget);
+  });
 }
