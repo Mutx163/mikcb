@@ -62,6 +62,28 @@ void main() {
     expect(provider.currentWeek, 8);
   });
 
+  test('setCurrentWeek notifies listeners before persistence completes',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    var notificationCount = 0;
+    provider.addListener(() {
+      notificationCount += 1;
+    });
+
+    final future = provider.setCurrentWeek(6);
+
+    expect(provider.currentWeek, 6);
+    expect(provider.activeProfile?.currentWeek, 6);
+    expect(notificationCount, 1);
+
+    await future;
+  });
+
   test('clearing active profile removes only courses and preserves settings',
       () async {
     final provider = TimetableProvider(
