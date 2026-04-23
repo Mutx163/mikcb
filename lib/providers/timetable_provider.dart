@@ -562,9 +562,10 @@ class TimetableProvider with ChangeNotifier {
     if (_settings.semesterStartDate == null) {
       _currentDateWeek = _currentWeek;
     }
-    await _persistActiveProfileState();
     _currentLiveCourseId = null; // 触发超级岛重刷
+    final persistFuture = _persistActiveProfileState();
     notifyListeners();
+    await persistFuture;
     await _updateLiveActivity();
   }
 
