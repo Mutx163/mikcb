@@ -1974,7 +1974,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get timeRangeValidationNoCrossDay => '结束时间必须晚于开始时间，暂不支持跨 0 点课程';
+  String get timeRangeValidationNoCrossDay => '结束时间必须晚于开始时间';
 
   @override
   String get timeSchemeNameEmptyValidation => '时间模板名称不能为空';
@@ -6083,7 +6083,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間，暫不支援跨 0 點課程';
+  String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間';
 
   @override
   String get timeSchemeNameEmptyValidation => '時間模板名稱不能為空';
@@ -10192,7 +10192,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間，暫不支援跨 0 點課程';
+  String get timeRangeValidationNoCrossDay => '結束時間必須晚於開始時間';
 
   @override
   String get timeSchemeNameEmptyValidation => '時間模板名稱不能為空';

@@ -29,7 +29,7 @@ void main() {
     expect(settings.homeTitleStyle, HomeTitleStyle.classic);
     expect(
       settings.timetableBackToCurrentWeekButtonStyle,
-      BackToCurrentWeekButtonStyle.inline,
+      BackToCurrentWeekButtonStyle.floating,
     );
     expect(settings.timetableFloatingBackToCurrentWeekButtonOpacity, 0.96);
     expect(
@@ -116,7 +116,7 @@ void main() {
     expect(restored.homeTitleStyle, HomeTitleStyle.classic);
     expect(
       restored.timetableBackToCurrentWeekButtonStyle,
-      BackToCurrentWeekButtonStyle.inline,
+      BackToCurrentWeekButtonStyle.floating,
     );
     expect(restored.timetableFloatingBackToCurrentWeekButtonOpacity, 0.96);
     expect(

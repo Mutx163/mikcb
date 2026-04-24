@@ -84,7 +84,7 @@ class TimetableProvider with ChangeNotifier {
   DateTime? _liveActivitySuspendedUntil;
   Future<void>? _initializationFuture;
 
-  List<Course> get courses => _courses;
+  List<Course> get courses => List.unmodifiable(_courses);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   TimetableSettings get settings => _settings;
   int get currentWeek => _currentWeek;
@@ -1456,10 +1456,13 @@ class TimetableProvider with ChangeNotifier {
   int _parseClockToMinutes(String value) {
     final parts = value.split(':');
     if (parts.length != 2) {
-      return 0;
+      return -1;
     }
-    final hour = int.tryParse(parts[0]) ?? 0;
-    final minute = int.tryParse(parts[1]) ?? 0;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return -1;
+    }
     return hour * 60 + minute;
   }
 

@@ -1148,7 +1148,7 @@
       }
     }
   },
-  "timeRangeValidationNoCrossDay": "End time must be later than start time. Cross-midnight classes are not supported yet.",
+  "timeRangeValidationNoCrossDay": "End time must be later than start time",
   "timeSchemeNameEmptyValidation": "Time scheme name cannot be empty",
   "liveTimeCorrectionNone": "No correction",
   "liveTimeCorrectionDelay": "Delay by {seconds}s",

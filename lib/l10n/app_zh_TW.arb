@@ -1169,7 +1169,7 @@
       }
     }
   },
-  "timeRangeValidationNoCrossDay": "結束時間必須晚於開始時間，暫不支援跨 0 點課程",
+  "timeRangeValidationNoCrossDay": "結束時間必須晚於開始時間",
   "timeSchemeNameEmptyValidation": "時間模板名稱不能為空",
   "liveTimeCorrectionNone": "不校正",
   "liveTimeCorrectionDelay": "整體延後 {seconds} 秒",

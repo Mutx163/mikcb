@@ -2095,7 +2095,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get timeRangeValidationNoCrossDay =>
-      'End time must be later than start time. Cross-midnight classes are not supported yet.';
+      'End time must be later than start time';
 
   @override
   String get timeSchemeNameEmptyValidation =>

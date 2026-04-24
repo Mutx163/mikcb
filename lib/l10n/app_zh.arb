@@ -1169,7 +1169,7 @@
       }
     }
   },
-  "timeRangeValidationNoCrossDay": "结束时间必须晚于开始时间，暂不支持跨 0 点课程",
+  "timeRangeValidationNoCrossDay": "结束时间必须晚于开始时间",
   "timeSchemeNameEmptyValidation": "时间模板名称不能为空",
   "liveTimeCorrectionNone": "不矫正",
   "liveTimeCorrectionDelay": "整体延后 {seconds} 秒",
