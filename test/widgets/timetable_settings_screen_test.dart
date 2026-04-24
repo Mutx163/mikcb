@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -125,17 +126,39 @@ void main() {
     await _pumpScreen(tester);
 
     await tester.tap(find.text('超级岛与通知'));
-    await _pumpScreen(tester);
-
-    await tester.tap(find.text('提醒时段'));
-    await _pumpScreen(tester);
-
-    await tester.tap(find.text('上课前弹出时间'));
     await tester.pumpAndSettle();
 
-    expect(find.text('30 分钟').last, findsOneWidget);
-    expect(find.text('40 分钟').last, findsOneWidget);
-    expect(find.text('50 分钟').last, findsOneWidget);
-    expect(find.text('60 分钟').last, findsOneWidget);
+    // Verify we're on the live settings screen.
+    expect(find.text('提醒时段'), findsWidgets);
+
+    await tester.tap(find.text('提醒时段'));
+    await tester.pumpAndSettle();
+
+    // We should now be on LiveReminderTimingScreen.
+    // Verify the before-class minutes dropdown includes 30–60 minute options.
+    // Find the DropdownButtonFormField whose label is '上课前弹出时间'.
+    final formFieldFinder = find.byWidgetPredicate((w) {
+      if (w is! DropdownButtonFormField<int>) return false;
+      return w.decoration.labelText == '上课前弹出时间';
+    });
+    await tester.scrollUntilVisible(
+      formFieldFinder,
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
+    final formField =
+        tester.widget<DropdownButtonFormField<int>>(formFieldFinder);
+    // The items are set on the form field constructor.
+    // Access the internal DropdownButton to get the items.
+    final dropdownFinder = find.descendant(
+      of: formFieldFinder,
+      matching: find.byType(DropdownButton<int>),
+    );
+    final dropdown = tester.widget<DropdownButton<int>>(dropdownFinder);
+    final optionValues = dropdown.items!
+        .map((item) => item.value)
+        .toList();
+    expect(optionValues, containsAll([30, 40, 50, 60]));
   });
 }
