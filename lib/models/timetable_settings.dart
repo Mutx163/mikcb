@@ -853,7 +853,7 @@ class TimetableSettings {
     this.homeTitleStyle = HomeTitleStyle.classic,
     this.timetableHomeViewMode = TimetableHomeViewMode.week,
     this.timetableBackToCurrentWeekButtonStyle =
-        BackToCurrentWeekButtonStyle.inline,
+        BackToCurrentWeekButtonStyle.floating,
     this.timetableFloatingBackToCurrentWeekButtonOpacity = 0.96,
     this.timetableLastViewedDayOfWeek = 1,
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
@@ -979,7 +979,7 @@ class TimetableSettings {
       homeTitleStyle: HomeTitleStyle.classic,
       timetableHomeViewMode: TimetableHomeViewMode.week,
       timetableBackToCurrentWeekButtonStyle:
-          BackToCurrentWeekButtonStyle.inline,
+          BackToCurrentWeekButtonStyle.floating,
       timetableFloatingBackToCurrentWeekButtonOpacity: 0.96,
       timetableLastViewedDayOfWeek: 1,
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
