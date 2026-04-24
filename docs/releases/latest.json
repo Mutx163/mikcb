@@ -2,26 +2,26 @@
   "releaseCount": 8,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.0.2",
-    "title": "v1.2.0.2",
-    "publishedAt": "2026-04-17T12:41:45Z",
-    "body": "# v1.2.0.2\r\n\r\n- 优化日视图切周体验：单日时间轴在左右滑到上一周或下一周时，过渡更连贯，减少了切周瞬间的闪动感。\r\n- 优化日视图切日反馈：顶部日期横杠现在会跟随手势连续移动，并带有更自然的非线性拉伸效果，切日时的方向感更强。\r\n- 优化超级岛焦点提示：在新的系统显示路径下，岛提示文案更克制，减少重复状态文字带来的视觉噪音。\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.2",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.2/mikcb-1.2.0.2-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.2-arm64-v8a.apk",
+    "version": "1.2.0.8",
+    "title": "v1.2.0.8",
+    "publishedAt": "2026-04-24T14:04:59Z",
+    "body": "# v1.2.0.8\r\n\r\n- 优化应用冷启动速度：减少重复数据读取，非关键同步改为后台执行，启动流程并行化。\r\n- 优化「回本周」按钮显示响应：滑动切换周次时按钮即时显示和隐藏，不再等待动画结束。\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.8",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.8/mikcb-1.2.0.8-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.0.8-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 2
+    "assetDownloadCount": 0
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "1.2.0.1",
-    "title": "v1.2.0.1",
-    "publishedAt": "2026-04-16T16:16:23Z",
-    "body": "# v1.2.0.1\n\n- 新增日视图时间轴：在周视图点击当天或任意日期后，可以直接展开成单日时间轴，按时间顺序查看当天课程与安排，阅读密度更低，聚焦更强。\n- 新增日程系统：现在可以在“添加内容”里直接创建日程，支持开始/结束日期、跨日日程、地点与备注，并会插入到日视图里和课程一起展示。\n- 优化日视图交互：周内切日、边界切周、回到今天、关闭后重新展开等行为更连贯，进入后会记住上次打开的视图状态与日期。\n- 优化进行中展示：日视图里的课程与日程都支持更直观的进度展示，正在进行中的内容更容易被看到，日程状态文案也和课程文案做了明确区分。\n- 优化超级岛自定义资源：岛标签 Logo / 展开图标的替换和清理逻辑更完整，更新安装包与历史资源文件不再持续堆积。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.1",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.1/mikcb-1.2.0.1-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.1-arm64-v8a.apk",
+    "version": "1.2.0.7",
+    "title": "v1.2.0.7",
+    "publishedAt": "2026-04-24T13:36:03Z",
+    "body": "# v1.2.0.7\n\n- 新增桌面小组件倒计时：开启后所有尺寸的小组件显示距离上课或下课的剩余分钟数，每分钟自动刷新，教室信息保留不丢失。\n- 优化迷你列表课程排序：正在上的课程置顶显示，已结束的课程不再占据列表位置。\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.7",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.7/mikcb-1.2.0.7-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.0.7-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 10
+    "assetDownloadCount": 1
   }
 }
