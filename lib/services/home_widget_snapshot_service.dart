@@ -197,6 +197,8 @@ class HomeWidgetSnapshotService {
   List<int> buildRefreshTriggers({
     required List<Course> todayCourses,
     required DateTime now,
+    bool showCountdown = false,
+    String state = 'no_course',
   }) {
     final triggers = <int>{};
     for (final course in todayCourses) {
@@ -208,6 +210,9 @@ class HomeWidgetSnapshotService {
       if (end != null && end.isAfter(now)) {
         triggers.add(end.millisecondsSinceEpoch);
       }
+    }
+    if (showCountdown && (state == 'ongoing' || state == 'upcoming')) {
+      triggers.add(now.millisecondsSinceEpoch + 60000);
     }
     final nextMidnight = DateTime(now.year, now.month, now.day + 1);
     if (nextMidnight.isAfter(now)) {

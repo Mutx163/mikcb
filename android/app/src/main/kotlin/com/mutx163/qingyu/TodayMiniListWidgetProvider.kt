@@ -99,7 +99,17 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                 val rows = if (snapshot.state == "completed") {
                     emptyList()
                 } else {
-                    snapshot.visibleTodayCourses.take(maxRows)
+                    val highlighted = snapshot.highlightedCourse
+                    val nowTime = java.text.SimpleDateFormat(
+                        "HH:mm", java.util.Locale.getDefault()
+                    ).format(java.util.Date())
+                    val ordered = mutableListOf<TodayWidgetCourseInfo>()
+                    if (highlighted != null) ordered.add(highlighted)
+                    for (c in snapshot.visibleTodayCourses) {
+                        if (c.id == highlighted?.id) continue
+                        if (c.endTime > nowTime) ordered.add(c)
+                    }
+                    ordered.take(maxRows)
                 }
                 val emptyText = when {
                     rows.isNotEmpty() -> ""
@@ -121,8 +131,8 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     if (remainingCount > 0) View.VISIBLE else View.GONE
                 )
                 views.setTextViewText(R.id.widget_mini_more, "还有 $remainingCount 节")
-                val highlightedId =
-                    if (snapshot.state == "ongoing") snapshot.highlightedCourse?.id else null
+                val highlightedId = snapshot.highlightedCourse?.id
+                val countdown = TodayWidgetSupport.countdownText(snapshot)
                 bindRow(
                     views,
                     0,
@@ -130,7 +140,8 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     primaryColor,
                     secondaryColor,
                     rows.getOrNull(0)?.id == highlightedId,
-                    style
+                    style,
+                    if (rows.getOrNull(0)?.id == highlightedId) countdown else null,
                 )
                 bindRow(
                     views,
@@ -139,7 +150,8 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     primaryColor,
                     secondaryColor,
                     rows.getOrNull(1)?.id == highlightedId,
-                    style
+                    style,
+                    if (rows.getOrNull(1)?.id == highlightedId) countdown else null,
                 )
                 bindRow(
                     views,
@@ -148,7 +160,8 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     primaryColor,
                     secondaryColor,
                     maxRows >= 3 && rows.getOrNull(2)?.id == highlightedId,
-                    style
+                    style,
+                    if (maxRows >= 3 && rows.getOrNull(2)?.id == highlightedId) countdown else null,
                 )
             }
 
@@ -188,6 +201,7 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             secondaryColor: Int,
             isHighlighted: Boolean,
             style: String,
+            countdown: String? = null,
         ) {
             val rowIds = arrayOf(
                 Triple(R.id.widget_mini_row_1, R.id.widget_mini_row_1_time, R.id.widget_mini_row_1_title),
@@ -215,10 +229,13 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             TodayWidgetSupport.setTextSizeSp(views, titleId, 11f)
             views.setTextViewText(
                 timeId,
-                if (course.location.isNotBlank()) {
-                    "${course.startTime} · ${course.location}"
-                } else {
-                    course.startTime
+                when {
+                    countdown != null && course.location.isNotBlank() ->
+                        "$countdown · ${course.location}"
+                    countdown != null -> countdown
+                    course.location.isNotBlank() ->
+                        "${course.startTime} · ${course.location}"
+                    else -> course.startTime
                 }
             )
             views.setTextViewText(titleId, course.name)

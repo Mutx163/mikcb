@@ -2557,6 +2557,8 @@ class TimetableProvider with ChangeNotifier {
     final triggerAtMillis = _homeWidgetSnapshotService.buildRefreshTriggers(
       todayCourses: getCoursesForDay(now.weekday, week: snapshot.currentWeek),
       now: now,
+      showCountdown: snapshot.showCountdown,
+      state: snapshot.state.value,
     );
     await _homeWidgetService.scheduleRefresh(triggerAtMillis);
   }

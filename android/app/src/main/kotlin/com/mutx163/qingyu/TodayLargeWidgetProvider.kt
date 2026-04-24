@@ -101,7 +101,8 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     when (snapshot.state) {
                         "no_course" -> "今天没有课程安排"
                         "completed" -> TodayWidgetSupport.footerText(snapshot)
-                        else -> TodayWidgetSupport.footerText(snapshot)
+                        else -> TodayWidgetSupport.countdownText(snapshot)
+                            ?: TodayWidgetSupport.footerText(snapshot)
                     }
                 )
                 val emptyText = when (snapshot.state) {

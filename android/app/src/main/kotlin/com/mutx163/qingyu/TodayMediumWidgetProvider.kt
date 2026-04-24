@@ -102,7 +102,8 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                 )
                 views.setTextViewText(
                     R.id.widget_medium_time,
-                    TodayWidgetSupport.heroTimeText(snapshot)
+                    TodayWidgetSupport.countdownText(snapshot)
+                        ?: TodayWidgetSupport.heroTimeText(snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_meta,
@@ -135,7 +136,9 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_medium_time,
-                if (profile.isShort) 15f else 16f
+                if (snapshot != null && TodayWidgetSupport.countdownText(snapshot) != null) {
+                    if (profile.isShort) 13f else 14f
+                } else if (profile.isShort) 15f else 16f
             )
             TodayWidgetSupport.setTextSizeSp(
                 views,
