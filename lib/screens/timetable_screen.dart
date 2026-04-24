@@ -50,6 +50,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _isSyncingDayViewPage = false;
   int? _pendingSyncedWeek;
   int? _lastObservedWeekPage;
+  int? _pendingSettledWeek;
+  int? _pendingCommittedWeek;
+  bool _isCommittingWeek = false;
+  late int _visibleWeek;
+  late final ValueNotifier<int> _visibleWeekListenable;
   final GlobalKey _timetableSurfaceKey = GlobalKey();
   final AppUpdateService _updateService = AppUpdateService();
   bool _hasAvailableUpdate = false;
@@ -75,6 +80,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.addObserver(this);
     final provider = context.read<TimetableProvider>();
     final initialWeek = provider.currentWeek;
+    _visibleWeek = initialWeek;
+    _pendingSettledWeek = initialWeek;
+    _visibleWeekListenable = ValueNotifier<int>(initialWeek);
     _weekPageController = PageController(
       initialPage:
           _clampWeek(initialWeek, provider.settings.semesterWeekCount) - 1,
@@ -103,6 +111,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     WidgetsBinding.instance.removeObserver(this);
     _weekPageController.dispose();
     _dayViewExpandController.dispose();
+    _visibleWeekListenable.dispose();
     _dayAgendaProgressTimer?.cancel();
     for (final controller in _dayViewPageControllers.values) {
       controller.dispose();
@@ -132,7 +141,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(
           provider.currentWeek,
-          provider.settings.semesterWeekCount,
+          provider.settings,
         );
         final colorScheme = Theme.of(context).colorScheme;
         final backgroundColor = Theme.of(context).brightness == Brightness.dark
@@ -202,11 +211,21 @@ class _TimetableScreenState extends State<TimetableScreen>
                           ),
                         ),
                       ),
-                      if (_shouldShowFloatingBackToCurrentWeekButton(
-                        provider,
-                        provider.settings,
-                      ))
-                        _buildFloatingBackToCurrentWeekButton(provider),
+                      ValueListenableBuilder<int>(
+                        valueListenable: _visibleWeekListenable,
+                        builder: (context, visibleWeek, child) {
+                          if (!_shouldShowFloatingBackToCurrentWeekButton(
+                            provider,
+                            provider.settings,
+                            visibleWeek,
+                          )) {
+                            return const SizedBox.shrink();
+                          }
+                          return _buildFloatingBackToCurrentWeekButton(
+                            provider,
+                          );
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -260,6 +279,10 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   void _restoreViewStateFromProvider(TimetableProvider provider) {
     final settings = provider.settings;
+    _visibleWeek = _clampWeek(provider.currentWeek, settings.semesterWeekCount);
+    _pendingSettledWeek = _visibleWeek;
+    _pendingCommittedWeek = null;
+    _visibleWeekListenable.value = _visibleWeek;
     final restoredDayOfWeek = _resolveStoredDayOfWeek(
       settings,
       settings.timetableLastViewedDayOfWeek,
@@ -275,7 +298,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
     _dayViewPageControllers.clear();
     if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
-      _selectedWeekForDayView = provider.currentWeek;
+      _selectedWeekForDayView = _visibleWeek;
       _selectedDayOfWeek = restoredDayOfWeek;
       _dayViewExpandController.value = 1;
     } else {
@@ -284,6 +307,32 @@ class _TimetableScreenState extends State<TimetableScreen>
       _dayViewExpandController.value = 0;
     }
   }
+
+  void _applyVisibleWeek(
+    int week, {
+    bool rebuild = false,
+    bool syncDayView = false,
+  }) {
+    final shouldSyncDayView = syncDayView && _selectedWeekForDayView != week;
+    if (_visibleWeek == week && !shouldSyncDayView) {
+      return;
+    }
+    _visibleWeek = week;
+    _visibleWeekListenable.value = week;
+    if ((rebuild || shouldSyncDayView) && mounted) {
+      setState(() {
+        if (shouldSyncDayView) {
+          _selectedWeekForDayView = week;
+        }
+      });
+      return;
+    }
+  }
+
+  bool get _hasPendingLocalWeekTransition =>
+      (_pendingSettledWeek != null && _pendingSettledWeek != _visibleWeek) ||
+      _pendingCommittedWeek != null ||
+      _isCommittingWeek;
 
   void _syncViewStateIfNeeded(TimetableProvider provider) {
     if (identical(_lastSyncedProvider, provider) &&
@@ -613,7 +662,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         mode: TimetableHomeViewMode.day,
         dayOfWeek: targetDayOfWeek,
       );
-      if (normalizedTargetWeek == provider.currentWeek) {
+      if (normalizedTargetWeek == _visibleWeek) {
         await _switchDayWithinWeek(
           settings,
           normalizedTargetWeek,
@@ -1099,24 +1148,36 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Stack(
       fit: StackFit.expand,
       children: [
-        PageView.builder(
-          controller: _weekPageController,
-          itemCount: settings.semesterWeekCount,
-          allowImplicitScrolling: true,
-          physics: _isDayView
-              ? const NeverScrollableScrollPhysics()
-              : const PageScrollPhysics(parent: ClampingScrollPhysics()),
-          onPageChanged: (page) => _handleWeekPageChanged(page, provider),
-          itemBuilder: (context, index) {
-            final week = index + 1;
-            return _buildWeekPage(
-              provider,
-              settings,
-              availableWidth,
-              availableHeight,
-              week,
-            );
+        NotificationListener<ScrollEndNotification>(
+          onNotification: (notification) {
+            final metrics = notification.metrics;
+            if (metrics.axis == Axis.horizontal) {
+              _finalizeWeekPageSettled(provider);
+            }
+            return false;
           },
+          child: PageView.builder(
+            controller: _weekPageController,
+            itemCount: settings.semesterWeekCount,
+            allowImplicitScrolling: true,
+            physics: _isDayView
+                ? const NeverScrollableScrollPhysics()
+                : const PageScrollPhysics(parent: ClampingScrollPhysics()),
+            onPageChanged: (page) =>
+                _handleWeekPageChanged(page, settings.semesterWeekCount),
+            itemBuilder: (context, index) {
+              final week = index + 1;
+              return RepaintBoundary(
+                child: _buildWeekPage(
+                  provider,
+                  settings,
+                  availableWidth,
+                  availableHeight,
+                  week,
+                ),
+              );
+            },
+          ),
         ),
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
@@ -1427,7 +1488,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return _isSameDate(resolvedDate, DateTime.now());
     }
     final now = DateTime.now();
-    return dayOfWeek == now.weekday && week == provider.currentWeek;
+    return dayOfWeek == now.weekday && week == _visibleWeek;
   }
 
   DateTime _resolveDisplayDateForWeekDay({
@@ -1443,8 +1504,7 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final now = DateTime.now();
     final normalizedToday = DateTime(now.year, now.month, now.day);
-    final dayDelta =
-        (week - provider.currentWeek) * 7 + dayOfWeek - now.weekday;
+    final dayDelta = (week - _visibleWeek) * 7 + dayOfWeek - now.weekday;
     return normalizedToday.add(Duration(days: dayDelta));
   }
 
@@ -2969,7 +3029,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                         ),
                       ),
                       if (currentSemesterWeek != null &&
-                          provider.currentWeek != currentSemesterWeek)
+                          _visibleWeek != currentSemesterWeek)
                         FilledButton.tonal(
                           style: FilledButton.styleFrom(
                             visualDensity: VisualDensity.compact,
@@ -3332,6 +3392,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   bool _shouldShowFloatingBackToCurrentWeekButton(
     TimetableProvider provider,
     TimetableSettings settings,
+    int visibleWeek,
   ) {
     if (_isDayView) {
       return false;
@@ -3340,7 +3401,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         BackToCurrentWeekButtonStyle.floating) {
       return false;
     }
-    return _canReturnToCurrentWeek(settings, provider.currentWeek);
+    return _canReturnToCurrentWeek(settings, visibleWeek);
   }
 
   Widget _buildFloatingBackToCurrentWeekButton(TimetableProvider provider) {
@@ -3447,12 +3508,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     final targetWeek = _clampWeek(week, provider.settings.semesterWeekCount);
-    if (targetWeek == provider.currentWeek) {
+    if (targetWeek == _visibleWeek) {
       return;
     }
 
     if (!_weekPageController.hasClients) {
-      await provider.setCurrentWeek(targetWeek);
+      _pendingSettledWeek = targetWeek;
+      _pendingCommittedWeek = targetWeek;
+      _applyVisibleWeek(
+        targetWeek,
+        rebuild: _isDayView || provider.settings.semesterStartDate == null,
+        syncDayView: _isDayView,
+      );
+      await _commitPendingWeek(provider);
       return;
     }
 
@@ -3461,7 +3529,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (animatePage) {
         await _weekPageController.animateToPage(
           targetWeek - 1,
-          duration: (targetWeek - provider.currentWeek).abs() == 1
+          duration: (targetWeek - _visibleWeek).abs() == 1
               ? _weekSlideDuration
               : const Duration(milliseconds: 360),
           curve: Curves.easeOutCubic,
@@ -3470,51 +3538,38 @@ class _TimetableScreenState extends State<TimetableScreen>
         // Day-view boundary swipes already provide the horizontal motion.
         _weekPageController.jumpToPage(targetWeek - 1);
       }
-      await provider.setCurrentWeek(targetWeek);
+      _pendingSettledWeek = targetWeek;
     } finally {
       _isSyncingWeekPage = false;
     }
-  }
 
-  Future<void> _handleWeekPageChanged(
-    int page,
-    TimetableProvider provider,
-  ) async {
-    _lastObservedWeekPage = page;
-    if (_isSyncingWeekPage) {
-      return;
-    }
-
-    final targetWeek = _clampWeek(
-      page + 1,
-      provider.settings.semesterWeekCount,
+    _finalizeWeekPageSettled(
+      provider,
+      fallbackWeek: targetWeek,
+      syncDayView: _isDayView,
     );
-    if (targetWeek == provider.currentWeek) {
-      return;
-    }
-
-    if (_isDayView && _selectedWeekForDayView != targetWeek) {
-      setState(() {
-        _selectedWeekForDayView = targetWeek;
-      });
-    }
-
-    _isSyncingWeekPage = true;
-    try {
-      _maybeSelectionClick(provider.settings);
-      await provider.setCurrentWeek(targetWeek);
-    } finally {
-      _isSyncingWeekPage = false;
-    }
   }
 
-  void _syncWeekPageWithProvider(int week, int maxWeek) {
-    if (_isSyncingWeekPage) {
+  void _handleWeekPageChanged(int page, int maxWeek) {
+    _lastObservedWeekPage = page;
+    _pendingSettledWeek = _clampWeek(page + 1, maxWeek);
+  }
+
+  void _syncWeekPageWithProvider(int week, TimetableSettings settings) {
+    final maxWeek = settings.semesterWeekCount;
+    if (_isSyncingWeekPage || _hasPendingLocalWeekTransition) {
       return;
     }
 
-    final targetPage = _clampWeek(week, maxWeek) - 1;
-    if (_lastObservedWeekPage == targetPage) {
+    final targetWeek = _clampWeek(week, maxWeek);
+    final targetPage = targetWeek - 1;
+    final shouldSyncDayView =
+        _isDayView && !_isDaySwipeAnimating && _selectedWeekForDayView != targetWeek;
+    final needsVisualSync =
+        _visibleWeek != targetWeek ||
+        shouldSyncDayView ||
+        _lastObservedWeekPage != targetPage;
+    if (!needsVisualSync) {
       return;
     }
     if (_pendingSyncedWeek == targetPage) {
@@ -3524,21 +3579,33 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _pendingSyncedWeek = null;
-      if (!mounted || !_weekPageController.hasClients) {
+      if (!mounted || _isSyncingWeekPage || _hasPendingLocalWeekTransition) {
         return;
       }
 
-      if (_isDayView &&
+      final syncDayView =
+          _isDayView &&
           !_isDaySwipeAnimating &&
-          _selectedWeekForDayView != targetPage + 1) {
+          _selectedWeekForDayView != targetPage + 1;
+      _pendingSettledWeek = targetPage + 1;
+      _applyVisibleWeek(
+        targetPage + 1,
+        rebuild: syncDayView || settings.semesterStartDate == null,
+        syncDayView: syncDayView,
+      );
+
+      if (syncDayView && mounted) {
         setState(() {
-          _selectedWeekForDayView = targetPage + 1;
           _dayViewTransitionSourceWeek = null;
           _dayViewTransitionSourceDayOfWeek = null;
         });
       }
 
-      final currentPage = _lastObservedWeekPage ?? _weekPageController.initialPage;
+      if (!_weekPageController.hasClients) {
+        return;
+      }
+      final currentPage =
+          _lastObservedWeekPage ?? _weekPageController.initialPage;
       if (currentPage == targetPage) {
         return;
       }
@@ -3546,6 +3613,66 @@ class _TimetableScreenState extends State<TimetableScreen>
       _lastObservedWeekPage = targetPage;
       _weekPageController.jumpToPage(targetPage);
     });
+  }
+
+  int _resolveSettledWeek(TimetableProvider provider, {int? fallbackWeek}) {
+    final maxWeek = provider.settings.semesterWeekCount;
+    if (_weekPageController.hasClients) {
+      final page = _weekPageController.page;
+      if (page != null) {
+        return _clampWeek(page.round() + 1, maxWeek);
+      }
+    }
+    if (_lastObservedWeekPage != null) {
+      return _clampWeek(_lastObservedWeekPage! + 1, maxWeek);
+    }
+    return _clampWeek(
+      fallbackWeek ?? _pendingSettledWeek ?? _visibleWeek,
+      maxWeek,
+    );
+  }
+
+  void _finalizeWeekPageSettled(
+    TimetableProvider provider, {
+    int? fallbackWeek,
+    bool syncDayView = false,
+  }) {
+    final targetWeek = _resolveSettledWeek(
+      provider,
+      fallbackWeek: fallbackWeek,
+    );
+    _pendingSettledWeek = targetWeek;
+    _pendingCommittedWeek = targetWeek;
+    _applyVisibleWeek(
+      targetWeek,
+      rebuild: syncDayView || provider.settings.semesterStartDate == null,
+      syncDayView: syncDayView,
+    );
+    unawaited(_commitPendingWeek(provider));
+  }
+
+  Future<void> _commitPendingWeek(TimetableProvider provider) async {
+    if (_isCommittingWeek) {
+      return;
+    }
+    _isCommittingWeek = true;
+    try {
+      while (mounted) {
+        final targetWeek = _pendingCommittedWeek;
+        if (targetWeek == null) {
+          return;
+        }
+        if (targetWeek == provider.currentWeek) {
+          _pendingCommittedWeek = null;
+          continue;
+        }
+        _pendingCommittedWeek = null;
+        _maybeSelectionClick(provider.settings);
+        await provider.setCurrentWeek(targetWeek, notify: false);
+      }
+    } finally {
+      _isCommittingWeek = false;
+    }
   }
 
   Future<void> _navigateToAddCourse(BuildContext context) async {
@@ -3626,7 +3753,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       title: l10n.singleLessonLabel,
                       pageBuilder: (_) => AddCourseScreen(
                         mode: CourseEditorMode.singleLesson,
-                        initialWeek: provider.currentWeek,
+                        initialWeek: _visibleWeek,
                         initialDayOfWeek: initialDayOfWeek,
                       ),
                     ),
@@ -3636,7 +3763,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                       title: l10n.recurringLessonLabel,
                       pageBuilder: (_) => AddCourseScreen(
                         mode: CourseEditorMode.recurring,
-                        initialWeek: provider.currentWeek,
+                        initialWeek: _visibleWeek,
                       ),
                     ),
                     _HomeActionPageButton(

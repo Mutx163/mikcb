@@ -557,14 +557,16 @@ class TimetableProvider with ChangeNotifier {
     }
   }
 
-  Future<void> setCurrentWeek(int week) async {
+  Future<void> setCurrentWeek(int week, {bool notify = true}) async {
     _currentWeek = clampCurrentWeekToSettings(week, _settings);
     if (_settings.semesterStartDate == null) {
       _currentDateWeek = _currentWeek;
     }
     _currentLiveCourseId = null; // 触发超级岛重刷
     final persistFuture = _persistActiveProfileState();
-    notifyListeners();
+    if (notify) {
+      notifyListeners();
+    }
     await persistFuture;
     await _updateLiveActivity();
   }
