@@ -96,7 +96,15 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                     snapshot == null -> "点击打开首页"
                     state == "no_course" -> "留一点时间给自己"
                     state == "completed" -> "今天课程已经结束"
-                    else -> TodayWidgetSupport.compactMetaText(snapshot)
+                    else -> {
+                    val cd = TodayWidgetSupport.countdownText(snapshot)
+                    if (cd != null) {
+                        val loc = snapshot.highlightedCourse?.location.orEmpty()
+                        if (snapshot.showLocation && loc.isNotBlank()) "$cd\n$loc" else cd
+                    } else {
+                        TodayWidgetSupport.compactMetaText(snapshot)
+                    }
+                }
                 }
             )
             views.setTextColor(R.id.widget_status, secondaryTextColor)
