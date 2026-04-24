@@ -27,6 +27,7 @@ migrate_working_dir/
 .codex_tmp/
 .claude/
 .mcp.json
+CLAUDE.md
 
 # Flutter/Dart/Pub related
 **/doc/api/
