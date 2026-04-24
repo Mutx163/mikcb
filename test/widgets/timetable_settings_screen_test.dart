@@ -147,10 +147,6 @@ void main() {
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pumpAndSettle();
-    final formField =
-        tester.widget<DropdownButtonFormField<int>>(formFieldFinder);
-    // The items are set on the form field constructor.
-    // Access the internal DropdownButton to get the items.
     final dropdownFinder = find.descendant(
       of: formFieldFinder,
       matching: find.byType(DropdownButton<int>),
