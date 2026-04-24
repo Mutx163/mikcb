@@ -124,6 +124,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (state == AppLifecycleState.resumed) {
       final provider = context.read<TimetableProvider>();
       unawaited(provider.syncTemporalContext());
+      // Force-push the current stage and display settings to the native
+      // live-update service.  The native alarm may have fired while the app
+      // was backgrounded and started the service with stale snapshot settings;
+      // this ensures the correct style is applied as soon as the user returns.
+      unawaited(provider.refreshLiveActivityNow());
       if (widget.enableUpdateCheck) {
         _checkForAppUpdate(
           includePrerelease: provider.settings.appUpdateIncludePrerelease,
