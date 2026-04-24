@@ -267,16 +267,13 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         await _storageService.hasHandledPackageMigration();
     final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
-    final legacyPackage = await _migrationService.findInstalledLegacyPackage();
-    final shouldShowMigrationGuide =
-        !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
-
-    if (!mounted) {
-      return;
-    }
 
     final provider = context.read<TimetableProvider>();
+    final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
     await provider.initialize();
+    final legacyPackage = await legacyPackageFuture;
+    final shouldShowMigrationGuide =
+        !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
 
     if (!mounted) {
       return;
