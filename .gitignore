@@ -24,7 +24,9 @@ migrate_working_dir/
 #.vscode/
 .vscode/*.code-workspace
 .codex
+.codex_tmp/
 .claude/
+.mcp.json
 
 # Flutter/Dart/Pub related
 **/doc/api/
