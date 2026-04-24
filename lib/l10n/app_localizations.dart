@@ -3668,7 +3668,7 @@ abstract class AppLocalizations {
   /// No description provided for @timeRangeValidationNoCrossDay.
   ///
   /// In zh, this message translates to:
-  /// **'结束时间必须晚于开始时间，暂不支持跨 0 点课程'**
+  /// **'结束时间必须晚于开始时间'**
   String get timeRangeValidationNoCrossDay;
 
   /// No description provided for @timeSchemeNameEmptyValidation.
