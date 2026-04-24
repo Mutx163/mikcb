@@ -29,9 +29,22 @@ class StorageService {
   StorageService._internal();
 
   SharedPreferences? _prefs;
+  SharedPreferences? _ensuredForPrefs;
+  bool _profilesEnsured = false;
+  bool _timeSchemesEnsured = false;
+  bool _hidePrefixMigrated = false;
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
+  }
+
+  void _resetEnsureCacheIfNeeded() {
+    if (_ensuredForPrefs != _prefs) {
+      _ensuredForPrefs = _prefs;
+      _profilesEnsured = false;
+      _timeSchemesEnsured = false;
+      _hidePrefixMigrated = false;
+    }
   }
 
   // 课程存储
@@ -358,6 +371,8 @@ class StorageService {
   }
 
   Future<void> _ensureProfilesInitialized() async {
+    _resetEnsureCacheIfNeeded();
+    if (_profilesEnsured) return;
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles != null && rawProfiles.isNotEmpty) {
       final activeProfileId = _prefs?.getString(_activeProfileIdKey);
@@ -370,6 +385,7 @@ class StorageService {
           await setActiveProfileId(profiles.first.id);
         }
       }
+      _profilesEnsured = true;
       return;
     }
 
@@ -392,11 +408,15 @@ class StorageService {
 
     await saveProfiles([migratedProfile]);
     await setActiveProfileId(migratedProfile.id);
+    _profilesEnsured = true;
   }
 
   Future<void> _ensureTimeSchemesInitialized() async {
+    _resetEnsureCacheIfNeeded();
+    if (_timeSchemesEnsured) return;
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles == null || rawProfiles.isEmpty) {
+      _timeSchemesEnsured = true;
       return;
     }
 
@@ -467,6 +487,7 @@ class StorageService {
         await saveProfiles(profiles);
       }
     }
+    _timeSchemesEnsured = true;
   }
 
   String _sectionSignature(List<SectionTime> sections) {
@@ -476,13 +497,17 @@ class StorageService {
   }
 
   Future<void> _migrateHidePrefixDefault() async {
+    _resetEnsureCacheIfNeeded();
+    if (_hidePrefixMigrated) return;
     if (_prefs?.getBool(_hidePrefixDefaultMigrationKey) == true) {
+      _hidePrefixMigrated = true;
       return;
     }
 
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles == null || rawProfiles.isEmpty) {
       await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
+      _hidePrefixMigrated = true;
       return;
     }
 
@@ -501,5 +526,6 @@ class StorageService {
 
     await saveProfiles(migratedProfiles);
     await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
+    _hidePrefixMigrated = true;
   }
 }

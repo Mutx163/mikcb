@@ -174,8 +174,8 @@ class TimetableProvider with ChangeNotifier {
     if (_settings.semesterStartDate != null) {
       await syncCurrentWeekWithSemesterStart();
     }
-    await _syncHomeWidgetSnapshot();
-    await _syncNativeRuntimePreferences();
+    unawaited(_syncHomeWidgetSnapshot());
+    unawaited(_syncNativeRuntimePreferences());
     if (_enableLiveActivitySync) {
       _startLiveActivityTick();
     }

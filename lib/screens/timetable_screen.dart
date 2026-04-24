@@ -3558,6 +3558,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   void _handleWeekPageChanged(int page, int maxWeek) {
     _lastObservedWeekPage = page;
     _pendingSettledWeek = _clampWeek(page + 1, maxWeek);
+    _visibleWeekListenable.value = _pendingSettledWeek!;
   }
 
   void _syncWeekPageWithProvider(int week, TimetableSettings settings) {
