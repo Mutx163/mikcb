@@ -2151,6 +2151,40 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                       _updateDraft(_draft.copyWith(widgetShowCountdown: value));
                     },
                   ),
+                  if (_draft.widgetShowCountdown) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.homeWidgetCountdownLeadTitle,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.homeWidgetCountdownLeadSubtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<int>(
+                      value: _draft.widgetCountdownLeadMinutes,
+                      items: [
+                        DropdownMenuItem(
+                          value: 0,
+                          child: Text(l10n.homeWidgetCountdownLeadAlways),
+                        ),
+                        for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
+                          DropdownMenuItem(
+                            value: m,
+                            child: Text(l10n.homeWidgetCountdownLeadMinutes('$m')),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          _updateDraft(
+                            _draft.copyWith(widgetCountdownLeadMinutes: value),
+                          );
+                        }
+                      },
+                    ),
+                  ],
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(l10n.homeWidgetHideCompletedTitle),

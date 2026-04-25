@@ -2371,6 +2371,7 @@ class TimetableProvider with ChangeNotifier {
       settings: _settings,
       todayCourses: todayCourses,
       now: currentTime,
+      countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
     );
   }
 
@@ -2562,6 +2563,7 @@ class TimetableProvider with ChangeNotifier {
       now: now,
       showCountdown: snapshot.showCountdown,
       state: snapshot.state.value,
+      countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
     );
     await _homeWidgetService.scheduleRefresh(triggerAtMillis);
   }
