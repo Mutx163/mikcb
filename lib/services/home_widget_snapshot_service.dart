@@ -1,4 +1,5 @@
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../models/timetable_settings.dart';
 
 enum HomeWidgetSnapshotState {
@@ -88,6 +89,12 @@ class HomeWidgetSnapshot {
   final List<HomeWidgetCourseSummary> visibleTodayCourses;
   final HomeWidgetCourseSummary? highlightedCourse;
   final HomeWidgetCourseSummary? nextCourse;
+  final String? nextExamName;
+  final String? nextExamDate;
+  final int? nextExamDaysUntil;
+  final String? nextExamLocation;
+  final String? nextExamStartTime;
+  final String? nextExamEndTime;
 
   const HomeWidgetSnapshot({
     required this.profileId,
@@ -108,6 +115,12 @@ class HomeWidgetSnapshot {
     required this.visibleTodayCourses,
     this.highlightedCourse,
     this.nextCourse,
+    this.nextExamName,
+    this.nextExamDate,
+    this.nextExamDaysUntil,
+    this.nextExamLocation,
+    this.nextExamStartTime,
+    this.nextExamEndTime,
   });
 
   Map<String, dynamic> toJson() {
@@ -131,6 +144,12 @@ class HomeWidgetSnapshot {
           visibleTodayCourses.map((course) => course.toJson()).toList(),
       'highlightedCourse': highlightedCourse?.toJson(),
       'nextCourse': nextCourse?.toJson(),
+      'nextExamName': nextExamName,
+      'nextExamDate': nextExamDate,
+      'nextExamDaysUntil': nextExamDaysUntil,
+      'nextExamLocation': nextExamLocation,
+      'nextExamStartTime': nextExamStartTime,
+      'nextExamEndTime': nextExamEndTime,
     };
   }
 }
@@ -147,6 +166,7 @@ class HomeWidgetSnapshotService {
     required DateTime now,
     int countdownLeadMinutes = 20,
     String countdownTextStyle = 'smart',
+    Exam? nextExam,
   }) {
     final summaries = todayCourses
         .map(HomeWidgetCourseSummary.fromCourse)
@@ -210,6 +230,14 @@ class HomeWidgetSnapshotService {
       nextCourse: upcomingCourse == null
           ? null
           : HomeWidgetCourseSummary.fromCourse(upcomingCourse),
+      nextExamName: nextExam?.name,
+      nextExamDate: nextExam != null
+          ? '${nextExam.dateTime.year}-${nextExam.dateTime.month.toString().padLeft(2, '0')}-${nextExam.dateTime.day.toString().padLeft(2, '0')}'
+          : null,
+      nextExamDaysUntil: nextExam?.daysUntil,
+      nextExamLocation: nextExam?.location,
+      nextExamStartTime: nextExam?.startTime,
+      nextExamEndTime: nextExam?.endTime,
     );
   }
 

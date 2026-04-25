@@ -2522,5 +2522,52 @@
       }
     }
   },
-  "scheduleDeletedHint": "Schedule deleted"
+  "scheduleDeletedHint": "Schedule deleted",
+  "examListTitle": "Exams",
+  "addExam": "Add Exam",
+  "editExam": "Edit Exam",
+  "saveExam": "Save Exam",
+  "noExams": "No exams scheduled",
+  "examToday": "Exam today",
+  "daysUntilExam": "{days} days until exam",
+  "@daysUntilExam": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "examPassed": "Completed",
+  "linkCourse": "Linked Course",
+  "linkCourseRequired": "Please select a course",
+  "examNameLabel": "Exam Name",
+  "examNameRequired": "Please enter exam name",
+  "examDateLabel": "Exam Date",
+  "examStartTimeLabel": "Start Time",
+  "examEndTimeLabel": "End Time",
+  "examLocationLabel": "Exam Room",
+  "examLocationHint": "Leave empty to use classroom",
+  "sameAsClassroom": "Same as classroom",
+  "examSeatLabel": "Seat Number",
+  "examReminderLabel": "Reminder",
+  "examNoteLabel": "Note",
+  "deleteExam": "Delete Exam",
+  "deleteExamConfirm": "Delete exam \"{name}\"?",
+  "@deleteExamConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "examBadgeLabel": "Exam",
+  "examCountdownToday": "Today",
+  "examCountdownDays": "in {days} days",
+  "@examCountdownDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

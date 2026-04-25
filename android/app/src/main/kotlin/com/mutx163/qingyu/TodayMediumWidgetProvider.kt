@@ -77,6 +77,7 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_medium_title, primaryColor)
             views.setTextColor(R.id.widget_medium_time, primaryColor)
             views.setTextColor(R.id.widget_medium_meta, secondaryColor)
+            views.setTextColor(R.id.widget_medium_exam, secondaryColor)
             views.setTextColor(R.id.widget_medium_footer, secondaryColor)
             views.setInt(
                 R.id.widget_medium_label,
@@ -90,6 +91,7 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_medium_time, "稍后打开应用同步")
                 views.setTextViewText(R.id.widget_medium_meta, "轻屿课表")
                 views.setTextViewText(R.id.widget_medium_footer, "点击打开首页")
+                views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
                 setRowVisibility(views, false, false, false)
             } else {
                 views.setTextViewText(
@@ -113,6 +115,13 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                     R.id.widget_medium_footer,
                     TodayWidgetSupport.footerText(snapshot)
                 )
+                val examText = TodayWidgetSupport.examCountdownText(snapshot)
+                if (examText != null) {
+                    views.setViewVisibility(R.id.widget_medium_exam, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_medium_exam, examText)
+                } else {
+                    views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
+                }
 
                 val secondaryCourses = TodayWidgetSupport.secondaryCourses(
                     snapshot,

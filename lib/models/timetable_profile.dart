@@ -1,4 +1,5 @@
 import 'course.dart';
+import 'exam.dart';
 import 'schedule_item.dart';
 import 'timetable_settings.dart';
 
@@ -19,6 +20,7 @@ class TimetableProfile {
   final String name;
   final List<Course> courses;
   final List<ScheduleItem> scheduleItems;
+  final List<Exam> exams;
   final TimetableSettings settings;
   final int currentWeek;
   final DateTime createdAt;
@@ -29,6 +31,7 @@ class TimetableProfile {
     required this.name,
     required this.courses,
     this.scheduleItems = const [],
+    this.exams = const [],
     required this.settings,
     required this.currentWeek,
     required this.createdAt,
@@ -41,6 +44,7 @@ class TimetableProfile {
       'name': name,
       'courses': courses.map((course) => course.toJson()).toList(),
       'scheduleItems': scheduleItems.map((item) => item.toJson()).toList(),
+      'exams': exams.map((exam) => exam.toJson()).toList(),
       'settings': settings.toJson(),
       'currentWeek': currentWeek,
       'createdAt': createdAt.toIso8601String(),
@@ -65,6 +69,10 @@ class TimetableProfile {
           .map((item) =>
               ScheduleItem.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
+      exams: (json['exams'] as List<dynamic>? ?? const [])
+          .map((item) =>
+              Exam.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList(),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
@@ -82,6 +90,7 @@ class TimetableProfile {
     String? name,
     List<Course>? courses,
     List<ScheduleItem>? scheduleItems,
+    List<Exam>? exams,
     TimetableSettings? settings,
     int? currentWeek,
     DateTime? createdAt,
@@ -92,6 +101,7 @@ class TimetableProfile {
       name: name ?? this.name,
       courses: courses ?? this.courses,
       scheduleItems: scheduleItems ?? this.scheduleItems,
+      exams: exams ?? this.exams,
       settings: settings ?? this.settings,
       currentWeek: currentWeek ?? this.currentWeek,
       createdAt: createdAt ?? this.createdAt,

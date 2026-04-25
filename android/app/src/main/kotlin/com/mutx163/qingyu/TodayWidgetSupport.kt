@@ -37,6 +37,12 @@ data class TodayWidgetSnapshotInfo(
     val visibleTodayCourses: List<TodayWidgetCourseInfo>,
     val highlightedCourse: TodayWidgetCourseInfo?,
     val nextCourse: TodayWidgetCourseInfo?,
+    val nextExamName: String?,
+    val nextExamDate: String?,
+    val nextExamDaysUntil: Int?,
+    val nextExamLocation: String?,
+    val nextExamStartTime: String?,
+    val nextExamEndTime: String?,
 )
 
 data class TodayWidgetSizeProfile(
@@ -181,6 +187,61 @@ object TodayWidgetSupport {
             }
             else -> false
         }
+        // Find next upcoming exam
+        val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        val todayDateStr = String.format("%04d-%02d-%02d",
+            nowCalendar.get(Calendar.YEAR),
+            nowCalendar.get(Calendar.MONTH) + 1,
+            nowCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        val examsArray = profileJson.optJSONArray("exams")
+        var nextExamName: String? = null
+        var nextExamDate: String? = null
+        var nextExamDaysUntil: Int? = null
+        var nextExamLocation: String? = null
+        var nextExamStartTime: String? = null
+        var nextExamEndTime: String? = null
+        if (examsArray != null) {
+            var bestDate: String? = null
+            for (i in 0 until examsArray.length()) {
+                val exam = examsArray.optJSONObject(i) ?: continue
+                val dateStr = exam.optString("dateTime").takeIf { it.isNotBlank() } ?: continue
+                val dateOnly = dateStr.take(10) // "yyyy-MM-dd"
+                if (dateOnly < todayDateStr) continue // expired
+                if (bestDate == null || dateOnly < bestDate) {
+                    bestDate = dateOnly
+                    nextExamName = exam.optString("name").takeIf { it.isNotBlank() }
+                    nextExamDate = dateOnly
+                    nextExamLocation = exam.optString("location").takeIf { it.isNotBlank() }
+                    nextExamStartTime = exam.optString("startTime").takeIf { it.isNotBlank() }
+                    nextExamEndTime = exam.optString("endTime").takeIf { it.isNotBlank() }
+                }
+            }
+            if (bestDate != null) {
+                // Calculate daysUntil
+                val examCal = Calendar.getInstance().apply {
+                    val parts = bestDate!!.split("-")
+                    if (parts.size == 3) {
+                        set(Calendar.YEAR, parts[0].toInt())
+                        set(Calendar.MONTH, parts[1].toInt() - 1)
+                        set(Calendar.DAY_OF_MONTH, parts[2].toInt())
+                        set(Calendar.HOUR_OF_DAY, 0)
+                        set(Calendar.MINUTE, 0)
+                        set(Calendar.SECOND, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                }
+                val todayCal = Calendar.getInstance().apply {
+                    timeInMillis = nowMillis
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val diffDays = ((examCal.timeInMillis - todayCal.timeInMillis) / 86_400_000L).toInt()
+                nextExamDaysUntil = diffDays.coerceAtLeast(0)
+            }
+        }
         return TodayWidgetSnapshotInfo(
             profileName = profileJson.optString("name", "轻屿课表"),
             currentWeek = currentWeek,
@@ -197,6 +258,12 @@ object TodayWidgetSupport {
             visibleTodayCourses = visibleTodayCourses.map { it.toWidgetCourseInfo() },
             highlightedCourse = (currentCourse ?: upcomingCourse)?.toWidgetCourseInfo(),
             nextCourse = upcomingCourse?.toWidgetCourseInfo(),
+            nextExamName = nextExamName,
+            nextExamDate = nextExamDate,
+            nextExamDaysUntil = nextExamDaysUntil,
+            nextExamLocation = nextExamLocation,
+            nextExamStartTime = nextExamStartTime,
+            nextExamEndTime = nextExamEndTime,
         )
     }
 
@@ -435,6 +502,26 @@ object TodayWidgetSupport {
         }
     }
 
+    fun examCountdownText(snapshot: TodayWidgetSnapshotInfo): String? {
+        val name = snapshot.nextExamName ?: return null
+        val daysUntil = snapshot.nextExamDaysUntil ?: return null
+        val timeRange = if (!snapshot.nextExamStartTime.isNullOrBlank() && !snapshot.nextExamEndTime.isNullOrBlank()) {
+            " ${snapshot.nextExamStartTime}-${snapshot.nextExamEndTime}"
+        } else {
+            ""
+        }
+        val location = if (!snapshot.nextExamLocation.isNullOrBlank()) {
+            " ${snapshot.nextExamLocation}"
+        } else {
+            ""
+        }
+        return when {
+            daysUntil == 0 -> "考试日 ${name}${timeRange}${location}"
+            daysUntil <= 7 -> "距${name}还有${daysUntil}天${timeRange}${location}"
+            else -> null
+        }
+    }
+
     fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
         return if (snapshot.totalTodayCourseCount > 0) {
             "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
@@ -486,6 +573,12 @@ object TodayWidgetSupport {
             visibleTodayCourses = visibleCourses,
             highlightedCourse = json.optJSONObject("highlightedCourse")?.let(::parseCourse),
             nextCourse = json.optJSONObject("nextCourse")?.let(::parseCourse),
+            nextExamName = json.optString("nextExamName").takeIf { it.isNotBlank() },
+            nextExamDate = json.optString("nextExamDate").takeIf { it.isNotBlank() },
+            nextExamDaysUntil = json.optInt("nextExamDaysUntil", -1).takeIf { it >= 0 },
+            nextExamLocation = json.optString("nextExamLocation").takeIf { it.isNotBlank() },
+            nextExamStartTime = json.optString("nextExamStartTime").takeIf { it.isNotBlank() },
+            nextExamEndTime = json.optString("nextExamEndTime").takeIf { it.isNotBlank() },
         )
     }
 

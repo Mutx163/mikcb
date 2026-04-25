@@ -1408,6 +1408,18 @@
   "homeWidgetShowLocationSubtitle": "關閉後，小組件次級資訊会優先顯示周次和課程數量。",
   "homeWidgetShowCountdownTitle": "顯示倒計時",
   "homeWidgetShowCountdownSubtitle": "先保留刷新開關，後续会用于下一節課和上課中的剩余時間展示。",
+  "homeWidgetCountdownLeadTitle": "倒計時提前量",
+  "homeWidgetCountdownLeadSubtitle": "設置上課前多少分鐘自動切換到倒計時模式。",
+  "homeWidgetCountdownLeadAlways": "始終顯示",
+  "homeWidgetCountdownLeadMinutes": "上課前 {minutes} 分鐘",
+  "@homeWidgetCountdownLeadMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
+  "widgetCountdownStyleTitle": "倒計時樣式",
   "homeWidgetHideCompletedTitle": "隱藏已上完課程",
   "homeWidgetHideCompletedSubtitle": "開啟後，2×2、2×4 和 4×4 課程列表只顯示還没结束的課程。",
   "homeWidgetHeightAdjustTitle": "卡片高度微調",
@@ -2509,5 +2521,52 @@
     }
   },
   "clearedRememberedLoginStatus": "已清除記住的登入資訊",
-  "clearedRememberedLoginSuccess": "已清除記住的登入資訊"
+  "clearedRememberedLoginSuccess": "已清除記住的登入資訊",
+  "examListTitle": "考試安排",
+  "addExam": "添加考試",
+  "editExam": "編輯考試",
+  "saveExam": "儲存考試",
+  "noExams": "暫無考試安排",
+  "examToday": "今天有考試",
+  "daysUntilExam": "距離考試還有 {days} 天",
+  "@daysUntilExam": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "examPassed": "已結束",
+  "linkCourse": "關聯課程",
+  "linkCourseRequired": "請選擇關聯課程",
+  "examNameLabel": "考試名稱",
+  "examNameRequired": "請輸入考試名稱",
+  "examDateLabel": "考試日期",
+  "examStartTimeLabel": "開始時間",
+  "examEndTimeLabel": "結束時間",
+  "examLocationLabel": "考場",
+  "examLocationHint": "留空則使用上課教室",
+  "sameAsClassroom": "同上課教室",
+  "examSeatLabel": "座位號",
+  "examReminderLabel": "提醒設定",
+  "examNoteLabel": "備註",
+  "deleteExam": "刪除考試",
+  "deleteExamConfirm": "刪除考試「{name}」？",
+  "@deleteExamConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "examBadgeLabel": "考試",
+  "examCountdownToday": "今天",
+  "examCountdownDays": "{days}天後",
+  "@examCountdownDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

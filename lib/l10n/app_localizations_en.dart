@@ -4376,4 +4376,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get scheduleDeletedHint => 'Schedule deleted';
+
+  @override
+  String get examListTitle => 'Exams';
+
+  @override
+  String get addExam => 'Add Exam';
+
+  @override
+  String get editExam => 'Edit Exam';
+
+  @override
+  String get saveExam => 'Save Exam';
+
+  @override
+  String get noExams => 'No exams scheduled';
+
+  @override
+  String get examToday => 'Exam today';
+
+  @override
+  String daysUntilExam(int days) {
+    return '$days days until exam';
+  }
+
+  @override
+  String get examPassed => 'Completed';
+
+  @override
+  String get linkCourse => 'Linked Course';
+
+  @override
+  String get linkCourseRequired => 'Please select a course';
+
+  @override
+  String get examNameLabel => 'Exam Name';
+
+  @override
+  String get examNameRequired => 'Please enter exam name';
+
+  @override
+  String get examDateLabel => 'Exam Date';
+
+  @override
+  String get examStartTimeLabel => 'Start Time';
+
+  @override
+  String get examEndTimeLabel => 'End Time';
+
+  @override
+  String get examLocationLabel => 'Exam Room';
+
+  @override
+  String get examLocationHint => 'Leave empty to use classroom';
+
+  @override
+  String get sameAsClassroom => 'Same as classroom';
+
+  @override
+  String get examSeatLabel => 'Seat Number';
+
+  @override
+  String get examReminderLabel => 'Reminder';
+
+  @override
+  String get examNoteLabel => 'Note';
+
+  @override
+  String get deleteExam => 'Delete Exam';
+
+  @override
+  String deleteExamConfirm(String name) {
+    return 'Delete exam \"$name\"?';
+  }
+
+  @override
+  String get examBadgeLabel => 'Exam';
+
+  @override
+  String get examCountdownToday => 'Today';
+
+  @override
+  String examCountdownDays(int days) {
+    return 'in $days days';
+  }
 }

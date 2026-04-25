@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
@@ -11,6 +12,7 @@ import '../models/timetable_settings.dart';
 class AppDataBackup {
   final String? profileName;
   final List<Course> courses;
+  final List<Exam> exams;
   final TimetableSettings settings;
   final int currentWeek;
   final DateTime exportedAt;
@@ -18,6 +20,7 @@ class AppDataBackup {
   const AppDataBackup({
     this.profileName,
     required this.courses,
+    this.exams = const [],
     required this.settings,
     required this.currentWeek,
     required this.exportedAt,
@@ -45,6 +48,7 @@ class DataTransferService {
   String buildBackupJson({
     String? profileName,
     required List<Course> courses,
+    List<Exam> exams = const [],
     required TimetableSettings settings,
     required int currentWeek,
   }) {
@@ -56,6 +60,7 @@ class DataTransferService {
       'currentWeek': currentWeek,
       'settings': settings.toJson(),
       'courses': courses.map((course) => course.toJson()).toList(),
+      'exams': exams.map((exam) => exam.toJson()).toList(),
     });
   }
 
@@ -84,6 +89,10 @@ class DataTransferService {
           ? null
           : json['profileName'] as String?,
       courses: rawCourses,
+      exams: (json['exams'] as List<dynamic>? ?? const [])
+          .map((item) =>
+              Exam.fromJson(Map<String, dynamic>.from(item as Map)))
+          .toList(),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
@@ -149,6 +158,7 @@ class DataTransferService {
   Future<void> exportAndShare({
     String? profileName,
     required List<Course> courses,
+    List<Exam> exams = const [],
     required TimetableSettings settings,
     required int currentWeek,
   }) async {
@@ -160,6 +170,7 @@ class DataTransferService {
         buildBackupJson(
           profileName: profileName,
           courses: courses,
+          exams: exams,
           settings: settings,
           currentWeek: currentWeek,
         ),
