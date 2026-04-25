@@ -28,6 +28,7 @@ migrate_working_dir/
 .claude/
 .mcp.json
 CLAUDE.md
+.trellis/
 
 # Flutter/Dart/Pub related
 **/doc/api/
