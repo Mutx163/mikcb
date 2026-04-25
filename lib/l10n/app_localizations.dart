@@ -4649,6 +4649,12 @@ abstract class AppLocalizations {
   /// **'上课前 {minutes} 分钟'**
   String homeWidgetCountdownLeadMinutes(String minutes);
 
+  /// No description provided for @widgetCountdownStyleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒计时样式'**
+  String get widgetCountdownStyleTitle;
+
   /// No description provided for @homeWidgetHideCompletedTitle.
   ///
   /// In zh, this message translates to:

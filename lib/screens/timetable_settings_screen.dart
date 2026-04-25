@@ -2178,6 +2178,29 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         }
                       },
                     ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<LiveCountdownTextStyle>(
+                      value: _draft.widgetCountdownTextStyle,
+                      decoration: InputDecoration(
+                        labelText: l10n.widgetCountdownStyleTitle,
+                        border: const OutlineInputBorder(),
+                      ),
+                      items: LiveCountdownTextStyle.values
+                          .map(
+                            (style) => DropdownMenuItem(
+                              value: style,
+                              child: Text(style.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          _updateDraft(
+                            _draft.copyWith(widgetCountdownTextStyle: value),
+                          );
+                        }
+                      },
+                    ),
                   ],
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,

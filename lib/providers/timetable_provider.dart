@@ -2372,6 +2372,7 @@ class TimetableProvider with ChangeNotifier {
       todayCourses: todayCourses,
       now: currentTime,
       countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
+      countdownTextStyle: _settings.widgetCountdownTextStyle.value,
     );
   }
 

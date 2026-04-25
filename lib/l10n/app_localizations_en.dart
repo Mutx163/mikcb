@@ -2679,6 +2679,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get widgetCountdownStyleTitle => 'Countdown style';
+
+  @override
   String get homeWidgetHideCompletedTitle => 'Hide completed classes';
 
   @override

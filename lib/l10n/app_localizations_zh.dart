@@ -2512,6 +2512,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get widgetCountdownStyleTitle => '倒计时样式';
+
+  @override
   String get homeWidgetHideCompletedTitle => '隐藏已上完课程';
 
   @override

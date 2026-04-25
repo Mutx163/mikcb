@@ -1419,6 +1419,7 @@
       }
     }
   },
+  "widgetCountdownStyleTitle": "倒计时样式",
   "homeWidgetHideCompletedTitle": "隐藏已上完课程",
   "homeWidgetHideCompletedSubtitle": "开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。",
   "homeWidgetHeightAdjustTitle": "卡片高度微调",

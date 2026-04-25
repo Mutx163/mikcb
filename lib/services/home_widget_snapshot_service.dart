@@ -79,6 +79,7 @@ class HomeWidgetSnapshot {
   final WidgetBackgroundStyle backgroundStyle;
   final bool showLocation;
   final bool showCountdown;
+  final String countdownTextStyle;
   final bool hideCompletedCourses;
   final double heightAdjustment;
   final double cornerRadius;
@@ -98,6 +99,7 @@ class HomeWidgetSnapshot {
     required this.backgroundStyle,
     required this.showLocation,
     required this.showCountdown,
+    required this.countdownTextStyle,
     required this.hideCompletedCourses,
     required this.heightAdjustment,
     required this.cornerRadius,
@@ -119,6 +121,7 @@ class HomeWidgetSnapshot {
       'backgroundStyle': backgroundStyle.value,
       'showLocation': showLocation,
       'showCountdown': showCountdown,
+      'countdownTextStyle': countdownTextStyle,
       'hideCompletedCourses': hideCompletedCourses,
       'heightAdjustment': heightAdjustment,
       'cornerRadius': cornerRadius,
@@ -143,6 +146,7 @@ class HomeWidgetSnapshotService {
     required List<Course> todayCourses,
     required DateTime now,
     int countdownLeadMinutes = 20,
+    String countdownTextStyle = 'smart',
   }) {
     final summaries = todayCourses
         .map(HomeWidgetCourseSummary.fromCourse)
@@ -191,6 +195,7 @@ class HomeWidgetSnapshotService {
       backgroundStyle: settings.widgetBackgroundStyle,
       showLocation: settings.widgetShowLocation,
       showCountdown: effectiveShowCountdown,
+      countdownTextStyle: countdownTextStyle,
       hideCompletedCourses: settings.widgetHideCompletedCourses,
       heightAdjustment: settings.widgetHeightAdjustment,
       cornerRadius: settings.widgetCornerRadius,
