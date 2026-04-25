@@ -741,6 +741,7 @@ class TimetableSettings {
   final bool widgetHideCompletedCourses;
   final double widgetHeightAdjustment;
   final double widgetCornerRadius;
+  final int widgetCountdownLeadMinutes;
   final AppThemeMode appThemeMode;
   final AppFontMode appFontMode;
   final String appLocaleTag;
@@ -847,6 +848,7 @@ class TimetableSettings {
     this.widgetHideCompletedCourses = false,
     this.widgetHeightAdjustment = -11,
     this.widgetCornerRadius = 22,
+    this.widgetCountdownLeadMinutes = 20,
     this.appThemeMode = AppThemeMode.system,
     this.appFontMode = AppFontMode.system,
     this.appLocaleTag = '',
@@ -1085,6 +1087,7 @@ class TimetableSettings {
       'widgetHideCompletedCourses': widgetHideCompletedCourses,
       'widgetHeightAdjustment': widgetHeightAdjustment,
       'widgetCornerRadius': widgetCornerRadius,
+      'widgetCountdownLeadMinutes': widgetCountdownLeadMinutes,
       'appThemeMode': appThemeMode.value,
       'appFontMode': appFontMode.value,
       'appLocaleTag': appLocaleTag,
@@ -1253,6 +1256,8 @@ class TimetableSettings {
           (json['widgetHeightAdjustment'] as num?)?.toDouble() ?? -11,
       widgetCornerRadius:
           (json['widgetCornerRadius'] as num?)?.toDouble() ?? 22,
+      widgetCountdownLeadMinutes:
+          (json['widgetCountdownLeadMinutes'] as num?)?.toInt() ?? 20,
       appThemeMode: AppThemeModeX.fromValue(json['appThemeMode'] as String?),
       appFontMode: AppFontModeX.fromValue(json['appFontMode'] as String?),
       appLocaleTag: _normalizeAppLocaleTag(
@@ -1483,6 +1488,7 @@ class TimetableSettings {
     bool? widgetHideCompletedCourses,
     double? widgetHeightAdjustment,
     double? widgetCornerRadius,
+    int? widgetCountdownLeadMinutes,
     AppThemeMode? appThemeMode,
     AppFontMode? appFontMode,
     String? appLocaleTag,
@@ -1612,6 +1618,7 @@ class TimetableSettings {
       widgetHeightAdjustment:
           widgetHeightAdjustment ?? this.widgetHeightAdjustment,
       widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,
+      widgetCountdownLeadMinutes: widgetCountdownLeadMinutes ?? this.widgetCountdownLeadMinutes,
       appThemeMode: appThemeMode ?? this.appThemeMode,
       appFontMode: appFontMode ?? this.appFontMode,
       appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),

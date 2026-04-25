@@ -4625,6 +4625,30 @@ abstract class AppLocalizations {
   /// **'先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。'**
   String get homeWidgetShowCountdownSubtitle;
 
+  /// No description provided for @homeWidgetCountdownLeadTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒计时提前量'**
+  String get homeWidgetCountdownLeadTitle;
+
+  /// No description provided for @homeWidgetCountdownLeadSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置上课前多少分钟自动切换到倒计时模式。'**
+  String get homeWidgetCountdownLeadSubtitle;
+
+  /// No description provided for @homeWidgetCountdownLeadAlways.
+  ///
+  /// In zh, this message translates to:
+  /// **'始终显示'**
+  String get homeWidgetCountdownLeadAlways;
+
+  /// No description provided for @homeWidgetCountdownLeadMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课前 {minutes} 分钟'**
+  String homeWidgetCountdownLeadMinutes(String minutes);
+
   /// No description provided for @homeWidgetHideCompletedTitle.
   ///
   /// In zh, this message translates to:

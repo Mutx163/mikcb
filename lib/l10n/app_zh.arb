@@ -1408,6 +1408,17 @@
   "homeWidgetShowLocationSubtitle": "关闭后，小组件次级信息会优先显示周次和课程数量。",
   "homeWidgetShowCountdownTitle": "显示倒计时",
   "homeWidgetShowCountdownSubtitle": "先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。",
+  "homeWidgetCountdownLeadTitle": "倒计时提前量",
+  "homeWidgetCountdownLeadSubtitle": "设置上课前多少分钟自动切换到倒计时模式。",
+  "homeWidgetCountdownLeadAlways": "始终显示",
+  "homeWidgetCountdownLeadMinutes": "上课前 {minutes} 分钟",
+  "@homeWidgetCountdownLeadMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
   "homeWidgetHideCompletedTitle": "隐藏已上完课程",
   "homeWidgetHideCompletedSubtitle": "开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。",
   "homeWidgetHeightAdjustTitle": "卡片高度微调",

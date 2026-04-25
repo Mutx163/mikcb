@@ -1408,6 +1408,17 @@
   "homeWidgetShowLocationSubtitle": "When turned off, the widget secondary info will prioritize week info and course count.",
   "homeWidgetShowCountdownTitle": "Show countdown",
   "homeWidgetShowCountdownSubtitle": "The refresh switch is kept for now and will later be used to show remaining time before the next class and during class.",
+  "homeWidgetCountdownLeadTitle": "Countdown lead time",
+  "homeWidgetCountdownLeadSubtitle": "Set how many minutes before class to automatically switch to countdown mode.",
+  "homeWidgetCountdownLeadAlways": "Always show",
+  "homeWidgetCountdownLeadMinutes": "{minutes} min before class",
+  "@homeWidgetCountdownLeadMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
   "homeWidgetHideCompletedTitle": "Hide completed classes",
   "homeWidgetHideCompletedSubtitle": "When enabled, the 2×2, 2×4, and 4×4 course lists show only classes that have not finished yet.",
   "homeWidgetHeightAdjustTitle": "Card height adjustment",

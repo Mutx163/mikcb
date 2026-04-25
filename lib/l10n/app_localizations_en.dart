@@ -2664,6 +2664,21 @@ class AppLocalizationsEn extends AppLocalizations {
       'The refresh switch is kept for now and will later be used to show remaining time before the next class and during class.';
 
   @override
+  String get homeWidgetCountdownLeadTitle => 'Countdown lead time';
+
+  @override
+  String get homeWidgetCountdownLeadSubtitle =>
+      'Set how many minutes before class to automatically switch to countdown mode.';
+
+  @override
+  String get homeWidgetCountdownLeadAlways => 'Always show';
+
+  @override
+  String homeWidgetCountdownLeadMinutes(String minutes) {
+    return '$minutes min before class';
+  }
+
+  @override
   String get homeWidgetHideCompletedTitle => 'Hide completed classes';
 
   @override

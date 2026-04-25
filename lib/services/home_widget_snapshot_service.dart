@@ -142,6 +142,7 @@ class HomeWidgetSnapshotService {
     required TimetableSettings settings,
     required List<Course> todayCourses,
     required DateTime now,
+    int countdownLeadMinutes = 20,
   }) {
     final summaries = todayCourses
         .map(HomeWidgetCourseSummary.fromCourse)
@@ -167,6 +168,19 @@ class HomeWidgetSnapshotService {
       (false, null, null) => HomeWidgetSnapshotState.completed,
     };
 
+    // Compute effective showCountdown based on countdownLeadMinutes.
+    final bool effectiveShowCountdown;
+    if (!settings.widgetShowCountdown) {
+      effectiveShowCountdown = false;
+    } else if (countdownLeadMinutes == 0) {
+      effectiveShowCountdown = true;
+    } else {
+      effectiveShowCountdown = state == HomeWidgetSnapshotState.ongoing ||
+          (state == HomeWidgetSnapshotState.upcoming &&
+              upcomingCourse != null &&
+              _isWithinLeadMinutes(now, upcomingCourse, countdownLeadMinutes));
+    }
+
     return HomeWidgetSnapshot(
       profileId: profileId,
       profileName: profileName,
@@ -176,7 +190,7 @@ class HomeWidgetSnapshotService {
       state: state,
       backgroundStyle: settings.widgetBackgroundStyle,
       showLocation: settings.widgetShowLocation,
-      showCountdown: settings.widgetShowCountdown,
+      showCountdown: effectiveShowCountdown,
       hideCompletedCourses: settings.widgetHideCompletedCourses,
       heightAdjustment: settings.widgetHeightAdjustment,
       cornerRadius: settings.widgetCornerRadius,
@@ -199,6 +213,7 @@ class HomeWidgetSnapshotService {
     required DateTime now,
     bool showCountdown = false,
     String state = 'no_course',
+    int countdownLeadMinutes = 20,
   }) {
     final triggers = <int>{};
     for (final course in todayCourses) {
@@ -206,6 +221,14 @@ class HomeWidgetSnapshotService {
       final end = _buildCourseDateTime(now, course.endTime);
       if (start != null && start.isAfter(now)) {
         triggers.add(start.millisecondsSinceEpoch);
+        // Add trigger at countdown activation point (start - lead minutes).
+        if (countdownLeadMinutes > 0) {
+          final activation =
+              start.subtract(Duration(minutes: countdownLeadMinutes));
+          if (activation.isAfter(now)) {
+            triggers.add(activation.millisecondsSinceEpoch);
+          }
+        }
       }
       if (end != null && end.isAfter(now)) {
         triggers.add(end.millisecondsSinceEpoch);
@@ -247,6 +270,14 @@ class HomeWidgetSnapshotService {
       }
     }
     return null;
+  }
+
+  bool _isWithinLeadMinutes(
+      DateTime now, Course course, int leadMinutes) {
+    final start = _buildCourseDateTime(now, course.startTime);
+    if (start == null) return false;
+    final threshold = start.subtract(Duration(minutes: leadMinutes));
+    return !now.isBefore(threshold);
   }
 
   DateTime? _buildCourseDateTime(DateTime now, String clock) {

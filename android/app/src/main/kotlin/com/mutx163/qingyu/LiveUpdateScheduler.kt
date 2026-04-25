@@ -1407,8 +1407,8 @@ object LiveUpdateScheduler {
             val breakEndOffsetMillis =
                 ((((nextStartMinutes - sectionStartMinutes).toDouble() / referenceTotalMinutes) *
                     totalDurationMillis).toLong()).coerceIn(1L, totalDurationMillis - 1L)
-            milestones += breakStartOffsetMillis to ("最近下课" to currentSection.endTime)
-            milestones += breakEndOffsetMillis to ("下节上课" to nextSection.startTime)
+            milestones += breakStartOffsetMillis to ("Class ending soon" to currentSection.endTime)
+            milestones += breakEndOffsetMillis to ("Next class starts" to nextSection.startTime)
         }
         return milestones.sortedBy { it.first }
     }

@@ -999,15 +999,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   }
 
   Future<void> _persistDraft(TimetableSettings next) async {
-    final display = widget.forDuringEnd
-        ? next.duringEndDisplaySettings
-        : next.beforeClassDisplaySettings;
-    if (display.miuiIslandExpandedIconMode ==
-            MiuiIslandExpandedIconMode.customImage &&
-        (display.miuiIslandExpandedIconPath == null ||
-            display.miuiIslandExpandedIconPath!.isEmpty)) {
-      return;
-    }
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;

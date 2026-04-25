@@ -2498,6 +2498,20 @@ class AppLocalizationsZh extends AppLocalizations {
   String get homeWidgetShowCountdownSubtitle => '先保留刷新开关，后续会用于下一节课和上课中的剩余时间展示。';
 
   @override
+  String get homeWidgetCountdownLeadTitle => '倒计时提前量';
+
+  @override
+  String get homeWidgetCountdownLeadSubtitle => '设置上课前多少分钟自动切换到倒计时模式。';
+
+  @override
+  String get homeWidgetCountdownLeadAlways => '始终显示';
+
+  @override
+  String homeWidgetCountdownLeadMinutes(String minutes) {
+    return '上课前 $minutes 分钟';
+  }
+
+  @override
   String get homeWidgetHideCompletedTitle => '隐藏已上完课程';
 
   @override
