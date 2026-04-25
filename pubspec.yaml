@@ -24,6 +24,7 @@ dependencies:
   path_provider: ^2.1.5
   open_filex: ^4.7.0
   flutter_markdown: ^0.7.7+1
+  flutter_secure_storage: ^9.2.4
   webview_flutter: 4.11.0
   azlistview: ^2.0.0
   animations: ^2.0.11

@@ -38,6 +38,48 @@ class StorageService {
     _prefs = await SharedPreferences.getInstance();
   }
 
+  Future<void> _backupAndRemoveCorruptString(String key, String raw) async {
+    final prefs = _prefs;
+    if (prefs == null) {
+      return;
+    }
+    final backupKey =
+        '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
+    await prefs.setString(backupKey, raw);
+    await prefs.remove(key);
+  }
+
+  Future<void> _backupAndRemoveCorruptStringList(
+    String key,
+    List<String> raw,
+  ) async {
+    final prefs = _prefs;
+    if (prefs == null) {
+      return;
+    }
+    final backupKey =
+        '${key}_corrupt_backup_${DateTime.now().microsecondsSinceEpoch}';
+    await prefs.setString(backupKey, jsonEncode(raw));
+    await prefs.remove(key);
+  }
+
+  Future<List<dynamic>?> _readJsonListPreference(String key) async {
+    final raw = _prefs?.getString(key);
+    if (raw == null || raw.isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is List<dynamic>) {
+        return decoded;
+      }
+    } catch (_) {
+      // Backed up below.
+    }
+    await _backupAndRemoveCorruptString(key, raw);
+    return null;
+  }
+
   void _resetEnsureCacheIfNeeded() {
     if (_ensuredForPrefs != _prefs) {
       _ensuredForPrefs = _prefs;
@@ -51,7 +93,12 @@ class StorageService {
   Future<List<Course>> getCourses() async {
     if (_prefs == null) await init();
     final coursesJson = _prefs?.getStringList(_coursesKey) ?? [];
-    return coursesJson.map((json) => Course.fromJsonString(json)).toList();
+    try {
+      return coursesJson.map((json) => Course.fromJsonString(json)).toList();
+    } catch (_) {
+      await _backupAndRemoveCorruptStringList(_coursesKey, coursesJson);
+      return const [];
+    }
   }
 
   Future<void> saveCourses(List<Course> courses) async {
@@ -87,7 +134,12 @@ class StorageService {
     if (settingsJson == null || settingsJson.isEmpty) {
       return TimetableSettings.defaults();
     }
-    return TimetableSettings.fromJsonString(settingsJson);
+    try {
+      return TimetableSettings.fromJsonString(settingsJson);
+    } catch (_) {
+      await _backupAndRemoveCorruptString(_timetableSettingsKey, settingsJson);
+      return TimetableSettings.defaults();
+    }
   }
 
   Future<void> saveTimetableSettings(TimetableSettings settings) async {
@@ -186,7 +238,7 @@ class StorageService {
 
     final profilesJson = _prefs?.getString(_profilesKey);
     if (profilesJson != null && profilesJson.isNotEmpty) {
-      final rawProfiles = jsonDecode(profilesJson) as List<dynamic>;
+      final rawProfiles = await _readJsonListPreference(_profilesKey);
       if (!_isProfilesPayloadEffectivelyEmpty(rawProfiles)) {
         return false;
       }
@@ -194,7 +246,7 @@ class StorageService {
 
     final timeSchemesJson = _prefs?.getString(_timeSchemesKey);
     if (timeSchemesJson != null && timeSchemesJson.isNotEmpty) {
-      final schemes = jsonDecode(timeSchemesJson) as List<dynamic>;
+      final schemes = await _readJsonListPreference(_timeSchemesKey);
       if (!_isTimeSchemesPayloadEffectivelyEmpty(schemes)) {
         return false;
       }
@@ -217,7 +269,10 @@ class StorageService {
     return true;
   }
 
-  bool _isProfilesPayloadEffectivelyEmpty(List<dynamic> rawProfiles) {
+  bool _isProfilesPayloadEffectivelyEmpty(List<dynamic>? rawProfiles) {
+    if (rawProfiles == null) {
+      return true;
+    }
     if (rawProfiles.isEmpty) {
       return true;
     }
@@ -225,16 +280,23 @@ class StorageService {
       return false;
     }
 
-    final profile = TimetableProfile.fromJson(
-      Map<String, dynamic>.from(rawProfiles.first as Map),
-    );
-    return profile.courses.isEmpty &&
-        profile.scheduleItems.isEmpty &&
-        profile.currentWeek == 1 &&
-        _isSettingsEffectivelyDefault(profile.settings);
+    try {
+      final profile = TimetableProfile.fromJson(
+        Map<String, dynamic>.from(rawProfiles.first as Map),
+      );
+      return profile.courses.isEmpty &&
+          profile.scheduleItems.isEmpty &&
+          profile.currentWeek == 1 &&
+          _isSettingsEffectivelyDefault(profile.settings);
+    } catch (_) {
+      return false;
+    }
   }
 
-  bool _isTimeSchemesPayloadEffectivelyEmpty(List<dynamic> rawSchemes) {
+  bool _isTimeSchemesPayloadEffectivelyEmpty(List<dynamic>? rawSchemes) {
+    if (rawSchemes == null) {
+      return true;
+    }
     if (rawSchemes.isEmpty) {
       return true;
     }
@@ -242,11 +304,15 @@ class StorageService {
       return false;
     }
 
-    final scheme = TimeScheme.fromJson(
-      Map<String, dynamic>.from(rawSchemes.first as Map),
-    );
-    return _sectionSignature(scheme.sections) ==
-        _sectionSignature(TimetableSettings.defaults().sections);
+    try {
+      final scheme = TimeScheme.fromJson(
+        Map<String, dynamic>.from(rawSchemes.first as Map),
+      );
+      return _sectionSignature(scheme.sections) ==
+          _sectionSignature(TimetableSettings.defaults().sections);
+    } catch (_) {
+      return false;
+    }
   }
 
   bool _isSettingsJsonEffectivelyDefault(String settingsJson) {
@@ -260,8 +326,9 @@ class StorageService {
 
   bool _isSettingsEffectivelyDefault(TimetableSettings settings) {
     final defaults = TimetableSettings.defaults();
-    final normalizedSettings =
-        settings.copyWith(activeTimeSchemeId: null).toJson();
+    final normalizedSettings = settings
+        .copyWith(activeTimeSchemeId: null)
+        .toJson();
     final normalizedDefaults = defaults.toJson();
     return jsonEncode(normalizedSettings) == jsonEncode(normalizedDefaults);
   }
@@ -320,17 +387,32 @@ class StorageService {
       return const [];
     }
 
-    final rawProfiles = jsonDecode(profilesJson) as List<dynamic>;
-    return rawProfiles
-        .map((item) =>
-            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
+    final rawProfiles = await _readJsonListPreference(_profilesKey);
+    if (rawProfiles == null) {
+      return const [];
+    }
+    try {
+      return rawProfiles
+          .map(
+            (item) => TimetableProfile.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList();
+    } catch (_) {
+      final raw = _prefs?.getString(_profilesKey);
+      if (raw != null) {
+        await _backupAndRemoveCorruptString(_profilesKey, raw);
+      }
+      return const [];
+    }
   }
 
   Future<void> saveProfiles(List<TimetableProfile> profiles) async {
     if (_prefs == null) await init();
-    final payload =
-        jsonEncode(profiles.map((profile) => profile.toJson()).toList());
+    final payload = jsonEncode(
+      profiles.map((profile) => profile.toJson()).toList(),
+    );
     await _prefs?.setString(_profilesKey, payload);
   }
 
@@ -356,17 +438,31 @@ class StorageService {
       return const [];
     }
 
-    final decoded = jsonDecode(rawSchemes) as List<dynamic>;
-    return decoded
-        .map((item) =>
-            TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
+    final decoded = await _readJsonListPreference(_timeSchemesKey);
+    if (decoded == null) {
+      return const [];
+    }
+    try {
+      return decoded
+          .map(
+            (item) =>
+                TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
+          .toList();
+    } catch (_) {
+      final raw = _prefs?.getString(_timeSchemesKey);
+      if (raw != null) {
+        await _backupAndRemoveCorruptString(_timeSchemesKey, raw);
+      }
+      return const [];
+    }
   }
 
   Future<void> saveTimeSchemes(List<TimeScheme> schemes) async {
     if (_prefs == null) await init();
-    final payload =
-        jsonEncode(schemes.map((scheme) => scheme.toJson()).toList());
+    final payload = jsonEncode(
+      schemes.map((scheme) => scheme.toJson()).toList(),
+    );
     await _prefs?.setString(_timeSchemesKey, payload);
   }
 
@@ -375,18 +471,31 @@ class StorageService {
     if (_profilesEnsured) return;
     final rawProfiles = _prefs?.getString(_profilesKey);
     if (rawProfiles != null && rawProfiles.isNotEmpty) {
-      final activeProfileId = _prefs?.getString(_activeProfileIdKey);
-      if (activeProfileId == null || activeProfileId.isEmpty) {
-        final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
-            .map((item) => TimetableProfile.fromJson(
-                Map<String, dynamic>.from(item as Map)))
-            .toList();
-        if (profiles.isNotEmpty) {
-          await setActiveProfileId(profiles.first.id);
+      final rawProfileList = await _readJsonListPreference(_profilesKey);
+      if (rawProfileList == null) {
+        // Corrupt stored profiles were backed up and removed. Continue below so
+        // the app can recreate a valid default profile.
+      } else {
+        final activeProfileId = _prefs?.getString(_activeProfileIdKey);
+        if (activeProfileId == null || activeProfileId.isEmpty) {
+          try {
+            final profiles = rawProfileList
+                .map(
+                  (item) => TimetableProfile.fromJson(
+                    Map<String, dynamic>.from(item as Map),
+                  ),
+                )
+                .toList();
+            if (profiles.isNotEmpty) {
+              await setActiveProfileId(profiles.first.id);
+            }
+          } catch (_) {
+            await _backupAndRemoveCorruptString(_profilesKey, rawProfiles);
+          }
         }
+        _profilesEnsured = true;
+        return;
       }
-      _profilesEnsured = true;
-      return;
     }
 
     final now = DateTime.now();
@@ -394,8 +503,8 @@ class StorageService {
     final legacySemesterStart = await getSemesterStart();
     final migratedSettings =
         legacySemesterStart != null && legacySettings.semesterStartDate == null
-            ? legacySettings.copyWith(semesterStartDate: legacySemesterStart)
-            : legacySettings;
+        ? legacySettings.copyWith(semesterStartDate: legacySemesterStart)
+        : legacySettings;
     final migratedProfile = TimetableProfile(
       id: 'profile-${now.microsecondsSinceEpoch}',
       name: '默认课表',
@@ -421,24 +530,42 @@ class StorageService {
     }
 
     final storedSchemesJson = _prefs?.getString(_timeSchemesKey);
-    final storedSchemes = <TimeScheme>[
-      if (storedSchemesJson != null && storedSchemesJson.isNotEmpty)
-        ...(jsonDecode(storedSchemesJson) as List<dynamic>).map(
-          (item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
-        ),
-    ];
-    final schemesById = {
-      for (final scheme in storedSchemes) scheme.id: scheme,
-    };
+    final rawStoredSchemes =
+        storedSchemesJson == null || storedSchemesJson.isEmpty
+        ? null
+        : await _readJsonListPreference(_timeSchemesKey);
+    var storedSchemes = <TimeScheme>[];
+    if (rawStoredSchemes != null) {
+      try {
+        storedSchemes = _parseStoredTimeSchemes(rawStoredSchemes);
+      } catch (_) {
+        if (storedSchemesJson != null) {
+          await _backupAndRemoveCorruptString(
+            _timeSchemesKey,
+            storedSchemesJson,
+          );
+        }
+      }
+    }
+    final schemesById = {for (final scheme in storedSchemes) scheme.id: scheme};
     final schemesBySignature = {
       for (final scheme in storedSchemes)
         _sectionSignature(scheme.sections): scheme,
     };
 
-    final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
-        .map((item) =>
-            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
+    final rawProfileList = await _readJsonListPreference(_profilesKey);
+    if (rawProfileList == null) {
+      _timeSchemesEnsured = true;
+      return;
+    }
+    List<TimetableProfile> profiles;
+    try {
+      profiles = _parseStoredProfiles(rawProfileList);
+    } catch (_) {
+      await _backupAndRemoveCorruptString(_profilesKey, rawProfiles);
+      _timeSchemesEnsured = true;
+      return;
+    }
 
     var hasProfileChanges = false;
     for (var index = 0; index < profiles.length; index++) {
@@ -446,8 +573,9 @@ class StorageService {
       final settings = profile.settings;
       final signature = _sectionSignature(settings.sections);
       final referencedSchemeId = settings.activeTimeSchemeId;
-      var resolvedScheme =
-          referencedSchemeId == null ? null : schemesById[referencedSchemeId];
+      var resolvedScheme = referencedSchemeId == null
+          ? null
+          : schemesById[referencedSchemeId];
 
       resolvedScheme ??= schemesBySignature[signature];
 
@@ -491,9 +619,24 @@ class StorageService {
   }
 
   String _sectionSignature(List<SectionTime> sections) {
-    return jsonEncode(
-      sections.map((section) => section.toJson()).toList(),
-    );
+    return jsonEncode(sections.map((section) => section.toJson()).toList());
+  }
+
+  List<TimetableProfile> _parseStoredProfiles(List<dynamic> rawProfiles) {
+    return rawProfiles
+        .map(
+          (item) =>
+              TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
+  }
+
+  List<TimeScheme> _parseStoredTimeSchemes(List<dynamic> rawSchemes) {
+    return rawSchemes
+        .map(
+          (item) => TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
+        )
+        .toList();
   }
 
   Future<void> _migrateHidePrefixDefault() async {
@@ -511,10 +654,21 @@ class StorageService {
       return;
     }
 
-    final profiles = (jsonDecode(rawProfiles) as List<dynamic>)
-        .map((item) =>
-            TimetableProfile.fromJson(Map<String, dynamic>.from(item as Map)))
-        .toList();
+    final rawProfileList = await _readJsonListPreference(_profilesKey);
+    if (rawProfileList == null) {
+      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
+      _hidePrefixMigrated = true;
+      return;
+    }
+    late final List<TimetableProfile> profiles;
+    try {
+      profiles = _parseStoredProfiles(rawProfileList);
+    } catch (_) {
+      await _backupAndRemoveCorruptString(_profilesKey, rawProfiles);
+      await _prefs?.setBool(_hidePrefixDefaultMigrationKey, true);
+      _hidePrefixMigrated = true;
+      return;
+    }
 
     final migratedProfiles = profiles
         .map(
