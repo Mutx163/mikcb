@@ -11,6 +11,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
@@ -19,10 +20,12 @@ import '../services/app_update_service.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
 import 'add_course_screen.dart';
+import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
+import 'exam_list_screen.dart';
 import 'feedback_screen.dart';
 import 'support_creator_screen.dart';
 import 'timetable_profiles_screen.dart';
@@ -948,6 +951,19 @@ class _TimetableScreenState extends State<TimetableScreen>
                                         color: subLabelColor,
                                       ),
                                     ),
+                                    if (date != null &&
+                                        provider.hasExamOnDate(date))
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Container(
+                                          width: 4,
+                                          height: 4,
+                                          decoration: BoxDecoration(
+                                            color: colorScheme.error,
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -1133,6 +1149,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   settings.showConflictBadgeOnTimetable,
                   sectionHeight,
                   cardInset,
+                  provider,
                 ),
               );
             }).toList(),
@@ -1574,6 +1591,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         (item) =>
             _buildScheduleAgendaItemForDate(item: item, targetDate: targetDate),
       ),
+      ...provider.exams
+          .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
+          .map(_DayAgendaItem.exam),
     ];
 
     items.sort((left, right) {
@@ -1585,8 +1605,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (endCompare != 0) {
         return endCompare;
       }
-      if (left.isScheduleItem != right.isScheduleItem) {
-        return left.isScheduleItem ? 1 : -1;
+      final leftType = left.isExam ? 2 : (left.isScheduleItem ? 1 : 0);
+      final rightType = right.isExam ? 2 : (right.isScheduleItem ? 1 : 0);
+      if (leftType != rightType) {
+        return leftType.compareTo(rightType);
       }
       return left.id.compareTo(right.id);
     });
@@ -1643,6 +1665,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     final countBadgeColor = hasAgenda
         ? colorScheme.primary.withValues(alpha: 0.10)
         : colorScheme.surfaceContainerHigh;
+    final targetDate = selectedDate ??
+        _resolveDisplayDateForWeekDay(
+          provider: provider,
+          settings: settings,
+          week: week,
+          dayOfWeek: dayOfWeek,
+        );
+    final dayExams = provider.exams
+        .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
     final countBadgeTextColor = hasAgenda
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
@@ -1866,7 +1899,8 @@ class _TimetableScreenState extends State<TimetableScreen>
             ),
             if (currentCourse != null ||
                 conflictCount > 0 ||
-                nonCurrentWeekCourseCount > 0) ...[
+                nonCurrentWeekCourseCount > 0 ||
+                dayExams.isNotEmpty) ...[
               const SizedBox(height: 10),
               Wrap(
                 spacing: 6,
@@ -1891,6 +1925,14 @@ class _TimetableScreenState extends State<TimetableScreen>
                       text:
                           '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
                     ),
+                  ...dayExams.map(
+                    (exam) => _buildDayViewSummaryChip(
+                      icon: Icons.quiz_outlined,
+                      text:
+                          '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
+                      accentColor: colorScheme.error,
+                    ),
+                  ),
                 ],
               ),
             ],
@@ -2056,6 +2098,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
     required _DayAgendaItem item,
   }) {
+    if (item.isExam) {
+      return _buildExamAgendaEntry(item.exam!, provider: context.read<TimetableProvider>());
+    }
     if (item.isScheduleItem) {
       return _buildScheduleAgendaEntry(item);
     }
@@ -2413,6 +2458,179 @@ class _TimetableScreenState extends State<TimetableScreen>
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildExamAgendaEntry(Exam exam, {required TimetableProvider provider}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
+    final course = provider.getCourseForExam(exam);
+    final courseName = course?.name ?? '';
+    final location = exam.location ?? course?.location ?? '';
+    final daysUntil = exam.daysUntil;
+    final countdownText = daysUntil == 0
+        ? l10n.examCountdownToday
+        : l10n.examCountdownDays(daysUntil);
+
+    return OpenContainer<void>(
+      key: ValueKey('day-view-exam-card-${exam.id}'),
+      tappable: false,
+      transitionType: ContainerTransitionType.fadeThrough,
+      transitionDuration: const Duration(milliseconds: 360),
+      openColor: theme.scaffoldBackgroundColor,
+      closedColor: Colors.transparent,
+      closedElevation: 0,
+      openElevation: 0,
+      closedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      openShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+      ),
+      openBuilder: (context, _) => ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: AddExamScreen(exam: exam),
+      ),
+      closedBuilder: (context, openContainer) {
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: openContainer,
+            borderRadius: BorderRadius.circular(20),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Ink(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      colorScheme.error,
+                      Color.lerp(
+                        colorScheme.error,
+                        colorScheme.errorContainer,
+                        0.25,
+                      ) ?? colorScheme.error,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.error.withValues(alpha: 0.20),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.quiz_outlined,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.examBadgeLabel,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.14),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              countdownText,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        exam.name,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (exam.startTime.isNotEmpty && exam.endTime.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            '${exam.startTime} - ${exam.endTime}',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      if (location.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            location,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.white.withValues(alpha: 0.8),
+                            ),
+                          ),
+                        ),
+                      if (courseName.isNotEmpty)
+                        Text(
+                          courseName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withValues(alpha: 0.7),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2905,6 +3123,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     bool showConflictBadge,
     double sectionHeight,
     double cardInset,
+    TimetableProvider provider,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
@@ -3780,6 +3999,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                         initialDate: _resolveAddScheduleInitialDate(provider),
                       ),
                     ),
+                    _HomeActionPageButton(
+                      sheetRoute: ModalRoute.of(sheetContext),
+                      icon: Icons.quiz_outlined,
+                      title: l10n.addExam,
+                      pageBuilder: (_) => const AddExamScreen(),
+                    ),
                   ],
                 ),
               ],
@@ -4577,6 +4802,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 _HomeActionPageButton(
                   sheetRoute: ModalRoute.of(sheetContext),
+                  icon: Icons.quiz_outlined,
+                  title: l10n.examListTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
+                  pageBuilder: (_) => const ExamListScreen(),
+                ),
+                _HomeActionPageButton(
+                  sheetRoute: ModalRoute.of(sheetContext),
                   icon: Icons.file_upload_outlined,
                   title: l10n.homeMenuImportTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
@@ -5174,6 +5406,7 @@ class _DayCourseDisplayItem {
 class _DayAgendaItem {
   final _DayCourseDisplayItem? courseItem;
   final ScheduleItem? scheduleItem;
+  final Exam? exam;
   final String startTime;
   final String endTime;
   final bool continuesFromPreviousDay;
@@ -5182,6 +5415,7 @@ class _DayAgendaItem {
   const _DayAgendaItem._({
     this.courseItem,
     this.scheduleItem,
+    this.exam,
     required this.startTime,
     required this.endTime,
     this.continuesFromPreviousDay = false,
@@ -5212,8 +5446,18 @@ class _DayAgendaItem {
     );
   }
 
+  factory _DayAgendaItem.exam(Exam exam) {
+    return _DayAgendaItem._(
+      exam: exam,
+      startTime: exam.startTime,
+      endTime: exam.endTime,
+    );
+  }
+
   bool get isScheduleItem => scheduleItem != null;
-  String get id => isScheduleItem ? scheduleItem!.id : courseItem!.course.id;
+  bool get isExam => exam != null;
+  String get id => exam?.id ??
+      (isScheduleItem ? scheduleItem!.id : courseItem!.course.id);
 }
 
 class _DayAgendaProgressInfo {

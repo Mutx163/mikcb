@@ -77,6 +77,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
             views.setTextColor(R.id.widget_large_week, secondaryColor)
             views.setTextColor(R.id.widget_large_title, primaryColor)
             views.setTextColor(R.id.widget_large_subtitle, secondaryColor)
+            views.setTextColor(R.id.widget_large_exam, secondaryColor)
             views.setTextColor(R.id.widget_large_empty, secondaryColor)
             views.setInt(
                 R.id.widget_large_heading,
@@ -91,6 +92,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.widget_large_subtitle, "打开应用后会生成今天的课程快照")
                 views.setViewVisibility(R.id.widget_large_empty, View.VISIBLE)
                 views.setTextViewText(R.id.widget_large_empty, "点击打开首页")
+                views.setViewVisibility(R.id.widget_large_exam, View.GONE)
                 setCourseRows(views, emptyList(), primaryColor, secondaryColor)
             } else {
                 views.setTextViewText(R.id.widget_large_heading, "今日课程")
@@ -115,6 +117,13 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_large_empty, emptyText)
+                val examText = TodayWidgetSupport.examCountdownText(snapshot)
+                if (examText != null) {
+                    views.setViewVisibility(R.id.widget_large_exam, View.VISIBLE)
+                    views.setTextViewText(R.id.widget_large_exam, examText)
+                } else {
+                    views.setViewVisibility(R.id.widget_large_exam, View.GONE)
+                }
                 setCourseRows(
                     views,
                     if (snapshot.state == "completed") {

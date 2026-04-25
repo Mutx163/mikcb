@@ -7476,6 +7476,162 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'日程已删除'**
   String get scheduleDeletedHint;
+
+  /// No description provided for @examListTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试安排'**
+  String get examListTitle;
+
+  /// No description provided for @addExam.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加考试'**
+  String get addExam;
+
+  /// No description provided for @editExam.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑考试'**
+  String get editExam;
+
+  /// No description provided for @saveExam.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存考试'**
+  String get saveExam;
+
+  /// No description provided for @noExams.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无考试安排'**
+  String get noExams;
+
+  /// No description provided for @examToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天有考试'**
+  String get examToday;
+
+  /// No description provided for @daysUntilExam.
+  ///
+  /// In zh, this message translates to:
+  /// **'距离考试还有 {days} 天'**
+  String daysUntilExam(int days);
+
+  /// No description provided for @examPassed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已结束'**
+  String get examPassed;
+
+  /// No description provided for @linkCourse.
+  ///
+  /// In zh, this message translates to:
+  /// **'关联课程'**
+  String get linkCourse;
+
+  /// No description provided for @linkCourseRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择关联课程'**
+  String get linkCourseRequired;
+
+  /// No description provided for @examNameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试名称'**
+  String get examNameLabel;
+
+  /// No description provided for @examNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入考试名称'**
+  String get examNameRequired;
+
+  /// No description provided for @examDateLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试日期'**
+  String get examDateLabel;
+
+  /// No description provided for @examStartTimeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始时间'**
+  String get examStartTimeLabel;
+
+  /// No description provided for @examEndTimeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束时间'**
+  String get examEndTimeLabel;
+
+  /// No description provided for @examLocationLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'考场'**
+  String get examLocationLabel;
+
+  /// No description provided for @examLocationHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'留空则使用上课教室'**
+  String get examLocationHint;
+
+  /// No description provided for @sameAsClassroom.
+  ///
+  /// In zh, this message translates to:
+  /// **'同上课教室'**
+  String get sameAsClassroom;
+
+  /// No description provided for @examSeatLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'座位号'**
+  String get examSeatLabel;
+
+  /// No description provided for @examReminderLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'提醒设置'**
+  String get examReminderLabel;
+
+  /// No description provided for @examNoteLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'备注'**
+  String get examNoteLabel;
+
+  /// No description provided for @deleteExam.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除考试'**
+  String get deleteExam;
+
+  /// No description provided for @deleteExamConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除考试「{name}」？'**
+  String deleteExamConfirm(String name);
+
+  /// No description provided for @examBadgeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'考试'**
+  String get examBadgeLabel;
+
+  /// No description provided for @examCountdownToday.
+  ///
+  /// In zh, this message translates to:
+  /// **'今天'**
+  String get examCountdownToday;
+
+  /// No description provided for @examCountdownDays.
+  ///
+  /// In zh, this message translates to:
+  /// **'{days}天后'**
+  String examCountdownDays(int days);
 }
 
 class _AppLocalizationsDelegate

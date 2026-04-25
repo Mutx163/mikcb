@@ -4128,6 +4128,90 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get scheduleDeletedHint => '日程已删除';
+
+  @override
+  String get examListTitle => '考试安排';
+
+  @override
+  String get addExam => '添加考试';
+
+  @override
+  String get editExam => '编辑考试';
+
+  @override
+  String get saveExam => '保存考试';
+
+  @override
+  String get noExams => '暂无考试安排';
+
+  @override
+  String get examToday => '今天有考试';
+
+  @override
+  String daysUntilExam(int days) {
+    return '距离考试还有 $days 天';
+  }
+
+  @override
+  String get examPassed => '已结束';
+
+  @override
+  String get linkCourse => '关联课程';
+
+  @override
+  String get linkCourseRequired => '请选择关联课程';
+
+  @override
+  String get examNameLabel => '考试名称';
+
+  @override
+  String get examNameRequired => '请输入考试名称';
+
+  @override
+  String get examDateLabel => '考试日期';
+
+  @override
+  String get examStartTimeLabel => '开始时间';
+
+  @override
+  String get examEndTimeLabel => '结束时间';
+
+  @override
+  String get examLocationLabel => '考场';
+
+  @override
+  String get examLocationHint => '留空则使用上课教室';
+
+  @override
+  String get sameAsClassroom => '同上课教室';
+
+  @override
+  String get examSeatLabel => '座位号';
+
+  @override
+  String get examReminderLabel => '提醒设置';
+
+  @override
+  String get examNoteLabel => '备注';
+
+  @override
+  String get deleteExam => '删除考试';
+
+  @override
+  String deleteExamConfirm(String name) {
+    return '删除考试「$name」？';
+  }
+
+  @override
+  String get examBadgeLabel => '考试';
+
+  @override
+  String get examCountdownToday => '今天';
+
+  @override
+  String examCountdownDays(int days) {
+    return '$days天后';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -6624,6 +6708,23 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get homeWidgetShowCountdownSubtitle => '先保留刷新開關，後续会用于下一節課和上課中的剩余時間展示。';
 
   @override
+  String get homeWidgetCountdownLeadTitle => '倒計時提前量';
+
+  @override
+  String get homeWidgetCountdownLeadSubtitle => '設置上課前多少分鐘自動切換到倒計時模式。';
+
+  @override
+  String get homeWidgetCountdownLeadAlways => '始終顯示';
+
+  @override
+  String homeWidgetCountdownLeadMinutes(String minutes) {
+    return '上課前 $minutes 分鐘';
+  }
+
+  @override
+  String get widgetCountdownStyleTitle => '倒計時樣式';
+
+  @override
   String get homeWidgetHideCompletedTitle => '隱藏已上完課程';
 
   @override
@@ -8237,6 +8338,90 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get scheduleDeletedHint => '日程已刪除';
+
+  @override
+  String get examListTitle => '考試安排';
+
+  @override
+  String get addExam => '添加考試';
+
+  @override
+  String get editExam => '編輯考試';
+
+  @override
+  String get saveExam => '儲存考試';
+
+  @override
+  String get noExams => '暫無考試安排';
+
+  @override
+  String get examToday => '今天有考試';
+
+  @override
+  String daysUntilExam(int days) {
+    return '距離考試還有 $days 天';
+  }
+
+  @override
+  String get examPassed => '已結束';
+
+  @override
+  String get linkCourse => '關聯課程';
+
+  @override
+  String get linkCourseRequired => '請選擇關聯課程';
+
+  @override
+  String get examNameLabel => '考試名稱';
+
+  @override
+  String get examNameRequired => '請輸入考試名稱';
+
+  @override
+  String get examDateLabel => '考試日期';
+
+  @override
+  String get examStartTimeLabel => '開始時間';
+
+  @override
+  String get examEndTimeLabel => '結束時間';
+
+  @override
+  String get examLocationLabel => '考場';
+
+  @override
+  String get examLocationHint => '留空則使用上課教室';
+
+  @override
+  String get sameAsClassroom => '同上課教室';
+
+  @override
+  String get examSeatLabel => '座位號';
+
+  @override
+  String get examReminderLabel => '提醒設定';
+
+  @override
+  String get examNoteLabel => '備註';
+
+  @override
+  String get deleteExam => '刪除考試';
+
+  @override
+  String deleteExamConfirm(String name) {
+    return '刪除考試「$name」？';
+  }
+
+  @override
+  String get examBadgeLabel => '考試';
+
+  @override
+  String get examCountdownToday => '今天';
+
+  @override
+  String examCountdownDays(int days) {
+    return '$days天後';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -10733,6 +10918,23 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get homeWidgetShowCountdownSubtitle => '先保留刷新開關，後续会用于下一節課和上課中的剩余時間展示。';
 
   @override
+  String get homeWidgetCountdownLeadTitle => '倒計時提前量';
+
+  @override
+  String get homeWidgetCountdownLeadSubtitle => '設置上課前多少分鐘自動切換到倒計時模式。';
+
+  @override
+  String get homeWidgetCountdownLeadAlways => '始終顯示';
+
+  @override
+  String homeWidgetCountdownLeadMinutes(String minutes) {
+    return '上課前 $minutes 分鐘';
+  }
+
+  @override
+  String get widgetCountdownStyleTitle => '倒計時樣式';
+
+  @override
   String get homeWidgetHideCompletedTitle => '隱藏已上完課程';
 
   @override
@@ -12346,4 +12548,88 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDeletedHint => '日程已刪除';
+
+  @override
+  String get examListTitle => '考試安排';
+
+  @override
+  String get addExam => '新增考試';
+
+  @override
+  String get editExam => '編輯考試';
+
+  @override
+  String get saveExam => '儲存考試';
+
+  @override
+  String get noExams => '暫無考試安排';
+
+  @override
+  String get examToday => '今天有考試';
+
+  @override
+  String daysUntilExam(int days) {
+    return '距離考試還有 $days 天';
+  }
+
+  @override
+  String get examPassed => '已結束';
+
+  @override
+  String get linkCourse => '關聯課程';
+
+  @override
+  String get linkCourseRequired => '請選擇關聯課程';
+
+  @override
+  String get examNameLabel => '考試名稱';
+
+  @override
+  String get examNameRequired => '請輸入考試名稱';
+
+  @override
+  String get examDateLabel => '考試日期';
+
+  @override
+  String get examStartTimeLabel => '開始時間';
+
+  @override
+  String get examEndTimeLabel => '結束時間';
+
+  @override
+  String get examLocationLabel => '考場';
+
+  @override
+  String get examLocationHint => '留空則使用上課教室';
+
+  @override
+  String get sameAsClassroom => '同上課教室';
+
+  @override
+  String get examSeatLabel => '座位號';
+
+  @override
+  String get examReminderLabel => '提醒設定';
+
+  @override
+  String get examNoteLabel => '備註';
+
+  @override
+  String get deleteExam => '刪除考試';
+
+  @override
+  String deleteExamConfirm(String name) {
+    return '刪除考試「$name」？';
+  }
+
+  @override
+  String get examBadgeLabel => '考試';
+
+  @override
+  String get examCountdownToday => '今天';
+
+  @override
+  String examCountdownDays(int days) {
+    return '$days天後';
+  }
 }

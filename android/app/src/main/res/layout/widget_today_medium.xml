@@ -52,6 +52,16 @@
         android:text="奉贤校区 一教C104"
         android:textSize="12sp" />
 
+    <TextView
+        android:id="@+id/widget_medium_exam"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:maxLines="1"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"

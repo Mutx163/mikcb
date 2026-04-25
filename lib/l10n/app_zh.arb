@@ -2522,5 +2522,52 @@
       }
     }
   },
-  "scheduleDeletedHint": "日程已删除"
+  "scheduleDeletedHint": "日程已删除",
+  "examListTitle": "考试安排",
+  "addExam": "添加考试",
+  "editExam": "编辑考试",
+  "saveExam": "保存考试",
+  "noExams": "暂无考试安排",
+  "examToday": "今天有考试",
+  "daysUntilExam": "距离考试还有 {days} 天",
+  "@daysUntilExam": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "examPassed": "已结束",
+  "linkCourse": "关联课程",
+  "linkCourseRequired": "请选择关联课程",
+  "examNameLabel": "考试名称",
+  "examNameRequired": "请输入考试名称",
+  "examDateLabel": "考试日期",
+  "examStartTimeLabel": "开始时间",
+  "examEndTimeLabel": "结束时间",
+  "examLocationLabel": "考场",
+  "examLocationHint": "留空则使用上课教室",
+  "sameAsClassroom": "同上课教室",
+  "examSeatLabel": "座位号",
+  "examReminderLabel": "提醒设置",
+  "examNoteLabel": "备注",
+  "deleteExam": "删除考试",
+  "deleteExamConfirm": "删除考试「{name}」？",
+  "@deleteExamConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "examBadgeLabel": "考试",
+  "examCountdownToday": "今天",
+  "examCountdownDays": "{days}天后",
+  "@examCountdownDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  }
 }

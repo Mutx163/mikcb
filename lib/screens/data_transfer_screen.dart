@@ -185,6 +185,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       await provider.dataTransferService.exportAndShare(
         profileName: provider.activeProfile?.name,
         courses: provider.courses,
+        exams: provider.exams,
         settings: provider.settings,
         currentWeek: provider.currentWeek,
       );

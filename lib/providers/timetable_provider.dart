@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
+import '../models/exam.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
@@ -68,6 +69,7 @@ class TimetableProvider with ChangeNotifier {
 
   List<Course> _courses = [];
   List<ScheduleItem> _scheduleItems = [];
+  List<Exam> _exams = [];
   TimetableSettings _settings = TimetableSettings.defaults();
   int _currentWeek = 1;
   int _currentDateWeek = 1;
@@ -86,6 +88,7 @@ class TimetableProvider with ChangeNotifier {
 
   List<Course> get courses => List.unmodifiable(_courses);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
+  List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
@@ -229,6 +232,7 @@ class TimetableProvider with ChangeNotifier {
     _scheduleItems = _sortScheduleItems(
       List<ScheduleItem>.from(profile.scheduleItems),
     );
+    _exams = List<Exam>.from(profile.exams);
     _currentWeek = clampCurrentWeekToSettings(profile.currentWeek, _settings);
     _currentDateWeek = _resolveCurrentDateWeek();
     unawaited(_syncNativeRuntimePreferences());
@@ -417,6 +421,7 @@ class TimetableProvider with ChangeNotifier {
     _profiles[index] = activeProfile.copyWith(
       courses: List<Course>.from(_courses),
       scheduleItems: List<ScheduleItem>.from(_scheduleItems),
+      exams: List<Exam>.from(_exams),
       settings: _settings,
       currentWeek: _currentWeek,
       lastUsedAt: touchLastUsedAt ? DateTime.now() : activeProfile.lastUsedAt,
@@ -1034,6 +1039,95 @@ class TimetableProvider with ChangeNotifier {
     );
   }
 
+  // ---- 考试 CRUD ----
+
+  Exam? getExamById(String id) {
+    for (final exam in _exams) {
+      if (exam.id == id) return exam;
+    }
+    return null;
+  }
+
+  Course? getCourseForExam(Exam exam) {
+    for (final course in _courses) {
+      if (course.id == exam.courseId) return course;
+    }
+    return null;
+  }
+
+  List<Exam> getExamsForCourse(String courseId) {
+    return _exams.where((exam) => exam.courseId == courseId).toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+  }
+
+  List<Exam> getUpcomingExams({int? limit}) {
+    final upcoming = _exams
+        .where((exam) => !exam.isExpired)
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    if (limit != null && upcoming.length > limit) {
+      return upcoming.sublist(0, limit);
+    }
+    return upcoming;
+  }
+
+  Exam? getNextExam() {
+    final upcoming = getUpcomingExams(limit: 1);
+    return upcoming.isEmpty ? null : upcoming.first;
+  }
+
+  bool hasExamOnDate(DateTime date) {
+    final target = DateTime(date.year, date.month, date.day);
+    return _exams.any((exam) {
+      final examDate = DateTime(
+        exam.dateTime.year,
+        exam.dateTime.month,
+        exam.dateTime.day,
+      );
+      return examDate == target;
+    });
+  }
+
+  Future<void> addExam(Exam exam) async {
+    await initialize();
+    if (getCourseForExam(exam) == null) {
+      throw ArgumentError('关联的课程不存在');
+    }
+    _exams.add(exam);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'exam_created',
+      parameters: {
+        'has_location': exam.location?.isNotEmpty == true ? 1 : 0,
+        'has_seat': exam.seatNumber?.isNotEmpty == true ? 1 : 0,
+      },
+    );
+  }
+
+  Future<void> updateExam(Exam exam) async {
+    await initialize();
+    final index = _exams.indexWhere((e) => e.id == exam.id);
+    if (index == -1) return;
+    _exams[index] = exam;
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'exam_updated',
+      parameters: {'exam_id': exam.id},
+    );
+  }
+
+  Future<void> deleteExam(String examId) async {
+    _exams.removeWhere((e) => e.id == examId);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'exam_deleted',
+      parameters: {'remaining_exam_count': _exams.length},
+    );
+  }
+
   Future<bool> deleteCourseOccurrence({
     required String courseId,
     required int sourceWeek,
@@ -1487,6 +1581,7 @@ class TimetableProvider with ChangeNotifier {
         List<Course>.from(backup.courses),
         settings: resolvedSettings,
       );
+      _exams = List<Exam>.from(backup.exams);
       _settings = resolvedSettings;
       _currentWeek = clampCurrentWeekToSettings(backup.currentWeek, _settings);
 
@@ -1531,6 +1626,7 @@ class TimetableProvider with ChangeNotifier {
           List<Course>.from(backup.courses),
           settings: resolvedSettings,
         ),
+        exams: List<Exam>.from(backup.exams),
         settings: resolvedSettings,
         currentWeek: clampCurrentWeekToSettings(
           backup.currentWeek,
@@ -2373,6 +2469,7 @@ class TimetableProvider with ChangeNotifier {
       now: currentTime,
       countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
       countdownTextStyle: _settings.widgetCountdownTextStyle.value,
+      nextExam: getNextExam(),
     );
   }
 
