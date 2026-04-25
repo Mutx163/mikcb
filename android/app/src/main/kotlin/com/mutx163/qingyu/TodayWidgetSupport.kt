@@ -28,6 +28,7 @@ data class TodayWidgetSnapshotInfo(
     val backgroundStyle: String,
     val showLocation: Boolean,
     val showCountdown: Boolean,
+    val countdownTextStyle: String,
     val hideCompletedCourses: Boolean,
     val heightAdjustment: Int,
     val cornerRadius: Int,
@@ -187,6 +188,7 @@ object TodayWidgetSupport {
             backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
             showLocation = settingsJson.optBoolean("widgetShowLocation", true),
             showCountdown = effectiveShowCountdown,
+            countdownTextStyle = settingsJson.optString("widgetCountdownTextStyle", "smart"),
             hideCompletedCourses = hideCompletedCourses,
             heightAdjustment = settingsJson.optDouble("widgetHeightAdjustment", -11.0).toInt(),
             cornerRadius = settingsJson.optDouble("widgetCornerRadius", 22.0).toInt(),
@@ -415,30 +417,19 @@ object TodayWidgetSupport {
     ): String? {
         if (!snapshot.showCountdown) return null
         val course = snapshot.highlightedCourse ?: return null
+        val style = snapshot.countdownTextStyle
         return when (snapshot.state) {
             "ongoing" -> {
                 val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return null
-                val remainingMinutes = ((endMillis - nowMillis) / 60_000L).toInt()
-                if (remainingMinutes <= 0) return null
-                if (remainingMinutes >= 60) {
-                    val hours = remainingMinutes / 60
-                    val mins = remainingMinutes % 60
-                    "还有 ${hours}时${mins}分 下课"
-                } else {
-                    "还有 ${remainingMinutes} 分钟下课"
-                }
+                val durationMillis = endMillis - nowMillis
+                if (durationMillis <= 0) return null
+                "还有 ${CountdownFormat.formatDuration(durationMillis, style)} 下课"
             }
             "upcoming" -> {
                 val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return null
-                val remainingMinutes = ((startMillis - nowMillis) / 60_000L).toInt()
-                if (remainingMinutes <= 0) return null
-                if (remainingMinutes >= 60) {
-                    val hours = remainingMinutes / 60
-                    val mins = remainingMinutes % 60
-                    "还有 ${hours}时${mins}分 上课"
-                } else {
-                    "还有 ${remainingMinutes} 分钟上课"
-                }
+                val durationMillis = startMillis - nowMillis
+                if (durationMillis <= 0) return null
+                "还有 ${CountdownFormat.formatDuration(durationMillis, style)} 上课"
             }
             else -> null
         }
@@ -483,6 +474,7 @@ object TodayWidgetSupport {
             backgroundStyle = json.optString("backgroundStyle", "solid"),
             showLocation = json.optBoolean("showLocation", true),
             showCountdown = json.optBoolean("showCountdown", true),
+            countdownTextStyle = json.optString("countdownTextStyle", "smart"),
             hideCompletedCourses = json.optBoolean("hideCompletedCourses", false),
             heightAdjustment = json.optDouble("heightAdjustment", 0.0).toInt(),
             cornerRadius = json.optDouble("cornerRadius", 28.0).toInt(),
