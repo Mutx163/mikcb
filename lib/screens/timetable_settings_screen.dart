@@ -2164,7 +2164,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
-                      value: _draft.widgetCountdownLeadMinutes,
+                      initialValue: _draft.widgetCountdownLeadMinutes,
                       items: [
                         DropdownMenuItem(
                           value: 0,

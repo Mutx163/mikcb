@@ -462,7 +462,6 @@ class MainActivity : FlutterActivity() {
             }
         }
         prefs.edit().remove(KEY_MANAGED_UPDATE_DOWNLOAD_IDS).apply()
-        cleanupManagedUpdateApkFiles()
     }
 
     private fun rememberManagedUpdateDownload(downloadId: Long) {
@@ -470,27 +469,6 @@ class MainActivity : FlutterActivity() {
             .edit()
             .putStringSet(KEY_MANAGED_UPDATE_DOWNLOAD_IDS, setOf(downloadId.toString()))
             .apply()
-    }
-
-    private fun cleanupManagedUpdateApkFiles() {
-        val downloadsDir =
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-                ?: return
-        val managedApkNamePattern = Regex(
-            "^mikcb(?:_update|_v.+)?\\.apk$",
-            RegexOption.IGNORE_CASE,
-        )
-        downloadsDir.listFiles()?.forEach { file ->
-            if (!file.isFile) {
-                return@forEach
-            }
-            if (!managedApkNamePattern.matches(file.name)) {
-                return@forEach
-            }
-            runCatching {
-                file.delete()
-            }
-        }
     }
 
     private fun hasNotificationPermission(): Boolean {

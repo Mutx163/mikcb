@@ -268,6 +268,9 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
 
+    if (!mounted) {
+      return;
+    }
     final provider = context.read<TimetableProvider>();
     final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
     await provider.initialize();
