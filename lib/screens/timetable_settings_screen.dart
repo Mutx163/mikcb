@@ -2153,18 +2153,12 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   ),
                   if (_draft.widgetShowCountdown) ...[
                     const SizedBox(height: 8),
-                    Text(
-                      l10n.homeWidgetCountdownLeadTitle,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.homeWidgetCountdownLeadSubtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
                       value: _draft.widgetCountdownLeadMinutes,
+                      decoration: InputDecoration(
+                        labelText: l10n.homeWidgetCountdownLeadTitle,
+                        border: const OutlineInputBorder(),
+                      ),
                       items: [
                         DropdownMenuItem(
                           value: 0,
@@ -2173,7 +2167,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
                           DropdownMenuItem(
                             value: m,
-                            child: Text(l10n.homeWidgetCountdownLeadMinutes('$m')),
+                            child: Text(l10n.beforeClassMinutesOption('$m')),
                           ),
                       ],
                       onChanged: (value) {
