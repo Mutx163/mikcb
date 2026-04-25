@@ -163,13 +163,30 @@ object TodayWidgetSupport {
             upcomingCourse != null -> "upcoming"
             else -> "completed"
         }
+        val widgetShowCountdown = settingsJson.optBoolean("widgetShowCountdown", true)
+        val countdownLeadMinutes = settingsJson.optInt("widgetCountdownLeadMinutes", 20)
+        val effectiveShowCountdown = when {
+            !widgetShowCountdown -> false
+            countdownLeadMinutes == 0 -> true
+            state == "ongoing" -> true
+            state == "upcoming" && upcomingCourse != null -> {
+                val startMillis = buildCourseDateTimeMillis(nowMillis, upcomingCourse.startTime)
+                if (startMillis != null) {
+                    val threshold = startMillis - countdownLeadMinutes * 60_000L
+                    nowMillis >= threshold
+                } else {
+                    false
+                }
+            }
+            else -> false
+        }
         return TodayWidgetSnapshotInfo(
             profileName = profileJson.optString("name", "轻屿课表"),
             currentWeek = currentWeek,
             state = state,
             backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
             showLocation = settingsJson.optBoolean("widgetShowLocation", true),
-            showCountdown = settingsJson.optBoolean("widgetShowCountdown", true),
+            showCountdown = effectiveShowCountdown,
             hideCompletedCourses = hideCompletedCourses,
             heightAdjustment = settingsJson.optDouble("widgetHeightAdjustment", -11.0).toInt(),
             cornerRadius = settingsJson.optDouble("widgetCornerRadius", 22.0).toInt(),
@@ -201,12 +218,19 @@ object TodayWidgetSupport {
             .filter { it.dayOfWeek == weekday && it.isInWeek(currentWeek) }
             .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
 
+        val countdownLeadMinutes = settingsJson.optInt("widgetCountdownLeadMinutes", 20)
         val triggers = mutableListOf<Long>()
         for (course in todayCourses) {
             val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime)
             val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime)
             if (startMillis != null && startMillis > nowMillis) {
                 triggers += startMillis
+                if (countdownLeadMinutes > 0) {
+                    val activation = startMillis - countdownLeadMinutes * 60_000L
+                    if (activation > nowMillis) {
+                        triggers += activation
+                    }
+                }
             }
             if (endMillis != null && endMillis > nowMillis) {
                 triggers += endMillis + 1000L
