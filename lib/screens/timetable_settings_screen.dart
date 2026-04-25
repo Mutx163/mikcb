@@ -2167,7 +2167,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                         for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
                           DropdownMenuItem(
                             value: m,
-                            child: Text(l10n.beforeClassMinutesOption('$m')),
+                            child: Text(l10n.beforeClassMinutesOption(m)),
                           ),
                       ],
                       onChanged: (value) {
