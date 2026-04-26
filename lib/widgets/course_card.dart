@@ -26,6 +26,7 @@ class CourseCard extends StatelessWidget {
   final String? compactOverlineText;
   final String? topRightBadgeText;
   final bool isHighlighted;
+  final bool isHoliday;
 
   const CourseCard({
     super.key,
@@ -49,6 +50,7 @@ class CourseCard extends StatelessWidget {
     this.compactOverlineText,
     this.topRightBadgeText,
     this.isHighlighted = false,
+    this.isHoliday = false,
   });
 
   Color _parseColor(String colorString) {
@@ -182,7 +184,7 @@ class CourseCard extends StatelessWidget {
     final crossAxisAlignment = _crossAxisAlignment;
     final textAlign = _textAlign;
 
-    return GestureDetector(
+    final card = GestureDetector(
       onTap: onTap,
       child: SizedBox.expand(
               child: Stack(
@@ -292,10 +294,24 @@ class CourseCard extends StatelessWidget {
                 right: 6,
                 child: _buildBadge(topRightBadgeText!),
               ),
+            if (isHoliday && topRightBadgeText == null)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: _buildBadge(
+                  AppLocalizations.of(context)!.holidayBadgeLabel,
+                  color: Colors.orange.shade700,
+                ),
+              ),
           ],
         ),
       ),
     );
+
+    if (isHoliday) {
+      return Opacity(opacity: 0.3, child: card);
+    }
+    return card;
   }
 
   Widget _buildBadge(String text, {Color? color}) {
