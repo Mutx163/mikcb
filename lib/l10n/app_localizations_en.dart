@@ -289,6 +289,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cancelAction => 'Cancel';
 
   @override
+  String get confirmAction => 'Confirm';
+
+  @override
   String get deleteAction => 'Delete';
 
   @override
@@ -4460,4 +4463,92 @@ class AppLocalizationsEn extends AppLocalizations {
   String examCountdownDays(int days) {
     return 'in $days days';
   }
+
+  @override
+  String get sortAction => 'Sort';
+
+  @override
+  String get sortByAdded => 'By date added';
+
+  @override
+  String get sortByName => 'By course name';
+
+  @override
+  String get sortBySchedule => 'By schedule time';
+
+  @override
+  String scheduleEntryTitle(int index) {
+    return 'Schedule entry $index';
+  }
+
+  @override
+  String get addScheduleEntryAction => 'Add schedule entry';
+
+  @override
+  String get deleteScheduleEntryAction => 'Delete entry';
+
+  @override
+  String get holidaySettingsEntryTitle => 'Holiday Marking';
+
+  @override
+  String get holidaySettingsEntrySubtitle =>
+      'Mark statutory holidays and makeup workdays on timetable';
+
+  @override
+  String get holidayMakeupWorkday => 'Workday';
+
+  @override
+  String get holidaySettingsTitle => 'Holiday Marking';
+
+  @override
+  String get holidayEnableTitle => 'Enable holiday marking';
+
+  @override
+  String get holidayEnableSubtitle =>
+      'When enabled, statutory holidays and makeup workdays will be marked on the timetable';
+
+  @override
+  String get holidayDataSectionTitle => 'Holiday Data';
+
+  @override
+  String get holidayDataYear => 'Year';
+
+  @override
+  String get holidayDataCount => 'Count';
+
+  @override
+  String get holidayDataEmpty => 'No holiday data yet';
+
+  @override
+  String get holidayCheckUpdate => 'Check for updates';
+
+  @override
+  String get holidayUpcomingSectionTitle => 'Upcoming Holidays';
+
+  @override
+  String get holidayNoUpcoming => 'No upcoming holidays';
+
+  @override
+  String get holidayBadgeLabel => 'Holiday';
+
+  @override
+  String get selectTeacherTitle => 'Select teacher';
+
+  @override
+  String get selectLocationTitle => 'Select location';
+
+  @override
+  String get historyRecordsLabel => 'History';
+
+  @override
+  String get noHistoryRecords => 'No history yet';
+
+  @override
+  String get weekPickerTitle => 'Select weeks';
+
+  @override
+  String get selectTimeSchemeTitle => 'Select time scheme';
+
+  @override
+  String get manageTimeSchemesAction => 'Manage time schemes';
 }

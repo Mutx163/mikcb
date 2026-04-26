@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/course.dart';
+import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/home_widget_service.dart';
@@ -70,6 +71,16 @@ class TimetableSettingsScreen extends StatelessWidget {
             MaterialPageRoute(
               settings: const RouteSettings(name: '/settings/home-widget'),
               builder: (_) => const _HomeWidgetSettingsScreen(),
+            ),
+          );
+        }
+
+        void openHolidaySettings() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/holiday'),
+              builder: (_) => const _HolidaySettingsScreen(),
             ),
           );
         }
@@ -168,6 +179,17 @@ class TimetableSettingsScreen extends StatelessWidget {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       onTap: openHomeWidgetSettings,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.celebration_outlined,
+                      title: l10n.holidaySettingsEntryTitle,
+                      subtitle: l10n.holidaySettingsEntrySubtitle,
+                      trailing: settings.enableHolidayMarking
+                          ? Icon(Icons.check_circle_outline,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary)
+                          : null,
+                      onTap: openHolidaySettings,
                     ),
                   ],
                 ),
@@ -3661,6 +3683,279 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
 
 Color _colorFromHex(String hexColor) {
   return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
+}
+
+class _HolidaySettingsScreen extends StatefulWidget {
+  const _HolidaySettingsScreen();
+
+  @override
+  State<_HolidaySettingsScreen> createState() => _HolidaySettingsScreenState();
+}
+
+class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
+  late TimetableSettings _draft;
+  Future<void> _saveQueue = Future<void>.value();
+
+  @override
+  void initState() {
+    super.initState();
+    _draft = context.read<TimetableProvider>().settings;
+  }
+
+  void _updateDraft(TimetableSettings next) {
+    setState(() {
+      _draft = next;
+    });
+    _enqueuePersist(next);
+  }
+
+  void _enqueuePersist(TimetableSettings next) {
+    _saveQueue = _saveQueue.catchError((_) {}).then((_) => _persistDraft(next));
+  }
+
+  Future<void> _persistDraft(TimetableSettings next) async {
+    final provider = context.read<TimetableProvider>();
+    await provider.updateTimetableSettings(next);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.watch<TimetableProvider>();
+    final holidayData = provider.holidayData;
+    final now = DateTime.now();
+
+    // Collect all holidays and makeup workdays
+    final allHolidays = <_HolidayDisplayItem>[];
+    if (holidayData != null) {
+      final seenGroups = <String>{};
+      for (final entry in holidayData.entries) {
+        if (entry.groupId != null && seenGroups.add(entry.groupId!)) {
+          final groupEntries =
+              holidayData.entriesForGroup(entry.groupId!);
+          allHolidays.add(_HolidayDisplayItem(
+            name: groupEntries.first.name,
+            startDate: groupEntries.first.date,
+            endDate: groupEntries.last.date,
+            type: groupEntries.first.type,
+            isPast: groupEntries.last.date.isBefore(now),
+          ));
+        } else if (entry.groupId == null &&
+            entry.type == HolidayType.adjustedWorkday) {
+          allHolidays.add(_HolidayDisplayItem(
+            name: l10n.holidayMakeupWorkday,
+            startDate: entry.date,
+            endDate: entry.date,
+            type: entry.type,
+            isPast: entry.date.isBefore(now),
+          ));
+        }
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.holidaySettingsTitle)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: Text(l10n.holidayEnableTitle),
+                  subtitle: Text(l10n.holidayEnableSubtitle),
+                  value: _draft.enableHolidayMarking,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(enableHolidayMarking: value),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.holidayDataSectionTitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (holidayData != null) ...[
+                    _buildInfoRow(
+                      l10n.holidayDataYear,
+                      '${holidayData.year}',
+                    ),
+                    _buildInfoRow(
+                      l10n.holidayDataCount,
+                      '${holidayData.entries.length}',
+                    ),
+                  ] else
+                    Text(
+                      l10n.holidayDataEmpty,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        await provider.refreshHolidayData();
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(l10n.holidayCheckUpdate)),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.refresh, size: 18),
+                      label: Text(l10n.holidayCheckUpdate),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.holidayUpcomingSectionTitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  if (allHolidays.isEmpty)
+                    Text(
+                      l10n.holidayNoUpcoming,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    )
+                  else
+                    ...allHolidays.map(
+                      (h) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Opacity(
+                          opacity: h.isPast ? 0.4 : 1.0,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: h.type == HolidayType.vacation
+                                      ? Colors.orange
+                                      : Colors.blue,
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      h.name,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    Text(
+                                      _formatHolidayRange(h.startDate, h.endDate),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatHolidayRange(DateTime start, DateTime end) {
+    if (_isSameDate(start, end)) {
+      return '${start.month}月${start.day}日';
+    }
+    if (start.month == end.month) {
+      return '${start.month}月${start.day}日 - ${end.day}日';
+    }
+    return '${start.month}月${start.day}日 - ${end.month}月${end.day}日';
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
+}
+
+class _HolidayDisplayItem {
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+  final HolidayType type;
+  final bool isPast;
+
+  const _HolidayDisplayItem({
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    required this.type,
+    required this.isPast,
+  });
 }
 
 String _formatDate(DateTime date) {

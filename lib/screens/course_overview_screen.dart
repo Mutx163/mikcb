@@ -3,229 +3,54 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 import 'add_course_screen.dart';
 
-class CourseOverviewScreen extends StatelessWidget {
+enum _SortMode { name, schedule, added }
+
+class CourseOverviewScreen extends StatefulWidget {
   const CourseOverviewScreen({super.key});
+
+  @override
+  State<CourseOverviewScreen> createState() => _CourseOverviewScreenState();
+}
+
+class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
+  _SortMode _sortMode = _SortMode.added;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
-    final courses = provider.courses;
+    final groups = provider.courseGroups;
     final conflictMap = provider.courseConflictMap;
     final conflictingCourseCount = conflictMap.length;
 
-    // Group courses by name
-    final Map<String, List<Course>> groupedCourses = {};
-    for (var course in courses) {
-      groupedCourses.putIfAbsent(course.name, () => []).add(course);
-    }
-    final courseNames = groupedCourses.keys.toList();
+    final sorted = _sortGroups(List.of(groups), conflictMap);
 
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.courseOverviewTitle),
         actions: [
+          _buildSortButton(l10n),
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: l10n.addNewCourseTooltip,
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  settings: const RouteSettings(name: '/course/create'),
-                  builder: (_) => const AddCourseScreen(),
-                ),
-              );
-            },
-          )
+            onPressed: () => _navigateToAddCourse(context),
+          ),
         ],
       ),
-      body: courseNames.isEmpty
-          ? Center(child: Text(l10n.emptyCourseOverviewHint))
+      body: sorted.isEmpty
+          ? _buildEmptyState(context, l10n)
           : Column(
               children: [
-                if (conflictingCourseCount > 0)
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Theme.of(context).colorScheme.onErrorContainer,
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            l10n.conflictDetectedMessage(conflictingCourseCount),
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onErrorContainer,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                if (conflictingCourseCount > 0) _buildConflictBanner(context, l10n, conflictingCourseCount),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: courseNames.length,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    itemCount: sorted.length,
                     itemBuilder: (context, index) {
-                      final name = courseNames[index];
-                      final group = groupedCourses[name]!;
-
-                      final representativeCourse = group.first;
-                      final shortNameDisplay =
-                          (representativeCourse.shortName != null &&
-                                  representativeCourse.shortName!.isNotEmpty)
-                              ? ' (${representativeCourse.shortName})'
-                              : '';
-                      final groupConflictCount = group
-                          .where((course) => conflictMap.containsKey(course.id))
-                          .length;
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: ExpansionTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Color(int.parse(
-                                'FF${representativeCourse.color.replaceAll('#', '')}',
-                                radix: 16)),
-                            child: Text(
-                              representativeCourse.name.substring(0, 1),
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          title: Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  '$name$shortNameDisplay',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              if (groupConflictCount > 0)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .errorContainer,
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Text(
-                                    l10n.conflictCountLabel(groupConflictCount),
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w700,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onErrorContainer,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          subtitle: Text(
-                            groupConflictCount > 0
-                                ? l10n.scheduledCountWithConflictHint(group.length)
-                                : l10n.scheduledCountLabel(group.length),
-                          ),
-                          children: group.map((course) {
-                            final conflicts =
-                                conflictMap[course.id] ?? const [];
-                            final conflictSummary =
-                                _buildConflictSummary(context, conflicts);
-
-                            return ListTile(
-                              isThreeLine: conflicts.isNotEmpty,
-                              title: Text(
-                                l10n.courseTimeSummary(
-                                  course.dayOfWeek,
-                                  course.startSection,
-                                  course.endSection,
-                                ),
-                              ),
-                              subtitle: Text(
-                                conflicts.isEmpty
-                                    ? l10n.courseDetailSummary(
-                                        course.weekDescription,
-                                        course.teacher.isNotEmpty
-                                            ? course.teacher
-                                            : l10n.teacherUnset,
-                                        course.location.isNotEmpty
-                                            ? course.location
-                                            : l10n.locationUnset,
-                                      )
-                                    : l10n.courseDetailSummaryWithConflict(
-                                        course.weekDescription,
-                                        course.teacher.isNotEmpty
-                                            ? course.teacher
-                                            : l10n.teacherUnset,
-                                        course.location.isNotEmpty
-                                            ? course.location
-                                            : l10n.locationUnset,
-                                        conflictSummary,
-                                      ),
-                              ),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit,
-                                        color: Colors.blue),
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          settings: const RouteSettings(
-                                              name: '/course/edit'),
-                                          builder: (_) =>
-                                              AddCourseScreen(course: course),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete,
-                                        color: Colors.red),
-                                    onPressed: () =>
-                                        _confirmDelete(context, course),
-                                  ),
-                                ],
-                              ),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    settings: const RouteSettings(
-                                        name: '/course/edit'),
-                                    builder: (_) =>
-                                        AddCourseScreen(course: course),
-                                  ),
-                                );
-                              },
-                            );
-                          }).toList(),
-                        ),
-                      );
+                      return _buildGroupCard(context, l10n, sorted[index], conflictMap);
                     },
                   ),
                 ),
@@ -234,55 +59,257 @@ class CourseOverviewScreen extends StatelessWidget {
     );
   }
 
-  String _buildConflictSummary(BuildContext context, List<Course> conflicts) {
-    final l10n = AppLocalizations.of(context)!;
-    final labels = conflicts
-        .map((course) {
-          return '${course.name}(${course.weekDescription} ${l10n.weekdaySectionSummary(_weekdayShortLabel(l10n, course.dayOfWeek), course.startSection, course.endSection)})';
-        })
-        .toSet()
-        .toList();
-    return labels.join('、');
+  // ---------------------------------------------------------------------------
+  // Sorting
+  // ---------------------------------------------------------------------------
+
+  List<CourseGroup> _sortGroups(
+    List<CourseGroup> groups,
+    Map<String, List<Course>> conflictMap,
+  ) {
+    switch (_sortMode) {
+      case _SortMode.name:
+        groups.sort((a, b) => a.name.compareTo(b.name));
+      case _SortMode.schedule:
+        groups.sort((a, b) {
+          final dayCmp = a.earliestDayOfWeek.compareTo(b.earliestDayOfWeek);
+          if (dayCmp != 0) return dayCmp;
+          return a.earliestStartSection.compareTo(b.earliestStartSection);
+        });
+      case _SortMode.added:
+        // keep provider order (insertion order)
+        break;
+    }
+    return groups;
   }
 
-  String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
-    return switch (dayOfWeek) {
-      1 => l10n.weekdayShortMonday,
-      2 => l10n.weekdayShortTuesday,
-      3 => l10n.weekdayShortWednesday,
-      4 => l10n.weekdayShortThursday,
-      5 => l10n.weekdayShortFriday,
-      6 => l10n.weekdayShortSaturday,
-      7 => l10n.weekdayShortSunday,
-      _ => dayOfWeek.toString(),
-    };
+  Widget _buildSortButton(AppLocalizations l10n) {
+    return PopupMenuButton<_SortMode>(
+      icon: const Icon(Icons.sort_rounded),
+      tooltip: l10n.sortAction,
+      onSelected: (mode) => setState(() => _sortMode = mode),
+      itemBuilder: (_) => [
+        CheckedPopupMenuItem(
+          value: _SortMode.added,
+          checked: _sortMode == _SortMode.added,
+          child: Text(l10n.sortByAdded),
+        ),
+        CheckedPopupMenuItem(
+          value: _SortMode.name,
+          checked: _sortMode == _SortMode.name,
+          child: Text(l10n.sortByName),
+        ),
+        CheckedPopupMenuItem(
+          value: _SortMode.schedule,
+          checked: _sortMode == _SortMode.schedule,
+          child: Text(l10n.sortBySchedule),
+        ),
+      ],
+    );
   }
 
-  void _confirmDelete(BuildContext context, Course course) {
-    showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-              title: Text(AppLocalizations.of(ctx)!.confirmDeleteTitle),
-              content: Text(
-                AppLocalizations.of(ctx)!.confirmDeleteCourseMessage(course.name),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text(AppLocalizations.of(ctx)!.cancelAction),
-                ),
-                TextButton(
-                  onPressed: () {
-                    context.read<TimetableProvider>().deleteCourse(course.id);
-                    Navigator.pop(ctx);
-                  },
-                  child: Text(
-                    AppLocalizations.of(ctx)!.deleteAction,
-                    style: const TextStyle(color: Colors.red),
+  // ---------------------------------------------------------------------------
+  // Empty state
+  // ---------------------------------------------------------------------------
+
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.school_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+            const SizedBox(height: 16),
+            Text(l10n.emptyCourseOverviewHint, textAlign: TextAlign.center),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              onPressed: () => _navigateToAddCourse(context),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.addNewCourseTooltip),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Conflict banner
+  // ---------------------------------------------------------------------------
+
+  Widget _buildConflictBanner(BuildContext context, AppLocalizations l10n, int count) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: colorScheme.onErrorContainer),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.conflictDetectedMessage(count),
+              style: TextStyle(color: colorScheme.onErrorContainer),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Group card
+  // ---------------------------------------------------------------------------
+
+  Widget _buildGroupCard(
+    BuildContext context,
+    AppLocalizations l10n,
+    CourseGroup group,
+    Map<String, List<Course>> conflictMap,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final courseColor = parseHexColorOrFallback(group.color, fallback: colorScheme.primary);
+    final hasConflict = group.courses.any((c) => conflictMap.containsKey(c.id));
+    final chipLabels = group.scheduleChipLabels(l10n);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => _navigateToEditGroup(context, group),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row 1: color dot + name + nature badge + conflict badge
+              Row(
+                children: [
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: courseColor,
+                      shape: BoxShape.circle,
+                    ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      group.name + (group.shortName != null && group.shortName!.isNotEmpty ? ' (${group.shortName})' : ''),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                  _buildNatureChip(l10n, group.courseNature),
+                  if (hasConflict) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        l10n.conflictCountLabel(group.courses.where((c) => conflictMap.containsKey(c.id)).length),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              // Row 2: teacher
+              if (group.teacher.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  group.teacher,
+                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
                 ),
               ],
-            ));
+              // Row 3: schedule chips
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: chipLabels
+                    .map((label) => Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: courseColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: courseColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNatureChip(AppLocalizations l10n, CourseNature nature) {
+    final isRequired = nature == CourseNature.required;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isRequired
+            ? Theme.of(context).colorScheme.primaryContainer
+            : Theme.of(context).colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        nature.label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: isRequired
+              ? Theme.of(context).colorScheme.onPrimaryContainer
+              : Theme.of(context).colorScheme.onTertiaryContainer,
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Navigation
+  // ---------------------------------------------------------------------------
+
+  void _navigateToAddCourse(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/course/create'),
+        builder: (_) => const AddCourseScreen(),
+      ),
+    );
+  }
+
+  void _navigateToEditGroup(BuildContext context, CourseGroup group) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/course/edit'),
+        builder: (_) => AddCourseScreen(courseGroup: group),
+      ),
+    );
   }
 }
-

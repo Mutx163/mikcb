@@ -2,8 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
+import '../models/holiday_entry.dart';
 import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
@@ -11,6 +13,7 @@ import '../models/timetable_settings.dart';
 import '../services/app_analytics.dart';
 import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
+import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
 import '../services/storage_service.dart';
@@ -55,6 +58,51 @@ enum LiveActivityStage {
   beforeEnd,
 }
 
+/// Groups courses that share the same name (i.e. the same subject with
+/// multiple schedule entries).  This is a UI-layer aggregation – the
+/// underlying storage still uses individual [Course] objects.
+class CourseGroup {
+  final String name;
+  final List<Course> courses;
+
+  const CourseGroup({required this.name, required this.courses});
+
+  /// Shared fields taken from the first course in the group.
+  String get teacher => courses.first.teacher;
+  String get color => courses.first.color;
+  String? get shortName => courses.first.shortName;
+  CourseNature get courseNature => courses.first.courseNature;
+  String? get description => courses.first.description;
+  String? get note => courses.first.note;
+
+  /// Summarised schedule chips, e.g. ["周一1-2节", "周三3-4节"].
+  List<String> scheduleChipLabels(AppLocalizations l10n) {
+    return courses.map((c) {
+      final dayLabel = _weekdayShortLabel(l10n, c.dayOfWeek);
+      return l10n.weekdaySectionSummary(dayLabel, c.startSection, c.endSection);
+    }).toList();
+  }
+
+  /// Earliest day/slot for sorting.
+  int get earliestDayOfWeek =>
+      courses.map((c) => c.dayOfWeek).reduce((a, b) => a < b ? a : b);
+  int get earliestStartSection =>
+      courses.map((c) => c.startSection).reduce((a, b) => a < b ? a : b);
+}
+
+String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
+  return switch (dayOfWeek) {
+    1 => l10n.weekdayShortMonday,
+    2 => l10n.weekdayShortTuesday,
+    3 => l10n.weekdayShortWednesday,
+    4 => l10n.weekdayShortThursday,
+    5 => l10n.weekdayShortFriday,
+    6 => l10n.weekdayShortSaturday,
+    7 => l10n.weekdayShortSunday,
+    _ => dayOfWeek.toString(),
+  };
+}
+
 class TimetableProvider with ChangeNotifier {
   static const Duration _liveEndReminderWindow = Duration(minutes: 10);
 
@@ -64,6 +112,7 @@ class TimetableProvider with ChangeNotifier {
   final DataTransferService _dataTransferService;
   final HomeWidgetService _homeWidgetService;
   final HomeWidgetSnapshotService _homeWidgetSnapshotService;
+  final HolidayService _holidayService;
   final AppAnalytics _analytics;
   final bool _enableLiveActivitySync;
 
@@ -85,6 +134,9 @@ class TimetableProvider with ChangeNotifier {
   String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
   Future<void>? _initializationFuture;
+  HolidayData? _holidayData;
+  List<String> _teacherRecords = [];
+  List<String> _locationRecords = [];
 
   List<Course> get courses => List.unmodifiable(_courses);
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
@@ -98,6 +150,62 @@ class TimetableProvider with ChangeNotifier {
   Map<String, List<Course>> get courseConflictMap => _buildCourseConflictMap();
   Map<String, List<Course>> courseConflictMapForWeek(int week) =>
       _buildCourseConflictMap(week: week);
+
+  /// Courses grouped by name – each group represents one subject with
+  /// one or more schedule entries.
+  List<CourseGroup> get courseGroups {
+    final Map<String, List<Course>> grouped = {};
+    for (final course in _courses) {
+      grouped.putIfAbsent(course.name, () => []).add(course);
+    }
+    return grouped.entries
+        .map((e) => CourseGroup(name: e.key, courses: e.value))
+        .toList();
+  }
+
+  /// Find the [CourseGroup] that contains [course], or `null` if not found.
+  CourseGroup? courseGroupForCourse(Course course) {
+    final siblings = _courses.where((c) => c.name == course.name).toList();
+    if (siblings.isEmpty) return null;
+    return CourseGroup(name: course.name, courses: siblings);
+  }
+
+  /// All unique non-empty teacher names (persistent records + current courses), sorted.
+  List<String> get uniqueTeachers {
+    final all = <String>{..._teacherRecords};
+    for (final c in _courses) {
+      if (c.teacher.isNotEmpty) all.add(c.teacher);
+    }
+    return all.toList()..sort();
+  }
+
+  /// All unique non-empty location names (persistent records + current courses), sorted.
+  List<String> get uniqueLocations {
+    final all = <String>{..._locationRecords};
+    for (final c in _courses) {
+      if (c.location.isNotEmpty) all.add(c.location);
+    }
+    return all.toList()..sort();
+  }
+
+  /// Record a teacher name persistently (if not already recorded).
+  Future<void> recordTeacher(String teacher) async {
+    if (teacher.isEmpty) return;
+    if (_teacherRecords.contains(teacher)) return;
+    _teacherRecords.add(teacher);
+    _teacherRecords.sort();
+    await _storageService.saveTeacherRecords(_teacherRecords);
+  }
+
+  /// Record a location name persistently (if not already recorded).
+  Future<void> recordLocation(String location) async {
+    if (location.isEmpty) return;
+    if (_locationRecords.contains(location)) return;
+    _locationRecords.add(location);
+    _locationRecords.sort();
+    await _storageService.saveLocationRecords(_locationRecords);
+  }
+
   int get currentDayOfWeek => _currentDayOfWeek;
   bool get isLoading => _isLoading;
   DateTime? get semesterStartDate => _settings.semesterStartDate;
@@ -118,6 +226,7 @@ class TimetableProvider with ChangeNotifier {
     DataTransferService? dataTransferService,
     HomeWidgetService? homeWidgetService,
     HomeWidgetSnapshotService? homeWidgetSnapshotService,
+    HolidayService? holidayService,
     AppAnalytics? analytics,
     bool autoInitialize = true,
     bool enableLiveActivitySync = true,
@@ -129,6 +238,7 @@ class TimetableProvider with ChangeNotifier {
        _homeWidgetService = homeWidgetService ?? HomeWidgetService(),
        _homeWidgetSnapshotService =
            homeWidgetSnapshotService ?? const HomeWidgetSnapshotService(),
+       _holidayService = holidayService ?? HolidayService(),
        _analytics = analytics ?? AppAnalytics.instance,
        _enableLiveActivitySync = enableLiveActivitySync {
     if (autoInitialize) {
@@ -145,6 +255,8 @@ class TimetableProvider with ChangeNotifier {
     _profiles = await _storageService.getProfiles();
     _timeSchemes = await _storageService.getTimeSchemes();
     _activeProfileId = await _storageService.getActiveProfileId();
+    _teacherRecords = await _storageService.getTeacherRecords();
+    _locationRecords = await _storageService.getLocationRecords();
     final activeProfile =
         this.activeProfile ?? (_profiles.isEmpty ? null : _profiles.first);
     if (activeProfile == null) {
@@ -177,6 +289,7 @@ class TimetableProvider with ChangeNotifier {
     if (_settings.semesterStartDate != null) {
       await syncCurrentWeekWithSemesterStart();
     }
+    unawaited(_loadHolidayData());
     unawaited(_syncHomeWidgetSnapshot());
     unawaited(_syncNativeRuntimePreferences());
     if (_enableLiveActivitySync) {
@@ -901,6 +1014,8 @@ class TimetableProvider with ChangeNotifier {
 
     _courses.add(preparedCourse);
     await _persistActiveProfileState();
+    await recordTeacher(preparedCourse.teacher);
+    await recordLocation(preparedCourse.location);
     _currentLiveCourseId = null;
     notifyListeners();
     _analytics.logEventLater(
@@ -935,6 +1050,8 @@ class TimetableProvider with ChangeNotifier {
       final newKey = _sharedCourseKey(normalizedCourse);
 
       _courses[index] = normalizedCourse;
+      await recordTeacher(normalizedCourse.teacher);
+      await recordLocation(normalizedCourse.location);
       for (var i = 0; i < _courses.length; i++) {
         if (i == index) {
           continue;
@@ -971,6 +1088,53 @@ class TimetableProvider with ChangeNotifier {
     _analytics.logEventLater(
       name: 'course_deleted',
       parameters: {'remaining_course_count': _courses.length},
+    );
+    _updateLiveActivity();
+  }
+
+  /// Delete all schedule entries (courses) for a given course name.
+  Future<void> deleteCourseGroup(String name) async {
+    final key = _buildSharedCourseNameKey(name);
+    _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_group_deleted',
+      parameters: {'remaining_course_count': _courses.length},
+    );
+    _updateLiveActivity();
+  }
+
+  /// Replace all schedule entries for a course group.  [updatedCourses] is
+  /// the full list of schedules that should exist after the update.
+  /// Shared fields (name, teacher, color, etc.) are propagated to all entries.
+  Future<void> updateCourseGroup(
+    String originalName,
+    List<Course> updatedCourses,
+  ) async {
+    final key = _buildSharedCourseNameKey(originalName);
+    // Remove old entries for this group.
+    _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
+    // Add the updated entries, applying shared fields.
+    final shared = updatedCourses.first;
+    for (final course in updatedCourses) {
+      final normalized = _normalizeCourse(
+        _applySharedCourseFields(course, shared),
+      );
+      _courses.add(normalized);
+      await recordTeacher(normalized.teacher);
+      await recordLocation(normalized.location);
+    }
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_group_updated',
+      parameters: {
+        'schedule_count': updatedCourses.length,
+        'remaining_course_count': _courses.length,
+      },
     );
     _updateLiveActivity();
   }
@@ -1126,6 +1290,55 @@ class TimetableProvider with ChangeNotifier {
       name: 'exam_deleted',
       parameters: {'remaining_exam_count': _exams.length},
     );
+  }
+
+  // ---- 节假日相关 ----
+
+  Future<void> _loadHolidayData() async {
+    try {
+      final now = DateTime.now();
+      final data = await _holidayService.getDataForYear(now.year);
+      _holidayData = data;
+      // If semester spans two years, also load next year
+      if (now.month >= 11) {
+        final nextYearData = await _holidayService.getDataForYear(now.year + 1);
+        // Merge: keep both years' entries (memory only, no persistence needed)
+        final merged = <HolidayEntry>[...data.entries, ...nextYearData.entries];
+        _holidayData = HolidayData(
+          year: data.year,
+          version: data.version,
+          entries: merged,
+        );
+      }
+      notifyListeners();
+    } catch (_) {
+      // Holiday data is non-critical; silently ignore failures
+    }
+  }
+
+  /// 获取指定日期的节假日条目
+  HolidayEntry? getHolidayForDate(DateTime date) {
+    return _holidayData?.entryForDate(date);
+  }
+
+  /// 当前加载的节假日数据信息
+  HolidayData? get holidayData => _holidayData;
+
+  /// Refresh holiday data (clear cache and reload)
+  Future<void> refreshHolidayData() async {
+    await _holidayService.clearCache(DateTime.now().year);
+    await _loadHolidayData();
+  }
+
+  /// 指定日期是否为假期（应隐藏课程）
+  bool isHoliday(DateTime date) {
+    if (!_settings.enableHolidayMarking) return false;
+    return _holidayData?.isHoliday(date) ?? false;
+  }
+
+  /// 指定日期是否为调休上班日
+  bool isAdjustedWorkday(DateTime date) {
+    return _holidayData?.isAdjustedWorkday(date) ?? false;
   }
 
   Future<bool> deleteCourseOccurrence({
@@ -2460,6 +2673,8 @@ class TimetableProvider with ChangeNotifier {
       week: targetWeek,
     ).map(resolveCourseDisplayName).toList(growable: false);
 
+    final holidayEntry = getHolidayForDate(currentTime);
+
     return _homeWidgetSnapshotService.build(
       profileId: profile.id,
       profileName: profile.name,
@@ -2470,6 +2685,8 @@ class TimetableProvider with ChangeNotifier {
       countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
       countdownTextStyle: _settings.widgetCountdownTextStyle.value,
       nextExam: getNextExam(),
+      isHoliday: holidayEntry?.shouldHideCourses ?? false,
+      holidayName: holidayEntry?.name,
     );
   }
 
@@ -2489,6 +2706,16 @@ class TimetableProvider with ChangeNotifier {
         return;
       }
       _liveActivitySuspendedUntil = null;
+    }
+
+    // 假期期间暂停超级岛更新
+    if (isHoliday(DateTime.now())) {
+      if (_currentLiveCourseId != null || _hasVisibleLiveUpdate) {
+        _currentLiveCourseId = null;
+        await _liveActivitiesService.stopLiveUpdate();
+        _hasVisibleLiveUpdate = false;
+      }
+      return;
     }
 
     final selection = getLiveActivityCourseSelection();
