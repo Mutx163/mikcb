@@ -81,6 +81,9 @@ void main() {
 
   testWidgets('live testing screen keeps one-second auto refresh cadence',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -97,11 +100,21 @@ void main() {
     );
     await _pumpScreen(tester);
 
+    await tester.scrollUntilVisible(
+      find.text('超级岛与通知'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('超级岛与通知'));
-    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.text('测试与诊断'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('测试与诊断'));
-    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
 
     expect(find.textContaining('每 1 秒自动拉取一次诊断状态'), findsOneWidget);
     expect(find.textContaining('上次刷新：'), findsOneWidget);
@@ -109,6 +122,9 @@ void main() {
 
   testWidgets('before class reminder popup includes 30 to 60 minute options',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -125,6 +141,11 @@ void main() {
     );
     await _pumpScreen(tester);
 
+    await tester.scrollUntilVisible(
+      find.text('超级岛与通知'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(find.text('超级岛与通知'));
     await tester.pumpAndSettle();
 
