@@ -3733,12 +3733,19 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
         if (entry.groupId != null && seenGroups.add(entry.groupId!)) {
           final groupEntries =
               holidayData.entriesForGroup(entry.groupId!);
+          // Prefer vacation entries for name/date range; fall back to first.
+          final vacationEntries = groupEntries
+              .where((e) => e.type == HolidayType.vacation)
+              .toList();
+          final representative = vacationEntries.isNotEmpty
+              ? vacationEntries
+              : groupEntries;
           allHolidays.add(_HolidayDisplayItem(
-            name: groupEntries.first.name,
-            startDate: groupEntries.first.date,
-            endDate: groupEntries.last.date,
-            type: groupEntries.first.type,
-            isPast: groupEntries.last.date.isBefore(now),
+            name: representative.first.name,
+            startDate: representative.first.date,
+            endDate: representative.last.date,
+            type: representative.first.type,
+            isPast: representative.last.date.isBefore(now),
           ));
         } else if (entry.groupId == null &&
             entry.type == HolidayType.adjustedWorkday) {
