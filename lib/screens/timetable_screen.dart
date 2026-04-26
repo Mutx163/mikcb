@@ -26,7 +26,6 @@ import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
 import 'exam_list_screen.dart';
-import 'feedback_screen.dart';
 import 'support_creator_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'timetable_settings_screen.dart';
@@ -4765,7 +4764,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       l10n.homeMenuImportTitle,
       l10n.homeMenuSettingsTitle,
       l10n.homeMenuCoffeeTitle,
-      l10n.homeMenuFeedbackTitle,
     ];
     final reserveTwoLineTitleSpace = actionTitles.any(
       (title) => _homeActionNeedsTwoLines(context, title),
@@ -4839,13 +4837,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   accentColor: colorScheme.secondary,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   pageBuilder: (_) => const SupportCreatorScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.chat_bubble_outline_rounded,
-                  title: l10n.homeMenuFeedbackTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const FeedbackScreen(),
                 ),
               ],
             ),
