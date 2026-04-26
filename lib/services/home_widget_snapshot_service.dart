@@ -7,6 +7,7 @@ enum HomeWidgetSnapshotState {
   upcoming,
   ongoing,
   completed,
+  holiday,
 }
 
 extension HomeWidgetSnapshotStateX on HomeWidgetSnapshotState {
@@ -15,6 +16,7 @@ extension HomeWidgetSnapshotStateX on HomeWidgetSnapshotState {
         HomeWidgetSnapshotState.upcoming => 'upcoming',
         HomeWidgetSnapshotState.ongoing => 'ongoing',
         HomeWidgetSnapshotState.completed => 'completed',
+        HomeWidgetSnapshotState.holiday => 'holiday',
       };
 }
 
@@ -95,6 +97,7 @@ class HomeWidgetSnapshot {
   final String? nextExamLocation;
   final String? nextExamStartTime;
   final String? nextExamEndTime;
+  final String? holidayName;
 
   const HomeWidgetSnapshot({
     required this.profileId,
@@ -121,6 +124,7 @@ class HomeWidgetSnapshot {
     this.nextExamLocation,
     this.nextExamStartTime,
     this.nextExamEndTime,
+    this.holidayName,
   });
 
   Map<String, dynamic> toJson() {
@@ -150,6 +154,7 @@ class HomeWidgetSnapshot {
       'nextExamLocation': nextExamLocation,
       'nextExamStartTime': nextExamStartTime,
       'nextExamEndTime': nextExamEndTime,
+      'holidayName': holidayName,
     };
   }
 }
@@ -167,7 +172,32 @@ class HomeWidgetSnapshotService {
     int countdownLeadMinutes = 20,
     String countdownTextStyle = 'smart',
     Exam? nextExam,
+    bool isHoliday = false,
+    String? holidayName,
   }) {
+    // Holiday: return a dedicated snapshot without course info
+    if (isHoliday) {
+      return HomeWidgetSnapshot(
+        profileId: profileId,
+        profileName: profileName,
+        currentWeek: currentWeek,
+        dayOfWeek: now.weekday,
+        generatedAtMillis: now.millisecondsSinceEpoch,
+        state: HomeWidgetSnapshotState.holiday,
+        backgroundStyle: settings.widgetBackgroundStyle,
+        showLocation: settings.widgetShowLocation,
+        showCountdown: false,
+        countdownTextStyle: countdownTextStyle,
+        hideCompletedCourses: settings.widgetHideCompletedCourses,
+        heightAdjustment: settings.widgetHeightAdjustment,
+        cornerRadius: settings.widgetCornerRadius,
+        totalTodayCourseCount: 0,
+        todayCourses: const [],
+        visibleTodayCourses: const [],
+        holidayName: holidayName ?? 'Holiday',
+      );
+    }
+
     final summaries = todayCourses
         .map(HomeWidgetCourseSummary.fromCourse)
         .toList(growable: false);

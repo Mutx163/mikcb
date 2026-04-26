@@ -268,6 +268,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cancelAction => '取消';
 
   @override
+  String get confirmAction => '确认';
+
+  @override
   String get deleteAction => '删除';
 
   @override
@@ -4212,6 +4215,92 @@ class AppLocalizationsZh extends AppLocalizations {
   String examCountdownDays(int days) {
     return '$days天后';
   }
+
+  @override
+  String get sortAction => '排序';
+
+  @override
+  String get sortByAdded => '按添加顺序';
+
+  @override
+  String get sortByName => '按课程名称';
+
+  @override
+  String get sortBySchedule => '按排课时间';
+
+  @override
+  String scheduleEntryTitle(int index) {
+    return '排课记录 $index';
+  }
+
+  @override
+  String get addScheduleEntryAction => '添加排课时间';
+
+  @override
+  String get deleteScheduleEntryAction => '删除排课';
+
+  @override
+  String get holidaySettingsEntryTitle => '节假日标记';
+
+  @override
+  String get holidaySettingsEntrySubtitle => '在课表上标记法定节假日和调休补班';
+
+  @override
+  String get holidayMakeupWorkday => '补班';
+
+  @override
+  String get holidaySettingsTitle => '节假日标记';
+
+  @override
+  String get holidayEnableTitle => '启用节假日标记';
+
+  @override
+  String get holidayEnableSubtitle => '开启后会在课表上标记法定节假日和调休补班日';
+
+  @override
+  String get holidayDataSectionTitle => '节假日数据';
+
+  @override
+  String get holidayDataYear => '年份';
+
+  @override
+  String get holidayDataCount => '条数';
+
+  @override
+  String get holidayDataEmpty => '暂无节假日数据';
+
+  @override
+  String get holidayCheckUpdate => '检查更新';
+
+  @override
+  String get holidayUpcomingSectionTitle => '近期节假日';
+
+  @override
+  String get holidayNoUpcoming => '近期没有节假日';
+
+  @override
+  String get holidayBadgeLabel => '假';
+
+  @override
+  String get selectTeacherTitle => '选择教师';
+
+  @override
+  String get selectLocationTitle => '选择教室';
+
+  @override
+  String get historyRecordsLabel => '历史记录';
+
+  @override
+  String get noHistoryRecords => '暂无历史记录';
+
+  @override
+  String get weekPickerTitle => '选择上课周次';
+
+  @override
+  String get selectTimeSchemeTitle => '选择时间方案';
+
+  @override
+  String get manageTimeSchemesAction => '管理时间方案';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).

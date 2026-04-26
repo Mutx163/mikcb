@@ -301,10 +301,16 @@ class _TimetableScreenState extends State<TimetableScreen>
     _dayViewTransitionSourceDayOfWeek = null;
     _isSyncingDayViewPage = false;
     _isDaySwipeAnimating = false;
-    for (final controller in _dayViewPageControllers.values) {
-      controller.dispose();
-    }
+    // Defer disposal to after the current frame so that AnimatedBuilder
+    // widgets that are still attached to these controllers can detach
+    // gracefully during the ongoing build pass.
+    final oldControllers = _dayViewPageControllers.values.toList();
     _dayViewPageControllers.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      for (final c in oldControllers) {
+        c.dispose();
+      }
+    });
     if (settings.timetableHomeViewMode == TimetableHomeViewMode.day) {
       _selectedWeekForDayView = _visibleWeek;
       _selectedDayOfWeek = restoredDayOfWeek;
@@ -540,7 +546,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final targetPage = _dayViewPageIndexForDay(settings, week, dayOfWeek);
     final existing = _dayViewPageControllers[week];
     if (forceRecreate && existing != null) {
-      existing.dispose();
+      // Defer disposal so AnimatedBuilder can detach its listener first.
+      WidgetsBinding.instance.addPostFrameCallback((_) => existing.dispose());
       _dayViewPageControllers[week] = PageController(initialPage: targetPage);
       return;
     }
@@ -557,7 +564,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
 
-    existing.dispose();
+    WidgetsBinding.instance.addPostFrameCallback((_) => existing.dispose());
     _dayViewPageControllers[week] = PageController(initialPage: targetPage);
   }
 
@@ -2190,7 +2197,10 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         openBuilder: (context, _) => ClipRRect(
           borderRadius: BorderRadius.circular(28),
-          child: AddCourseScreen(course: courseItem.course),
+          child: AddCourseScreen(
+            courseGroup: context.read<TimetableProvider>().courseGroupForCourse(courseItem.course),
+            initialCourse: courseItem.course,
+          ),
         ),
         closedBuilder: (context, openContainer) {
           final content = progressInfo != null
@@ -3132,6 +3142,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
+    final date = _dateForWeekDay(settings, week, dayOfWeek);
+    final isDayHoliday = date != null && provider.isHoliday(date);
+
     for (
       var sectionIndex = 0;
       sectionIndex < settings.sectionCount;
@@ -3177,6 +3190,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   showConflictBadge,
                 ),
                 isHighlighted: item.isCurrentCourse,
+                isHoliday: isDayHoliday,
                 isCompact: true,
                 showName: settings.courseCardShowName,
                 showTeacher: settings.courseCardShowTeacher,
@@ -3905,18 +3919,15 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   void _editCourse(Course course) {
+    final provider = context.read<TimetableProvider>();
+    final group = provider.courseGroupForCourse(course);
     Navigator.push(
       context,
       MaterialPageRoute(
         settings: const RouteSettings(name: '/course/edit'),
         builder: (context) => AddCourseScreen(
-          course: course,
-          mode: course.activeWeeks.length == 1
-              ? CourseEditorMode.singleLesson
-              : CourseEditorMode.recurring,
-          initialWeek: course.activeWeeks.length == 1
-              ? course.activeWeeks.first
-              : null,
+          courseGroup: group,
+          initialCourse: course,
         ),
       ),
     );

@@ -104,6 +104,7 @@
   "deleteScheduleTitle": "Delete Schedule",
   "deleteLessonTitle": "Delete This Lesson",
   "cancelAction": "Cancel",
+  "confirmAction": "Confirm",
   "deleteAction": "Delete",
   "deletedCourseMessage": "Deleted: {name}",
   "@deletedCourseMessage": {
@@ -2569,5 +2570,40 @@
         "type": "int"
       }
     }
-  }
+  },
+  "sortAction": "Sort",
+  "sortByAdded": "By date added",
+  "sortByName": "By course name",
+  "sortBySchedule": "By schedule time",
+  "scheduleEntryTitle": "Schedule entry {index}",
+  "@scheduleEntryTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "addScheduleEntryAction": "Add schedule entry",
+  "deleteScheduleEntryAction": "Delete entry",
+  "holidaySettingsEntryTitle": "Holiday Marking",
+  "holidaySettingsEntrySubtitle": "Mark statutory holidays and makeup workdays on timetable",
+  "holidayMakeupWorkday": "Workday",
+  "holidaySettingsTitle": "Holiday Marking",
+  "holidayEnableTitle": "Enable holiday marking",
+  "holidayEnableSubtitle": "When enabled, statutory holidays and makeup workdays will be marked on the timetable",
+  "holidayDataSectionTitle": "Holiday Data",
+  "holidayDataYear": "Year",
+  "holidayDataCount": "Count",
+  "holidayDataEmpty": "No holiday data yet",
+  "holidayCheckUpdate": "Check for updates",
+  "holidayUpcomingSectionTitle": "Upcoming Holidays",
+  "holidayNoUpcoming": "No upcoming holidays",
+  "holidayBadgeLabel": "Holiday",
+  "selectTeacherTitle": "Select teacher",
+  "selectLocationTitle": "Select location",
+  "historyRecordsLabel": "History",
+  "noHistoryRecords": "No history yet",
+  "weekPickerTitle": "Select weeks",
+  "selectTimeSchemeTitle": "Select time scheme",
+  "manageTimeSchemesAction": "Manage time schemes"
 }

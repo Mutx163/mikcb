@@ -466,6 +466,35 @@ class StorageService {
     await _prefs?.setString(_timeSchemesKey, payload);
   }
 
+  // ---------------------------------------------------------------------------
+  // Teacher / Location records (persistent across courses)
+  // ---------------------------------------------------------------------------
+
+  static const String _teacherRecordsKey = 'teacher_records';
+  static const String _locationRecordsKey = 'location_records';
+
+  Future<List<String>> getTeacherRecords() async {
+    if (_prefs == null) await init();
+    final raw = _prefs?.getStringList(_teacherRecordsKey);
+    return raw ?? [];
+  }
+
+  Future<void> saveTeacherRecords(List<String> teachers) async {
+    if (_prefs == null) await init();
+    await _prefs?.setStringList(_teacherRecordsKey, teachers);
+  }
+
+  Future<List<String>> getLocationRecords() async {
+    if (_prefs == null) await init();
+    final raw = _prefs?.getStringList(_locationRecordsKey);
+    return raw ?? [];
+  }
+
+  Future<void> saveLocationRecords(List<String> locations) async {
+    if (_prefs == null) await init();
+    await _prefs?.setStringList(_locationRecordsKey, locations);
+  }
+
   Future<void> _ensureProfilesInitialized() async {
     _resetEnsureCacheIfNeeded();
     if (_profilesEnsured) return;

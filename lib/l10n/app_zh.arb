@@ -104,6 +104,7 @@
   "deleteScheduleTitle": "删除排课",
   "deleteLessonTitle": "删除这节课",
   "cancelAction": "取消",
+  "confirmAction": "确认",
   "deleteAction": "删除",
   "deletedCourseMessage": "已删除：{name}",
   "@deletedCourseMessage": {
@@ -2569,5 +2570,40 @@
         "type": "int"
       }
     }
-  }
+  },
+  "sortAction": "排序",
+  "sortByAdded": "按添加顺序",
+  "sortByName": "按课程名称",
+  "sortBySchedule": "按排课时间",
+  "scheduleEntryTitle": "排课记录 {index}",
+  "@scheduleEntryTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "addScheduleEntryAction": "添加排课时间",
+  "deleteScheduleEntryAction": "删除排课",
+  "holidaySettingsEntryTitle": "节假日标记",
+  "holidaySettingsEntrySubtitle": "在课表上标记法定节假日和调休补班",
+  "holidayMakeupWorkday": "补班",
+  "holidaySettingsTitle": "节假日标记",
+  "holidayEnableTitle": "启用节假日标记",
+  "holidayEnableSubtitle": "开启后会在课表上标记法定节假日和调休补班日",
+  "holidayDataSectionTitle": "节假日数据",
+  "holidayDataYear": "年份",
+  "holidayDataCount": "条数",
+  "holidayDataEmpty": "暂无节假日数据",
+  "holidayCheckUpdate": "检查更新",
+  "holidayUpcomingSectionTitle": "近期节假日",
+  "holidayNoUpcoming": "近期没有节假日",
+  "holidayBadgeLabel": "假",
+  "selectTeacherTitle": "选择教师",
+  "selectLocationTitle": "选择教室",
+  "historyRecordsLabel": "历史记录",
+  "noHistoryRecords": "暂无历史记录",
+  "weekPickerTitle": "选择上课周次",
+  "selectTimeSchemeTitle": "选择时间方案",
+  "manageTimeSchemesAction": "管理时间方案"
 }

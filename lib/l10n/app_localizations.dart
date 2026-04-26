@@ -598,6 +598,12 @@ abstract class AppLocalizations {
   /// **'取消'**
   String get cancelAction;
 
+  /// No description provided for @confirmAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认'**
+  String get confirmAction;
+
   /// No description provided for @deleteAction.
   ///
   /// In zh, this message translates to:
@@ -7632,6 +7638,174 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{days}天后'**
   String examCountdownDays(int days);
+
+  /// No description provided for @sortAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'排序'**
+  String get sortAction;
+
+  /// No description provided for @sortByAdded.
+  ///
+  /// In zh, this message translates to:
+  /// **'按添加顺序'**
+  String get sortByAdded;
+
+  /// No description provided for @sortByName.
+  ///
+  /// In zh, this message translates to:
+  /// **'按课程名称'**
+  String get sortByName;
+
+  /// No description provided for @sortBySchedule.
+  ///
+  /// In zh, this message translates to:
+  /// **'按排课时间'**
+  String get sortBySchedule;
+
+  /// No description provided for @scheduleEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'排课记录 {index}'**
+  String scheduleEntryTitle(int index);
+
+  /// No description provided for @addScheduleEntryAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加排课时间'**
+  String get addScheduleEntryAction;
+
+  /// No description provided for @deleteScheduleEntryAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除排课'**
+  String get deleteScheduleEntryAction;
+
+  /// No description provided for @holidaySettingsEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'节假日标记'**
+  String get holidaySettingsEntryTitle;
+
+  /// No description provided for @holidaySettingsEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在课表上标记法定节假日和调休补班'**
+  String get holidaySettingsEntrySubtitle;
+
+  /// No description provided for @holidayMakeupWorkday.
+  ///
+  /// In zh, this message translates to:
+  /// **'补班'**
+  String get holidayMakeupWorkday;
+
+  /// No description provided for @holidaySettingsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'节假日标记'**
+  String get holidaySettingsTitle;
+
+  /// No description provided for @holidayEnableTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用节假日标记'**
+  String get holidayEnableTitle;
+
+  /// No description provided for @holidayEnableSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后会在课表上标记法定节假日和调休补班日'**
+  String get holidayEnableSubtitle;
+
+  /// No description provided for @holidayDataSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'节假日数据'**
+  String get holidayDataSectionTitle;
+
+  /// No description provided for @holidayDataYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'年份'**
+  String get holidayDataYear;
+
+  /// No description provided for @holidayDataCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'条数'**
+  String get holidayDataCount;
+
+  /// No description provided for @holidayDataEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无节假日数据'**
+  String get holidayDataEmpty;
+
+  /// No description provided for @holidayCheckUpdate.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查更新'**
+  String get holidayCheckUpdate;
+
+  /// No description provided for @holidayUpcomingSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'近期节假日'**
+  String get holidayUpcomingSectionTitle;
+
+  /// No description provided for @holidayNoUpcoming.
+  ///
+  /// In zh, this message translates to:
+  /// **'近期没有节假日'**
+  String get holidayNoUpcoming;
+
+  /// No description provided for @holidayBadgeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'假'**
+  String get holidayBadgeLabel;
+
+  /// No description provided for @selectTeacherTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择教师'**
+  String get selectTeacherTitle;
+
+  /// No description provided for @selectLocationTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择教室'**
+  String get selectLocationTitle;
+
+  /// No description provided for @historyRecordsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'历史记录'**
+  String get historyRecordsLabel;
+
+  /// No description provided for @noHistoryRecords.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无历史记录'**
+  String get noHistoryRecords;
+
+  /// No description provided for @weekPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择上课周次'**
+  String get weekPickerTitle;
+
+  /// No description provided for @selectTimeSchemeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择时间方案'**
+  String get selectTimeSchemeTitle;
+
+  /// No description provided for @manageTimeSchemesAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'管理时间方案'**
+  String get manageTimeSchemesAction;
 }
 
 class _AppLocalizationsDelegate
