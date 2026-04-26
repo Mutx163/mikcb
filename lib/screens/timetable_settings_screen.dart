@@ -3859,17 +3859,26 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       ),
                     )
                   else
-                    ...provider.holidayLogs.map(
-                      (log) => Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '[${log.timeString}] ${log.message}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontFamily: 'monospace',
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
+                    SizedBox(
+                      height: 160,
+                      child: ListView.builder(
+                        itemCount: provider.holidayLogs.length,
+                        itemBuilder: (_, i) {
+                          final log = provider.holidayLogs[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Text(
+                              '[${log.timeString}] ${log.message}',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                 ],
