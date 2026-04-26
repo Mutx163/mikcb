@@ -19,19 +19,26 @@ class HolidayService {
   SharedPreferences? _prefs;
 
   /// 获取指定年份的节假日数据
+  ///
+  /// 有本地缓存时先返回缓存、后台拉远程覆盖；
+  /// 无缓存时阻塞拉远程，失败才用内置资产兜底。
   Future<HolidayData> getDataForYear(int year) async {
     // 1. 内存缓存
     final cached = _memoryCache[year];
-    if (cached != null) return cached;
+    if (cached != null) {
+      _backgroundRefresh(year);
+      return cached;
+    }
 
     // 2. SharedPreferences 缓存
     final localCached = await _loadFromLocalCache(year);
     if (localCached != null) {
       _memoryCache[year] = localCached;
+      _backgroundRefresh(year);
       return localCached;
     }
 
-    // 3. 远程拉取（主数据源）
+    // 3. 无缓存 → 阻塞拉远程
     final remote = await _fetchRemoteUpdate(year);
     if (remote != null && remote.entries.isNotEmpty) {
       _memoryCache[year] = remote;
@@ -44,6 +51,16 @@ class HolidayService {
     _memoryCache[year] = builtin;
     await _saveToLocalCache(year, builtin);
     return builtin;
+  }
+
+  /// 后台拉取远程数据并覆盖本地缓存
+  void _backgroundRefresh(int year) {
+    unawaited(_fetchRemoteUpdate(year).then((remote) {
+      if (remote != null && remote.entries.isNotEmpty) {
+        _memoryCache[year] = remote;
+        unawaited(_saveToLocalCache(year, remote));
+      }
+    }));
   }
 
   Future<HolidayData?> _loadFromLocalCache(int year) async {
