@@ -9,7 +9,7 @@ import '../models/holiday_entry.dart';
 
 /// 节假日数据加载/缓存/远程更新服务
 ///
-/// 优先级：内存缓存 > 本地存储 > 内置资源 > 远程拉取
+/// 优先级：内存缓存 > 本地存储 > 远程拉取 > 内置资源（离线兜底）
 class HolidayService {
   static const _cacheKeyPrefix = 'holiday_data_';
 
@@ -31,19 +31,18 @@ class HolidayService {
       return localCached;
     }
 
-    // 3. 加载内置资源
+    // 3. 远程拉取（主数据源）
+    final remote = await _fetchRemoteUpdate(year);
+    if (remote != null && remote.entries.isNotEmpty) {
+      _memoryCache[year] = remote;
+      await _saveToLocalCache(year, remote);
+      return remote;
+    }
+
+    // 4. 离线兜底：加载内置资源
     final builtin = await _loadBuiltin(year);
     _memoryCache[year] = builtin;
     await _saveToLocalCache(year, builtin);
-
-    // 4. 异步拉取远程更新（不阻塞返回）
-    unawaited(_fetchRemoteUpdate(year).then((remote) {
-      if (remote != null && remote.entries.isNotEmpty) {
-        _memoryCache[year] = remote;
-        unawaited(_saveToLocalCache(year, remote));
-      }
-    }));
-
     return builtin;
   }
 
