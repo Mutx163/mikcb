@@ -124,12 +124,15 @@ class HolidayService {
     }
     if (current != null) groups.add(current);
 
-    // Build entries
+    // Build entries — vacation groups first, then assign makeup workdays
+    // to the nearest holiday group.
     final entries = <HolidayEntry>[];
+    final groupIds = <String>[];
     for (int i = 0; i < groups.length; i++) {
       final group = groups[i];
       final name = _nameForGroup(group);
       final groupId = 'holiday-$year-$i';
+      groupIds.add(groupId);
       for (final date in group) {
         entries.add(HolidayEntry(
           date: date,
@@ -140,10 +143,24 @@ class HolidayService {
       }
     }
     for (final date in makeupDates) {
+      // Find the nearest holiday group (within 21 days).
+      String? nearestGroupId;
+      int minDist = 22;
+      for (int i = 0; i < groups.length; i++) {
+        final group = groups[i];
+        final dist = _absDays(date, group.first);
+        final distEnd = _absDays(date, group.last);
+        final d = dist < distEnd ? dist : distEnd;
+        if (d < minDist) {
+          minDist = d;
+          nearestGroupId = groupIds[i];
+        }
+      }
       entries.add(HolidayEntry(
         date: date,
         name: '调休上班',
         type: HolidayType.adjustedWorkday,
+        groupId: nearestGroupId,
       ));
     }
 
@@ -152,6 +169,9 @@ class HolidayService {
 
   bool _isConsecutive(DateTime a, DateTime b) =>
       b.difference(a).inDays == 1;
+
+  int _absDays(DateTime a, DateTime b) =>
+      a.difference(b).inDays.abs();
 
   String _nameForGroup(List<DateTime> group) {
     final first = group.first;
