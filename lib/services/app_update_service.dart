@@ -2,11 +2,27 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/timetable_settings.dart';
+
+/// A single log entry from the update process.
+class UpdateLogEntry {
+  final DateTime timestamp;
+  final String message;
+
+  const UpdateLogEntry(this.timestamp, this.message);
+
+  String get timeString {
+    final h = timestamp.hour.toString().padLeft(2, '0');
+    final m = timestamp.minute.toString().padLeft(2, '0');
+    final s = timestamp.second.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+}
 
 class AppReleaseInfo {
   final String version;
@@ -87,6 +103,16 @@ class _AppUpdateFetchOutcome {
 
 class AppUpdateService {
   static const String repositoryUrl = 'https://github.com/Mutx163/mikcb';
+
+  /// Update process logs (most recent first, capped at 50).
+  final List<UpdateLogEntry> logs = [];
+
+  void _log(String message) {
+    final entry = UpdateLogEntry(DateTime.now(), message);
+    logs.insert(0, entry);
+    if (logs.length > 50) logs.removeLast();
+    debugPrint('[AppUpdateService] $message');
+  }
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
   static const String releasesApiUrl =
@@ -161,22 +187,28 @@ class AppUpdateService {
     AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
     String? mirrorUrlPrefix,
   }) async {
+    _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
+
     _AppUpdateFetchOutcome apiOutcome;
     try {
+      _log('策略1：GitHub API…');
       apiOutcome = await _fetchFromGitHubApi(
         includePrerelease: includePrerelease,
         preferredSource: preferredSource,
         mirrorUrlPrefix: mirrorUrlPrefix,
       );
-    } catch (_) {
+    } catch (e) {
+      _log('GitHub API 异常：$e');
       apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     }
     if (apiOutcome.release != null) {
+      _log('GitHub API 成功，版本 ${apiOutcome.release!.version}');
       return _buildCheckResult(
         currentVersion: currentVersion,
         release: apiOutcome.release!,
       );
     }
+    _log('GitHub API 未获取到版本，状态码: ${apiOutcome.statusCode}');
 
     var saw404 = apiOutcome.saw404;
     int? lastStatusCode;
@@ -187,18 +219,22 @@ class AppUpdateService {
 
     _AppUpdateFetchOutcome pageOutcome;
     try {
+      _log('策略2：Release 页面抓取…');
       pageOutcome = await _fetchFromReleasesPage(
         includePrerelease: includePrerelease,
       );
-    } catch (_) {
+    } catch (e) {
+      _log('Release 页面异常：$e');
       pageOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
     }
     if (pageOutcome.release != null) {
+      _log('Release 页面成功，版本 ${pageOutcome.release!.version}');
       return _buildCheckResult(
         currentVersion: currentVersion,
         release: pageOutcome.release!,
       );
     }
+    _log('Release 页面未获取到版本，状态码: ${pageOutcome.statusCode}');
     saw404 = saw404 || pageOutcome.saw404;
     hadRetryableFailure =
         hadRetryableFailure || pageOutcome.hadRetryableFailure;
@@ -207,6 +243,7 @@ class AppUpdateService {
     }
 
     if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
+      _log('两种策略均返回 404，仓库尚无 Release');
       return AppUpdateCheckResult(
         hasRelease: false,
         hasUpdate: false,
@@ -216,6 +253,7 @@ class AppUpdateService {
     }
 
     if (lastStatusCode != null) {
+      _log('检查更新失败，最后 HTTP 状态码: $lastStatusCode');
       return AppUpdateCheckResult(
         hasRelease: false,
         hasUpdate: false,
@@ -224,6 +262,7 @@ class AppUpdateService {
       );
     }
 
+    _log('网络异常，所有策略均失败');
     return AppUpdateCheckResult(
       hasRelease: false,
       hasUpdate: false,
@@ -237,6 +276,7 @@ class AppUpdateService {
     void Function(int downloadedBytes, int? totalBytes) onProgress,
     AppUpdateDownloadController? controller,
   ) async {
+    _log('开始下载更新：$url');
     HttpClient? client;
     IOSink? sink;
     File? file;
@@ -252,15 +292,18 @@ class AppUpdateService {
       final response = await request.close();
 
       if (response.statusCode != 200) {
+        _log('下载失败，HTTP ${response.statusCode}');
         return '下载失败（HTTP ${response.statusCode}）';
       }
 
       final total = response.contentLength;
+      _log('下载响应 OK，文件大小: ${total > 0 ? '${(total / 1024 / 1024).toStringAsFixed(1)} MB' : '未知'}');
       int downloaded = 0;
       sink = file.openWrite();
 
       await for (final chunk in response) {
         if (controller?.isCancelled == true) {
+          _log('下载被用户取消');
           return downloadCancelledMessage;
         }
         sink.add(chunk);
@@ -272,18 +315,24 @@ class AppUpdateService {
       sink = null;
 
       if (controller?.isCancelled == true) {
+        _log('下载被用户取消');
         return downloadCancelledMessage;
       }
 
+      _log('下载完成，${(downloaded / 1024 / 1024).toStringAsFixed(1)} MB，正在打开安装…');
       final result = await _openInstaller(savePath);
       if (result.type != ResultType.done) {
+        _log('打开安装包失败: ${result.message}');
         return '打开安装包失败: ${result.message}';
       }
+      _log('安装包已打开');
       return null;
     } catch (e) {
       if (controller?.isCancelled == true) {
+        _log('下载被用户取消');
         return downloadCancelledMessage;
       }
+      _log('下载或安装异常：$e');
       return '下载或安装过程中出现错误: $e';
     } finally {
       try {
@@ -321,6 +370,7 @@ class AppUpdateService {
   }) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
+      _log('测速失败：地址无效 $url');
       return const AppUpdateDownloadProbeResult(
         isSuccess: false,
         elapsed: Duration.zero,
@@ -328,6 +378,7 @@ class AppUpdateService {
       );
     }
 
+    _log('测速 $url …');
     final stopwatch = Stopwatch()..start();
     try {
       var response = await _client.head(
@@ -346,6 +397,7 @@ class AppUpdateService {
 
       stopwatch.stop();
       final isSuccess = response.statusCode >= 200 && response.statusCode < 400;
+      _log('测速结果：${isSuccess ? '成功' : '失败'} HTTP ${response.statusCode}，耗时 ${stopwatch.elapsedMilliseconds} ms');
       return AppUpdateDownloadProbeResult(
         isSuccess: isSuccess,
         elapsed: stopwatch.elapsed,
@@ -354,6 +406,7 @@ class AppUpdateService {
       );
     } catch (error) {
       stopwatch.stop();
+      _log('测速异常：$error，耗时 ${stopwatch.elapsedMilliseconds} ms');
       return AppUpdateDownloadProbeResult(
         isSuccess: false,
         elapsed: stopwatch.elapsed,
@@ -402,6 +455,7 @@ class AppUpdateService {
     required bool includePrerelease,
   }) async {
     try {
+      _log('请求 $releasesPageUrl');
       final response = await _client
           .get(
             Uri.parse(releasesPageUrl),
@@ -409,9 +463,11 @@ class AppUpdateService {
           )
           .timeout(_releasesPageRequestTimeout);
       if (response.statusCode == 404) {
+        _log('页面响应 404');
         return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
       }
       if (response.statusCode != 200) {
+        _log('页面响应 ${response.statusCode}，跳过');
         return _AppUpdateFetchOutcome(
           statusCode: response.statusCode,
           hadRetryableFailure: true,
@@ -448,6 +504,7 @@ class AppUpdateService {
       preferredSource: preferredSource,
       mirrorUrlPrefix: mirrorUrlPrefix,
     );
+    _log('GitHub API 候选地址 ${candidates.length} 个');
 
     for (final candidate in candidates) {
       final outcome = await _fetchGitHubApiCandidate(
@@ -475,6 +532,7 @@ class AppUpdateService {
     required bool includePrerelease,
   }) async {
     try {
+      _log('请求 $candidate');
       final response = await _client
           .get(
             Uri.parse(candidate),
@@ -482,9 +540,11 @@ class AppUpdateService {
           )
           .timeout(_releaseApiRequestTimeout);
       if (response.statusCode == 404) {
+        _log('API 响应 404');
         return const _AppUpdateFetchOutcome(saw404: true, statusCode: 404);
       }
       if (response.statusCode != 200) {
+        _log('API 响应 ${response.statusCode}，跳过');
         return _AppUpdateFetchOutcome(
           statusCode: response.statusCode,
           hadRetryableFailure: true,
@@ -567,6 +627,7 @@ class AppUpdateService {
     required AppReleaseInfo release,
   }) {
     final hasUpdate = _compareVersions(release.version, currentVersion) > 0;
+    _log('版本比较：最新 ${release.version} vs 当前 $currentVersion → ${hasUpdate ? '有更新' : '已是最新'}');
     return AppUpdateCheckResult(
       hasRelease: true,
       hasUpdate: hasUpdate,

@@ -1067,11 +1067,63 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   title: Text(l10n.aboutCheckPrereleaseTitle),
                   subtitle: Text(l10n.aboutCheckPrereleaseSubtitle),
                 ),
+                const Divider(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '更新日志',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildUpdateLogsArea(theme, colorScheme),
               ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildUpdateLogsArea(ThemeData theme, ColorScheme colorScheme) {
+    final logs = _updateService.logs;
+    if (logs.isEmpty) {
+      return Text(
+        '暂无日志',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    return SizedBox(
+      height: 160,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: ListView.builder(
+          itemCount: logs.length,
+          itemBuilder: (_, i) {
+            final log = logs[i];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(
+                '[${log.timeString}] ${log.message}',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontFamily: 'monospace',
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 
