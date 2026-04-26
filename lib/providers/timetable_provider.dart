@@ -1324,6 +1324,9 @@ class TimetableProvider with ChangeNotifier {
   /// 当前加载的节假日数据信息
   HolidayData? get holidayData => _holidayData;
 
+  /// 节假日数据更新日志
+  List<HolidayLogEntry> get holidayLogs => _holidayService.logs;
+
   /// Refresh holiday data (clear cache and reload)
   Future<void> refreshHolidayData() async {
     await _holidayService.clearCache(DateTime.now().year);
