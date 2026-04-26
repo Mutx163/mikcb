@@ -146,17 +146,35 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.error.withValues(alpha: 0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, color: colorScheme.onErrorContainer),
-          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.all(5),
+            decoration: BoxDecoration(
+              color: colorScheme.error.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.warning_amber_rounded, size: 18, color: colorScheme.error),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               l10n.conflictDetectedMessage(count),
-              style: TextStyle(color: colorScheme.onErrorContainer),
+              style: TextStyle(
+                color: colorScheme.onErrorContainer,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ),
         ],
@@ -179,87 +197,104 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     final hasConflict = group.courses.any((c) => conflictMap.containsKey(c.id));
     final chipLabels = group.scheduleChipLabels(l10n);
 
-    return Card(
+    final conflictCount = group.courses.where((c) => conflictMap.containsKey(c.id)).length;
+
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => _navigateToEditGroup(context, group),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Row 1: color dot + name + nature badge + conflict badge
-              Row(
-                children: [
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: courseColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      group.name + (group.shortName != null && group.shortName!.isNotEmpty ? ' (${group.shortName})' : ''),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                  ),
-                  _buildNatureChip(l10n, group.courseNature),
-                  if (hasConflict) ...[
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: colorScheme.errorContainer,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: hasConflict
+              ? colorScheme.error.withValues(alpha: 0.35)
+              : colorScheme.outlineVariant.withValues(alpha: 0.5),
+          width: hasConflict ? 1.4 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: hasConflict
+                ? colorScheme.error.withValues(alpha: 0.10)
+                : colorScheme.shadow.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => _navigateToEditGroup(context, group),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Row 1: name + nature badge + conflict badge
+                Row(
+                  children: [
+                    Expanded(
                       child: Text(
-                        l10n.conflictCountLabel(group.courses.where((c) => conflictMap.containsKey(c.id)).length),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onErrorContainer,
+                        group.name + (group.shortName != null && group.shortName!.isNotEmpty ? ' (${group.shortName})' : ''),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                    ),
+                    _buildNatureChip(l10n, group.courseNature),
+                    if (hasConflict) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: colorScheme.errorContainer,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          l10n.conflictCountLabel(conflictCount),
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: colorScheme.onErrorContainer,
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
+                ),
+                // Row 2: teacher
+                if (group.teacher.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    group.teacher,
+                    style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                  ),
                 ],
-              ),
-              // Row 2: teacher
-              if (group.teacher.isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  group.teacher,
-                  style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                // Row 3: schedule chips
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: chipLabels
+                      .map((label) => Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: courseColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: courseColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ))
+                      .toList(),
                 ),
               ],
-              // Row 3: schedule chips
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: chipLabels
-                    .map((label) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: courseColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: courseColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ))
-                    .toList(),
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -274,7 +309,7 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
         color: isRequired
             ? Theme.of(context).colorScheme.primaryContainer
             : Theme.of(context).colorScheme.tertiaryContainer,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         nature.label,

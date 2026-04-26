@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/hex_color.dart';
 
 class AddExamScreen extends StatefulWidget {
   final Exam? exam;
@@ -106,37 +107,122 @@ class _AddExamScreenState extends State<AddExamScreen> {
   }
 
   Widget _buildCourseDropdown(List<Course> courses, AppLocalizations l10n) {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedCourseId,
-      decoration: InputDecoration(
-        labelText: l10n.linkCourse,
-        border: const OutlineInputBorder(),
-      ),
-      items: courses.map((course) {
-        return DropdownMenuItem(
-          value: course.id,
-          child: Text(
-            '${course.name} · ${course.teacher}',
-            overflow: TextOverflow.ellipsis,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.linkCourse,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: colorScheme.onSurfaceVariant,
           ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedCourseId = value;
-          if (!_isEditing && value != null) {
-            final course = courses.firstWhere((c) => c.id == value);
-            if (_nameController.text.isEmpty) {
-              _nameController.text = '${course.name}期末考试';
-            }
-            if (_locationController.text.isEmpty) {
-              _locationController.text = '';
-            }
-          }
-        });
-      },
-      validator: (value) =>
-          value == null ? l10n.linkCourseRequired : null,
+        ),
+        const SizedBox(height: 8),
+        ...courses.map((course) {
+          final isSelected = course.id == _selectedCourseId;
+          final courseColor = parseHexColorOrFallback(
+            course.color,
+            fallback: colorScheme.primary,
+          );
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Material(
+              color: isSelected
+                  ? courseColor.withValues(alpha: 0.10)
+                  : colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(14),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  setState(() {
+                    _selectedCourseId = course.id;
+                    if (_nameController.text.isEmpty) {
+                      _nameController.text = '期末考试';
+                    }
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: isSelected
+                      ? BoxDecoration(
+                          border: Border.all(
+                            color: courseColor.withValues(alpha: 0.4),
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        )
+                      : null,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: courseColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              course.name,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                                color: isSelected
+                                    ? courseColor
+                                    : colorScheme.onSurface,
+                              ),
+                            ),
+                            if (course.teacher.isNotEmpty)
+                              Text(
+                                course.teacher,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (isSelected)
+                        Icon(Icons.check_circle_rounded, size: 20, color: courseColor),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+        if (courses.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              '暂无课程，请先添加课程',
+              style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+            ),
+          ),
+        if (_selectedCourseId == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              l10n.linkCourseRequired,
+              style: TextStyle(color: colorScheme.error, fontSize: 12),
+            ),
+          ),
+      ],
     );
   }
 
