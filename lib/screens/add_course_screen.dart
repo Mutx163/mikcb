@@ -664,58 +664,71 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  // "Follow profile" option
-                  _buildSchemeTile(
-                    title: l10n.followCurrentTimetableWithName(followLabel),
-                    subtitle: null,
-                    isSelected: currentValue == null,
-                    onTap: () {
-                      onSelected(null);
-                      Navigator.pop(sheetContext);
-                    },
-                    trailing: null,
-                  ),
-                  if (schemes.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Divider(height: 1),
-                    const SizedBox(height: 8),
-                  ],
-                  // Existing schemes
-                  ...schemes.map((scheme) {
-                    final isSelected = currentValue == scheme.id;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: _buildSchemeTile(
-                        title: scheme.name,
-                        subtitle: scheme.sections.isNotEmpty
-                            ? '${scheme.sections.first.startTime}–${scheme.sections.last.endTime} · ${scheme.sectionCount}'
-                            : null,
-                        isSelected: isSelected,
-                        onTap: () {
-                          onSelected(scheme.id);
-                          Navigator.pop(sheetContext);
-                        },
-                        trailing: IconButton(
-                          icon: const Icon(Icons.edit_rounded, size: 20),
-                          tooltip: l10n.editTimeSchemeTitle,
-                          onPressed: () async {
-                            Navigator.pop(sheetContext);
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                settings: const RouteSettings(
-                                    name: '/settings/time-schemes'),
-                                builder: (_) => TimeSchemeManagementScreen(
-                                      initialEditSchemeId: scheme.id,
-                                    ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.5,
+                    ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // "Follow profile" option
+                          _buildSchemeTile(
+                            title: l10n.followCurrentTimetableWithName(followLabel),
+                            subtitle: null,
+                            isSelected: currentValue == null,
+                            onTap: () {
+                              onSelected(null);
+                              Navigator.pop(sheetContext);
+                            },
+                            trailing: null,
+                          ),
+                          if (schemes.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            const Divider(height: 1),
+                            const SizedBox(height: 8),
+                          ],
+                          // Existing schemes
+                          ...schemes.map((scheme) {
+                            final isSelected = currentValue == scheme.id;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: _buildSchemeTile(
+                                title: scheme.name,
+                                subtitle: scheme.sections.isNotEmpty
+                                    ? '${scheme.sections.first.startTime}–${scheme.sections.last.endTime} · ${scheme.sectionCount}'
+                                    : null,
+                                isSelected: isSelected,
+                                onTap: () {
+                                  onSelected(scheme.id);
+                                  Navigator.pop(sheetContext);
+                                },
+                                trailing: IconButton(
+                                  icon: const Icon(Icons.edit_rounded, size: 20),
+                                  tooltip: l10n.editTimeSchemeTitle,
+                                  onPressed: () async {
+                                    Navigator.pop(sheetContext);
+                                    await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        settings: const RouteSettings(
+                                            name: '/settings/time-schemes'),
+                                        builder: (_) => TimeSchemeManagementScreen(
+                                              initialEditSchemeId: scheme.id,
+                                            ),
+                                      ),
+                                    );
+                                    if (mounted) setState(() {});
+                                  },
+                                ),
                               ),
                             );
-                            if (mounted) setState(() {});
-                          },
-                        ),
+                          }),
+                        ],
                       ),
-                    );
-                  }),
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   // Create new scheme button
                   SizedBox(
