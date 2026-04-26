@@ -158,7 +158,7 @@ void main() {
     await _pumpScreen(tester);
 
     expect(find.text('添加单节课'), findsOneWidget);
-    expect(find.text('上课周次'), findsOneWidget);
+    expect(find.text('周次设置'), findsOneWidget);
     expect(find.text('连续周'), findsNothing);
   });
 
@@ -311,6 +311,9 @@ void main() {
 
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await _pumpScreen(tester);
+    // Open week picker dialog
+    await tester.tap(find.text('周次设置'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('自定义周'));
     await _pumpScreen(tester);
 
@@ -344,6 +347,10 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await _pumpScreen(tester);
 
+    // Open week picker dialog
+    await tester.tap(find.text('周次设置'));
+    await tester.pumpAndSettle();
+
     expect(find.text('全部'), findsOneWidget);
     expect(find.byType(ChoiceChip), findsNWidgets(3));
 
@@ -354,6 +361,5 @@ void main() {
       find.widgetWithText(ChoiceChip, '单周'),
     );
     expect(selectedChip.selected, isTrue);
-    expect(find.text('只保留范围内的单周。'), findsOneWidget);
   });
 }

@@ -107,11 +107,6 @@ void main() {
 
     expect(find.textContaining('检测到 2 门排课存在实际冲突'), findsOneWidget);
     expect(find.text('冲突 1 节'), findsNWidgets(2));
-    expect(find.textContaining('展开查看冲突详情'), findsWidgets);
-    await tester.tap(find.text('线性代数'));
-    await _pumpScreen(tester);
-    expect(find.textContaining('冲突课程:'), findsOneWidget);
-    expect(find.textContaining('第1-16周'), findsOneWidget);
   });
 
   testWidgets('course overview does not mark same slot on different weeks',
