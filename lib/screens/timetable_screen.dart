@@ -1933,7 +1933,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ...dayExams.map(
                     (exam) => _buildDayViewSummaryChip(
-                      icon: Icons.quiz_outlined,
+                      icon: Icons.school_outlined,
                       text:
                           '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
                       accentColor: colorScheme.error,
@@ -2555,7 +2555,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 const Icon(
-                                  Icons.quiz_outlined,
+                                  Icons.school_outlined,
                                   size: 14,
                                   color: Colors.white,
                                 ),
@@ -4011,7 +4011,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                     _HomeActionPageButton(
                       sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.quiz_outlined,
+                      icon: Icons.school_outlined,
                       title: l10n.addExam,
                       pageBuilder: (_) => const AddExamScreen(),
                     ),
@@ -4811,7 +4811,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 _HomeActionPageButton(
                   sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.quiz_outlined,
+                  icon: Icons.school_outlined,
                   title: l10n.examListTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   pageBuilder: (_) => const ExamListScreen(),

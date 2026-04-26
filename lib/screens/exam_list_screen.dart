@@ -89,7 +89,7 @@ class ExamListScreen extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.quiz_outlined,
+            Icons.school_outlined,
             size: 64,
             color: Theme.of(context).colorScheme.outline,
           ),
