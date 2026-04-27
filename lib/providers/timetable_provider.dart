@@ -1082,6 +1082,7 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> deleteCourse(String courseId) async {
     _courses.removeWhere((c) => c.id == courseId);
+    _exams.removeWhere((e) => e.courseId == courseId);
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
@@ -1095,7 +1096,12 @@ class TimetableProvider with ChangeNotifier {
   /// Delete all schedule entries (courses) for a given course name.
   Future<void> deleteCourseGroup(String name) async {
     final key = _buildSharedCourseNameKey(name);
-    _courses.removeWhere((c) => _buildSharedCourseNameKey(c.name) == key);
+    final deletedCourseIds = _courses
+        .where((c) => _buildSharedCourseNameKey(c.name) == key)
+        .map((c) => c.id)
+        .toSet();
+    _courses.removeWhere((c) => deletedCourseIds.contains(c.id));
+    _exams.removeWhere((e) => deletedCourseIds.contains(e.courseId));
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
     notifyListeners();
