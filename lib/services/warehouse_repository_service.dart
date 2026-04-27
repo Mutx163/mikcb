@@ -253,12 +253,12 @@ List<Map<String, String>> _parseYamlListMaps(
 }
 
 MapEntry<String, String>? _parseYamlPair(String line) {
-  final separatorIndex = line.indexOf(':');
+  final separatorIndex = line.indexOf(': ');
   if (separatorIndex <= 0) {
     return null;
   }
   final key = line.substring(0, separatorIndex).trim();
-  var value = line.substring(separatorIndex + 1).trim();
+  var value = line.substring(separatorIndex + 2).trim();
   value = _stripInlineComment(value);
   if ((value.startsWith('"') && value.endsWith('"')) ||
       (value.startsWith("'") && value.endsWith("'"))) {

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -2612,6 +2613,8 @@ class _WarehouseAdapterWebLoginScreenState
   int _loadingProgress = 0;
   String? _currentUrl;
   bool _isExecutingImport = false;
+  Timer? _importTimeoutTimer;
+  static const _importTimeout = Duration(seconds: 30);
   String? _lastScriptStatus;
   List<SectionTime>? _pendingImportedSections;
   String? _pendingImportedSectionsSignature;
@@ -2686,6 +2689,7 @@ class _WarehouseAdapterWebLoginScreenState
 
   @override
   void dispose() {
+    _importTimeoutTimer?.cancel();
     _addressController.dispose();
     _addressFocusNode.dispose();
     super.dispose();
@@ -3068,6 +3072,26 @@ class _WarehouseAdapterWebLoginScreenState
     } catch (_) {}
   }
 
+  void _startImportTimeout() {
+    _importTimeoutTimer?.cancel();
+    _importTimeoutTimer = Timer(_importTimeout, () {
+      if (!mounted || !_isExecutingImport) return;
+      setState(() {
+        _isExecutingImport = false;
+        _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
+      });
+      _showLightTip(
+        context,
+        AppLocalizations.of(context)!.executeFailedWithError('timeout'),
+      );
+    });
+  }
+
+  void _cancelImportTimeout() {
+    _importTimeoutTimer?.cancel();
+    _importTimeoutTimer = null;
+  }
+
   Future<void> _executeImportScript() async {
     final l10n = AppLocalizations.of(context)!;
     _resetPendingImportedArtifacts();
@@ -3177,10 +3201,12 @@ class _WarehouseAdapterWebLoginScreenState
             ? AppLocalizations.of(context)!.localDebugScriptInjected
             : AppLocalizations.of(context)!.scriptInjected;
       });
+      _startImportTimeout();
     } catch (error) {
       if (!mounted) {
         return;
       }
+      _cancelImportTimeout();
       setState(() {
         _isExecutingImport = false;
         _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
@@ -3229,6 +3255,7 @@ class _WarehouseAdapterWebLoginScreenState
         break;
       case 'error':
         if (!mounted) return;
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus = '脚本执行失败';
@@ -3241,6 +3268,7 @@ class _WarehouseAdapterWebLoginScreenState
         break;
       case 'complete':
         if (!mounted) return;
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus = AppLocalizations.of(context)!.importFlowFinished;
@@ -3475,6 +3503,7 @@ class _WarehouseAdapterWebLoginScreenState
                   .importCourseCountPrompt(parsedCourses.length),
             );
       if (replaceExisting == null || !mounted) {
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus =
@@ -3493,6 +3522,7 @@ class _WarehouseAdapterWebLoginScreenState
             .importConfirmSemesterMappingSubtitleWarehouse,
       );
       if (semesterConfig == null || !mounted) {
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus =
@@ -3534,6 +3564,7 @@ class _WarehouseAdapterWebLoginScreenState
         provider: provider,
       );
       if (!capacityReady || !mounted) {
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus =
@@ -3568,14 +3599,17 @@ class _WarehouseAdapterWebLoginScreenState
             : AppLocalizations.of(context)!.importNoCourseChanges,
       );
       if (importedCount > 0) {
+        _cancelImportTimeout();
         navigator.pop(true);
       } else {
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
         });
       }
     } catch (error) {
       if (!mounted) return;
+      _cancelImportTimeout();
       setState(() {
         _isExecutingImport = false;
         _lastScriptStatus = AppLocalizations.of(context)!.importFailedStatus;
