@@ -129,6 +129,7 @@ class TimetableProvider with ChangeNotifier {
   bool _isLoading = false;
   Timer? _liveActivityTimer;
   String? _currentLiveCourseId;
+  String? _lastLiveActivityStageKey;
   bool _hasVisibleLiveUpdate = false;
   String? _lastLiveSnapshotSignature;
   String? _lastHomeWidgetSnapshotSignature;
@@ -303,7 +304,28 @@ class TimetableProvider with ChangeNotifier {
     unawaited(syncTemporalContext());
     _liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       unawaited(syncTemporalContext());
+      _checkLiveActivityStageTransition();
     });
+  }
+
+  /// Detects stage transitions (e.g. beforeClass → beforeEnd) and forces
+  /// a live activity update so the native service picks up the correct
+  /// displaySettings for the new stage.
+  void _checkLiveActivityStageTransition() {
+    final selection = getLiveActivityCourseSelection();
+    final liveCourse = selection?.currentCourse;
+    if (liveCourse == null || selection == null) return;
+
+    final stageName = selection.stage.name;
+    final key =
+        '${liveCourse.id}:$stageName:${liveCourse.name}:'
+        '${liveCourse.startSection}:${liveCourse.endSection}:'
+        '${liveCourse.location}:${liveCourse.teacher}';
+    if (_lastLiveActivityStageKey != null && _lastLiveActivityStageKey != key) {
+      _currentLiveCourseId = null;
+      unawaited(_updateLiveActivity());
+    }
+    _lastLiveActivityStageKey = key;
   }
 
   @override

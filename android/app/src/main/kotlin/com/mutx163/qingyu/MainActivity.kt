@@ -1093,6 +1093,7 @@ class LiveUpdateService : Service() {
     private var cachedIslandBitmapKey: String? = null
     private var cachedIslandBitmap: Bitmap? = null
     private var hasStartedForeground = false
+    private var lastTickerStage: String? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -1600,6 +1601,17 @@ class LiveUpdateService : Service() {
                     }
                     return
                 }
+
+                // When stage transitions, reschedule so onStartCommand re-reads
+                // the correct displaySettings for the new stage.
+                if (lastTickerStage != null && stage != lastTickerStage) {
+                    lastTickerStage = stage
+                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
+                        stopAndRemoveNotification()
+                    }
+                    return
+                }
+                lastTickerStage = stage
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
                     if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
