@@ -11,10 +11,6 @@ import '../utils/hex_color.dart';
 
 enum _WeekSelectionMode { range, custom }
 
-enum _RangeWeekFilter { all, odd, even }
-
-enum CourseEditorMode { singleLesson, recurring }
-
 class AddCourseScreen extends StatefulWidget {
   final Course? course;
   final CourseGroup? courseGroup;
@@ -22,7 +18,6 @@ class AddCourseScreen extends StatefulWidget {
   final int? initialDayOfWeek;
   final int? initialStartSection;
   final int? initialWeek;
-  final CourseEditorMode mode;
 
   const AddCourseScreen({
     super.key,
@@ -32,7 +27,6 @@ class AddCourseScreen extends StatefulWidget {
     this.initialDayOfWeek,
     this.initialStartSection,
     this.initialWeek,
-    this.mode = CourseEditorMode.recurring,
   });
 
   @override
@@ -129,9 +123,6 @@ class _ScheduleEntryData {
 }
 
 class _AddCourseScreenState extends State<AddCourseScreen> {
-  static const String _manualSingleLessonTemplateValue =
-      '__manual_single_lesson__';
-
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _shortNameController = TextEditingController();
@@ -139,28 +130,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   final _locationController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  int _selectedDayOfWeek = 1;
-  int _startSection = 1;
-  int _endSection = 2;
-  int _startWeek = 1;
-  int _endWeek = 16;
-  int _singleWeek = 1;
-  bool _isOddWeek = false;
-  bool _isEvenWeek = false;
-  _WeekSelectionMode _weekSelectionMode = _WeekSelectionMode.range;
-  Set<int> _selectedCustomWeeks = <int>{};
-  late CourseEditorMode _editorMode;
-  String _selectedSingleLessonTemplateId = _manualSingleLessonTemplateValue;
   CourseNature _courseNature = CourseNature.required;
   String _selectedColor = '#2196F3';
-  String? _selectedTimeSchemeOverrideId;
-
-  // Group editing state
-  // Use group editing body for everything except singleLesson mode.
-  // This makes "add course" and "edit course" consistent: both support
-  // multiple schedule entries. Only singleLesson keeps the simple body.
-  bool get _isGroupEditing =>
-      widget.courseGroup != null || _editorMode != CourseEditorMode.singleLesson;
   List<_ScheduleEntryData> _scheduleEntries = [];
   final List<TextEditingController> _entryTeacherControllers = [];
   final List<TextEditingController> _entryLocationControllers = [];
@@ -202,8 +173,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   @override
   void initState() {
     super.initState();
-    _editorMode = widget.mode;
-    if (_isGroupEditing) {
+    {
       if (widget.courseGroup != null) {
         // Editing existing group: load shared fields from the first course.
         final courses = widget.courseGroup!.courses;
@@ -249,19 +219,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         _entryTeacherControllers.add(TextEditingController(text: entry.teacher));
         _entryLocationControllers.add(TextEditingController(text: entry.location));
       }
-    } else if (widget.course != null) {
-      _loadCourseData(widget.course!);
-    } else {
-      _selectedDayOfWeek = widget.initialDayOfWeek ?? 1;
-      _startSection = widget.initialStartSection ?? 1;
-      _endSection = _startSection + 1;
-      _singleWeek = widget.initialWeek ?? 1;
-      if (_editorMode == CourseEditorMode.singleLesson) {
-        _weekSelectionMode = _WeekSelectionMode.custom;
-        _selectedCustomWeeks = {_singleWeek};
-        _startWeek = _singleWeek;
-        _endWeek = _singleWeek;
-      }
     }
   }
 
@@ -286,11 +243,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
-    if (!_isGroupEditing) {
-      _normalizeSections(settings);
-      _normalizeWeeks(settings);
-      _normalizeSingleWeek(settings);
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -319,32 +271,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: _isGroupEditing
-            ? _buildGroupEditingBody(provider, settings)
-            : _buildSingleEditingBody(provider, settings),
+        child: _buildGroupEditingBody(provider, settings),
       ),
-    );
-  }
-
-  Widget _buildSingleEditingBody(
-    TimetableProvider provider,
-    TimetableSettings settings,
-  ) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-      children: [
-        if (widget.course == null) ...[
-          _buildModeSection(settings),
-          const SizedBox(height: 8),
-        ],
-        _buildBasicInfoSection(provider),
-        const SizedBox(height: 8),
-        _buildTimeSection(provider, settings),
-        const SizedBox(height: 8),
-        _buildSingleWeekSummary(settings, AppLocalizations.of(context)!),
-        const SizedBox(height: 8),
-        _buildColorSection(),
-      ],
     );
   }
 
@@ -395,91 +323,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     _teacherController.text = course.teacher;
     _locationController.text = course.location;
     _descriptionController.text = course.description ?? course.note ?? '';
-    _selectedDayOfWeek = course.dayOfWeek;
-    _startSection = course.startSection;
-    _endSection = course.endSection;
-    _startWeek = course.startWeek;
-    _endWeek = course.endWeek;
-    _isOddWeek = course.isOddWeek;
-    _isEvenWeek = course.isEvenWeek;
-    final customWeeks = course.normalizedCustomWeeks;
-    if (customWeeks != null) {
-      _weekSelectionMode = _WeekSelectionMode.custom;
-      _selectedCustomWeeks = customWeeks.toSet();
-    }
-    final activeWeeks = course.activeWeeks;
-    if (activeWeeks.length == 1) {
-      _editorMode = CourseEditorMode.singleLesson;
-      _singleWeek = activeWeeks.first;
-    }
     _courseNature = course.courseNature;
     _selectedColor = course.color;
-    _selectedTimeSchemeOverrideId = course.timeSchemeIdOverride;
-  }
-
-  void _normalizeSections(TimetableSettings settings) {
-    final maxSection = settings.sectionCount;
-    if (_startSection > maxSection) {
-      _startSection = maxSection;
-    }
-    if (_endSection > maxSection) {
-      _endSection = maxSection;
-    }
-    if (_endSection < _startSection) {
-      _endSection = _startSection;
-    }
-  }
-
-  void _normalizeWeeks(TimetableSettings settings) {
-    final maxWeek = settings.semesterWeekCount;
-    if (_startWeek > maxWeek) {
-      _startWeek = maxWeek;
-    }
-    if (_endWeek > maxWeek) {
-      _endWeek = maxWeek;
-    }
-    if (_startWeek < 1) {
-      _startWeek = 1;
-    }
-    if (_endWeek < _startWeek) {
-      _endWeek = _startWeek;
-    }
-
-    if (_selectedCustomWeeks.isNotEmpty) {
-      _selectedCustomWeeks = _selectedCustomWeeks
-          .where((week) => week >= 1 && week <= maxWeek)
-          .toSet();
-    }
-    if (_weekSelectionMode == _WeekSelectionMode.custom &&
-        _selectedCustomWeeks.isEmpty) {
-      _selectedCustomWeeks = {_startWeek.clamp(1, maxWeek)};
-    }
-  }
-
-  void _normalizeSingleWeek(TimetableSettings settings) {
-    final maxWeek = settings.semesterWeekCount;
-    if (_singleWeek < 1) {
-      _singleWeek = 1;
-    }
-    if (_singleWeek > maxWeek) {
-      _singleWeek = maxWeek;
-    }
   }
 
   String _resolveTitle() {
     final l10n = AppLocalizations.of(context)!;
-    if (_isGroupEditing) {
-      return widget.courseGroup != null || widget.course != null
-          ? l10n.editCourseTitle
-          : l10n.addCourseTitle;
-    }
-    if (widget.course != null) {
-      return _editorMode == CourseEditorMode.singleLesson
-          ? l10n.editSingleLessonTitle
-          : l10n.editCourseTitle;
-    }
-    return _editorMode == CourseEditorMode.singleLesson
-        ? l10n.addSingleLessonTitle
+    return widget.courseGroup != null || widget.course != null
+        ? l10n.editCourseTitle
         : l10n.addCourseTitle;
   }
 
@@ -708,7 +559,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                   icon: const Icon(Icons.edit_rounded, size: 20),
                                   tooltip: l10n.editTimeSchemeTitle,
                                   onPressed: () async {
-                                    Navigator.pop(sheetContext);
                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(
@@ -719,6 +569,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                             ),
                                       ),
                                     );
+                                    setSheetState(() {});
                                     if (mounted) setState(() {});
                                   },
                                 ),
@@ -836,7 +687,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
       children: [
-        _buildGroupSharedInfoSection(l10n),
+        _buildGroupSharedInfoSection(provider, l10n),
         const SizedBox(height: 6),
         for (var i = 0; i < _scheduleEntries.length; i++) ...[
           _buildScheduleEntryCard(provider, settings, i, l10n),
@@ -847,7 +698,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildGroupSharedInfoSection(AppLocalizations l10n) {
+  Widget _buildGroupSharedInfoSection(TimetableProvider provider, AppLocalizations l10n) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -867,6 +718,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 helperText: l10n.courseNameHelper,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.book_outlined, size: 18),
+                suffixIcon: widget.course == null
+                    ? IconButton(
+                        tooltip: l10n.reuseExistingCourseLabel,
+                        icon: const Icon(Icons.auto_awesome_motion_rounded),
+                        onPressed: () => _showCourseTemplateSheet(provider),
+                      )
+                    : null,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 isDense: true,
               ),
@@ -1139,7 +997,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     style: const TextStyle(fontSize: 13),
                     decoration: _compactInputDecoration(
                       labelText: l10n.teacherLabel,
-                      prefixIcon: Icons.person_outline_rounded,
                       suffixIcon: const Icon(Icons.arrow_drop_down_rounded,
                           size: 20),
                     ),
@@ -1249,45 +1106,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildSingleTimeSchemePicker(
-    TimetableProvider provider,
-    AppLocalizations l10n,
-    String followLabel,
-  ) {
-    final currentName = _selectedTimeSchemeOverrideId == null
-        ? l10n.followCurrentTimetableWithName(followLabel)
-        : provider.timeSchemes
-                .where((s) => s.id == _selectedTimeSchemeOverrideId)
-                .firstOrNull
-                ?.name ??
-            l10n.followCurrentTimetableWithName(followLabel);
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () => _showTimeSchemePickerSheet(
-        currentValue: _selectedTimeSchemeOverrideId,
-        onSelected: (value) {
-          setState(() {
-            _selectedTimeSchemeOverrideId = value;
-          });
-        },
-      ),
-      child: InputDecorator(
-        decoration: _compactInputDecoration(
-          labelText: l10n.timeSchemeLabel,
-          prefixIcon: Icons.schedule_rounded,
-          suffixIcon:
-              const Icon(Icons.arrow_drop_down_rounded, size: 20),
-        ),
-        child: Text(
-          currentName,
-          style: const TextStyle(fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    );
-  }
-
   Widget _buildAddScheduleEntryButton(AppLocalizations l10n) {
     return OutlinedButton.icon(
       onPressed: _addScheduleEntry,
@@ -1309,8 +1127,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         endSection: last?.endSection ?? 2,
         startWeek: last?.startWeek ?? 1,
         endWeek: last?.endWeek ?? 16,
-        teacher: last?.teacher ?? '',
-        location: last?.location ?? '',
+        teacher: last?.teacher ?? _teacherController.text,
+        location: last?.location ?? _locationController.text,
       );
       _scheduleEntries.add(newEntry);
       _entryTeacherControllers.add(
@@ -1362,333 +1180,101 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     Navigator.pop(context);
   }
 
-  Widget _buildModeSection(TimetableSettings settings) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.addMethodTitle,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            SegmentedButton<CourseEditorMode>(
-              segments: [
-                ButtonSegment(
-                  value: CourseEditorMode.singleLesson,
-                  icon: Icon(Icons.looks_one_rounded),
-                  label: Text(l10n.singleLessonLabel),
-                ),
-                ButtonSegment(
-                  value: CourseEditorMode.recurring,
-                  icon: Icon(Icons.view_week_rounded),
-                  label: Text(l10n.recurringLessonLabel),
-                ),
-              ],
-              selected: {_editorMode},
-              showSelectedIcon: false,
-              onSelectionChanged: (selection) {
-                final nextMode = selection.first;
-                setState(() {
-                  _editorMode = nextMode;
-                  if (nextMode == CourseEditorMode.singleLesson) {
-                    final fallbackWeek = widget.initialWeek ?? _startWeek;
-                    _singleWeek =
-                        fallbackWeek.clamp(1, settings.semesterWeekCount);
-                    _weekSelectionMode = _WeekSelectionMode.custom;
-                    _selectedCustomWeeks = {_singleWeek};
-                    _startWeek = _singleWeek;
-                    _endWeek = _singleWeek;
-                    _isOddWeek = false;
-                    _isEvenWeek = false;
-                  } else {
-                    if (_selectedCustomWeeks.isNotEmpty) {
-                      final sortedWeeks = _selectedCustomWeeks.toList()..sort();
-                      _startWeek = sortedWeeks.first;
-                      _endWeek = sortedWeeks.last;
-                    }
-                    _weekSelectionMode = _WeekSelectionMode.range;
-                  }
-                });
-              },
-            ),
-            const SizedBox(height: 12),
-            Text(
-              _editorMode == CourseEditorMode.singleLesson
-                  ? l10n.singleLessonHint
-                  : l10n.recurringLessonHint,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBasicInfoSection(TimetableProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final singleLessonTemplates = _buildSingleLessonTemplates(provider);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.sharedInfoTitle,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            if (widget.course == null &&
-                _editorMode == CourseEditorMode.singleLesson) ...[
-              DropdownButtonFormField<String>(
-                isExpanded: true,
-                initialValue: singleLessonTemplates.any(
-                  (template) => template.id == _selectedSingleLessonTemplateId,
-                )
-                    ? _selectedSingleLessonTemplateId
-                    : _manualSingleLessonTemplateValue,
-                decoration: InputDecoration(
-                  labelText: l10n.reuseExistingCourseLabel,
-                  helperText: l10n.reuseExistingCourseHelper,
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.auto_awesome_motion_rounded),
-                ),
-                items: [
-                  DropdownMenuItem(
-                    value: _manualSingleLessonTemplateValue,
-                    child: Text(
-                      l10n.manualInputLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  ...singleLessonTemplates.map(
-                    (template) => DropdownMenuItem(
-                      value: template.id,
-                      child: Text(
-                        template.summary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-                selectedItemBuilder: (context) => [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      l10n.manualInputLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  ...singleLessonTemplates.map(
-                    (template) => Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        template.summary,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value == null) {
-                    return;
-                  }
-                  setState(() {
-                    _selectedSingleLessonTemplateId = value;
-                    if (value == _manualSingleLessonTemplateValue) {
-                      return;
-                    }
-                    _SingleLessonTemplate? template;
-                    for (final item in singleLessonTemplates) {
-                      if (item.id == value) {
-                        template = item;
-                        break;
-                      }
-                    }
-                    if (template != null) {
-                      _applySingleLessonTemplate(template.course);
-                    }
-                  });
-                },
-              ),
-              if (singleLessonTemplates.isEmpty) ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.noTemplateCoursesHint,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ],
-            ],
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _nameController,
-              style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
-                labelText: l10n.courseNameLabel,
-                helperText: l10n.courseNameHelper,
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.book_outlined, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                isDense: true,
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return l10n.pleaseEnterCourseName;
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _shortNameController,
-              style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
-                labelText: l10n.courseShortNameOptional,
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.short_text_rounded, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                isDense: true,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _teacherController,
-                    readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: l10n.teacherLabel,
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person_outline_rounded, size: 18),
-                      suffixIcon: Icon(Icons.arrow_drop_down_rounded, size: 20),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      isDense: true,
-                    ),
-                    style: const TextStyle(fontSize: 13),
-                    onTap: () => _showPickerSheet(
-                      title: l10n.selectTeacherTitle,
-                      suggestions: provider.uniqueTeachers,
-                      controller: _teacherController,
-                      onEntrySync: null,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: DropdownButtonFormField<CourseNature>(
-                    isExpanded: true,
-                    initialValue: _courseNature,
-                    decoration: InputDecoration(
-                      labelText: l10n.courseNatureLabel,
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      isDense: true,
-                    ),
-                    items: CourseNature.values
-                        .map(
-                          (item) => DropdownMenuItem(
-                            value: item,
-                            child: Text(item.label, style: const TextStyle(fontSize: 13)),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() => _courseNature = value);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _descriptionController,
-              style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
-                labelText: l10n.courseDescriptionOptional,
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.notes_rounded, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                isDense: true,
-              ),
-              maxLines: null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<_SingleLessonTemplate> _buildSingleLessonTemplates(
-    TimetableProvider provider,
-  ) {
-    if (provider.courses.isEmpty) {
-      return const <_SingleLessonTemplate>[];
-    }
-
-    final uniqueCourses = <String, Course>{};
-    final sortedCourses = provider.courses.toList()
-      ..sort((left, right) {
-        final nameCompare = left.name.compareTo(right.name);
-        if (nameCompare != 0) {
-          return nameCompare;
-        }
-        final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
-        if (dayCompare != 0) {
-          return dayCompare;
-        }
-        return left.startSection.compareTo(right.startSection);
-      });
-
-    for (final course in sortedCourses) {
-      final key = course.name.trim().toLowerCase();
-      uniqueCourses.putIfAbsent(key, () => course);
-    }
-
-    return uniqueCourses.values
-        .map(
-          (course) => _SingleLessonTemplate(
-            id: course.id,
-            course: course,
-            summary: _buildSingleLessonTemplateSummary(course),
-          ),
-        )
-        .toList(growable: false);
-  }
-
-  String _buildSingleLessonTemplateSummary(Course course) {
-    final parts = <String>[course.name];
-    final shortName = course.shortName?.trim();
-    final teacher = course.teacher.trim();
-
-    if (shortName != null &&
-        shortName.isNotEmpty &&
-        shortName.toLowerCase() != course.name.trim().toLowerCase()) {
-      parts.add(shortName);
-    }
-    if (teacher.isNotEmpty) {
-      parts.add(teacher);
-    }
-
-    return parts.join(' · ');
-  }
-
-  void _applySingleLessonTemplate(Course course) {
+  void _applyCourseTemplate(Course course) {
     _nameController.text = course.name;
     _shortNameController.text = course.shortName ?? '';
     _teacherController.text = course.teacher;
     _descriptionController.text = course.description ?? course.note ?? '';
     _courseNature = course.courseNature;
     _selectedColor = course.color;
+    // Sync existing schedule entries' teacher/location with shared info.
+    for (var i = 0; i < _scheduleEntries.length; i++) {
+      _scheduleEntries[i].teacher = course.teacher;
+      _entryTeacherControllers[i].text = course.teacher;
+      _scheduleEntries[i].location = course.location;
+      _entryLocationControllers[i].text = course.location;
+    }
+  }
+
+  void _showCourseTemplateSheet(TimetableProvider provider) {
+    final l10n = AppLocalizations.of(context)!;
+    final courseGroups = provider.courseGroups;
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.reuseExistingCourseHelper,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (courseGroups.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(
+                      child: Text(
+                        l10n.courseNameHelper,
+                        style: Theme.of(sheetContext).textTheme.bodySmall,
+                      ),
+                    ),
+                  )
+                else
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: courseGroups.length,
+                      itemBuilder: (context, index) {
+                        final group = courseGroups[index];
+                        final representative = group.courses.first;
+                        return ListTile(
+                          leading: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: parseHexColorOrFallback(
+                                representative.color,
+                                fallback: const Color(0xFF2196F3),
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          title: Text(
+                            group.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          subtitle: Text(
+                            representative.teacher.isNotEmpty
+                                ? representative.teacher
+                                : '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          onTap: () {
+                            setState(() => _applyCourseTemplate(representative));
+                            Navigator.pop(sheetContext);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildResponsiveFieldPair({
@@ -1717,242 +1303,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ],
         );
       },
-    );
-  }
-
-  _RangeWeekFilter get _rangeWeekFilter {
-    if (_isOddWeek) {
-      return _RangeWeekFilter.odd;
-    }
-    if (_isEvenWeek) {
-      return _RangeWeekFilter.even;
-    }
-    return _RangeWeekFilter.all;
-  }
-
-  Widget _buildRangeWeekFilterChip({
-    required String label,
-    required bool selected,
-    required VoidCallback onPressed,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      showCheckmark: false,
-      selectedColor: colorScheme.primaryContainer,
-      backgroundColor: colorScheme.surfaceContainerHighest,
-      side: BorderSide(
-        color: selected ? colorScheme.primary : colorScheme.outlineVariant,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(999),
-      ),
-      labelStyle: theme.textTheme.labelLarge?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: selected
-            ? colorScheme.onPrimaryContainer
-            : colorScheme.onSurfaceVariant,
-      ),
-      onSelected: (_) => onPressed(),
-    );
-  }
-
-  Widget _buildTimeSection(
-    TimetableProvider provider,
-    TimetableSettings settings,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final weekDays = _weekdayLabels(l10n);
-    final sectionNumbers =
-        List.generate(settings.sectionCount, (index) => index + 1);
-    final selectedScheme = _resolveSelectedTimeScheme(provider);
-    final validationMessage = provider.validateCourseTimeSchemeOverride(
-      timeSchemeId: _selectedTimeSchemeOverrideId,
-      startSection: _startSection,
-      endSection: _endSection,
-    );
-    final effectiveScheme = validationMessage == null ? selectedScheme : null;
-    final fallbackStartSection = settings.sectionAt(_startSection);
-    final fallbackEndSection = settings.sectionAt(_endSection);
-    final startTime = effectiveScheme == null
-        ? fallbackStartSection.startTime
-        : effectiveScheme.sections[_startSection - 1].startTime;
-    final endTime = effectiveScheme == null
-        ? fallbackEndSection.endTime
-        : effectiveScheme.sections[_endSection - 1].endTime;
-    final followLabel =
-        provider.activeTimeScheme?.name ?? AppLocalizations.of(context)!.timetableAppName;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.currentScheduleTitle,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(height: 10),
-            // Time scheme
-            _buildSingleTimeSchemePicker(provider, l10n, followLabel),
-            if (validationMessage != null) ...[
-              const SizedBox(height: 4),
-              Text(validationMessage,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 11)),
-            ],
-            const SizedBox(height: 10),
-            // Row: Weekday + Start section + End section
-            Row(
-              children: [
-                Expanded(
-                  flex: 5,
-                  child: DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue: _selectedDayOfWeek,
-                    decoration: _compactInputDecoration(
-                      labelText: l10n.weekdayLabel,
-                    ),
-                    items: List.generate(weekDays.length, (index) {
-                      return DropdownMenuItem(
-                        value: index + 1,
-                        child: Text(weekDays[index], style: const TextStyle(fontSize: 13)),
-                      );
-                    }),
-                    onChanged: (value) {
-                      setState(() => _selectedDayOfWeek = value!);
-                    },
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  flex: 4,
-                  child: DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue: _startSection,
-                    decoration: _compactInputDecoration(
-                      labelText: l10n.startSectionLabel,
-                    ),
-                    items: sectionNumbers.map((section) {
-                      return DropdownMenuItem(
-                        value: section,
-                        child: Text(l10n.sectionLabel(section), style: const TextStyle(fontSize: 13)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _startSection = value!;
-                        if (_endSection < _startSection) _endSection = _startSection;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  flex: 4,
-                  child: DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue: _endSection,
-                    decoration: _compactInputDecoration(
-                      labelText: l10n.endSectionLabel,
-                    ),
-                    items: sectionNumbers
-                        .where((section) => section >= _startSection)
-                        .map((section) {
-                      return DropdownMenuItem(
-                        value: section,
-                        child: Text(l10n.sectionLabel(section), style: const TextStyle(fontSize: 13)),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() => _endSection = value!);
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.timeRangeLabel(startTime, endTime),
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-            ),
-            const SizedBox(height: 10),
-            // Location
-            TextFormField(
-              controller: _locationController,
-              readOnly: true,
-              style: const TextStyle(fontSize: 13),
-              decoration: _compactInputDecoration(
-                labelText: l10n.locationLabel,
-                prefixIcon: Icons.location_on_outlined,
-                suffixIcon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
-              ),
-              onTap: () => _showPickerSheet(
-                title: l10n.selectLocationTitle,
-                suggestions: provider.uniqueLocations,
-                controller: _locationController,
-                onEntrySync: null,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildColorSection() {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.courseColorTitle,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _colors.map((color) {
-                final isSelected = color == _selectedColor;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedColor = color;
-                    });
-                  },
-                  child: Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Color(int.parse('FF${color.replaceFirst('#', '')}',
-                          radix: 16)),
-                      borderRadius: BorderRadius.circular(8),
-                      border: isSelected
-                          ? Border.all(color: Colors.black, width: 3)
-                          : null,
-                    ),
-                    child: isSelected
-                        ? const Icon(Icons.check, color: Colors.white)
-                        : null,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: _showCustomColorPicker,
-              icon: const Icon(Icons.palette_outlined),
-              label: Text(l10n.customPaletteAction),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -2082,34 +1432,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     });
   }
 
-  TimeScheme? _resolveSelectedTimeScheme(TimetableProvider provider) {
-    if (_selectedTimeSchemeOverrideId == null) {
-      return provider.activeTimeScheme;
-    }
-
-    for (final scheme in provider.timeSchemes) {
-      if (scheme.id == _selectedTimeSchemeOverrideId) {
-        return scheme;
-      }
-    }
-
-    return null;
-  }
-
-  List<int> _buildWeeksFromRange() {
-    final weeks = <int>[];
-    for (var week = _startWeek; week <= _endWeek; week++) {
-      if (_isOddWeek && week.isEven) {
-        continue;
-      }
-      if (_isEvenWeek && week.isOdd) {
-        continue;
-      }
-      weeks.add(week);
-    }
-    return weeks;
-  }
-
   List<int> _buildEntryWeeksFromRange(_ScheduleEntryData entry) {
     final weeks = <int>[];
     for (var w = entry.startWeek; w <= entry.endWeek; w++) {
@@ -2219,384 +1541,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ),
       ),
     );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Single-week picker dialog
-  // ---------------------------------------------------------------------------
-
-  Widget _buildSingleWeekSummary(TimetableSettings settings, AppLocalizations l10n) {
-    final availableWeeks = settings.availableWeeks;
-    if (_editorMode == CourseEditorMode.singleLesson) {
-      return _buildWeekSummaryRow(
-        title: l10n.weekSettingsTitle,
-        summary: l10n.weekLabel(_singleWeek),
-        onTap: () => _showSingleWeekPickerDialog(settings, l10n),
-      );
-    }
-    final selectedWeeks = _weekSelectionMode == _WeekSelectionMode.range
-        ? _buildWeeksFromRange()
-        : (_selectedCustomWeeks.toList()..sort());
-    final summary = _selectedWeeksSummaryText(
-      selectedWeeks, availableWeeks,
-      _startWeek, _endWeek, _isOddWeek, _isEvenWeek,
-      _weekSelectionMode, l10n,
-    );
-    return _buildWeekSummaryRow(
-      title: l10n.weekSettingsTitle,
-      summary: summary,
-      onTap: () => _showSingleWeekPickerDialog(settings, l10n),
-    );
-  }
-
-  Future<void> _showSingleWeekPickerDialog(
-    TimetableSettings settings,
-    AppLocalizations l10n,
-  ) async {
-    final availableWeeks = settings.availableWeeks;
-    var tempMode = _weekSelectionMode;
-    var tempStartWeek = _startWeek;
-    var tempEndWeek = _endWeek;
-    var tempIsOddWeek = _isOddWeek;
-    var tempIsEvenWeek = _isEvenWeek;
-    var tempCustomWeeks = Set<int>.from(_selectedCustomWeeks);
-    var tempRangeFilter = _rangeWeekFilter;
-    var tempSingleWeek = _singleWeek;
-
-    List<int> buildTempWeeksFromRange() {
-      final weeks = <int>[];
-      for (var w = tempStartWeek; w <= tempEndWeek; w++) {
-        if (tempIsOddWeek && w.isEven) continue;
-        if (tempIsEvenWeek && w.isOdd) continue;
-        weeks.add(w);
-      }
-      return weeks;
-    }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final selectedWeeks = tempMode == _WeekSelectionMode.range
-                ? buildTempWeeksFromRange()
-                : (tempCustomWeeks.toList()..sort());
-
-            return Dialog.fullscreen(
-              child: Scaffold(
-                appBar: AppBar(
-                  title: Text(l10n.weekPickerTitle),
-                  leading: IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context, false),
-                  ),
-                ),
-                body: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    if (_editorMode == CourseEditorMode.singleLesson) ...[
-                      DropdownButtonFormField<int>(
-                        initialValue: tempSingleWeek,
-                        decoration: InputDecoration(
-                          labelText: l10n.selectWeekLabel,
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.event_note_rounded),
-                        ),
-                        items: availableWeeks
-                            .map((week) => DropdownMenuItem(
-                                  value: week,
-                                  child: Text(l10n.weekLabel(week)),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) return;
-                          setDialogState(() => tempSingleWeek = value);
-                        },
-                      ),
-                    ] else ...[
-                    SegmentedButton<_WeekSelectionMode>(
-                      segments: [
-                        ButtonSegment(
-                          value: _WeekSelectionMode.range,
-                          label: Text(l10n.rangeWeeksLabel),
-                          icon: Icon(Icons.linear_scale_rounded),
-                        ),
-                        ButtonSegment(
-                          value: _WeekSelectionMode.custom,
-                          label: Text(l10n.customWeeksLabel),
-                          icon: Icon(Icons.apps_rounded),
-                        ),
-                      ],
-                      selected: {tempMode},
-                      showSelectedIcon: false,
-                      onSelectionChanged: (selection) {
-                        final nextMode = selection.first;
-                        setDialogState(() {
-                          if (nextMode == _WeekSelectionMode.custom &&
-                              tempCustomWeeks.isEmpty) {
-                            tempCustomWeeks = buildTempWeeksFromRange().toSet();
-                            if (tempCustomWeeks.isEmpty) {
-                              tempCustomWeeks = {tempStartWeek};
-                            }
-                          }
-                          if (nextMode == _WeekSelectionMode.range &&
-                              tempCustomWeeks.isNotEmpty) {
-                            final sorted = tempCustomWeeks.toList()..sort();
-                            tempStartWeek = sorted.first;
-                            tempEndWeek = sorted.last;
-                            tempIsOddWeek = false;
-                            tempIsEvenWeek = false;
-                          }
-                          tempMode = nextMode;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    if (tempMode == _WeekSelectionMode.range) ...[
-                      _buildResponsiveFieldPair(
-                        leading: DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          initialValue: tempStartWeek,
-                          decoration: InputDecoration(
-                            labelText: l10n.startWeekLabel,
-                            border: OutlineInputBorder(),
-                          ),
-                          items: availableWeeks.map((week) {
-                            return DropdownMenuItem(
-                              value: week,
-                              child: Text(l10n.weekLabel(week)),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setDialogState(() {
-                              tempStartWeek = value!;
-                              if (tempEndWeek < tempStartWeek) {
-                                tempEndWeek = tempStartWeek;
-                              }
-                            });
-                          },
-                        ),
-                        trailing: DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          initialValue: tempEndWeek,
-                          decoration: InputDecoration(
-                            labelText: l10n.endWeekLabel,
-                            border: OutlineInputBorder(),
-                          ),
-                          items: availableWeeks
-                              .where((week) => week >= tempStartWeek)
-                              .map((week) {
-                            return DropdownMenuItem(
-                              value: week,
-                              child: Text(l10n.weekLabel(week)),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setDialogState(() => tempEndWeek = value!);
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildRangeWeekFilterChip(
-                            label: l10n.allWeeksFilter,
-                            selected: tempRangeFilter == _RangeWeekFilter.all,
-                            onPressed: () {
-                              setDialogState(() {
-                                tempRangeFilter = _RangeWeekFilter.all;
-                                tempIsOddWeek = false;
-                                tempIsEvenWeek = false;
-                              });
-                            },
-                          ),
-                          _buildRangeWeekFilterChip(
-                            label: l10n.oddWeeksFilter,
-                            selected: tempRangeFilter == _RangeWeekFilter.odd,
-                            onPressed: () {
-                              setDialogState(() {
-                                tempRangeFilter = _RangeWeekFilter.odd;
-                                tempIsOddWeek = true;
-                                tempIsEvenWeek = false;
-                              });
-                            },
-                          ),
-                          _buildRangeWeekFilterChip(
-                            label: l10n.evenWeeksFilter,
-                            selected: tempRangeFilter == _RangeWeekFilter.even,
-                            onPressed: () {
-                              setDialogState(() {
-                                tempRangeFilter = _RangeWeekFilter.even;
-                                tempIsOddWeek = false;
-                                tempIsEvenWeek = true;
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ] else ...[
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final theme = Theme.of(context);
-                          final colorScheme = theme.colorScheme;
-                          final width = constraints.maxWidth;
-                          final crossAxisCount =
-                              width < 340 ? 4 : width < 420 ? 5 : 6;
-                          final availableWidth =
-                              width - (crossAxisCount - 1) * 8;
-                          final tileWidth = availableWidth / crossAxisCount;
-                          final targetMinHeight = width < 340 ? 46.0 : 44.0;
-                          final childAspectRatio = tileWidth / targetMinHeight;
-                          return GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: availableWeeks.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: childAspectRatio,
-                            ),
-                            itemBuilder: (context, index) {
-                              final week = availableWeeks[index];
-                              final isSelected =
-                                  tempCustomWeeks.contains(week);
-                              return FilledButton.tonal(
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(48, 44),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.padded,
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 10),
-                                  backgroundColor: isSelected
-                                      ? colorScheme.primaryContainer
-                                      : colorScheme.surfaceContainerHighest,
-                                  foregroundColor: isSelected
-                                      ? colorScheme.onPrimaryContainer
-                                      : colorScheme.onSurfaceVariant,
-                                  side: BorderSide(
-                                    color: isSelected
-                                        ? colorScheme.primary
-                                        : colorScheme.outlineVariant,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  elevation: 0,
-                                ),
-                                onPressed: () {
-                                  setDialogState(() {
-                                    if (isSelected) {
-                                      if (tempCustomWeeks.length > 1) {
-                                        tempCustomWeeks.remove(week);
-                                      }
-                                    } else {
-                                      tempCustomWeeks.add(week);
-                                    }
-                                  });
-                                },
-                                child: Text(
-                                  '$week',
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          ActionChip(
-                            label: Text(l10n.selectAllAction),
-                            onPressed: () {
-                              setDialogState(() {
-                                tempCustomWeeks = availableWeeks.toSet();
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            label: Text(l10n.selectOddWeeksAction),
-                            onPressed: () {
-                              setDialogState(() {
-                                tempCustomWeeks = availableWeeks
-                                    .where((week) => week.isOdd)
-                                    .toSet();
-                              });
-                            },
-                          ),
-                          ActionChip(
-                            label: Text(l10n.selectEvenWeeksAction),
-                            onPressed: () {
-                              setDialogState(() {
-                                tempCustomWeeks = availableWeeks
-                                    .where((week) => week.isEven)
-                                    .toSet();
-                              });
-                            },
-                          ),
-                        ],
-                      ),
-                    ],
-                    ], // close else
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.selectedWeeksSummary(
-                        selectedWeeks.length,
-                        _formatWeekList(selectedWeeks),
-                      ),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-                bottomNavigationBar: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(l10n.cancelAction),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          child: Text(l10n.confirmAction),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-
-    if (confirmed != true || !mounted) return;
-    setState(() {
-      if (_editorMode == CourseEditorMode.singleLesson) {
-        _singleWeek = tempSingleWeek;
-      }
-      _weekSelectionMode = tempMode;
-      _startWeek = tempStartWeek;
-      _endWeek = tempEndWeek;
-      _isOddWeek = tempIsOddWeek;
-      _isEvenWeek = tempIsEvenWeek;
-      _selectedCustomWeeks = tempCustomWeeks;
-      _isOddWeek = tempRangeFilter == _RangeWeekFilter.odd;
-      _isEvenWeek = tempRangeFilter == _RangeWeekFilter.even;
-    });
   }
 
   // ---------------------------------------------------------------------------
@@ -2946,11 +1890,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     FocusScope.of(context).unfocus();
     await Future<void>.delayed(const Duration(milliseconds: 16));
 
-    if (_isGroupEditing) {
-      await _saveGroup(provider, settings, l10n);
-    } else {
-      await _saveSingle(provider, settings, l10n);
-    }
+    await _saveGroup(provider, settings, l10n);
   }
 
   Future<void> _saveGroup(
@@ -3079,111 +2019,5 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     return null;
   }
 
-  Future<void> _saveSingle(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    AppLocalizations l10n,
-  ) async {
-    final validationMessage = provider.validateCourseTimeSchemeOverride(
-      timeSchemeId: _selectedTimeSchemeOverrideId,
-      startSection: _startSection,
-      endSection: _endSection,
-    );
-    if (validationMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationMessage)),
-      );
-      return;
-    }
-
-    List<int>? customWeeks;
-    if (_editorMode == CourseEditorMode.singleLesson) {
-      customWeeks = [_singleWeek];
-    } else if (_weekSelectionMode == _WeekSelectionMode.custom) {
-      final selectedWeeks = _selectedCustomWeeks.toList()..sort();
-      if (selectedWeeks.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.selectAtLeastOneWeek)),
-        );
-        return;
-      }
-      customWeeks = selectedWeeks;
-    }
-
-    final selectedScheme = _resolveSelectedTimeScheme(provider);
-    final startTime = selectedScheme == null
-        ? settings.sectionAt(_startSection).startTime
-        : selectedScheme.sections[_startSection - 1].startTime;
-    final endTime = selectedScheme == null
-        ? settings.sectionAt(_endSection).endTime
-        : selectedScheme.sections[_endSection - 1].endTime;
-
-    final course = Course(
-      id: widget.course?.id ?? const Uuid().v4(),
-      name: _nameController.text,
-      shortName:
-          _shortNameController.text.isEmpty ? null : _shortNameController.text,
-      teacher: _teacherController.text,
-      location: _locationController.text,
-      dayOfWeek: _selectedDayOfWeek,
-      startSection: _startSection,
-      endSection: _endSection,
-      startTime: startTime,
-      endTime: endTime,
-      color: _selectedColor,
-      startWeek: customWeeks == null ? _startWeek : customWeeks.first,
-      endWeek: customWeeks == null ? _endWeek : customWeeks.last,
-      isOddWeek: customWeeks == null ? _isOddWeek : false,
-      isEvenWeek: customWeeks == null ? _isEvenWeek : false,
-      customWeeks: customWeeks,
-      courseNature: _courseNature,
-      description: _descriptionController.text.isEmpty
-          ? null
-          : _descriptionController.text,
-      timeSchemeIdOverride: _selectedTimeSchemeOverrideId,
-    );
-
-    try {
-      if (widget.course == null) {
-        await provider.addCourse(course);
-      } else {
-        await provider.updateCourse(
-          course,
-          previousSharedName: widget.course!.name,
-        );
-      }
-    } on ArgumentError catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? l10n.saveFailed)),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.course == null
-              ? l10n.courseAddedSuccess
-              : l10n.courseUpdatedSuccess,
-        ),
-      ),
-    );
-    Navigator.pop(context);
-  }
-}
-
-class _SingleLessonTemplate {
-  final String id;
-  final Course course;
-  final String summary;
-
-  const _SingleLessonTemplate({
-    required this.id,
-    required this.course,
-    required this.summary,
-  });
 }
 

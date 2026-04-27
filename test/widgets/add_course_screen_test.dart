@@ -134,34 +134,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('single lesson mode shows simplified week selector',
-      (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: provider,
-        child: const TestApp(
-          home: AddCourseScreen(
-            mode: CourseEditorMode.singleLesson,
-            initialWeek: 4,
-          ),
-        ),
-      ),
-    );
-    await _pumpScreen(tester);
-    await tester.drag(find.byType(ListView), const Offset(0, -800));
-    await _pumpScreen(tester);
-
-    expect(find.text('添加单节课'), findsOneWidget);
-    expect(find.text('周次设置'), findsOneWidget);
-    expect(find.text('连续周'), findsNothing);
-  });
-
   testWidgets('single lesson mode can default to today weekday',
       (tester) async {
     final provider = TimetableProvider(
@@ -176,7 +148,6 @@ void main() {
         value: provider,
         child: TestApp(
           home: AddCourseScreen(
-            mode: CourseEditorMode.singleLesson,
             initialWeek: 4,
             initialDayOfWeek: todayWeekday,
           ),
@@ -188,104 +159,6 @@ void main() {
     await _pumpScreen(tester);
 
     expect(find.text(_weekdayLabelForTest(todayWeekday)), findsOneWidget);
-  });
-
-  testWidgets('single lesson mode can prefill from existing course',
-      (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-template',
-        name: '大学英语',
-        shortName: '英语',
-        teacher: '李老师',
-        location: 'A101',
-        dayOfWeek: 2,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:10',
-        endTime: '11:50',
-      ),
-    );
-
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: provider,
-        child: const TestApp(
-          home: AddCourseScreen(
-            mode: CourseEditorMode.singleLesson,
-            initialWeek: 4,
-          ),
-        ),
-      ),
-    );
-    await _pumpScreen(tester);
-
-    await tester.tap(find.text('手动填写'));
-    await _pumpScreen(tester);
-    await tester.tap(find.text('大学英语 · 英语 · 李老师').last);
-    await _pumpScreen(tester);
-    await tester.drag(find.byType(ListView), const Offset(0, -400));
-    await _pumpScreen(tester);
-
-    final fieldValues = tester
-        .widgetList<EditableText>(find.byType(EditableText))
-        .map((widget) => widget.controller.text)
-        .toList();
-
-    expect(fieldValues, contains('大学英语'));
-    expect(fieldValues, contains('李老师'));
-    expect(fieldValues, isNot(contains('A101')));
-  });
-
-  testWidgets('single lesson template dropdown does not overflow on long text',
-      (tester) async {
-    final provider = TimetableProvider(
-      autoInitialize: false,
-      enableLiveActivitySync: false,
-    );
-    await provider.initialize();
-    await provider.addCourse(
-      Course(
-        id: 'course-long-template',
-        name: '大学英语精读与跨文化交流',
-        teacher: '李老师',
-        location: '教学楼A区101多媒体智慧教室超长地点',
-        dayOfWeek: 2,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:10',
-        endTime: '11:50',
-      ),
-    );
-
-    await tester.binding.setSurfaceSize(const Size(360, 800));
-    addTearDown(() => tester.binding.setSurfaceSize(null));
-
-    await tester.pumpWidget(
-      ChangeNotifierProvider.value(
-        value: provider,
-        child: const TestApp(
-          home: AddCourseScreen(
-            mode: CourseEditorMode.singleLesson,
-            initialWeek: 4,
-          ),
-        ),
-      ),
-    );
-    await _pumpScreen(tester);
-    expect(tester.takeException(), isNull);
-
-    await tester.tap(find.text('手动填写'));
-    await _pumpScreen(tester);
-    await tester.tap(find.textContaining('大学英语精读与跨文化交流').last);
-    await _pumpScreen(tester);
-
-    expect(tester.takeException(), isNull);
   });
 
   testWidgets('custom week grid wraps earlier on narrow screens',
