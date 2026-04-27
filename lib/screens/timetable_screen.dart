@@ -3984,21 +3984,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                   children: [
                     _HomeActionPageButton(
                       sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.looks_one_rounded,
-                      title: l10n.singleLessonLabel,
+                      icon: Icons.view_week_rounded,
+                      title: l10n.addCourseTitle,
                       pageBuilder: (_) => AddCourseScreen(
-                        mode: CourseEditorMode.singleLesson,
                         initialWeek: _visibleWeek,
                         initialDayOfWeek: initialDayOfWeek,
-                      ),
-                    ),
-                    _HomeActionPageButton(
-                      sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.view_week_rounded,
-                      title: l10n.recurringLessonLabel,
-                      pageBuilder: (_) => AddCourseScreen(
-                        mode: CourseEditorMode.recurring,
-                        initialWeek: _visibleWeek,
                       ),
                     ),
                     _HomeActionPageButton(
