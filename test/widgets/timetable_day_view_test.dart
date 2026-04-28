@@ -1882,7 +1882,8 @@ void main() {
     await _pumpTimetableFrame(tester);
     await tester.tap(find.text('添加课程'));
     await _pumpTimetableFrame(tester);
-    await tester.tap(find.text('单节课'));
+    // Sub-sheet: tap "添加课程" again to navigate to AddCourseScreen.
+    await tester.tap(find.text('添加课程'));
     await tester.pump();
     await _pumpFiniteFrames(tester, count: 12);
 
