@@ -66,10 +66,22 @@ class MainActivity : FlutterActivity() {
         private const val KEY_MANAGED_UPDATE_DOWNLOAD_IDS = "managed_update_download_ids"
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
+        private const val ICS_CHANNEL = "com.mutx163.qingyu/ics_import"
     }
 
     private var notificationManager: NotificationManager? = null
     private var permissionResult: MethodChannel.Result? = null
+    private var pendingIcsContent: String? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handleIcsIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIcsIntent(intent)
+    }
 
     override fun onResume() {
         super.onResume()
@@ -159,6 +171,12 @@ class MainActivity : FlutterActivity() {
                         LiveUpdateScheduler.clearSnapshot(this)
                         stopLiveUpdateService()
                         result.success(true)
+                    }
+
+                    "getInitialIcsIntent" -> {
+                        val content = pendingIcsContent
+                        pendingIcsContent = null
+                        result.success(content)
                     }
 
                     else -> result.notImplemented()
@@ -368,6 +386,34 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+    }
+
+    private fun handleIcsIntent(intent: Intent) {
+        val action = intent.action ?: return
+        if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return
+        val uri: Uri? = when (action) {
+            Intent.ACTION_SEND -> {
+                if (intent.type?.startsWith("text/calendar") == true) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                } else null
+            }
+            else -> intent.data
+        }
+        uri?.let { readIcsFromUri(it) }
+    }
+
+    private fun readIcsFromUri(uri: Uri) {
+        try {
+            val content = contentResolver.openInputStream(uri)?.use { stream ->
+                stream.bufferedReader().readText()
+            }
+            if (content != null && content.contains("VCALENDAR", ignoreCase = true)) {
+                pendingIcsContent = content
+                Log.d("MainActivity", "ICS content loaded from intent, length=${content.length}")
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to read ICS from URI: $uri", e)
+        }
     }
 
     private fun canRequestPinWidget(): Boolean {

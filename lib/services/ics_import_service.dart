@@ -139,12 +139,42 @@ class IcsImportService {
     final startSection = int.parse(sectionMatch.group(1)!);
     final endSection = int.parse(sectionMatch.group(2)!);
     final hasStructuredLocation = descriptionLines.length >= 2;
-    final rawLocation = hasStructuredLocation
-        ? descriptionLines[1]
-        : (event['LOCATION'] ?? '');
-    final teacher = descriptionLines.length >= 3
-        ? descriptionLines[2]
-        : _extractTeacherFromCombinedLocation(event['LOCATION'] ?? '');
+
+    // ICS DESCRIPTION has two known formats after line[0] (section info):
+    //   Format A: line[1]=location, line[2]=teacher
+    //   Format B: line[1]=teacher,   line[2]=location
+    // We use the independent LOCATION field from the ICS event as a
+    // tie-breaker: whichever description line matches LOCATION is the
+    // location line, and the other is the teacher line.
+    String rawLocation;
+    String teacher;
+    if (!hasStructuredLocation) {
+      rawLocation = event['LOCATION'] ?? '';
+      teacher = _extractTeacherFromCombinedLocation(rawLocation);
+    } else if (descriptionLines.length < 3) {
+      // Only one extra line — fall back to LOCATION field.
+      rawLocation = descriptionLines[1];
+      teacher = _extractTeacherFromCombinedLocation(event['LOCATION'] ?? '');
+    } else {
+      final icsLocation = (event['LOCATION'] ?? '').trim();
+      final line1 = descriptionLines[1].trim();
+      final line2 = descriptionLines[2].trim();
+
+      final line1MatchesLocation = icsLocation.isNotEmpty &&
+          (line1.contains(icsLocation) || icsLocation.contains(line1));
+      final line2MatchesLocation = icsLocation.isNotEmpty &&
+          (line2.contains(icsLocation) || icsLocation.contains(line2));
+
+      if (line2MatchesLocation && !line1MatchesLocation) {
+        // Format B: line[1]=teacher, line[2]=location
+        teacher = line1;
+        rawLocation = line2;
+      } else {
+        // Format A (default): line[1]=location, line[2]=teacher
+        rawLocation = line1;
+        teacher = line2;
+      }
+    }
     final endWeek = _parseEndWeek(
           event['RRULE'],
           semesterStart,

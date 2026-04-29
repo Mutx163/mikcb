@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ui';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -344,6 +345,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       if (!mounted) {
         return;
       }
+      unawaited(_checkPendingIcsIntent());
       unawaited(
         AppLogService.instance.info(
           'startup_flow_completed',
@@ -381,6 +383,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return;
     }
 
+    unawaited(_checkPendingIcsIntent());
     unawaited(
       AppLogService.instance.info(
         'startup_flow_completed',
@@ -528,6 +531,23 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       ),
     );
     return imported == true;
+  }
+
+  Future<void> _checkPendingIcsIntent() async {
+    try {
+      const channel = MethodChannel('com.mutx163.qingyu/miui_live');
+      final icsContent = await channel.invokeMethod<String?>('getInitialIcsIntent');
+      if (icsContent != null && icsContent.isNotEmpty && mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            settings: const RouteSettings(name: '/courses/import/ics-external'),
+            builder: (_) => IcsCourseImportScreen(initialIcsContent: icsContent),
+          ),
+        );
+      }
+    } catch (e) {
+      // Silently ignore - this is a non-critical feature
+    }
   }
 
   @override

@@ -130,7 +130,8 @@ class CourseImportScreen extends StatelessWidget {
 }
 
 class IcsCourseImportScreen extends StatefulWidget {
-  const IcsCourseImportScreen({super.key});
+  final String? initialIcsContent;
+  const IcsCourseImportScreen({super.key, this.initialIcsContent});
 
   @override
   State<IcsCourseImportScreen> createState() => _IcsCourseImportScreenState();
@@ -142,6 +143,16 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       const ImportWeekAlignmentService();
 
   bool _isImporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialIcsContent != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _importFromExternalIcs(widget.initialIcsContent!);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -275,6 +286,104 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.importNoCoursesRecognized)),
         );
+        return;
+      }
+
+      final semesterConfig = await _pickImportSemesterConfig(
+        context,
+        initialSemesterStartDate:
+            provider.settings.semesterStartDate ?? parsedResult.semesterStart,
+        initialFirstCourseWeek: _weekAlignmentService.inferFirstCourseWeek(
+          semesterStartDate:
+              provider.settings.semesterStartDate ?? parsedResult.semesterStart,
+          firstCourseDate: parsedResult.semesterStart,
+        ),
+        inferredFirstCourseDate: parsedResult.semesterStart,
+        title: l10n.importConfirmSemesterMappingTitle,
+        subtitle: l10n.importConfirmSemesterMappingSubtitleIcs,
+      );
+      if (semesterConfig == null || !mounted) {
+        return;
+      }
+
+      final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
+        parsedResult.courses,
+        firstCourseWeek: semesterConfig.firstCourseWeek,
+      );
+      final requiredSectionCount =
+          provider.previewImportedCourseRequiredSectionCount(
+        alignedCourses,
+        replaceExisting: replaceExisting,
+      );
+      if (!mounted) {
+        return;
+      }
+      final capacityReady = await _ensureSectionCapacity(
+        context,
+        requiredSectionCount: requiredSectionCount,
+        provider: provider,
+      );
+      if (!capacityReady || !mounted) {
+        return;
+      }
+
+      final importedCount = await provider.importParsedCourses(
+        alignedCourses,
+        replaceExisting: replaceExisting,
+        semesterStart: semesterConfig.semesterStartDate,
+        source: 'ics',
+      );
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            importedCount > 0
+                ? (replaceExisting
+                    ? l10n.importOverwriteCount(importedCount)
+                    : l10n.importUpdatedCount(importedCount))
+                : l10n.importNoCourseChanges,
+          ),
+        ),
+      );
+      if (importedCount > 0) {
+        Navigator.of(context).pop(true);
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _importFromExternalIcs(String icsContent) async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isImporting = true;
+    });
+    try {
+      final provider = context.read<TimetableProvider>();
+      final replaceExisting = provider.courses.isEmpty
+          ? true
+          : await _askReplaceExisting(
+              context,
+              title: l10n.importReplaceExistingTitle,
+              content: l10n.importReplaceExistingMessage(l10n.icsImportTitle),
+            );
+      if (replaceExisting == null || !mounted) {
+        return;
+      }
+
+      final parsedResult = _icsImportService.parseWakeUpSchedule(icsContent);
+      if (parsedResult.courses.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.importNoCoursesRecognized)),
+          );
+        }
         return;
       }
 
