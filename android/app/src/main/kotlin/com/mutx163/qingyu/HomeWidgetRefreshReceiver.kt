@@ -13,7 +13,9 @@ class HomeWidgetRefreshReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED,
             Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED -> {
-                HomeWidgetStorage.refreshSnapshotFromFlutterState(context)
+                // Don't overwrite Flutter-synced snapshot with native-computed data.
+                // TodayWidgetSupport.readSnapshot already falls back to native
+                // computation when no synced snapshot exists.
                 TodayWidgetSupport.updateAll(context)
                 HomeWidgetStorage.rescheduleRefresh(context)
             }

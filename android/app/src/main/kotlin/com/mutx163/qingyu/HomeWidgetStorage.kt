@@ -22,7 +22,6 @@ object HomeWidgetStorage {
             .edit()
             .putString(KEY_SNAPSHOT_JSON, payload)
             .apply()
-        refreshSnapshotFromFlutterState(context)
         TodayWidgetSupport.updateAll(context)
         rescheduleRefresh(context)
     }

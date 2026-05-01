@@ -43,6 +43,7 @@ data class TodayWidgetSnapshotInfo(
     val nextExamLocation: String?,
     val nextExamStartTime: String?,
     val nextExamEndTime: String?,
+    val holidayName: String? = null,
 )
 
 data class TodayWidgetSizeProfile(
@@ -110,13 +111,15 @@ object TodayWidgetSupport {
     private const val KEY_ACTIVE_PROFILE_ID = "flutter.active_timetable_profile_id"
 
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
-        buildSnapshotFromFlutterState(context)?.let { return it }
-        val payload = HomeWidgetStorage.getSnapshotJson(context) ?: return null
-        return try {
-            parseSnapshot(JSONObject(payload))
-        } catch (_: Exception) {
-            null
+        val payload = HomeWidgetStorage.getSnapshotJson(context)
+        if (payload != null) {
+            try {
+                return parseSnapshot(JSONObject(payload))
+            } catch (_: Exception) {
+                // fall through to native fallback
+            }
         }
+        return buildSnapshotFromFlutterState(context)
     }
 
     fun updateAll(context: Context) {
@@ -414,13 +417,14 @@ object TodayWidgetSupport {
             "ongoing" -> "正在上课"
             "upcoming" -> "下一节课"
             "completed" -> "今日已结束"
+            "holiday" -> "假期中"
             else -> "今日无课"
         }
     }
 
     fun statusBackgroundRes(state: String, style: String): Int {
         return when (state) {
-            "ongoing", "upcoming" -> {
+            "ongoing", "upcoming", "holiday" -> {
                 if (style == "gradient") {
                     R.drawable.widget_status_chip_light
                 } else {
@@ -439,6 +443,7 @@ object TodayWidgetSupport {
 
     fun heroCourseName(snapshot: TodayWidgetSnapshotInfo): String {
         return when {
+            snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
             snapshot.highlightedCourse != null -> snapshot.highlightedCourse.name
             snapshot.state == "completed" -> "今天课程已结束"
             else -> "今天没有课程"
@@ -446,6 +451,9 @@ object TodayWidgetSupport {
     }
 
     fun heroTimeText(snapshot: TodayWidgetSnapshotInfo): String {
+        if (snapshot.state == "holiday") {
+            return "好好休息"
+        }
         val highlighted = snapshot.highlightedCourse
         return when {
             highlighted != null &&
@@ -459,6 +467,9 @@ object TodayWidgetSupport {
     }
 
     fun heroMetaText(snapshot: TodayWidgetSnapshotInfo): String {
+        if (snapshot.state == "holiday") {
+            return "第${snapshot.currentWeek}周"
+        }
         val highlighted = snapshot.highlightedCourse
         return when {
             !snapshot.showLocation -> "第${snapshot.currentWeek}周"
@@ -469,6 +480,9 @@ object TodayWidgetSupport {
     }
 
     fun compactMetaText(snapshot: TodayWidgetSnapshotInfo): String {
+        if (snapshot.state == "holiday") {
+            return "好好休息"
+        }
         val highlighted = snapshot.highlightedCourse
         return when {
             highlighted == null -> heroTimeText(snapshot)
@@ -523,7 +537,9 @@ object TodayWidgetSupport {
     }
 
     fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
-        return if (snapshot.totalTodayCourseCount > 0) {
+        return if (snapshot.state == "holiday") {
+            "${snapshot.profileName} · ${snapshot.holidayName ?: "假期中"}"
+        } else if (snapshot.totalTodayCourseCount > 0) {
             "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
         } else {
             "${snapshot.profileName} · 第${snapshot.currentWeek}周"
@@ -579,6 +595,7 @@ object TodayWidgetSupport {
             nextExamLocation = json.optString("nextExamLocation").takeIf { it.isNotBlank() },
             nextExamStartTime = json.optString("nextExamStartTime").takeIf { it.isNotBlank() },
             nextExamEndTime = json.optString("nextExamEndTime").takeIf { it.isNotBlank() },
+            holidayName = json.optString("holidayName").takeIf { it.isNotBlank() },
         )
     }
 
