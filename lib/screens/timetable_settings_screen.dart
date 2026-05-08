@@ -1238,11 +1238,14 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _isAppResumed = true;
   bool _autoRefreshEnabled = true;
   DateTime? _lastDebugStatusUpdatedAt;
+  bool _holidayOverrideEnabled = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final provider = context.read<TimetableProvider>();
+    _holidayOverrideEnabled = provider.settings.holidayOverrideEnabled;
     unawaited(_refreshDebugStatus(showLoading: true));
     _autoRefreshTimer = Timer.periodic(_autoRefreshInterval, (_) {
       if (!mounted || !_isAppResumed) {
@@ -1429,6 +1432,31 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _SettingsSectionCard(
+            title: '假期状态覆盖',
+            subtitle: '开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程',
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              value: _holidayOverrideEnabled,
+              onChanged: (value) {
+                setState(() {
+                  _holidayOverrideEnabled = value;
+                });
+                final provider = context.read<TimetableProvider>();
+                provider.updateTimetableSettings(
+                  provider.settings.copyWith(holidayOverrideEnabled: value),
+                );
+                provider.refreshLiveActivityNow(forceSnapshotSync: true);
+              },
+              title: Text(_holidayOverrideEnabled ? '假期模式已开启' : '假期模式已关闭'),
+              subtitle: Text(
+                _holidayOverrideEnabled
+                    ? '课程提醒和小组件将隐藏所有课程'
+                    : '当前使用正常假期数据',
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           _SettingsSectionCard(
             title: l10n.liveTestingNotificationTitle,
             subtitle: l10n.liveTestingNotificationSubtitle,

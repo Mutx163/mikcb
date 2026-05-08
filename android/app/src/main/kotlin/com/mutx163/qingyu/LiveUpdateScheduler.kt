@@ -174,6 +174,7 @@ private data class NativeScheduleSnapshot(
     val currentWeek: Int,
     val semesterStartMillis: Long?,
     val endReminderLeadMillis: Long,
+    val isHoliday: Boolean,
     val courses: List<NativeCourse>,
     val settings: NativeLiveSettings,
 )
@@ -414,6 +415,14 @@ object LiveUpdateScheduler {
     fun reschedule(context: Context, allowImmediateStart: Boolean): Boolean {
         cancelScheduledAlarm(context)
         val snapshot = loadSnapshot(context) ?: return false
+        if (snapshot.isHoliday) {
+            UmengDiagnosticReporter.record(
+                context = context.applicationContext,
+                category = "live_update_reschedule_holiday",
+                message = "Reschedule skipped due to holiday override",
+            )
+            return false
+        }
         val now = System.currentTimeMillis()
         val activeSelection = findActiveSelection(snapshot, now)
         if (allowImmediateStart && activeSelection != null) {
@@ -726,6 +735,7 @@ object LiveUpdateScheduler {
             currentWeek = json.optInt("currentWeek", 1),
             semesterStartMillis = json.optLong("semesterStartMillis").takeIf { it > 0L },
             endReminderLeadMillis = json.optLong("endReminderLeadMillis", 600_000L),
+            isHoliday = json.optBoolean("isHoliday", false),
             courses = courses,
             settings = settings,
         )

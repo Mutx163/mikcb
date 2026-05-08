@@ -1363,6 +1363,7 @@ class TimetableProvider with ChangeNotifier {
 
   /// 指定日期是否为假期（应隐藏课程）
   bool isHoliday(DateTime date) {
+    if (_settings.holidayOverrideEnabled) return true;
     if (!_settings.enableHolidayMarking) return false;
     return _holidayData?.isHoliday(date) ?? false;
   }
@@ -2871,10 +2872,12 @@ class TimetableProvider with ChangeNotifier {
     final displayCourses = _courses
         .map(resolveCourseDisplayName)
         .toList(growable: false);
+    final todayIsHoliday = isHoliday(DateTime.now());
     final snapshotSignature = jsonEncode({
       'profileId': activeProfile.id,
       'currentWeek': _currentWeek,
       'semesterStartDate': _settings.semesterStartDate?.millisecondsSinceEpoch,
+      'isHoliday': todayIsHoliday,
       'settings': _settings.toJson(),
       'courses': displayCourses.map((course) => course.toJson()).toList(),
     });
@@ -2914,13 +2917,19 @@ class TimetableProvider with ChangeNotifier {
         _lastHomeWidgetSnapshotSignature = snapshotSignature;
       }
     }
-    final triggerAtMillis = _homeWidgetSnapshotService.buildRefreshTriggers(
-      todayCourses: getCoursesForDay(now.weekday, week: snapshot.currentWeek),
-      now: now,
-      showCountdown: snapshot.showCountdown,
-      state: snapshot.state.value,
-      countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
-    );
+    final triggerAtMillis =
+        snapshot.state == HomeWidgetSnapshotState.holiday
+            ? <int>[]
+            : _homeWidgetSnapshotService.buildRefreshTriggers(
+                todayCourses: getCoursesForDay(
+                  now.weekday,
+                  week: snapshot.currentWeek,
+                ),
+                now: now,
+                showCountdown: snapshot.showCountdown,
+                state: snapshot.state.value,
+                countdownLeadMinutes: _settings.widgetCountdownLeadMinutes,
+              );
     await _homeWidgetService.scheduleRefresh(triggerAtMillis);
   }
 
