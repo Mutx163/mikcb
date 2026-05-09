@@ -3723,11 +3723,23 @@ class _HolidaySettingsScreen extends StatefulWidget {
 class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   late TimetableSettings _draft;
   Future<void> _saveQueue = Future<void>.value();
+  List<HolidayEntry> _customHolidays = [];
 
   @override
   void initState() {
     super.initState();
     _draft = context.read<TimetableProvider>().settings;
+    _loadCustomHolidays();
+  }
+
+  Future<void> _loadCustomHolidays() async {
+    final provider = context.read<TimetableProvider>();
+    final entries = await provider.getCustomHolidays();
+    if (mounted) {
+      setState(() {
+        _customHolidays = entries;
+      });
+    }
   }
 
   void _updateDraft(TimetableSettings next) {
@@ -3744,6 +3756,186 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
   Future<void> _persistDraft(TimetableSettings next) async {
     final provider = context.read<TimetableProvider>();
     await provider.updateTimetableSettings(next);
+  }
+
+  Future<void> _showCustomHolidayDialog({
+    HolidayEntry? existing,
+    DateTime? initialStart,
+    DateTime? initialEnd,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    DateTime? startDate = initialStart ?? existing?.date;
+    DateTime? endDate = initialEnd ?? existing?.date;
+    HolidayType selectedType = existing?.type ?? HolidayType.vacation;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: Text(existing != null ? l10n.customHolidayEdit : l10n.customHolidayAdd),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.customHolidayNameLabel,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    InkWell(
+                      onTap: () async {
+                        final picked = await showDateRangePicker(
+                          context: ctx,
+                          initialDateRange: startDate != null && endDate != null
+                              ? DateTimeRange(start: startDate!, end: endDate!)
+                              : null,
+                          firstDate: DateTime(2020),
+                          lastDate: DateTime(2030),
+                        );
+                        if (picked != null) {
+                          setDialogState(() {
+                            startDate = picked.start;
+                            endDate = picked.end;
+                          });
+                        }
+                      },
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: '${l10n.customHolidayStartDate} / ${l10n.customHolidayEndDate}',
+                          border: const OutlineInputBorder(),
+                          suffixIcon: const Icon(Icons.date_range, size: 18),
+                        ),
+                        child: Text(
+                          startDate != null && endDate != null
+                              ? '${startDate!.month}/${startDate!.day} — ${endDate!.month}/${endDate!.day}'
+                              : '--',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(l10n.customHolidayType, style: const TextStyle(fontSize: 13)),
+                    const SizedBox(height: 4),
+                    SegmentedButton<HolidayType>(
+                      segments: [
+                        ButtonSegment(
+                          value: HolidayType.vacation,
+                          label: Text(l10n.customHolidayTypeVacation, style: const TextStyle(fontSize: 12)),
+                        ),
+                        ButtonSegment(
+                          value: HolidayType.adjustedWorkday,
+                          label: Text(l10n.customHolidayTypeWorkday, style: const TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                      selected: {selectedType},
+                      onSelectionChanged: (s) => setDialogState(() => selectedType = s.first),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    if (nameController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(ctx).showSnackBar(
+                        SnackBar(content: Text(l10n.customHolidayNameRequired)),
+                      );
+                      return;
+                    }
+                    if (startDate == null || endDate == null) return;
+                    Navigator.pop(ctx, true);
+                  },
+                  child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result != true || startDate == null || endDate == null) return;
+    if (!mounted) return;
+    final name = nameController.text.trim();
+    final groupId = existing?.groupId ?? 'custom-${DateTime.now().millisecondsSinceEpoch}';
+    final provider = context.read<TimetableProvider>();
+
+    // Build entries for each day in range
+    final entries = <HolidayEntry>[];
+    var d = startDate!;
+    while (!d.isAfter(endDate!)) {
+      entries.add(HolidayEntry(
+        date: DateTime(d.year, d.month, d.day),
+        name: name,
+        type: selectedType,
+        groupId: groupId,
+      ));
+      d = d.add(const Duration(days: 1));
+    }
+
+    if (existing != null) {
+      await provider.updateCustomHoliday(groupId, entries);
+    } else {
+      for (final entry in entries) {
+        await provider.addCustomHoliday(entry);
+      }
+    }
+    await _loadCustomHolidays();
+  }
+
+  Future<void> _confirmDeleteCustomHoliday(String groupId) async {
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        content: Text(l10n.customHolidayDeleteConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.customHolidayDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      final provider = context.read<TimetableProvider>();
+      await provider.removeCustomHoliday(groupId);
+      await _loadCustomHolidays();
+    }
+  }
+
+  /// Group custom holiday entries by groupId for display.
+  List<_CustomHolidayGroup> _groupCustomHolidays() {
+    final map = <String, List<HolidayEntry>>{};
+    for (final entry in _customHolidays) {
+      final key = entry.groupId ?? 'ungrouped';
+      map.putIfAbsent(key, () => []).add(entry);
+    }
+    return map.entries.map((e) {
+      e.value.sort((a, b) => a.date.compareTo(b.date));
+      return _CustomHolidayGroup(
+        groupId: e.key,
+        name: e.value.first.name,
+        startDate: e.value.first.date,
+        endDate: e.value.last.date,
+        type: e.value.first.type,
+      );
+    }).toList()
+      ..sort((a, b) => a.startDate.compareTo(b.startDate));
   }
 
   @override
@@ -3914,6 +4106,120 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // ---- 自定义假期 ----
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          l10n.customHolidayTitle,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add, size: 20),
+                        tooltip: l10n.customHolidayAdd,
+                        onPressed: () => _showCustomHolidayDialog(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (_customHolidays.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text(
+                          l10n.customHolidayEmpty,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    ..._groupCustomHolidays().map((group) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Dismissible(
+                          key: ValueKey(group.groupId),
+                          direction: DismissDirection.endToStart,
+                          background: Container(
+                            alignment: Alignment.centerRight,
+                            padding: const EdgeInsets.only(right: 16),
+                            color: Theme.of(context).colorScheme.errorContainer,
+                            child: Icon(
+                              Icons.delete_outline,
+                              color: Theme.of(context).colorScheme.onErrorContainer,
+                            ),
+                          ),
+                          confirmDismiss: (_) async {
+                            await _confirmDeleteCustomHoliday(group.groupId);
+                            return false;
+                          },
+                          child: ListTile(
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              width: 4,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: group.type == HolidayType.vacation
+                                    ? Colors.orange
+                                    : Colors.blue,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            title: Text(
+                              group.name,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            subtitle: Text(
+                              _formatHolidayRange(group.startDate, group.endDate),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            trailing: Icon(
+                              Icons.chevron_right,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            onTap: () {
+                              // Reconstruct entries for editing
+                              final entries = _customHolidays
+                                  .where((e) => e.groupId == group.groupId)
+                                  .toList();
+                              if (entries.isNotEmpty) {
+                                _showCustomHolidayDialog(
+                                  existing: entries.first,
+                                  initialStart: group.startDate,
+                                  initialEnd: group.endDate,
+                                );
+                              }
+                            },
+                          ),
+                        ),
+                      );
+                    }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -4042,6 +4348,22 @@ class _HolidayDisplayItem {
     required this.endDate,
     required this.type,
     required this.isPast,
+  });
+}
+
+class _CustomHolidayGroup {
+  final String groupId;
+  final String name;
+  final DateTime startDate;
+  final DateTime endDate;
+  final HolidayType type;
+
+  const _CustomHolidayGroup({
+    required this.groupId,
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    required this.type,
   });
 }
 

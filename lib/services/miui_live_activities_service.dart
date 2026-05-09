@@ -481,6 +481,7 @@ class MiuiLiveActivitiesService {
     required int currentWeek,
     DateTime? semesterStartDate,
     required int endReminderLeadMillis,
+    bool isHoliday = false,
   }) async {
     await initialize();
     try {
@@ -488,6 +489,7 @@ class MiuiLiveActivitiesService {
         'currentWeek': currentWeek,
         'semesterStartMillis': semesterStartDate?.millisecondsSinceEpoch,
         'endReminderLeadMillis': endReminderLeadMillis,
+        'isHoliday': isHoliday,
         'courses': courses.map((course) => course.toJson()).toList(),
         'settings': settings.toJson(),
       });

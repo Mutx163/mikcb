@@ -2599,6 +2599,26 @@
   "holidayUpcomingSectionTitle": "近期节假日",
   "holidayNoUpcoming": "近期没有节假日",
   "holidayBadgeLabel": "假",
+  "customHolidayTitle": "自定义假期",
+  "customHolidayAdd": "添加假期",
+  "customHolidayEdit": "编辑假期",
+  "customHolidayDelete": "删除",
+  "customHolidayDeleteConfirm": "确定删除这个自定义假期吗？",
+  "customHolidayNameLabel": "假期名称",
+  "customHolidayStartDate": "开始日期",
+  "customHolidayEndDate": "结束日期",
+  "customHolidayType": "类型",
+  "customHolidayTypeVacation": "假期（隐藏课程）",
+  "customHolidayTypeWorkday": "调休上班（显示课程）",
+  "customHolidayEmpty": "暂无自定义假期",
+  "customHolidayNameRequired": "请输入假期名称",
+  "customHolidayDateRange": "{start} ~ {end}",
+  "@customHolidayDateRange": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
   "selectTeacherTitle": "选择教师",
   "selectLocationTitle": "选择教室",
   "historyRecordsLabel": "历史记录",

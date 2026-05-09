@@ -4282,6 +4282,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayBadgeLabel => '假';
 
   @override
+  String get customHolidayTitle => '自定义假期';
+
+  @override
+  String get customHolidayAdd => '添加假期';
+
+  @override
+  String get customHolidayEdit => '编辑假期';
+
+  @override
+  String get customHolidayDelete => '删除';
+
+  @override
+  String get customHolidayDeleteConfirm => '确定删除这个自定义假期吗？';
+
+  @override
+  String get customHolidayNameLabel => '假期名称';
+
+  @override
+  String get customHolidayStartDate => '开始日期';
+
+  @override
+  String get customHolidayEndDate => '结束日期';
+
+  @override
+  String get customHolidayType => '类型';
+
+  @override
+  String get customHolidayTypeVacation => '假期（隐藏课程）';
+
+  @override
+  String get customHolidayTypeWorkday => '调休上班（显示课程）';
+
+  @override
+  String get customHolidayEmpty => '暂无自定义假期';
+
+  @override
+  String get customHolidayNameRequired => '请输入假期名称';
+
+  @override
+  String customHolidayDateRange(Object start, Object end) {
+    return '$start ~ $end';
+  }
+
+  @override
   String get selectTeacherTitle => '选择教师';
 
   @override

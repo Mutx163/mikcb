@@ -1326,18 +1326,20 @@ class TimetableProvider with ChangeNotifier {
     try {
       final now = DateTime.now();
       final data = await _holidayService.getDataForYear(now.year);
-      _holidayData = data;
+      var allEntries = <HolidayEntry>[...data.entries];
       // If semester spans two years, also load next year
       if (now.month >= 11) {
         final nextYearData = await _holidayService.getDataForYear(now.year + 1);
-        // Merge: keep both years' entries (memory only, no persistence needed)
-        final merged = <HolidayEntry>[...data.entries, ...nextYearData.entries];
-        _holidayData = HolidayData(
-          year: data.year,
-          version: data.version,
-          entries: merged,
-        );
+        allEntries.addAll(nextYearData.entries);
       }
+      // Merge user-defined custom holidays
+      final customEntries = await _holidayService.loadCustomHolidays();
+      allEntries.addAll(customEntries);
+      _holidayData = HolidayData(
+        year: data.year,
+        version: data.version,
+        entries: allEntries,
+      );
       notifyListeners();
     } catch (_) {
       // Holiday data is non-critical; silently ignore failures
@@ -1361,8 +1363,33 @@ class TimetableProvider with ChangeNotifier {
     await _loadHolidayData();
   }
 
+  /// 用户自定义假期列表（不含远程/内置数据）
+  Future<List<HolidayEntry>> getCustomHolidays() async {
+    return _holidayService.loadCustomHolidays();
+  }
+
+  /// 新增自定义假期
+  Future<void> addCustomHoliday(HolidayEntry entry) async {
+    await _holidayService.addCustomHoliday(entry);
+    await _loadHolidayData();
+  }
+
+  /// 按 groupId 删除自定义假期
+  Future<void> removeCustomHoliday(String groupId) async {
+    await _holidayService.removeCustomHoliday(groupId);
+    await _loadHolidayData();
+  }
+
+  /// 按 groupId 更新自定义假期
+  Future<void> updateCustomHoliday(String groupId, List<HolidayEntry> newEntries) async {
+    await _holidayService.updateCustomHoliday(groupId, newEntries);
+    await _loadHolidayData();
+  }
+
   /// 指定日期是否为假期（应隐藏课程）
   bool isHoliday(DateTime date) {
+    // 调休上班日优先级最高，即使是假期覆盖模式也要显示课程
+    if (_holidayData?.isAdjustedWorkday(date) ?? false) return false;
     if (_settings.holidayOverrideEnabled) return true;
     if (!_settings.enableHolidayMarking) return false;
     return _holidayData?.isHoliday(date) ?? false;
@@ -2891,6 +2918,7 @@ class TimetableProvider with ChangeNotifier {
       currentWeek: _currentWeek,
       semesterStartDate: _settings.semesterStartDate,
       endReminderLeadMillis: _liveEndReminderWindow.inMilliseconds,
+      isHoliday: todayIsHoliday,
     );
     if (synced) {
       _lastLiveSnapshotSignature = snapshotSignature;
