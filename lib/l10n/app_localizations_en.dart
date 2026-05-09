@@ -4532,6 +4532,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayBadgeLabel => 'Holiday';
 
   @override
+  String get customHolidayTitle => 'Custom Holidays';
+
+  @override
+  String get customHolidayAdd => 'Add Holiday';
+
+  @override
+  String get customHolidayEdit => 'Edit Holiday';
+
+  @override
+  String get customHolidayDelete => 'Delete';
+
+  @override
+  String get customHolidayDeleteConfirm => 'Delete this custom holiday?';
+
+  @override
+  String get customHolidayNameLabel => 'Holiday name';
+
+  @override
+  String get customHolidayStartDate => 'Start date';
+
+  @override
+  String get customHolidayEndDate => 'End date';
+
+  @override
+  String get customHolidayType => 'Type';
+
+  @override
+  String get customHolidayTypeVacation => 'Holiday (hide courses)';
+
+  @override
+  String get customHolidayTypeWorkday => 'Makeup workday (show courses)';
+
+  @override
+  String get customHolidayEmpty => 'No custom holidays';
+
+  @override
+  String get customHolidayNameRequired => 'Please enter a holiday name';
+
+  @override
+  String customHolidayDateRange(Object start, Object end) {
+    return '$start ~ $end';
+  }
+
+  @override
   String get selectTeacherTitle => 'Select teacher';
 
   @override

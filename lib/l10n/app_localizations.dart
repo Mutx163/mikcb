@@ -7765,6 +7765,90 @@ abstract class AppLocalizations {
   /// **'假'**
   String get holidayBadgeLabel;
 
+  /// No description provided for @customHolidayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义假期'**
+  String get customHolidayTitle;
+
+  /// No description provided for @customHolidayAdd.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加假期'**
+  String get customHolidayAdd;
+
+  /// No description provided for @customHolidayEdit.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑假期'**
+  String get customHolidayEdit;
+
+  /// No description provided for @customHolidayDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除'**
+  String get customHolidayDelete;
+
+  /// No description provided for @customHolidayDeleteConfirm.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除这个自定义假期吗？'**
+  String get customHolidayDeleteConfirm;
+
+  /// No description provided for @customHolidayNameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期名称'**
+  String get customHolidayNameLabel;
+
+  /// No description provided for @customHolidayStartDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始日期'**
+  String get customHolidayStartDate;
+
+  /// No description provided for @customHolidayEndDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束日期'**
+  String get customHolidayEndDate;
+
+  /// No description provided for @customHolidayType.
+  ///
+  /// In zh, this message translates to:
+  /// **'类型'**
+  String get customHolidayType;
+
+  /// No description provided for @customHolidayTypeVacation.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期（隐藏课程）'**
+  String get customHolidayTypeVacation;
+
+  /// No description provided for @customHolidayTypeWorkday.
+  ///
+  /// In zh, this message translates to:
+  /// **'调休上班（显示课程）'**
+  String get customHolidayTypeWorkday;
+
+  /// No description provided for @customHolidayEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无自定义假期'**
+  String get customHolidayEmpty;
+
+  /// No description provided for @customHolidayNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入假期名称'**
+  String get customHolidayNameRequired;
+
+  /// No description provided for @customHolidayDateRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'{start} ~ {end}'**
+  String customHolidayDateRange(Object start, Object end);
+
   /// No description provided for @selectTeacherTitle.
   ///
   /// In zh, this message translates to:
