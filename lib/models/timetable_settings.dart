@@ -818,6 +818,7 @@ class TimetableSettings {
   final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
+  final bool holidayOverrideEnabled;
 
   const TimetableSettings({
     required this.sections,
@@ -934,6 +935,7 @@ class TimetableSettings {
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
+    this.holidayOverrideEnabled = false,
   });
 
   factory TimetableSettings.defaults() {
@@ -1057,6 +1059,7 @@ class TimetableSettings {
       appUpdateMirrorPreset: 'ghfast',
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
+      holidayOverrideEnabled: false,
     );
   }
 
@@ -1186,6 +1189,7 @@ class TimetableSettings {
       'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
+      'holidayOverrideEnabled': holidayOverrideEnabled,
     };
   }
 
@@ -1456,6 +1460,8 @@ class TimetableSettings {
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
+      holidayOverrideEnabled:
+          json['holidayOverrideEnabled'] as bool? ?? false,
     );
   }
 
@@ -1579,6 +1585,7 @@ class TimetableSettings {
     String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
+    bool? holidayOverrideEnabled,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -1797,6 +1804,8 @@ class TimetableSettings {
           appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:
           appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
+      holidayOverrideEnabled:
+          holidayOverrideEnabled ?? this.holidayOverrideEnabled,
     );
   }
 

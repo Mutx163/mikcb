@@ -2599,6 +2599,26 @@
   "holidayUpcomingSectionTitle": "Upcoming Holidays",
   "holidayNoUpcoming": "No upcoming holidays",
   "holidayBadgeLabel": "Holiday",
+  "customHolidayTitle": "Custom Holidays",
+  "customHolidayAdd": "Add Holiday",
+  "customHolidayEdit": "Edit Holiday",
+  "customHolidayDelete": "Delete",
+  "customHolidayDeleteConfirm": "Delete this custom holiday?",
+  "customHolidayNameLabel": "Holiday name",
+  "customHolidayStartDate": "Start date",
+  "customHolidayEndDate": "End date",
+  "customHolidayType": "Type",
+  "customHolidayTypeVacation": "Holiday (hide courses)",
+  "customHolidayTypeWorkday": "Makeup workday (show courses)",
+  "customHolidayEmpty": "No custom holidays",
+  "customHolidayNameRequired": "Please enter a holiday name",
+  "customHolidayDateRange": "{start} ~ {end}",
+  "@customHolidayDateRange": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
   "selectTeacherTitle": "Select teacher",
   "selectLocationTitle": "Select location",
   "historyRecordsLabel": "History",

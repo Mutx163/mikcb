@@ -135,6 +135,8 @@ object TodayWidgetSupport {
     ): TodayWidgetSnapshotInfo? {
         val profileJson = readActiveProfileJson(context) ?: return null
         val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val isHoliday = profileJson.optBoolean("isHoliday", false)
+            || settingsJson.optBoolean("holidayOverrideEnabled", false)
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
@@ -146,20 +148,34 @@ object TodayWidgetSupport {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
         val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
-        val todayCourses = allCourses
-            .filter { it.dayOfWeek == todayWeekday && it.isInWeek(currentWeek) }
-            .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
-        val currentCourse = todayCourses.firstOrNull { course ->
-            val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
-            val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return@firstOrNull false
-            nowMillis in startMillis..endMillis
+        val todayCourses = if (isHoliday) {
+            emptyList()
+        } else {
+            allCourses
+                .filter { it.dayOfWeek == todayWeekday && it.isInWeek(currentWeek) }
+                .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
         }
-        val upcomingCourse = todayCourses.firstOrNull { course ->
-            val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
-            startMillis > nowMillis
+        val currentCourse = if (isHoliday) {
+            null
+        } else {
+            todayCourses.firstOrNull { course ->
+                val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
+                val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return@firstOrNull false
+                nowMillis in startMillis..endMillis
+            }
+        }
+        val upcomingCourse = if (isHoliday) {
+            null
+        } else {
+            todayCourses.firstOrNull { course ->
+                val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return@firstOrNull false
+                startMillis > nowMillis
+            }
         }
         val hideCompletedCourses = settingsJson.optBoolean("widgetHideCompletedCourses", false)
-        val visibleTodayCourses = if (hideCompletedCourses) {
+        val visibleTodayCourses = if (isHoliday) {
+            emptyList()
+        } else if (hideCompletedCourses) {
             todayCourses.filter { course ->
                 val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return@filter false
                 endMillis > nowMillis
@@ -168,6 +184,7 @@ object TodayWidgetSupport {
             todayCourses
         }
         val state = when {
+            isHoliday -> "holiday"
             todayCourses.isEmpty() -> "no_course"
             currentCourse != null -> "ongoing"
             upcomingCourse != null -> "upcoming"
@@ -276,6 +293,9 @@ object TodayWidgetSupport {
     ): Long? {
         val profileJson = readActiveProfileJson(context) ?: return null
         val settingsJson = profileJson.optJSONObject("settings") ?: JSONObject()
+        val isHoliday = profileJson.optBoolean("isHoliday", false)
+            || settingsJson.optBoolean("holidayOverrideEnabled", false)
+        if (isHoliday) return null
         val semesterWeekCount = settingsJson.optInt("semesterWeekCount", 20).coerceAtLeast(1)
         val currentWeek = calculateWeekForDate(
             semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
@@ -417,7 +437,7 @@ object TodayWidgetSupport {
             "ongoing" -> "正在上课"
             "upcoming" -> "下一节课"
             "completed" -> "今日已结束"
-            "holiday" -> "假期中"
+            "holiday" -> "今日假期"
             else -> "今日无课"
         }
     }
