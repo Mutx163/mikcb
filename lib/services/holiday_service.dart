@@ -28,6 +28,7 @@ class HolidayLogEntry {
 /// 优先级：内存缓存 > 本地存储 > 远程拉取 > 内置资源（离线兜底）
 class HolidayService {
   static const _cacheKeyPrefix = 'holiday_data_';
+  static const _customHolidaysKey = 'custom_holidays';
 
   /// 内存缓存
   final Map<int, HolidayData> _memoryCache = {};
@@ -264,5 +265,53 @@ class HolidayService {
       await prefs.remove('$_cacheKeyPrefix$year');
     } catch (_) {}
     _log('$year年：缓存已清除');
+  }
+
+  // ---- 自定义假期 ----
+
+  /// 加载用户自定义假期列表
+  Future<List<HolidayEntry>> loadCustomHolidays() async {
+    try {
+      final prefs = await _ensurePrefs();
+      final raw = prefs.getString(_customHolidaysKey);
+      if (raw == null) return <HolidayEntry>[];
+      final list = jsonDecode(raw) as List<dynamic>;
+      return list
+          .map((e) => HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    } catch (_) {
+      return <HolidayEntry>[];
+    }
+  }
+
+  /// 保存整个自定义假期列表
+  Future<void> saveCustomHolidays(List<HolidayEntry> entries) async {
+    try {
+      final prefs = await _ensurePrefs();
+      final json = jsonEncode(entries.map((e) => e.toJson()).toList());
+      await prefs.setString(_customHolidaysKey, json);
+    } catch (_) {}
+  }
+
+  /// 新增一条自定义假期
+  Future<void> addCustomHoliday(HolidayEntry entry) async {
+    final existing = await loadCustomHolidays();
+    existing.add(entry);
+    await saveCustomHolidays(existing);
+  }
+
+  /// 按 groupId 删除自定义假期
+  Future<void> removeCustomHoliday(String groupId) async {
+    final existing = await loadCustomHolidays();
+    existing.removeWhere((e) => e.groupId == groupId);
+    await saveCustomHolidays(existing);
+  }
+
+  /// 按 groupId 更新自定义假期（替换同组所有 entries）
+  Future<void> updateCustomHoliday(String groupId, List<HolidayEntry> newEntries) async {
+    final existing = await loadCustomHolidays();
+    existing.removeWhere((e) => e.groupId == groupId);
+    existing.addAll(newEntries);
+    await saveCustomHolidays(existing);
   }
 }
