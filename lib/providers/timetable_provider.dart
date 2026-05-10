@@ -290,7 +290,7 @@ class TimetableProvider with ChangeNotifier {
     if (_settings.semesterStartDate != null) {
       await syncCurrentWeekWithSemesterStart();
     }
-    await _loadHolidayData();
+    unawaited(_loadHolidayData());
     unawaited(_syncHomeWidgetSnapshot());
     unawaited(_syncNativeRuntimePreferences());
     if (_enableLiveActivitySync) {
