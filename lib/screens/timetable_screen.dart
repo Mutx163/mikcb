@@ -4458,7 +4458,6 @@ class _TimetableScreenState extends State<TimetableScreen>
       useSafeArea: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
-        final colorScheme = theme.colorScheme;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -4471,28 +4470,25 @@ class _TimetableScreenState extends State<TimetableScreen>
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Row(
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
-                    Expanded(
-                      child: _HomeActionButton(
-                        icon: isSuspended
-                            ? Icons.play_circle_outline_rounded
-                            : Icons.pause_circle_outline_rounded,
-                        title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
-                        accentColor: isSuspended ? null : colorScheme.error,
-                        onTap: () => Navigator.of(sheetContext).pop('this_week'),
-                      ),
+                    _HomeActionButton(
+                      icon: isSuspended
+                          ? Icons.play_circle_outline_rounded
+                          : Icons.pause_circle_outline_rounded,
+                      title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
+                      accentColor: isSuspended ? null : theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('this_week'),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _HomeActionButton(
-                        icon: hasAnySuspended
-                            ? Icons.play_circle_filled_rounded
-                            : Icons.pause_circle_filled_rounded,
-                        title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
-                        accentColor: hasAnySuspended ? null : colorScheme.error,
-                        onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
-                      ),
+                    _HomeActionButton(
+                      icon: hasAnySuspended
+                          ? Icons.play_circle_filled_rounded
+                          : Icons.pause_circle_filled_rounded,
+                      title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+                      accentColor: hasAnySuspended ? null : theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
                     ),
                   ],
                 ),
