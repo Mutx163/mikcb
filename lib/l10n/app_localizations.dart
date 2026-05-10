@@ -7786,13 +7786,13 @@ abstract class AppLocalizations {
   /// No description provided for @courseActionSuspend.
   ///
   /// In zh, this message translates to:
-  /// **'标记停课（本周）'**
+  /// **'停课'**
   String get courseActionSuspend;
 
   /// No description provided for @courseActionUnsuspend.
   ///
   /// In zh, this message translates to:
-  /// **'取消停课（本周）'**
+  /// **'恢复'**
   String get courseActionUnsuspend;
 
   /// No description provided for @suspendSheetTitle.

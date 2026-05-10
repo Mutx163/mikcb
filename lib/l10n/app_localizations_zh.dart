@@ -4291,10 +4291,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get suspendedStatusLabel => '停课';
 
   @override
-  String get courseActionSuspend => '标记停课（本周）';
+  String get courseActionSuspend => '停课';
 
   @override
-  String get courseActionUnsuspend => '取消停课（本周）';
+  String get courseActionUnsuspend => '恢复';
 
   @override
   String get suspendSheetTitle => '停课';

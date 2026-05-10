@@ -4541,10 +4541,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suspendedStatusLabel => 'Suspended';
 
   @override
-  String get courseActionSuspend => 'Suspend (this week)';
+  String get courseActionSuspend => 'Suspend';
 
   @override
-  String get courseActionUnsuspend => 'Unsuspend (this week)';
+  String get courseActionUnsuspend => 'Restore';
 
   @override
   String get suspendSheetTitle => 'Suspend';
