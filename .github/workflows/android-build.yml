@@ -101,6 +101,9 @@ jobs:
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
+      - name: Sync system time
+        run: sudo timedatectl set-ntp true || sudo ntpdate -u pool.ntp.org || true
+
       - name: Upload to pgyer
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -118,7 +121,7 @@ jobs:
           fi
 
           echo "Step 1: Getting upload token..."
-          TOKEN_RESP=$(curl -s -X POST \
+          TOKEN_RESP=$(curl -s --connect-timeout 10 --max-time 30 -X POST \
             -d "_api_key=${PGYER_API_KEY}&buildType=android" \
             https://www.pgyer.com/apiv2/app/getCOSToken)
           echo "Token response: ${TOKEN_RESP}"
@@ -131,14 +134,13 @@ jobs:
           KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.params.key')
           SIGNATURE=$(echo "${TOKEN_RESP}" | jq -r '.data.params.signature')
           TOKEN=$(echo "${TOKEN_RESP}" | jq -r '.data.params["x-cos-security-token"]')
-          FILE_NAME=$(echo "${TOKEN_RESP}" | jq -r '.data.params["x-cos-meta-file-name"]')
 
           echo "Step 2: Uploading APK to ${ENDPOINT}..."
           UPLOAD_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            --connect-timeout 30 --max-time 600 \
             -F "key=${KEY}" \
             -F "signature=${SIGNATURE}" \
             -F "x-cos-security-token=${TOKEN}" \
-            -F "x-cos-meta-file-name=${FILE_NAME}" \
             -F "file=@${APK_PATH}" \
             "${ENDPOINT}")
           HTTP_CODE=$(echo "${UPLOAD_RESP}" | tail -1)
@@ -151,7 +153,7 @@ jobs:
 
           echo "Step 3: Polling build status..."
           BUILD_KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.key')
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             sleep 5
             INFO_RESP=$(curl -s -X GET \
               "https://www.pgyer.com/apiv2/app/buildInfo?_api_key=${PGYER_API_KEY}&buildKey=${BUILD_KEY}")
@@ -161,7 +163,7 @@ jobs:
               echo "Published! Install: https://www.pgyer.com/${SHORT_URL}"
               exit 0
             elif [[ "${INFO_CODE}" == "1247" ]]; then
-              echo "Still publishing... (attempt ${i}/30)"
+              echo "Still publishing... (attempt ${i}/60)"
             else
               echo "Build info error: ${INFO_RESP}"
               exit 1
