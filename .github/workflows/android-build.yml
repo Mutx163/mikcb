@@ -116,22 +116,59 @@ jobs:
             echo "APK not found at ${APK_PATH}"
             exit 1
           fi
-          echo "Uploading to pgyer..."
-          RESPONSE=$(curl -s -F "_api_key=${PGYER_API_KEY}" \
-               -F "file=@${APK_PATH}" \
-               -F "buildInstallType=2" \
-               -F "buildPassword=" \
-               -F "buildUpdateDescription=${{ steps.meta.outputs.release_tag }}" \
-               https://www.pgyer.com/apiv2/app/upload)
-          echo "Response: ${RESPONSE}"
-          CODE=$(echo "${RESPONSE}" | jq -r '.code // empty')
-          if [[ "${CODE}" == "0" ]]; then
-            SHORT_URL=$(echo "${RESPONSE}" | jq -r '.data.buildShortcutUrl // empty')
-            echo "Upload success! Install: https://www.pgyer.com/${SHORT_URL}"
-          else
-            echo "Upload failed with code: ${CODE}"
+
+          echo "Step 1: Getting upload token..."
+          TOKEN_RESP=$(curl -s -X POST \
+            -d "_api_key=${PGYER_API_KEY}&buildType=android" \
+            https://www.pgyer.com/apiv2/app/getCOSToken)
+          echo "Token response: ${TOKEN_RESP}"
+          CODE=$(echo "${TOKEN_RESP}" | jq -r '.code')
+          if [[ "${CODE}" != "0" ]]; then
+            echo "Failed to get upload token, code: ${CODE}"
             exit 1
           fi
+          ENDPOINT=$(echo "${TOKEN_RESP}" | jq -r '.data.endpoint')
+          KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.params.key')
+          SIGNATURE=$(echo "${TOKEN_RESP}" | jq -r '.data.params.signature')
+          TOKEN=$(echo "${TOKEN_RESP}" | jq -r '.data.params["x-cos-security-token"]')
+          FILE_NAME=$(echo "${TOKEN_RESP}" | jq -r '.data.params["x-cos-meta-file-name"]')
+
+          echo "Step 2: Uploading APK to ${ENDPOINT}..."
+          UPLOAD_RESP=$(curl -s -w "\n%{http_code}" -X POST \
+            -F "key=${KEY}" \
+            -F "signature=${SIGNATURE}" \
+            -F "x-cos-security-token=${TOKEN}" \
+            -F "x-cos-meta-file-name=${FILE_NAME}" \
+            -F "file=@${APK_PATH}" \
+            "${ENDPOINT}")
+          HTTP_CODE=$(echo "${UPLOAD_RESP}" | tail -1)
+          if [[ "${HTTP_CODE}" != "204" ]]; then
+            echo "Upload failed with HTTP ${HTTP_CODE}"
+            echo "${UPLOAD_RESP}"
+            exit 1
+          fi
+          echo "Upload accepted (HTTP 204)."
+
+          echo "Step 3: Polling build status..."
+          BUILD_KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.key')
+          for i in $(seq 1 30); do
+            sleep 5
+            INFO_RESP=$(curl -s -X GET \
+              "https://www.pgyer.com/apiv2/app/buildInfo?_api_key=${PGYER_API_KEY}&buildKey=${BUILD_KEY}")
+            INFO_CODE=$(echo "${INFO_RESP}" | jq -r '.code')
+            if [[ "${INFO_CODE}" == "0" ]]; then
+              SHORT_URL=$(echo "${INFO_RESP}" | jq -r '.data.buildShortcutUrl')
+              echo "Published! Install: https://www.pgyer.com/${SHORT_URL}"
+              exit 0
+            elif [[ "${INFO_CODE}" == "1247" ]]; then
+              echo "Still publishing... (attempt ${i}/30)"
+            else
+              echo "Build info error: ${INFO_RESP}"
+              exit 1
+            fi
+          done
+          echo "Timeout waiting for publish."
+          exit 1
 
       - name: Upload APK artifact
         if: startsWith(github.ref, 'refs/tags/v')
