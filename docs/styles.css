@@ -860,6 +860,27 @@ main {
   background: var(--surface-alt);
 }
 
+.release-channel-switch[hidden] {
+  display: none;
+}
+
+.release-channel-label {
+  display: none;
+  width: 100%;
+  margin-top: 18px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.release-channel-label.is-visible {
+  display: block;
+}
+
 .release-channel-tab {
   min-height: 40px;
   padding: 0 16px;
@@ -1473,7 +1494,8 @@ main {
   .feature-item,
   .scenario-item,
   .template-card,
-  .download-summary-card {
+  .download-summary-card,
+  .faq-item {
     background: rgba(28, 28, 30, 0.82);
     border-color: rgba(255, 255, 255, 0.05);
   }
@@ -1512,5 +1534,88 @@ main {
       background: rgba(0, 0, 0, 0.96);
       border-bottom-color: rgba(255, 255, 255, 0.1);
     }
+  }
+}
+
+/* FAQ Section */
+.faq-section {
+  padding: 80px 0;
+}
+
+.faq-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 40px;
+}
+
+.faq-item {
+  background: var(--surface);
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.faq-item:hover {
+  border-color: var(--line);
+}
+
+.faq-item summary {
+  padding: 20px 24px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: '+';
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text-soft);
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.faq-item[open] summary::after {
+  content: '−';
+}
+
+.faq-answer {
+  padding: 0 24px 20px;
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.faq-answer p {
+  margin: 0 0 12px;
+}
+
+.faq-answer ul,
+.faq-answer ol {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.faq-answer li {
+  margin-bottom: 8px;
+}
+
+.faq-answer li:last-child {
+  margin-bottom: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .faq-item summary::after {
+    color: var(--text-soft);
   }
 }

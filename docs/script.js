@@ -623,6 +623,7 @@ const releaseCloseButton = document.querySelector(".release-close");
 const releaseDialog = document.querySelector(".release-dialog");
 const releaseDownloadNote = document.querySelector(".release-download-note");
 const releaseChannelSwitch = document.getElementById("release-channel-switch");
+const releaseChannelLabel = document.getElementById("release-channel-label");
 const releaseChannelTabs = Array.from(
   document.querySelectorAll(".release-channel-tab")
 );
@@ -1040,6 +1041,10 @@ function updateReleaseChannelTabs() {
 
   if (releaseChannelSwitch) {
     releaseChannelSwitch.hidden = !hasPrerelease;
+  }
+
+  if (releaseChannelLabel) {
+    releaseChannelLabel.style.display = hasPrerelease ? "none" : "block";
   }
 
   releaseChannelTabs.forEach((tab) => {
