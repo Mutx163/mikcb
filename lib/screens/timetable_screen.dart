@@ -4469,30 +4469,27 @@ class _TimetableScreenState extends State<TimetableScreen>
                   l10n.suspendSheetTitle,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _HomeActionButton(
-                      icon: isSuspended
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.pause_circle_outline_rounded,
-                      title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
-                      subtitle: l10n.suspendThisWeekDesc,
-                      accentColor: isSuspended ? null : theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('this_week'),
-                    ),
-                    _HomeActionButton(
-                      icon: hasAnySuspended
-                          ? Icons.play_circle_filled_rounded
-                          : Icons.pause_circle_filled_rounded,
-                      title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
-                      subtitle: hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
-                      accentColor: hasAnySuspended ? null : theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
-                    ),
-                  ],
+                const SizedBox(height: 12),
+                _buildSuspendOption(
+                  context: sheetContext,
+                  icon: isSuspended
+                      ? Icons.play_circle_outline_rounded
+                      : Icons.pause_circle_outline_rounded,
+                  title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
+                  subtitle: l10n.suspendThisWeekDesc,
+                  accentColor: isSuspended ? null : theme.colorScheme.error,
+                  onTap: () => Navigator.of(sheetContext).pop('this_week'),
+                ),
+                const Divider(height: 1),
+                _buildSuspendOption(
+                  context: sheetContext,
+                  icon: hasAnySuspended
+                      ? Icons.play_circle_filled_rounded
+                      : Icons.pause_circle_filled_rounded,
+                  title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+                  subtitle: hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
+                  accentColor: hasAnySuspended ? null : theme.colorScheme.error,
+                  onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
                 ),
               ],
             ),
@@ -4517,6 +4514,52 @@ class _TimetableScreenState extends State<TimetableScreen>
         }
         break;
     }
+  }
+
+  Widget _buildSuspendOption({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    Color? accentColor,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final color = accentColor ?? theme.colorScheme.primary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+        child: Row(
+          children: [
+            Icon(icon, color: color, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Future<void> _confirmDeleteCourse(Course course) async {
@@ -5124,7 +5167,6 @@ class _StatusChip {
 class _HomeActionButton extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
   final Color? accentColor;
   final bool enabled;
@@ -5134,7 +5176,6 @@ class _HomeActionButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
-    this.subtitle,
     required this.onTap,
     this.accentColor,
     this.enabled = true,
@@ -5146,7 +5187,6 @@ class _HomeActionButton extends StatelessWidget {
     return _HomeActionButtonBody(
       icon: icon,
       title: title,
-      subtitle: subtitle,
       accentColor: accentColor,
       enabled: enabled,
       reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
@@ -5295,7 +5335,6 @@ class _HomeActionPageButton extends StatelessWidget {
 class _HomeActionButtonBody extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? subtitle;
   final VoidCallback onTap;
   final String? badgeText;
   final Color? accentColor;
@@ -5305,7 +5344,6 @@ class _HomeActionButtonBody extends StatelessWidget {
   const _HomeActionButtonBody({
     required this.icon,
     required this.title,
-    this.subtitle,
     required this.onTap,
     this.badgeText,
     this.accentColor,
@@ -5406,30 +5444,6 @@ class _HomeActionButtonBody extends StatelessWidget {
                       color: enabled ? null : colorScheme.onSurfaceVariant,
                     ),
                   ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    maxLines: 1,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
