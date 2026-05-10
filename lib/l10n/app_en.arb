@@ -2605,6 +2605,7 @@
   "courseActionSuspend": "Suspend",
   "courseActionUnsuspend": "Restore",
   "suspendSheetTitle": "Suspend",
+  "suspendSheetSubtitle": "Choose suspension scope",
   "suspendThisWeek": "This week",
   "suspendThisWeekDesc": "Suspend this week only",
   "suspendAllWeeks": "All weeks",

@@ -4469,6 +4469,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   l10n.suspendSheetTitle,
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 8),
+                Text(l10n.suspendSheetSubtitle, style: theme.textTheme.bodySmall),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 12,
