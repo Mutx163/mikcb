@@ -1193,7 +1193,7 @@ class TimetableProvider with ChangeNotifier {
         'suspended': !currentSuspended.contains(week),
       },
     );
-    _updateLiveActivity();
+    await _updateLiveActivity();
   }
 
   /// 停课全部周次
@@ -1209,7 +1209,7 @@ class TimetableProvider with ChangeNotifier {
       name: 'course_all_weeks_suspended',
       parameters: {'course_id': courseId},
     );
-    _updateLiveActivity();
+    await _updateLiveActivity();
   }
 
   /// 取消全部停课
@@ -1223,7 +1223,7 @@ class TimetableProvider with ChangeNotifier {
       name: 'course_all_weeks_unsuspended',
       parameters: {'course_id': courseId},
     );
-    _updateLiveActivity();
+    await _updateLiveActivity();
   }
 
   List<ScheduleItem> getScheduleItemsForDate(DateTime date) {
