@@ -2283,6 +2283,19 @@ class TimetableProvider with ChangeNotifier {
       ..sort((a, b) => a.startSection.compareTo(b.startSection));
   }
 
+  /// 获取指定天的有效课程（排除停课），用于小组件和超级岛
+  List<Course> getActiveCoursesForDay(int dayOfWeek, {int? week}) {
+    final targetWeek = week ?? _currentWeek;
+    return _courses
+        .where(
+          (course) =>
+              course.dayOfWeek == dayOfWeek &&
+              course.isActiveInWeek(targetWeek),
+        )
+        .toList()
+      ..sort((a, b) => a.startSection.compareTo(b.startSection));
+  }
+
   List<Course> getTodayCourses() {
     return getCoursesForDay(_currentDayOfWeek, week: _currentDateWeek);
   }
@@ -2606,7 +2619,7 @@ class TimetableProvider with ChangeNotifier {
   }) {
     final currentTime = now ?? DateTime.now();
     final targetWeek = week ?? _calculateWeekForDate(currentTime);
-    final todayCourses = getCoursesForDay(
+    final todayCourses = getActiveCoursesForDay(
       currentTime.weekday,
       week: targetWeek,
     );
@@ -2794,7 +2807,12 @@ class TimetableProvider with ChangeNotifier {
 
     final currentTime = now ?? DateTime.now();
     final targetWeek = _calculateWeekForDate(currentTime);
-    final todayCourses = getCoursesForDay(
+    // 含停课的原始课程数（用于区分"没课"和"课都停了"）
+    final originalTodayCount = getCoursesForDay(
+      currentTime.weekday,
+      week: targetWeek,
+    ).length;
+    final todayCourses = getActiveCoursesForDay(
       currentTime.weekday,
       week: targetWeek,
     ).map(resolveCourseDisplayName).toList(growable: false);
@@ -2802,7 +2820,7 @@ class TimetableProvider with ChangeNotifier {
     // 计算明天的课程（用于今日课程结束后显示）
     final tomorrow = currentTime.add(const Duration(days: 1));
     final tomorrowWeek = _calculateWeekForDate(tomorrow);
-    final tomorrowCourses = getCoursesForDay(
+    final tomorrowCourses = getActiveCoursesForDay(
       tomorrow.weekday,
       week: tomorrowWeek,
     ).map(resolveCourseDisplayName).toList(growable: false);
@@ -2825,6 +2843,7 @@ class TimetableProvider with ChangeNotifier {
       tomorrowWeek: tomorrowWeek,
       tomorrowDayOfWeek: tomorrow.weekday,
       showTomorrowCourses: _settings.widgetShowTomorrowCourses,
+      originalTodayCourseCount: originalTodayCount,
     );
   }
 
@@ -3050,7 +3069,7 @@ class TimetableProvider with ChangeNotifier {
         snapshot.state == HomeWidgetSnapshotState.holiday
             ? <int>[]
             : _homeWidgetSnapshotService.buildRefreshTriggers(
-                todayCourses: getCoursesForDay(
+                todayCourses: getActiveCoursesForDay(
                   now.weekday,
                   week: snapshot.currentWeek,
                 ),

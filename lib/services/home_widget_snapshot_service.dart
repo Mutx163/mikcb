@@ -187,6 +187,7 @@ class HomeWidgetSnapshotService {
     int tomorrowWeek = 0,
     int tomorrowDayOfWeek = 0,
     bool showTomorrowCourses = true,
+    int originalTodayCourseCount = 0,
   }) {
     // Holiday: return a dedicated snapshot without course info
     if (isHoliday) {
@@ -227,8 +228,9 @@ class HomeWidgetSnapshotService {
     final currentCourse = _findCurrentCourse(todayCourses, now);
     final upcomingCourse = _findNextCourse(todayCourses, now);
 
+    final hasCoursesScheduled = !todayCourses.isEmpty || originalTodayCourseCount > 0;
     final state =
-        switch ((todayCourses.isEmpty, currentCourse, upcomingCourse)) {
+        switch ((!hasCoursesScheduled, currentCourse, upcomingCourse)) {
       (true, _, _) => HomeWidgetSnapshotState.noCourse,
       (false, Course _, _) => HomeWidgetSnapshotState.ongoing,
       (false, null, Course _) => HomeWidgetSnapshotState.upcoming,

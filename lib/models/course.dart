@@ -267,6 +267,12 @@ class Course {
     return true;
   }
 
+  /// 是否在指定周次有效（排除停课）
+  bool isActiveInWeek(int week) {
+    if (suspendedWeeks?.contains(week) == true) return false;
+    return isInWeek(week);
+  }
+
   String _formatWeekList(List<int> weeks) {
     if (weeks.isEmpty) {
       return '';

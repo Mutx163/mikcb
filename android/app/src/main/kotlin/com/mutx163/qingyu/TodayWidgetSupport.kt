@@ -84,6 +84,10 @@ private data class WidgetSourceCourse(
         if (suspendedWeeks?.contains(week) == true) {
             return false
         }
+        return isInWeekIgnoringSuspension(week)
+    }
+
+    fun isInWeekIgnoringSuspension(week: Int): Boolean {
         val normalizedCustomWeeks = customWeeks
             ?.filter { it > 0 }
             ?.distinct()
@@ -159,6 +163,10 @@ object TodayWidgetSupport {
             timeInMillis = nowMillis
         }.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
         val allCourses = parseSourceCourses(profileJson.optJSONArray("courses"))
+        // 含停课的原始课程数（用于区分"没课"和"课都停了"）
+        val originalTodayCourseCount = if (isHoliday) 0 else {
+            allCourses.count { it.dayOfWeek == todayWeekday && it.isInWeekIgnoringSuspension(currentWeek) }
+        }
         val todayCourses = if (isHoliday) {
             emptyList()
         } else {
@@ -196,7 +204,7 @@ object TodayWidgetSupport {
         }
         val state = when {
             isHoliday -> "holiday"
-            todayCourses.isEmpty() -> "no_course"
+            todayCourses.isEmpty() && originalTodayCourseCount == 0 -> "no_course"
             currentCourse != null -> "ongoing"
             upcomingCourse != null -> "upcoming"
             else -> "completed"
