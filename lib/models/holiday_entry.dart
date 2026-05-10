@@ -102,11 +102,35 @@ class HolidayData {
   }
 
   /// 某日期是否为假期（应隐藏课程）
-  bool isHoliday(DateTime date) => entryForDate(date)?.shouldHideCourses ?? false;
+  /// 调休上班日优先级高于假期——同一天既有假期又有调休上班时，按上班处理。
+  /// 但用户手动设置的自定义假期优先级最高，覆盖调休上班日。
+  bool isHoliday(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    // 自定义假期优先级最高
+    if (entries.any((e) =>
+        _isSameDate(e.date, dateOnly) &&
+        e.shouldHideCourses &&
+        _isCustomEntry(e))) {
+      return true;
+    }
+    if (entries.any((e) => _isSameDate(e.date, dateOnly) && e.isAdjustedWorkday)) {
+      return false;
+    }
+    return entries.any((e) => _isSameDate(e.date, dateOnly) && e.shouldHideCourses);
+  }
 
-  /// 某日期是否为调休上班日
-  bool isAdjustedWorkday(DateTime date) =>
-      entryForDate(date)?.isAdjustedWorkday ?? false;
+  /// 某日期是否为调休上班日（排除被自定义假期覆盖的情况）
+  bool isAdjustedWorkday(DateTime date) {
+    final dateOnly = DateTime(date.year, date.month, date.day);
+    // 如果该日期有自定义假期覆盖，则不算调休上班日
+    if (entries.any((e) =>
+        _isSameDate(e.date, dateOnly) &&
+        e.shouldHideCourses &&
+        _isCustomEntry(e))) {
+      return false;
+    }
+    return entries.any((e) => _isSameDate(e.date, dateOnly) && e.isAdjustedWorkday);
+  }
 
   /// 获取连续假期组
   List<HolidayEntry> entriesForGroup(String groupId) {
@@ -116,6 +140,9 @@ class HolidayData {
 
   static bool _isSameDate(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
+
+  static bool _isCustomEntry(HolidayEntry e) =>
+      e.groupId != null && e.groupId!.startsWith('custom-');
 
   Map<String, dynamic> toJson() => {
         'year': year,

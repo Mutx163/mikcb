@@ -175,6 +175,9 @@ private data class NativeScheduleSnapshot(
     val semesterStartMillis: Long?,
     val endReminderLeadMillis: Long,
     val isHoliday: Boolean,
+    val holidayDates: Set<String>,
+    val holidayOverrideEnabled: Boolean,
+    val enableHolidayMarking: Boolean,
     val courses: List<NativeCourse>,
     val settings: NativeLiveSettings,
 )
@@ -415,7 +418,9 @@ object LiveUpdateScheduler {
     fun reschedule(context: Context, allowImmediateStart: Boolean): Boolean {
         cancelScheduledAlarm(context)
         val snapshot = loadSnapshot(context) ?: return false
-        if (snapshot.isHoliday) {
+        // Check if today is a holiday (uses both legacy isHoliday flag and full date list)
+        val nowCalendar = Calendar.getInstance()
+        if (snapshot.isHoliday || isDateHoliday(snapshot, nowCalendar)) {
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_reschedule_holiday",
@@ -731,11 +736,23 @@ object LiveUpdateScheduler {
             )
         }
 
+        val holidayDatesArray = json.optJSONArray("holidayDates")
+        val holidayDates = mutableSetOf<String>()
+        if (holidayDatesArray != null) {
+            for (i in 0 until holidayDatesArray.length()) {
+                val dateStr = holidayDatesArray.optString(i)
+                if (dateStr.isNotBlank()) holidayDates.add(dateStr)
+            }
+        }
+
         return NativeScheduleSnapshot(
             currentWeek = json.optInt("currentWeek", 1),
             semesterStartMillis = json.optLong("semesterStartMillis").takeIf { it > 0L },
             endReminderLeadMillis = json.optLong("endReminderLeadMillis", 600_000L),
             isHoliday = json.optBoolean("isHoliday", false),
+            holidayDates = holidayDates,
+            holidayOverrideEnabled = json.optBoolean("holidayOverrideEnabled", false),
+            enableHolidayMarking = json.optBoolean("enableHolidayMarking", true),
             courses = courses,
             settings = settings,
         )
@@ -833,6 +850,10 @@ object LiveUpdateScheduler {
         nowMillis: Long,
     ): ScheduledSelection? {
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
+        // Skip if today is a holiday
+        if (isDateHoliday(snapshot, nowCalendar)) {
+            return null
+        }
         val targetWeek = calculateWeekForDate(snapshot, nowCalendar)
         val todayCourses = snapshot.courses
             .filter { it.dayOfWeek == nowCalendar.get(Calendar.DAY_OF_WEEK).toWeekday() && it.isInWeek(targetWeek) }
@@ -917,6 +938,10 @@ object LiveUpdateScheduler {
                 val candidateDate = Calendar.getInstance().apply {
                     timeInMillis = todayStart.timeInMillis
                     add(Calendar.DAY_OF_YEAR, dayOffset)
+                }
+                // Skip courses that fall on a holiday
+                if (isDateHoliday(snapshot, candidateDate)) {
+                    continue
                 }
                 val startAtMillis =
                     buildCorrectedCourseDateTimeMillis(
@@ -1356,6 +1381,24 @@ object LiveUpdateScheduler {
             dateMillis = dateCalendar.timeInMillis,
             semesterWeekCount = snapshot.settings.semesterWeekCount,
         )
+    }
+
+    /** Check whether a specific date should be treated as a holiday
+     *  (courses should be hidden) based on the snapshot's holiday data. */
+    private fun isDateHoliday(
+        snapshot: NativeScheduleSnapshot,
+        dateCalendar: Calendar,
+    ): Boolean {
+        if (snapshot.holidayOverrideEnabled) return true
+        if (!snapshot.enableHolidayMarking) return false
+        if (snapshot.holidayDates.isEmpty()) return false
+        val dateStr = String.format(
+            "%04d-%02d-%02d",
+            dateCalendar.get(Calendar.YEAR),
+            dateCalendar.get(Calendar.MONTH) + 1,
+            dateCalendar.get(Calendar.DAY_OF_MONTH),
+        )
+        return snapshot.holidayDates.contains(dateStr)
     }
 
     private fun buildCourseDateTimeMillis(
