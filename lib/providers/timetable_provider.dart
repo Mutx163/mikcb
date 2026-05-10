@@ -2799,6 +2799,14 @@ class TimetableProvider with ChangeNotifier {
       week: targetWeek,
     ).map(resolveCourseDisplayName).toList(growable: false);
 
+    // 计算明天的课程（用于今日课程结束后显示）
+    final tomorrow = currentTime.add(const Duration(days: 1));
+    final tomorrowWeek = _calculateWeekForDate(tomorrow);
+    final tomorrowCourses = getCoursesForDay(
+      tomorrow.weekday,
+      week: tomorrowWeek,
+    ).map(resolveCourseDisplayName).toList(growable: false);
+
     final holidayEntry = getHolidayForDate(currentTime);
 
     return _homeWidgetSnapshotService.build(
@@ -2813,6 +2821,9 @@ class TimetableProvider with ChangeNotifier {
       nextExam: getNextExam(),
       isHoliday: holidayEntry?.shouldHideCourses ?? false,
       holidayName: holidayEntry?.name,
+      tomorrowCourses: tomorrowCourses,
+      tomorrowWeek: tomorrowWeek,
+      tomorrowDayOfWeek: tomorrow.weekday,
     );
   }
 

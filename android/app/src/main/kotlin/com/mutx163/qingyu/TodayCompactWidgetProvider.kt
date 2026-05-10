@@ -82,11 +82,13 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 targetAspect = 1f,
             )
             views.setTextViewText(R.id.widget_status, TodayWidgetSupport.statusText(state))
+            val isShowingTomorrow = state == "completed" && (snapshot?.tomorrowCourses?.isNotEmpty() == true)
             views.setTextViewText(
                 R.id.widget_course_name,
                 when {
                     snapshot == null -> "今日无课"
                     state == "holiday" -> snapshot.holidayName ?: "假期中"
+                    isShowingTomorrow -> snapshot.tomorrowCourses.first().name
                     state == "completed" -> "今天课程"
                     else -> TodayWidgetSupport.heroCourseName(snapshot)
                 }
@@ -96,6 +98,11 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 when {
                     snapshot == null -> "点击打开首页"
                     state == "holiday" -> "好好休息"
+                    isShowingTomorrow -> {
+                        val first = snapshot.tomorrowCourses.first()
+                        val time = "${first.startTime} - ${first.endTime}"
+                        if (snapshot.showLocation && first.location.isNotBlank()) "$time\n${first.location}" else time
+                    }
                     state == "no_course" -> "留一点时间给自己"
                     state == "completed" -> "今天课程已经结束"
                     else -> {

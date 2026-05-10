@@ -98,6 +98,9 @@ class HomeWidgetSnapshot {
   final String? nextExamStartTime;
   final String? nextExamEndTime;
   final String? holidayName;
+  final List<HomeWidgetCourseSummary> tomorrowCourses;
+  final int tomorrowWeek;
+  final int tomorrowDayOfWeek;
 
   const HomeWidgetSnapshot({
     required this.profileId,
@@ -125,6 +128,9 @@ class HomeWidgetSnapshot {
     this.nextExamStartTime,
     this.nextExamEndTime,
     this.holidayName,
+    this.tomorrowCourses = const [],
+    this.tomorrowWeek = 0,
+    this.tomorrowDayOfWeek = 0,
   });
 
   Map<String, dynamic> toJson() {
@@ -155,6 +161,9 @@ class HomeWidgetSnapshot {
       'nextExamStartTime': nextExamStartTime,
       'nextExamEndTime': nextExamEndTime,
       'holidayName': holidayName,
+      'tomorrowCourses': tomorrowCourses.map((c) => c.toJson()).toList(),
+      'tomorrowWeek': tomorrowWeek,
+      'tomorrowDayOfWeek': tomorrowDayOfWeek,
     };
   }
 }
@@ -174,6 +183,9 @@ class HomeWidgetSnapshotService {
     Exam? nextExam,
     bool isHoliday = false,
     String? holidayName,
+    List<Course> tomorrowCourses = const [],
+    int tomorrowWeek = 0,
+    int tomorrowDayOfWeek = 0,
   }) {
     // Holiday: return a dedicated snapshot without course info
     if (isHoliday) {
@@ -268,6 +280,11 @@ class HomeWidgetSnapshotService {
       nextExamLocation: nextExam?.location,
       nextExamStartTime: nextExam?.startTime,
       nextExamEndTime: nextExam?.endTime,
+      tomorrowCourses: tomorrowCourses
+          .map(HomeWidgetCourseSummary.fromCourse)
+          .toList(growable: false),
+      tomorrowWeek: tomorrowWeek,
+      tomorrowDayOfWeek: tomorrowDayOfWeek,
     );
   }
 
