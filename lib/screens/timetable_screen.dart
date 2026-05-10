@@ -4381,51 +4381,56 @@ class _TimetableScreenState extends State<TimetableScreen>
       context: context,
       showDragHandle: true,
       useSafeArea: true,
+      constraints: const BoxConstraints.tightFor(width: double.infinity),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.deleteModeTitle,
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.deleteModeSubtitle, style: theme.textTheme.bodySmall),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _HomeActionButton(
-                      icon: Icons.delete_sweep_rounded,
-                      title: l10n.deleteCourseAction,
-                      accentColor: theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('course'),
-                    ),
-                    _HomeActionButton(
-                      icon: Icons.remove_circle_outline_rounded,
-                      title: l10n.deleteOccurrenceAction,
-                      accentColor: theme.colorScheme.error,
-                      enabled: canDeleteOccurrence,
-                      onTap: () => Navigator.of(sheetContext).pop('occurrence'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  canDeleteOccurrence
-                      ? l10n.deleteModeHintCurrentWeek(week)
-                      : l10n.deleteModeHintUnavailable(week),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+          child: SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.deleteModeTitle,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(l10n.deleteModeSubtitle, style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.start,
+                    children: [
+                      _HomeActionButton(
+                        icon: Icons.delete_sweep_rounded,
+                        title: l10n.deleteCourseAction,
+                        accentColor: theme.colorScheme.error,
+                        onTap: () => Navigator.of(sheetContext).pop('course'),
+                      ),
+                      _HomeActionButton(
+                        icon: Icons.remove_circle_outline_rounded,
+                        title: l10n.deleteOccurrenceAction,
+                        accentColor: theme.colorScheme.error,
+                        enabled: canDeleteOccurrence,
+                        onTap: () => Navigator.of(sheetContext).pop('occurrence'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    canDeleteOccurrence
+                        ? l10n.deleteModeHintCurrentWeek(week)
+                        : l10n.deleteModeHintUnavailable(week),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -4456,52 +4461,57 @@ class _TimetableScreenState extends State<TimetableScreen>
       context: context,
       showDragHandle: true,
       useSafeArea: true,
+      constraints: const BoxConstraints.tightFor(width: double.infinity),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.suspendSheetTitle,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.suspendSheetSubtitle, style: theme.textTheme.bodySmall),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    _HomeActionButton(
-                      icon: isSuspended
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.pause_circle_outline_rounded,
-                      title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
-                      accentColor: isSuspended ? null : theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('this_week'),
-                    ),
-                    _HomeActionButton(
-                      icon: hasAnySuspended
-                          ? Icons.play_circle_filled_rounded
-                          : Icons.pause_circle_filled_rounded,
-                      title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
-                      accentColor: hasAnySuspended ? null : theme.colorScheme.error,
-                      onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+          child: SizedBox(
+            width: double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.suspendSheetTitle,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(l10n.suspendSheetSubtitle, style: theme.textTheme.bodySmall),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    alignment: WrapAlignment.start,
+                    children: [
+                      _HomeActionButton(
+                        icon: isSuspended
+                            ? Icons.play_circle_outline_rounded
+                            : Icons.pause_circle_outline_rounded,
+                        title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
+                        accentColor: isSuspended ? null : theme.colorScheme.error,
+                        onTap: () => Navigator.of(sheetContext).pop('this_week'),
+                      ),
+                      _HomeActionButton(
+                        icon: hasAnySuspended
+                            ? Icons.play_circle_filled_rounded
+                            : Icons.pause_circle_filled_rounded,
+                        title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+                        accentColor: hasAnySuspended ? null : theme.colorScheme.error,
+                        onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
