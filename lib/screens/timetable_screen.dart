@@ -2141,6 +2141,12 @@ class _TimetableScreenState extends State<TimetableScreen>
           textColor: onCardColor,
           backgroundColor: Colors.white.withValues(alpha: 0.14),
         ),
+      if (courseItem.course.isSuspendedInWeek(week))
+        _buildDayAgendaStatusBadge(
+          text: l10n.suspendedBadgeLabel,
+          textColor: Colors.white,
+          backgroundColor: Colors.red.shade700,
+        ),
     ];
     final cardDecoration = BoxDecoration(
       color: palette.baseColor,
@@ -2177,8 +2183,11 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? _resolveDayAgendaProgressInfo(courseItem.course, palette: palette)
         : null;
 
+    final isSuspended = courseItem.course.isSuspendedInWeek(week);
+    final effectiveOpacity = isSuspended ? 0.4 : courseItem.opacity;
+
     return Opacity(
-      opacity: courseItem.opacity,
+      opacity: effectiveOpacity,
       child: OpenContainer<void>(
         key: ValueKey('day-view-edit-card-${courseItem.course.id}'),
         tappable: false,
@@ -3190,6 +3199,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                 ),
                 isHighlighted: item.isCurrentCourse,
                 isHoliday: isDayHoliday,
+                isSuspended: item.course.isSuspendedInWeek(week),
                 isCompact: true,
                 showName: settings.courseCardShowName,
                 showTeacher: settings.courseCardShowTeacher,
@@ -4232,6 +4242,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final canReschedule = course.isInWeek(week);
+    final isSuspended = course.isSuspendedInWeek(week);
 
     return Wrap(
       spacing: 12,
@@ -4259,6 +4270,16 @@ class _TimetableScreenState extends State<TimetableScreen>
               action: _CourseActionType.reschedule,
             ),
           ),
+        ),
+        _HomeActionButton(
+          key: ValueKey('course-action-suspend-${course.id}'),
+          icon: isSuspended ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
+          title: isSuspended ? l10n.courseActionUnsuspend : l10n.courseActionSuspend,
+          accentColor: isSuspended ? null : theme.colorScheme.error,
+          onTap: () {
+            context.read<TimetableProvider>().toggleCourseSuspension(course.id, week);
+            Navigator.of(context).pop();
+          },
         ),
         _HomeActionButton(
           key: ValueKey('course-action-delete-${course.id}'),

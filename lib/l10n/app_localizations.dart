@@ -7765,6 +7765,24 @@ abstract class AppLocalizations {
   /// **'假'**
   String get holidayBadgeLabel;
 
+  /// No description provided for @suspendedBadgeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'停'**
+  String get suspendedBadgeLabel;
+
+  /// No description provided for @courseActionSuspend.
+  ///
+  /// In zh, this message translates to:
+  /// **'标记停课（本周）'**
+  String get courseActionSuspend;
+
+  /// No description provided for @courseActionUnsuspend.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消停课（本周）'**
+  String get courseActionUnsuspend;
+
   /// No description provided for @customHolidayTitle.
   ///
   /// In zh, this message translates to:
