@@ -186,6 +186,7 @@ class HomeWidgetSnapshotService {
     List<Course> tomorrowCourses = const [],
     int tomorrowWeek = 0,
     int tomorrowDayOfWeek = 0,
+    bool showTomorrowCourses = true,
   }) {
     // Holiday: return a dedicated snapshot without course info
     if (isHoliday) {
@@ -280,9 +281,11 @@ class HomeWidgetSnapshotService {
       nextExamLocation: nextExam?.location,
       nextExamStartTime: nextExam?.startTime,
       nextExamEndTime: nextExam?.endTime,
-      tomorrowCourses: tomorrowCourses
-          .map(HomeWidgetCourseSummary.fromCourse)
-          .toList(growable: false),
+      tomorrowCourses: showTomorrowCourses
+          ? tomorrowCourses
+              .map(HomeWidgetCourseSummary.fromCourse)
+              .toList(growable: false)
+          : const [],
       tomorrowWeek: tomorrowWeek,
       tomorrowDayOfWeek: tomorrowDayOfWeek,
     );

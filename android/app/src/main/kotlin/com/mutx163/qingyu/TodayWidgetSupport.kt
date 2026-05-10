@@ -278,7 +278,8 @@ object TodayWidgetSupport {
         var tomorrowCourses: List<TodayWidgetCourseInfo> = emptyList()
         var tomorrowWeek = currentWeek
         var tomorrowDayOfWeek = 0
-        if (state == "completed" && !isHoliday) {
+        val showTomorrowCourses = settingsJson.optBoolean("widgetShowTomorrowCourses", true)
+        if (state == "completed" && !isHoliday && showTomorrowCourses) {
             val tomorrowCal = Calendar.getInstance().apply {
                 timeInMillis = nowMillis
                 add(Calendar.DAY_OF_YEAR, 1)

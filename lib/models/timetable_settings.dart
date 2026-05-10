@@ -740,6 +740,7 @@ class TimetableSettings {
   final bool widgetShowLocation;
   final bool widgetShowCountdown;
   final bool widgetHideCompletedCourses;
+  final bool widgetShowTomorrowCourses;
   final double widgetHeightAdjustment;
   final double widgetCornerRadius;
   final int widgetCountdownLeadMinutes;
@@ -850,6 +851,7 @@ class TimetableSettings {
     this.widgetShowLocation = true,
     this.widgetShowCountdown = true,
     this.widgetHideCompletedCourses = false,
+    this.widgetShowTomorrowCourses = true,
     this.widgetHeightAdjustment = -11,
     this.widgetCornerRadius = 22,
     this.widgetCountdownLeadMinutes = 20,
@@ -980,6 +982,7 @@ class TimetableSettings {
       widgetShowLocation: true,
       widgetShowCountdown: true,
       widgetHideCompletedCourses: false,
+      widgetShowTomorrowCourses: true,
       widgetHeightAdjustment: -11,
       widgetCornerRadius: 22,
       appThemeMode: AppThemeMode.system,
@@ -1094,6 +1097,7 @@ class TimetableSettings {
       'widgetShowLocation': widgetShowLocation,
       'widgetShowCountdown': widgetShowCountdown,
       'widgetHideCompletedCourses': widgetHideCompletedCourses,
+      'widgetShowTomorrowCourses': widgetShowTomorrowCourses,
       'widgetHeightAdjustment': widgetHeightAdjustment,
       'widgetCornerRadius': widgetCornerRadius,
       'widgetCountdownLeadMinutes': widgetCountdownLeadMinutes,
@@ -1264,6 +1268,8 @@ class TimetableSettings {
       widgetShowCountdown: json['widgetShowCountdown'] as bool? ?? true,
       widgetHideCompletedCourses:
           json['widgetHideCompletedCourses'] as bool? ?? false,
+      widgetShowTomorrowCourses:
+          json['widgetShowTomorrowCourses'] as bool? ?? true,
       widgetHeightAdjustment:
           (json['widgetHeightAdjustment'] as num?)?.toDouble() ?? -11,
       widgetCornerRadius:
@@ -1503,6 +1509,7 @@ class TimetableSettings {
     bool? widgetShowLocation,
     bool? widgetShowCountdown,
     bool? widgetHideCompletedCourses,
+    bool? widgetShowTomorrowCourses,
     double? widgetHeightAdjustment,
     double? widgetCornerRadius,
     int? widgetCountdownLeadMinutes,
@@ -1635,6 +1642,8 @@ class TimetableSettings {
       widgetShowCountdown: widgetShowCountdown ?? this.widgetShowCountdown,
       widgetHideCompletedCourses:
           widgetHideCompletedCourses ?? this.widgetHideCompletedCourses,
+      widgetShowTomorrowCourses:
+          widgetShowTomorrowCourses ?? this.widgetShowTomorrowCourses,
       widgetHeightAdjustment:
           widgetHeightAdjustment ?? this.widgetHeightAdjustment,
       widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,

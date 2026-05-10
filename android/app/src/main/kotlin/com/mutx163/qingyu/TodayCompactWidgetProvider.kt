@@ -81,7 +81,10 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
                 heightAdjustmentDp = snapshot?.heightAdjustment ?: 0,
                 targetAspect = 1f,
             )
-            views.setTextViewText(R.id.widget_status, TodayWidgetSupport.statusText(state))
+            views.setTextViewText(
+                R.id.widget_status,
+                if (isShowingTomorrow) "明日课程" else TodayWidgetSupport.statusText(state)
+            )
             val isShowingTomorrow = state == "completed" && (snapshot?.tomorrowCourses?.isNotEmpty() == true)
             views.setTextViewText(
                 R.id.widget_course_name,
