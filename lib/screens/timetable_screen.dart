@@ -4047,6 +4047,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                   _buildCourseActionPreviewCard(
                     sheetContext,
                     previewCourses[index],
+                    week: week,
                     badgeText: conflicts.isEmpty ? null : l10n.conflictLabel,
                   ),
                   const SizedBox(height: 8),
@@ -4121,6 +4122,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Widget _buildCourseActionPreviewCard(
     BuildContext context,
     Course course, {
+    required int week,
     String? badgeText,
   }) {
     final l10n = AppLocalizations.of(context)!;
@@ -4229,6 +4231,81 @@ class _TimetableScreenState extends State<TimetableScreen>
               style: theme.textTheme.bodySmall,
             ),
           ],
+          _buildStatusChips(context, course, week),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChips(BuildContext context, Course course, int week) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final provider = context.read<TimetableProvider>();
+    final date = _dateForWeekDay(provider.settings, week, course.dayOfWeek);
+    final isDayHoliday = date != null && provider.isHoliday(date);
+    final isSuspended = course.isSuspendedInWeek(week);
+    final isNonCurrentWeek = !course.isInWeek(week);
+
+    final chips = <_StatusChip>[];
+    if (isDayHoliday) {
+      chips.add(_StatusChip(
+        label: l10n.holidayBadgeLabel,
+        color: Colors.orange.shade700,
+        icon: Icons.beach_access_rounded,
+      ));
+    }
+    if (isSuspended) {
+      chips.add(_StatusChip(
+        label: l10n.suspendedBadgeLabel,
+        color: Colors.red.shade700,
+        icon: Icons.pause_circle_outline_rounded,
+      ));
+    }
+    if (isNonCurrentWeek) {
+      chips.add(_StatusChip(
+        label: l10n.nonCurrentWeekLabel,
+        color: theme.colorScheme.outline,
+        icon: Icons.schedule_outlined,
+      ));
+    }
+    if (course.suspensionDescription != null) {
+      chips.add(_StatusChip(
+        label: course.suspensionDescription!,
+        color: Colors.red.shade300,
+        icon: Icons.info_outline_rounded,
+      ));
+    }
+    if (chips.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 4,
+        children: [
+          for (final chip in chips)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: chip.color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: chip.color.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(chip.icon, size: 14, color: chip.color),
+                  const SizedBox(width: 4),
+                  Text(
+                    chip.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: chip.color,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
@@ -4957,6 +5034,18 @@ class _CourseActionSelection {
 
   final Course course;
   final _CourseActionType action;
+}
+
+class _StatusChip {
+  const _StatusChip({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
+
+  final String label;
+  final Color color;
+  final IconData icon;
 }
 
 class _HomeActionButton extends StatelessWidget {
