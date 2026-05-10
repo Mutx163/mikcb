@@ -4547,13 +4547,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseActionUnsuspend => 'Unsuspend (this week)';
 
   @override
-  String get suspendSheetTitle => 'Suspend Options';
+  String get suspendSheetTitle => 'Suspend';
 
   @override
-  String get suspendThisWeek => 'This week only';
+  String get suspendThisWeek => 'This week';
 
   @override
-  String get suspendThisWeekDesc => 'Suspend only this week\'s class';
+  String get suspendThisWeekDesc => 'Suspend this week only';
 
   @override
   String get suspendAllWeeks => 'All weeks';
@@ -4562,7 +4562,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suspendAllWeeksDesc => 'Suspend all weeks';
 
   @override
-  String get unsuspendAllWeeks => 'Unsuspend all';
+  String get unsuspendAllWeeks => 'Restore all';
 
   @override
   String get unsuspendAllWeeksDesc => 'Restore all weeks';

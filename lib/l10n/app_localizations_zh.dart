@@ -4297,25 +4297,25 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseActionUnsuspend => '取消停课（本周）';
 
   @override
-  String get suspendSheetTitle => '停课选项';
+  String get suspendSheetTitle => '停课';
 
   @override
-  String get suspendThisWeek => '本节停课';
+  String get suspendThisWeek => '停本周';
 
   @override
-  String get suspendThisWeekDesc => '仅暂停本周这一次';
+  String get suspendThisWeekDesc => '仅暂停当前周';
 
   @override
-  String get suspendAllWeeks => '全部停课';
+  String get suspendAllWeeks => '全部停';
 
   @override
   String get suspendAllWeeksDesc => '暂停所有周次';
 
   @override
-  String get unsuspendAllWeeks => '取消全部停课';
+  String get unsuspendAllWeeks => '恢复全部';
 
   @override
-  String get unsuspendAllWeeksDesc => '恢复所有周次的课程';
+  String get unsuspendAllWeeksDesc => '恢复所有周次';
 
   @override
   String get customHolidayTitle => '自定义假期';
