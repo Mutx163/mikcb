@@ -4460,54 +4460,44 @@ class _TimetableScreenState extends State<TimetableScreen>
         final theme = Theme.of(sheetContext);
         final colorScheme = theme.colorScheme;
         return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 8, 24, 8),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.suspendSheetTitle,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.suspendSheetTitle,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-              ),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                leading: Icon(
-                  isSuspended ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
-                  color: isSuspended ? colorScheme.primary : colorScheme.error,
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _HomeActionButton(
+                        icon: isSuspended
+                            ? Icons.play_circle_outline_rounded
+                            : Icons.pause_circle_outline_rounded,
+                        title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
+                        accentColor: isSuspended ? null : colorScheme.error,
+                        onTap: () => Navigator.of(sheetContext).pop('this_week'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _HomeActionButton(
+                        icon: hasAnySuspended
+                            ? Icons.play_circle_filled_rounded
+                            : Icons.pause_circle_filled_rounded,
+                        title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+                        accentColor: hasAnySuspended ? null : colorScheme.error,
+                        onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
+                      ),
+                    ),
+                  ],
                 ),
-                title: Text(
-                  isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
-                  style: TextStyle(
-                    color: isSuspended ? colorScheme.primary : colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(l10n.suspendThisWeekDesc),
-                onTap: () => Navigator.of(sheetContext).pop('this_week'),
-              ),
-              const Divider(height: 1, indent: 24, endIndent: 24),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24),
-                leading: Icon(
-                  hasAnySuspended ? Icons.play_circle_filled_rounded : Icons.pause_circle_filled_rounded,
-                  color: hasAnySuspended ? colorScheme.primary : colorScheme.error,
-                ),
-                title: Text(
-                  hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
-                  style: TextStyle(
-                    color: hasAnySuspended ? colorScheme.primary : colorScheme.error,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                subtitle: Text(hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc),
-                onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
-              ),
-              const SizedBox(height: 16),
-            ],
+              ],
+            ),
           ),
         );
       },
