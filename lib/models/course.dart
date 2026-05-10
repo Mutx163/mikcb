@@ -257,7 +257,6 @@ class Course {
   }
 
   bool isInWeek(int week) {
-    if (isSuspendedInWeek(week)) return false;
     final custom = normalizedCustomWeeks;
     if (custom != null) {
       return custom.contains(week);
