@@ -4282,7 +4282,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get holidayBadgeLabel => '假';
 
   @override
+  String get holidayStatusLabel => '假期';
+
+  @override
   String get suspendedBadgeLabel => '停';
+
+  @override
+  String get suspendedStatusLabel => '停课';
 
   @override
   String get courseActionSuspend => '标记停课（本周）';

@@ -4249,14 +4249,14 @@ class _TimetableScreenState extends State<TimetableScreen>
     final chips = <_StatusChip>[];
     if (isDayHoliday) {
       chips.add(_StatusChip(
-        label: l10n.holidayBadgeLabel,
+        label: l10n.holidayStatusLabel,
         color: Colors.orange.shade700,
         icon: Icons.beach_access_rounded,
       ));
     }
     if (isSuspended) {
       chips.add(_StatusChip(
-        label: l10n.suspendedBadgeLabel,
+        label: l10n.suspendedStatusLabel,
         color: Colors.red.shade700,
         icon: Icons.pause_circle_outline_rounded,
       ));
