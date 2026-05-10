@@ -12,10 +12,11 @@
     />
     <meta
       name="keywords"
-      content="轻屿课表,课表App,Android课表,HyperOS超级岛,桌面小组件,课程提醒,时间模板,教务导入"
+      content="轻屿课表,课表App,Android课表,大学课表,课程表软件,教务系统导入,课表提醒,HyperOS超级岛,桌面小组件,课程提醒,时间模板,教务导入,免费课表,大学生课表工具,课程管理,上课提醒,课程导入,ics课表,小米课表,MIUI课表"
     />
     <meta name="author" content="Mutx163" />
-    <meta name="theme-color" content="#2563EB" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="轻屿课表" />
     <meta property="og:locale" content="zh_CN" />
@@ -69,6 +70,62 @@
         }
       }
     </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "轻屿课表怎么导入课表？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "支持三种导入方式：1. 教务系统导入：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步；2. 文件导入：支持 Excel、CSV、iCal (.ics) 等格式，点击导入后选择手机中的文件即可；3. 手动添加：点击课表空白处 → 添加课程 → 填写课程信息"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "支持哪些学校的教务导入？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "目前已适配部分高校的教务系统，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、Excel/CSV 格式导入或手动添加课程。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "轻屿课表是免费的吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "是的，轻屿课表完全免费，无广告，无需注册。开源项目，代码公开透明。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "支持 iOS 或鸿蒙吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "目前仅支持 Android 系统，重点适配 HyperOS（小米/红米）。暂无 iOS 和鸿蒙版本计划。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "课表数据会丢失吗？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "课表数据存储在本地，支持完整备份导出与恢复。建议定期备份，换机时可通过备份文件迁移。"
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "怎么设置单双周？",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "添加或编辑课程时，在「重复」选项中选择「单周」或「双周」即可。也支持自定义周次范围，灵活适配各种排课方式。"
+            }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <header class="global-nav">
@@ -94,6 +151,7 @@
           <a href="#experience">体验</a>
           <a href="#features">能力</a>
           <a href="#platform">平台</a>
+          <a href="#faq">常见问题</a>
           <a href="#download">下载</a>
         </nav>
         <button
@@ -333,6 +391,64 @@
         </div>
       </section>
 
+      <section id="faq" class="faq-section">
+        <div class="section-shell reveal">
+          <div class="headline-block">
+            <p class="section-label">常见问题</p>
+            <h2>你可能想知道的</h2>
+          </div>
+          <div class="faq-grid">
+            <details class="faq-item">
+              <summary>轻屿课表怎么导入课表？</summary>
+              <div class="faq-answer">
+                <p>支持三种导入方式：</p>
+                <ol>
+                  <li><strong>教务系统导入</strong>：点击右上角菜单 → 导入课程表 → 选择你的学校 → 登录教务系统自动同步</li>
+                  <li><strong>文件导入</strong>：支持 Excel、CSV、iCal (.ics) 等格式，点击导入后选择手机中的文件即可</li>
+                  <li><strong>手动添加</strong>：点击课表空白处 → 添加课程 → 填写课程信息</li>
+                </ol>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>支持哪些学校的教务导入？</summary>
+              <div class="faq-answer">
+                <p>目前已适配部分高校的教务系统，持续扩展中。如果你的学校暂未适配，可以：</p>
+                <ul>
+                  <li>使用 .ics 文件导入（从学校教务系统导出日历格式）</li>
+                  <li>使用 Excel/CSV 格式导入</li>
+                  <li>手动添加课程</li>
+                </ul>
+                <p>也欢迎在 GitHub 提交你学校的适配需求。</p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>轻屿课表是免费的吗？</summary>
+              <div class="faq-answer">
+                <p>是的，轻屿课表完全免费，无广告，无需注册。开源项目，代码公开透明。</p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>支持 iOS 或鸿蒙吗？</summary>
+              <div class="faq-answer">
+                <p>目前仅支持 Android 系统，重点适配 HyperOS（小米/红米）。暂无 iOS 和鸿蒙版本计划。</p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>课表数据会丢失吗？</summary>
+              <div class="faq-answer">
+                <p>课表数据存储在本地，支持完整备份导出与恢复。建议定期备份，换机时可通过备份文件迁移。</p>
+              </div>
+            </details>
+            <details class="faq-item">
+              <summary>怎么设置单双周？</summary>
+              <div class="faq-answer">
+                <p>添加或编辑课程时，在「重复」选项中选择「单周」或「双周」即可。也支持自定义周次范围，灵活适配各种排课方式。</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
       <section id="download" class="download-section">
         <div class="section-shell download-shell reveal">
           <p class="section-label">下载</p>
@@ -410,6 +526,13 @@
             <p class="download-note">点开后先读版本信息，再准备下载线路；需要原始包也能直接切到 GitHub。</p>
           </div>
           <div class="inline-links download-links">
+            <a
+              href="https://www.pgyer.com/qingyu"
+              target="_blank"
+              rel="noreferrer"
+            >
+              蒲公英下载
+            </a>
             <a
               href="https://github.com/Mutx163/mikcb/releases"
               target="_blank"
@@ -494,6 +617,7 @@
         </button>
         <p class="section-label">下载</p>
         <h2 id="release-dialog-title">最新版本</h2>
+        <div class="release-channel-label" id="release-channel-label" style="display: none;">正式版</div>
         <div class="release-channel-switch" id="release-channel-switch" hidden>
           <button
             id="release-tab-stable"
@@ -542,6 +666,14 @@
             国内下载
           </a>
           <a
+            class="primary-cta release-action-link"
+            href="https://www.pgyer.com/qingyu"
+            target="_blank"
+            rel="noreferrer"
+          >
+            蒲公英下载
+          </a>
+          <a
             id="release-github-download"
             class="secondary-cta release-action-link"
             href="https://github.com/Mutx163/mikcb/releases"
@@ -552,7 +684,7 @@
           </a>
         </div>
         <p class="release-download-note">
-          国内下载会自动测速选最快镜像；需要原始包再用 GitHub 下载。
+          国内下载会自动测速选最快镜像；蒲公英支持直接安装；需要原始包再用 GitHub 下载。
         </p>
         <div class="inline-links release-links">
           <a
