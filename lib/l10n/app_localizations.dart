@@ -7795,6 +7795,48 @@ abstract class AppLocalizations {
   /// **'取消停课（本周）'**
   String get courseActionUnsuspend;
 
+  /// No description provided for @suspendSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'停课选项'**
+  String get suspendSheetTitle;
+
+  /// No description provided for @suspendThisWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'本节停课'**
+  String get suspendThisWeek;
+
+  /// No description provided for @suspendThisWeekDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅暂停本周这一次'**
+  String get suspendThisWeekDesc;
+
+  /// No description provided for @suspendAllWeeks.
+  ///
+  /// In zh, this message translates to:
+  /// **'全部停课'**
+  String get suspendAllWeeks;
+
+  /// No description provided for @suspendAllWeeksDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停所有周次'**
+  String get suspendAllWeeksDesc;
+
+  /// No description provided for @unsuspendAllWeeks.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消全部停课'**
+  String get unsuspendAllWeeks;
+
+  /// No description provided for @unsuspendAllWeeksDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复所有周次的课程'**
+  String get unsuspendAllWeeksDesc;
+
   /// No description provided for @customHolidayTitle.
   ///
   /// In zh, this message translates to:

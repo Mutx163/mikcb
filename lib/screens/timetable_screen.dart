@@ -4354,8 +4354,8 @@ class _TimetableScreenState extends State<TimetableScreen>
           title: isSuspended ? l10n.courseActionUnsuspend : l10n.courseActionSuspend,
           accentColor: isSuspended ? null : theme.colorScheme.error,
           onTap: () {
-            context.read<TimetableProvider>().toggleCourseSuspension(course.id, week);
             Navigator.of(context).pop();
+            _showSuspendSheet(course, week);
           },
         ),
         _HomeActionButton(
@@ -4442,6 +4442,79 @@ class _TimetableScreenState extends State<TimetableScreen>
         break;
       case 'occurrence':
         await _confirmDeleteOccurrence(course, week);
+        break;
+    }
+  }
+
+  Future<void> _showSuspendSheet(Course course, int week) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    final isSuspended = course.isSuspendedInWeek(week);
+    final hasAnySuspended = course.suspendedWeeks?.isNotEmpty ?? false;
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      useSafeArea: true,
+      builder: (sheetContext) {
+        final theme = Theme.of(sheetContext);
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.suspendSheetTitle,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _HomeActionButton(
+                      icon: isSuspended
+                          ? Icons.play_circle_outline_rounded
+                          : Icons.pause_circle_outline_rounded,
+                      title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
+                      subtitle: l10n.suspendThisWeekDesc,
+                      accentColor: isSuspended ? null : theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('this_week'),
+                    ),
+                    _HomeActionButton(
+                      icon: hasAnySuspended
+                          ? Icons.play_circle_filled_rounded
+                          : Icons.pause_circle_filled_rounded,
+                      title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+                      subtitle: hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
+                      accentColor: hasAnySuspended ? null : theme.colorScheme.error,
+                      onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    switch (selected) {
+      case 'this_week':
+        await provider.toggleCourseSuspension(course.id, week);
+        break;
+      case 'all_weeks':
+        if (hasAnySuspended) {
+          await provider.unsuspendAllWeeks(course.id);
+        } else {
+          await provider.suspendAllWeeks(course.id);
+        }
         break;
     }
   }
@@ -5051,6 +5124,7 @@ class _StatusChip {
 class _HomeActionButton extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final VoidCallback onTap;
   final Color? accentColor;
   final bool enabled;
@@ -5060,6 +5134,7 @@ class _HomeActionButton extends StatelessWidget {
     super.key,
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.onTap,
     this.accentColor,
     this.enabled = true,
@@ -5071,6 +5146,7 @@ class _HomeActionButton extends StatelessWidget {
     return _HomeActionButtonBody(
       icon: icon,
       title: title,
+      subtitle: subtitle,
       accentColor: accentColor,
       enabled: enabled,
       reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
@@ -5219,6 +5295,7 @@ class _HomeActionPageButton extends StatelessWidget {
 class _HomeActionButtonBody extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final VoidCallback onTap;
   final String? badgeText;
   final Color? accentColor;
@@ -5228,6 +5305,7 @@ class _HomeActionButtonBody extends StatelessWidget {
   const _HomeActionButtonBody({
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.onTap,
     this.badgeText,
     this.accentColor,
@@ -5328,6 +5406,30 @@ class _HomeActionButtonBody extends StatelessWidget {
                       color: enabled ? null : colorScheme.onSurfaceVariant,
                     ),
                   ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
