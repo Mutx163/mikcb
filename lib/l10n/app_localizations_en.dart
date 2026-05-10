@@ -2692,6 +2692,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'When enabled, the 2×2, 2×4, and 4×4 course lists show only classes that have not finished yet.';
 
   @override
+  String get homeWidgetShowTomorrowTitle => 'Show tomorrow\'s classes';
+
+  @override
+  String get homeWidgetShowTomorrowSubtitle =>
+      'When enabled, the widget automatically switches to tomorrow\'s classes after today\'s classes end.';
+
+  @override
   String get homeWidgetHeightAdjustTitle => 'Card height adjustment';
 
   @override

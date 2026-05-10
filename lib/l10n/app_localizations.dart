@@ -4673,6 +4673,18 @@ abstract class AppLocalizations {
   /// **'开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。'**
   String get homeWidgetHideCompletedSubtitle;
 
+  /// No description provided for @homeWidgetShowTomorrowTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课后显示明日课程'**
+  String get homeWidgetShowTomorrowTitle;
+
+  /// No description provided for @homeWidgetShowTomorrowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，今日课程全部结束时小组件自动切换显示明天的课程。'**
+  String get homeWidgetShowTomorrowSubtitle;
+
   /// No description provided for @homeWidgetHeightAdjustTitle.
   ///
   /// In zh, this message translates to:

@@ -72,6 +72,7 @@ class MainActivity : FlutterActivity() {
     private var notificationManager: NotificationManager? = null
     private var permissionResult: MethodChannel.Result? = null
     private var pendingIcsContent: String? = null
+    private var flutterChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,6 +96,7 @@ class MainActivity : FlutterActivity() {
         createNotificationChannels()
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
+            .also { flutterChannel = it }
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "initialize" -> result.success(true)
@@ -393,13 +395,21 @@ class MainActivity : FlutterActivity() {
         if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return
         val uri: Uri? = when (action) {
             Intent.ACTION_SEND -> {
-                if (intent.type?.startsWith("text/calendar") == true) {
+                val type = intent.type ?: ""
+                if (type.startsWith("text/calendar") || type == "application/octet-stream") {
                     intent.getParcelableExtra(Intent.EXTRA_STREAM)
                 } else null
             }
             else -> intent.data
         }
-        uri?.let { readIcsFromUri(it) }
+        uri?.let {
+            readIcsFromUri(it)
+            if (pendingIcsContent != null) {
+                try {
+                    flutterChannel?.invokeMethod("onIcsIntentReceived", null)
+                } catch (_: Exception) {}
+            }
+        }
     }
 
     private fun readIcsFromUri(uri: Uri) {
