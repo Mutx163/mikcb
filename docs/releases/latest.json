@@ -1,27 +1,27 @@
 {
-  "releaseCount": 8,
+  "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.0.15",
-    "title": "v1.2.0.15",
-    "publishedAt": "2026-04-29T17:40:38Z",
-    "body": "# v1.2.0.15\r\n\r\n## 新增\r\n\r\n- 支持从外部应用（文件管理器、微信等）直接打开或分享 `.ics` 文件到轻屿课表，自动跳转到课程导入页面\r\n\r\n## 优化\r\n\r\n- ICS 导入时教师姓名和教室位置的识别准确性，兼容不同来源的 `.ics` 文件格式\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.15",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.15/mikcb-1.2.0.15-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.15-arm64-v8a.apk",
+    "version": "1.2.0.24",
+    "title": "v1.2.0.24",
+    "publishedAt": "2026-05-10T10:35:30Z",
+    "body": "# v1.2.0.24\r\n\r\n## 优化\r\n\r\n- 修复从外部应用打开 .ics 文件时偶发不触发导入的问题\r\n- 优化 ICS 文件导入兼容性：支持更多文件管理器和分享方式\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.24",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.24/mikcb-1.2.0.24-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.0.24-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 6
+    "assetDownloadCount": 0
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "1.2.0.9",
-    "title": "v1.2.0.9",
-    "publishedAt": "2026-04-26T07:03:52Z",
-    "body": "# v1.2.0.9\n\n- 新增节假日标记：支持法定假期和调休日，课表自动灰显对应课程。\n- 新增考试管理：添加考试信息并在小组件中显示倒计时。\n- 新增课程编辑器时间方案选择弹窗：支持直接选择、新建和编辑时间方案，替代原有下拉框。\n- 新增教师和教室快捷选择弹窗：输入框点击弹出历史记录列表，支持快速选择或手动输入。\n- 新增小组件倒计时提前分钟数设置。\n- 优化排课记录卡片布局更紧凑：字段合并为多行排列，减少页面滚动。\n- 优化课程总览页面：新增冲突横幅提示和排序功能。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.9",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.9/mikcb-1.2.0.9-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.9-arm64-v8a.apk",
+    "version": "1.2.0.23",
+    "title": "v1.2.0.23",
+    "publishedAt": "2026-05-10T10:00:07Z",
+    "body": "Automated release for v1.2.0.23",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.23",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.23/mikcb-1.2.0.23-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.0.23-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 1
+    "assetDownloadCount": 0
   }
 }
