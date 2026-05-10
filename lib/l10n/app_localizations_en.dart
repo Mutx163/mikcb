@@ -4532,7 +4532,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get holidayBadgeLabel => 'Holiday';
 
   @override
+  String get holidayStatusLabel => 'Holiday';
+
+  @override
   String get suspendedBadgeLabel => 'Suspended';
+
+  @override
+  String get suspendedStatusLabel => 'Suspended';
 
   @override
   String get courseActionSuspend => 'Suspend (this week)';
