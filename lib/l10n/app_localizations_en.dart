@@ -4550,6 +4550,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get suspendSheetTitle => 'Suspend';
 
   @override
+  String get suspendSheetSubtitle => 'Choose suspension scope';
+
+  @override
   String get suspendThisWeek => 'This week';
 
   @override

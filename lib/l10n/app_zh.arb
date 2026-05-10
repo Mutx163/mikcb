@@ -2605,6 +2605,7 @@
   "courseActionSuspend": "停课",
   "courseActionUnsuspend": "恢复",
   "suspendSheetTitle": "停课",
+  "suspendSheetSubtitle": "选择停课范围",
   "suspendThisWeek": "停本周",
   "suspendThisWeekDesc": "仅暂停当前周",
   "suspendAllWeeks": "全部停",

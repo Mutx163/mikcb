@@ -7801,6 +7801,12 @@ abstract class AppLocalizations {
   /// **'停课'**
   String get suspendSheetTitle;
 
+  /// No description provided for @suspendSheetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择停课范围'**
+  String get suspendSheetSubtitle;
+
   /// No description provided for @suspendThisWeek.
   ///
   /// In zh, this message translates to:

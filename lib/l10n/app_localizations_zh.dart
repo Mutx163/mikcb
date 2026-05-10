@@ -4300,6 +4300,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get suspendSheetTitle => '停课';
 
   @override
+  String get suspendSheetSubtitle => '选择停课范围';
+
+  @override
   String get suspendThisWeek => '停本周';
 
   @override
