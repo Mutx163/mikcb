@@ -44,6 +44,12 @@ data class TodayWidgetSnapshotInfo(
     val nextExamStartTime: String?,
     val nextExamEndTime: String?,
     val holidayName: String? = null,
+    /** 今天课程已结束时，显示明天的课程列表 */
+    val tomorrowCourses: List<TodayWidgetCourseInfo> = emptyList(),
+    /** 今天课程已结束时，明天是第几周 */
+    val tomorrowWeek: Int = currentWeek,
+    /** 今天课程已结束时，明天的星期几 (1=周一 ... 7=周日) */
+    val tomorrowDayOfWeek: Int = 0,
 )
 
 data class TodayWidgetSizeProfile(
@@ -71,8 +77,13 @@ private data class WidgetSourceCourse(
     val isOddWeek: Boolean,
     val isEvenWeek: Boolean,
     val customWeeks: List<Int>?,
+    val suspendedWeeks: List<Int>?,
 ) {
     fun isInWeek(week: Int): Boolean {
+        // 停课周次检查
+        if (suspendedWeeks?.contains(week) == true) {
+            return false
+        }
         val normalizedCustomWeeks = customWeeks
             ?.filter { it > 0 }
             ?.distinct()
@@ -262,6 +273,39 @@ object TodayWidgetSupport {
                 nextExamDaysUntil = diffDays.coerceAtLeast(0)
             }
         }
+
+        // 今天课程已结束时，计算明天的课程
+        var tomorrowCourses: List<TodayWidgetCourseInfo> = emptyList()
+        var tomorrowWeek = currentWeek
+        var tomorrowDayOfWeek = 0
+        if (state == "completed" && !isHoliday) {
+            val tomorrowCal = Calendar.getInstance().apply {
+                timeInMillis = nowMillis
+                add(Calendar.DAY_OF_YEAR, 1)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            tomorrowDayOfWeek = tomorrowCal.get(Calendar.DAY_OF_WEEK).let(::calendarDayToWeekday)
+            val tomorrowWeekday = tomorrowDayOfWeek
+            tomorrowWeek = calculateWeekForDate(
+                semesterStartMillis = settingsJson.optLong("semesterStartDate").takeIf { it > 0L },
+                fallbackWeek = currentWeek,
+                semesterWeekCount = semesterWeekCount,
+                nowMillis = tomorrowCal.timeInMillis,
+            )
+            val isTomorrowHoliday = profileJson.optBoolean("isHoliday", false)
+            tomorrowCourses = if (isTomorrowHoliday) {
+                emptyList()
+            } else {
+                allCourses
+                    .filter { it.dayOfWeek == tomorrowWeekday && it.isInWeek(tomorrowWeek) }
+                    .sortedWith(compareBy<WidgetSourceCourse>({ it.startSection }, { it.startTime }))
+                    .map { it.toWidgetCourseInfo() }
+            }
+        }
+
         return TodayWidgetSnapshotInfo(
             profileName = profileJson.optString("name", "轻屿课表"),
             currentWeek = currentWeek,
@@ -284,6 +328,9 @@ object TodayWidgetSupport {
             nextExamLocation = nextExamLocation,
             nextExamStartTime = nextExamStartTime,
             nextExamEndTime = nextExamEndTime,
+            tomorrowCourses = tomorrowCourses,
+            tomorrowWeek = tomorrowWeek,
+            tomorrowDayOfWeek = tomorrowDayOfWeek,
         )
     }
 
@@ -442,6 +489,14 @@ object TodayWidgetSupport {
         }
     }
 
+    fun headingText(snapshot: TodayWidgetSnapshotInfo): String {
+        return if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+            "明日课程"
+        } else {
+            "今日课程"
+        }
+    }
+
     fun statusBackgroundRes(state: String, style: String): Int {
         return when (state) {
             "ongoing", "upcoming", "holiday" -> {
@@ -465,6 +520,8 @@ object TodayWidgetSupport {
         return when {
             snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
             snapshot.highlightedCourse != null -> snapshot.highlightedCourse.name
+            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() ->
+                snapshot.tomorrowCourses.first().name
             snapshot.state == "completed" -> "今天课程已结束"
             else -> "今天没有课程"
         }
@@ -481,6 +538,10 @@ object TodayWidgetSupport {
                 highlighted.endTime.isNotBlank() -> {
                 "${highlighted.startTime} - ${highlighted.endTime}"
             }
+            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() -> {
+                val first = snapshot.tomorrowCourses.first()
+                "${first.startTime} - ${first.endTime}"
+            }
             snapshot.state == "completed" -> "接下来没有课程"
             else -> "留一点时间给自己"
         }
@@ -489,6 +550,14 @@ object TodayWidgetSupport {
     fun heroMetaText(snapshot: TodayWidgetSnapshotInfo): String {
         if (snapshot.state == "holiday") {
             return "第${snapshot.currentWeek}周"
+        }
+        if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+            val first = snapshot.tomorrowCourses.first()
+            return if (snapshot.showLocation && first.location.isNotBlank()) {
+                first.location
+            } else {
+                "第${snapshot.tomorrowWeek}周"
+            }
         }
         val highlighted = snapshot.highlightedCourse
         return when {
@@ -557,16 +626,23 @@ object TodayWidgetSupport {
     }
 
     fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
-        return if (snapshot.state == "holiday") {
-            "${snapshot.profileName} · ${snapshot.holidayName ?: "假期中"}"
-        } else if (snapshot.totalTodayCourseCount > 0) {
-            "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
-        } else {
-            "${snapshot.profileName} · 第${snapshot.currentWeek}周"
+        return when {
+            snapshot.state == "holiday" ->
+                "${snapshot.profileName} · ${snapshot.holidayName ?: "假期中"}"
+            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() ->
+                "${snapshot.profileName} · 明日 ${snapshot.tomorrowCourses.size} 节"
+            snapshot.totalTodayCourseCount > 0 ->
+                "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
+            else ->
+                "${snapshot.profileName} · 第${snapshot.currentWeek}周"
         }
     }
 
     fun secondaryCourses(snapshot: TodayWidgetSnapshotInfo, limit: Int): List<TodayWidgetCourseInfo> {
+        if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+            // 明日课程：第一个作为 hero，其余作为 secondary
+            return snapshot.tomorrowCourses.drop(1).take(limit)
+        }
         val highlightedId = snapshot.highlightedCourse?.id
         val courses = if (highlightedId == null) {
             snapshot.visibleTodayCourses
@@ -616,6 +692,9 @@ object TodayWidgetSupport {
             nextExamStartTime = json.optString("nextExamStartTime").takeIf { it.isNotBlank() },
             nextExamEndTime = json.optString("nextExamEndTime").takeIf { it.isNotBlank() },
             holidayName = json.optString("holidayName").takeIf { it.isNotBlank() },
+            tomorrowCourses = json.optJSONArray("tomorrowCourses")?.let(::parseCourses) ?: emptyList(),
+            tomorrowWeek = json.optInt("tomorrowWeek", json.optInt("currentWeek", 1)),
+            tomorrowDayOfWeek = json.optInt("tomorrowDayOfWeek", 0),
         )
     }
 
@@ -689,6 +768,16 @@ object TodayWidgetSupport {
                         isOddWeek = item.optBoolean("isOddWeek", false),
                         isEvenWeek = item.optBoolean("isEvenWeek", false),
                         customWeeks = item.optJSONArray("customWeeks")?.let { rawWeeks ->
+                            buildList {
+                                for (weekIndex in 0 until rawWeeks.length()) {
+                                    val week = rawWeeks.optInt(weekIndex, 0)
+                                    if (week > 0) {
+                                        add(week)
+                                    }
+                                }
+                            }
+                        },
+                        suspendedWeeks = item.optJSONArray("suspendedWeeks")?.let { rawWeeks ->
                             buildList {
                                 for (weekIndex in 0 until rawWeeks.length()) {
                                     val week = rawWeeks.optInt(weekIndex, 0)

@@ -94,9 +94,10 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
                 setRowVisibility(views, false, false, false)
             } else {
+                val isShowingTomorrow = snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()
                 views.setTextViewText(
                     R.id.widget_medium_label,
-                    TodayWidgetSupport.statusText(snapshot.state)
+                    if (isShowingTomorrow) "明日课程" else TodayWidgetSupport.statusText(snapshot.state)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_title,
@@ -104,7 +105,8 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
                 )
                 views.setTextViewText(
                     R.id.widget_medium_time,
-                    TodayWidgetSupport.countdownText(snapshot)
+                    if (isShowingTomorrow) TodayWidgetSupport.heroTimeText(snapshot)
+                    else TodayWidgetSupport.countdownText(snapshot)
                         ?: TodayWidgetSupport.heroTimeText(snapshot)
                 )
                 views.setTextViewText(
