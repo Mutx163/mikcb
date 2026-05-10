@@ -2525,6 +2525,12 @@ class AppLocalizationsZh extends AppLocalizations {
       '开启后，2×2、2×4 和 4×4 课程列表只显示还没结束的课程。';
 
   @override
+  String get homeWidgetShowTomorrowTitle => '课后显示明日课程';
+
+  @override
+  String get homeWidgetShowTomorrowSubtitle => '开启后，今日课程全部结束时小组件自动切换显示明天的课程。';
+
+  @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微调';
 
   @override

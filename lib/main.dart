@@ -536,6 +536,12 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   Future<void> _checkPendingIcsIntent() async {
     try {
       const channel = MethodChannel('com.mutx163.qingyu/miui_live');
+      channel.setMethodCallHandler((call) async {
+        if (call.method == 'onIcsIntentReceived') {
+          await Future.delayed(const Duration(milliseconds: 300));
+          _checkPendingIcsIntent();
+        }
+      });
       final icsContent = await channel.invokeMethod<String?>('getInitialIcsIntent');
       if (icsContent != null && icsContent.isNotEmpty && mounted) {
         Navigator.of(context).push(
