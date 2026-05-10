@@ -4547,6 +4547,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseActionUnsuspend => 'Unsuspend (this week)';
 
   @override
+  String get suspendSheetTitle => 'Suspend Options';
+
+  @override
+  String get suspendThisWeek => 'This week only';
+
+  @override
+  String get suspendThisWeekDesc => 'Suspend only this week\'s class';
+
+  @override
+  String get suspendAllWeeks => 'All weeks';
+
+  @override
+  String get suspendAllWeeksDesc => 'Suspend all weeks';
+
+  @override
+  String get unsuspendAllWeeks => 'Unsuspend all';
+
+  @override
+  String get unsuspendAllWeeksDesc => 'Restore all weeks';
+
+  @override
   String get customHolidayTitle => 'Custom Holidays';
 
   @override

@@ -1196,6 +1196,36 @@ class TimetableProvider with ChangeNotifier {
     _updateLiveActivity();
   }
 
+  /// 停课全部周次
+  Future<void> suspendAllWeeks(String courseId) async {
+    final index = _courses.indexWhere((c) => c.id == courseId);
+    if (index == -1) return;
+    final course = _courses[index];
+    final allWeeks = course.activeWeeks;
+    _courses[index] = course.copyWith(suspendedWeeks: allWeeks);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_all_weeks_suspended',
+      parameters: {'course_id': courseId},
+    );
+    _updateLiveActivity();
+  }
+
+  /// 取消全部停课
+  Future<void> unsuspendAllWeeks(String courseId) async {
+    final index = _courses.indexWhere((c) => c.id == courseId);
+    if (index == -1) return;
+    _courses[index] = _courses[index].copyWith(suspendedWeeks: null);
+    await _persistActiveProfileState();
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_all_weeks_unsuspended',
+      parameters: {'course_id': courseId},
+    );
+    _updateLiveActivity();
+  }
+
   List<ScheduleItem> getScheduleItemsForDate(DateTime date) {
     final normalizedDate = DateTime(date.year, date.month, date.day);
     return _scheduleItems
