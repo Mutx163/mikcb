@@ -76,7 +76,7 @@ class CourseCard extends StatelessWidget {
     final titleAlignment = _contentAlignment;
     final titleTextAlign = _textAlign;
 
-    return Card(
+    final card = Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       elevation: isHighlighted ? 6 : 2,
       shape: RoundedRectangleBorder(
@@ -172,13 +172,42 @@ class CourseCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: _buildBadge(topRightBadgeText!),
+                  child: _buildBadgeRow(
+                    context,
+                    customBadgeText: topRightBadgeText,
+                  ),
+                ),
+              if (isHoliday && topRightBadgeText == null)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _buildBadgeRow(
+                    context,
+                    showHoliday: true,
+                  ),
+                ),
+              if (isSuspended && topRightBadgeText == null && !isHoliday)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: _buildBadgeRow(
+                    context,
+                    showSuspended: true,
+                  ),
                 ),
             ],
           ),
         ),
       ),
     );
+
+    if (isHoliday) {
+      return Opacity(opacity: 0.3, child: card);
+    }
+    if (isSuspended) {
+      return Opacity(opacity: 0.4, child: card);
+    }
+    return card;
   }
 
   Widget _buildCompactCard(BuildContext context, Color color) {
@@ -294,24 +323,27 @@ class CourseCard extends StatelessWidget {
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadge(topRightBadgeText!),
+                child: _buildBadgeRow(
+                  context,
+                  customBadgeText: topRightBadgeText,
+                ),
               ),
             if (isHoliday && topRightBadgeText == null)
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadge(
-                  AppLocalizations.of(context)!.holidayBadgeLabel,
-                  color: Colors.orange.shade700,
+                child: _buildBadgeRow(
+                  context,
+                  showHoliday: true,
                 ),
               ),
             if (isSuspended && topRightBadgeText == null && !isHoliday)
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadge(
-                  AppLocalizations.of(context)!.suspendedBadgeLabel,
-                  color: Colors.red.shade700,
+                child: _buildBadgeRow(
+                  context,
+                  showSuspended: true,
                 ),
               ),
           ],
@@ -350,6 +382,42 @@ class CourseCard extends StatelessWidget {
           color: Colors.white,
         ),
       ),
+    );
+  }
+
+  Widget _buildBadgeRow(
+    BuildContext context, {
+    String? customBadgeText,
+    bool showHoliday = false,
+    bool showSuspended = false,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    final badges = <Widget>[];
+    if (showHoliday && l10n != null) {
+      badges.add(_buildBadge(
+        l10n.holidayBadgeLabel,
+        color: Colors.orange.shade700,
+      ));
+    }
+    if (showSuspended && l10n != null) {
+      badges.add(_buildBadge(
+        l10n.suspendedBadgeLabel,
+        color: Colors.red.shade700,
+      ));
+    }
+    if (customBadgeText != null) {
+      badges.add(_buildBadge(customBadgeText));
+    }
+    if (badges.isEmpty) return const SizedBox.shrink();
+    if (badges.length == 1) return badges.first;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < badges.length; i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          badges[i],
+        ],
+      ],
     );
   }
 
