@@ -4492,6 +4492,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
