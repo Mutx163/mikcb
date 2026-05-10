@@ -1423,6 +1423,8 @@
   "widgetCountdownStyleTitle": "Countdown style",
   "homeWidgetHideCompletedTitle": "Hide completed classes",
   "homeWidgetHideCompletedSubtitle": "When enabled, the 2×2, 2×4, and 4×4 course lists show only classes that have not finished yet.",
+  "homeWidgetShowTomorrowTitle": "Show tomorrow's classes",
+  "homeWidgetShowTomorrowSubtitle": "When enabled, the widget automatically switches to tomorrow's classes after today's classes end.",
   "homeWidgetHeightAdjustTitle": "Card height adjustment",
   "defaultLabel": "Default",
   "higherByValue": "Higher by {value}",

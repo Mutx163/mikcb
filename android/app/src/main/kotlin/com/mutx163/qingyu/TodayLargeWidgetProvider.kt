@@ -103,11 +103,16 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 )
                 views.setTextViewText(
                     R.id.widget_large_title,
-                    if (isShowingTomorrow) "明日课程列表" else "今日课程列表"
+                    when {
+                        snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
+                        isShowingTomorrow -> "明日课程列表"
+                        else -> "今日课程列表"
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_large_subtitle,
                     when {
+                        snapshot.state == "holiday" -> "好好休息"
                         isShowingTomorrow -> TodayWidgetSupport.footerText(snapshot)
                         snapshot.state == "no_course" -> "今天没有课程安排"
                         snapshot.state == "completed" -> TodayWidgetSupport.footerText(snapshot)

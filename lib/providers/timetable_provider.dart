@@ -2824,6 +2824,7 @@ class TimetableProvider with ChangeNotifier {
       tomorrowCourses: tomorrowCourses,
       tomorrowWeek: tomorrowWeek,
       tomorrowDayOfWeek: tomorrow.weekday,
+      showTomorrowCourses: _settings.widgetShowTomorrowCourses,
     );
   }
 

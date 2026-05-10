@@ -2263,6 +2263,17 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                       );
                     },
                   ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.homeWidgetShowTomorrowTitle),
+                    subtitle: Text(l10n.homeWidgetShowTomorrowSubtitle),
+                    value: _draft.widgetShowTomorrowCourses,
+                    onChanged: (value) {
+                      _updateDraft(
+                        _draft.copyWith(widgetShowTomorrowCourses: value),
+                      );
+                    },
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     l10n.homeWidgetHeightAdjustTitle,
