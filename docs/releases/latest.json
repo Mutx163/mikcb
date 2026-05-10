@@ -2,18 +2,6 @@
   "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.0.15",
-    "title": "v1.2.0.15",
-    "publishedAt": "2026-04-29T17:40:38Z",
-    "body": "# v1.2.0.15\r\n\r\n## 新增\r\n\r\n- 支持从外部应用（文件管理器、微信等）直接打开或分享 `.ics` 文件到轻屿课表，自动跳转到课程导入页面\r\n\r\n## 优化\r\n\r\n- ICS 导入时教师姓名和教室位置的识别准确性，兼容不同来源的 `.ics` 文件格式\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.15",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.15/mikcb-1.2.0.15-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.15-arm64-v8a.apk",
-    "assetCount": 1,
-    "assetDownloadCount": 112
-  },
-  "prerelease": {
-    "channelLabel": "预发布",
     "version": "1.2.0.24",
     "title": "v1.2.0.24",
     "publishedAt": "2026-05-10T10:35:30Z",
@@ -22,6 +10,18 @@
     "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.24/mikcb-1.2.0.24-arm64-v8a.apk",
     "assetName": "mikcb-1.2.0.24-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 5
+    "assetDownloadCount": 6
+  },
+  "prerelease": {
+    "channelLabel": "预发布",
+    "version": "1.2.0.23",
+    "title": "v1.2.0.23",
+    "publishedAt": "2026-05-10T10:00:07Z",
+    "body": "Automated release for v1.2.0.23",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.23",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.23/mikcb-1.2.0.23-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.0.23-arm64-v8a.apk",
+    "assetCount": 1,
+    "assetDownloadCount": 0
   }
 }
