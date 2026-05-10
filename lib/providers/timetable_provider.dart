@@ -1368,9 +1368,17 @@ class TimetableProvider with ChangeNotifier {
     return _holidayService.loadCustomHolidays();
   }
 
-  /// 新增自定义假期
+  /// 新增一条自定义假期
   Future<void> addCustomHoliday(HolidayEntry entry) async {
     await _holidayService.addCustomHoliday(entry);
+    await _loadHolidayData();
+  }
+
+  /// 批量新增自定义假期（单次 load → append → save，避免逐条写入的竞态问题）
+  Future<void> addCustomHolidays(List<HolidayEntry> entries) async {
+    final existing = await _holidayService.loadCustomHolidays();
+    existing.addAll(entries);
+    await _holidayService.saveCustomHolidays(existing);
     await _loadHolidayData();
   }
 
@@ -2900,11 +2908,15 @@ class TimetableProvider with ChangeNotifier {
         .map(resolveCourseDisplayName)
         .toList(growable: false);
     final todayIsHoliday = isHoliday(DateTime.now());
+    final holidayDates = _buildHolidayDatesForSnapshot();
     final snapshotSignature = jsonEncode({
       'profileId': activeProfile.id,
       'currentWeek': _currentWeek,
       'semesterStartDate': _settings.semesterStartDate?.millisecondsSinceEpoch,
       'isHoliday': todayIsHoliday,
+      'holidayDates': holidayDates,
+      'holidayOverrideEnabled': _settings.holidayOverrideEnabled,
+      'enableHolidayMarking': _settings.enableHolidayMarking,
       'settings': _settings.toJson(),
       'courses': displayCourses.map((course) => course.toJson()).toList(),
     });
@@ -2919,10 +2931,28 @@ class TimetableProvider with ChangeNotifier {
       semesterStartDate: _settings.semesterStartDate,
       endReminderLeadMillis: _liveEndReminderWindow.inMilliseconds,
       isHoliday: todayIsHoliday,
+      holidayDates: holidayDates,
+      holidayOverrideEnabled: _settings.holidayOverrideEnabled,
+      enableHolidayMarking: _settings.enableHolidayMarking,
     );
     if (synced) {
       _lastLiveSnapshotSignature = snapshotSignature;
     }
+  }
+
+  /// Build a list of holiday date strings ("yyyy-MM-dd") for the native
+  /// scheduler so it can skip courses that fall on holidays.
+  List<String> _buildHolidayDatesForSnapshot() {
+    if (!_settings.enableHolidayMarking || _holidayData == null) {
+      return const [];
+    }
+    return _holidayData!.entries
+        .where((e) => e.shouldHideCourses)
+        .map((e) {
+          final d = e.date;
+          return '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+        })
+        .toList();
   }
 
   Future<void> _syncHomeWidgetSnapshot() async {

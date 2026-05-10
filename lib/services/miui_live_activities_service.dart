@@ -482,6 +482,9 @@ class MiuiLiveActivitiesService {
     DateTime? semesterStartDate,
     required int endReminderLeadMillis,
     bool isHoliday = false,
+    List<String> holidayDates = const [],
+    bool holidayOverrideEnabled = false,
+    bool enableHolidayMarking = true,
   }) async {
     await initialize();
     try {
@@ -490,6 +493,9 @@ class MiuiLiveActivitiesService {
         'semesterStartMillis': semesterStartDate?.millisecondsSinceEpoch,
         'endReminderLeadMillis': endReminderLeadMillis,
         'isHoliday': isHoliday,
+        'holidayDates': holidayDates,
+        'holidayOverrideEnabled': holidayOverrideEnabled,
+        'enableHolidayMarking': enableHolidayMarking,
         'courses': courses.map((course) => course.toJson()).toList(),
         'settings': settings.toJson(),
       });

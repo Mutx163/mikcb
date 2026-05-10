@@ -3883,12 +3883,11 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       d = d.add(const Duration(days: 1));
     }
 
+    // Batch save: load existing → add/update → save once (avoid race condition)
     if (existing != null) {
       await provider.updateCustomHoliday(groupId, entries);
     } else {
-      for (final entry in entries) {
-        await provider.addCustomHoliday(entry);
-      }
+      await provider.addCustomHolidays(entries);
     }
     await _loadCustomHolidays();
   }
@@ -4193,10 +4192,19 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
-                            trailing: Icon(
-                              Icons.chevron_right,
-                              size: 20,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    size: 20,
+                                    color: Theme.of(context).colorScheme.error,
+                                  ),
+                                  tooltip: l10n.customHolidayDelete,
+                                  onPressed: () => _confirmDeleteCustomHoliday(group.groupId),
+                                ),
+                              ],
                             ),
                             onTap: () {
                               // Reconstruct entries for editing
