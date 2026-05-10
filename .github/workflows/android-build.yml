@@ -117,11 +117,21 @@ jobs:
             exit 1
           fi
           echo "Uploading to pgyer..."
-          curl -F "_api_key=${PGYER_API_KEY}" \
+          RESPONSE=$(curl -s -F "_api_key=${PGYER_API_KEY}" \
                -F "file=@${APK_PATH}" \
                -F "buildInstallType=2" \
                -F "buildPassword=" \
-               https://www.pgyer.com/apiv2/app/upload
+               -F "buildUpdateDescription=${{ steps.meta.outputs.release_tag }}" \
+               https://www.pgyer.com/apiv2/app/upload)
+          echo "Response: ${RESPONSE}"
+          CODE=$(echo "${RESPONSE}" | jq -r '.code // empty')
+          if [[ "${CODE}" == "0" ]]; then
+            SHORT_URL=$(echo "${RESPONSE}" | jq -r '.data.buildShortcutUrl // empty')
+            echo "Upload success! Install: https://www.pgyer.com/${SHORT_URL}"
+          else
+            echo "Upload failed with code: ${CODE}"
+            exit 1
+          fi
 
       - name: Upload APK artifact
         if: startsWith(github.ref, 'refs/tags/v')
