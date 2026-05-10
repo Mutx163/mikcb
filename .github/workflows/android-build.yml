@@ -101,76 +101,14 @@ jobs:
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
-      - name: Sync system time
-        run: sudo timedatectl set-ntp true || sudo ntpdate -u pool.ntp.org || true
-
       - name: Upload to pgyer
         if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          PGYER_API_KEY: ${{ secrets.PGYER_API_KEY }}
-        shell: bash
-        run: |
-          if [[ -z "${PGYER_API_KEY}" ]]; then
-            echo "PGYER_API_KEY not set, skipping upload."
-            exit 0
-          fi
-          APK_PATH="build/app/outputs/flutter-apk/app-arm64-v8a-release.apk"
-          if [[ ! -f "${APK_PATH}" ]]; then
-            echo "APK not found at ${APK_PATH}"
-            exit 1
-          fi
-
-          echo "Step 1: Getting upload token..."
-          TOKEN_RESP=$(curl -s --connect-timeout 10 --max-time 30 -X POST \
-            -d "_api_key=${PGYER_API_KEY}&buildType=android" \
-            https://www.pgyer.com/apiv2/app/getCOSToken)
-          echo "Token response: ${TOKEN_RESP}"
-          CODE=$(echo "${TOKEN_RESP}" | jq -r '.code')
-          if [[ "${CODE}" != "0" ]]; then
-            echo "Failed to get upload token, code: ${CODE}"
-            exit 1
-          fi
-          ENDPOINT=$(echo "${TOKEN_RESP}" | jq -r '.data.endpoint')
-          KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.params.key')
-          SIGNATURE=$(echo "${TOKEN_RESP}" | jq -r '.data.params.signature')
-          TOKEN=$(echo "${TOKEN_RESP}" | jq -r '.data.params["x-cos-security-token"]')
-
-          echo "Step 2: Uploading APK to ${ENDPOINT}..."
-          UPLOAD_RESP=$(curl -s -w "\n%{http_code}" -X POST \
-            --connect-timeout 30 --max-time 600 \
-            -F "key=${KEY}" \
-            -F "signature=${SIGNATURE}" \
-            -F "x-cos-security-token=${TOKEN}" \
-            -F "file=@${APK_PATH}" \
-            "${ENDPOINT}")
-          HTTP_CODE=$(echo "${UPLOAD_RESP}" | tail -1)
-          if [[ "${HTTP_CODE}" != "204" ]]; then
-            echo "Upload failed with HTTP ${HTTP_CODE}"
-            echo "${UPLOAD_RESP}"
-            exit 1
-          fi
-          echo "Upload accepted (HTTP 204)."
-
-          echo "Step 3: Polling build status..."
-          BUILD_KEY=$(echo "${TOKEN_RESP}" | jq -r '.data.key')
-          for i in $(seq 1 60); do
-            sleep 5
-            INFO_RESP=$(curl -s -X GET \
-              "https://www.pgyer.com/apiv2/app/buildInfo?_api_key=${PGYER_API_KEY}&buildKey=${BUILD_KEY}")
-            INFO_CODE=$(echo "${INFO_RESP}" | jq -r '.code')
-            if [[ "${INFO_CODE}" == "0" ]]; then
-              SHORT_URL=$(echo "${INFO_RESP}" | jq -r '.data.buildShortcutUrl')
-              echo "Published! Install: https://www.pgyer.com/${SHORT_URL}"
-              exit 0
-            elif [[ "${INFO_CODE}" == "1247" ]]; then
-              echo "Still publishing... (attempt ${i}/60)"
-            else
-              echo "Build info error: ${INFO_RESP}"
-              exit 1
-            fi
-          done
-          echo "Timeout waiting for publish."
-          exit 1
+        uses: PGYER/pgyer-upload-app-action@v1.3
+        with:
+          _api_key: ${{ secrets.PGYER_API_KEY }}
+          appFilePath: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          buildInstallType: 2
+          buildUpdateDescription: ${{ steps.meta.outputs.release_tag }}
 
       - name: Upload APK artifact
         if: startsWith(github.ref, 'refs/tags/v')
