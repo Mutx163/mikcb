@@ -27,6 +27,7 @@ class CourseCard extends StatelessWidget {
   final String? topRightBadgeText;
   final bool isHighlighted;
   final bool isHoliday;
+  final bool isSuspended;
 
   const CourseCard({
     super.key,
@@ -51,6 +52,7 @@ class CourseCard extends StatelessWidget {
     this.topRightBadgeText,
     this.isHighlighted = false,
     this.isHoliday = false,
+    this.isSuspended = false,
   });
 
   Color _parseColor(String colorString) {
@@ -303,6 +305,15 @@ class CourseCard extends StatelessWidget {
                   color: Colors.orange.shade700,
                 ),
               ),
+            if (isSuspended && topRightBadgeText == null && !isHoliday)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: _buildBadge(
+                  AppLocalizations.of(context)!.suspendedBadgeLabel,
+                  color: Colors.red.shade700,
+                ),
+              ),
           ],
         ),
       ),
@@ -310,6 +321,9 @@ class CourseCard extends StatelessWidget {
 
     if (isHoliday) {
       return Opacity(opacity: 0.3, child: card);
+    }
+    if (isSuspended) {
+      return Opacity(opacity: 0.4, child: card);
     }
     return card;
   }

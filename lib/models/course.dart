@@ -43,6 +43,7 @@ class Course {
   final bool isOddWeek; // 是否单周
   final bool isEvenWeek; // 是否双周
   final List<int>? customWeeks; // 自定义周次
+  final List<int>? suspendedWeeks; // 停课周次
   final CourseNature courseNature; // 课程性质
   final String? description; // 课程简介（同名课程共享）
   final String? note; // 备注/备忘录
@@ -65,6 +66,7 @@ class Course {
     this.isOddWeek = false,
     this.isEvenWeek = false,
     this.customWeeks,
+    this.suspendedWeeks,
     this.courseNature = CourseNature.required,
     this.description,
     this.note,
@@ -89,6 +91,7 @@ class Course {
       'isOddWeek': isOddWeek,
       'isEvenWeek': isEvenWeek,
       'customWeeks': customWeeks,
+      'suspendedWeeks': suspendedWeeks,
       'courseNature': courseNature.value,
       'description': description,
       'note': note,
@@ -114,6 +117,9 @@ class Course {
       isOddWeek: json['isOddWeek'] as bool? ?? false,
       isEvenWeek: json['isEvenWeek'] as bool? ?? false,
       customWeeks: (json['customWeeks'] as List<dynamic>?)
+          ?.map((item) => item as int)
+          .toList(),
+      suspendedWeeks: (json['suspendedWeeks'] as List<dynamic>?)
           ?.map((item) => item as int)
           .toList(),
       courseNature: CourseNatureX.fromValue(json['courseNature'] as String?),
@@ -146,6 +152,7 @@ class Course {
     bool? isOddWeek,
     bool? isEvenWeek,
     Object? customWeeks = _unset,
+    Object? suspendedWeeks = _unset,
     CourseNature? courseNature,
     Object? description = _unset,
     Object? note = _unset,
@@ -171,6 +178,9 @@ class Course {
       customWeeks: identical(customWeeks, _unset)
           ? this.customWeeks
           : (customWeeks as List<int>?),
+      suspendedWeeks: identical(suspendedWeeks, _unset)
+          ? this.suspendedWeeks
+          : (suspendedWeeks as List<int>?),
       courseNature: courseNature ?? this.courseNature,
       description: identical(description, _unset)
           ? this.description
@@ -194,6 +204,18 @@ class Course {
   }
 
   bool get hasCustomWeeks => normalizedCustomWeeks != null;
+
+  List<int>? get normalizedSuspendedWeeks {
+    final source = suspendedWeeks;
+    if (source == null || source.isEmpty) {
+      return null;
+    }
+    final normalized = source.toSet().toList()..sort();
+    return normalized;
+  }
+
+  bool isSuspendedInWeek(int week) =>
+      suspendedWeeks?.contains(week) ?? false;
 
   List<int> get activeWeeks {
     final custom = normalizedCustomWeeks;
@@ -228,7 +250,14 @@ class Course {
     return '第$startWeek-$endWeek周$mode';
   }
 
+  String? get suspensionDescription {
+    final suspended = normalizedSuspendedWeeks;
+    if (suspended == null || suspended.isEmpty) return null;
+    return '第${_formatWeekList(suspended)}周停课';
+  }
+
   bool isInWeek(int week) {
+    if (isSuspendedInWeek(week)) return false;
     final custom = normalizedCustomWeeks;
     if (custom != null) {
       return custom.contains(week);

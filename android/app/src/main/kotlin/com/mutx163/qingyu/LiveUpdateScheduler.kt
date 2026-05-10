@@ -98,9 +98,11 @@ private data class NativeCourse(
     val isOddWeek: Boolean,
     val isEvenWeek: Boolean,
     val customWeeks: List<Int>?,
+    val suspendedWeeks: List<Int>?,
     val note: String?,
 ) {
     fun isInWeek(week: Int): Boolean {
+        if (suspendedWeeks?.contains(week) == true) return false
         return liveSchedulerCourseIsInWeek(
             week = week,
             startWeek = startWeek,
@@ -732,6 +734,7 @@ object LiveUpdateScheduler {
                 isOddWeek = courseJson.optBoolean("isOddWeek", false),
                 isEvenWeek = courseJson.optBoolean("isEvenWeek", false),
                 customWeeks = parseIntList(courseJson.opt("customWeeks")),
+                suspendedWeeks = parseIntList(courseJson.opt("suspendedWeeks")),
                 note = normalizeNullableText(courseJson.opt("note")?.toString()),
             )
         }
@@ -841,6 +844,7 @@ object LiveUpdateScheduler {
             isOddWeek = data["isOddWeek"] as? Boolean ?: false,
             isEvenWeek = data["isEvenWeek"] as? Boolean ?: false,
             customWeeks = parseIntList(data["customWeeks"]),
+            suspendedWeeks = parseIntList(data["suspendedWeeks"]),
             note = normalizeNullableText(data["note"] as? String),
         )
     }
