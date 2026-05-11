@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/timetable_settings.dart';
+import 'pgyer_api_service.dart';
 
 /// A single log entry from the update process.
 class UpdateLogEntry {
@@ -30,6 +31,7 @@ class AppReleaseInfo {
   final String body;
   final String releaseUrl;
   final String? downloadUrl;
+  final String? pgyerDownloadUrl; // 蒲公英下载页面（来自蒲公英 API 时有值）
   final DateTime? updatedAt;
   final bool isPrerelease;
 
@@ -39,6 +41,7 @@ class AppReleaseInfo {
     required this.body,
     required this.releaseUrl,
     required this.downloadUrl,
+    this.pgyerDownloadUrl,
     required this.updatedAt,
     required this.isPrerelease,
   });
@@ -169,54 +172,70 @@ class AppUpdateService {
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
   final AppUpdateOpenInstaller _openInstaller;
   final Duration _releaseApiRequestTimeout;
+  final PgyerApiService _pgyerApiService;
 
   AppUpdateService({
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
     Duration releaseApiRequestTimeout = _releaseRequestTimeout,
+    PgyerApiService? pgyerApiService,
   })  : _client = client ?? http.Client(),
         _temporaryDirectoryProvider =
             temporaryDirectoryProvider ?? getTemporaryDirectory,
         _openInstaller = openInstaller ?? OpenFilex.open,
-        _releaseApiRequestTimeout = releaseApiRequestTimeout;
+        _releaseApiRequestTimeout = releaseApiRequestTimeout,
+        _pgyerApiService = pgyerApiService ?? PgyerApiService();
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
     bool includePrerelease = false,
     AppUpdateDownloadSource preferredSource = AppUpdateDownloadSource.original,
     String? mirrorUrlPrefix,
+    String? pgyerApiKey,
+    String? pgyerAppKey,
   }) async {
     _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
 
-    _AppUpdateFetchOutcome apiOutcome;
-    try {
-      _log('策略1：GitHub API…');
-      apiOutcome = await _fetchFromGitHubApi(
-        includePrerelease: includePrerelease,
-        preferredSource: preferredSource,
-        mirrorUrlPrefix: mirrorUrlPrefix,
-      );
-    } catch (e) {
-      _log('GitHub API 异常：$e');
-      apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    // 策略1：蒲公英 API（优先，需要 API Key）
+    final pgyerConfig = (pgyerApiKey != null && 
+        pgyerApiKey.isNotEmpty && 
+        pgyerAppKey != null && 
+        pgyerAppKey.isNotEmpty)
+        ? PgyerApiConfig(apiKey: pgyerApiKey, appKey: pgyerAppKey)
+        : null;
+    
+    if (pgyerConfig != null) {
+      try {
+        _log('策略1：蒲公英 API…');
+        final pgyerService = PgyerApiService(config: pgyerConfig);
+        final pgyerInfo = await pgyerService.checkForUpdate();
+        if (pgyerInfo != null) {
+          _log('蒲公英 API 成功，版本 ${pgyerInfo.buildVersion}');
+          final release = AppReleaseInfo(
+            version: pgyerInfo.buildVersion,
+            title: pgyerInfo.buildVersion,
+            body: pgyerInfo.buildUpdateDescription,
+            releaseUrl: pgyerInfo.downloadPageUrl,
+            downloadUrl: pgyerInfo.downloadPageUrl,
+            pgyerDownloadUrl: pgyerInfo.downloadPageUrl,
+            updatedAt: DateTime.tryParse(pgyerInfo.buildCreated)?.toLocal(),
+            isPrerelease: false,
+          );
+          return _buildCheckResult(
+            currentVersion: currentVersion,
+            release: release,
+          );
+        }
+        _log('蒲公英 API 未获取到版本');
+      } catch (e) {
+        _log('蒲公英 API 异常：$e');
+      }
+    } else {
+      _log('蒲公英 API Key 未配置，跳过');
     }
-    if (apiOutcome.release != null) {
-      _log('GitHub API 成功，版本 ${apiOutcome.release!.version}');
-      return _buildCheckResult(
-        currentVersion: currentVersion,
-        release: apiOutcome.release!,
-      );
-    }
-    _log('GitHub API 未获取到版本，状态码: ${apiOutcome.statusCode}');
 
-    var saw404 = apiOutcome.saw404;
-    int? lastStatusCode;
-    var hadRetryableFailure = apiOutcome.hadRetryableFailure;
-    if (apiOutcome.statusCode != null && apiOutcome.statusCode != 404) {
-      lastStatusCode = apiOutcome.statusCode;
-    }
-
+    // 策略2：Release 页面抓取（支持镜像，比 API 快）
     _AppUpdateFetchOutcome pageOutcome;
     try {
       _log('策略2：Release 页面抓取…');
@@ -235,15 +254,43 @@ class AppUpdateService {
       );
     }
     _log('Release 页面未获取到版本，状态码: ${pageOutcome.statusCode}');
-    saw404 = saw404 || pageOutcome.saw404;
-    hadRetryableFailure =
-        hadRetryableFailure || pageOutcome.hadRetryableFailure;
+
+    var saw404 = pageOutcome.saw404;
+    int? lastStatusCode;
+    var hadRetryableFailure = pageOutcome.hadRetryableFailure;
     if (pageOutcome.statusCode != null && pageOutcome.statusCode != 404) {
       lastStatusCode = pageOutcome.statusCode;
     }
 
+    // 策略3：GitHub API（最慢，作为最终备选）
+    _AppUpdateFetchOutcome apiOutcome;
+    try {
+      _log('策略3：GitHub API…');
+      apiOutcome = await _fetchFromGitHubApi(
+        includePrerelease: includePrerelease,
+        preferredSource: preferredSource,
+        mirrorUrlPrefix: mirrorUrlPrefix,
+      );
+    } catch (e) {
+      _log('GitHub API 异常：$e');
+      apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
+    }
+    if (apiOutcome.release != null) {
+      _log('GitHub API 成功，版本 ${apiOutcome.release!.version}');
+      return _buildCheckResult(
+        currentVersion: currentVersion,
+        release: apiOutcome.release!,
+      );
+    }
+    _log('GitHub API 未获取到版本，状态码: ${apiOutcome.statusCode}');
+    saw404 = saw404 || apiOutcome.saw404;
+    hadRetryableFailure = hadRetryableFailure || apiOutcome.hadRetryableFailure;
+    if (apiOutcome.statusCode != null && apiOutcome.statusCode != 404) {
+      lastStatusCode = apiOutcome.statusCode;
+    }
+
     if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
-      _log('两种策略均返回 404，仓库尚无 Release');
+      _log('所有策略均未获取到版本');
       return AppUpdateCheckResult(
         hasRelease: false,
         hasUpdate: false,
@@ -449,6 +496,28 @@ class AppUpdateService {
 
     final separator = normalizedPrefix.endsWith('/') ? '' : '/';
     return '$normalizedPrefix$separator$originalUrl';
+  }
+
+  /// 获取下载链接（根据下载渠道）
+  String? getEffectiveDownloadUrl({
+    required AppReleaseInfo? release,
+    required AppUpdateDownloadChannel channel,
+    required AppUpdateDownloadSource source,
+    required String mirrorUrlPrefix,
+  }) {
+    if (channel == AppUpdateDownloadChannel.pgyer) {
+      // 蒲公英渠道：优先返回蒲公英下载页面，兜底用固定地址
+      return release?.pgyerDownloadUrl ?? 'https://www.pgyer.com/qingyu';
+    } else {
+      // GitHub 渠道：返回 GitHub 下载链接（可能经过镜像加速）
+      final originalUrl = release?.downloadUrl;
+      if (originalUrl == null) return null;
+      return buildDownloadUrl(
+        originalUrl: originalUrl,
+        source: source,
+        mirrorUrlPrefix: mirrorUrlPrefix,
+      );
+    }
   }
 
   Future<_AppUpdateFetchOutcome> _fetchFromReleasesPage({

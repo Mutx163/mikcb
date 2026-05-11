@@ -2,6 +2,8 @@ import 'dart:convert';
 
 enum AppUpdateDownloadSource { original, mirror }
 
+enum AppUpdateDownloadChannel { pgyer, github }
+
 enum AppUpdateMirrorPreset { ghfast, ghproxyCn, ghLlkk, custom }
 
 enum WidgetBackgroundStyle { glass, solid, gradient }
@@ -504,6 +506,30 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
   }
 }
 
+extension AppUpdateDownloadChannelX on AppUpdateDownloadChannel {
+  String get value => switch (this) {
+    AppUpdateDownloadChannel.pgyer => 'pgyer',
+    AppUpdateDownloadChannel.github => 'github',
+  };
+
+  String get label => switch (this) {
+    AppUpdateDownloadChannel.pgyer => '蒲公英下载',
+    AppUpdateDownloadChannel.github => 'GitHub 下载',
+  };
+
+  String get description => switch (this) {
+    AppUpdateDownloadChannel.pgyer => '国内高速下载，推荐使用',
+    AppUpdateDownloadChannel.github => 'GitHub 原生 + 国内镜像',
+  };
+
+  static AppUpdateDownloadChannel fromValue(String? value) {
+    return AppUpdateDownloadChannel.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => AppUpdateDownloadChannel.pgyer,
+    );
+  }
+}
+
 extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
   String get value => switch (this) {
     AppUpdateMirrorPreset.ghfast => 'ghfast',
@@ -816,9 +842,12 @@ class TimetableSettings {
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
   final String appUpdateDownloadSource;
+  final String appUpdateDownloadChannel;
   final String appUpdateMirrorPreset;
   final bool appUpdateIncludePrerelease;
   final String appUpdateMirrorUrlPrefix;
+  final String pgyerApiKey;
+  final String pgyerAppKey;
   final bool holidayOverrideEnabled;
 
   const TimetableSettings({
@@ -934,9 +963,12 @@ class TimetableSettings {
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'mirror',
+    this.appUpdateDownloadChannel = 'pgyer',
     this.appUpdateMirrorPreset = 'ghfast',
     this.appUpdateIncludePrerelease = false,
     this.appUpdateMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix,
+    this.pgyerApiKey = '',
+    this.pgyerAppKey = '',
     this.holidayOverrideEnabled = false,
   });
 
@@ -1190,9 +1222,12 @@ class TimetableSettings {
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
+      'appUpdateDownloadChannel': appUpdateDownloadChannel,
       'appUpdateMirrorPreset': appUpdateMirrorPreset,
       'appUpdateIncludePrerelease': appUpdateIncludePrerelease,
       'appUpdateMirrorUrlPrefix': appUpdateMirrorUrlPrefix,
+      'pgyerApiKey': pgyerApiKey,
+      'pgyerAppKey': pgyerAppKey,
       'holidayOverrideEnabled': holidayOverrideEnabled,
     };
   }
@@ -1458,6 +1493,8 @@ class TimetableSettings {
           json['timetableUnifiedCardColor'] as String? ?? '#2563EB',
       appUpdateDownloadSource:
           json['appUpdateDownloadSource'] as String? ?? 'mirror',
+      appUpdateDownloadChannel:
+          json['appUpdateDownloadChannel'] as String? ?? 'pgyer',
       appUpdateMirrorPreset: (rawAppUpdateMirrorPreset == null
           ? AppUpdateMirrorPresetX.fromUrlPrefix(
               rawAppUpdateMirrorUrlPrefix,
@@ -1466,6 +1503,8 @@ class TimetableSettings {
       appUpdateIncludePrerelease:
           json['appUpdateIncludePrerelease'] as bool? ?? false,
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
+      pgyerApiKey: json['pgyerApiKey'] as String? ?? '',
+      pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
       holidayOverrideEnabled:
           json['holidayOverrideEnabled'] as bool? ?? false,
     );
@@ -1589,9 +1628,12 @@ class TimetableSettings {
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
     String? appUpdateDownloadSource,
+    String? appUpdateDownloadChannel,
     String? appUpdateMirrorPreset,
     bool? appUpdateIncludePrerelease,
     String? appUpdateMirrorUrlPrefix,
+    String? pgyerApiKey,
+    String? pgyerAppKey,
     bool? holidayOverrideEnabled,
   }) {
     return TimetableSettings(
@@ -1807,12 +1849,16 @@ class TimetableSettings {
           timetableUnifiedCardColor ?? this.timetableUnifiedCardColor,
       appUpdateDownloadSource:
           appUpdateDownloadSource ?? this.appUpdateDownloadSource,
+      appUpdateDownloadChannel:
+          appUpdateDownloadChannel ?? this.appUpdateDownloadChannel,
       appUpdateMirrorPreset:
           appUpdateMirrorPreset ?? this.appUpdateMirrorPreset,
       appUpdateIncludePrerelease:
           appUpdateIncludePrerelease ?? this.appUpdateIncludePrerelease,
       appUpdateMirrorUrlPrefix:
           appUpdateMirrorUrlPrefix ?? this.appUpdateMirrorUrlPrefix,
+      pgyerApiKey: pgyerApiKey ?? this.pgyerApiKey,
+      pgyerAppKey: pgyerAppKey ?? this.pgyerAppKey,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
     );
