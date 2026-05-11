@@ -646,6 +646,8 @@ class AppUpdateService {
       _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
       _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
       _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghProxyComMirrorUrlPrefix),
+      _normalizeMirrorUrlPrefix(ghproxyNetMirrorUrlPrefix),
     ];
 
     final originalCandidates = <String>[apiUrl];

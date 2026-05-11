@@ -4,7 +4,7 @@ enum AppUpdateDownloadSource { original, mirror }
 
 enum AppUpdateDownloadChannel { pgyer, github }
 
-enum AppUpdateMirrorPreset { ghfast, ghproxyCn, ghLlkk, custom }
+enum AppUpdateMirrorPreset { ghfast, ghproxyCn, ghLlkk, ghProxyCom, ghproxyNet, custom }
 
 enum WidgetBackgroundStyle { glass, solid, gradient }
 
@@ -52,6 +52,8 @@ enum LiveBeforeClassQuickAction { none, silent, doNotDisturb }
 const String defaultAppUpdateMirrorUrlPrefix = 'https://ghfast.top/';
 const String ghproxyCnMirrorUrlPrefix = 'https://ghproxy.cn/';
 const String ghLlkkMirrorUrlPrefix = 'https://gh.llkk.cc/';
+const String ghProxyComMirrorUrlPrefix = 'https://gh-proxy.com/';
+const String ghproxyNetMirrorUrlPrefix = 'https://ghproxy.net/';
 
 String _normalizeAppLocaleTag(String? value) {
   final normalized = (value ?? '').trim();
@@ -535,6 +537,8 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     AppUpdateMirrorPreset.ghfast => 'ghfast',
     AppUpdateMirrorPreset.ghproxyCn => 'ghproxy_cn',
     AppUpdateMirrorPreset.ghLlkk => 'gh_llkk',
+    AppUpdateMirrorPreset.ghProxyCom => 'gh_proxy_com',
+    AppUpdateMirrorPreset.ghproxyNet => 'ghproxy_net',
     AppUpdateMirrorPreset.custom => 'custom',
   };
 
@@ -542,6 +546,8 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     AppUpdateMirrorPreset.ghfast => '默认镜像',
     AppUpdateMirrorPreset.ghproxyCn => '备用镜像 1',
     AppUpdateMirrorPreset.ghLlkk => '备用镜像 2',
+    AppUpdateMirrorPreset.ghProxyCom => '备用镜像 3',
+    AppUpdateMirrorPreset.ghproxyNet => '备用镜像 4',
     AppUpdateMirrorPreset.custom => '自定义',
   };
 
@@ -549,6 +555,8 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
     AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
   };
 
@@ -575,6 +583,12 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     if (normalized == _normalizeMirrorUrlPrefixValue(ghLlkkMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghLlkk;
     }
+    if (normalized == _normalizeMirrorUrlPrefixValue(ghProxyComMirrorUrlPrefix)) {
+      return AppUpdateMirrorPreset.ghProxyCom;
+    }
+    if (normalized == _normalizeMirrorUrlPrefixValue(ghproxyNetMirrorUrlPrefix)) {
+      return AppUpdateMirrorPreset.ghproxyNet;
+    }
     return AppUpdateMirrorPreset.custom;
   }
 }
@@ -588,6 +602,8 @@ String resolveAppUpdateMirrorUrlPrefix({
     AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
     AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
+    AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
     AppUpdateMirrorPreset.custom =>
       normalizedCustomUrlPrefix.isEmpty
           ? defaultAppUpdateMirrorUrlPrefix
