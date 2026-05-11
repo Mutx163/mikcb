@@ -24,19 +24,25 @@ import 'live_diagnostics_log_viewer_screen.dart';
 
 enum AboutUpdatePrimaryAction {
   openReleasePage,
-  openDownloadLink,
   downloadInApp,
+  openDownloadLink,
 }
 
 @visibleForTesting
 AboutUpdatePrimaryAction resolveAboutUpdatePrimaryAction({
   required bool isAndroid,
   required String? downloadUrl,
+  required AppUpdateDownloadChannel channel,
 }) {
   final hasDownloadUrl = (downloadUrl ?? '').trim().isNotEmpty;
   if (!hasDownloadUrl) {
     return AboutUpdatePrimaryAction.openReleasePage;
   }
+  // 蒲公英渠道：始终用浏览器打开下载页面
+  if (channel == AppUpdateDownloadChannel.pgyer) {
+    return AboutUpdatePrimaryAction.openDownloadLink;
+  }
+  // GitHub 渠道：Android 应用内下载，其他平台打开链接
   if (isAndroid) {
     return AboutUpdatePrimaryAction.downloadInApp;
   }
@@ -543,6 +549,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   bool _isDownloading = false;
   bool _isCancellingDownload = false;
   bool _isProbingMirrors = false;
+  bool _useSystemDownloader = false;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
   AppUpdateDownloadController? _downloadController;
@@ -572,18 +579,21 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.aboutUpdateScreenTitle),
+        actions: [
+          IconButton(
+            tooltip: l10n.aboutAdvancedOptionsTitle,
+            onPressed: () => _openAdvancedOptions(theme, settings),
+            icon: const Icon(Icons.tune_rounded),
+          ),
+        ],
       ),
       bottomNavigationBar:
           _isDownloading ? _buildDownloadProgressBar(theme) : null,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
           children: [
-            _buildUpdateCard(theme, settings),
-            const SizedBox(height: 16),
-            _buildAdvancedOptionsCard(theme, settings),
-            const SizedBox(height: 16),
-            _buildDiagnosticsCard(theme, settings),
+            Expanded(child: _buildUpdateCard(theme, settings)),
           ],
         ),
       ),
@@ -593,299 +603,79 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Widget _buildUpdateCard(ThemeData theme, TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
-    final downloadSource = AppUpdateDownloadSourceX.fromValue(
-      settings.appUpdateDownloadSource,
-    );
-    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
-      settings.appUpdateMirrorPreset,
-    );
-    final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
-      preset: mirrorPreset,
-      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-    );
-    final probeResultByPreset = {
-      for (final item in _mirrorProbeStates) item.preset: item.result,
-    };
-    final recommendedMirrorPreset =
-        resolveRecommendedMirrorPreset(probeResultByPreset);
+
     return FutureBuilder<AppUpdateCheckResult>(
       future: _updateFuture,
       builder: (context, snapshot) {
         if (widget.packageInfo == null ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return _buildUpdateSectionCard(
-            theme,
-            title: l10n.aboutUpdateStatusTitle,
-            trailing: IconButton(
-              tooltip: l10n.aboutRefreshCheckTooltip,
-              onPressed: widget.packageInfo == null ? null : _refreshUpdate,
-              icon: const Icon(Icons.refresh_rounded),
+          return Card(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                  _UpdateCheckAnimation(colorScheme: colorScheme),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.aboutCheckingLatestVersion,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '正在连接更新服务器...',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            subtitle: l10n.aboutCheckingLatestVersion,
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: LinearProgressIndicator(minHeight: 3),
-            ),
-          );
+          ),
+        );
         }
 
         final result = snapshot.data;
         if (result == null) {
-          return _buildUpdateSectionCard(
-            theme,
-            title: l10n.aboutUpdateStatusTitle,
-            trailing: IconButton(
-              tooltip: l10n.aboutRefreshCheckTooltip,
-              onPressed: widget.packageInfo == null ? null : _refreshUpdate,
-              icon: const Icon(Icons.refresh_rounded),
-            ),
-            subtitle: l10n.aboutReadVersionFailed,
-            child: Text(
-              l10n.aboutReadVersionFailedHint,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.error_outline_rounded,
+                    size: 48,
+                    color: colorScheme.error,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.aboutReadVersionFailed,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.aboutReadVersionFailedHint,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           );
         }
 
-        final release = result.latestRelease;
-        final updateColor = result.hasUpdate
-            ? colorScheme.primary
-            : colorScheme.onSurfaceVariant;
-        final originalDownloadUrl = release?.downloadUrl;
-        final effectiveDownloadUrl = originalDownloadUrl == null
-            ? null
-            : _updateService.buildDownloadUrl(
-                originalUrl: originalDownloadUrl,
-                source: downloadSource,
-                mirrorUrlPrefix: effectiveMirrorUrlPrefix,
-              );
-        final isAndroid = defaultTargetPlatform == TargetPlatform.android;
-        final primaryAction = resolveAboutUpdatePrimaryAction(
-          isAndroid: isAndroid,
-          downloadUrl: effectiveDownloadUrl,
-        );
-        final primaryButtonLabel = switch (primaryAction) {
-          AboutUpdatePrimaryAction.openReleasePage =>
-            l10n.aboutViewReleaseAction,
-          AboutUpdatePrimaryAction.downloadInApp => l10n.aboutDownloadNowAction,
-          AboutUpdatePrimaryAction.openDownloadLink =>
-            l10n.aboutOpenDownloadPageAction,
-        };
-        final primaryButtonIcon = switch (primaryAction) {
-          AboutUpdatePrimaryAction.downloadInApp => Icons.download_rounded,
-          AboutUpdatePrimaryAction.openDownloadLink ||
-          AboutUpdatePrimaryAction.openReleasePage =>
-            Icons.open_in_new_rounded,
-        };
-
         return Column(
           children: [
-            _buildUpdateSectionCard(
-              theme,
-              title: l10n.aboutUpdateStatusTitle,
-              trailing: IconButton(
-                tooltip: l10n.aboutRefreshCheckTooltip,
-                onPressed: widget.packageInfo == null ? null : _refreshUpdate,
-                icon: const Icon(Icons.refresh_rounded),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: updateColor.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      result.message ?? '',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: updateColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildUpdateInfoChip(
-                        theme,
-                        label: l10n.aboutCurrentVersionLabel,
-                        value: result.currentVersion,
-                      ),
-                      _buildUpdateInfoChip(
-                        theme,
-                        label: l10n.aboutLatestVersionLabel,
-                        value: release?.version ?? l10n.aboutUnreleasedLabel,
-                      ),
-                      if (release?.isPrerelease == true)
-                        _buildUpdateInfoChip(
-                          theme,
-                          label: l10n.aboutVersionChannelLabel,
-                          value: l10n.aboutPrereleaseChannel,
-                        ),
-                    ],
-                  ),
-                  if (release != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      result.hasUpdate
-                          ? l10n.aboutUpdateAvailableHint
-                          : l10n.aboutUpdateNoUpdateHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  if (release?.updatedAt != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      l10n.aboutUpdatedAt(_formatDateTime(release!.updatedAt!)),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildUpdateSectionCard(
-              theme,
-              title: l10n.aboutUpdateNowTitle,
-              subtitle: isAndroid
-                  ? l10n.aboutUpdateNowAndroidSubtitle
-                  : l10n.aboutUpdateNowOtherSubtitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      downloadSource == AppUpdateDownloadSource.mirror
-                          ? l10n.aboutMirrorDownloadHint
-                          : l10n.aboutOriginalDownloadHint,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: result.hasRelease
-                        ? (primaryAction ==
-                                    AboutUpdatePrimaryAction.downloadInApp &&
-                                _isDownloading
-                            ? null
-                            : () => _handlePrimaryUpdateAction(
-                                  primaryAction: primaryAction,
-                                  effectiveDownloadUrl: effectiveDownloadUrl,
-                                  releaseUrl: release?.releaseUrl,
-                                ))
-                        : null,
-                    icon: Icon(primaryButtonIcon),
-                    label: Text(primaryButtonLabel),
-                  ),
-                  if (result.hasRelease &&
-                      isAndroid &&
-                      effectiveDownloadUrl != null) ...[
-                    const SizedBox(height: 10),
-                    FilledButton.tonalIcon(
-                      onPressed: _isDownloading
-                          ? null
-                          : () => _enqueueSystemDownload(
-                                url: effectiveDownloadUrl,
-                                version: release?.version,
-                              ),
-                      icon: const Icon(Icons.download_for_offline_rounded),
-                      label: Text(l10n.aboutUseSystemDownloaderAction),
-                    ),
-                  ],
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed: result.hasRelease
-                        ? () => _openUrl(release?.releaseUrl)
-                        : null,
-                    icon: const Icon(Icons.new_releases_outlined),
-                    label: Text(l10n.aboutOpenReleasePageAction),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildUpdateSectionCard(
-              theme,
-              title: l10n.aboutDownloadMethodTitle,
-              subtitle: l10n.aboutDownloadMethodSubtitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SegmentedButton<AppUpdateDownloadSource>(
-                    segments: [
-                      ButtonSegment<AppUpdateDownloadSource>(
-                        value: AppUpdateDownloadSource.mirror,
-                        label: Text(l10n.aboutDownloadMethodMirror),
-                      ),
-                      ButtonSegment<AppUpdateDownloadSource>(
-                        value: AppUpdateDownloadSource.original,
-                        label: Text(l10n.aboutDownloadMethodOriginal),
-                      ),
-                    ],
-                    selected: {downloadSource},
-                    onSelectionChanged: (selection) {
-                      final nextSource = selection.first;
-                      _updateDownloadSource(nextSource);
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      downloadSource == AppUpdateDownloadSource.mirror
-                          ? recommendedMirrorPreset != null &&
-                                  recommendedMirrorPreset != mirrorPreset
-                              ? l10n.aboutMirrorModeHintRecommended(
-                                  mirrorPreset.label,
-                                  recommendedMirrorPreset.label)
-                              : l10n.aboutMirrorModeHintCurrent(
-                                  mirrorPreset.label)
-                          : l10n.aboutOriginalModeHint,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if ((release?.body ?? '').isNotEmpty) ...[
+            _buildStatusCard(theme, result),
+            if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
               const SizedBox(height: 16),
-              _buildUpdateSectionCard(
-                theme,
-                title: l10n.aboutReleaseNotesTitle,
-                subtitle: l10n.aboutReleaseNotesSubtitle,
-                child: ReleaseNotesMarkdown(
-                  data: release!.body.trim(),
-                  onTapLink: _openUrl,
-                ),
-              ),
+              _buildNotesCard(theme, result),
             ],
           ],
         );
@@ -893,12 +683,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
-  Widget _buildAdvancedOptionsCard(
-    ThemeData theme,
-    TimetableSettings settings,
-  ) {
+  Widget _buildStatusCard(ThemeData theme, AppUpdateCheckResult result) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
+    final release = result.latestRelease;
+    final settings = context.read<TimetableProvider>().settings;
+    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
     final downloadSource = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
     );
@@ -909,283 +701,337 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       preset: mirrorPreset,
       customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
     );
-    final probeResultByPreset = {
-      for (final item in _mirrorProbeStates) item.preset: item.result,
+    final effectiveDownloadUrl = _updateService.getEffectiveDownloadUrl(
+      release: release,
+      channel: downloadChannel,
+      source: downloadSource,
+      mirrorUrlPrefix: effectiveMirrorUrlPrefix,
+    );
+    final isAndroid = defaultTargetPlatform == TargetPlatform.android;
+    final primaryAction = resolveAboutUpdatePrimaryAction(
+      isAndroid: isAndroid,
+      downloadUrl: effectiveDownloadUrl,
+      channel: downloadChannel,
+    );
+    final primaryButtonLabel = switch (primaryAction) {
+      AboutUpdatePrimaryAction.openReleasePage =>
+        l10n.aboutViewReleaseAction,
+      AboutUpdatePrimaryAction.downloadInApp => l10n.aboutDownloadNowAction,
+      AboutUpdatePrimaryAction.openDownloadLink =>
+        l10n.aboutOpenDownloadPageAction,
     };
-    final recommendedMirrorPreset =
-        resolveRecommendedMirrorPreset(probeResultByPreset);
+    final primaryButtonIcon = switch (primaryAction) {
+      AboutUpdatePrimaryAction.downloadInApp => Icons.download_rounded,
+      AboutUpdatePrimaryAction.openDownloadLink ||
+      AboutUpdatePrimaryAction.openReleasePage => Icons.open_in_new_rounded,
+    };
+    final statusColor = result.hasUpdate ? colorScheme.primary : Colors.green;
+    final statusIcon =
+        result.hasUpdate ? Icons.system_update_rounded : Icons.check_circle;
 
-    return FutureBuilder<AppUpdateCheckResult>(
-      future: _updateFuture,
-      builder: (context, snapshot) {
-        final originalDownloadUrl = snapshot.data?.latestRelease?.downloadUrl;
-        return Card(
-          child: Theme(
-            data: theme.copyWith(dividerColor: Colors.transparent),
-            child: ExpansionTile(
-              maintainState: true,
-              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              title: Text(
-                l10n.aboutAdvancedOptionsTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          children: [
+            // 居中状态图标
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
               ),
-              subtitle: Text(
-                l10n.aboutAdvancedOptionsSubtitle,
+              child: Icon(statusIcon, size: 32, color: statusColor),
+            ),
+            const SizedBox(height: 16),
+            // 状态标题
+            Text(
+              result.hasUpdate ? '有版本更新' : '已是最新版本',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            // 更新时间
+            if (release?.updatedAt != null)
+              Text(
+                l10n.aboutUpdatedAt(_formatDateTime(release!.updatedAt!)),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
+            const SizedBox(height: 20),
+            // 版本对比信息
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.aboutMirrorSectionTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  downloadSource == AppUpdateDownloadSource.mirror
-                      ? l10n.aboutMirrorSectionMirrorHint
-                      : l10n.aboutMirrorSectionOriginalHint,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (downloadSource == AppUpdateDownloadSource.mirror) ...[
-                  ...AppUpdateMirrorPreset.values.map(
-                    (preset) => _buildMirrorPresetTile(
-                      theme,
-                      settings: settings,
-                      preset: preset,
-                      currentPreset: mirrorPreset,
-                      recommendedPreset: recommendedMirrorPreset,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          mirrorPreset.usesCustomUrl
-                              ? l10n.aboutCurrentCustomMirrorTitle
-                              : l10n.aboutCurrentMirrorTitle,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SelectableText(
-                          effectiveMirrorUrlPrefix,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          mirrorPreset.usesCustomUrl
-                              ? l10n.aboutCurrentCustomMirrorHint
-                              : l10n.aboutCurrentMirrorHint,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed:
-                            originalDownloadUrl == null || _isProbingMirrors
-                                ? null
-                                : () => _probeAndRecommendMirrors(
-                                      originalDownloadUrl,
-                                      customMirrorUrlPrefix:
-                                          settings.appUpdateMirrorUrlPrefix,
-                                    ),
-                        icon: Icon(
-                          _isProbingMirrors
-                              ? Icons.hourglass_top_rounded
-                              : Icons.speed_rounded,
-                        ),
-                        label: Text(
-                          _isProbingMirrors
-                              ? l10n.aboutProbingMirrors
-                              : l10n.aboutProbeMirrorsAction,
-                        ),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: _editMirrorUrlPrefix,
-                        icon: const Icon(Icons.edit_outlined),
-                        label: Text(
-                          mirrorPreset.usesCustomUrl
-                              ? l10n.aboutEditCustomMirrorAction
-                              : l10n.aboutSetCustomMirrorAction,
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      l10n.aboutMirrorDisabledHint,
-                      style: theme.textTheme.bodyMedium?.copyWith(
+                Column(
+                  children: [
+                    Text(
+                      l10n.aboutCurrentVersionLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
                     ),
-                  ),
-                ],
-                SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  value: settings.appUpdateIncludePrerelease,
-                  onChanged: widget.packageInfo == null
-                      ? null
-                      : (value) => _updatePrereleasePreference(value),
-                  title: Text(l10n.aboutCheckPrereleaseTitle),
-                  subtitle: Text(l10n.aboutCheckPrereleaseSubtitle),
+                    const SizedBox(height: 4),
+                    Text(
+                      result.currentVersion,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(height: 24),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '更新日志',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    width: 1,
+                    height: 32,
+                    color: colorScheme.outlineVariant,
+                  ),
+                ),
+                Column(
+                  children: [
+                    Text(
+                      l10n.aboutLatestVersionLabel,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      release?.version ?? l10n.aboutUnreleasedLabel,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontFamily: 'monospace',
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // 主要操作按钮
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: result.hasRelease
+                    ? () {
+                        if (primaryAction == AboutUpdatePrimaryAction.openReleasePage) {
+                          _openUrl(release?.releaseUrl);
+                        } else if (downloadChannel == AppUpdateDownloadChannel.pgyer) {
+                          // 蒲公英渠道：用浏览器打开下载页面
+                          _openUrl(effectiveDownloadUrl);
+                        } else if (effectiveDownloadUrl != null) {
+                          // GitHub 渠道：应用内下载或系统管理器
+                          if (_useSystemDownloader) {
+                            _enqueueSystemDownload(
+                              url: effectiveDownloadUrl,
+                              version: release?.version,
+                            );
+                          } else {
+                            _downloadAndInstall(effectiveDownloadUrl);
+                          }
+                        }
+                      }
+                    : null,
+                icon: Icon(_isDownloading
+                    ? Icons.cancel_rounded
+                    : primaryButtonIcon),
+                label: Text(_isDownloading
+                    ? l10n.aboutDownloadCancelling
+                    : primaryButtonLabel),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            // 次要操作按钮
+            if (primaryAction != AboutUpdatePrimaryAction.openReleasePage &&
+                result.hasRelease) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openUrl(release?.releaseUrl),
+                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                  label: Text(l10n.aboutViewReleaseAction),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                _buildUpdateLogsArea(theme, colorScheme),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildUpdateLogsArea(ThemeData theme, ColorScheme colorScheme) {
-    final logs = _updateService.logs;
-    if (logs.isEmpty) {
-      return Text(
-        '暂无日志',
-        style: theme.textTheme.bodySmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-        ),
-      );
-    }
-    return SizedBox(
-      height: 160,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: ListView.builder(
-          itemCount: logs.length,
-          itemBuilder: (_, i) {
-            final log = logs[i];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 3),
-              child: Text(
-                '[${log.timeString}] ${log.message}',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  color: colorScheme.onSurfaceVariant,
-                ),
               ),
-            );
-          },
+            ],
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDiagnosticsCard(
-    ThemeData theme,
-    TimetableSettings settings,
-  ) {
+  Widget _buildNotesCard(ThemeData theme, AppUpdateCheckResult result) {
     final l10n = AppLocalizations.of(context)!;
+    final colorScheme = theme.colorScheme;
     return Card(
-      child: Theme(
-        data: theme.copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          maintainState: true,
-          tilePadding: const EdgeInsets.symmetric(horizontal: 16),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          title: Text(
-            l10n.aboutDiagnosticsTitle,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          subtitle: Text(
-            l10n.aboutDiagnosticsSubtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              value: settings.liveEnableLocalDiagnostics,
-              onChanged: widget.packageInfo == null
-                  ? null
-                  : (value) => _updateLiveDiagnosticsPreference(value),
-              title: Text(l10n.aboutRecordDiagnosticsTitle),
-              subtitle: Text(l10n.aboutRecordDiagnosticsSubtitle),
+            Row(
+              children: [
+                Icon(Icons.update_rounded,
+                    size: 18, color: colorScheme.primary),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.aboutReleaseNotesTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
-            if (settings.liveEnableLocalDiagnostics) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  FilledButton.tonalIcon(
-                    onPressed: _exportLiveDiagnostics,
-                    icon: const Icon(Icons.ios_share_rounded),
-                    label: Text(l10n.aboutExportDiagnosticsAction),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _openLiveDiagnosticsViewer,
-                    icon: const Icon(Icons.article_outlined),
-                    label: Text(l10n.aboutViewPhoneLogsAction),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: _clearLiveDiagnostics,
-                    icon: const Icon(Icons.restart_alt_rounded),
-                    label: Text(l10n.aboutClearAndRecollectAction),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerLow,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: ReleaseNotesMarkdown(
+                data: result.latestRelease!.body.trim(),
+                onTapLink: _openUrl,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDownloadMethodTab(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '应用内下载',
+              isSelected: !_useSystemDownloader,
+              onTap: () => setState(() => _useSystemDownloader = false),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '系统管理器',
+              isSelected: _useSystemDownloader,
+              onTap: () => setState(() => _useSystemDownloader = true),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadChannelTab(ThemeData theme, TimetableSettings settings) {
+    final colorScheme = theme.colorScheme;
+    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '蒲公英下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: 'GitHub 下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.github,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.github),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggle(
+    ThemeData theme, {
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return GestureDetector(
+      onTap: onChanged == null ? null : () => onChanged(!value),
+      child: Container(
+        width: 52,
+        height: 30,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: value ? colorScheme.primary : colorScheme.surfaceContainerHigh,
+          border: Border.all(
+            color: value ? colorScheme.primary : colorScheme.outlineVariant,
+            width: 1.5,
+          ),
+        ),
+        child: Align(
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    value ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
-            ],
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -1219,6 +1065,27 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  void _openAdvancedOptions(ThemeData theme, TimetableSettings settings) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => _AdvancedOptionsScreen(
+          theme: theme,
+          settings: settings,
+          packageInfo: widget.packageInfo,
+          updateService: _updateService,
+          analytics: _analytics,
+          updateFuture: _updateFuture,
+          mirrorProbeStates: _mirrorProbeStates,
+          isDownloading: _isDownloading,
+          useSystemDownloader: _useSystemDownloader,
+          onUseSystemDownloaderChanged: (value) {
+            setState(() => _useSystemDownloader = value);
+          },
+        ),
+      ),
+    );
+  }
+
   void _refreshUpdate() {
     if (widget.packageInfo == null) {
       return;
@@ -1241,6 +1108,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         includePrerelease: settings.appUpdateIncludePrerelease,
         preferredSource: downloadSource,
         mirrorUrlPrefix: effectiveMirrorUrlPrefix,
+        pgyerApiKey: settings.pgyerApiKey,
+        pgyerAppKey: settings.pgyerAppKey,
       );
     });
   }
@@ -1385,6 +1254,30 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
   }
 
+  Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateDownloadChannel: channel.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } else {
+      _analytics.logEventLater(
+        name: 'update_channel_changed',
+        parameters: {
+          'channel': channel.value,
+        },
+      );
+    }
+  }
+
   Future<void> _updateMirrorPreset(AppUpdateMirrorPreset preset) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
@@ -1428,158 +1321,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     await _updateMirrorPreset(preset);
-  }
-
-  Widget _buildMirrorStatusBadge(
-    ThemeData theme, {
-    required String label,
-    required Color backgroundColor,
-    required Color foregroundColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: foregroundColor,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMirrorPresetTile(
-    ThemeData theme, {
-    required TimetableSettings settings,
-    required AppUpdateMirrorPreset preset,
-    required AppUpdateMirrorPreset currentPreset,
-    required AppUpdateMirrorPreset? recommendedPreset,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
-    final probeState = _findMirrorProbeState(preset);
-    final isSelected = currentPreset == preset;
-    final isRecommended =
-        recommendedPreset == preset && probeState?.result.isSuccess == true;
-    final subtitleText =
-        preset.usesCustomUrl && settings.appUpdateMirrorUrlPrefix.trim().isEmpty
-            ? l10n.aboutFillCustomMirrorFirst
-            : (preset.usesCustomUrl
-                ? resolveAppUpdateMirrorUrlPrefix(
-                    preset: preset,
-                    customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-                  )
-                : preset.description);
-    final statusText = probeState == null
-        ? null
-        : probeState.result.isSuccess
-            ? '${probeState.result.elapsed.inMilliseconds} ms'
-            : (probeState.result.message ?? l10n.aboutUnavailable);
-    final statusColor = probeState == null
-        ? colorScheme.onSurfaceVariant
-        : probeState.result.isSuccess
-            ? colorScheme.primary
-            : colorScheme.error;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: isSelected
-            ? colorScheme.primaryContainer
-            : colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => _handleMirrorPresetTap(preset, settings),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
-            child: RadioGroup<AppUpdateMirrorPreset>(
-              groupValue: currentPreset,
-              onChanged: (value) {
-                if (value == null) return;
-                _handleMirrorPresetTap(value, settings);
-              },
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Radio<AppUpdateMirrorPreset>(value: preset),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(
-                              preset.label,
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            if (isSelected)
-                              _buildMirrorStatusBadge(
-                                theme,
-                                label: l10n.schemeListCurrentLabel,
-                                backgroundColor: colorScheme.primary,
-                                foregroundColor: colorScheme.onPrimary,
-                              ),
-                            if (isRecommended)
-                              _buildMirrorStatusBadge(
-                                theme,
-                                label: l10n.aboutRecommended,
-                                backgroundColor: colorScheme.secondaryContainer,
-                                foregroundColor:
-                                    colorScheme.onSecondaryContainer,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          subtitleText,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        if (statusText != null) ...[
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Icon(
-                                probeState!.result.isSuccess
-                                    ? Icons.speed_rounded
-                                    : Icons.error_outline_rounded,
-                                size: 16,
-                                color: statusColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  statusText,
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: statusColor,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   List<MapEntry<AppUpdateMirrorPreset, String>> _buildMirrorPresetCandidates(
@@ -1966,83 +1707,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     return '$year-$month-$day $hour:$minute';
   }
 
-  Widget _buildUpdateInfoChip(
-    ThemeData theme, {
-    required String label,
-    required String value,
-  }) {
-    final colorScheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpdateSectionCard(
-    ThemeData theme, {
-    required String title,
-    String? subtitle,
-    Widget? trailing,
-    required Widget child,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                if (trailing != null) trailing,
-              ],
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                subtitle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
-
   String? _normalizeMirrorUrlPrefix(String input) {
     final value = input.trim();
     if (value.isEmpty) {
@@ -2142,6 +1806,1028 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return '${(bytes / 1024).toStringAsFixed(1)} KB';
     }
     return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
+class _UpdateCheckAnimation extends StatefulWidget {
+  final ColorScheme colorScheme;
+
+  const _UpdateCheckAnimation({required this.colorScheme});
+
+  @override
+  State<_UpdateCheckAnimation> createState() => _UpdateCheckAnimationState();
+}
+
+class _UpdateCheckAnimationState extends State<_UpdateCheckAnimation>
+    with TickerProviderStateMixin {
+  late final AnimationController _rotationController;
+  late final AnimationController _pulseController;
+  late final AnimationController _arcController;
+  late final Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+
+    _arcController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    )..repeat();
+
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _pulseController.dispose();
+    _arcController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = widget.colorScheme;
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 外圈脉冲效果
+          AnimatedBuilder(
+            animation: _pulseAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: _pulseAnimation.value,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: colorScheme.primary.withValues(alpha: 0.08),
+                  ),
+                ),
+              );
+            },
+          ),
+          // 旋转的弧形
+          AnimatedBuilder(
+            animation: _arcController,
+            builder: (context, child) {
+              return CustomPaint(
+                size: const Size(64, 64),
+                painter: _ArcPainter(
+                  color: colorScheme.primary,
+                  animationValue: _arcController.value,
+                ),
+              );
+            },
+          ),
+          // 中心图标
+          AnimatedBuilder(
+            animation: _rotationController,
+            builder: (context, child) {
+              return Transform.rotate(
+                angle: _rotationController.value * 2 * 3.14159,
+                child: Icon(
+                  Icons.sync_rounded,
+                  size: 28,
+                  color: colorScheme.primary,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ArcPainter extends CustomPainter {
+  final Color color;
+  final double animationValue;
+
+  _ArcPainter({required this.color, required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final startAngle = animationValue * 2 * 3.14159;
+    const sweepAngle = 3.14159 * 0.8; // 约 144 度的弧
+
+    final paint = Paint()
+      ..color = color.withValues(alpha: 0.6)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
+
+    // 第二条较短的弧
+    final paint2 = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawArc(
+      rect,
+      startAngle + 3.14159,
+      sweepAngle * 0.6,
+      false,
+      paint2,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ArcPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
+  }
+}
+
+class _SegmentedTabButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+  final Color selectedColor;
+  final Color selectedTextColor;
+  final Color unselectedTextColor;
+
+  const _SegmentedTabButton({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+    required this.selectedColor,
+    required this.selectedTextColor,
+    required this.unselectedTextColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedColor : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: selectedColor.withValues(alpha: 0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ]
+              : null,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? selectedTextColor : unselectedTextColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdvancedOptionsScreen extends StatefulWidget {
+  final ThemeData theme;
+  final TimetableSettings settings;
+  final PackageInfo? packageInfo;
+  final AppUpdateService updateService;
+  final AppAnalytics analytics;
+  final Future<AppUpdateCheckResult>? updateFuture;
+  final List<_MirrorProbeState> mirrorProbeStates;
+  final bool isDownloading;
+  final bool useSystemDownloader;
+  final ValueChanged<bool> onUseSystemDownloaderChanged;
+
+  const _AdvancedOptionsScreen({
+    required this.theme,
+    required this.settings,
+    required this.packageInfo,
+    required this.updateService,
+    required this.analytics,
+    required this.updateFuture,
+    required this.mirrorProbeStates,
+    required this.isDownloading,
+    required this.useSystemDownloader,
+    required this.onUseSystemDownloaderChanged,
+  });
+
+  @override
+  State<_AdvancedOptionsScreen> createState() => _AdvancedOptionsScreenState();
+}
+
+class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
+  bool _isProbingMirrors = false;
+  List<_MirrorProbeState> _mirrorProbeStates = const [];
+  late bool _useSystemDownloader;
+
+  @override
+  void initState() {
+    super.initState();
+    _mirrorProbeStates = widget.mirrorProbeStates;
+    _useSystemDownloader = widget.useSystemDownloader;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = widget.theme;
+    final settings = context.select<TimetableProvider, TimetableSettings>((p) => p.settings);
+    final colorScheme = theme.colorScheme;
+    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    final downloadSource = AppUpdateDownloadSourceX.fromValue(
+      settings.appUpdateDownloadSource,
+    );
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final probeResultByPreset = {
+      for (final item in _mirrorProbeStates) item.preset: item.result,
+    };
+    final recommendedMirrorPreset =
+        resolveRecommendedMirrorPreset(probeResultByPreset);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.aboutAdvancedOptionsTitle),
+      ),
+      body: FutureBuilder<AppUpdateCheckResult>(
+        future: widget.updateFuture,
+        builder: (context, snapshot) {
+          final result = snapshot.data;
+          final release = result?.latestRelease;
+          final originalDownloadUrl = release?.downloadUrl;
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            children: [
+              // 下载设置卡片
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 下载渠道切换
+                      Text(
+                        '下载渠道',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '蒲公英国内高速下载，GitHub 支持镜像加速',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildDownloadChannelTab(theme, settings),
+                      const SizedBox(height: 16),
+                      // 下载方式切换
+                      Text(
+                        '下载安装包方式',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '选择应用内直接下载或系统下载管理器',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildDownloadMethodTab(theme),
+                      // 检测测试版本
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.aboutCheckPrereleaseTitle,
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    l10n.aboutCheckPrereleaseSubtitle,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            _buildToggle(
+                              theme,
+                              value: settings.appUpdateIncludePrerelease,
+                              onChanged: widget.packageInfo == null
+                                  ? null
+                                  : (value) => _updatePrereleasePreference(value),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              // 镜像设置卡片（仅 GitHub 渠道）
+              if (downloadChannel == AppUpdateDownloadChannel.github &&
+                  downloadSource == AppUpdateDownloadSource.mirror)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.aboutMirrorSectionTitle,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        ...AppUpdateMirrorPreset.values.map(
+                          (preset) => _buildMirrorRadioTile(
+                            theme,
+                            preset: preset,
+                            currentPreset: mirrorPreset,
+                            recommendedPreset: recommendedMirrorPreset,
+                            onTap: () => _handleMirrorPresetTap(preset, settings),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: originalDownloadUrl == null ||
+                                        _isProbingMirrors
+                                    ? null
+                                    : () => _probeAndRecommendMirrors(
+                                          originalDownloadUrl,
+                                          customMirrorUrlPrefix:
+                                              settings.appUpdateMirrorUrlPrefix,
+                                        ),
+                                icon: Icon(
+                                  _isProbingMirrors
+                                      ? Icons.hourglass_top_rounded
+                                      : Icons.speed_rounded,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  _isProbingMirrors
+                                      ? l10n.aboutProbingMirrors
+                                      : l10n.aboutProbeMirrorsAction,
+                                ),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FilledButton.tonalIcon(
+                                onPressed: _editMirrorUrlPrefix,
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                label: Text(
+                                  mirrorPreset.usesCustomUrl
+                                      ? l10n.aboutEditCustomMirrorAction
+                                      : l10n.aboutSetCustomMirrorAction,
+                                ),
+                                style: FilledButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              if (downloadChannel == AppUpdateDownloadChannel.github &&
+                  downloadSource == AppUpdateDownloadSource.mirror)
+                const SizedBox(height: 16),
+              // 诊断设置卡片
+              _buildDiagnosticsCard(theme, settings),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDownloadChannelTab(ThemeData theme, TimetableSettings settings) {
+    final colorScheme = theme.colorScheme;
+    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '蒲公英下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: 'GitHub 下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.github,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.github),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadMethodTab(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '应用内下载',
+              isSelected: !_useSystemDownloader,
+              onTap: () {
+                setState(() => _useSystemDownloader = false);
+                widget.onUseSystemDownloaderChanged(false);
+              },
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '系统管理器',
+              isSelected: _useSystemDownloader,
+              onTap: () {
+                setState(() => _useSystemDownloader = true);
+                widget.onUseSystemDownloaderChanged(true);
+              },
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggle(
+    ThemeData theme, {
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return GestureDetector(
+      onTap: onChanged == null ? null : () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 48,
+        height: 28,
+        decoration: BoxDecoration(
+          color: onChanged == null
+              ? colorScheme.surfaceContainerHighest
+              : value
+                  ? colorScheme.primary
+                  : colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: value ? 22 : 2,
+              top: 2,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: onChanged == null
+                      ? colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+                      : value
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurfaceVariant,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMirrorRadioTile(
+    ThemeData theme, {
+    required AppUpdateMirrorPreset preset,
+    required AppUpdateMirrorPreset currentPreset,
+    required AppUpdateMirrorPreset? recommendedPreset,
+    required VoidCallback onTap,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = theme.colorScheme;
+    final probeState = _mirrorProbeStates.where((s) => s.preset == preset).firstOrNull;
+    final isSelected = currentPreset == preset;
+    final isRecommended =
+        recommendedPreset == preset && probeState?.result.isSuccess == true;
+    final settings = context.read<TimetableProvider>().settings;
+    final subtitleText = preset.usesCustomUrl &&
+            settings.appUpdateMirrorUrlPrefix.trim().isEmpty
+        ? l10n.aboutFillCustomMirrorFirst
+        : (preset.usesCustomUrl
+            ? resolveAppUpdateMirrorUrlPrefix(
+                preset: preset,
+                customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+              )
+            : preset.description);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isSelected
+            ? colorScheme.primaryContainer
+            : colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected
+                          ? colorScheme.primary
+                          : colorScheme.outline,
+                      width: 2,
+                    ),
+                  ),
+                  child: isSelected
+                      ? Center(
+                          child: Container(
+                            width: 10,
+                            height: 10,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        )
+                      : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              preset.label,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isRecommended) ...[
+                            const SizedBox(width: 6),
+                            _MirrorBadge(
+                              label: l10n.aboutRecommended,
+                              backgroundColor: colorScheme.primaryContainer,
+                              foregroundColor: colorScheme.onPrimaryContainer,
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitleText,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (probeState != null) ...[
+                  const SizedBox(width: 8),
+                  _buildMirrorProbeStatusChip(theme, probeState.result),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMirrorProbeStatusChip(
+    ThemeData theme,
+    AppUpdateDownloadProbeResult result,
+  ) {
+    final colorScheme = theme.colorScheme;
+    final (label, background, foreground) = switch (result) {
+      AppUpdateDownloadProbeResult(isSuccess: true, :final elapsed) =>
+        (
+          '${elapsed.inMilliseconds}ms',
+          Colors.green.withValues(alpha: 0.12),
+          Colors.green,
+        ),
+      AppUpdateDownloadProbeResult(isSuccess: false) =>
+        (
+          '失败',
+          colorScheme.errorContainer,
+          colorScheme.onErrorContainer,
+        ),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: foreground,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDiagnosticsCard(
+    ThemeData theme,
+    TimetableSettings settings,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = theme.colorScheme;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.aboutDiagnosticsTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            Text(
+              l10n.aboutDiagnosticsSubtitle,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          l10n.aboutRecordDiagnosticsTitle,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          l10n.aboutRecordDiagnosticsSubtitle,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _buildToggle(
+                    theme,
+                    value: settings.liveEnableLocalDiagnostics,
+                    onChanged: widget.packageInfo == null
+                        ? null
+                        : (value) => _updateLiveDiagnosticsPreference(value),
+                  ),
+                ],
+              ),
+            ),
+            if (settings.liveEnableLocalDiagnostics) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: _exportLiveDiagnostics,
+                    icon: const Icon(Icons.ios_share_rounded),
+                    label: Text(l10n.aboutExportDiagnosticsAction),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: _openLiveDiagnosticsViewer,
+                    icon: const Icon(Icons.article_outlined),
+                    label: Text(l10n.aboutViewPhoneLogsAction),
+                  ),
+                  FilledButton.tonalIcon(
+                    onPressed: _clearLiveDiagnostics,
+                    icon: const Icon(Icons.restart_alt_rounded),
+                    label: Text(l10n.aboutClearAndRecollectAction),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateDownloadChannel: channel.value,
+      ),
+    );
+    if (!mounted) return;
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _updatePrereleasePreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateIncludePrerelease: value,
+      ),
+    );
+    if (!mounted) return;
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableLocalDiagnostics: value,
+      ),
+    );
+    if (!mounted) return;
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _handleMirrorPresetTap(
+    AppUpdateMirrorPreset preset,
+    TimetableSettings settings,
+  ) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorPreset: preset.value,
+      ),
+    );
+    if (!mounted) return;
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _probeAndRecommendMirrors(
+    String originalDownloadUrl, {
+    String? customMirrorUrlPrefix,
+  }) async {
+    setState(() => _isProbingMirrors = true);
+    try {
+      final candidates = <MapEntry<AppUpdateMirrorPreset, String>>[
+        MapEntry(
+          AppUpdateMirrorPreset.ghfast,
+          resolveAppUpdateMirrorUrlPrefix(
+            preset: AppUpdateMirrorPreset.ghfast,
+            customUrlPrefix: customMirrorUrlPrefix ?? '',
+          ),
+        ),
+        MapEntry(
+          AppUpdateMirrorPreset.ghproxyCn,
+          resolveAppUpdateMirrorUrlPrefix(
+            preset: AppUpdateMirrorPreset.ghproxyCn,
+            customUrlPrefix: customMirrorUrlPrefix ?? '',
+          ),
+        ),
+        MapEntry(
+          AppUpdateMirrorPreset.ghLlkk,
+          resolveAppUpdateMirrorUrlPrefix(
+            preset: AppUpdateMirrorPreset.ghLlkk,
+            customUrlPrefix: customMirrorUrlPrefix ?? '',
+          ),
+        ),
+      ];
+
+      final results = await Future.wait(
+        candidates.map((candidate) async {
+          final probeUrl = widget.updateService.buildDownloadUrl(
+            originalUrl: originalDownloadUrl,
+            source: AppUpdateDownloadSource.mirror,
+            mirrorUrlPrefix: candidate.value,
+          );
+          final probeResult = await widget.updateService.probeDownloadUrl(probeUrl);
+          return _MirrorProbeState(
+            preset: candidate.key,
+            prefix: candidate.value,
+            result: probeResult,
+          );
+        }),
+      );
+
+      if (!mounted) return;
+      setState(() => _mirrorProbeStates = results);
+      final recommended = resolveRecommendedMirrorPreset({
+        for (final item in results) item.preset: item.result,
+      });
+      if (recommended != null) {
+        final provider = context.read<TimetableProvider>();
+        await provider.updateTimetableSettings(
+          provider.settings.copyWith(
+            appUpdateMirrorPreset: recommended.value,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isProbingMirrors = false);
+    }
+  }
+
+  Future<void> _editMirrorUrlPrefix() async {
+    final l10n = AppLocalizations.of(context)!;
+    final settings = context.read<TimetableProvider>().settings;
+    final controller =
+        TextEditingController(text: settings.appUpdateMirrorUrlPrefix);
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.aboutSetMirrorSourceTitle),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            labelText: l10n.aboutMirrorPrefixLabel,
+            hintText: 'https://ghfast.top/',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(AppLocalizations.of(context)!.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, controller.text),
+            child: Text(AppLocalizations.of(context)!.saveAction),
+          ),
+        ],
+      ),
+    );
+    if (result == null) return;
+    final provider = context.read<TimetableProvider>();
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorUrlPrefix: result,
+      ),
+    );
+  }
+
+  Future<void> _exportLiveDiagnostics() async {
+    // TODO: 实现导出诊断
+  }
+
+  Future<void> _openLiveDiagnosticsViewer() async {
+    // TODO: 实现查看日志
+  }
+
+  Future<void> _clearLiveDiagnostics() async {
+    // TODO: 实现清除诊断
+  }
+}
+
+class _MirrorBadge extends StatelessWidget {
+  final String label;
+  final Color backgroundColor;
+  final Color foregroundColor;
+
+  const _MirrorBadge({
+    required this.label,
+    required this.backgroundColor,
+    required this.foregroundColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: foregroundColor,
+        ),
+      ),
+    );
   }
 }
 

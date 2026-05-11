@@ -9,6 +9,7 @@ void main() {
       resolveAboutUpdatePrimaryAction(
         isAndroid: true,
         downloadUrl: 'https://example.com/app.apk',
+        channel: AppUpdateDownloadChannel.github,
       ),
       AboutUpdatePrimaryAction.downloadInApp,
     );
@@ -19,6 +20,7 @@ void main() {
       resolveAboutUpdatePrimaryAction(
         isAndroid: true,
         downloadUrl: 'https://github.com/example/app.apk',
+        channel: AppUpdateDownloadChannel.github,
       ),
       AboutUpdatePrimaryAction.downloadInApp,
     );
@@ -29,6 +31,7 @@ void main() {
       resolveAboutUpdatePrimaryAction(
         isAndroid: false,
         downloadUrl: 'https://github.com/example/app.apk',
+        channel: AppUpdateDownloadChannel.github,
       ),
       AboutUpdatePrimaryAction.openDownloadLink,
     );
@@ -39,8 +42,20 @@ void main() {
       resolveAboutUpdatePrimaryAction(
         isAndroid: true,
         downloadUrl: null,
+        channel: AppUpdateDownloadChannel.github,
       ),
       AboutUpdatePrimaryAction.openReleasePage,
+    );
+  });
+
+  test('pgyer channel always opens download link in browser', () {
+    expect(
+      resolveAboutUpdatePrimaryAction(
+        isAndroid: true,
+        downloadUrl: 'https://www.pgyer.com/app',
+        channel: AppUpdateDownloadChannel.pgyer,
+      ),
+      AboutUpdatePrimaryAction.openDownloadLink,
     );
   });
 
