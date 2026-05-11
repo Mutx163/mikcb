@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element, unused_field
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -548,6 +550,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<AppUpdateCheckResult>? _updateFuture;
   bool _isDownloading = false;
   bool _isCancellingDownload = false;
+  bool _isProbingMirrors = false;
   bool _useSystemDownloader = false;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
@@ -911,8 +914,150 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildDownloadMethodTab(ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '应用内下载',
+              isSelected: !_useSystemDownloader,
+              onTap: () => setState(() => _useSystemDownloader = false),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '系统管理器',
+              isSelected: _useSystemDownloader,
+              onTap: () => setState(() => _useSystemDownloader = true),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildDownloadChannelTab(ThemeData theme, TimetableSettings settings) {
+    final colorScheme = theme.colorScheme;
+    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
+      settings.appUpdateDownloadChannel,
+    );
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      padding: const EdgeInsets.all(4),
+      child: Row(
+        children: [
+          Expanded(
+            child: _SegmentedTabButton(
+              label: '蒲公英下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: _SegmentedTabButton(
+              label: 'GitHub 下载',
+              isSelected: downloadChannel == AppUpdateDownloadChannel.github,
+              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.github),
+              selectedColor: colorScheme.primary,
+              selectedTextColor: colorScheme.onPrimary,
+              unselectedTextColor: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggle(
+    ThemeData theme, {
+    required bool value,
+    required ValueChanged<bool>? onChanged,
+  }) {
+    final colorScheme = theme.colorScheme;
+    return GestureDetector(
+      onTap: onChanged == null ? null : () => onChanged(!value),
+      child: Container(
+        width: 52,
+        height: 30,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          color: value ? colorScheme.primary : colorScheme.surfaceContainerHigh,
+          border: Border.all(
+            color: value ? colorScheme.primary : colorScheme.outlineVariant,
+            width: 1.5,
+          ),
+        ),
+        child: Align(
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color:
+                    value ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _handlePrimaryUpdateAction({
+    required AboutUpdatePrimaryAction primaryAction,
+    required String? effectiveDownloadUrl,
+    required String? releaseUrl,
+  }) {
+    switch (primaryAction) {
+      case AboutUpdatePrimaryAction.downloadInApp:
+        if ((effectiveDownloadUrl ?? '').isNotEmpty) {
+          _downloadAndInstall(effectiveDownloadUrl!);
+        }
+        break;
+      case AboutUpdatePrimaryAction.openDownloadLink:
+        _openUrl(effectiveDownloadUrl);
+        break;
+      case AboutUpdatePrimaryAction.openReleasePage:
+        _openUrl(releaseUrl);
+        break;
+    }
+  }
 
   Future<void> _openUrl(String? url) async {
     final uri = Uri.tryParse(url ?? '');
@@ -971,7 +1116,341 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     });
   }
 
+  Future<void> _updatePrereleasePreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateIncludePrerelease: value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    _analytics.logEventLater(
+      name: 'update_prerelease_toggled',
+      parameters: {'enabled': value},
+    );
+    _refreshUpdate();
+  }
 
+  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableLocalDiagnostics: value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value
+            ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
+            : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled),
+      ),
+    );
+  }
+
+  Future<void> _openLiveDiagnosticsViewer() async {
+    final settings = context.read<TimetableProvider>().settings;
+    final nativeRawLog =
+        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final rawLog = await AppLogService.instance.readMergedLogsText(
+      nativeRawLog: nativeRawLog,
+    );
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LiveDiagnosticsLogViewerScreen(
+          title: AppLocalizations.of(context)!.aboutAppLogsTitle,
+          rawLog: rawLog,
+          isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+          onExport: _exportLiveDiagnostics,
+          onClear: _clearLiveDiagnostics,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exportLiveDiagnostics([String? _]) async {
+    final nativeRawLog =
+        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final path = await AppLogService.instance.exportMergedLogsFile(
+      nativeRawLog: nativeRawLog,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (path == null || path.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(
+                AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet)),
+      );
+      return;
+    }
+
+    await Share.shareXFiles(
+      [XFile(path)],
+      text: AppLocalizations.of(context)!.appLogsShareText,
+      subject: AppLocalizations.of(context)!.appLogsShareSubject,
+    );
+  }
+
+  Future<bool> _clearLiveDiagnostics() async {
+    final clearedAppLogs = await AppLogService.instance.clearAppLogs();
+    final clearedNativeLogs =
+        await MiuiLiveActivitiesService().clearLiveDiagnostics();
+    final cleared = clearedAppLogs || clearedNativeLogs;
+    if (!mounted) {
+      return cleared;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          cleared
+              ? AppLocalizations.of(context)!.liveDiagnosticsCleared
+              : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
+        ),
+      ),
+    );
+    return cleared;
+  }
+
+  Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateDownloadSource: source.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } else {
+      _analytics.logEventLater(
+        name: 'update_source_changed',
+        parameters: {
+          'source': source.value,
+        },
+      );
+    }
+  }
+
+  Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateDownloadChannel: channel.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } else {
+      _analytics.logEventLater(
+        name: 'update_channel_changed',
+        parameters: {
+          'channel': channel.value,
+        },
+      );
+    }
+  }
+
+  Future<void> _updateMirrorPreset(AppUpdateMirrorPreset preset) async {
+    final provider = context.read<TimetableProvider>();
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        appUpdateMirrorPreset: preset.value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    _analytics.logEventLater(
+      name: 'update_mirror_preset_changed',
+      parameters: {
+        'preset': preset.value,
+      },
+    );
+  }
+
+  _MirrorProbeState? _findMirrorProbeState(AppUpdateMirrorPreset preset) {
+    for (final item in _mirrorProbeStates) {
+      if (item.preset == preset) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  Future<void> _handleMirrorPresetTap(
+    AppUpdateMirrorPreset preset,
+    TimetableSettings settings,
+  ) async {
+    if (preset.usesCustomUrl &&
+        settings.appUpdateMirrorUrlPrefix.trim().isEmpty) {
+      await _editMirrorUrlPrefix();
+      return;
+    }
+    await _updateMirrorPreset(preset);
+  }
+
+  List<MapEntry<AppUpdateMirrorPreset, String>> _buildMirrorPresetCandidates(
+    String customMirrorUrlPrefix,
+  ) {
+    final candidates = <MapEntry<AppUpdateMirrorPreset, String>>[
+      MapEntry(
+        AppUpdateMirrorPreset.ghfast,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghfast,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghproxyCn,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghproxyCn,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghLlkk,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghLlkk,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+    ];
+    final normalizedCustomPrefix =
+        _normalizeMirrorUrlPrefix(customMirrorUrlPrefix);
+    if (normalizedCustomPrefix != null) {
+      candidates.add(
+        MapEntry(AppUpdateMirrorPreset.custom, normalizedCustomPrefix),
+      );
+    }
+    return candidates;
+  }
+
+  Future<List<_MirrorProbeState>> _probeMirrorCandidates(
+    String originalDownloadUrl, {
+    required String customMirrorUrlPrefix,
+  }) async {
+    final candidates = _buildMirrorPresetCandidates(customMirrorUrlPrefix);
+    return Future.wait(
+      candidates.map((candidate) async {
+        final probeUrl = _updateService.buildDownloadUrl(
+          originalUrl: originalDownloadUrl,
+          source: AppUpdateDownloadSource.mirror,
+          mirrorUrlPrefix: candidate.value,
+        );
+        final probeResult = await _updateService.probeDownloadUrl(probeUrl);
+        return _MirrorProbeState(
+          preset: candidate.key,
+          prefix: candidate.value,
+          result: probeResult,
+        );
+      }),
+    );
+  }
+
+  Future<void> _probeAndRecommendMirrors(
+    String originalDownloadUrl, {
+    required String customMirrorUrlPrefix,
+  }) async {
+    final l10n = AppLocalizations.of(context)!;
+    if (_buildMirrorPresetCandidates(customMirrorUrlPrefix).isEmpty) {
+      return;
+    }
+
+    _analytics.logEventLater(name: 'update_mirror_probe_started');
+    setState(() {
+      _isProbingMirrors = true;
+      _mirrorProbeStates = const [];
+    });
+
+    final nextStates = await _probeMirrorCandidates(
+      originalDownloadUrl,
+      customMirrorUrlPrefix: customMirrorUrlPrefix,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _isProbingMirrors = false;
+      _mirrorProbeStates = nextStates;
+    });
+
+    final recommendedPreset = resolveRecommendedMirrorPreset({
+      for (final item in nextStates) item.preset: item.result,
+    });
+    if (recommendedPreset == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.aboutProbeNoMirrorFound)),
+      );
+      return;
+    }
+
+    final currentPreset = AppUpdateMirrorPresetX.fromValue(
+      context.read<TimetableProvider>().settings.appUpdateMirrorPreset,
+    );
+    _analytics.logEventLater(
+      name: 'update_mirror_probe_completed',
+      parameters: {
+        'recommended': recommendedPreset.value,
+      },
+    );
+    if (recommendedPreset == currentPreset) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label))),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.aboutProbeRecommendSwitch(recommendedPreset.label)),
+        action: SnackBarAction(
+          label: l10n.switchAction,
+          onPressed: () {
+            _updateMirrorPreset(recommendedPreset);
+          },
+        ),
+      ),
+    );
+  }
 
   void _showDownloadFailureSnackBar(String error) {
     final l10n = AppLocalizations.of(context)!;
