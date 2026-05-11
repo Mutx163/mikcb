@@ -2204,7 +2204,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   if (_draft.widgetShowCountdown) ...[
                     const SizedBox(height: 8),
                     DropdownButtonFormField<int>(
-                      value: _draft.widgetCountdownLeadMinutes,
+                      initialValue: _draft.widgetCountdownLeadMinutes,
                       decoration: InputDecoration(
                         labelText: l10n.homeWidgetCountdownLeadTitle,
                         border: const OutlineInputBorder(),
@@ -2230,7 +2230,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<LiveCountdownTextStyle>(
-                      value: _draft.widgetCountdownTextStyle,
+                      initialValue: _draft.widgetCountdownTextStyle,
                       decoration: InputDecoration(
                         labelText: l10n.widgetCountdownStyleTitle,
                         border: const OutlineInputBorder(),

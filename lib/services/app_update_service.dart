@@ -75,6 +75,9 @@ class AppUpdateDownloadController {
 
 typedef AppUpdateTempDirectoryProvider = Future<Directory> Function();
 typedef AppUpdateOpenInstaller = Future<OpenResult> Function(String path);
+typedef PgyerApiServiceFactory = PgyerApiService Function(
+  PgyerApiConfig config,
+);
 
 class AppUpdateDownloadProbeResult {
   final bool isSuccess;
@@ -172,17 +175,21 @@ class AppUpdateService {
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
   final AppUpdateOpenInstaller _openInstaller;
   final Duration _releaseApiRequestTimeout;
+  final PgyerApiServiceFactory _pgyerApiServiceFactory;
 
   AppUpdateService({
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
     Duration releaseApiRequestTimeout = _releaseRequestTimeout,
+    PgyerApiServiceFactory? pgyerApiServiceFactory,
   })  : _client = client ?? http.Client(),
         _temporaryDirectoryProvider =
             temporaryDirectoryProvider ?? getTemporaryDirectory,
         _openInstaller = openInstaller ?? OpenFilex.open,
-        _releaseApiRequestTimeout = releaseApiRequestTimeout;
+        _releaseApiRequestTimeout = releaseApiRequestTimeout,
+        _pgyerApiServiceFactory = pgyerApiServiceFactory ??
+            ((config) => PgyerApiService(config: config));
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
@@ -195,17 +202,17 @@ class AppUpdateService {
     _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
 
     // 策略1：蒲公英 API（优先，需要 API Key）
-    final pgyerConfig = (pgyerApiKey != null && 
-        pgyerApiKey.isNotEmpty && 
-        pgyerAppKey != null && 
+    final pgyerConfig = (pgyerApiKey != null &&
+        pgyerApiKey.isNotEmpty &&
+        pgyerAppKey != null &&
         pgyerAppKey.isNotEmpty)
         ? PgyerApiConfig(apiKey: pgyerApiKey, appKey: pgyerAppKey)
         : null;
-    
+
     if (pgyerConfig != null) {
       try {
         _log('策略1：蒲公英 API…');
-        final pgyerService = PgyerApiService(config: pgyerConfig);
+        final pgyerService = _pgyerApiServiceFactory(pgyerConfig);
         final pgyerInfo = await pgyerService.checkForUpdate();
         if (pgyerInfo != null) {
           _log('蒲公英 API 成功，版本 ${pgyerInfo.buildVersion}');
