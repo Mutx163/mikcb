@@ -2714,6 +2714,20 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             customUrlPrefix: customMirrorUrlPrefix ?? '',
           ),
         ),
+        MapEntry(
+          AppUpdateMirrorPreset.ghProxyCom,
+          resolveAppUpdateMirrorUrlPrefix(
+            preset: AppUpdateMirrorPreset.ghProxyCom,
+            customUrlPrefix: customMirrorUrlPrefix ?? '',
+          ),
+        ),
+        MapEntry(
+          AppUpdateMirrorPreset.ghproxyNet,
+          resolveAppUpdateMirrorUrlPrefix(
+            preset: AppUpdateMirrorPreset.ghproxyNet,
+            customUrlPrefix: customMirrorUrlPrefix ?? '',
+          ),
+        ),
       ];
 
       final results = await Future.wait(
