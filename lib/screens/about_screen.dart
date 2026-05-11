@@ -1381,6 +1381,20 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           customUrlPrefix: customMirrorUrlPrefix,
         ),
       ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghProxyCom,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghProxyCom,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
+      MapEntry(
+        AppUpdateMirrorPreset.ghproxyNet,
+        resolveAppUpdateMirrorUrlPrefix(
+          preset: AppUpdateMirrorPreset.ghproxyNet,
+          customUrlPrefix: customMirrorUrlPrefix,
+        ),
+      ),
     ];
     final normalizedCustomPrefix =
         _normalizeMirrorUrlPrefix(customMirrorUrlPrefix);

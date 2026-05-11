@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/warehouse_repository_models.dart';
@@ -35,10 +37,20 @@ class WarehouseRepositoryService {
   WarehouseRepositoryService({http.Client? client})
       : _client = client ?? http.Client();
 
+  static void _log(String message) {
+    final now = DateTime.now();
+    final h = now.hour.toString().padLeft(2, '0');
+    final m = now.minute.toString().padLeft(2, '0');
+    final s = now.second.toString().padLeft(2, '0');
+    final ms = now.millisecond.toString().padLeft(3, '0');
+    debugPrint('[WarehouseService] [$h:$m:$s.$ms] $message');
+  }
+
   Future<WarehouseRootIndex> fetchRootIndex(
     WarehouseRepositorySource source, {
     WarehouseFetchOptions? options,
   }) async {
+    _log('获取学校列表…');
     final content = await _fetchText(
       source.buildRawFileUri('index/root_index.yaml'),
       options: options,
@@ -71,6 +83,7 @@ class WarehouseRepositoryService {
     WarehouseSchoolEntry school, {
     WarehouseFetchOptions? options,
   }) async {
+    _log('获取 ${school.name} 适配器列表…');
     final path = 'resources/${school.resourceFolder}/adapters.yaml';
     final content = await _fetchText(
       source.buildRawFileUri(path),
@@ -109,49 +122,64 @@ class WarehouseRepositoryService {
       options: options,
     );
   }
-
   Future<String> _fetchText(
     Uri uri, {
     WarehouseFetchOptions? options,
   }) async {
-    final candidates = _buildCandidateUris(
-      uri,
-      options ??
-          const WarehouseFetchOptions(
-            downloadSource: AppUpdateDownloadSource.mirror,
-            mirrorPreset: AppUpdateMirrorPreset.ghfast,
-            customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
-          ),
-    );
-
-    Object? lastError;
-    for (final candidate in candidates) {
-      try {
-        final response = await _client.get(
-          candidate,
-          headers: const {
-            'Accept': 'text/plain, */*',
-            'User-Agent': 'mikcb-warehouse-client',
-          },
+    final effectiveOptions = options ??
+        const WarehouseFetchOptions(
+          downloadSource: AppUpdateDownloadSource.mirror,
+          mirrorPreset: AppUpdateMirrorPreset.ghfast,
+          customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
         );
-        if (response.statusCode == 200) {
-          return utf8.decode(response.bodyBytes);
+    final candidates = _buildCandidateUris(uri, effectiveOptions);
+    _log('请求 $uri，候选 ${candidates.length} 个');
+
+    // 所有候选并行竞争，谁先返回 200 用谁
+    final completer = Completer<String>();
+    var completedCount = 0;
+    Object? lastError;
+
+    for (final candidate in candidates) {
+      _client
+          .get(
+            candidate,
+            headers: const {
+              'Accept': 'text/plain, */*',
+              'User-Agent': 'mikcb-warehouse-client',
+            },
+          )
+          .then((response) {
+        completedCount++;
+        if (response.statusCode == 200 && !completer.isCompleted) {
+          _log('命中 $candidate');
+          completer.complete(utf8.decode(response.bodyBytes));
+        } else {
+          lastError = 'HTTP ${response.statusCode}';
+          if (completedCount >= candidates.length && !completer.isCompleted) {
+            completer.completeError(_buildFetchError(effectiveOptions, lastError));
+          }
         }
-        lastError = 'HTTP ${response.statusCode}';
-      } catch (error) {
+      }).catchError((error) {
+        completedCount++;
         lastError = error;
-      }
+        _log('候选失败：$candidate，$error');
+        if (completedCount >= candidates.length && !completer.isCompleted) {
+          completer.completeError(_buildFetchError(effectiveOptions, lastError));
+        }
+      });
     }
 
+    return completer.future;
+  }
+
+  WarehouseRepositoryException _buildFetchError(
+    WarehouseFetchOptions options,
+    Object? lastError,
+  ) {
     final usingMirror =
-        (options ?? const WarehouseFetchOptions(
-              downloadSource: AppUpdateDownloadSource.mirror,
-              mirrorPreset: AppUpdateMirrorPreset.ghfast,
-              customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
-            ))
-            .downloadSource ==
-            AppUpdateDownloadSource.mirror;
-    throw WarehouseRepositoryException(
+        options.downloadSource == AppUpdateDownloadSource.mirror;
+    return WarehouseRepositoryException(
       usingMirror
           ? '暂时无法读取适配仓。当前已按“版本更新”里的国内镜像线路尝试读取，请检查网络，或切到其他镜像线路后重试。'
               '${lastError == null ? "" : " 原始错误：$lastError"}'
@@ -173,6 +201,8 @@ class WarehouseRepositoryService {
       AppUpdateMirrorPreset.ghfast,
       AppUpdateMirrorPreset.ghproxyCn,
       AppUpdateMirrorPreset.ghLlkk,
+      AppUpdateMirrorPreset.ghProxyCom,
+      AppUpdateMirrorPreset.ghproxyNet,
       if (options.customMirrorUrlPrefix.trim().isNotEmpty)
         AppUpdateMirrorPreset.custom,
     ];
