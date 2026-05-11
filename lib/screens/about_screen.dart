@@ -672,14 +672,16 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           );
         }
 
-        return Column(
-          children: [
-            _buildStatusCard(theme, result),
-            if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _buildNotesCard(theme, result),
+        return SingleChildScrollView(
+          child: Column(
+            children: [
+              _buildStatusCard(theme, result),
+              if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _buildNotesCard(theme, result),
+              ],
             ],
-          ],
+          ),
         );
       },
     );
@@ -1083,6 +1085,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onUseSystemDownloaderChanged: (value) {
             setState(() => _useSystemDownloader = value);
           },
+          onExportLiveDiagnostics: _exportLiveDiagnostics,
+          onOpenLiveDiagnosticsViewer: _openLiveDiagnosticsViewer,
+          onClearLiveDiagnostics: _clearLiveDiagnostics,
         ),
       ),
     );
@@ -2020,6 +2025,9 @@ class _AdvancedOptionsScreen extends StatefulWidget {
   final bool isDownloading;
   final bool useSystemDownloader;
   final ValueChanged<bool> onUseSystemDownloaderChanged;
+  final Future<void> Function([String? rawLog]) onExportLiveDiagnostics;
+  final Future<void> Function() onOpenLiveDiagnosticsViewer;
+  final Future<bool> Function() onClearLiveDiagnostics;
 
   const _AdvancedOptionsScreen({
     required this.theme,
@@ -2032,6 +2040,9 @@ class _AdvancedOptionsScreen extends StatefulWidget {
     required this.isDownloading,
     required this.useSystemDownloader,
     required this.onUseSystemDownloaderChanged,
+    required this.onExportLiveDiagnostics,
+    required this.onOpenLiveDiagnosticsViewer,
+    required this.onClearLiveDiagnostics,
   });
 
   @override
@@ -2601,17 +2612,17 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                 runSpacing: 12,
                 children: [
                   FilledButton.tonalIcon(
-                    onPressed: _exportLiveDiagnostics,
+                    onPressed: widget.onExportLiveDiagnostics,
                     icon: const Icon(Icons.ios_share_rounded),
                     label: Text(l10n.aboutExportDiagnosticsAction),
                   ),
                   FilledButton.tonalIcon(
-                    onPressed: _openLiveDiagnosticsViewer,
+                    onPressed: widget.onOpenLiveDiagnosticsViewer,
                     icon: const Icon(Icons.article_outlined),
                     label: Text(l10n.aboutViewPhoneLogsAction),
                   ),
                   FilledButton.tonalIcon(
-                    onPressed: _clearLiveDiagnostics,
+                    onPressed: widget.onClearLiveDiagnostics,
                     icon: const Icon(Icons.restart_alt_rounded),
                     label: Text(l10n.aboutClearAndRecollectAction),
                   ),
@@ -2780,7 +2791,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
         ],
       ),
     );
-    if (result == null) return;
+    if (result == null || !mounted) return;
     final provider = context.read<TimetableProvider>();
     await provider.updateTimetableSettings(
       provider.settings.copyWith(
@@ -2789,17 +2800,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
-  Future<void> _exportLiveDiagnostics() async {
-    // TODO: 实现导出诊断
-  }
-
-  Future<void> _openLiveDiagnosticsViewer() async {
-    // TODO: 实现查看日志
-  }
-
-  Future<void> _clearLiveDiagnostics() async {
-    // TODO: 实现清除诊断
-  }
 }
 
 class _MirrorBadge extends StatelessWidget {

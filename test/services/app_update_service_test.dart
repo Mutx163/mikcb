@@ -9,6 +9,7 @@ import 'package:http/testing.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/app_update_service.dart';
+import 'package:university_timetable/services/pgyer_api_service.dart';
 
 class _CountingProbeClient extends http.BaseClient {
   final int totalBytes;
@@ -48,8 +49,21 @@ class _CountingProbeClient extends http.BaseClient {
   }
 }
 
+class _FakePgyerApiService extends PgyerApiService {
+  final PgyerAppInfo? appInfo;
+  var checkCount = 0;
+
+  _FakePgyerApiService(this.appInfo) : super(config: null);
+
+  @override
+  Future<PgyerAppInfo?> checkForUpdate() async {
+    checkCount += 1;
+    return appInfo;
+  }
+}
+
 void main() {
-  test('successful GitHub API lookup does not request releases page', () async {
+  test('github api lookup is used after releases page misses', () async {
     final requestedPaths = <String>[];
     final client = MockClient((request) async {
       requestedPaths.add(request.url.path);
@@ -82,7 +96,10 @@ void main() {
 
     expect(result.hasRelease, isTrue);
     expect(result.latestRelease?.version, '1.1.11');
-    expect(requestedPaths, ['/repos/Mutx163/mikcb/releases']);
+    expect(requestedPaths, [
+      '/Mutx163/mikcb/releases',
+      '/repos/Mutx163/mikcb/releases',
+    ]);
   });
 
   test('include prerelease picks highest version even if not first in list',
@@ -606,7 +623,8 @@ void main() {
 
     expect(result.hasUpdate, isTrue);
     expect(result.latestRelease?.version, '1.3.1');
-    expect(requests.first, mirroredApiUrl);
+    expect(requests.first, AppUpdateService.releasesPageUrl);
+    expect(requests[1], mirroredApiUrl);
     expect(requests, contains(AppUpdateService.releasesApiUrl));
   });
 
@@ -726,8 +744,51 @@ void main() {
       result.latestRelease?.downloadUrl,
       'https://github.com/Mutx163/mikcb/releases/download/v1.1.10.23/mikcb-1.1.10.23-arm64-v8a.apk',
     );
-    expect(requests, contains(AppUpdateService.releasesApiUrl));
+    expect(requests, isNot(contains(AppUpdateService.releasesApiUrl)));
     expect(requests, contains(AppUpdateService.releasesPageUrl));
+  });
+
+  test('pgyer factory is used when credentials are configured', () async {
+    late PgyerApiConfig capturedConfig;
+    final fakePgyer = _FakePgyerApiService(
+      const PgyerAppInfo(
+        buildKey: 'build-key',
+        buildVersion: '1.4.0',
+        buildVersionNo: '90',
+        buildUpdateDescription: 'pgyer body',
+        buildCreated: '2026-04-10 10:00:00',
+        buildFileSize: '1048576',
+        buildShortcutUrl: 'qingyu',
+        buildName: '轻屿课表',
+        buildIcon: '',
+      ),
+    );
+    final client = MockClient((request) async {
+      fail('GitHub should not be requested when Pgyer returns a release');
+    });
+
+    final service = AppUpdateService(
+      client: client,
+      pgyerApiServiceFactory: (config) {
+        capturedConfig = config;
+        return fakePgyer;
+      },
+    );
+    final result = await service.checkForUpdates(
+      currentVersion: '1.3.0',
+      pgyerApiKey: 'api-key',
+      pgyerAppKey: 'app-key',
+    );
+
+    expect(fakePgyer.checkCount, 1);
+    expect(capturedConfig.apiKey, 'api-key');
+    expect(capturedConfig.appKey, 'app-key');
+    expect(result.hasUpdate, isTrue);
+    expect(result.latestRelease?.version, '1.4.0');
+    expect(
+      result.latestRelease?.pgyerDownloadUrl,
+      'https://www.pgyer.com/qingyu',
+    );
   });
 
   test('releases page fallback skips prerelease when stable only is enabled',

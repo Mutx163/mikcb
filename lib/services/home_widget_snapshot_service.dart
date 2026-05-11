@@ -228,7 +228,7 @@ class HomeWidgetSnapshotService {
     final currentCourse = _findCurrentCourse(todayCourses, now);
     final upcomingCourse = _findNextCourse(todayCourses, now);
 
-    final hasCoursesScheduled = !todayCourses.isEmpty || originalTodayCourseCount > 0;
+    final hasCoursesScheduled = todayCourses.isNotEmpty || originalTodayCourseCount > 0;
     final state =
         switch ((!hasCoursesScheduled, currentCourse, upcomingCourse)) {
       (true, _, _) => HomeWidgetSnapshotState.noCourse,
