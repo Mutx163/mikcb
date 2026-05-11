@@ -52,8 +52,8 @@ jobs:
           echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
           # 读取 release notes 内容用于蒲公英更新说明
           if [[ -f "${RELEASE_NOTES_FILE}" ]]; then
-            # 去掉标题行，只保留内容
-            RELEASE_BODY=$(sed '1,/^## /{/^## /!d}' "${RELEASE_NOTES_FILE}" | sed '/^$/d' | sed 's/^- //')
+            # 提取以 - 开头的行，去掉前缀
+            RELEASE_BODY=$(grep "^- " "${RELEASE_NOTES_FILE}" | sed 's/^- //')
             echo "release_body<<EOF" >> "$GITHUB_OUTPUT"
             echo "${RELEASE_BODY}" >> "$GITHUB_OUTPUT"
             echo "EOF" >> "$GITHUB_OUTPUT"
