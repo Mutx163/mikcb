@@ -172,20 +172,17 @@ class AppUpdateService {
   final AppUpdateTempDirectoryProvider _temporaryDirectoryProvider;
   final AppUpdateOpenInstaller _openInstaller;
   final Duration _releaseApiRequestTimeout;
-  final PgyerApiService _pgyerApiService;
 
   AppUpdateService({
     http.Client? client,
     AppUpdateTempDirectoryProvider? temporaryDirectoryProvider,
     AppUpdateOpenInstaller? openInstaller,
     Duration releaseApiRequestTimeout = _releaseRequestTimeout,
-    PgyerApiService? pgyerApiService,
   })  : _client = client ?? http.Client(),
         _temporaryDirectoryProvider =
             temporaryDirectoryProvider ?? getTemporaryDirectory,
         _openInstaller = openInstaller ?? OpenFilex.open,
-        _releaseApiRequestTimeout = releaseApiRequestTimeout,
-        _pgyerApiService = pgyerApiService ?? PgyerApiService();
+        _releaseApiRequestTimeout = releaseApiRequestTimeout;
 
   Future<AppUpdateCheckResult> checkForUpdates({
     required String currentVersion,
