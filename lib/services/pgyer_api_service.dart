@@ -34,7 +34,8 @@ class PgyerApiService {
   /// 检测应用更新
   /// 返回 null 表示调用失败或未配置，应降级到 GitHub API
   Future<PgyerAppInfo?> checkForUpdate() async {
-    if (_config == null || !_config!.isValid) {
+    final config = _config;
+    if (config == null || !config.isValid) {
       debugPrint('[PgyerApi] 未配置 API Key，跳过');
       return null;
     }
@@ -46,8 +47,8 @@ class PgyerApiService {
             Uri.parse('$_baseUrl/app/check'),
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
             body: {
-              '_api_key': _config!.apiKey,
-              'appKey': _config!.appKey,
+              '_api_key': config.apiKey,
+              'appKey': config.appKey,
             },
           )
           .timeout(_timeout);
