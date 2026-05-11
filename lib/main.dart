@@ -6,7 +6,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -114,11 +113,9 @@ ThemeData _buildAppTheme(
 }
 
 Future<void> main() async {
-  runZonedGuarded(() async {
+  runZonedGuarded(() {
     WidgetsFlutterBinding.ensureInitialized();
     unawaited(AppLogService.instance.initialize());
-    // 预加载 SharedPreferences，避免冷启动阻塞
-    await SharedPreferences.getInstance();
     WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
     FlutterError.onError = (details) {
@@ -191,91 +188,45 @@ class MyApp extends StatelessWidget {
           create: (_) => TimetableProvider(autoInitialize: false),
         ),
       ],
-      child: const _MyMaterialApp(),
+      child: Consumer<TimetableProvider>(
+        builder: (context, provider, child) {
+          final seedColor = _colorFromHex(provider.settings.themeSeedColor);
+          final fontFamily =
+              _fontFamilyFromSettings(provider.settings.appFontMode);
+
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            onGenerateTitle: (context) => kReleaseMode
+                ? AppLocalizations.of(context)!.appTitle
+                : AppLocalizations.of(context)!.appTitleDebug,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            locale: _localeFromSettings(provider.settings.appLocaleTag),
+            themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
+            theme: _buildAppTheme(
+              seedColor,
+              Brightness.light,
+              fontFamily: fontFamily,
+            ),
+            darkTheme: _buildAppTheme(
+              seedColor,
+              Brightness.dark,
+              fontFamily: fontFamily,
+            ),
+            navigatorObservers: <NavigatorObserver>[
+              _AppRouteLogObserver(),
+            ],
+            home: const AppEntryScreen(),
+          );
+        },
+      ),
     );
   }
-}
-
-class _MyMaterialApp extends StatelessWidget {
-  const _MyMaterialApp();
-
-  @override
-  Widget build(BuildContext context) {
-    // 只选择主题相关的设置，避免 provider 其他变化触发重建
-    final themeSettings = context.select<TimetableProvider, _ThemeSettings>(
-      (provider) => _ThemeSettings(
-        seedColor: provider.settings.themeSeedColor,
-        fontMode: provider.settings.appFontMode,
-        localeTag: provider.settings.appLocaleTag,
-        themeMode: provider.settings.appThemeMode,
-      ),
-    );
-
-    final seedColor = _colorFromHex(themeSettings.seedColor);
-    final fontFamily = _fontFamilyFromSettings(themeSettings.fontMode);
-
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      onGenerateTitle: (context) => kReleaseMode
-          ? AppLocalizations.of(context)!.appTitle
-          : AppLocalizations.of(context)!.appTitleDebug,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      locale: _localeFromSettings(themeSettings.localeTag),
-      themeMode: _themeModeFromSettings(themeSettings.themeMode),
-      theme: _buildAppTheme(
-        seedColor,
-        Brightness.light,
-        fontFamily: fontFamily,
-      ),
-      darkTheme: _buildAppTheme(
-        seedColor,
-        Brightness.dark,
-        fontFamily: fontFamily,
-      ),
-      navigatorObservers: <NavigatorObserver>[
-        _AppRouteLogObserver(),
-      ],
-      home: const AppEntryScreen(),
-    );
-  }
-}
-
-/// 用于 Selector 的主题设置快照，避免不必要的重建
-class _ThemeSettings {
-  final String seedColor;
-  final AppFontMode fontMode;
-  final String localeTag;
-  final AppThemeMode themeMode;
-
-  const _ThemeSettings({
-    required this.seedColor,
-    required this.fontMode,
-    required this.localeTag,
-    required this.themeMode,
-  });
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is _ThemeSettings &&
-          runtimeType == other.runtimeType &&
-          seedColor == other.seedColor &&
-          fontMode == other.fontMode &&
-          localeTag == other.localeTag &&
-          themeMode == other.themeMode;
-
-  @override
-  int get hashCode =>
-      seedColor.hashCode ^
-      fontMode.hashCode ^
-      localeTag.hashCode ^
-      themeMode.hashCode;
 }
 
 class AppEntryScreen extends StatefulWidget {
@@ -289,6 +240,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   final StorageService _storageService = StorageService();
   final AppMigrationService _migrationService = AppMigrationService();
   bool _startupHandled = false;
+  bool _isBootstrapping = true;
 
   @override
   void initState() {
@@ -308,53 +260,21 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       ),
     );
 
-    // SharedPreferences 已在 main() 预加载，这里直接读取
+    await _storageService.init();
+    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
+    final hasCompletedOnboarding =
+        await _storageService.hasCompletedOnboarding();
+    final hasHandledPackageMigration =
+        await _storageService.hasHandledPackageMigration();
     final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
-    final hasCompletedOnboarding = await _storageService.hasCompletedOnboarding();
-    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
-    final hasHandledPackageMigration = await _storageService.hasHandledPackageMigration();
 
     if (!mounted) {
       return;
     }
-
-    // 后台初始化 provider，不阻塞 UI
     final provider = context.read<TimetableProvider>();
-    unawaited(provider.initialize());
-
-    // 等待第一帧渲染完成
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-
-    // 隐私协议检查：合规要求，必须在使用 App 前同意
-    if (!hasAcceptedPrivacy) {
-      final accepted = await _openGuide(
-        requirePrivacyConsent: true,
-        initialPrivacyChecked: false,
-        markGuideSeenAfterExit: !hasSeenGuide,
-      );
-      if (!mounted || !accepted) {
-        return;
-      }
-      await UmengAnalyticsService.initializeIfNeeded();
-    } else if (!hasSeenGuide && mounted) {
-      // 已同意隐私但未看过引导，异步展示
-      unawaited(_openGuide(
-        requirePrivacyConsent: false,
-        initialPrivacyChecked: true,
-        markGuideSeenAfterExit: true,
-      ));
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    // 迁移检查
     final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
+    await provider.initialize();
     final legacyPackage = await legacyPackageFuture;
     final shouldShowMigrationGuide =
         !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
@@ -419,21 +339,60 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       }
     }
 
+    if (hasAcceptedPrivacy && hasSeenGuide) {
+      await AppLogService.instance.updatePrivacyAccepted(true);
+      await UmengAnalyticsService.initializeIfNeeded();
+      if (!mounted) {
+        return;
+      }
+      unawaited(_checkPendingIcsIntent());
+      unawaited(
+        AppLogService.instance.info(
+          'startup_flow_completed',
+          'Startup flow completed without onboarding screens',
+        ),
+      );
+      setState(() {
+        _isBootstrapping = false;
+      });
+      return;
+    }
+
     if (!mounted) {
+      return;
+    }
+
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
+
+    final guideCompleted = await _openGuide(
+      requirePrivacyConsent: !hasAcceptedPrivacy,
+      initialPrivacyChecked: hasAcceptedPrivacy,
+      markGuideSeenAfterExit: !hasSeenGuide,
+    );
+    if (!mounted || !guideCompleted) {
       return;
     }
 
     if (await _storageService.hasAcceptedPrivacyPolicy()) {
       await UmengAnalyticsService.initializeIfNeeded();
     }
+    if (!mounted) {
+      return;
+    }
 
     unawaited(_checkPendingIcsIntent());
     unawaited(
       AppLogService.instance.info(
         'startup_flow_completed',
-        'Startup flow completed',
+        'Startup flow completed after guide/onboarding',
       ),
     );
+    setState(() {
+      _isBootstrapping = false;
+    });
   }
 
   Future<bool> _openGuide({
@@ -599,6 +558,9 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isBootstrapping) {
+      return const Scaffold();
+    }
     return const TimetableScreen();
   }
 }
