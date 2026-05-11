@@ -443,6 +443,7 @@ class _AboutScreenState extends State<AboutScreen> {
           title: AppLocalizations.of(context)!.aboutAppLogsTitle,
           rawLog: rawLog,
           isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+          onRecordingChanged: (value) => _updateLiveDiagnosticsPreference(value),
           onExport: (text) async {
             final path = await AppLogService.instance.exportMergedLogsFile(
               nativeRawLog: nativeRawLog,
@@ -463,6 +464,32 @@ class _AboutScreenState extends State<AboutScreen> {
             return clearedAppLogs || clearedNativeLogs;
           },
         ),
+      ),
+    );
+  }
+
+  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
+    final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    final message = await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        liveEnableLocalDiagnostics: value,
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (message != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(value
+            ? l10n.aboutLiveDiagnosticsEnabled
+            : l10n.aboutLiveDiagnosticsDisabled),
       ),
     );
   }
@@ -1115,8 +1142,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         includePrerelease: settings.appUpdateIncludePrerelease,
         preferredSource: downloadSource,
         mirrorUrlPrefix: effectiveMirrorUrlPrefix,
-        pgyerApiKey: settings.pgyerApiKey,
-        pgyerAppKey: settings.pgyerAppKey,
       );
     });
   }
@@ -1185,6 +1210,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           title: AppLocalizations.of(context)!.aboutAppLogsTitle,
           rawLog: rawLog,
           isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+          onRecordingChanged: _updateLiveDiagnosticsPreference,
           onExport: _exportLiveDiagnostics,
           onClear: _clearLiveDiagnostics,
         ),
@@ -2570,65 +2596,28 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                 color: colorScheme.onSurfaceVariant,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.aboutRecordDiagnosticsTitle,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          l10n.aboutRecordDiagnosticsSubtitle,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  _buildToggle(
-                    theme,
-                    value: settings.liveEnableLocalDiagnostics,
-                    onChanged: widget.packageInfo == null
-                        ? null
-                        : (value) => _updateLiveDiagnosticsPreference(value),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                FilledButton.tonalIcon(
+                  onPressed: widget.onExportLiveDiagnostics,
+                  icon: const Icon(Icons.ios_share_rounded),
+                  label: Text(l10n.aboutExportDiagnosticsAction),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: widget.onOpenLiveDiagnosticsViewer,
+                  icon: const Icon(Icons.article_outlined),
+                  label: Text(l10n.aboutViewPhoneLogsAction),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: widget.onClearLiveDiagnostics,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text(l10n.aboutClearAndRecollectAction),
+                ),
+              ],
             ),
-            if (settings.liveEnableLocalDiagnostics) ...[
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  FilledButton.tonalIcon(
-                    onPressed: widget.onExportLiveDiagnostics,
-                    icon: const Icon(Icons.ios_share_rounded),
-                    label: Text(l10n.aboutExportDiagnosticsAction),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: widget.onOpenLiveDiagnosticsViewer,
-                    icon: const Icon(Icons.article_outlined),
-                    label: Text(l10n.aboutViewPhoneLogsAction),
-                  ),
-                  FilledButton.tonalIcon(
-                    onPressed: widget.onClearLiveDiagnostics,
-                    icon: const Icon(Icons.restart_alt_rounded),
-                    label: Text(l10n.aboutClearAndRecollectAction),
-                  ),
-                ],
-              ),
-            ],
           ],
         ),
       ),
@@ -2655,21 +2644,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final message = await provider.updateTimetableSettings(
       provider.settings.copyWith(
         appUpdateIncludePrerelease: value,
-      ),
-    );
-    if (!mounted) return;
-    if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    }
-  }
-
-  Future<void> _updateLiveDiagnosticsPreference(bool value) async {
-    final provider = context.read<TimetableProvider>();
-    final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        liveEnableLocalDiagnostics: value,
       ),
     );
     if (!mounted) return;

@@ -20,6 +20,7 @@ class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
   final String title;
   final String rawLog;
   final bool? isRecordingEnabled;
+  final ValueChanged<bool>? onRecordingChanged;
   final Future<void> Function(String text)? onExport;
   final Future<bool> Function()? onClear;
 
@@ -28,6 +29,7 @@ class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
     required this.title,
     required this.rawLog,
     this.isRecordingEnabled,
+    this.onRecordingChanged,
     this.onExport,
     this.onClear,
   });
@@ -118,16 +120,14 @@ class _LiveDiagnosticsLogViewerScreenState
               runSpacing: 8,
               children: [
                 if (widget.isRecordingEnabled != null)
-                  _StatusChip(
-                    icon: widget.isRecordingEnabled!
-                        ? Icons.fiber_manual_record_rounded
-                        : Icons.pause_circle_outline_rounded,
-                    label: widget.isRecordingEnabled!
-                        ? l10n.appLogsRecordingEnabled
-                        : l10n.appLogsRecordingDisabled,
-                    color: widget.isRecordingEnabled!
-                        ? Colors.green
-                        : Theme.of(context).colorScheme.outline,
+                  _RecordingToggleChip(
+                    isRecording: widget.isRecordingEnabled!,
+                    l10n: l10n,
+                    onToggle: widget.onRecordingChanged == null
+                        ? null
+                        : () => widget.onRecordingChanged!(
+                              !widget.isRecordingEnabled!,
+                            ),
                   ),
                 SegmentedButton<DiagnosticsLogViewMode>(
                   segments: <ButtonSegment<DiagnosticsLogViewMode>>[
@@ -409,38 +409,53 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
+class _RecordingToggleChip extends StatelessWidget {
+  final bool isRecording;
+  final AppLocalizations l10n;
+  final VoidCallback? onToggle;
 
-  const _StatusChip({
-    required this.icon,
-    required this.label,
-    required this.color,
+  const _RecordingToggleChip({
+    required this.isRecording,
+    required this.l10n,
+    required this.onToggle,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w700,
-                ),
+    final color = isRecording ? Colors.green : Theme.of(context).colorScheme.outline;
+    return GestureDetector(
+      onTap: onToggle,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color: color.withValues(alpha: 0.35),
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isRecording
+                  ? Icons.fiber_manual_record_rounded
+                  : Icons.pause_circle_outline_rounded,
+              size: 16,
+              color: color,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              isRecording
+                  ? l10n.appLogsRecordingEnabled
+                  : l10n.appLogsRecordingDisabled,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
