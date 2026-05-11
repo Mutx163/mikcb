@@ -191,43 +191,50 @@ class MyApp extends StatelessWidget {
           create: (_) => TimetableProvider(autoInitialize: false),
         ),
       ],
-      child: Consumer<TimetableProvider>(
-        builder: (context, provider, child) {
-          final seedColor = _colorFromHex(provider.settings.themeSeedColor);
-          final fontFamily =
-              _fontFamilyFromSettings(provider.settings.appFontMode);
+      child: const _MyMaterialApp(),
+    );
+  }
+}
 
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            onGenerateTitle: (context) => kReleaseMode
-                ? AppLocalizations.of(context)!.appTitle
-                : AppLocalizations.of(context)!.appTitleDebug,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: _localeFromSettings(provider.settings.appLocaleTag),
-            themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
-            theme: _buildAppTheme(
-              seedColor,
-              Brightness.light,
-              fontFamily: fontFamily,
-            ),
-            darkTheme: _buildAppTheme(
-              seedColor,
-              Brightness.dark,
-              fontFamily: fontFamily,
-            ),
-            navigatorObservers: <NavigatorObserver>[
-              _AppRouteLogObserver(),
-            ],
-            home: const AppEntryScreen(),
-          );
-        },
+class _MyMaterialApp extends StatelessWidget {
+  const _MyMaterialApp();
+
+  @override
+  Widget build(BuildContext context) {
+    // 监听 provider 获取主题设置，但不重建 MaterialApp
+    final provider = context.watch<TimetableProvider>();
+    final seedColor = _colorFromHex(provider.settings.themeSeedColor);
+    final fontFamily =
+        _fontFamilyFromSettings(provider.settings.appFontMode);
+
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      onGenerateTitle: (context) => kReleaseMode
+          ? AppLocalizations.of(context)!.appTitle
+          : AppLocalizations.of(context)!.appTitleDebug,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: _localeFromSettings(provider.settings.appLocaleTag),
+      themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
+      theme: _buildAppTheme(
+        seedColor,
+        Brightness.light,
+        fontFamily: fontFamily,
       ),
+      darkTheme: _buildAppTheme(
+        seedColor,
+        Brightness.dark,
+        fontFamily: fontFamily,
+      ),
+      navigatorObservers: <NavigatorObserver>[
+        _AppRouteLogObserver(),
+      ],
+      home: const AppEntryScreen(),
     );
   }
 }
@@ -294,7 +301,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         return;
       }
       await UmengAnalyticsService.initializeIfNeeded();
-    } else if (!hasSeenGuide) {
+    } else if (!hasSeenGuide && mounted) {
       // 已同意隐私但未看过引导，异步展示
       unawaited(_openGuide(
         requirePrivacyConsent: false,
