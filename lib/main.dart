@@ -201,11 +201,18 @@ class _MyMaterialApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 监听 provider 获取主题设置，但不重建 MaterialApp
-    final provider = context.watch<TimetableProvider>();
-    final seedColor = _colorFromHex(provider.settings.themeSeedColor);
-    final fontFamily =
-        _fontFamilyFromSettings(provider.settings.appFontMode);
+    // 只选择主题相关的设置，避免 provider 其他变化触发重建
+    final themeSettings = context.select<TimetableProvider, _ThemeSettings>(
+      (provider) => _ThemeSettings(
+        seedColor: provider.settings.themeSeedColor,
+        fontMode: provider.settings.appFontMode,
+        localeTag: provider.settings.appLocaleTag,
+        themeMode: provider.settings.appThemeMode,
+      ),
+    );
+
+    final seedColor = _colorFromHex(themeSettings.seedColor);
+    final fontFamily = _fontFamilyFromSettings(themeSettings.fontMode);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -219,8 +226,8 @@ class _MyMaterialApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: _localeFromSettings(provider.settings.appLocaleTag),
-      themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
+      locale: _localeFromSettings(themeSettings.localeTag),
+      themeMode: _themeModeFromSettings(themeSettings.themeMode),
       theme: _buildAppTheme(
         seedColor,
         Brightness.light,
@@ -237,6 +244,38 @@ class _MyMaterialApp extends StatelessWidget {
       home: const AppEntryScreen(),
     );
   }
+}
+
+/// 用于 Selector 的主题设置快照，避免不必要的重建
+class _ThemeSettings {
+  final String seedColor;
+  final AppFontMode fontMode;
+  final String localeTag;
+  final AppThemeMode themeMode;
+
+  const _ThemeSettings({
+    required this.seedColor,
+    required this.fontMode,
+    required this.localeTag,
+    required this.themeMode,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _ThemeSettings &&
+          runtimeType == other.runtimeType &&
+          seedColor == other.seedColor &&
+          fontMode == other.fontMode &&
+          localeTag == other.localeTag &&
+          themeMode == other.themeMode;
+
+  @override
+  int get hashCode =>
+      seedColor.hashCode ^
+      fontMode.hashCode ^
+      localeTag.hashCode ^
+      themeMode.hashCode;
 }
 
 class AppEntryScreen extends StatefulWidget {
