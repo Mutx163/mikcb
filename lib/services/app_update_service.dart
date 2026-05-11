@@ -109,10 +109,15 @@ class AppUpdateService {
   final List<UpdateLogEntry> logs = [];
 
   void _log(String message) {
-    final entry = UpdateLogEntry(DateTime.now(), message);
+    final now = DateTime.now();
+    final entry = UpdateLogEntry(now, message);
     logs.insert(0, entry);
     if (logs.length > 50) logs.removeLast();
-    debugPrint('[AppUpdateService] $message');
+    final h = now.hour.toString().padLeft(2, '0');
+    final m = now.minute.toString().padLeft(2, '0');
+    final s = now.second.toString().padLeft(2, '0');
+    final ms = now.millisecond.toString().padLeft(3, '0');
+    debugPrint('[AppUpdateService] [$h:$m:$s.$ms] $message');
   }
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
@@ -190,59 +195,66 @@ class AppUpdateService {
   }) async {
     _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
 
-    // 策略1：GitHub API（优先）
-    _AppUpdateFetchOutcome apiOutcome;
-    try {
-      _log('策略1：GitHub API…');
-      apiOutcome = await _fetchFromGitHubApi(
-        includePrerelease: includePrerelease,
-        preferredSource: preferredSource,
-        mirrorUrlPrefix: mirrorUrlPrefix,
-      );
-    } catch (e) {
+    // 两个策略并行竞争，谁先有结果用谁
+    final completer = Completer<_AppUpdateFetchOutcome>();
+    var completedCount = 0;
+    _AppUpdateFetchOutcome? apiOutcome;
+    _AppUpdateFetchOutcome? pageOutcome;
+
+    void onStrategyDone(String name, _AppUpdateFetchOutcome outcome,
+        {_AppUpdateFetchOutcome? Function()? storageSetter}) {
+      completedCount++;
+      _log('$name 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}');
+      if (outcome.release != null && !completer.isCompleted) {
+        completer.complete(outcome);
+      } else if (completedCount >= 2 && !completer.isCompleted) {
+        // 两个策略都完成且都没有结果，用最后一个触发完成
+        completer.complete(outcome);
+      }
+    }
+
+    // 同时发起两个策略
+    _fetchFromGitHubApi(
+      includePrerelease: includePrerelease,
+      preferredSource: preferredSource,
+      mirrorUrlPrefix: mirrorUrlPrefix,
+    ).then((outcome) {
+      apiOutcome = outcome;
+      onStrategyDone('GitHub API', outcome);
+    }).catchError((e) {
       _log('GitHub API 异常：$e');
       apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
-    }
-    if (apiOutcome.release != null) {
-      _log('GitHub API 成功，版本 ${apiOutcome.release!.version}');
-      return _buildCheckResult(
-        currentVersion: currentVersion,
-        release: apiOutcome.release!,
-      );
-    }
-    _log('GitHub API 未获取到版本，状态码: ${apiOutcome.statusCode}');
+      onStrategyDone('GitHub API', apiOutcome!);
+    });
 
-    var saw404 = apiOutcome.saw404;
-    int? lastStatusCode;
-    var hadRetryableFailure = apiOutcome.hadRetryableFailure;
-    if (apiOutcome.statusCode != null && apiOutcome.statusCode != 404) {
-      lastStatusCode = apiOutcome.statusCode;
-    }
-
-    // 策略2：Release 页面抓取（备选）
-    _AppUpdateFetchOutcome pageOutcome;
-    try {
-      _log('策略2：Release 页面抓取…');
-      pageOutcome = await _fetchFromReleasesPage(
-        includePrerelease: includePrerelease,
-      );
-    } catch (e) {
+    _fetchFromReleasesPage(
+      includePrerelease: includePrerelease,
+    ).then((outcome) {
+      pageOutcome = outcome;
+      onStrategyDone('Release 页面', outcome);
+    }).catchError((e) {
       _log('Release 页面异常：$e');
       pageOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
-    }
-    if (pageOutcome.release != null) {
-      _log('Release 页面成功，版本 ${pageOutcome.release!.version}');
+      onStrategyDone('Release 页面', pageOutcome!);
+    });
+
+    final winner = await completer.future;
+
+    if (winner.release != null) {
+      _log('竞争胜出，版本 ${winner.release!.version}');
       return _buildCheckResult(
         currentVersion: currentVersion,
-        release: pageOutcome.release!,
+        release: winner.release!,
       );
     }
-    _log('Release 页面未获取到版本，状态码: ${pageOutcome.statusCode}');
-    saw404 = saw404 || pageOutcome.saw404;
-    hadRetryableFailure = hadRetryableFailure || pageOutcome.hadRetryableFailure;
-    if (pageOutcome.statusCode != null && pageOutcome.statusCode != 404) {
-      lastStatusCode = pageOutcome.statusCode;
-    }
+
+    // 两个策略都没有结果，汇总错误信息
+    final saw404 =
+        (apiOutcome?.saw404 ?? false) || (pageOutcome?.saw404 ?? false);
+    final hadRetryableFailure = (apiOutcome?.hadRetryableFailure ?? false) ||
+        (pageOutcome?.hadRetryableFailure ?? false);
+    final lastStatusCode =
+        _pickLastNon404StatusCode(apiOutcome?.statusCode, pageOutcome?.statusCode);
 
     if (saw404 && !hadRetryableFailure && lastStatusCode == null) {
       _log('所有策略均未获取到版本');
@@ -250,7 +262,9 @@ class AppUpdateService {
         hasRelease: false,
         hasUpdate: false,
         currentVersion: currentVersion,
-        message: includePrerelease ? '还没有可用的正式版或预发布版本。' : '仓库还没有发布 Release。',
+        message: includePrerelease
+            ? '还没有可用的正式版或预发布版本。'
+            : '仓库还没有发布 Release。',
       );
     }
 
@@ -271,6 +285,12 @@ class AppUpdateService {
       currentVersion: currentVersion,
       message: '网络异常，暂时无法检查更新。',
     );
+  }
+
+  static int? _pickLastNon404StatusCode(int? a, int? b) {
+    if (a != null && a != 404) return a;
+    if (b != null && b != 404) return b;
+    return null;
   }
 
   Future<String?> downloadAndInstallUpdate(
@@ -520,35 +540,51 @@ class AppUpdateService {
     required AppUpdateDownloadSource preferredSource,
     String? mirrorUrlPrefix,
   }) async {
-    var saw404 = false;
-    int? lastStatusCode;
-    var hadRetryableFailure = false;
     final candidates = _buildGitHubApiCandidates(
       releasesApiUrl,
       preferredSource: preferredSource,
       mirrorUrlPrefix: mirrorUrlPrefix,
     );
-    _log('GitHub API 候选地址 ${candidates.length} 个');
+    _log('GitHub API 候选地址 ${candidates.length} 个，并行竞争');
+
+    // 所有镜像并行竞争，谁先有结果用谁
+    final completer = Completer<_AppUpdateFetchOutcome>();
+    var completedCount = 0;
+    var saw404 = false;
+    var hadRetryableFailure = false;
+    int? lastStatusCode;
 
     for (final candidate in candidates) {
-      final outcome = await _fetchGitHubApiCandidate(
+      _fetchGitHubApiCandidate(
         candidate,
         includePrerelease: includePrerelease,
-      );
-      if (outcome.release != null) {
-        return outcome;
-      }
-      saw404 = saw404 || outcome.saw404;
-      hadRetryableFailure =
-          hadRetryableFailure || outcome.hadRetryableFailure;
-      lastStatusCode = outcome.statusCode ?? lastStatusCode;
+      ).then((outcome) {
+        completedCount++;
+        saw404 = saw404 || outcome.saw404;
+        hadRetryableFailure =
+            hadRetryableFailure || outcome.hadRetryableFailure;
+        lastStatusCode = outcome.statusCode ?? lastStatusCode;
+        if (outcome.release != null && !completer.isCompleted) {
+          completer.complete(outcome);
+        } else if (completedCount >= candidates.length &&
+            !completer.isCompleted) {
+          completer.complete(outcome);
+        }
+      }).catchError((e) {
+        completedCount++;
+        hadRetryableFailure = true;
+        _log('候选异常：$e');
+        if (completedCount >= candidates.length && !completer.isCompleted) {
+          completer.complete(_AppUpdateFetchOutcome(
+            saw404: saw404,
+            statusCode: lastStatusCode,
+            hadRetryableFailure: hadRetryableFailure,
+          ));
+        }
+      });
     }
 
-    return _AppUpdateFetchOutcome(
-      saw404: saw404,
-      statusCode: lastStatusCode,
-      hadRetryableFailure: hadRetryableFailure,
-    );
+    return completer.future;
   }
 
   Future<_AppUpdateFetchOutcome> _fetchGitHubApiCandidate(
@@ -924,6 +960,24 @@ class AppUpdateService {
         prerelease: null,
       );
     }
+    // 处理 "1.2.0-29-debug" 这类含数字前缀的预发布：
+    // 提取 "29" 作为构建号，剩余 "debug" 作为预发布标识
+    if (explicitPrerelease != null) {
+      final numericPrefix = _extractNumericPrefixParts(explicitPrerelease);
+      if (numericPrefix != null && numericPrefix.isNotEmpty) {
+        // "29-debug" -> mainParts append 29, prerelease null
+        return _ParsedVersion(
+          mainParts: [
+            ...baseParts.map(
+              (item) =>
+                  int.tryParse(item.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0,
+            ),
+            ...numericPrefix,
+          ],
+          prerelease: null,
+        );
+      }
+    }
 
     final numericDottedSuffixParts =
         !hasExplicitPrerelease && baseParts.length > 3
@@ -981,6 +1035,30 @@ class AppUpdateService {
     return values;
   }
 
+  /// 提取 "29-debug" 中的数字前缀部分 [29]，
+  /// 或 "1.2.3-xxx" 中的 [1, 2, 3]。
+  List<int>? _extractNumericPrefixParts(String raw) {
+    final parts = raw.split('.');
+    final values = <int>[];
+    for (final part in parts) {
+      final value = int.tryParse(part);
+      if (value != null) {
+        values.add(value);
+        continue;
+      }
+      // 尝试提取段内的数字前缀，如 "29-debug" → 29
+      final match = RegExp(r'^\d+').firstMatch(part);
+      if (match != null) {
+        final prefixValue = int.tryParse(match.group(0)!);
+        if (prefixValue != null) {
+          values.add(prefixValue);
+        }
+      }
+      break; // 遇到非纯数字段就停止
+    }
+    return values.isEmpty ? null : values;
+  }
+
   int _comparePrerelease(String left, String right) {
     final leftParts = left.split('.');
     final rightParts = right.split('.');
@@ -999,6 +1077,16 @@ class AppUpdateService {
       if (leftNumber != null && rightNumber != null) {
         return leftNumber.compareTo(rightNumber);
       }
+      // 提取数字前缀处理 "29" vs "29-debug" 这类情况
+      final leftPrefix = leftNumber ?? _extractNumericPrefix(leftValue);
+      final rightPrefix = rightNumber ?? _extractNumericPrefix(rightValue);
+      if (leftPrefix != null && rightPrefix != null) {
+        if (leftPrefix != rightPrefix) {
+          return leftPrefix.compareTo(rightPrefix);
+        }
+        // 数字前缀相同，继续比较下一段
+        continue;
+      }
       if (leftNumber != null) {
         return -1;
       }
@@ -1009,6 +1097,12 @@ class AppUpdateService {
     }
 
     return 0;
+  }
+
+  static int? _extractNumericPrefix(String value) {
+    final match = RegExp(r'^\d+').firstMatch(value);
+    if (match == null) return null;
+    return int.tryParse(match.group(0)!);
   }
 
   Map<String, dynamic>? _pickLatestEligibleRelease(

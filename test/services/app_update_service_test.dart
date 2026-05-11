@@ -49,11 +49,13 @@ class _CountingProbeClient extends http.BaseClient {
 }
 
 void main() {
-  test('github api lookup is used after releases page misses', () async {
+  test('github api and releases page race in parallel', () async {
     final requestedPaths = <String>[];
     final client = MockClient((request) async {
       requestedPaths.add(request.url.path);
       if (request.url.path.endsWith('/releases')) {
+        // 模拟 GitHub API 稍慢
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         return http.Response(
           jsonEncode([
             {
@@ -74,7 +76,8 @@ void main() {
           200,
         );
       }
-      fail('Unexpected url: ${request.url}');
+      // Releases 页面请求返回 404
+      return http.Response('', 404);
     });
 
     final service = AppUpdateService(client: client);
@@ -82,9 +85,46 @@ void main() {
 
     expect(result.hasRelease, isTrue);
     expect(result.latestRelease?.version, '1.1.11');
-    expect(requestedPaths, [
-      '/repos/Mutx163/mikcb/releases',
-    ]);
+    // 两个策略都发出了请求
+    expect(requestedPaths, contains('/repos/Mutx163/mikcb/releases'));
+  });
+
+  test('debug build with dash suffix is not treated as newer than release',
+      () async {
+    final client = MockClient((request) async {
+      if (request.url.path.endsWith('/releases')) {
+        return http.Response(
+          jsonEncode([
+            {
+              'tag_name': 'v1.2.0.29',
+              'name': 'v1.2.0.29',
+              'draft': false,
+              'prerelease': false,
+              'html_url': 'https://example.com/1.2.0.29',
+              'assets': const [
+                {
+                  'name': 'mikcb-1.2.0.29-arm64-v8a.apk',
+                  'browser_download_url': 'https://example.com/1.2.0.29.apk',
+                },
+              ],
+              'updated_at': '2026-05-11T10:00:00Z',
+            },
+          ]),
+          200,
+        );
+      }
+      return http.Response('', 404);
+    });
+
+    final service = AppUpdateService(client: client);
+    final result = await service.checkForUpdates(
+      currentVersion: '1.2.0-29-debug',
+    );
+
+    expect(result.hasRelease, isTrue);
+    expect(result.latestRelease?.version, '1.2.0.29');
+    // debug 构建 1.2.0-29-debug 应该等同于 1.2.0.29，不提示更新
+    expect(result.hasUpdate, isFalse);
   });
 
   test('include prerelease picks highest version even if not first in list',

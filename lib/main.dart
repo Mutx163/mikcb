@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -113,9 +114,11 @@ ThemeData _buildAppTheme(
 }
 
 Future<void> main() async {
-  runZonedGuarded(() {
+  runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     unawaited(AppLogService.instance.initialize());
+    // 预加载 SharedPreferences，避免冷启动阻塞
+    await SharedPreferences.getInstance();
     WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
     FlutterError.onError = (details) {
@@ -240,7 +243,6 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   final StorageService _storageService = StorageService();
   final AppMigrationService _migrationService = AppMigrationService();
   bool _startupHandled = false;
-  bool _isBootstrapping = true;
 
   @override
   void initState() {
@@ -260,21 +262,53 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       ),
     );
 
-    await _storageService.init();
-    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
-    final hasCompletedOnboarding =
-        await _storageService.hasCompletedOnboarding();
-    final hasHandledPackageMigration =
-        await _storageService.hasHandledPackageMigration();
+    // SharedPreferences 已在 main() 预加载，这里直接读取
     final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
     final hasSeenGuide = await _storageService.hasSeenUserGuide();
+    final hasCompletedOnboarding = await _storageService.hasCompletedOnboarding();
+    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
+    final hasHandledPackageMigration = await _storageService.hasHandledPackageMigration();
 
     if (!mounted) {
       return;
     }
+
+    // 后台初始化 provider，不阻塞 UI
     final provider = context.read<TimetableProvider>();
+    unawaited(provider.initialize());
+
+    // 等待第一帧渲染完成
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) {
+      return;
+    }
+
+    // 隐私协议检查：合规要求，必须在使用 App 前同意
+    if (!hasAcceptedPrivacy) {
+      final accepted = await _openGuide(
+        requirePrivacyConsent: true,
+        initialPrivacyChecked: false,
+        markGuideSeenAfterExit: !hasSeenGuide,
+      );
+      if (!mounted || !accepted) {
+        return;
+      }
+      await UmengAnalyticsService.initializeIfNeeded();
+    } else if (!hasSeenGuide) {
+      // 已同意隐私但未看过引导，异步展示
+      unawaited(_openGuide(
+        requirePrivacyConsent: false,
+        initialPrivacyChecked: true,
+        markGuideSeenAfterExit: true,
+      ));
+    }
+
+    if (!mounted) {
+      return;
+    }
+
+    // 迁移检查
     final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
-    await provider.initialize();
     final legacyPackage = await legacyPackageFuture;
     final shouldShowMigrationGuide =
         !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
@@ -339,60 +373,21 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       }
     }
 
-    if (hasAcceptedPrivacy && hasSeenGuide) {
-      await AppLogService.instance.updatePrivacyAccepted(true);
-      await UmengAnalyticsService.initializeIfNeeded();
-      if (!mounted) {
-        return;
-      }
-      unawaited(_checkPendingIcsIntent());
-      unawaited(
-        AppLogService.instance.info(
-          'startup_flow_completed',
-          'Startup flow completed without onboarding screens',
-        ),
-      );
-      setState(() {
-        _isBootstrapping = false;
-      });
-      return;
-    }
-
     if (!mounted) {
-      return;
-    }
-
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-
-    final guideCompleted = await _openGuide(
-      requirePrivacyConsent: !hasAcceptedPrivacy,
-      initialPrivacyChecked: hasAcceptedPrivacy,
-      markGuideSeenAfterExit: !hasSeenGuide,
-    );
-    if (!mounted || !guideCompleted) {
       return;
     }
 
     if (await _storageService.hasAcceptedPrivacyPolicy()) {
       await UmengAnalyticsService.initializeIfNeeded();
     }
-    if (!mounted) {
-      return;
-    }
 
     unawaited(_checkPendingIcsIntent());
     unawaited(
       AppLogService.instance.info(
         'startup_flow_completed',
-        'Startup flow completed after guide/onboarding',
+        'Startup flow completed',
       ),
     );
-    setState(() {
-      _isBootstrapping = false;
-    });
   }
 
   Future<bool> _openGuide({
@@ -558,11 +553,6 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isBootstrapping) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
     return const TimetableScreen();
   }
 }
