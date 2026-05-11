@@ -50,6 +50,16 @@ jobs:
           echo "release_tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           echo "release_notes_file=${RELEASE_NOTES_FILE}" >> "$GITHUB_OUTPUT"
           echo "is_prerelease=${IS_PRERELEASE}" >> "$GITHUB_OUTPUT"
+          # 读取 release notes 内容用于蒲公英更新说明
+          if [[ -f "${RELEASE_NOTES_FILE}" ]]; then
+            # 去掉标题行，只保留内容
+            RELEASE_BODY=$(sed '1,/^## /{/^## /!d}' "${RELEASE_NOTES_FILE}" | sed '/^$/d' | sed 's/^- //')
+            echo "release_body<<EOF" >> "$GITHUB_OUTPUT"
+            echo "${RELEASE_BODY}" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "release_body=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Analyze
         run: flutter analyze --no-fatal-infos
@@ -108,7 +118,7 @@ jobs:
           _api_key: ${{ secrets.PGYER_API_KEY }}
           appFilePath: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           buildInstallType: 1
-          buildUpdateDescription: ${{ steps.meta.outputs.release_tag }}
+          buildUpdateDescription: ${{ steps.meta.outputs.release_body }}
 
       - name: Upload APK artifact
         if: startsWith(github.ref, 'refs/tags/v')
