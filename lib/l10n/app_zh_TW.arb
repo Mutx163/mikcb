@@ -574,6 +574,8 @@
   "stableOnly": "正式版",
   "aboutUpdatesTitle": "版本更新",
   "aboutUpdatesSubtitle": "檢查更新、立即下載，以及測試與診斷入口",
+  "aboutChangelogTitle": "更新日誌",
+  "aboutChangelogSubtitle": "查看所有版本的更新內容",
   "aboutPositioningTitle": "項目定位",
   "aboutPositioningSubtitle": "這是什麼、適合誰、核心能力是什麼",
   "aboutPositioningBullet1": "支持周視圖課表、課程增刪改、.ics 匯入",

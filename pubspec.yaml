@@ -42,3 +42,4 @@ flutter:
     - assets/donate/wechatpay.png
     - assets/donate/alipay.png
     - assets/holidays/
+    - docs/releases/

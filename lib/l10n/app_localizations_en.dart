@@ -988,6 +988,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Check updates, download now, and open testing / diagnostics tools.';
 
   @override
+  String get aboutChangelogTitle => 'Changelog';
+
+  @override
+  String get aboutChangelogSubtitle => 'View update notes for all versions';
+
+  @override
   String get aboutPositioningTitle => 'Project Positioning';
 
   @override
