@@ -3790,12 +3790,18 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    24 + MediaQuery.of(ctx).viewInsets.bottom,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text(
                       existing != null ? l10n.customHolidayEdit : l10n.customHolidayAdd,
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -3811,6 +3817,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     const SizedBox(height: 16),
                     InkWell(
                       onTap: () async {
+                        FocusManager.instance.primaryFocus?.unfocus();
                         final now = DateTime.now();
                         final picked = await showDateRangePicker(
                           context: ctx,
@@ -3891,11 +3898,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                   ],
                 ),
               ),
-            );
-          },
-        );
-      },
-    );
+            ),
+          );
+        },
+      );
+    },
+  );
 
     if (result != true || startDate == null || endDate == null) return;
     if (!mounted) return;
@@ -3977,24 +3985,22 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     final holidayData = provider.holidayData;
     final now = DateTime.now();
 
-    // Collect all holidays and makeup workdays
-    final allHolidays = <_HolidayDisplayItem>[];
+    // Collect official holidays (exclude custom ones)
+    final officialHolidays = <_HolidayDisplayItem>[];
     if (holidayData != null) {
       final seenGroups = <String>{};
       for (final entry in holidayData.entries) {
-        // 跳过自定义假期，后面单独处理
         if (entry.groupId != null && entry.groupId!.startsWith('custom-')) continue;
         if (entry.groupId != null && seenGroups.add(entry.groupId!)) {
           final groupEntries =
               holidayData.entriesForGroup(entry.groupId!);
-          // Prefer vacation entries for name/date range; fall back to first.
           final vacationEntries = groupEntries
               .where((e) => e.type == HolidayType.vacation)
               .toList();
           final representative = vacationEntries.isNotEmpty
               ? vacationEntries
               : groupEntries;
-          allHolidays.add(_HolidayDisplayItem(
+          officialHolidays.add(_HolidayDisplayItem(
             name: representative.first.name,
             startDate: representative.first.date,
             endDate: representative.last.date,
@@ -4003,7 +4009,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
           ));
         } else if (entry.groupId == null &&
             entry.type == HolidayType.adjustedWorkday) {
-          allHolidays.add(_HolidayDisplayItem(
+          officialHolidays.add(_HolidayDisplayItem(
             name: l10n.holidayMakeupWorkday,
             startDate: entry.date,
             endDate: entry.date,
@@ -4014,22 +4020,27 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       }
     }
 
-    // Add custom holidays to the list
-    for (final group in _groupCustomHolidays()) {
-      allHolidays.add(_HolidayDisplayItem(
-        name: group.name,
-        startDate: group.startDate,
-        endDate: group.endDate,
-        type: group.type,
-        isPast: group.endDate.isBefore(now),
-      ));
-    }
-
     // Sort by start date
-    allHolidays.sort((a, b) => a.startDate.compareTo(b.startDate));
+    officialHolidays.sort((a, b) => a.startDate.compareTo(b.startDate));
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.holidaySettingsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.holidaySettingsTitle),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: l10n.holidayCheckUpdate,
+            onPressed: () async {
+              await provider.refreshHolidayData();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(l10n.holidayCheckUpdate)),
+                );
+              }
+            },
+          ),
+        ],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -4046,123 +4057,23 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     );
                   },
                 ),
+
               ],
             ),
           ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.holidayDataSectionTitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (holidayData != null) ...[
-                    _buildInfoRow(
-                      l10n.holidayDataYear,
-                      '${holidayData.year}',
-                    ),
-                    _buildInfoRow(
-                      l10n.holidayDataCount,
-                      '${holidayData.entries.length}',
-                    ),
-                  ] else
-                    Text(
-                      l10n.holidayDataEmpty,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () async {
-                        await provider.refreshHolidayData();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(l10n.holidayCheckUpdate)),
-                          );
-                        }
-                      },
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: Text(l10n.holidayCheckUpdate),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          // Update log section
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '更新日志',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (provider.holidayLogs.isEmpty)
-                    Text(
-                      '暂无日志',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    )
-                  else
-                    SizedBox(
-                      height: 160,
-                      child: ListView.builder(
-                        itemCount: provider.holidayLogs.length,
-                        itemBuilder: (_, i) {
-                          final log = provider.holidayLogs[i];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                              '[${log.timeString}] ${log.message}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontFamily: 'monospace',
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 4),
           // ---- 自定义假期 ----
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
+                      Icon(Icons.edit_note, size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           l10n.customHolidayTitle,
@@ -4173,14 +4084,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.add, size: 20),
-                        tooltip: l10n.customHolidayAdd,
+                      TextButton.icon(
                         onPressed: () => _showCustomHolidayDialog(),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: Text(l10n.customHolidayAdd),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   if (_customHolidays.isEmpty)
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -4277,30 +4188,46 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // ---- 法定节假日 ----
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    l10n.holidayUpcomingSectionTitle,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.celebration_outlined, size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${holidayData?.year ?? ""}年法定节假日',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  if (allHolidays.isEmpty)
-                    Text(
-                      l10n.holidayNoUpcoming,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 8),
+                  if (officialHolidays.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Center(
+                        child: Text(
+                          l10n.holidayNoUpcoming,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                       ),
                     )
                   else
-                    ...allHolidays.map(
+                    ...officialHolidays.map(
                       (h) => Padding(
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Opacity(
@@ -4350,32 +4277,99 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          // ---- 更新日志 ----
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.history, size: 18,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '更新日志',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      if (provider.holidayLogs.isNotEmpty)
+                        Text(
+                          '${provider.holidayLogs.length}条',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  if (provider.holidayLogs.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        '暂无日志',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    )
+                  else
+                    SizedBox(
+                      height: 140,
+                      child: ListView.builder(
+                        itemCount: provider.holidayLogs.length,
+                        itemBuilder: (_, i) {
+                          final log = provider.holidayLogs[i];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 3),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  log.timeString,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant
+                                        .withValues(alpha: 0.7),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    log.message,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   String _formatHolidayRange(DateTime start, DateTime end) {
     if (_isSameDate(start, end)) {
