@@ -538,7 +538,7 @@ class AppUpdateService {
           outcomes.add(outcome);
           return outcome;
         });
-      }),
+      }).toList(),
       (outcome) => outcome.release != null ? outcome : null,
     );
 
