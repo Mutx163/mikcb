@@ -544,6 +544,8 @@
   "stableOnly": "Stable only",
   "aboutUpdatesTitle": "App Updates",
   "aboutUpdatesSubtitle": "Check updates, download now, and open testing / diagnostics tools.",
+  "aboutChangelogTitle": "Changelog",
+  "aboutChangelogSubtitle": "View update notes for all versions",
   "aboutPositioningTitle": "Project Positioning",
   "aboutPositioningSubtitle": "What it is, who it is for, and its core capabilities.",
   "aboutPositioningBullet1": "Supports weekly timetable view, course add/edit/delete, and .ics import.",

@@ -18,6 +18,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_analytics.dart';
 import '../services/app_log_service.dart';
+import 'changelog_screen.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
@@ -229,6 +230,19 @@ class _AboutScreenState extends State<AboutScreen> {
                         builder: (_) => AboutUpdateScreen(
                           packageInfo: _packageInfo,
                         ),
+                      ),
+                    );
+                  },
+                ),
+                _AboutNavTile(
+                  icon: Icons.history_rounded,
+                  title: l10n.aboutChangelogTitle,
+                  subtitle: l10n.aboutChangelogSubtitle,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ChangelogScreen(),
                       ),
                     );
                   },

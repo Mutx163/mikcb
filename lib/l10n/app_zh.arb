@@ -575,6 +575,8 @@
   "stableOnly": "正式版",
   "aboutUpdatesTitle": "版本更新",
   "aboutUpdatesSubtitle": "检查更新、立即下载，以及测试与诊断入口",
+  "aboutChangelogTitle": "更新日志",
+  "aboutChangelogSubtitle": "查看所有版本的更新内容",
   "aboutPositioningTitle": "项目定位",
   "aboutPositioningSubtitle": "这是什么、适合谁、核心能力是什么",
   "aboutPositioningBullet1": "支持周视图课表、课程增删改、.ics 导入",

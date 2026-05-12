@@ -1783,6 +1783,18 @@ abstract class AppLocalizations {
   /// **'检查更新、立即下载，以及测试与诊断入口'**
   String get aboutUpdatesSubtitle;
 
+  /// No description provided for @aboutChangelogTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新日志'**
+  String get aboutChangelogTitle;
+
+  /// No description provided for @aboutChangelogSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看所有版本的更新内容'**
+  String get aboutChangelogSubtitle;
+
   /// No description provided for @aboutPositioningTitle.
   ///
   /// In zh, this message translates to:
