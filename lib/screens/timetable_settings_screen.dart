@@ -3992,6 +3992,20 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
       }
     }
 
+    // Add custom holidays to the list
+    for (final group in _groupCustomHolidays()) {
+      allHolidays.add(_HolidayDisplayItem(
+        name: group.name,
+        startDate: group.startDate,
+        endDate: group.endDate,
+        type: group.type,
+        isPast: group.endDate.isBefore(now),
+      ));
+    }
+
+    // Sort by start date
+    allHolidays.sort((a, b) => a.startDate.compareTo(b.startDate));
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.holidaySettingsTitle)),
       body: ListView(
