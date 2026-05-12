@@ -4611,10 +4611,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get customHolidayType => 'Type';
 
   @override
-  String get customHolidayTypeVacation => 'Holiday (hide courses)';
+  String get customHolidayTypeVacation => 'Holiday';
 
   @override
-  String get customHolidayTypeWorkday => 'Makeup workday (show courses)';
+  String get customHolidayTypeWorkday => 'Workday';
 
   @override
   String get customHolidayEmpty => 'No custom holidays';
@@ -4647,4 +4647,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageTimeSchemesAction => 'Manage time schemes';
+
+  @override
+  String get examDefaultName => 'Final Exam';
+
+  @override
+  String get examDateWeekPickerTitle => 'Select exam date';
+
+  @override
+  String get weekPickerCalendarTooltip => 'Use calendar picker';
+
+  @override
+  String get thisWeekLabel => 'This week';
 }

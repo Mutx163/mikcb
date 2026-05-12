@@ -45,6 +45,7 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<String> _getKnownVersions() {
     // 返回所有已知版本，按倒序排列（最新在前）
     return [
+      'v1.2.1.1',
       'v1.2.1',
       'v1.2.0.30',
       'v1.2.0.29',

@@ -5,6 +5,8 @@ import 'package:uuid/uuid.dart';
 
 import '../models/course.dart';
 import '../models/exam.dart';
+import '../models/timetable_settings.dart';
+import 'package:intl/intl.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
 
@@ -285,7 +287,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                             setState(() {
                               _selectedCourseId = course.id;
                               if (_nameController.text.isEmpty) {
-                                _nameController.text = '期末考试';
+                                _nameController.text = l10n.examDefaultName;
                               }
                             });
                             Navigator.pop(ctx);
@@ -379,9 +381,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
     if (semesterStart != null) {
       final weekIndex = _getWeekIndex(_selectedDate, semesterStart, 1); // 1=Monday
       if (weekIndex != null && weekIndex >= 1 && weekIndex <= settings.semesterWeekCount) {
-        final dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        final dayNames = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
         final dayOfWeek = _selectedDate.weekday; // 1=Monday, 7=Sunday
-        weekInfo = ' 第$weekIndex周 ${dayNames[dayOfWeek - 1]}';
+        weekInfo = ' ${l10n.weekLabel(weekIndex)} ${dayNames[dayOfWeek - 1]}';
       }
     }
 
@@ -556,7 +558,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
   Future<DateTime?> _showWeekPicker(
     BuildContext context,
     DateTime semesterStart,
-    dynamic settings,
+    TimetableSettings settings,
   ) async {
     final colorScheme = Theme.of(context).colorScheme;
     final totalWeeks = settings.semesterWeekCount;
@@ -597,7 +599,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
-            final dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            final l10n = AppLocalizations.of(ctx)!;
+            final dayNames = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
 
             return SafeArea(
               child: Column(
@@ -620,15 +623,21 @@ class _AddExamScreenState extends State<AddExamScreen> {
                       children: [
                         const Icon(Icons.view_week_rounded, size: 20),
                         const SizedBox(width: 8),
-                        const Text(
-                          '选择考试日期',
+                        Text(
+                          l10n.examDateWeekPickerTitle,
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         const Spacer(),
+                        // Close button
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 20),
+                          tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
                         // 切换到标准日历选择器
                         IconButton(
                           icon: const Icon(Icons.calendar_today, size: 20),
-                          tooltip: '使用日历选择',
+                          tooltip: l10n.weekPickerCalendarTooltip,
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: ctx,
@@ -644,8 +653,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         // 显示当前选中的实际日期
                         Text(
                           selectedDayOfWeek != null
-                              ? '${getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!).month}/${getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!).day}'
-                              : '第$selectedWeek周',
+                              ? DateFormat.Md().format(getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!))
+                              : l10n.weekLabel(selectedWeek),
                           style: TextStyle(
                             fontSize: 14,
                             color: colorScheme.primary,
@@ -699,7 +708,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        '${date.month}/${date.day}',
+                                        DateFormat.Md().format(date),
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: isSelected
@@ -785,7 +794,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                       ),
                                       child: Center(
                                         child: Text(
-                                          '第$week周',
+                                          l10n.weekLabel(week),
                                           style: TextStyle(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w600,
@@ -806,8 +815,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                         children: [
                                           Text(
                                             selectedDayOfWeek != null
-                                                ? '${date.month}月${date.day}日 ${dayNames[selectedDayOfWeek! - 1]}'
-                                                : '第$week周',
+                                                ? '${DateFormat.Md().format(date)} ${dayNames[selectedDayOfWeek! - 1]}'
+                                                : l10n.weekLabel(week),
                                             style: TextStyle(
                                               fontSize: 14,
                                               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
@@ -818,7 +827,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                           ),
                                           if (isCurrentWeek)
                                             Text(
-                                              '本周',
+                                              l10n.thisWeekLabel,
                                               style: TextStyle(
                                                 fontSize: 11,
                                                 color: colorScheme.secondary,
