@@ -3962,6 +3962,8 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     if (holidayData != null) {
       final seenGroups = <String>{};
       for (final entry in holidayData.entries) {
+        // 跳过自定义假期，后面单独处理
+        if (entry.groupId != null && entry.groupId!.startsWith('custom-')) continue;
         if (entry.groupId != null && seenGroups.add(entry.groupId!)) {
           final groupEntries =
               holidayData.entriesForGroup(entry.groupId!);
