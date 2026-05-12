@@ -2625,8 +2625,8 @@
   "customHolidayStartDate": "开始日期",
   "customHolidayEndDate": "结束日期",
   "customHolidayType": "类型",
-  "customHolidayTypeVacation": "假期（隐藏课程）",
-  "customHolidayTypeWorkday": "调休上班（显示课程）",
+  "customHolidayTypeVacation": "假期",
+  "customHolidayTypeWorkday": "调休上班",
   "customHolidayEmpty": "暂无自定义假期",
   "customHolidayNameRequired": "请输入假期名称",
   "customHolidayDateRange": "{start} ~ {end}",
@@ -2642,5 +2642,9 @@
   "noHistoryRecords": "暂无历史记录",
   "weekPickerTitle": "选择上课周次",
   "selectTimeSchemeTitle": "选择时间方案",
-  "manageTimeSchemesAction": "管理时间方案"
+  "manageTimeSchemesAction": "管理时间方案",
+  "examDefaultName": "期末考试",
+  "examDateWeekPickerTitle": "选择考试日期",
+  "weekPickerCalendarTooltip": "使用日历选择",
+  "thisWeekLabel": "本周"
 }

@@ -2625,8 +2625,8 @@
   "customHolidayStartDate": "Start date",
   "customHolidayEndDate": "End date",
   "customHolidayType": "Type",
-  "customHolidayTypeVacation": "Holiday (hide courses)",
-  "customHolidayTypeWorkday": "Makeup workday (show courses)",
+  "customHolidayTypeVacation": "Holiday",
+  "customHolidayTypeWorkday": "Workday",
   "customHolidayEmpty": "No custom holidays",
   "customHolidayNameRequired": "Please enter a holiday name",
   "customHolidayDateRange": "{start} ~ {end}",
@@ -2642,5 +2642,9 @@
   "noHistoryRecords": "No history yet",
   "weekPickerTitle": "Select weeks",
   "selectTimeSchemeTitle": "Select time scheme",
-  "manageTimeSchemesAction": "Manage time schemes"
+  "manageTimeSchemesAction": "Manage time schemes",
+  "examDefaultName": "Final Exam",
+  "examDateWeekPickerTitle": "Select exam date",
+  "weekPickerCalendarTooltip": "Use calendar picker",
+  "thisWeekLabel": "This week"
 }

@@ -4360,10 +4360,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get customHolidayType => '类型';
 
   @override
-  String get customHolidayTypeVacation => '假期（隐藏课程）';
+  String get customHolidayTypeVacation => '假期';
 
   @override
-  String get customHolidayTypeWorkday => '调休上班（显示课程）';
+  String get customHolidayTypeWorkday => '调休上班';
 
   @override
   String get customHolidayEmpty => '暂无自定义假期';
@@ -4396,6 +4396,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get manageTimeSchemesAction => '管理时间方案';
+
+  @override
+  String get examDefaultName => '期末考试';
+
+  @override
+  String get examDateWeekPickerTitle => '选择考试日期';
+
+  @override
+  String get weekPickerCalendarTooltip => '使用日历选择';
+
+  @override
+  String get thisWeekLabel => '本周';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -8612,6 +8624,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String examCountdownDays(int days) {
     return '$days天後';
   }
+
+  @override
+  String get examDefaultName => '期末考試';
+
+  @override
+  String get examDateWeekPickerTitle => '選擇考試日期';
+
+  @override
+  String get weekPickerCalendarTooltip => '使用日曆選擇';
+
+  @override
+  String get thisWeekLabel => '本週';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -12828,4 +12852,16 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String examCountdownDays(int days) {
     return '$days天後';
   }
+
+  @override
+  String get examDefaultName => '期末考試';
+
+  @override
+  String get examDateWeekPickerTitle => '選擇考試日期';
+
+  @override
+  String get weekPickerCalendarTooltip => '使用日曆選擇';
+
+  @override
+  String get thisWeekLabel => '本週';
 }

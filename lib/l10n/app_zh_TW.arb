@@ -2570,5 +2570,9 @@
         "type": "int"
       }
     }
-  }
+  },
+  "examDefaultName": "期末考試",
+  "examDateWeekPickerTitle": "選擇考試日期",
+  "weekPickerCalendarTooltip": "使用日曆選擇",
+  "thisWeekLabel": "本週"
 }

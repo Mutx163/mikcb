@@ -3782,18 +3782,25 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     DateTime? endDate = initialEnd ?? existing?.date;
     HolidayType selectedType = existing?.type ?? HolidayType.vacation;
 
-    final result = await showDialog<bool>(
+    final result = await showModalBottomSheet<bool>(
       context: context,
+      showDragHandle: true,
+      useSafeArea: true,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
-            return AlertDialog(
-              title: Text(existing != null ? l10n.customHolidayEdit : l10n.customHolidayAdd),
-              content: SingleChildScrollView(
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      existing != null ? l10n.customHolidayEdit : l10n.customHolidayAdd,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
@@ -3836,42 +3843,54 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     const SizedBox(height: 16),
                     Text(l10n.customHolidayType, style: const TextStyle(fontSize: 13)),
                     const SizedBox(height: 4),
-                    SegmentedButton<HolidayType>(
-                      segments: [
-                        ButtonSegment(
-                          value: HolidayType.vacation,
-                          label: Text(l10n.customHolidayTypeVacation, style: const TextStyle(fontSize: 12)),
+                    SizedBox(
+                      width: double.infinity,
+                      child: SegmentedButton<HolidayType>(
+                        showSelectedIcon: false,
+                        segments: [
+                          ButtonSegment(
+                            value: HolidayType.vacation,
+                            label: Text(l10n.customHolidayTypeVacation),
+                          ),
+                          ButtonSegment(
+                            value: HolidayType.adjustedWorkday,
+                            label: Text(l10n.customHolidayTypeWorkday),
+                          ),
+                        ],
+                        selected: {selectedType},
+                        onSelectionChanged: (s) => setDialogState(() => selectedType = s.first),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
+                          ),
                         ),
-                        ButtonSegment(
-                          value: HolidayType.adjustedWorkday,
-                          label: Text(l10n.customHolidayTypeWorkday, style: const TextStyle(fontSize: 12)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              if (nameController.text.trim().isEmpty) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(content: Text(l10n.customHolidayNameRequired)),
+                                );
+                                return;
+                              }
+                              if (startDate == null || endDate == null) return;
+                              Navigator.pop(ctx, true);
+                            },
+                            child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
+                          ),
                         ),
                       ],
-                      selected: {selectedType},
-                      onSelectionChanged: (s) => setDialogState(() => selectedType = s.first),
                     ),
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, false),
-                  child: Text(MaterialLocalizations.of(ctx).cancelButtonLabel),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    if (nameController.text.trim().isEmpty) {
-                      ScaffoldMessenger.of(ctx).showSnackBar(
-                        SnackBar(content: Text(l10n.customHolidayNameRequired)),
-                      );
-                      return;
-                    }
-                    if (startDate == null || endDate == null) return;
-                    Navigator.pop(ctx, true);
-                  },
-                  child: Text(MaterialLocalizations.of(ctx).okButtonLabel),
-                ),
-              ],
             );
           },
         );

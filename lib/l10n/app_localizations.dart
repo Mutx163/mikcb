@@ -7924,13 +7924,13 @@ abstract class AppLocalizations {
   /// No description provided for @customHolidayTypeVacation.
   ///
   /// In zh, this message translates to:
-  /// **'假期（隐藏课程）'**
+  /// **'假期'**
   String get customHolidayTypeVacation;
 
   /// No description provided for @customHolidayTypeWorkday.
   ///
   /// In zh, this message translates to:
-  /// **'调休上班（显示课程）'**
+  /// **'调休上班'**
   String get customHolidayTypeWorkday;
 
   /// No description provided for @customHolidayEmpty.
@@ -7992,6 +7992,30 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'管理时间方案'**
   String get manageTimeSchemesAction;
+
+  /// No description provided for @examDefaultName.
+  ///
+  /// In zh, this message translates to:
+  /// **'期末考试'**
+  String get examDefaultName;
+
+  /// No description provided for @examDateWeekPickerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择考试日期'**
+  String get examDateWeekPickerTitle;
+
+  /// No description provided for @weekPickerCalendarTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用日历选择'**
+  String get weekPickerCalendarTooltip;
+
+  /// No description provided for @thisWeekLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周'**
+  String get thisWeekLabel;
 }
 
 class _AppLocalizationsDelegate
