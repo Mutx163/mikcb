@@ -180,31 +180,15 @@ class WarehouseRepositoryService {
       return [originalUri];
     }
 
-    final orderedPresets = <AppUpdateMirrorPreset>[
-      options.mirrorPreset,
-      AppUpdateMirrorPreset.ghfast,
-      AppUpdateMirrorPreset.ghproxyCn,
-      AppUpdateMirrorPreset.ghLlkk,
-      AppUpdateMirrorPreset.ghProxyCom,
-      AppUpdateMirrorPreset.ghproxyNet,
-      if (options.customMirrorUrlPrefix.trim().isNotEmpty)
-        AppUpdateMirrorPreset.custom,
-    ];
-    final seen = <String>{};
-    final uris = <Uri>[];
-    for (final preset in orderedPresets) {
-      final prefix = resolveAppUpdateMirrorUrlPrefix(
-        preset: preset,
-        customUrlPrefix: options.customMirrorUrlPrefix,
-      );
-      final separator = prefix.endsWith('/') ? '' : '/';
-      final candidate = Uri.parse('$prefix$separator$originalUri');
-      final key = candidate.toString();
-      if (seen.add(key)) {
-        uris.add(candidate);
-      }
-    }
-    return uris;
+    final selectedPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: options.mirrorPreset,
+      customUrlPrefix: options.customMirrorUrlPrefix,
+    );
+    final urls = buildMirrorCandidateUrls(
+      originalUri.toString(),
+      selectedMirrorPrefix: selectedPrefix,
+    );
+    return urls.map(Uri.parse).toList();
   }
 }
 

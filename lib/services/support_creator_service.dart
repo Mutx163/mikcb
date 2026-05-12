@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import 'app_update_service.dart';
-import '../models/timetable_settings.dart';
 import '../utils/async_utils.dart';
 
 class SupportDonorEntry {
@@ -74,23 +73,10 @@ class SupportCreatorService {
     String? mirrorUrlPrefix,
   }) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final allMirrorPrefixes = <String?>[
-      normalizedMirrorPrefix,
-      _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghProxyComMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghproxyNetMirrorUrlPrefix),
-    ];
-
-    final seen = <String>{};
-    final candidateUrls = <String>[];
-    for (final prefix in allMirrorPrefixes.whereType<String>()) {
-      final separator = prefix.endsWith('/') ? '' : '/';
-      final url = '$prefix$separator$_donorsUrl';
-      if (seen.add(url)) candidateUrls.add(url);
-    }
-    if (seen.add(_donorsUrl)) candidateUrls.add(_donorsUrl);
+    final candidateUrls = buildMirrorCandidateUrls(
+      _donorsUrl,
+      selectedMirrorPrefix: normalizedMirrorPrefix,
+    );
 
     final sw = Stopwatch()..start();
     print('[SupportCreator] fetchDonors 开始，候选 ${candidateUrls.length} 个');
