@@ -716,9 +716,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                           hasScrolledToCurrentWeek = true;
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (scrollController.hasClients) {
-                              scrollController.jumpTo(
-                                (index * 60.0).clamp(0.0, scrollController.position.maxScrollExtent),
-                              );
+                              final targetOffset = (index * 56.0 - 100.0).clamp(0.0, scrollController.position.maxScrollExtent);
+                              scrollController.jumpTo(targetOffset);
                             }
                           });
                         }
