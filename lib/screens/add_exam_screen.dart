@@ -630,15 +630,14 @@ class _AddExamScreenState extends State<AddExamScreen> {
                           icon: const Icon(Icons.calendar_today, size: 20),
                           tooltip: '使用日历选择',
                           onPressed: () async {
-                            Navigator.pop(ctx); // 先关闭周次选择器
                             final picked = await showDatePicker(
-                              context: context,
+                              context: ctx,
                               initialDate: getDateForWeekAndDay(selectedWeek, selectedDayOfWeek ?? DateTime.now().weekday),
                               firstDate: DateTime.now().subtract(const Duration(days: 365)),
                               lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
                             );
-                            if (picked != null && context.mounted) {
-                              Navigator.pop(context, picked);
+                            if (picked != null && ctx.mounted) {
+                              Navigator.pop(ctx, picked);
                             }
                           },
                         ),
