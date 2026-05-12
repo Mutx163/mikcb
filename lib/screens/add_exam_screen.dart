@@ -661,6 +661,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                   setModalState(() {
                                     selectedDayOfWeek = dayOfWeek;
                                   });
+                                  // 选完星期后自动确定
+                                  Navigator.pop(
+                                    ctx,
+                                    getDateForWeekAndDay(selectedWeek, dayOfWeek),
+                                  );
                                 },
                                 child: Container(
                                   padding: const EdgeInsets.symmetric(vertical: 10),
