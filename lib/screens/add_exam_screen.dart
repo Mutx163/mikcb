@@ -562,10 +562,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
     final totalWeeks = settings.semesterWeekCount;
     const firstDayOfWeek = 1; // 1=Mon, 7=Sun
 
-    // 计算当前选中日期所在的周次
-    final currentWeekIndex = _getWeekIndex(_selectedDate, semesterStart, firstDayOfWeek);
-    final initialWeek = (currentWeekIndex != null && currentWeekIndex >= 1 && currentWeekIndex <= totalWeeks)
-        ? currentWeekIndex
+    // 计算当前周次（基于今天）
+    final now = DateTime.now();
+    final nowWeekIndex = _getWeekIndex(now, semesterStart, firstDayOfWeek);
+    final initialWeek = (nowWeekIndex != null && nowWeekIndex >= 1 && nowWeekIndex <= totalWeeks)
+        ? nowWeekIndex
         : 1;
 
     int selectedWeek = initialWeek;
