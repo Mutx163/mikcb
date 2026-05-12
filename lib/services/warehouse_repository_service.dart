@@ -140,7 +140,7 @@ class WarehouseRepositoryService {
             'User-Agent': 'mikcb-warehouse-client',
           },
         );
-      }),
+      }).toList(),
       (response) {
         if (response.statusCode == 200) {
           return utf8.decode(response.bodyBytes);

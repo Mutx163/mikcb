@@ -90,7 +90,7 @@ class SupportCreatorService {
               },
             )
             .timeout(const Duration(seconds: 6));
-      }),
+      }).toList(),
       (response) {
         if (response.statusCode != 200) return null;
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
