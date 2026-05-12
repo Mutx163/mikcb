@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import 'app_update_service.dart';
+import '../utils/async_utils.dart';
 
 class SupportDonorEntry {
   final String name;
@@ -78,31 +79,31 @@ class SupportCreatorService {
       _donorsUrl,
     ];
 
-    Object? lastError;
-    for (var index = 0; index < candidateUrls.length; index++) {
-      final candidateUrl = candidateUrls[index];
-      try {
-        final response = await _client.get(
-          Uri.parse(candidateUrl),
-          headers: const {
-            'Accept': 'application/json',
-            'User-Agent': 'mikcb-app',
-          },
-        ).timeout(Duration(seconds: index == 0 ? 4 : 6));
-        if (response.statusCode != 200) {
-          lastError = Exception('HTTP ${response.statusCode}');
-          continue;
-        }
+    final result = await raceFutures<http.Response, SupportDonorData>(
+      candidateUrls.map((candidateUrl) {
+        return _client
+            .get(
+              Uri.parse(candidateUrl),
+              headers: const {
+                'Accept': 'application/json',
+                'User-Agent': 'mikcb-app',
+              },
+            )
+            .timeout(const Duration(seconds: 6));
+      }),
+      (response) {
+        if (response.statusCode != 200) return null;
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-        if (decoded is! Map) {
-          throw Exception('鸣谢名单格式不正确');
-        }
+        if (decoded is! Map) return null;
         return SupportDonorData.fromJson(Map<String, dynamic>.from(decoded));
-      } catch (error) {
-        lastError = error;
-      }
+      },
+    );
+
+    if (result.winner != null) {
+      return result.winner!;
     }
 
+    final lastError = result.errors.isNotEmpty ? result.errors.last : null;
     throw Exception('加载鸣谢名单失败：$lastError');
   }
 
