@@ -629,7 +629,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         Text(
                           selectedDayOfWeek != null
                               ? '${getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!).month}/${getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!).day}'
-                              : '请选择星期',
+                              : '第$selectedWeek周',
                           style: TextStyle(
                             fontSize: 14,
                             color: colorScheme.primary,
