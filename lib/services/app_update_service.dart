@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/timetable_settings.dart';
+import '../utils/async_utils.dart';
 
 /// A single log entry from the update process.
 class UpdateLogEntry {
@@ -113,11 +114,7 @@ class AppUpdateService {
     final entry = UpdateLogEntry(now, message);
     logs.insert(0, entry);
     if (logs.length > 50) logs.removeLast();
-    final h = now.hour.toString().padLeft(2, '0');
-    final m = now.minute.toString().padLeft(2, '0');
-    final s = now.second.toString().padLeft(2, '0');
-    final ms = now.millisecond.toString().padLeft(3, '0');
-    debugPrint('[AppUpdateService] [$h:$m:$s.$ms] $message');
+    debugPrint('[AppUpdateService] ${formatLogTimestamp(now)} $message');
   }
   static const String latestReleaseApiUrl =
       'https://api.github.com/repos/Mutx163/mikcb/releases/latest';
@@ -196,51 +193,34 @@ class AppUpdateService {
     _log('开始检查更新（当前版本 $currentVersion，含预发布: $includePrerelease）');
 
     // 两个策略并行竞争，谁先有结果用谁
-    final completer = Completer<_AppUpdateFetchOutcome>();
-    var completedCount = 0;
     _AppUpdateFetchOutcome? apiOutcome;
     _AppUpdateFetchOutcome? pageOutcome;
 
-    void onStrategyDone(String name, _AppUpdateFetchOutcome outcome,
-        {_AppUpdateFetchOutcome? Function()? storageSetter}) {
-      completedCount++;
-      _log('$name 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}');
-      if (outcome.release != null && !completer.isCompleted) {
-        completer.complete(outcome);
-      } else if (completedCount >= 2 && !completer.isCompleted) {
-        // 两个策略都完成且都没有结果，用最后一个触发完成
-        completer.complete(outcome);
-      }
-    }
+    final result = await raceFutures<_AppUpdateFetchOutcome, _AppUpdateFetchOutcome>(
+      [
+        _fetchFromGitHubApi(
+          includePrerelease: includePrerelease,
+          preferredSource: preferredSource,
+          mirrorUrlPrefix: mirrorUrlPrefix,
+        ).then((outcome) {
+          apiOutcome = outcome;
+          _log('GitHub API 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}');
+          return outcome;
+        }),
+        _fetchFromReleasesPage(
+          includePrerelease: includePrerelease,
+        ).then((outcome) {
+          pageOutcome = outcome;
+          _log('Release 页面 完成，有结果: ${outcome.release != null}，状态码: ${outcome.statusCode}');
+          return outcome;
+        }),
+      ],
+      (outcome) => outcome.release != null ? outcome : null,
+    );
 
-    // 同时发起两个策略
-    _fetchFromGitHubApi(
-      includePrerelease: includePrerelease,
-      preferredSource: preferredSource,
-      mirrorUrlPrefix: mirrorUrlPrefix,
-    ).then((outcome) {
-      apiOutcome = outcome;
-      onStrategyDone('GitHub API', outcome);
-    }).catchError((e) {
-      _log('GitHub API 异常：$e');
-      apiOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
-      onStrategyDone('GitHub API', apiOutcome!);
-    });
+    final winner = result.winner;
 
-    _fetchFromReleasesPage(
-      includePrerelease: includePrerelease,
-    ).then((outcome) {
-      pageOutcome = outcome;
-      onStrategyDone('Release 页面', outcome);
-    }).catchError((e) {
-      _log('Release 页面异常：$e');
-      pageOutcome = const _AppUpdateFetchOutcome(hadRetryableFailure: true);
-      onStrategyDone('Release 页面', pageOutcome!);
-    });
-
-    final winner = await completer.future;
-
-    if (winner.release != null) {
+    if (winner != null) {
       _log('竞争胜出，版本 ${winner.release!.version}');
       return _buildCheckResult(
         currentVersion: currentVersion,
@@ -548,43 +528,43 @@ class AppUpdateService {
     _log('GitHub API 候选地址 ${candidates.length} 个，并行竞争');
 
     // 所有镜像并行竞争，谁先有结果用谁
-    final completer = Completer<_AppUpdateFetchOutcome>();
-    var completedCount = 0;
+    final outcomes = <_AppUpdateFetchOutcome>[];
+    final result = await raceFutures<_AppUpdateFetchOutcome, _AppUpdateFetchOutcome>(
+      candidates.map((candidate) {
+        return _fetchGitHubApiCandidate(
+          candidate,
+          includePrerelease: includePrerelease,
+        ).then((outcome) {
+          outcomes.add(outcome);
+          return outcome;
+        });
+      }),
+      (outcome) => outcome.release != null ? outcome : null,
+    );
+
+    if (result.winner != null) {
+      return result.winner!;
+    }
+
+    // 所有候选均无结果，汇总错误信息
     var saw404 = false;
     var hadRetryableFailure = false;
     int? lastStatusCode;
-
-    for (final candidate in candidates) {
-      _fetchGitHubApiCandidate(
-        candidate,
-        includePrerelease: includePrerelease,
-      ).then((outcome) {
-        completedCount++;
-        saw404 = saw404 || outcome.saw404;
-        hadRetryableFailure =
-            hadRetryableFailure || outcome.hadRetryableFailure;
-        lastStatusCode = outcome.statusCode ?? lastStatusCode;
-        if (outcome.release != null && !completer.isCompleted) {
-          completer.complete(outcome);
-        } else if (completedCount >= candidates.length &&
-            !completer.isCompleted) {
-          completer.complete(outcome);
-        }
-      }).catchError((e) {
-        completedCount++;
-        hadRetryableFailure = true;
-        _log('候选异常：$e');
-        if (completedCount >= candidates.length && !completer.isCompleted) {
-          completer.complete(_AppUpdateFetchOutcome(
-            saw404: saw404,
-            statusCode: lastStatusCode,
-            hadRetryableFailure: hadRetryableFailure,
-          ));
-        }
-      });
+    for (final outcome in outcomes) {
+      saw404 = saw404 || outcome.saw404;
+      hadRetryableFailure = hadRetryableFailure || outcome.hadRetryableFailure;
+      lastStatusCode = outcome.statusCode ?? lastStatusCode;
+    }
+    for (final error in result.errors) {
+      hadRetryableFailure = true;
+      _log('候选异常：$error');
     }
 
-    return completer.future;
+    return _AppUpdateFetchOutcome(
+      saw404: saw404,
+      statusCode: lastStatusCode,
+      hadRetryableFailure: hadRetryableFailure,
+    );
   }
 
   Future<_AppUpdateFetchOutcome> _fetchGitHubApiCandidate(

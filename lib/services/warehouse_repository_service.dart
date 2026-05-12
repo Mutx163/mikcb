@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
+import '../utils/async_utils.dart';
 
 class WarehouseFetchOptions {
   final AppUpdateDownloadSource downloadSource;
@@ -38,12 +38,7 @@ class WarehouseRepositoryService {
       : _client = client ?? http.Client();
 
   static void _log(String message) {
-    final now = DateTime.now();
-    final h = now.hour.toString().padLeft(2, '0');
-    final m = now.minute.toString().padLeft(2, '0');
-    final s = now.second.toString().padLeft(2, '0');
-    final ms = now.millisecond.toString().padLeft(3, '0');
-    debugPrint('[WarehouseService] [$h:$m:$s.$ms] $message');
+    debugPrint('[WarehouseService] ${formatLogTimestamp()} $message');
   }
 
   Future<WarehouseRootIndex> fetchRootIndex(
@@ -136,41 +131,30 @@ class WarehouseRepositoryService {
     _log('请求 $uri，候选 ${candidates.length} 个');
 
     // 所有候选并行竞争，谁先返回 200 用谁
-    final completer = Completer<String>();
-    var completedCount = 0;
-    Object? lastError;
+    final result = await raceFutures<http.Response, String>(
+      candidates.map((candidate) {
+        return _client.get(
+          candidate,
+          headers: const {
+            'Accept': 'text/plain, */*',
+            'User-Agent': 'mikcb-warehouse-client',
+          },
+        );
+      }),
+      (response) {
+        if (response.statusCode == 200) {
+          return utf8.decode(response.bodyBytes);
+        }
+        return null;
+      },
+    );
 
-    for (final candidate in candidates) {
-      _client
-          .get(
-            candidate,
-            headers: const {
-              'Accept': 'text/plain, */*',
-              'User-Agent': 'mikcb-warehouse-client',
-            },
-          )
-          .then((response) {
-        completedCount++;
-        if (response.statusCode == 200 && !completer.isCompleted) {
-          _log('命中 $candidate');
-          completer.complete(utf8.decode(response.bodyBytes));
-        } else {
-          lastError = 'HTTP ${response.statusCode}';
-          if (completedCount >= candidates.length && !completer.isCompleted) {
-            completer.completeError(_buildFetchError(effectiveOptions, lastError));
-          }
-        }
-      }).catchError((error) {
-        completedCount++;
-        lastError = error;
-        _log('候选失败：$candidate，$error');
-        if (completedCount >= candidates.length && !completer.isCompleted) {
-          completer.completeError(_buildFetchError(effectiveOptions, lastError));
-        }
-      });
+    if (result.winner != null) {
+      return result.winner!;
     }
 
-    return completer.future;
+    final lastError = result.errors.isNotEmpty ? result.errors.last : null;
+    throw _buildFetchError(effectiveOptions, lastError);
   }
 
   WarehouseRepositoryException _buildFetchError(
