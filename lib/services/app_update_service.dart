@@ -622,46 +622,20 @@ class AppUpdateService {
     String? mirrorUrlPrefix,
   }) {
     final normalizedSelectedMirror = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
-    final fallbackMirrorUrls = <String?>[
-      _normalizeMirrorUrlPrefix(defaultAppUpdateMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghproxyCnMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghLlkkMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghProxyComMirrorUrlPrefix),
-      _normalizeMirrorUrlPrefix(ghproxyNetMirrorUrlPrefix),
-    ];
+    final mirrorCandidates = buildMirrorCandidateUrls(
+      apiUrl,
+      selectedMirrorPrefix: normalizedSelectedMirror,
+    );
 
-    final originalCandidates = <String>[apiUrl];
-    final mirrorCandidates = <String>[
-      if (normalizedSelectedMirror != null)
-        buildDownloadUrl(
-          originalUrl: apiUrl,
-          source: AppUpdateDownloadSource.mirror,
-          mirrorUrlPrefix: normalizedSelectedMirror,
-        ),
-      ...fallbackMirrorUrls.whereType<String>().map(
-            (prefix) => buildDownloadUrl(
-              originalUrl: apiUrl,
-              source: AppUpdateDownloadSource.mirror,
-              mirrorUrlPrefix: prefix,
-            ),
-          ),
-    ];
-
-    final ordered = <String>[
-      if (preferredSource == AppUpdateDownloadSource.mirror) ...[
-        ...mirrorCandidates,
-        ...originalCandidates,
-      ] else ...[
-        ...originalCandidates,
-        ...mirrorCandidates,
-      ],
-    ];
-
-    final seen = <String>{};
-    return ordered.where((candidate) {
-      final normalized = candidate.trim();
-      return normalized.isNotEmpty && seen.add(normalized);
-    }).toList(growable: false);
+    // 按 preferredSource 决定顺序
+    if (preferredSource == AppUpdateDownloadSource.mirror) {
+      return mirrorCandidates;
+    } else {
+      // 直连优先，镜像兜底
+      final direct = mirrorCandidates.last; // 原始 URL 在最后
+      final mirrors = mirrorCandidates.sublist(0, mirrorCandidates.length - 1);
+      return [direct, ...mirrors];
+    }
   }
 
   AppUpdateCheckResult _buildCheckResult({

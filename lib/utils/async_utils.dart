@@ -61,3 +61,43 @@ Future<RaceResult<T>> raceFutures<S, T>(
 
   return completer.future;
 }
+
+/// 所有内置镜像前缀（不含 custom）。
+const List<String> allBuiltinMirrorUrlPrefixes = [
+  'https://ghfast.top/',
+  'https://ghproxy.cn/',
+  'https://gh.llkk.cc/',
+  'https://gh-proxy.com/',
+  'https://ghproxy.net/',
+];
+
+/// 为 [originalUrl] 构建镜像候选列表。
+///
+/// [selectedMirrorPrefix] 为用户选择的镜像前缀，会排在最前面；
+/// 随后是全部内置镜像；最后是原始 URL。
+/// 自动去重。
+List<String> buildMirrorCandidateUrls(
+  String originalUrl, {
+  String? selectedMirrorPrefix,
+}) {
+  final seen = <String>{};
+  final candidates = <String>[];
+
+  void addPrefix(String prefix) {
+    final normalized = prefix.trim();
+    if (normalized.isEmpty) return;
+    final separator = normalized.endsWith('/') ? '' : '/';
+    final url = '$normalized$separator$originalUrl';
+    if (seen.add(url)) candidates.add(url);
+  }
+
+  if (selectedMirrorPrefix != null && selectedMirrorPrefix.isNotEmpty) {
+    addPrefix(selectedMirrorPrefix);
+  }
+  for (final prefix in allBuiltinMirrorUrlPrefixes) {
+    addPrefix(prefix);
+  }
+  if (seen.add(originalUrl)) candidates.add(originalUrl);
+
+  return candidates;
+}
