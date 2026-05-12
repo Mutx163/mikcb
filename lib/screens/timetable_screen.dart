@@ -889,6 +889,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final isToday =
                             date != null && _isSameDate(date, DateTime.now());
                         final isSelected = _isSelectedDay(week, dayOfWeek);
+                        final isDayHoliday =
+                            date != null && provider.isHoliday(date);
+                        final isDayAdjustedWorkday =
+                            date != null && provider.isAdjustedWorkday(date);
                         final labelColor = (isSelected || isToday)
                             ? colorScheme.primary
                             : colorScheme.onSurface;
@@ -967,6 +971,32 @@ class _TimetableScreenState extends State<TimetableScreen>
                                           decoration: BoxDecoration(
                                             color: colorScheme.error,
                                             shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                      ),
+                                    if (isDayHoliday || isDayAdjustedWorkday)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 2),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                            vertical: 0.5,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: isDayAdjustedWorkday
+                                                ? Colors.blue.withValues(alpha: 0.15)
+                                                : Colors.orange.withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(3),
+                                          ),
+                                          child: Text(
+                                            isDayAdjustedWorkday ? '班' : '假',
+                                            style: TextStyle(
+                                              fontSize: 7,
+                                              fontWeight: FontWeight.w600,
+                                              color: isDayAdjustedWorkday
+                                                  ? Colors.blue.shade700
+                                                  : Colors.orange.shade700,
+                                            ),
                                           ),
                                         ),
                                       ),
