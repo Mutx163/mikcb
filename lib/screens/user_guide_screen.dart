@@ -24,7 +24,8 @@ class UserGuideScreen extends StatefulWidget {
 class _UserGuideScreenState extends State<UserGuideScreen>
     with WidgetsBindingObserver {
   final MiuiLiveActivitiesService _service = MiuiLiveActivitiesService();
-  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
   bool _isLoading = true;
   bool _hasNotificationPermission = false;
@@ -32,26 +33,24 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
   bool _isKeepAliveAccessibilityEnabled = false;
-  bool _isNearBottom = false;
   late bool _privacyChecked;
-  int _androidVersion = 0;
+
+  bool get _showPrivacyPage => widget.requirePrivacyConsent;
+
+  int get _totalPages => _showPrivacyPage ? 3 : 2;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _privacyChecked = widget.initialPrivacyChecked;
-    _scrollController.addListener(_handleScroll);
     _refreshStatus();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _scrollController
-      ..removeListener(_handleScroll)
-      ..dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -59,19 +58,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       unawaited(_refreshStatus(showLoading: false));
-    }
-  }
-
-  void _handleScroll() {
-    if (!_scrollController.hasClients) {
-      return;
-    }
-    final position = _scrollController.position;
-    final nextValue = position.pixels >= position.maxScrollExtent - 48;
-    if (nextValue != _isNearBottom) {
-      setState(() {
-        _isNearBottom = nextValue;
-      });
     }
   }
 
@@ -94,7 +80,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       return;
     }
     setState(() {
-      _androidVersion = (promotedSupport['androidVersion'] as int?) ?? 0;
       _hasNotificationPermission =
           promotedSupport['hasNotificationPermission'] == true ||
               hasNotificationPermission;
@@ -115,182 +100,118 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     await _refreshStatus(showLoading: false);
   }
 
-  Future<void> _scrollMore() async {
-    if (!_scrollController.hasClients) {
-      return;
+  void _goNext() {
+    if (_currentPage < _totalPages - 1) {
+      _pageController.animateToPage(
+        _currentPage + 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
     }
-    final target = (_scrollController.offset + 420).clamp(
-      0.0,
-      _scrollController.position.maxScrollExtent,
-    );
-    await _scrollController.animateTo(
-      target,
-      duration: const Duration(milliseconds: 280),
-      curve: Curves.easeOutCubic,
-    );
   }
+
+  void _goPrev() {
+    if (_currentPage > 0) {
+      _pageController.animateToPage(
+        _currentPage - 1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  int get _permissionReadyCount => [
+        _hasNotificationPermission,
+        _canPostPromoted,
+        _isIgnoringBatteryOptimizations,
+        _isKeepAliveAccessibilityEnabled,
+      ].where((item) => item).length;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return PopScope(
-        canPop: !widget.requirePrivacyConsent,
-        child: Scaffold(
-          appBar: AppBar(
-            automaticallyImplyLeading: !widget.requirePrivacyConsent,
-            title: Text(
-              widget.requirePrivacyConsent
-                  ? l10n.firstUseGuideTitle
-                  : l10n.guideAndPermissionsTitle,
+      canPop: !widget.requirePrivacyConsent,
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: !widget.requirePrivacyConsent,
+          title: Text(
+            widget.requirePrivacyConsent
+                ? l10n.firstUseGuideTitle
+                : l10n.guideAndPermissionsTitle,
+          ),
+          actions: [
+            IconButton(
+              tooltip: l10n.refreshStatusTooltip,
+              onPressed: _refreshStatus,
+              icon: const Icon(Icons.refresh),
             ),
-            actions: [
-              IconButton(
-                tooltip: l10n.refreshStatusTooltip,
-                onPressed: _refreshStatus,
-                icon: const Icon(Icons.refresh),
-              ),
-            ],
-          ),
-          body: ListView(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-            children: [
-              _buildHeroCard(theme, l10n),
-              const SizedBox(height: 16),
-              _buildQuickActionsCard(theme, l10n),
-              const SizedBox(height: 16),
-              _buildStatusCard(theme),
-              const SizedBox(height: 16),
-              _buildPermissionChecklistCard(theme),
-              const SizedBox(height: 16),
-              _buildShortNameCard(theme),
-              const SizedBox(height: 16),
-              _buildImportGuideCard(theme),
-              const SizedBox(height: 16),
-              _buildPrivacyConsentCard(theme),
-              const SizedBox(height: 16),
-              _buildTipsCard(theme),
-            ],
-          ),
-          bottomNavigationBar: _buildBottomBar(theme, l10n),
-        ));
-  }
-
-  Widget _buildHeroCard(ThemeData theme, AppLocalizations l10n) {
-    final colorScheme = theme.colorScheme;
-    final readyCount = [
-      _hasNotificationPermission,
-      _canPostPromoted,
-      _isIgnoringBatteryOptimizations,
-    ].where((item) => item).length;
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.surfaceContainerHighest,
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
+        body: Column(
+          children: [
+            _buildProgressBar(theme, colorScheme),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const ClampingScrollPhysics(),
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+                children: [
+                  if (_showPrivacyPage) _buildPrivacyPage(theme, l10n),
+                  _buildPermissionsPage(theme, l10n, colorScheme),
+                  _buildTipsPage(theme, l10n, colorScheme),
+                ],
+              ),
+            ),
+            _buildBottomBar(theme, l10n, colorScheme),
+          ],
+        ),
       ),
+    );
+  }
+
+  // ── Progress bar ──────────────────────────────────────────────
+
+  Widget _buildProgressBar(ThemeData theme, ColorScheme colorScheme) {
+    if (_totalPages <= 1) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(
-                  Icons.auto_awesome_rounded,
-                  color: colorScheme.onPrimary,
+              Text(
+                '${_currentPage + 1} / $_totalPages',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.guideHeroTitle,
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.guideHeroSubtitle,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 8),
+              Text(
+                _buildPageTitle(),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colorScheme.primary,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildHeroChip(Icons.security_rounded, l10n.guideChipPermissions),
-              _buildHeroChip(
-                  Icons.system_update_alt_rounded, l10n.guideHyperOsChip),
-              _buildHeroChip(Icons.edit_note_rounded, l10n.guideChipShortName),
-              _buildHeroChip(Icons.import_export_rounded, l10n.guideChipImport),
-              _buildHeroChip(
-                Icons.check_circle_rounded,
-                l10n.guideChipReadyCount(readyCount),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: colorScheme.surface.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.swipe_up_alt_rounded,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    _isNearBottom
-                        ? l10n.guideBottomReachedHint
-                        : l10n.guideScrollHint,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => _runAction(() async {
-                await _service.requestNotificationPermission();
-              }),
-              icon: const Icon(Icons.notifications_active_outlined),
-              label: Text(l10n.guideRequestNotificationFirst),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: (_currentPage + 1) / _totalPages,
+              minHeight: 4,
+              backgroundColor: colorScheme.surfaceContainerHighest,
             ),
           ),
         ],
@@ -298,686 +219,301 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  Widget _buildQuickActionsCard(ThemeData theme, AppLocalizations l10n) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  String _buildPageTitle() {
+    // No l10n needed for these short labels
+    if (_showPrivacyPage && _currentPage == 0) return '隐私协议';
+    if ((_showPrivacyPage && _currentPage == 1) ||
+        (!_showPrivacyPage && _currentPage == 0)) {
+      return '系统权限';
+    }
+    return '使用技巧';
+  }
+
+  // ── Page 1: Privacy consent ──────────────────────────────────
+
+  Widget _buildPrivacyPage(ThemeData theme, AppLocalizations l10n) {
+    final colorScheme = theme.colorScheme;
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      children: [
+        // Minimal welcome
+        Row(
           children: [
-            Text(
-              l10n.quickSetupTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.school_rounded,
+                color: colorScheme.onPrimary,
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.quickSetupSubtitle,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 14),
-            GridView.count(
-              shrinkWrap: true,
-              crossAxisCount: 2,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.45,
-              children: [
-                _buildQuickActionButton(
-                  icon: Icons.notifications_outlined,
-                  title: l10n.quickActionNotificationsTitle,
-                  subtitle: l10n.quickActionNotificationsSubtitle,
-                  onTap: () => _runAction(_service.openNotificationSettings),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '使用前请阅读并同意以下内容',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-                _buildQuickActionButton(
-                  icon: Icons.star_border_rounded,
-                  title: l10n.quickActionIslandTitle,
-                  subtitle: l10n.quickActionIslandSubtitle,
-                  onTap: () => _runAction(_service.openPromotedSettings),
-                ),
-                _buildQuickActionButton(
-                  icon: Icons.play_circle_outline_rounded,
-                  title: l10n.quickActionAutoStartTitle,
-                  subtitle: l10n.quickActionAutoStartSubtitle,
-                  onTap: () => _runAction(_service.openAutoStartSettings),
-                ),
-                _buildQuickActionButton(
-                  icon: Icons.battery_saver_outlined,
-                  title: l10n.quickActionBatteryTitle,
-                  subtitle: l10n.quickActionBatterySubtitle,
-                  onTap: () =>
-                      _runAction(_service.openBatteryOptimizationSettings),
-                ),
-                _buildQuickActionButton(
-                  icon: Icons.accessibility_new_rounded,
-                  title: l10n.quickActionKeepAliveTitle,
-                  subtitle: l10n.quickActionKeepAliveSubtitle,
-                  onTap: () => _runAction(_service.openAccessibilitySettings),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
+        const SizedBox(height: 20),
 
-  Widget _buildStatusCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guideStatusTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+        // Expandable privacy full text
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLowest,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: ExpansionTile(
+            title: Text(
+              '隐私协议、第三方 SDK 与免责说明',
+              style: const TextStyle(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(height: 12),
-            if (_isLoading)
-              const Center(child: CircularProgressIndicator())
-            else ...[
-              _buildStatusTile(
-                icon: Icons.notifications_active_outlined,
-                title: l10n.guideStatusNotificationPermission,
-                value: _hasNotificationPermission ? l10n.guideStatusEnabled : l10n.guideStatusDisabled,
-                success: _hasNotificationPermission,
-              ),
-              _buildStatusTile(
-                icon: Icons.auto_awesome,
-                title: l10n.guideStatusIslandSupport,
-                value: _canPostPromoted
-                    ? l10n.guideStatusSystemAllowed
-                    : (_hasPromotedPermission ? l10n.guideStatusEnabledPending : l10n.guideStatusSuggestedCheck),
-                success: _canPostPromoted,
-              ),
-              _buildStatusTile(
-                icon: Icons.battery_charging_full_outlined,
-                title: l10n.guideStatusBatteryOptimization,
-                value: _isIgnoringBatteryOptimizations ? l10n.guideStatusBatteryUnrestricted : l10n.guideStatusBatteryRestricted,
-                success: _isIgnoringBatteryOptimizations,
-              ),
-              _buildStatusTile(
-                icon: Icons.accessibility_new_rounded,
-                title: l10n.guideStatusKeepAlive,
-                value: _isKeepAliveAccessibilityEnabled ? l10n.guideStatusEnabled : l10n.guideStatusDisabled,
-                success: _isKeepAliveAccessibilityEnabled,
-              ),
-              _buildStatusTile(
-                icon: Icons.phone_android_outlined,
-                title: l10n.guideStatusAndroidVersion,
-                value: _androidVersion > 0 ? 'Android $_androidVersion' : l10n.guideStatusVersionUnknown,
-                success: _androidVersion >= 13,
-              ),
-              _buildStatusTile(
-                icon: Icons.star_border_rounded,
-                title: l10n.guideStatusIslandSystemSupport,
-                value: l10n.guideStatusIslandSystemRequirement,
-                success: _canPostPromoted,
-              ),
-              const SizedBox(height: 6),
+            childrenPadding:
+                const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            shape: const Border(),
+            collapsedShape: const Border(),
+            children: [
+              const Divider(),
+              const SizedBox(height: 8),
               Text(
-                l10n.guideStatusIslandHint,
+                l10n.guidePrivacyParagraph1,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.guidePrivacyParagraph2,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.guidePrivacyParagraph3,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.guidePrivacyParagraph4,
+                style: theme.textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.guideRiskTitle,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.guideRiskParagraph1,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.guideRiskParagraph2,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.guideRiskParagraph3,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.guideUmengPrivacyLink,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPermissionChecklistCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guidePermissionChecklistTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guidePermissionChecklistSubtitle,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            _buildChecklistTile(
-              step: '1',
-              icon: Icons.notifications_outlined,
-              title: l10n.guideChecklistRequestNotificationTitle,
-              subtitle: l10n.guideChecklistRequestNotificationSubtitle,
-              onTap: () => _runAction(() async {
-                await _service.requestNotificationPermission();
-              }),
-            ),
-            _buildChecklistTile(
-              step: '2',
-              icon: Icons.tune,
-              title: l10n.guideChecklistOpenNotificationTitle,
-              subtitle: l10n.guideChecklistOpenNotificationSubtitle,
-              onTap: () => _runAction(_service.openNotificationSettings),
-            ),
-            _buildChecklistTile(
-              step: '3',
-              icon: Icons.star_border,
-              title: l10n.guideChecklistOpenIslandTitle,
-              subtitle: l10n.guideChecklistOpenIslandSubtitle,
-              onTap: () => _runAction(_service.openPromotedSettings),
-            ),
-            _buildChecklistTile(
-              step: '4',
-              icon: Icons.play_circle_outline,
-              title: l10n.guideChecklistOpenAutoStartTitle,
-              subtitle: l10n.guideChecklistOpenAutoStartSubtitle,
-              onTap: () => _runAction(_service.openAutoStartSettings),
-            ),
-            _buildChecklistTile(
-              step: '5',
-              icon: Icons.battery_saver_outlined,
-              title: l10n.guideChecklistOpenBatteryTitle,
-              subtitle: l10n.guideChecklistOpenBatterySubtitle,
-              onTap: () => _runAction(_service.openBatteryOptimizationSettings),
-            ),
-            _buildChecklistTile(
-              step: '6',
-              icon: Icons.accessibility_new_rounded,
-              title: l10n.guideChecklistOpenKeepAliveTitle,
-              subtitle: l10n.guideChecklistOpenKeepAliveSubtitle,
-              onTap: () => _runAction(_service.openAccessibilitySettings),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShortNameCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guideShortNameAdviceTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guideShortNameAdviceSubtitle,
-            ),
-            const SizedBox(height: 12),
-            _buildTipLine(l10n.guideShortNameRecommended, l10n.guideShortNameRecommendedExample),
-            const SizedBox(height: 6),
-            _buildTipLine(l10n.guideShortNameNotRecommended, l10n.guideShortNameNotRecommendedExample),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      settings: const RouteSettings(name: '/courses/overview'),
-                      builder: (_) => const CourseOverviewScreen(),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.edit_outlined),
-                label: Text(l10n.guideSetCourseShortNameAction),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildImportGuideCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guideImportMethodsTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guideImportMethodsSubtitle,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 12),
-            _buildNumberedLine(
-              '1',
-              l10n.guideImportMethodStep1,
-            ),
-            const SizedBox(height: 8),
-            _buildNumberedLine(
-              '2',
-              l10n.guideImportMethodStep2,
-            ),
-            const SizedBox(height: 8),
-            _buildNumberedLine(
-              '3',
-              l10n.guideImportMethodStep3,
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                l10n.guideImportMethodExtra,
-                style: theme.textTheme.bodySmall,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTipsCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guideFinalTipsTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              l10n.guideFinalTip1,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guideFinalTip2,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guideFinalTip3,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPrivacyConsentCard(ThemeData theme) {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
-    final helperText = widget.requirePrivacyConsent
-        ? l10n.guidePrivacyHelperRequireConsent
-        : l10n.guidePrivacyHelperViewOnly;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.guidePrivacySectionTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              l10n.guidePrivacyParagraph1,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guidePrivacyParagraph2,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guidePrivacyParagraph3,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.guidePrivacyParagraph4,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.guideRiskTitle,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.guideRiskParagraph1,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.guideRiskParagraph2,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.guideRiskParagraph3,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    helperText,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    l10n.guideUmengPrivacyLink,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBottomBar(ThemeData theme, AppLocalizations l10n) {
-    final colorScheme = theme.colorScheme;
-    return SafeArea(
-      top: false,
-      child: Container(
-        constraints: const BoxConstraints(minHeight: 112),
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: colorScheme.outlineVariant),
           ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.requirePrivacyConsent) ...[
-              InkWell(
-                onTap: () {
-                  setState(() {
-                    _privacyChecked = !_privacyChecked;
-                  });
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Row(
+        const SizedBox(height: 16),
+
+        // Privacy checkbox
+        InkWell(
+          onTap: () {
+            setState(() {
+              _privacyChecked = !_privacyChecked;
+            });
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              children: [
+                Checkbox(
+                  value: _privacyChecked,
+                  onChanged: (value) {
+                    setState(() {
+                      _privacyChecked = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Text(
+                    l10n.guidePrivacyConsentLabel,
+                    style: theme.textTheme.bodyMedium,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ── Page 2: Permissions ──────────────────────────────────────
+
+  Widget _buildPermissionsPage(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final readyCount = _permissionReadyCount;
+    final items = _buildPermissionItems(l10n, colorScheme);
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Text(
+            '系统权限设置',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '完成这些设置，超级岛和提醒才能正常使用',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Progress bar
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Checkbox(
-                        value: _privacyChecked,
-                        onChanged: (value) {
-                          setState(() {
-                            _privacyChecked = value ?? false;
-                          });
-                        },
+                      Text(
+                        '$readyCount / ${items.length} 已完成',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                      Expanded(
-                        child: Text(
-                          l10n.guidePrivacyConsentLabel,
-                          style: theme.textTheme.bodyMedium,
+                      const SizedBox(height: 6),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: items.isEmpty
+                              ? 0.0
+                              : readyCount / items.length,
+                          minHeight: 6,
+                          backgroundColor:
+                              colorScheme.surfaceContainerHighest,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 8),
-            ],
-            Row(
-              children: [
-                if (widget.requirePrivacyConsent)
-                  TextButton(
-                    onPressed: _exitWithoutConsent,
-                    child: Text(l10n.exitAppAction),
-                  ),
-                if (widget.requirePrivacyConsent) const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.requirePrivacyConsent
-                        ? l10n.guideRequireConsentHint
-                        : l10n.guideContinueHint,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
                 const SizedBox(width: 12),
-                if (!_isNearBottom)
-                  FilledButton.icon(
-                    onPressed: _scrollMore,
-                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                    label: Text(l10n.continueReadingAction),
-                  )
-                else
-                  FilledButton.icon(
-                    onPressed: widget.requirePrivacyConsent
-                        ? (_privacyChecked
-                            ? () => Navigator.of(context).pop(true)
-                            : null)
-                        : () => Navigator.of(context).maybePop(),
-                    icon: const Icon(Icons.check_rounded),
-                    label: Text(
-                      widget.requirePrivacyConsent
-                          ? l10n.agreeAndStartAction
-                          : l10n.startUsingAction,
-                    ),
-                  ),
+                FilledButton.tonalIcon(
+                  onPressed: _refreshStatus,
+                  icon: const Icon(Icons.refresh, size: 18),
+                  label: Text(l10n.refreshStatusTooltip),
+                ),
               ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _exitWithoutConsent() async {
-    try {
-      await SystemNavigator.pop();
-    } catch (_) {
-      // Fall back to dismissing the route so the caller can keep the app blocked.
-    }
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pop(false);
-  }
-
-  Widget _buildHeroChip(IconData icon, String text) {
-    return Chip(
-      avatar: Icon(icon, size: 16),
-      label: Text(text),
-    );
-  }
-
-  Widget _buildQuickActionButton({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(18),
-      child: Ink(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: colorScheme.outlineVariant),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: colorScheme.primary),
-            const SizedBox(height: 10),
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildChecklistTile({
-    required String step,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Ink(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(18),
           ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
-                child: Text(
-                  step,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Icon(icon, color: colorScheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+          const SizedBox(height: 16),
 
-  Widget _buildStatusTile({
-    required IconData icon,
-    required String title,
-    required String value,
-    required bool success,
-  }) {
-    final color = success ? Colors.green.shade700 : Colors.orange.shade700;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(width: 12),
-          Expanded(
+          // Permission list
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
+              children: items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                return Column(
+                  children: [
+                    if (index > 0)
+                      Divider(
+                        height: 1,
+                        indent: 16,
+                        endIndent: 16,
+                        color: colorScheme.outlineVariant,
+                      ),
+                    _buildPermissionRow(item, colorScheme),
+                  ],
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Tip
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  size: 18,
+                  color: colorScheme.tertiary,
                 ),
-                const SizedBox(height: 2),
-                Text(value, style: TextStyle(color: color)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '每项点击后跳转到系统设置，设置完成后返回应用，状态会自动刷新',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -986,19 +522,276 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  Widget _buildTipLine(String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  List<_PermissionItem> _buildPermissionItems(
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    return [
+      _PermissionItem(
+        icon: Icons.notifications_active_outlined,
+        iconColor: Colors.blue,
+        title: l10n.guideStatusNotificationPermission,
+        enabled: _hasNotificationPermission,
+        enabledLabel: l10n.guideStatusEnabled,
+        disabledLabel: l10n.guideStatusDisabled,
+        onTap: () => _runAction(() async {
+          await _service.requestNotificationPermission();
+        }),
+      ),
+      _PermissionItem(
+        icon: Icons.auto_awesome,
+        iconColor: Colors.amber.shade700,
+        title: l10n.guideStatusIslandSupport,
+        enabled: _canPostPromoted,
+        enabledLabel: l10n.guideStatusSystemAllowed,
+        disabledLabel: _hasPromotedPermission
+            ? l10n.guideStatusEnabledPending
+            : l10n.guideStatusSuggestedCheck,
+        onTap: () => _runAction(_service.openPromotedSettings),
+      ),
+      _PermissionItem(
+        icon: Icons.play_circle_outline_rounded,
+        iconColor: Colors.green.shade700,
+        title: l10n.quickActionAutoStartTitle,
+        enabled: _isKeepAliveAccessibilityEnabled && _isIgnoringBatteryOptimizations
+            ? true
+            : false,
+        enabledLabel: '已开启',
+        disabledLabel: '建议开启',
+        onTap: () => _runAction(_service.openAutoStartSettings),
+      ),
+      _PermissionItem(
+        icon: Icons.battery_saver_outlined,
+        iconColor: Colors.orange.shade700,
+        title: l10n.guideStatusBatteryOptimization,
+        enabled: _isIgnoringBatteryOptimizations,
+        enabledLabel: l10n.guideStatusBatteryUnrestricted,
+        disabledLabel: l10n.guideStatusBatteryRestricted,
+        onTap: () => _runAction(_service.openBatteryOptimizationSettings),
+      ),
+      _PermissionItem(
+        icon: Icons.accessibility_new_rounded,
+        iconColor: Colors.purple,
+        title: l10n.guideStatusKeepAlive,
+        enabled: _isKeepAliveAccessibilityEnabled,
+        enabledLabel: l10n.guideStatusEnabled,
+        disabledLabel: l10n.guideStatusDisabled,
+        onTap: () => _runAction(_service.openAccessibilitySettings),
+      ),
+    ];
+  }
+
+  Widget _buildPermissionRow(
+    _PermissionItem item,
+    ColorScheme colorScheme,
+  ) {
+    final statusColor = item.enabled ? Colors.green.shade700 : Colors.orange.shade700;
+    return InkWell(
+      onTap: item.onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(item.icon, color: item.iconColor, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                item.title,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                item.enabled ? item.enabledLabel : item.disabledLabel,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ),
+            if (item.onTap != null) ...[
+              const SizedBox(width: 8),
+              Icon(
+                item.enabled ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
+                size: 20,
+                color: item.enabled ? Colors.green.shade700 : colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Page 3: Tips ────────────────────────────────────────────
+
+  Widget _buildTipsPage(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        SizedBox(
-          width: 72,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+        Text(
+          '使用技巧',
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.w800,
           ),
         ),
-        Expanded(child: Text(value)),
+        const SizedBox(height: 4),
+        Text(
+          '这些随时可以在「设置」里找到',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Short name
+        _buildTipTile(
+          theme: theme,
+          colorScheme: colorScheme,
+          icon: Icons.edit_note_rounded,
+          title: l10n.guideShortNameAdviceTitle,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.guideShortNameAdviceSubtitle),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 72,
+                    child: Text(
+                      l10n.guideShortNameRecommended,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Expanded(child: Text(l10n.guideShortNameRecommendedExample)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 72,
+                    child: Text(
+                      l10n.guideShortNameNotRecommended,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  Expanded(child: Text(l10n.guideShortNameNotRecommendedExample)),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        settings: const RouteSettings(name: '/courses/overview'),
+                        builder: (_) => const CourseOverviewScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: Text(l10n.guideSetCourseShortNameAction),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Import guide
+        _buildTipTile(
+          theme: theme,
+          colorScheme: colorScheme,
+          icon: Icons.import_export_rounded,
+          title: l10n.guideImportMethodsTitle,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.guideImportMethodsSubtitle),
+              const SizedBox(height: 10),
+              _buildNumberedLine('1', l10n.guideImportMethodStep1),
+              const SizedBox(height: 8),
+              _buildNumberedLine('2', l10n.guideImportMethodStep2),
+              const SizedBox(height: 8),
+              _buildNumberedLine('3', l10n.guideImportMethodStep3),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  l10n.guideImportMethodExtra,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Final tips
+        _buildTipTile(
+          theme: theme,
+          colorScheme: colorScheme,
+          icon: Icons.tips_and_updates_rounded,
+          title: l10n.guideFinalTipsTitle,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.guideFinalTip1),
+              const SizedBox(height: 8),
+              Text(l10n.guideFinalTip2),
+              const SizedBox(height: 8),
+              Text(l10n.guideFinalTip3),
+            ],
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildTipTile({
+    required ThemeData theme,
+    required ColorScheme colorScheme,
+    required IconData icon,
+    required String title,
+    required Widget body,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: ExpansionTile(
+        leading: Icon(icon, color: colorScheme.primary),
+        title: Text(
+          title,
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        shape: const Border(),
+        collapsedShape: const Border(),
+        children: [body],
+      ),
     );
   }
 
@@ -1021,5 +814,101 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ],
     );
   }
+
+  // ── Bottom navigation bar ────────────────────────────────────
+
+  Widget _buildBottomBar(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final isFirstPage = _currentPage == 0;
+    final isLastPage = _currentPage == _totalPages - 1;
+    final showPrev = !isFirstPage;
+    final isPrivacyPage = _showPrivacyPage && isFirstPage;
+    final canGoNext = !isPrivacyPage || _privacyChecked;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          border: Border(
+            top: BorderSide(color: colorScheme.outlineVariant),
+          ),
+        ),
+        child: Row(
+          children: [
+            // Left button
+            if (isPrivacyPage)
+              TextButton(
+                onPressed: _exitWithoutConsent,
+                child: Text(l10n.exitAppAction),
+              )
+            else if (showPrev)
+              TextButton.icon(
+                onPressed: _goPrev,
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: Text('上一步'),
+              )
+            else
+              const Spacer(),
+
+            const Spacer(),
+
+            // Right button
+            if (!isLastPage)
+              FilledButton.icon(
+                onPressed: canGoNext ? _goNext : null,
+                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                label: Text('下一步'),
+              )
+            else
+              FilledButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.check_rounded, size: 18),
+                label: Text(
+                  widget.requirePrivacyConsent
+                      ? l10n.agreeAndStartAction
+                      : l10n.startUsingAction,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _exitWithoutConsent() async {
+    try {
+      await SystemNavigator.pop();
+    } catch (_) {
+      // Fall back to dismissing the route so the caller can keep the app blocked.
+    }
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pop(false);
+  }
 }
 
+class _PermissionItem {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final bool enabled;
+  final String enabledLabel;
+  final String disabledLabel;
+  final VoidCallback? onTap;
+
+  const _PermissionItem({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.enabled,
+    required this.enabledLabel,
+    required this.disabledLabel,
+    this.onTap,
+  });
+}
