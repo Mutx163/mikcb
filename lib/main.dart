@@ -261,13 +261,21 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     );
 
     await _storageService.init();
-    final isDataEmpty = await _storageService.isAppDataEffectivelyEmpty();
-    final hasCompletedOnboarding =
-        await _storageService.hasCompletedOnboarding();
-    final hasHandledPackageMigration =
-        await _storageService.hasHandledPackageMigration();
-    final hasAcceptedPrivacy = await _storageService.hasAcceptedPrivacyPolicy();
-    final hasSeenGuide = await _storageService.hasSeenUserGuide();
+
+    // --- 并行读取所有启动状态 ---
+    final startupResults = await Future.wait([
+      _storageService.isAppDataEffectivelyEmpty(),
+      _storageService.hasCompletedOnboarding(),
+      _storageService.hasHandledPackageMigration(),
+      _storageService.hasAcceptedPrivacyPolicy(),
+      _storageService.hasSeenUserGuide(),
+    ]);
+
+    final isDataEmpty = startupResults[0];
+    final hasCompletedOnboarding = startupResults[1];
+    final hasHandledPackageMigration = startupResults[2];
+    final hasAcceptedPrivacy = startupResults[3];
+    final hasSeenGuide = startupResults[4];
 
     if (!mounted) {
       return;
@@ -318,33 +326,39 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         return;
       }
       if (action != null) {
-        var completedOnboarding = false;
         switch (action) {
           case WelcomeFlowAction.importCourses:
-            completedOnboarding = await _runCourseImportFlow();
+            final imported = await _runCourseImportFlow();
+            // 无论导入成功与否，都标记 onboarding 完成，避免重复弹出
+            await _storageService.setCompletedOnboarding(true);
+            if (imported) {
+              await _storageService.setHasSeenUserGuide(true);
+            }
             break;
           case WelcomeFlowAction.restoreBackup:
-            completedOnboarding = await _runBackupImportFlow(
+            final restored = await _runBackupImportFlow(
               forcedMode: _BackupImportMode.replaceCurrent,
             );
+            await _storageService.setCompletedOnboarding(true);
+            if (restored) {
+              await _storageService.setHasSeenUserGuide(true);
+            }
             break;
           case WelcomeFlowAction.viewGuide:
           case WelcomeFlowAction.startUsing:
-            completedOnboarding = true;
+            await _storageService.setCompletedOnboarding(true);
             break;
         }
-        if (completedOnboarding) {
-          await _storageService.setCompletedOnboarding(true);
-        }
+      } else {
+        // action == null（用户按了返回键），也标记完成避免死循环
+        await _storageService.setCompletedOnboarding(true);
       }
     }
 
     if (hasAcceptedPrivacy && hasSeenGuide) {
-      await AppLogService.instance.updatePrivacyAccepted(true);
-      await UmengAnalyticsService.initializeIfNeeded();
-      if (!mounted) {
-        return;
-      }
+      // 非关键初始化：后台执行，不阻塞首帧
+      unawaited(AppLogService.instance.updatePrivacyAccepted(true));
+      unawaited(UmengAnalyticsService.initializeIfNeeded());
       unawaited(_checkPendingIcsIntent());
       unawaited(
         AppLogService.instance.info(
@@ -377,7 +391,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
 
     if (await _storageService.hasAcceptedPrivacyPolicy()) {
-      await UmengAnalyticsService.initializeIfNeeded();
+      unawaited(UmengAnalyticsService.initializeIfNeeded());
     }
     if (!mounted) {
       return;

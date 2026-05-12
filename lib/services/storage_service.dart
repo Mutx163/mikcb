@@ -186,6 +186,9 @@ class StorageService {
   Future<void> setHasSeenUserGuide(bool value) async {
     if (_prefs == null) await init();
     await _prefs?.setBool(_hasSeenUserGuideKey, value);
+    if (_prefs?.getBool(_hasSeenUserGuideKey) != value) {
+      await _prefs?.setBool(_hasSeenUserGuideKey, value);
+    }
   }
 
   Future<bool> hasAcceptedPrivacyPolicy() async {
@@ -196,6 +199,9 @@ class StorageService {
   Future<void> setAcceptedPrivacyPolicy(bool value) async {
     if (_prefs == null) await init();
     await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+    if (_prefs?.getBool(_acceptedPrivacyPolicyKey) != value) {
+      await _prefs?.setBool(_acceptedPrivacyPolicyKey, value);
+    }
   }
 
   Future<bool> hasCompletedOnboarding() async {
@@ -206,6 +212,10 @@ class StorageService {
   Future<void> setCompletedOnboarding(bool value) async {
     if (_prefs == null) await init();
     await _prefs?.setBool(_hasCompletedOnboardingKey, value);
+    // 防御性验证：某些国产 ROM 的 commit() 可能不可靠
+    if (_prefs?.getBool(_hasCompletedOnboardingKey) != value) {
+      await _prefs?.setBool(_hasCompletedOnboardingKey, value);
+    }
   }
 
   Future<bool> hasHandledPackageMigration() async {
