@@ -3804,13 +3804,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     const SizedBox(height: 16),
                     InkWell(
                       onTap: () async {
+                        final now = DateTime.now();
                         final picked = await showDateRangePicker(
                           context: ctx,
                           initialDateRange: startDate != null && endDate != null
                               ? DateTimeRange(start: startDate!, end: endDate!)
                               : null,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2030),
+                          firstDate: DateTime(now.year - 1),
+                          lastDate: DateTime(now.year + 2),
                         );
                         if (picked != null) {
                           setDialogState(() {
