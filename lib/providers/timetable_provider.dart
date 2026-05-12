@@ -253,11 +253,20 @@ class TimetableProvider with ChangeNotifier {
 
   Future<void> _init() async {
     await _storageService.init();
-    _profiles = await _storageService.getProfiles();
-    _timeSchemes = await _storageService.getTimeSchemes();
-    _activeProfileId = await _storageService.getActiveProfileId();
-    _teacherRecords = await _storageService.getTeacherRecords();
-    _locationRecords = await _storageService.getLocationRecords();
+
+    // --- 最小就绪集：只等主屏必需的 3 项数据 ---
+    final profilesFuture = _storageService.getProfiles();
+    final timeSchemesFuture = _storageService.getTimeSchemes();
+    final activeProfileIdFuture = _storageService.getActiveProfileId();
+    await Future.wait([profilesFuture, timeSchemesFuture, activeProfileIdFuture]);
+
+    _profiles = await profilesFuture;
+    _timeSchemes = await timeSchemesFuture;
+    _activeProfileId = await activeProfileIdFuture;
+
+    // --- 非关键数据：后台加载，不阻塞首帧 ---
+    unawaited(_loadDeferredData());
+
     final activeProfile =
         this.activeProfile ?? (_profiles.isEmpty ? null : _profiles.first);
     if (activeProfile == null) {
@@ -266,8 +275,45 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     _applyProfileState(activeProfile);
-    final didMigrateAppLogsDefault = await _storageService
-        .hasMigratedAppLogsDefault();
+
+    // --- 迁移逻辑：不阻塞首帧，后台完成 ---
+    unawaited(_runAppLogsMigrationIfNeeded(activeProfile));
+
+    if (_activeProfileId != activeProfile.id) {
+      _activeProfileId = activeProfile.id;
+      unawaited(_storageService.setActiveProfileId(activeProfile.id));
+    }
+    if (_settings.semesterStartDate != null) {
+      unawaited(syncCurrentWeekWithSemesterStart());
+    }
+
+    // --- 首帧已可渲染，立即通知 ---
+    notifyListeners();
+
+    // --- 非关键任务全部后台执行 ---
+    unawaited(_loadHolidayData());
+    unawaited(_syncHomeWidgetSnapshot());
+    unawaited(_syncNativeRuntimePreferences());
+    if (_enableLiveActivitySync) {
+      _startLiveActivityTick();
+    }
+  }
+
+  /// 后台加载非关键数据：教师/地点记录
+  Future<void> _loadDeferredData() async {
+    final teacherFuture = _storageService.getTeacherRecords();
+    final locationFuture = _storageService.getLocationRecords();
+    await Future.wait([teacherFuture, locationFuture]);
+    _teacherRecords = await teacherFuture;
+    _locationRecords = await locationFuture;
+  }
+
+  /// 后台执行 app logs 迁移，不阻塞首帧
+  Future<void> _runAppLogsMigrationIfNeeded(
+    TimetableProfile activeProfile,
+  ) async {
+    final didMigrateAppLogsDefault =
+        await _storageService.hasMigratedAppLogsDefault();
     if (!didMigrateAppLogsDefault && !_settings.liveEnableLocalDiagnostics) {
       _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
       await _persistActiveProfileState();
@@ -283,20 +329,6 @@ class TimetableProvider with ChangeNotifier {
     } else if (!didMigrateAppLogsDefault) {
       await _storageService.setMigratedAppLogsDefault(true);
     }
-    if (_activeProfileId != activeProfile.id) {
-      _activeProfileId = activeProfile.id;
-      await _storageService.setActiveProfileId(activeProfile.id);
-    }
-    if (_settings.semesterStartDate != null) {
-      await syncCurrentWeekWithSemesterStart();
-    }
-    unawaited(_loadHolidayData());
-    unawaited(_syncHomeWidgetSnapshot());
-    unawaited(_syncNativeRuntimePreferences());
-    if (_enableLiveActivitySync) {
-      _startLiveActivityTick();
-    }
-    notifyListeners();
   }
 
   void _startLiveActivityTick() {
