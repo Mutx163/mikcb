@@ -292,18 +292,20 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ),
           ),
           const SizedBox(width: 12),
-          DropdownButton<String>(
-            value: currentTag,
-            items: buildLocaleDropdownItems(context),
-            onChanged: (value) {
-              if (value == null) return;
-              final next =
-                  provider.settings.copyWith(appLocaleTag: value);
-              provider.updateTimetableSettings(next);
-            },
-            borderRadius: BorderRadius.circular(12),
-            underline: const SizedBox.shrink(),
-            isDense: true,
+          Flexible(
+            child: DropdownButton<String>(
+              value: currentTag,
+              items: buildLocaleDropdownItems(context),
+              onChanged: (value) {
+                if (value == null) return;
+                final next =
+                    provider.settings.copyWith(appLocaleTag: value);
+                provider.updateTimetableSettings(next);
+              },
+              borderRadius: BorderRadius.circular(12),
+              underline: const SizedBox.shrink(),
+              isDense: true,
+            ),
           ),
         ],
       ),
