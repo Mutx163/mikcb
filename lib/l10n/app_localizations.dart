@@ -8059,6 +8059,12 @@ abstract class AppLocalizations {
   /// **'完成这些设置，超级岛和提醒才能正常使用'**
   String get guidePermissionsSubtitle;
 
+  /// No description provided for @guidePermissionsFooterHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。'**
+  String get guidePermissionsFooterHint;
+
   /// No description provided for @guideTipsHeader.
   ///
   /// In zh, this message translates to:

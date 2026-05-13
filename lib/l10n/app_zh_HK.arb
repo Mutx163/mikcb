@@ -2653,6 +2653,7 @@
   "guideNextButton": "下一步",
   "guidePermissionsHeader": "系統權限設置",
   "guidePermissionsSubtitle": "完成這些設置，超級島和提醒才能正常使用",
+  "guidePermissionsFooterHint": "點擊後跳轉到系統設置，返回應用後可識別的狀態會自動刷新；自啟動受系統限制，請以系統頁面開關為準。",
   "guideTipsHeader": "使用技巧",
   "guideTipsSubtitle": "這些隨時可以在「設置」裡找到",
   "guidePrivacyReadBeforeUse": "使用前請閱讀並同意以下內容",

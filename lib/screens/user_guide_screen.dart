@@ -33,7 +33,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
   bool _isKeepAliveAccessibilityEnabled = false;
-  bool _isAutoStartEnabled = true;
+  bool _isAutoStartEnabled = false;
   late bool _privacyChecked;
 
   int get _totalPages => 3;
@@ -151,7 +151,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             Expanded(
               child: PageView(
                 controller: _pageController,
-                physics: const ClampingScrollPhysics(),
+                physics: (widget.requirePrivacyConsent && !_privacyChecked)
+                    ? const NeverScrollableScrollPhysics()
+                    : const ClampingScrollPhysics(),
                 onPageChanged: (page) {
                   setState(() {
                     _currentPage = page;
@@ -525,7 +527,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。',
+                    l10n.guidePermissionsFooterHint,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onTertiaryContainer,
                     ),
@@ -571,8 +573,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         iconColor: Colors.green.shade700,
         title: l10n.quickActionAutoStartTitle,
         enabled: _isAutoStartEnabled,
-        enabledLabel: '已开启',
-        disabledLabel: '未开启',
+        enabledLabel: l10n.guideStatusEnabled,
+        disabledLabel: l10n.guideStatusDisabled,
         onTap: () => _runAction(_service.openAutoStartSettings),
       ),
       _PermissionItem(
@@ -900,6 +902,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   void _finishGuide() {
+    if (widget.requirePrivacyConsent && !_privacyChecked) return;
     Navigator.of(context).pop(widget.requirePrivacyConsent ? true : null);
   }
 

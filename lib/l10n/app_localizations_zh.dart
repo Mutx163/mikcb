@@ -4431,6 +4431,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guidePermissionsSubtitle => '完成这些设置，超级岛和提醒才能正常使用';
 
   @override
+  String get guidePermissionsFooterHint =>
+      '点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。';
+
+  @override
   String get guideTipsHeader => '使用技巧';
 
   @override
@@ -8923,6 +8927,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guidePermissionsSubtitle => '完成這些設置，超級島和提醒才能正常使用';
 
   @override
+  String get guidePermissionsFooterHint =>
+      '點擊後跳轉到系統設置，返回應用後可識別的狀態會自動刷新；自啟動受系統限制，請以系統頁面開關為準。';
+
+  @override
   String get guideTipsHeader => '使用技巧';
 
   @override
@@ -13413,6 +13421,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guidePermissionsSubtitle => '完成這些設定，超級島和提醒才能正常使用';
+
+  @override
+  String get guidePermissionsFooterHint =>
+      '點擊後跳轉到系統設定，返回應用後可識別的狀態會自動刷新；自啟動受系統限制，請以系統頁面開關為準。';
 
   @override
   String get guideTipsHeader => '使用技巧';
