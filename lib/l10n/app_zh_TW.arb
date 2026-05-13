@@ -2574,5 +2574,150 @@
   "examDefaultName": "期末考試",
   "examDateWeekPickerTitle": "選擇考試日期",
   "weekPickerCalendarTooltip": "使用日曆選擇",
-  "thisWeekLabel": "本週"
+  "thisWeekLabel": "本週",
+  "confirmAction": "確認",
+  "homeWidgetShowTomorrowTitle": "下課後顯示明天課程",
+  "homeWidgetShowTomorrowSubtitle": "啟用後，當今天的課程全部結束時，桌面小工具會自動切換顯示明天的課程。",
+  "sortAction": "排序",
+  "sortByAdded": "依新增順序",
+  "sortByName": "依課程名稱",
+  "sortBySchedule": "依上課時間",
+  "scheduleEntryTitle": "排課紀錄 {index}",
+  "@scheduleEntryTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "addScheduleEntryAction": "新增排課時段",
+  "deleteScheduleEntryAction": "刪除排課",
+  "holidaySettingsEntryTitle": "假日標記",
+  "holidaySettingsEntrySubtitle": "在課表上標示放假日與補班日",
+  "holidayMakeupWorkday": "補班",
+  "holidaySettingsTitle": "假日標記",
+  "holidayEnableTitle": "啟用假日標記",
+  "holidayEnableSubtitle": "啟用後會在課表上標示放假日與補班日。",
+  "holidayDataSectionTitle": "假日資料",
+  "holidayDataYear": "年份",
+  "holidayDataCount": "數量",
+  "holidayDataEmpty": "目前沒有假日資料",
+  "holidayCheckUpdate": "檢查更新",
+  "holidayUpcomingSectionTitle": "近期假日",
+  "holidayNoUpcoming": "近期沒有假日",
+  "holidayBadgeLabel": "休",
+  "holidayStatusLabel": "放假",
+  "suspendedBadgeLabel": "停",
+  "suspendedStatusLabel": "停課",
+  "courseActionSuspend": "停課",
+  "courseActionUnsuspend": "恢復上課",
+  "suspendSheetTitle": "停課",
+  "suspendSheetSubtitle": "選擇停課範圍",
+  "suspendThisWeek": "本週停課",
+  "suspendThisWeekDesc": "只停本週",
+  "suspendAllWeeks": "全部週次停課",
+  "suspendAllWeeksDesc": "套用到所有週次",
+  "unsuspendAllWeeks": "恢復全部週次",
+  "unsuspendAllWeeksDesc": "恢復所有週次",
+  "customHolidayTitle": "自訂假日",
+  "customHolidayAdd": "新增假日",
+  "customHolidayEdit": "編輯假日",
+  "customHolidayDelete": "刪除",
+  "customHolidayDeleteConfirm": "確定要刪除此自訂假日嗎？",
+  "customHolidayNameLabel": "假日名稱",
+  "customHolidayStartDate": "開始日期",
+  "customHolidayEndDate": "結束日期",
+  "customHolidayType": "類型",
+  "customHolidayTypeVacation": "放假",
+  "customHolidayTypeWorkday": "補班日",
+  "customHolidayEmpty": "目前沒有自訂假日",
+  "customHolidayNameRequired": "請輸入假日名稱",
+  "customHolidayDateRange": "{start} ~ {end}",
+  "@customHolidayDateRange": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
+  "selectTeacherTitle": "選擇老師",
+  "selectLocationTitle": "選擇地點",
+  "historyRecordsLabel": "歷史紀錄",
+  "noHistoryRecords": "目前沒有歷史紀錄",
+  "weekPickerTitle": "選擇上課週次",
+  "selectTimeSchemeTitle": "選擇時間方案",
+  "manageTimeSchemesAction": "管理時間方案",
+  "guidePrivacyPageTitle": "隱私權條款",
+  "guidePermissionsPageTitle": "系統權限",
+  "guideTipsPageTitle": "使用技巧",
+  "guidePrevButton": "上一步",
+  "guideNextButton": "下一步",
+  "guidePermissionsHeader": "系統權限設定",
+  "guidePermissionsSubtitle": "完成這些設定，超級島和提醒才能正常使用",
+  "guideTipsHeader": "使用技巧",
+  "guideTipsSubtitle": "這些隨時可以在「設定」裡找到",
+  "guidePrivacyReadBeforeUse": "使用前請閱讀並同意以下內容",
+  "guidePrivacyViewOnly": "隱私權、第三方 SDK 與免責聲明",
+  "holidayDataYearLabel": "{year}年國定假日",
+  "@holidayDataYearLabel": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "holidayUpdateLog": "更新紀錄",
+  "holidayUpdateLogCount": "{count}筆",
+  "@holidayUpdateLogCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameMonth": "{month}月{start}日 - {end}日",
+  "@holidayDateSameMonth": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameDay": "{month}月{day}日",
+  "@holidayDateSameDay": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateDiffMonth": "{startMonth}月{startDay}日 - {endMonth}月{endDay}日",
+  "@holidayDateDiffMonth": {
+    "placeholders": {
+      "startMonth": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endMonth": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTestingHolidayOverride": "假期狀態覆蓋",
+  "liveTestingHolidayOverrideSubtitle": "開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程",
+  "liveTestingHolidayModeEnabled": "假期模式已開啟",
+  "liveTestingHolidayModeDisabled": "假期模式已關閉",
+  "liveTestingHolidayModeEnabledDesc": "課程提醒和小工具將隱藏所有課程",
+  "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據"
 }

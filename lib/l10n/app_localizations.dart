@@ -8016,6 +8016,149 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'本周'**
   String get thisWeekLabel;
+
+  /// No description provided for @guidePrivacyPageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐私协议'**
+  String get guidePrivacyPageTitle;
+
+  /// No description provided for @guidePermissionsPageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统权限'**
+  String get guidePermissionsPageTitle;
+
+  /// No description provided for @guideTipsPageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用技巧'**
+  String get guideTipsPageTitle;
+
+  /// No description provided for @guidePrevButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'上一步'**
+  String get guidePrevButton;
+
+  /// No description provided for @guideNextButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'下一步'**
+  String get guideNextButton;
+
+  /// No description provided for @guidePermissionsHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统权限设置'**
+  String get guidePermissionsHeader;
+
+  /// No description provided for @guidePermissionsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成这些设置，超级岛和提醒才能正常使用'**
+  String get guidePermissionsSubtitle;
+
+  /// No description provided for @guideTipsHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用技巧'**
+  String get guideTipsHeader;
+
+  /// No description provided for @guideTipsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'这些随时可以在「设置」里找到'**
+  String get guideTipsSubtitle;
+
+  /// No description provided for @guidePrivacyReadBeforeUse.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用前请阅读并同意以下内容'**
+  String get guidePrivacyReadBeforeUse;
+
+  /// No description provided for @guidePrivacyViewOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐私、第三方 SDK 与免责说明'**
+  String get guidePrivacyViewOnly;
+
+  /// No description provided for @holidayDataYearLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年法定节假日'**
+  String holidayDataYearLabel(Object year);
+
+  /// No description provided for @holidayUpdateLog.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新日志'**
+  String get holidayUpdateLog;
+
+  /// No description provided for @holidayUpdateLogCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count}条'**
+  String holidayUpdateLogCount(int count);
+
+  /// No description provided for @holidayDateSameMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月{start}日 - {end}日'**
+  String holidayDateSameMonth(int month, int start, int end);
+
+  /// No description provided for @holidayDateSameDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'{month}月{day}日'**
+  String holidayDateSameDay(int month, int day);
+
+  /// No description provided for @holidayDateDiffMonth.
+  ///
+  /// In zh, this message translates to:
+  /// **'{startMonth}月{startDay}日 - {endMonth}月{endDay}日'**
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  );
+
+  /// No description provided for @liveTestingHolidayOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期状态覆盖'**
+  String get liveTestingHolidayOverride;
+
+  /// No description provided for @liveTestingHolidayOverrideSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程'**
+  String get liveTestingHolidayOverrideSubtitle;
+
+  /// No description provided for @liveTestingHolidayModeEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期模式已开启'**
+  String get liveTestingHolidayModeEnabled;
+
+  /// No description provided for @liveTestingHolidayModeDisabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'假期模式已关闭'**
+  String get liveTestingHolidayModeDisabled;
+
+  /// No description provided for @liveTestingHolidayModeEnabledDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程提醒和小组件将隐藏所有课程'**
+  String get liveTestingHolidayModeEnabledDesc;
+
+  /// No description provided for @liveTestingHolidayModeDisabledDesc.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前使用正常假期数据'**
+  String get liveTestingHolidayModeDisabledDesc;
 }
 
 class _AppLocalizationsDelegate

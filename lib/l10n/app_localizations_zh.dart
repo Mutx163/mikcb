@@ -4408,6 +4408,91 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get thisWeekLabel => '本周';
+
+  @override
+  String get guidePrivacyPageTitle => '隐私协议';
+
+  @override
+  String get guidePermissionsPageTitle => '系统权限';
+
+  @override
+  String get guideTipsPageTitle => '使用技巧';
+
+  @override
+  String get guidePrevButton => '上一步';
+
+  @override
+  String get guideNextButton => '下一步';
+
+  @override
+  String get guidePermissionsHeader => '系统权限设置';
+
+  @override
+  String get guidePermissionsSubtitle => '完成这些设置，超级岛和提醒才能正常使用';
+
+  @override
+  String get guideTipsHeader => '使用技巧';
+
+  @override
+  String get guideTipsSubtitle => '这些随时可以在「设置」里找到';
+
+  @override
+  String get guidePrivacyReadBeforeUse => '使用前请阅读并同意以下内容';
+
+  @override
+  String get guidePrivacyViewOnly => '隐私、第三方 SDK 与免责说明';
+
+  @override
+  String holidayDataYearLabel(Object year) {
+    return '$year年法定节假日';
+  }
+
+  @override
+  String get holidayUpdateLog => '更新日志';
+
+  @override
+  String holidayUpdateLogCount(int count) {
+    return '$count条';
+  }
+
+  @override
+  String holidayDateSameMonth(int month, int start, int end) {
+    return '$month月$start日 - $end日';
+  }
+
+  @override
+  String holidayDateSameDay(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  ) {
+    return '$startMonth月$startDay日 - $endMonth月$endDay日';
+  }
+
+  @override
+  String get liveTestingHolidayOverride => '假期状态覆盖';
+
+  @override
+  String get liveTestingHolidayOverrideSubtitle =>
+      '开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程';
+
+  @override
+  String get liveTestingHolidayModeEnabled => '假期模式已开启';
+
+  @override
+  String get liveTestingHolidayModeDisabled => '假期模式已关闭';
+
+  @override
+  String get liveTestingHolidayModeEnabledDesc => '课程提醒和小组件将隐藏所有课程';
+
+  @override
+  String get liveTestingHolidayModeDisabledDesc => '当前使用正常假期数据';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -4502,7 +4587,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutSectionEntrySubtitle => '節次時間、行高、時間列、周末顯示與卡片布局';
 
   @override
-  String get homeWidgetEntryTitle => '桌面小工具';
+  String get homeWidgetEntryTitle => '桌面小組件';
 
   @override
   String get homeWidgetEntrySubtitle => '今日課程卡片、小組件背景與顯示資訊';
@@ -4672,6 +4757,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cancelAction => '取消';
+
+  @override
+  String get confirmAction => '確認';
 
   @override
   String get deleteAction => '刪除';
@@ -6934,6 +7022,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
       '開啟後，2×2、2×4 和 4×4 課程列表只顯示還没结束的課程。';
 
   @override
+  String get homeWidgetShowTomorrowTitle => '課後顯示明日課程';
+
+  @override
+  String get homeWidgetShowTomorrowSubtitle =>
+      '啟用後，當今日課程全部結束時，桌面小組件會自動切換顯示明日課程。';
+
+  @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微調';
 
   @override
@@ -8626,6 +8721,175 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get sortAction => '排序';
+
+  @override
+  String get sortByAdded => '按加入次序';
+
+  @override
+  String get sortByName => '按課程名稱';
+
+  @override
+  String get sortBySchedule => '按上課時間';
+
+  @override
+  String scheduleEntryTitle(int index) {
+    return '排課記錄 $index';
+  }
+
+  @override
+  String get addScheduleEntryAction => '新增排課時段';
+
+  @override
+  String get deleteScheduleEntryAction => '刪除排課';
+
+  @override
+  String get holidaySettingsEntryTitle => '假期標記';
+
+  @override
+  String get holidaySettingsEntrySubtitle => '在課表上標記公眾假期和調休補班';
+
+  @override
+  String get holidayMakeupWorkday => '補班';
+
+  @override
+  String get holidaySettingsTitle => '假期標記';
+
+  @override
+  String get holidayEnableTitle => '啟用假期標記';
+
+  @override
+  String get holidayEnableSubtitle => '啟用後會在課表上標記公眾假期和調休補班。';
+
+  @override
+  String get holidayDataSectionTitle => '假期資料';
+
+  @override
+  String get holidayDataYear => '年份';
+
+  @override
+  String get holidayDataCount => '數量';
+
+  @override
+  String get holidayDataEmpty => '暫無假期資料';
+
+  @override
+  String get holidayCheckUpdate => '檢查更新';
+
+  @override
+  String get holidayUpcomingSectionTitle => '近期假期';
+
+  @override
+  String get holidayNoUpcoming => '近期沒有假期';
+
+  @override
+  String get holidayBadgeLabel => '休';
+
+  @override
+  String get holidayStatusLabel => '假期';
+
+  @override
+  String get suspendedBadgeLabel => '停';
+
+  @override
+  String get suspendedStatusLabel => '停課';
+
+  @override
+  String get courseActionSuspend => '停課';
+
+  @override
+  String get courseActionUnsuspend => '恢復上課';
+
+  @override
+  String get suspendSheetTitle => '停課';
+
+  @override
+  String get suspendSheetSubtitle => '選擇停課範圍';
+
+  @override
+  String get suspendThisWeek => '本週停課';
+
+  @override
+  String get suspendThisWeekDesc => '只停本週';
+
+  @override
+  String get suspendAllWeeks => '全部週次停課';
+
+  @override
+  String get suspendAllWeeksDesc => '套用到所有週次';
+
+  @override
+  String get unsuspendAllWeeks => '恢復全部週次';
+
+  @override
+  String get unsuspendAllWeeksDesc => '恢復所有週次';
+
+  @override
+  String get customHolidayTitle => '自訂假期';
+
+  @override
+  String get customHolidayAdd => '新增假期';
+
+  @override
+  String get customHolidayEdit => '編輯假期';
+
+  @override
+  String get customHolidayDelete => '刪除';
+
+  @override
+  String get customHolidayDeleteConfirm => '確定要刪除此自訂假期嗎？';
+
+  @override
+  String get customHolidayNameLabel => '假期名稱';
+
+  @override
+  String get customHolidayStartDate => '開始日期';
+
+  @override
+  String get customHolidayEndDate => '結束日期';
+
+  @override
+  String get customHolidayType => '類型';
+
+  @override
+  String get customHolidayTypeVacation => '放假';
+
+  @override
+  String get customHolidayTypeWorkday => '調休補班';
+
+  @override
+  String get customHolidayEmpty => '暫無自訂假期';
+
+  @override
+  String get customHolidayNameRequired => '請輸入假期名稱';
+
+  @override
+  String customHolidayDateRange(Object start, Object end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get selectTeacherTitle => '選擇老師';
+
+  @override
+  String get selectLocationTitle => '選擇地點';
+
+  @override
+  String get historyRecordsLabel => '歷史記錄';
+
+  @override
+  String get noHistoryRecords => '暫無歷史記錄';
+
+  @override
+  String get weekPickerTitle => '選擇上課週次';
+
+  @override
+  String get selectTimeSchemeTitle => '選擇時間方案';
+
+  @override
+  String get manageTimeSchemesAction => '管理時間方案';
+
+  @override
   String get examDefaultName => '期末考試';
 
   @override
@@ -8636,6 +8900,91 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get thisWeekLabel => '本週';
+
+  @override
+  String get guidePrivacyPageTitle => '私隱條款';
+
+  @override
+  String get guidePermissionsPageTitle => '系統權限';
+
+  @override
+  String get guideTipsPageTitle => '使用技巧';
+
+  @override
+  String get guidePrevButton => '上一步';
+
+  @override
+  String get guideNextButton => '下一步';
+
+  @override
+  String get guidePermissionsHeader => '系統權限設置';
+
+  @override
+  String get guidePermissionsSubtitle => '完成這些設置，超級島和提醒才能正常使用';
+
+  @override
+  String get guideTipsHeader => '使用技巧';
+
+  @override
+  String get guideTipsSubtitle => '這些隨時可以在「設置」裡找到';
+
+  @override
+  String get guidePrivacyReadBeforeUse => '使用前請閱讀並同意以下內容';
+
+  @override
+  String get guidePrivacyViewOnly => '私隱、第三方 SDK 與免責聲明';
+
+  @override
+  String holidayDataYearLabel(Object year) {
+    return '$year年公眾假期';
+  }
+
+  @override
+  String get holidayUpdateLog => '更新日誌';
+
+  @override
+  String holidayUpdateLogCount(int count) {
+    return '$count條';
+  }
+
+  @override
+  String holidayDateSameMonth(int month, int start, int end) {
+    return '$month月$start日 - $end日';
+  }
+
+  @override
+  String holidayDateSameDay(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  ) {
+    return '$startMonth月$startDay日 - $endMonth月$endDay日';
+  }
+
+  @override
+  String get liveTestingHolidayOverride => '假期狀態覆蓋';
+
+  @override
+  String get liveTestingHolidayOverrideSubtitle =>
+      '開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程';
+
+  @override
+  String get liveTestingHolidayModeEnabled => '假期模式已開啟';
+
+  @override
+  String get liveTestingHolidayModeDisabled => '假期模式已關閉';
+
+  @override
+  String get liveTestingHolidayModeEnabledDesc => '課程提醒和小工具將隱藏所有課程';
+
+  @override
+  String get liveTestingHolidayModeDisabledDesc => '當前使用正常假期數據';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -8900,6 +9249,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cancelAction => '取消';
+
+  @override
+  String get confirmAction => '確認';
 
   @override
   String get deleteAction => '刪除';
@@ -11162,6 +11514,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
       '開啟後，2×2、2×4 和 4×4 課程列表只顯示還没结束的課程。';
 
   @override
+  String get homeWidgetShowTomorrowTitle => '下課後顯示明天課程';
+
+  @override
+  String get homeWidgetShowTomorrowSubtitle =>
+      '啟用後，當今天的課程全部結束時，桌面小工具會自動切換顯示明天的課程。';
+
+  @override
   String get homeWidgetHeightAdjustTitle => '卡片高度微調';
 
   @override
@@ -12854,6 +13213,175 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
+  String get sortAction => '排序';
+
+  @override
+  String get sortByAdded => '依新增順序';
+
+  @override
+  String get sortByName => '依課程名稱';
+
+  @override
+  String get sortBySchedule => '依上課時間';
+
+  @override
+  String scheduleEntryTitle(int index) {
+    return '排課紀錄 $index';
+  }
+
+  @override
+  String get addScheduleEntryAction => '新增排課時段';
+
+  @override
+  String get deleteScheduleEntryAction => '刪除排課';
+
+  @override
+  String get holidaySettingsEntryTitle => '假日標記';
+
+  @override
+  String get holidaySettingsEntrySubtitle => '在課表上標示放假日與補班日';
+
+  @override
+  String get holidayMakeupWorkday => '補班';
+
+  @override
+  String get holidaySettingsTitle => '假日標記';
+
+  @override
+  String get holidayEnableTitle => '啟用假日標記';
+
+  @override
+  String get holidayEnableSubtitle => '啟用後會在課表上標示放假日與補班日。';
+
+  @override
+  String get holidayDataSectionTitle => '假日資料';
+
+  @override
+  String get holidayDataYear => '年份';
+
+  @override
+  String get holidayDataCount => '數量';
+
+  @override
+  String get holidayDataEmpty => '目前沒有假日資料';
+
+  @override
+  String get holidayCheckUpdate => '檢查更新';
+
+  @override
+  String get holidayUpcomingSectionTitle => '近期假日';
+
+  @override
+  String get holidayNoUpcoming => '近期沒有假日';
+
+  @override
+  String get holidayBadgeLabel => '休';
+
+  @override
+  String get holidayStatusLabel => '放假';
+
+  @override
+  String get suspendedBadgeLabel => '停';
+
+  @override
+  String get suspendedStatusLabel => '停課';
+
+  @override
+  String get courseActionSuspend => '停課';
+
+  @override
+  String get courseActionUnsuspend => '恢復上課';
+
+  @override
+  String get suspendSheetTitle => '停課';
+
+  @override
+  String get suspendSheetSubtitle => '選擇停課範圍';
+
+  @override
+  String get suspendThisWeek => '本週停課';
+
+  @override
+  String get suspendThisWeekDesc => '只停本週';
+
+  @override
+  String get suspendAllWeeks => '全部週次停課';
+
+  @override
+  String get suspendAllWeeksDesc => '套用到所有週次';
+
+  @override
+  String get unsuspendAllWeeks => '恢復全部週次';
+
+  @override
+  String get unsuspendAllWeeksDesc => '恢復所有週次';
+
+  @override
+  String get customHolidayTitle => '自訂假日';
+
+  @override
+  String get customHolidayAdd => '新增假日';
+
+  @override
+  String get customHolidayEdit => '編輯假日';
+
+  @override
+  String get customHolidayDelete => '刪除';
+
+  @override
+  String get customHolidayDeleteConfirm => '確定要刪除此自訂假日嗎？';
+
+  @override
+  String get customHolidayNameLabel => '假日名稱';
+
+  @override
+  String get customHolidayStartDate => '開始日期';
+
+  @override
+  String get customHolidayEndDate => '結束日期';
+
+  @override
+  String get customHolidayType => '類型';
+
+  @override
+  String get customHolidayTypeVacation => '放假';
+
+  @override
+  String get customHolidayTypeWorkday => '補班日';
+
+  @override
+  String get customHolidayEmpty => '目前沒有自訂假日';
+
+  @override
+  String get customHolidayNameRequired => '請輸入假日名稱';
+
+  @override
+  String customHolidayDateRange(Object start, Object end) {
+    return '$start ~ $end';
+  }
+
+  @override
+  String get selectTeacherTitle => '選擇老師';
+
+  @override
+  String get selectLocationTitle => '選擇地點';
+
+  @override
+  String get historyRecordsLabel => '歷史紀錄';
+
+  @override
+  String get noHistoryRecords => '目前沒有歷史紀錄';
+
+  @override
+  String get weekPickerTitle => '選擇上課週次';
+
+  @override
+  String get selectTimeSchemeTitle => '選擇時間方案';
+
+  @override
+  String get manageTimeSchemesAction => '管理時間方案';
+
+  @override
   String get examDefaultName => '期末考試';
 
   @override
@@ -12864,4 +13392,89 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get thisWeekLabel => '本週';
+
+  @override
+  String get guidePrivacyPageTitle => '隱私權條款';
+
+  @override
+  String get guidePermissionsPageTitle => '系統權限';
+
+  @override
+  String get guideTipsPageTitle => '使用技巧';
+
+  @override
+  String get guidePrevButton => '上一步';
+
+  @override
+  String get guideNextButton => '下一步';
+
+  @override
+  String get guidePermissionsHeader => '系統權限設定';
+
+  @override
+  String get guidePermissionsSubtitle => '完成這些設定，超級島和提醒才能正常使用';
+
+  @override
+  String get guideTipsHeader => '使用技巧';
+
+  @override
+  String get guideTipsSubtitle => '這些隨時可以在「設定」裡找到';
+
+  @override
+  String get guidePrivacyReadBeforeUse => '使用前請閱讀並同意以下內容';
+
+  @override
+  String get guidePrivacyViewOnly => '隱私權、第三方 SDK 與免責聲明';
+
+  @override
+  String holidayDataYearLabel(Object year) {
+    return '$year年國定假日';
+  }
+
+  @override
+  String get holidayUpdateLog => '更新紀錄';
+
+  @override
+  String holidayUpdateLogCount(int count) {
+    return '$count筆';
+  }
+
+  @override
+  String holidayDateSameMonth(int month, int start, int end) {
+    return '$month月$start日 - $end日';
+  }
+
+  @override
+  String holidayDateSameDay(int month, int day) {
+    return '$month月$day日';
+  }
+
+  @override
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  ) {
+    return '$startMonth月$startDay日 - $endMonth月$endDay日';
+  }
+
+  @override
+  String get liveTestingHolidayOverride => '假期狀態覆蓋';
+
+  @override
+  String get liveTestingHolidayOverrideSubtitle =>
+      '開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程';
+
+  @override
+  String get liveTestingHolidayModeEnabled => '假期模式已開啟';
+
+  @override
+  String get liveTestingHolidayModeDisabled => '假期模式已關閉';
+
+  @override
+  String get liveTestingHolidayModeEnabledDesc => '課程提醒和小工具將隱藏所有課程';
+
+  @override
+  String get liveTestingHolidayModeDisabledDesc => '當前使用正常假期數據';
 }

@@ -2,6 +2,7 @@ package com.mutx163.qingyu
 
 import android.Manifest
 import android.app.ActivityManager
+import android.app.AppOpsManager
 import android.app.DownloadManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -48,6 +49,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import org.json.JSONObject
+import java.util.Locale
 import java.io.File
 import java.util.Calendar
 import kotlin.math.ceil
@@ -132,6 +134,9 @@ class MainActivity : FlutterActivity() {
                     "openAccessibilitySettings" -> {
                         openAccessibilitySettings()
                         result.success(true)
+                    }
+                    "isAutoStartEnabled" -> {
+                        result.success(isAutoStartEnabled())
                     }
                     "isKeepAliveAccessibilityEnabled" -> {
                         result.success(isKeepAliveAccessibilityEnabled())
@@ -608,41 +613,111 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun openAutoStartSettings() {
-        val intents = listOf(
-            Intent().apply {
-                component = ComponentName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.autostart.AutoStartManagementActivity"
-                )
-            },
-            Intent("miui.intent.action.APP_PERM_EDITOR").apply {
-                setClassName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.permissions.PermissionsEditorActivity"
-                )
-                putExtra("extra_pkgname", packageName)
-                putExtra("package_name", packageName)
-                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
-            },
-            Intent().apply {
-                component = ComponentName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.permissions.AppPermissionsEditorActivity"
-                )
-                putExtra("extra_pkgname", packageName)
-                putExtra("package_name", packageName)
-                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
-            },
-            Intent().apply {
-                component = ComponentName(
-                    "com.miui.securitycenter",
-                    "com.miui.permcenter.permissions.PermissionsEditorActivity"
-                )
-                putExtra("extra_pkgname", packageName)
-                putExtra("package_name", packageName)
-                putExtra("android.intent.extra.PACKAGE_NAME", packageName)
+        val brand = Build.BRAND.lowercase(Locale.ROOT)
+        val intents = mutableListOf<Intent>()
+
+        when (brand) {
+            "xiaomi", "poco", "redmi" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.miui.securitycenter",
+                        "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                    )
+                }
+                intents += Intent("miui.intent.action.APP_PERM_EDITOR").apply {
+                    component = ComponentName(
+                        "com.miui.securitycenter",
+                        "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                    )
+                    putExtra("extra_pkgname", packageName)
+                    putExtra("package_name", packageName)
+                }
             }
-        )
+            "oppo", "realme", "oneplus" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.coloros.safecenter",
+                        "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.oppo.safe",
+                        "com.oppo.safe.permission.startup.StartupAppListActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.coloros.safecenter",
+                        "com.coloros.safecenter.startupapp.StartupAppListActivity"
+                    )
+                }
+                if (brand == "oneplus") {
+                    intents += Intent().apply {
+                        component = ComponentName(
+                            "com.oneplus.security",
+                            "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"
+                        )
+                    }
+                }
+            }
+            "vivo" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.iqoo.secure",
+                        "com.iqoo.secure.ui.phoneoptimize.AddWhiteListActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.vivo.permissionmanager",
+                        "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                    )
+                }
+            }
+            "huawei", "honor" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.huawei.systemmanager",
+                        "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.huawei.systemmanager",
+                        "com.huawei.systemmanager.optimize.process.ProtectActivity"
+                    )
+                }
+            }
+            "samsung" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.samsung.android.lool",
+                        "com.samsung.android.sm.ui.battery.BatteryActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.samsung.android.lool",
+                        "com.samsung.android.sm.battery.ui.BatteryActivity"
+                    )
+                }
+            }
+            "asus" -> {
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.asus.mobilemanager",
+                        "com.asus.mobilemanager.autostart.AutoStartActivity"
+                    )
+                }
+                intents += Intent().apply {
+                    component = ComponentName(
+                        "com.asus.mobilemanager",
+                        "com.asus.mobilemanager.powersaver.PowerSaverSettings"
+                    )
+                }
+            }
+        }
 
         for (intent in intents) {
             try {
@@ -650,7 +725,7 @@ class MainActivity : FlutterActivity() {
                 startActivity(intent)
                 return
             } catch (_: Exception) {
-                // Try the next Xiaomi-specific screen.
+                // Try the next screen.
             }
         }
 
@@ -903,6 +978,63 @@ class MainActivity : FlutterActivity() {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(fallbackIntent)
+        }
+    }
+
+    private fun isAutoStartEnabled(): Boolean {
+        // 1. 尝试 AppOps 反射检测（小米/OPPO/Vivo/一加 等）
+        val appOpsResult = checkAutoStartViaAppOps()
+        if (appOpsResult != null) return appOpsResult
+
+        // 2. 回退到电池优化检测（三星/华为/荣耀/通用）
+        val batteryResult = checkAutoStartViaBattery()
+        if (batteryResult != null) return batteryResult
+
+        // 3. 兜底：乐观默认
+        return true
+    }
+
+    /**
+     * 通过 AppOps 反射检测自启动状态。
+     * 适用：小米 (MIUI)、OPPO (ColorOS)、Vivo、一加 (OxygenOS) 等。
+     * 不适用时返回 null（如 Pixel 等原生 Android）。
+     */
+    private fun checkAutoStartViaAppOps(): Boolean? {
+        return try {
+            val appOps = getSystemService(Context.APP_OPS_SERVICE) as AppOpsManager
+            val method = AppOpsManager::class.java.getMethod(
+                "checkOpNoThrow",
+                Int::class.javaPrimitiveType,
+                Int::class.javaPrimitiveType,
+                String::class.java
+            )
+            // OP_AUTO_START = 10008 (小米/OPPO/Vivo 等厂商通用)
+            val result = method.invoke(
+                appOps, 10008, android.os.Process.myUid(), packageName
+            ) as Int
+            when (result) {
+                AppOpsManager.MODE_ALLOWED -> true
+                AppOpsManager.MODE_IGNORED,
+                AppOpsManager.MODE_ERRORED -> false
+                else -> null // MODE_DEFAULT 等，说明此 OP 不适用于当前设备
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 通过电池优化状态间接推断。
+     * 适用：三星（sleeping apps）、华为/荣耀（EMUI）等使用电池策略限制后台的厂商。
+     * 对于 Pixel 等原生设备也适用（但通常不需要自启动权限）。
+     */
+    private fun checkAutoStartViaBattery(): Boolean? {
+        return try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return null
+            val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            powerManager?.isIgnoringBatteryOptimizations(packageName)
+        } catch (_: Exception) {
+            null
         }
     }
 

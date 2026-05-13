@@ -4659,4 +4659,92 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisWeekLabel => 'This week';
+
+  @override
+  String get guidePrivacyPageTitle => 'Privacy Policy';
+
+  @override
+  String get guidePermissionsPageTitle => 'Permissions';
+
+  @override
+  String get guideTipsPageTitle => 'Tips';
+
+  @override
+  String get guidePrevButton => 'Previous';
+
+  @override
+  String get guideNextButton => 'Next';
+
+  @override
+  String get guidePermissionsHeader => 'System Permissions';
+
+  @override
+  String get guidePermissionsSubtitle =>
+      'Complete these settings for Super Island and reminders to work properly';
+
+  @override
+  String get guideTipsHeader => 'Tips';
+
+  @override
+  String get guideTipsSubtitle => 'These can always be found in Settings';
+
+  @override
+  String get guidePrivacyReadBeforeUse => 'Please read and agree before use';
+
+  @override
+  String get guidePrivacyViewOnly =>
+      'Privacy, third-party SDKs, and disclaimer';
+
+  @override
+  String holidayDataYearLabel(Object year) {
+    return '$year Official Holidays';
+  }
+
+  @override
+  String get holidayUpdateLog => 'Update Log';
+
+  @override
+  String holidayUpdateLogCount(int count) {
+    return '$count entries';
+  }
+
+  @override
+  String holidayDateSameMonth(int month, int start, int end) {
+    return '$month/$start - $end';
+  }
+
+  @override
+  String holidayDateSameDay(int month, int day) {
+    return '$month/$day';
+  }
+
+  @override
+  String holidayDateDiffMonth(
+    int startMonth,
+    int startDay,
+    int endMonth,
+    int endDay,
+  ) {
+    return '$startMonth/$startDay - $endMonth/$endDay';
+  }
+
+  @override
+  String get liveTestingHolidayOverride => 'Holiday Status Override';
+
+  @override
+  String get liveTestingHolidayOverrideSubtitle =>
+      'Simulate holiday status for testing reminders and widgets';
+
+  @override
+  String get liveTestingHolidayModeEnabled => 'Holiday Mode Enabled';
+
+  @override
+  String get liveTestingHolidayModeDisabled => 'Holiday Mode Disabled';
+
+  @override
+  String get liveTestingHolidayModeEnabledDesc =>
+      'Reminders and widgets will hide all courses';
+
+  @override
+  String get liveTestingHolidayModeDisabledDesc => 'Using normal holiday data';
 }

@@ -1434,8 +1434,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         children: [
           if (!kReleaseMode) ...[  
             _SettingsSectionCard(
-              title: '假期状态覆盖',
-              subtitle: '开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程',
+              title: l10n.liveTestingHolidayOverride,
+              subtitle: l10n.liveTestingHolidayOverrideSubtitle,
               child: SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 value: _holidayOverrideEnabled,
@@ -1449,11 +1449,11 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   );
                   provider.refreshLiveActivityNow(forceSnapshotSync: true);
                 },
-                title: Text(_holidayOverrideEnabled ? '假期模式已开启' : '假期模式已关闭'),
+                title: Text(_holidayOverrideEnabled ? l10n.liveTestingHolidayModeEnabled : l10n.liveTestingHolidayModeDisabled),
                 subtitle: Text(
                   _holidayOverrideEnabled
-                      ? '课程提醒和小组件将隐藏所有课程'
-                      : '当前使用正常假期数据',
+                      ? l10n.liveTestingHolidayModeEnabledDesc
+                      : l10n.liveTestingHolidayModeDisabledDesc,
                 ),
               ),
             ),
@@ -4146,7 +4146,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                               ),
                             ),
                             subtitle: Text(
-                              _formatHolidayRange(group.startDate, group.endDate),
+                              _formatHolidayRange(group.startDate, group.endDate, l10n),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -4202,7 +4202,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          '${holidayData?.year ?? ""}年法定节假日',
+                          l10n.holidayDataYearLabel(holidayData?.year ?? ''),
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -4257,7 +4257,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                                       ),
                                     ),
                                     Text(
-                                      _formatHolidayRange(h.startDate, h.endDate),
+                                      _formatHolidayRange(h.startDate, h.endDate, l10n),
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Theme.of(context)
@@ -4292,7 +4292,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          '更新日志',
+                          l10n.holidayUpdateLog,
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
@@ -4302,7 +4302,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       ),
                       if (provider.holidayLogs.isNotEmpty)
                         Text(
-                          '${provider.holidayLogs.length}条',
+                          l10n.holidayUpdateLogCount(provider.holidayLogs.length),
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                     ],
@@ -4371,14 +4371,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
 
 
 
-  String _formatHolidayRange(DateTime start, DateTime end) {
+  String _formatHolidayRange(DateTime start, DateTime end, AppLocalizations l10n) {
     if (_isSameDate(start, end)) {
-      return '${start.month}月${start.day}日';
+      return l10n.holidayDateSameDay(start.month, start.day);
     }
     if (start.month == end.month) {
-      return '${start.month}月${start.day}日 - ${end.day}日';
+      return l10n.holidayDateSameMonth(start.month, start.day, end.day);
     }
-    return '${start.month}月${start.day}日 - ${end.month}月${end.day}日';
+    return l10n.holidayDateDiffMonth(start.month, start.day, end.month, end.day);
   }
 
   bool _isSameDate(DateTime a, DateTime b) =>
