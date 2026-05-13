@@ -959,6 +959,10 @@ String localeLabel(BuildContext context, Locale locale) {
     case 'en':
     case 'en_US':
       return 'English';
+    case 'ja':
+      return '日本語';
+    case 'ko':
+      return '한국어';
     default:
       return tag;
   }
