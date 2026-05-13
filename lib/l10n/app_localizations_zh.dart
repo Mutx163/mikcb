@@ -69,15 +69,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get languageModeSystem => '跟随系统';
 
   @override
-  String get languageModeZhCn => '简体中文';
-
-  @override
-  String get languageModeZhHk => '繁體中文（香港）';
-
-  @override
-  String get languageModeEnUs => '英语';
-
-  @override
   String get settingsTitle => '课表设置';
 
   @override
@@ -2079,9 +2070,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveDisplaySummaryMinimal => '最简显示';
-
-  @override
-  String get languageModeZhTw => '繁體中文（台灣）';
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';
@@ -4564,15 +4552,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get languageModeSystem => '跟隨系統';
 
   @override
-  String get languageModeZhCn => '簡體中文';
-
-  @override
-  String get languageModeZhHk => '繁體中文（香港）';
-
-  @override
-  String get languageModeEnUs => '英語';
-
-  @override
   String get settingsTitle => '課表設定';
 
   @override
@@ -6574,9 +6553,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveDisplaySummaryMinimal => '最簡顯示';
-
-  @override
-  String get languageModeZhTw => '繁體中文（台灣）';
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';
@@ -9060,15 +9036,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get languageModeSystem => '跟隨系統';
 
   @override
-  String get languageModeZhCn => '簡體中文';
-
-  @override
-  String get languageModeZhHk => '繁體中文（香港）';
-
-  @override
-  String get languageModeEnUs => '英語';
-
-  @override
   String get settingsTitle => '課表設定';
 
   @override
@@ -11070,9 +11037,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveDisplaySummaryMinimal => '最簡顯示';
-
-  @override
-  String get languageModeZhTw => '繁體中文（台灣）';
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';

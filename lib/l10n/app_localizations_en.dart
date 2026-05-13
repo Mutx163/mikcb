@@ -71,15 +71,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get languageModeSystem => 'Follow System';
 
   @override
-  String get languageModeZhCn => 'Simplified Chinese';
-
-  @override
-  String get languageModeZhHk => 'Traditional Chinese (Hong Kong)';
-
-  @override
-  String get languageModeEnUs => 'English';
-
-  @override
   String get settingsTitle => 'Timetable Settings';
 
   @override
@@ -2207,9 +2198,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveDisplaySummaryMinimal => 'Minimal display';
-
-  @override
-  String get languageModeZhTw => 'Traditional Chinese (Taiwan)';
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';
