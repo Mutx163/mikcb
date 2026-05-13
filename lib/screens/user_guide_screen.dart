@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 
+import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import 'course_overview_screen.dart';
+import 'timetable_settings_screen.dart';
 
 class UserGuideScreen extends StatefulWidget {
   final bool requirePrivacyConsent;
@@ -225,6 +228,67 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return l10n.guideTipsPageTitle;
   }
 
+  // ── Language selector ────────────────────────────────────────
+
+  Widget _buildLanguageSelector(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    final provider = context.read<TimetableProvider?>();
+    if (provider == null) return const SizedBox.shrink();
+    final currentTag =
+        normalizeLocaleTagForDropdown(provider.settings.appLocaleTag);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.language_rounded, color: colorScheme.primary, size: 22),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.languageSectionTitle,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  l10n.languageSectionSubtitle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          DropdownButton<String>(
+            value: currentTag,
+            items: buildLocaleDropdownItems(context),
+            onChanged: (value) {
+              if (value == null) return;
+              final next =
+                  provider.settings.copyWith(appLocaleTag: value);
+              provider.updateTimetableSettings(next);
+            },
+            borderRadius: BorderRadius.circular(12),
+            underline: const SizedBox.shrink(),
+            isDense: true,
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Page 1: Privacy consent ──────────────────────────────────
 
   Widget _buildPrivacyPage(ThemeData theme, AppLocalizations l10n) {
@@ -260,6 +324,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ),
           ],
         ),
+        const SizedBox(height: 16),
+        // Language selector
+        _buildLanguageSelector(theme, l10n, colorScheme),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(16),
