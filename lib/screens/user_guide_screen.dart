@@ -33,11 +33,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _canPostPromoted = false;
   bool _isIgnoringBatteryOptimizations = false;
   bool _isKeepAliveAccessibilityEnabled = false;
+  bool _isAutoStartEnabled = true;
   late bool _privacyChecked;
 
-  bool get _showPrivacyPage => widget.requirePrivacyConsent;
-
-  int get _totalPages => _showPrivacyPage ? 3 : 2;
+  int get _totalPages => 3;
 
   @override
   void initState() {
@@ -69,12 +68,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
 
     final promotedSupport = await _service.checkPromotedSupport();
-    final hasNotificationPermission =
-        await _service.checkNotificationPermission();
-    final isIgnoringBatteryOptimizations =
-        await _service.isIgnoringBatteryOptimizations();
-    final isKeepAliveAccessibilityEnabled =
-        await _service.isKeepAliveAccessibilityEnabled();
+    final hasNotificationPermission = await _service
+        .checkNotificationPermission();
+    final isIgnoringBatteryOptimizations = await _service
+        .isIgnoringBatteryOptimizations();
+    final isKeepAliveAccessibilityEnabled = await _service
+        .isKeepAliveAccessibilityEnabled();
+    final isAutoStartEnabled = await _service.isAutoStartEnabled();
 
     if (!mounted) {
       return;
@@ -82,11 +82,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     setState(() {
       _hasNotificationPermission =
           promotedSupport['hasNotificationPermission'] == true ||
-              hasNotificationPermission;
+          hasNotificationPermission;
       _hasPromotedPermission = promotedSupport['hasPromotedPermission'] == true;
       _canPostPromoted = promotedSupport['canPostPromoted'] == true;
       _isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations;
       _isKeepAliveAccessibilityEnabled = isKeepAliveAccessibilityEnabled;
+      _isAutoStartEnabled = isAutoStartEnabled;
       _isLoading = false;
     });
   }
@@ -120,13 +121,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
-  int get _permissionReadyCount => [
-        _hasNotificationPermission,
-        _canPostPromoted,
-        _isIgnoringBatteryOptimizations,
-        _isKeepAliveAccessibilityEnabled,
-      ].where((item) => item).length;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -153,7 +147,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ),
         body: Column(
           children: [
-            _buildProgressBar(theme, colorScheme),
+            _buildProgressBar(theme, l10n, colorScheme),
             Expanded(
               child: PageView(
                 controller: _pageController,
@@ -164,7 +158,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   });
                 },
                 children: [
-                  if (_showPrivacyPage) _buildPrivacyPage(theme, l10n),
+                  _buildPrivacyPage(theme, l10n),
                   _buildPermissionsPage(theme, l10n, colorScheme),
                   _buildTipsPage(theme, l10n, colorScheme),
                 ],
@@ -179,7 +173,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   // ── Progress bar ──────────────────────────────────────────────
 
-  Widget _buildProgressBar(ThemeData theme, ColorScheme colorScheme) {
+  Widget _buildProgressBar(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
     if (_totalPages <= 1) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -197,7 +195,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               ),
               const SizedBox(width: 8),
               Text(
-                _buildPageTitle(),
+                _buildPageTitle(l10n),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: colorScheme.primary,
                   fontWeight: FontWeight.w600,
@@ -219,24 +217,23 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  String _buildPageTitle() {
-    // No l10n needed for these short labels
-    if (_showPrivacyPage && _currentPage == 0) return '隐私协议';
-    if ((_showPrivacyPage && _currentPage == 1) ||
-        (!_showPrivacyPage && _currentPage == 0)) {
-      return '系统权限';
-    }
-    return '使用技巧';
+  String _buildPageTitle(AppLocalizations l10n) {
+    if (_currentPage == 0) return l10n.guidePrivacyPageTitle;
+    if (_currentPage == 1) return l10n.guidePermissionsPageTitle;
+    return l10n.guideTipsPageTitle;
   }
 
   // ── Page 1: Privacy consent ──────────────────────────────────
 
   Widget _buildPrivacyPage(ThemeData theme, AppLocalizations l10n) {
     final colorScheme = theme.colorScheme;
+    final helperText = widget.requirePrivacyConsent
+        ? l10n.guidePrivacyHelperRequireConsent
+        : l10n.guidePrivacyHelperViewOnly;
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        // Minimal welcome
         Row(
           children: [
             Container(
@@ -246,15 +243,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 color: colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.school_rounded,
-                color: colorScheme.onPrimary,
-              ),
+              child: Icon(Icons.school_rounded, color: colorScheme.onPrimary),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                '使用前请阅读并同意以下内容',
+                widget.requirePrivacyConsent
+                    ? l10n.guidePrivacyReadBeforeUse
+                    : l10n.guidePrivacyViewOnly,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -263,26 +259,23 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ],
         ),
         const SizedBox(height: 20),
-
-        // Expandable privacy full text
         Container(
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerLowest,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: colorScheme.outlineVariant),
           ),
-          child: ExpansionTile(
-            title: Text(
-              '隐私协议、第三方 SDK 与免责说明',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            childrenPadding:
-                const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            shape: const Border(),
-            collapsedShape: const Border(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Divider(),
-              const SizedBox(height: 8),
+              Text(
+                l10n.guidePrivacySectionTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
               Text(
                 l10n.guidePrivacyParagraph1,
                 style: theme.textTheme.bodyMedium,
@@ -302,13 +295,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 l10n.guidePrivacyParagraph4,
                 style: theme.textTheme.bodyMedium,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,63 +315,85 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     const SizedBox(height: 8),
                     Text(
                       l10n.guideRiskParagraph1,
-                      style: theme.textTheme.bodySmall,
+                      style: theme.textTheme.bodyMedium,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       l10n.guideRiskParagraph2,
-                      style: theme.textTheme.bodySmall,
+                      style: theme.textTheme.bodyMedium,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
                     Text(
                       l10n.guideRiskParagraph3,
-                      style: theme.textTheme.bodySmall,
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.guideUmengPrivacyLink,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colorScheme.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      helperText,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      l10n.guideUmengPrivacyLink,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
-
-        // Privacy checkbox
-        InkWell(
-          onTap: () {
-            setState(() {
-              _privacyChecked = !_privacyChecked;
-            });
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 6),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: _privacyChecked,
-                  onChanged: (value) {
-                    setState(() {
-                      _privacyChecked = value ?? false;
-                    });
-                  },
-                ),
-                Expanded(
-                  child: Text(
-                    l10n.guidePrivacyConsentLabel,
-                    style: theme.textTheme.bodyMedium,
+        if (widget.requirePrivacyConsent) ...[
+          const SizedBox(height: 16),
+          InkWell(
+            onTap: () {
+              setState(() {
+                _privacyChecked = !_privacyChecked;
+              });
+            },
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: _privacyChecked,
+                    onChanged: (value) {
+                      setState(() {
+                        _privacyChecked = value ?? false;
+                      });
+                    },
                   ),
-                ),
-              ],
+                  Expanded(
+                    child: Text(
+                      l10n.guidePrivacyConsentLabel,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -394,8 +409,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       return const Center(child: CircularProgressIndicator());
     }
 
-    final readyCount = _permissionReadyCount;
     final items = _buildPermissionItems(l10n, colorScheme);
+    final countableItems = items.where((item) => item.enabled != null).toList();
+    final readyCount = countableItems
+        .where((item) => item.enabled == true)
+        .length;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -404,14 +422,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         children: [
           // Header
           Text(
-            '系统权限设置',
+            l10n.guidePermissionsHeader,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w800,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            '完成这些设置，超级岛和提醒才能正常使用',
+            l10n.guidePermissionsSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
             ),
@@ -432,7 +450,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '$readyCount / ${items.length} 已完成',
+                        '$readyCount / ${countableItems.length} 已完成',
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -441,12 +459,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                       ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
-                          value: items.isEmpty
+                          value: countableItems.isEmpty
                               ? 0.0
-                              : readyCount / items.length,
+                              : readyCount / countableItems.length,
                           minHeight: 6,
-                          backgroundColor:
-                              colorScheme.surfaceContainerHighest,
+                          backgroundColor: colorScheme.surfaceContainerHighest,
                         ),
                       ),
                     ],
@@ -508,7 +525,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '每项点击后跳转到系统设置，设置完成后返回应用，状态会自动刷新',
+                    '点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。',
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: colorScheme.onTertiaryContainer,
                     ),
@@ -553,11 +570,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         icon: Icons.play_circle_outline_rounded,
         iconColor: Colors.green.shade700,
         title: l10n.quickActionAutoStartTitle,
-        enabled: _isKeepAliveAccessibilityEnabled && _isIgnoringBatteryOptimizations
-            ? true
-            : false,
+        enabled: _isAutoStartEnabled,
         enabledLabel: '已开启',
-        disabledLabel: '建议开启',
+        disabledLabel: '未开启',
         onTap: () => _runAction(_service.openAutoStartSettings),
       ),
       _PermissionItem(
@@ -581,11 +596,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     ];
   }
 
-  Widget _buildPermissionRow(
-    _PermissionItem item,
-    ColorScheme colorScheme,
-  ) {
-    final statusColor = item.enabled ? Colors.green.shade700 : Colors.orange.shade700;
+  Widget _buildPermissionRow(_PermissionItem item, ColorScheme colorScheme) {
+    final statusColor = item.enabled == null
+        ? colorScheme.onSurfaceVariant
+        : item.enabled!
+        ? Colors.green.shade700
+        : Colors.orange.shade700;
     return InkWell(
       onTap: item.onTap,
       borderRadius: BorderRadius.circular(16),
@@ -608,7 +624,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                item.enabled ? item.enabledLabel : item.disabledLabel,
+                item.enabled == true ? item.enabledLabel : item.disabledLabel,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -619,9 +635,13 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             if (item.onTap != null) ...[
               const SizedBox(width: 8),
               Icon(
-                item.enabled ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
+                item.enabled == true
+                    ? Icons.check_circle_rounded
+                    : Icons.chevron_right_rounded,
                 size: 20,
-                color: item.enabled ? Colors.green.shade700 : colorScheme.onSurfaceVariant,
+                color: item.enabled == true
+                    ? Colors.green.shade700
+                    : colorScheme.onSurfaceVariant,
               ),
             ],
           ],
@@ -641,14 +661,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         Text(
-          '使用技巧',
+          l10n.guideTipsHeader,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.w800,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          '这些随时可以在「设置」里找到',
+          l10n.guideTipsSubtitle,
           style: theme.textTheme.bodyMedium?.copyWith(
             color: colorScheme.onSurfaceVariant,
           ),
@@ -688,7 +708,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  Expanded(child: Text(l10n.guideShortNameNotRecommendedExample)),
+                  Expanded(
+                    child: Text(l10n.guideShortNameNotRecommendedExample),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -699,7 +721,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        settings: const RouteSettings(name: '/courses/overview'),
+                        settings: const RouteSettings(
+                          name: '/courses/overview',
+                        ),
                         builder: (_) => const CourseOverviewScreen(),
                       ),
                     );
@@ -783,10 +807,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       child: ExpansionTile(
         leading: Icon(icon, color: colorScheme.primary),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.w700),
-        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         shape: const Border(),
         collapsedShape: const Border(),
@@ -825,7 +846,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final isFirstPage = _currentPage == 0;
     final isLastPage = _currentPage == _totalPages - 1;
     final showPrev = !isFirstPage;
-    final isPrivacyPage = _showPrivacyPage && isFirstPage;
+    final isPrivacyPage = widget.requirePrivacyConsent && isFirstPage;
     final canGoNext = !isPrivacyPage || _privacyChecked;
 
     return SafeArea(
@@ -834,9 +855,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: colorScheme.outlineVariant),
-          ),
+          border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
         ),
         child: Row(
           children: [
@@ -850,7 +869,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               TextButton.icon(
                 onPressed: _goPrev,
                 icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: Text('上一步'),
+                label: Text(l10n.guidePrevButton),
               )
             else
               const Spacer(),
@@ -862,11 +881,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               FilledButton.icon(
                 onPressed: canGoNext ? _goNext : null,
                 icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: Text('下一步'),
+                label: Text(l10n.guideNextButton),
               )
             else
               FilledButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
+                onPressed: _finishGuide,
                 icon: const Icon(Icons.check_rounded, size: 18),
                 label: Text(
                   widget.requirePrivacyConsent
@@ -878,6 +897,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         ),
       ),
     );
+  }
+
+  void _finishGuide() {
+    Navigator.of(context).pop(widget.requirePrivacyConsent ? true : null);
   }
 
   Future<void> _exitWithoutConsent() async {
@@ -897,7 +920,7 @@ class _PermissionItem {
   final IconData icon;
   final Color iconColor;
   final String title;
-  final bool enabled;
+  final bool? enabled;
   final String enabledLabel;
   final String disabledLabel;
   final VoidCallback? onTap;

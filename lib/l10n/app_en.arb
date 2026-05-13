@@ -2646,5 +2646,79 @@
   "examDefaultName": "Final Exam",
   "examDateWeekPickerTitle": "Select exam date",
   "weekPickerCalendarTooltip": "Use calendar picker",
-  "thisWeekLabel": "This week"
+  "thisWeekLabel": "This week",
+  "guidePrivacyPageTitle": "Privacy Policy",
+  "guidePermissionsPageTitle": "Permissions",
+  "guideTipsPageTitle": "Tips",
+  "guidePrevButton": "Previous",
+  "guideNextButton": "Next",
+  "guidePermissionsHeader": "System Permissions",
+  "guidePermissionsSubtitle": "Complete these settings for Super Island and reminders to work properly",
+  "guideTipsHeader": "Tips",
+  "guideTipsSubtitle": "These can always be found in Settings",
+  "guidePrivacyReadBeforeUse": "Please read and agree before use",
+  "guidePrivacyViewOnly": "Privacy, third-party SDKs, and disclaimer",
+  "holidayDataYearLabel": "{year} Official Holidays",
+  "@holidayDataYearLabel": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "holidayUpdateLog": "Update Log",
+  "holidayUpdateLogCount": "{count} entries",
+  "@holidayUpdateLogCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameMonth": "{month}/{start} - {end}",
+  "@holidayDateSameMonth": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameDay": "{month}/{day}",
+  "@holidayDateSameDay": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateDiffMonth": "{startMonth}/{startDay} - {endMonth}/{endDay}",
+  "@holidayDateDiffMonth": {
+    "placeholders": {
+      "startMonth": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endMonth": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTestingHolidayOverride": "Holiday Status Override",
+  "liveTestingHolidayOverrideSubtitle": "Simulate holiday status for testing reminders and widgets",
+  "liveTestingHolidayModeEnabled": "Holiday Mode Enabled",
+  "liveTestingHolidayModeDisabled": "Holiday Mode Disabled",
+  "liveTestingHolidayModeEnabledDesc": "Reminders and widgets will hide all courses",
+  "liveTestingHolidayModeDisabledDesc": "Using normal holiday data"
 }

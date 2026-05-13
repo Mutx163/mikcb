@@ -2646,5 +2646,79 @@
   "examDefaultName": "期末考试",
   "examDateWeekPickerTitle": "选择考试日期",
   "weekPickerCalendarTooltip": "使用日历选择",
-  "thisWeekLabel": "本周"
+  "thisWeekLabel": "本周",
+  "guidePrivacyPageTitle": "隐私协议",
+  "guidePermissionsPageTitle": "系统权限",
+  "guideTipsPageTitle": "使用技巧",
+  "guidePrevButton": "上一步",
+  "guideNextButton": "下一步",
+  "guidePermissionsHeader": "系统权限设置",
+  "guidePermissionsSubtitle": "完成这些设置，超级岛和提醒才能正常使用",
+  "guideTipsHeader": "使用技巧",
+  "guideTipsSubtitle": "这些随时可以在「设置」里找到",
+  "guidePrivacyReadBeforeUse": "使用前请阅读并同意以下内容",
+  "guidePrivacyViewOnly": "隐私、第三方 SDK 与免责说明",
+  "holidayDataYearLabel": "{year}年法定节假日",
+  "@holidayDataYearLabel": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "holidayUpdateLog": "更新日志",
+  "holidayUpdateLogCount": "{count}条",
+  "@holidayUpdateLogCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameMonth": "{month}月{start}日 - {end}日",
+  "@holidayDateSameMonth": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameDay": "{month}月{day}日",
+  "@holidayDateSameDay": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateDiffMonth": "{startMonth}月{startDay}日 - {endMonth}月{endDay}日",
+  "@holidayDateDiffMonth": {
+    "placeholders": {
+      "startMonth": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endMonth": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTestingHolidayOverride": "假期状态覆盖",
+  "liveTestingHolidayOverrideSubtitle": "开启后模拟假期状态，用于测试提醒和小组件是否正确隐藏课程",
+  "liveTestingHolidayModeEnabled": "假期模式已开启",
+  "liveTestingHolidayModeDisabled": "假期模式已关闭",
+  "liveTestingHolidayModeEnabledDesc": "课程提醒和小组件将隐藏所有课程",
+  "liveTestingHolidayModeDisabledDesc": "当前使用正常假期数据"
 }

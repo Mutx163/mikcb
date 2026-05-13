@@ -9,8 +9,9 @@ import 'app_log_service.dart';
 import 'umeng_analytics_service.dart';
 
 class MiuiLiveActivitiesService {
-  static const MethodChannel _channel =
-      MethodChannel('com.mutx163.qingyu/miui_live');
+  static const MethodChannel _channel = MethodChannel(
+    'com.mutx163.qingyu/miui_live',
+  );
 
   static final MiuiLiveActivitiesService _instance =
       MiuiLiveActivitiesService._internal();
@@ -44,8 +45,9 @@ class MiuiLiveActivitiesService {
   Future<bool> requestNotificationPermission() async {
     if (!Platform.isAndroid) return true;
     try {
-      final result =
-          await _channel.invokeMethod('requestNotificationPermission');
+      final result = await _channel.invokeMethod(
+        'requestNotificationPermission',
+      );
       return result == true;
     } catch (e) {
       return false;
@@ -153,11 +155,22 @@ class MiuiLiveActivitiesService {
     }
   }
 
+  Future<bool> isAutoStartEnabled() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final result = await _channel.invokeMethod('isAutoStartEnabled');
+      return result == true;
+    } catch (e) {
+      return true; // optimistic default
+    }
+  }
+
   Future<bool> isKeepAliveAccessibilityEnabled() async {
     if (!Platform.isAndroid) return false;
     try {
-      final result =
-          await _channel.invokeMethod('isKeepAliveAccessibilityEnabled');
+      final result = await _channel.invokeMethod(
+        'isKeepAliveAccessibilityEnabled',
+      );
       return result == true;
     } catch (e) {
       return false;
@@ -213,8 +226,9 @@ class MiuiLiveActivitiesService {
   Future<bool> isIgnoringBatteryOptimizations() async {
     if (!Platform.isAndroid) return true;
     try {
-      final result =
-          await _channel.invokeMethod('isIgnoringBatteryOptimizations');
+      final result = await _channel.invokeMethod(
+        'isIgnoringBatteryOptimizations',
+      );
       return result == true;
     } catch (e) {
       return false;
@@ -500,6 +514,18 @@ class MiuiLiveActivitiesService {
         'settings': settings.toJson(),
       });
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
+      await UmengAnalyticsService.reportDiagnostic(
+        'live_update_settings_synced',
+        'Flutter live update settings synced: '
+            'beforeClass=${settings.liveEnableBeforeClass}, '
+            'duringClass=${settings.liveEnableDuringClass}, '
+            'beforeEnd=${settings.liveEnableBeforeEnd}, '
+            'promote=${settings.livePromoteDuringClass}, '
+            'notification=${settings.liveShowDuringClassNotification}, '
+            'countdown=${settings.liveShowCountdown}, '
+            'courseName=${settings.liveShowCourseName}, '
+            'location=${settings.liveShowLocation}',
+      );
       return true;
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(

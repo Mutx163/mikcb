@@ -15,6 +15,16 @@ class KeepAliveAccessibilityService : AccessibilityService() {
             category = "keep_alive_accessibility_connected",
             message = "Accessibility keep-alive service connected",
         )
+        // Trigger an immediate widget refresh and ensure the WorkManager
+        // periodic backup is scheduled, so widgets stay updated even when
+        // AlarmManager alarms are suppressed by MIUI/HyperOS.
+        try {
+            TodayWidgetSupport.updateAll(applicationContext)
+            HomeWidgetStorage.rescheduleRefresh(applicationContext)
+            WidgetRefreshWorker.ensureScheduled(applicationContext)
+        } catch (e: Exception) {
+            Log.w("KeepAliveAccessibility", "Failed to refresh widget on connect", e)
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {

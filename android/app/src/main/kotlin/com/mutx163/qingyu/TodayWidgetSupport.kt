@@ -126,15 +126,24 @@ object TodayWidgetSupport {
     private const val KEY_ACTIVE_PROFILE_ID = "flutter.active_timetable_profile_id"
 
     fun readSnapshot(context: Context): TodayWidgetSnapshotInfo? {
+        // Prefer real-time computed snapshot (state reflects current time).
+        // The stored snapshot from Flutter has a stale `state` that doesn't
+        // update when a class ends, causing the widget to show "上课中"
+        // after the countdown reaches zero.
+        val computed = buildSnapshotFromFlutterState(context)
+        if (computed != null) {
+            return computed
+        }
+        // Fallback: stored snapshot from Flutter sync.
         val payload = HomeWidgetStorage.getSnapshotJson(context)
         if (payload != null) {
             try {
                 return parseSnapshot(JSONObject(payload))
             } catch (_: Exception) {
-                // fall through to native fallback
+                // fall through
             }
         }
-        return buildSnapshotFromFlutterState(context)
+        return null
     }
 
     fun updateAll(context: Context) {

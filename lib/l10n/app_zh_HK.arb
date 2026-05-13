@@ -29,7 +29,7 @@
   "appearanceEntrySubtitle": "主題色、課表背景、課程卡片顏色",
   "layoutSectionEntryTitle": "布局與節次",
   "layoutSectionEntrySubtitle": "節次時間、行高、時間列、周末顯示與卡片布局",
-  "homeWidgetEntryTitle": "桌面小工具",
+  "homeWidgetEntryTitle": "桌面小組件",
   "homeWidgetEntrySubtitle": "今日課程卡片、小組件背景與顯示資訊",
   "reminderNotificationSectionTitle": "提醒與通知",
   "userGuideEntryTitle": "使用引導與權限",
@@ -2574,5 +2574,150 @@
   "examDefaultName": "期末考試",
   "examDateWeekPickerTitle": "選擇考試日期",
   "weekPickerCalendarTooltip": "使用日曆選擇",
-  "thisWeekLabel": "本週"
+  "thisWeekLabel": "本週",
+  "confirmAction": "確認",
+  "homeWidgetShowTomorrowTitle": "課後顯示明日課程",
+  "homeWidgetShowTomorrowSubtitle": "啟用後，當今日課程全部結束時，桌面小組件會自動切換顯示明日課程。",
+  "sortAction": "排序",
+  "sortByAdded": "按加入次序",
+  "sortByName": "按課程名稱",
+  "sortBySchedule": "按上課時間",
+  "scheduleEntryTitle": "排課記錄 {index}",
+  "@scheduleEntryTitle": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "addScheduleEntryAction": "新增排課時段",
+  "deleteScheduleEntryAction": "刪除排課",
+  "holidaySettingsEntryTitle": "假期標記",
+  "holidaySettingsEntrySubtitle": "在課表上標記公眾假期和調休補班",
+  "holidayMakeupWorkday": "補班",
+  "holidaySettingsTitle": "假期標記",
+  "holidayEnableTitle": "啟用假期標記",
+  "holidayEnableSubtitle": "啟用後會在課表上標記公眾假期和調休補班。",
+  "holidayDataSectionTitle": "假期資料",
+  "holidayDataYear": "年份",
+  "holidayDataCount": "數量",
+  "holidayDataEmpty": "暫無假期資料",
+  "holidayCheckUpdate": "檢查更新",
+  "holidayUpcomingSectionTitle": "近期假期",
+  "holidayNoUpcoming": "近期沒有假期",
+  "holidayBadgeLabel": "休",
+  "holidayStatusLabel": "假期",
+  "suspendedBadgeLabel": "停",
+  "suspendedStatusLabel": "停課",
+  "courseActionSuspend": "停課",
+  "courseActionUnsuspend": "恢復上課",
+  "suspendSheetTitle": "停課",
+  "suspendSheetSubtitle": "選擇停課範圍",
+  "suspendThisWeek": "本週停課",
+  "suspendThisWeekDesc": "只停本週",
+  "suspendAllWeeks": "全部週次停課",
+  "suspendAllWeeksDesc": "套用到所有週次",
+  "unsuspendAllWeeks": "恢復全部週次",
+  "unsuspendAllWeeksDesc": "恢復所有週次",
+  "customHolidayTitle": "自訂假期",
+  "customHolidayAdd": "新增假期",
+  "customHolidayEdit": "編輯假期",
+  "customHolidayDelete": "刪除",
+  "customHolidayDeleteConfirm": "確定要刪除此自訂假期嗎？",
+  "customHolidayNameLabel": "假期名稱",
+  "customHolidayStartDate": "開始日期",
+  "customHolidayEndDate": "結束日期",
+  "customHolidayType": "類型",
+  "customHolidayTypeVacation": "放假",
+  "customHolidayTypeWorkday": "調休補班",
+  "customHolidayEmpty": "暫無自訂假期",
+  "customHolidayNameRequired": "請輸入假期名稱",
+  "customHolidayDateRange": "{start} ~ {end}",
+  "@customHolidayDateRange": {
+    "placeholders": {
+      "start": {},
+      "end": {}
+    }
+  },
+  "selectTeacherTitle": "選擇老師",
+  "selectLocationTitle": "選擇地點",
+  "historyRecordsLabel": "歷史記錄",
+  "noHistoryRecords": "暫無歷史記錄",
+  "weekPickerTitle": "選擇上課週次",
+  "selectTimeSchemeTitle": "選擇時間方案",
+  "manageTimeSchemesAction": "管理時間方案",
+  "guidePrivacyPageTitle": "私隱條款",
+  "guidePermissionsPageTitle": "系統權限",
+  "guideTipsPageTitle": "使用技巧",
+  "guidePrevButton": "上一步",
+  "guideNextButton": "下一步",
+  "guidePermissionsHeader": "系統權限設置",
+  "guidePermissionsSubtitle": "完成這些設置，超級島和提醒才能正常使用",
+  "guideTipsHeader": "使用技巧",
+  "guideTipsSubtitle": "這些隨時可以在「設置」裡找到",
+  "guidePrivacyReadBeforeUse": "使用前請閱讀並同意以下內容",
+  "guidePrivacyViewOnly": "私隱、第三方 SDK 與免責聲明",
+  "holidayDataYearLabel": "{year}年公眾假期",
+  "@holidayDataYearLabel": {
+    "placeholders": {
+      "year": {}
+    }
+  },
+  "holidayUpdateLog": "更新日誌",
+  "holidayUpdateLogCount": "{count}條",
+  "@holidayUpdateLogCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameMonth": "{month}月{start}日 - {end}日",
+  "@holidayDateSameMonth": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "start": {
+        "type": "int"
+      },
+      "end": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateSameDay": "{month}月{day}日",
+  "@holidayDateSameDay": {
+    "placeholders": {
+      "month": {
+        "type": "int"
+      },
+      "day": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayDateDiffMonth": "{startMonth}月{startDay}日 - {endMonth}月{endDay}日",
+  "@holidayDateDiffMonth": {
+    "placeholders": {
+      "startMonth": {
+        "type": "int"
+      },
+      "startDay": {
+        "type": "int"
+      },
+      "endMonth": {
+        "type": "int"
+      },
+      "endDay": {
+        "type": "int"
+      }
+    }
+  },
+  "liveTestingHolidayOverride": "假期狀態覆蓋",
+  "liveTestingHolidayOverrideSubtitle": "開啟後模擬假期狀態，用於測試提醒和小工具是否正確隱藏課程",
+  "liveTestingHolidayModeEnabled": "假期模式已開啟",
+  "liveTestingHolidayModeDisabled": "假期模式已關閉",
+  "liveTestingHolidayModeEnabledDesc": "課程提醒和小工具將隱藏所有課程",
+  "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據"
 }

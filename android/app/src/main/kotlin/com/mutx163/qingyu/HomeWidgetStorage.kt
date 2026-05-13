@@ -24,6 +24,9 @@ object HomeWidgetStorage {
             .apply()
         TodayWidgetSupport.updateAll(context)
         rescheduleRefresh(context)
+        // WorkManager backup: ensures widget refresh even when
+        // AlarmManager is suppressed (e.g. MIUI + accessibility service).
+        WidgetRefreshWorker.ensureScheduled(context)
     }
 
     fun clearSnapshot(context: Context) {
@@ -33,6 +36,7 @@ object HomeWidgetStorage {
             .remove(KEY_REFRESH_TIMES_JSON)
             .apply()
         cancelRefreshAlarm(context)
+        WidgetRefreshWorker.cancel(context)
         TodayWidgetSupport.updateAll(context)
     }
 

@@ -289,6 +289,23 @@ object LiveUpdateScheduler {
             .putString(KEY_SNAPSHOT_JSON, snapshotJson)
             .putString(KEY_SNAPSHOT_VERSION, resolveAppVersionToken(context))
             .apply()
+        // Diagnostic: log key settings from the synced snapshot
+        try {
+            val settingsJson = JSONObject(snapshotJson).optJSONObject("settings")
+            if (settingsJson != null) {
+                UmengDiagnosticReporter.record(
+                    context = context.applicationContext,
+                    category = "live_update_snapshot_settings",
+                    message = "Synced live update settings values",
+                    extras = mapOf(
+                        "liveEnableDuringClass" to settingsJson.optBoolean("liveEnableDuringClass", true),
+                        "liveEnableBeforeEnd" to settingsJson.optBoolean("liveEnableBeforeEnd", true),
+                        "liveEnableBeforeClass" to settingsJson.optBoolean("liveEnableBeforeClass", true),
+                        "livePromoteDuringClass" to settingsJson.optBoolean("livePromoteDuringClass", true),
+                    )
+                )
+            }
+        } catch (_: Exception) {}
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_snapshot_synced",
@@ -298,6 +315,9 @@ object LiveUpdateScheduler {
             )
         )
         reschedule(context, allowImmediateStart = false)
+        // WorkManager backup: ensures live update can still trigger
+        // when AlarmManager is suppressed (e.g. MIUI + accessibility).
+        LiveUpdateRefreshWorker.ensureScheduled(context)
     }
 
     fun clearSnapshot(context: Context) {
@@ -312,6 +332,7 @@ object LiveUpdateScheduler {
             message = "Live update schedule snapshot cleared",
         )
         cancelScheduledAlarm(context)
+        LiveUpdateRefreshWorker.cancel(context)
     }
 
     fun handleAlarm(context: Context) {

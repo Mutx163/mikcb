@@ -1367,8 +1367,12 @@ class TimetableSettings {
       ),
       liveShowStageText: json['liveShowStageText'] as bool? ?? true,
       liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
-      liveEnableDuringClass: json['liveEnableDuringClass'] as bool? ?? true,
-      liveEnableBeforeEnd: json['liveEnableBeforeEnd'] as bool? ?? true,
+      // Migrate: these two are controlled by a single UI switch.
+      // If either is true, both should be true to avoid UI/logic mismatch.
+      liveEnableDuringClass: (json['liveEnableDuringClass'] as bool? ?? true) ||
+          (json['liveEnableBeforeEnd'] as bool? ?? true),
+      liveEnableBeforeEnd: (json['liveEnableDuringClass'] as bool? ?? true) ||
+          (json['liveEnableBeforeEnd'] as bool? ?? true),
       livePromoteDuringClass: json['livePromoteDuringClass'] as bool? ?? true,
       liveShowDuringClassNotification:
           json['liveShowDuringClassNotification'] as bool? ?? true,
