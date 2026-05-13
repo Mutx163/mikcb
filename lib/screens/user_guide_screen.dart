@@ -295,6 +295,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           Flexible(
             child: DropdownButton<String>(
               value: currentTag,
+              isExpanded: true,
               items: buildLocaleDropdownItems(context),
               onChanged: (value) {
                 if (value == null) return;
