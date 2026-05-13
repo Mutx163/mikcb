@@ -2654,6 +2654,7 @@
   "guideNextButton": "下一步",
   "guidePermissionsHeader": "系统权限设置",
   "guidePermissionsSubtitle": "完成这些设置，超级岛和提醒才能正常使用",
+  "guidePermissionsFooterHint": "点击后跳转到系统设置，返回应用后可识别的状态会自动刷新；自启动受系统限制，请以系统页面开关为准。",
   "guideTipsHeader": "使用技巧",
   "guideTipsSubtitle": "这些随时可以在「设置」里找到",
   "guidePrivacyReadBeforeUse": "使用前请阅读并同意以下内容",

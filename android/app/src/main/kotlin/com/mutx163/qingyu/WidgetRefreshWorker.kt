@@ -42,7 +42,7 @@ class WidgetRefreshWorker(
 
         /**
          * Enqueue a periodic widget refresh.
-         * Uses KEEP policy so calling multiple times is safe.
+         * Uses UPDATE policy so constraint/config changes propagate.
          */
         fun ensureScheduled(context: Context) {
             val request = PeriodicWorkRequestBuilder<WidgetRefreshWorker>(
@@ -50,7 +50,7 @@ class WidgetRefreshWorker(
             ).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
         }

@@ -25,6 +25,15 @@ class LiveUpdateRefreshWorker(
         return try {
             LiveUpdateScheduler.handleAlarm(applicationContext)
             Result.success()
+        } catch (e: IllegalStateException) {
+            // Android 12+ restricts starting foreground services from the
+            // background.  Fall back to reschedule-only (schedules the next
+            // alarm without trying to start the service immediately).
+            Log.w(TAG, "Foreground service start blocked, falling back to schedule-only", e)
+            try {
+                LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = false)
+            } catch (_: Exception) {}
+            Result.success()
         } catch (e: Exception) {
             Log.w(TAG, "Live update refresh worker failed", e)
             Result.retry()
@@ -41,7 +50,7 @@ class LiveUpdateRefreshWorker(
             ).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
         }

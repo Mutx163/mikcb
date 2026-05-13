@@ -2654,6 +2654,7 @@
   "guideNextButton": "Next",
   "guidePermissionsHeader": "System Permissions",
   "guidePermissionsSubtitle": "Complete these settings for Super Island and reminders to work properly",
+  "guidePermissionsFooterHint": "Tap to open system settings. Statuses that can be detected will refresh automatically when you return. Auto-start is limited by the system; use the switch on the system page as the source of truth.",
   "guideTipsHeader": "Tips",
   "guideTipsSubtitle": "These can always be found in Settings",
   "guidePrivacyReadBeforeUse": "Please read and agree before use",

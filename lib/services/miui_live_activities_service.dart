@@ -161,7 +161,7 @@ class MiuiLiveActivitiesService {
       final result = await _channel.invokeMethod('isAutoStartEnabled');
       return result == true;
     } catch (e) {
-      return true; // optimistic default
+      return false;
     }
   }
 

@@ -4683,6 +4683,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Complete these settings for Super Island and reminders to work properly';
 
   @override
+  String get guidePermissionsFooterHint =>
+      'Tap to open system settings. Statuses that can be detected will refresh automatically when you return. Auto-start is limited by the system; use the switch on the system page as the source of truth.';
+
+  @override
   String get guideTipsHeader => 'Tips';
 
   @override
