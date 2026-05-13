@@ -20,9 +20,6 @@
   "languageSectionSubtitle": "Follow system or switch manually to supported locales.",
   "languageModeLabel": "Language",
   "languageModeSystem": "Follow System",
-  "languageModeZhCn": "Simplified Chinese",
-  "languageModeZhHk": "Traditional Chinese (Hong Kong)",
-  "languageModeEnUs": "English",
   "settingsTitle": "Timetable Settings",
   "dailyUsageSectionTitle": "Daily Use",
   "appearanceEntryTitle": "Appearance",
@@ -1258,7 +1255,6 @@
       }
     }
   },
-  "languageModeZhTw": "Traditional Chinese (Taiwan)",
   "guideHyperOsChip": "HyperOS 3.0.300+",
   "guideStatusTitle": "Current status",
   "guideStatusNotificationPermission": "Notification permission",

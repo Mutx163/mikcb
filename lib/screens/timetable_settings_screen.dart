@@ -943,22 +943,22 @@ List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
   return items;
 }
 
+/// Each language displays in its own native name.
 String localeLabel(BuildContext context, Locale locale) {
-  final l10n = AppLocalizations.of(context)!;
   final tag = locale.countryCode?.isNotEmpty == true
       ? '${locale.languageCode}_${locale.countryCode}'
       : locale.languageCode;
   switch (tag) {
     case 'zh':
     case 'zh_CN':
-      return l10n.languageModeZhCn;
+      return '简体中文';
     case 'zh_HK':
-      return l10n.languageModeZhHk;
+      return '繁體中文（香港）';
     case 'zh_TW':
-      return l10n.languageModeZhTw;
+      return '繁體中文（台灣）';
     case 'en':
     case 'en_US':
-      return l10n.languageModeEnUs;
+      return 'English';
     default:
       return tag;
   }

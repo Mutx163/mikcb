@@ -220,24 +220,6 @@ abstract class AppLocalizations {
   /// **'跟随系统'**
   String get languageModeSystem;
 
-  /// No description provided for @languageModeZhCn.
-  ///
-  /// In zh, this message translates to:
-  /// **'简体中文'**
-  String get languageModeZhCn;
-
-  /// No description provided for @languageModeZhHk.
-  ///
-  /// In zh, this message translates to:
-  /// **'繁體中文（香港）'**
-  String get languageModeZhHk;
-
-  /// No description provided for @languageModeEnUs.
-  ///
-  /// In zh, this message translates to:
-  /// **'英语'**
-  String get languageModeEnUs;
-
   /// No description provided for @settingsTitle.
   ///
   /// In zh, this message translates to:
@@ -3850,12 +3832,6 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'最简显示'**
   String get liveDisplaySummaryMinimal;
-
-  /// No description provided for @languageModeZhTw.
-  ///
-  /// In zh, this message translates to:
-  /// **'繁體中文（台灣）'**
-  String get languageModeZhTw;
 
   /// No description provided for @guideHyperOsChip.
   ///
