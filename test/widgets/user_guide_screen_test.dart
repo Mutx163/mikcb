@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
 import '../helpers_test_app.dart';
 
@@ -172,6 +175,27 @@ void main() {
     await tester.tap(find.byType(TextButton).last);
     await tester.pumpAndSettle();
     expect(find.text('2 / 3'), findsOneWidget);
+  });
+
+  testWidgets('language selector appears on first page when provider is available', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<TimetableProvider>.value(
+        value: provider,
+        child: const TestApp(home: UserGuideScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('应用语言'), findsOneWidget);
+    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
+    expect(find.byType(DropdownButton<String>), findsOneWidget);
   });
 
   testWidgets('non-consent guide shows all pages without checkbox', (tester) async {
