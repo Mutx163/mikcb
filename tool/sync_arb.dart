@@ -21,6 +21,8 @@ const _targetFiles = {
   'en': '$_arbDir/app_en.arb',
   'zh_HK': '$_arbDir/app_zh_HK.arb',
   'zh_TW': '$_arbDir/app_zh_TW.arb',
+  'ja': '$_arbDir/app_ja.arb',
+  'ko': '$_arbDir/app_ko.arb',
 };
 
 Map<String, dynamic> _readArb(String path) {
