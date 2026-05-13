@@ -10,14 +10,24 @@ import '../services/miui_live_activities_service.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
+enum GuideAction {
+  startUsing,
+  importCourses,
+  restoreBackup,
+}
+
 class UserGuideScreen extends StatefulWidget {
   final bool requirePrivacyConsent;
   final bool initialPrivacyChecked;
+  final Future<bool> Function()? onImportCourses;
+  final Future<bool> Function()? onRestoreBackup;
 
   const UserGuideScreen({
     super.key,
     this.requirePrivacyConsent = false,
     this.initialPrivacyChecked = false,
+    this.onImportCourses,
+    this.onRestoreBackup,
   });
 
   @override
@@ -39,7 +49,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _isAutoStartEnabled = false;
   late bool _privacyChecked;
 
-  int get _totalPages => 3;
+  int get _totalPages => 4;
 
   @override
   void initState() {
@@ -114,6 +124,21 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
+  void _onPageChanged(int page) {
+    // If consent is required and the user swiped past the privacy page
+    // without checking the checkbox, snap back.
+    if (widget.requirePrivacyConsent && !_privacyChecked && page > 1) {
+      setState(() => _currentPage = 1);
+      _pageController.animateToPage(
+        1,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutCubic,
+      );
+      return;
+    }
+    setState(() => _currentPage = page);
+  }
+
   void _goPrev() {
     if (_currentPage > 0) {
       _pageController.animateToPage(
@@ -154,15 +179,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             Expanded(
               child: PageView(
                 controller: _pageController,
-                physics: (widget.requirePrivacyConsent && !_privacyChecked)
-                    ? const NeverScrollableScrollPhysics()
-                    : const ClampingScrollPhysics(),
-                onPageChanged: (page) {
-                  setState(() {
-                    _currentPage = page;
-                  });
-                },
+                physics: const ClampingScrollPhysics(),
+                onPageChanged: _onPageChanged,
                 children: [
+                  _buildWelcomePage(theme, l10n, colorScheme),
                   _buildPrivacyPage(theme, l10n),
                   _buildPermissionsPage(theme, l10n, colorScheme),
                   _buildTipsPage(theme, l10n, colorScheme),
@@ -223,8 +243,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   String _buildPageTitle(AppLocalizations l10n) {
-    if (_currentPage == 0) return l10n.guidePrivacyPageTitle;
-    if (_currentPage == 1) return l10n.guidePermissionsPageTitle;
+    if (_currentPage == 0) return l10n.welcomeTitle;
+    if (_currentPage == 1) return l10n.guidePrivacyPageTitle;
+    if (_currentPage == 2) return l10n.guidePermissionsPageTitle;
     return l10n.guideTipsPageTitle;
   }
 
@@ -289,7 +310,90 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  // ── Page 1: Privacy consent ──────────────────────────────────
+  // ── Page 1: Welcome ─────────────────────────────────────────
+
+  Widget _buildWelcomePage(
+    ThemeData theme,
+    AppLocalizations l10n,
+    ColorScheme colorScheme,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      children: [
+        // App branding
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.primaryContainer,
+                colorScheme.surfaceContainerHighest,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.welcomeAppName,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.welcomeSubtitle,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Language selector
+        _buildLanguageSelector(theme, l10n, colorScheme),
+        const SizedBox(height: 20),
+        // Action tiles
+        _WelcomeActionTile(
+          icon: Icons.rocket_launch_rounded,
+          title: l10n.startUsingTitle,
+          subtitle: l10n.startUsingSubtitle,
+          onTap: _goNext,
+        ),
+        const SizedBox(height: 12),
+        if (widget.onImportCourses != null) ...[
+          _WelcomeActionTile(
+            icon: Icons.file_upload_outlined,
+            title: l10n.importTimetableTitle,
+            subtitle: l10n.importTimetableSubtitle,
+            onTap: () => _runWelcomeAction(widget.onImportCourses!),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (widget.onRestoreBackup != null) ...[
+          _WelcomeActionTile(
+            icon: Icons.restore_page_rounded,
+            title: l10n.restoreBackupTitle,
+            subtitle: l10n.restoreBackupSubtitle,
+            onTap: () => _runWelcomeAction(widget.onRestoreBackup!),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _runWelcomeAction(Future<bool> Function() action) async {
+    final imported = await action();
+    if (imported && mounted) {
+      Navigator.of(context).pop(GuideAction.importCourses);
+    }
+  }
+
+  // ── Page 2: Privacy consent ──────────────────────────────────
 
   Widget _buildPrivacyPage(ThemeData theme, AppLocalizations l10n) {
     final colorScheme = theme.colorScheme;
@@ -915,7 +1019,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final isFirstPage = _currentPage == 0;
     final isLastPage = _currentPage == _totalPages - 1;
     final showPrev = !isFirstPage;
-    final isPrivacyPage = widget.requirePrivacyConsent && isFirstPage;
+    final isPrivacyPage = widget.requirePrivacyConsent && _currentPage == 1;
     final canGoNext = !isPrivacyPage || _privacyChecked;
 
     return SafeArea(
@@ -970,7 +1074,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   void _finishGuide() {
     if (widget.requirePrivacyConsent && !_privacyChecked) return;
-    Navigator.of(context).pop(widget.requirePrivacyConsent ? true : null);
+    Navigator.of(context).pop(
+      widget.requirePrivacyConsent ? GuideAction.startUsing : null,
+    );
   }
 
   Future<void> _exitWithoutConsent() async {
@@ -983,6 +1089,74 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       return;
     }
     Navigator.of(context).pop(false);
+  }
+}
+
+class _WelcomeActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _WelcomeActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: colorScheme.surfaceContainerLowest,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(icon, color: colorScheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w800,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

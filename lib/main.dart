@@ -272,7 +272,6 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     ]);
 
     final isDataEmpty = startupResults[0];
-    final hasCompletedOnboarding = startupResults[1];
     final hasHandledPackageMigration = startupResults[2];
     final hasAcceptedPrivacy = startupResults[3];
     final hasSeenGuide = startupResults[4];
@@ -313,44 +312,6 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         }
       } else if (action == MigrationFlowAction.skip) {
         await _storageService.setHandledPackageMigration(true);
-        await _storageService.setCompletedOnboarding(true);
-      }
-    } else if (!hasCompletedOnboarding) {
-      final action = await Navigator.of(context).push<WelcomeFlowAction>(
-        MaterialPageRoute(
-          builder: (_) => const StartupWelcomeScreen(),
-          fullscreenDialog: true,
-        ),
-      );
-      if (!mounted) {
-        return;
-      }
-      if (action != null) {
-        switch (action) {
-          case WelcomeFlowAction.importCourses:
-            final imported = await _runCourseImportFlow();
-            // 无论导入成功与否，都标记 onboarding 完成，避免重复弹出
-            await _storageService.setCompletedOnboarding(true);
-            if (imported) {
-              await _storageService.setHasSeenUserGuide(true);
-            }
-            break;
-          case WelcomeFlowAction.restoreBackup:
-            final restored = await _runBackupImportFlow(
-              forcedMode: _BackupImportMode.replaceCurrent,
-            );
-            await _storageService.setCompletedOnboarding(true);
-            if (restored) {
-              await _storageService.setHasSeenUserGuide(true);
-            }
-            break;
-          case WelcomeFlowAction.viewGuide:
-          case WelcomeFlowAction.startUsing:
-            await _storageService.setCompletedOnboarding(true);
-            break;
-        }
-      } else {
-        // action == null（用户按了返回键），也标记完成避免死循环
         await _storageService.setCompletedOnboarding(true);
       }
     }
@@ -414,12 +375,16 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     required bool initialPrivacyChecked,
     required bool markGuideSeenAfterExit,
   }) async {
-    final accepted = await Navigator.of(context).push<bool>(
+    final action = await Navigator.of(context).push<GuideAction>(
       MaterialPageRoute(
         settings: const RouteSettings(name: '/user-guide'),
         builder: (_) => UserGuideScreen(
           requirePrivacyConsent: requirePrivacyConsent,
           initialPrivacyChecked: initialPrivacyChecked,
+          onImportCourses: _runCourseImportFlow,
+          onRestoreBackup: () => _runBackupImportFlow(
+            forcedMode: _BackupImportMode.replaceCurrent,
+          ),
         ),
         fullscreenDialog: true,
       ),
@@ -430,7 +395,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
 
     if (requirePrivacyConsent) {
-      if (accepted == true) {
+      if (action != null) {
         await _storageService.setAcceptedPrivacyPolicy(true);
         await AppLogService.instance.updatePrivacyAccepted(true);
         await UmengAnalyticsService.initializeIfNeeded();
@@ -442,6 +407,8 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     if (markGuideSeenAfterExit) {
       await _storageService.setHasSeenUserGuide(true);
     }
+
+    await _storageService.setCompletedOnboarding(true);
     return true;
   }
 
