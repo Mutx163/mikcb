@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// 用法: dart run tool/_build_arb.dart <target_locale> <chunk_dir>
+// ignore_for_file: avoid_print
+
+/// 用法: dart run tool/_build_arb.dart `<target_locale>` `<chunk_dir>`
 /// 读取 zh.arb 结构，合并 chunk_dir 下的翻译片段，输出完整 ARB
 void main(List<String> args) {
   if (args.length < 2) {
@@ -67,7 +69,7 @@ void main(List<String> args) {
 
   final outPath = 'lib/l10n/app_$locale.arb';
   File(outPath).writeAsStringSync(
-    const JsonEncoder.withIndent('  ').convert(merged) + '\n',
+    '${const JsonEncoder.withIndent('  ').convert(merged)}\n',
   );
   print('✅ $outPath: $translated translated, $fallback fallback (zh)');
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env dart
+// ignore_for_file: avoid_print
 // sync_arb.dart — 检测 zh.arb 与其他语言的差异
 //
 // 用法：
@@ -43,7 +44,7 @@ void _writeArb(String path, Map<String, dynamic> data) {
       }),
   );
   File(path).writeAsStringSync(
-    const JsonEncoder.withIndent('  ').convert(sorted) + '\n',
+    '${const JsonEncoder.withIndent('  ').convert(sorted)}\n',
   );
 }
 
