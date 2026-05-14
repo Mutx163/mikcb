@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
@@ -79,9 +80,9 @@ class SupportCreatorService {
     );
 
     final sw = Stopwatch()..start();
-    print('[SupportCreator] fetchDonors 开始，候选 ${candidateUrls.length} 个');
+    debugPrint('[SupportCreator] fetchDonors 开始，候选 ${candidateUrls.length} 个');
     for (var i = 0; i < candidateUrls.length; i++) {
-      print('[SupportCreator]   候选 $i: ${candidateUrls[i]}');
+      debugPrint('[SupportCreator]   候选 $i: ${candidateUrls[i]}');
     }
 
     final result = await raceFutures<http.Response, SupportDonorData>(
@@ -97,26 +98,26 @@ class SupportCreatorService {
             .timeout(const Duration(seconds: 6));
       }).toList(),
       (response) {
-        print('[SupportCreator] 收到响应 ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms');
+        debugPrint('[SupportCreator] 收到响应 ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms');
         if (response.statusCode != 200) return null;
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         if (decoded is! Map) {
-          print('[SupportCreator] 响应不是 Map 格式');
+          debugPrint('[SupportCreator] 响应不是 Map 格式');
           return null;
         }
         final data = SupportDonorData.fromJson(Map<String, dynamic>.from(decoded));
-        print('[SupportCreator] 解析成功，${data.donors.length} 位捐赠者');
+        debugPrint('[SupportCreator] 解析成功，${data.donors.length} 位捐赠者');
         return data;
       },
     );
 
     if (result.winner != null) {
-      print('[SupportCreator] 竞争胜出，总耗时 ${sw.elapsedMilliseconds}ms');
+      debugPrint('[SupportCreator] 竞争胜出，总耗时 ${sw.elapsedMilliseconds}ms');
       return result.winner!;
     }
 
     final lastError = result.errors.isNotEmpty ? result.errors.last : null;
-    print('[SupportCreator] 全部失败，errors: ${result.errors}');
+    debugPrint('[SupportCreator] 全部失败，errors: ${result.errors}');
     throw Exception('加载鸣谢名单失败：$lastError');
   }
 

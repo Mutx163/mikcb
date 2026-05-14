@@ -38,8 +38,8 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  Finder _nextButton() => find.text('下一步').last;
-  Finder _agreeButton() => find.text('同意并开始使用').last;
+  Finder nextButton() => find.text('下一步').last;
+  Finder agreeButton() => find.text('同意并开始使用').last;
 
   testWidgets('non-consent guide shows 4 pages, no checkbox', (tester) async {
     await tester.pumpWidget(const TestApp(home: UserGuideScreen()));
@@ -51,7 +51,7 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
 
     // Navigate to privacy page
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
     expect(find.text('2 / 4'), findsOneWidget);
   });
@@ -65,7 +65,7 @@ void main() {
 
     // Welcome page → privacy page via Next button
     expect(find.text('1 / 4'), findsOneWidget);
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
     expect(find.text('2 / 4'), findsOneWidget);
 
@@ -88,9 +88,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Navigate: welcome → privacy → permissions
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     expect(find.text('3 / 4'), findsOneWidget);
@@ -119,22 +119,22 @@ void main() {
 
     // Page 1: Welcome → Next
     expect(find.text('1 / 4'), findsOneWidget);
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 2: Privacy (initialPrivacyChecked) → Next
     expect(find.text('2 / 4'), findsOneWidget);
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 3: Permissions → Next
     expect(find.text('3 / 4'), findsOneWidget);
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
 
     // Page 4: Tips → Agree
     expect(find.text('4 / 4'), findsOneWidget);
-    await tester.tap(_agreeButton());
+    await tester.tap(agreeButton());
     await tester.pumpAndSettle();
 
     expect(action, GuideAction.startUsing);
@@ -157,18 +157,18 @@ void main() {
     expect(find.text('上一步'), findsNothing);
 
     // Navigate to page 2: Privacy
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
     expect(find.text('2 / 4'), findsOneWidget);
 
     // Navigate to page 3: Permissions (consent checked via initial flag)
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
     expect(find.text('3 / 4'), findsOneWidget);
     expect(find.text('上一步'), findsOneWidget);
 
     // Navigate to page 4: Tips
-    await tester.tap(_nextButton());
+    await tester.tap(nextButton());
     await tester.pumpAndSettle();
     expect(find.text('4 / 4'), findsOneWidget);
     expect(find.text('同意并开始使用'), findsOneWidget);
