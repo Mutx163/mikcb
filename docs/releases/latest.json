@@ -2,26 +2,26 @@
   "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.0.24",
-    "title": "v1.2.0.24",
-    "publishedAt": "2026-05-10T10:35:30Z",
-    "body": "# v1.2.0.24\r\n\r\n## 优化\r\n\r\n- 修复从外部应用打开 .ics 文件时偶发不触发导入的问题\r\n- 优化 ICS 文件导入兼容性：支持更多文件管理器和分享方式\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.24",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.24/mikcb-1.2.0.24-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.24-arm64-v8a.apk",
+    "version": "1.2.1.5",
+    "title": "v1.2.1.5",
+    "publishedAt": "2026-05-14T05:34:35Z",
+    "body": "# v1.2.1.5\r\n\r\n- 优化课表设置更新后的后台同步策略，减少界面等待\r\n- 优化日视图进度刷新机制，支持测试环境禁用\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.5",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.5/mikcb-1.2.1.5-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.5-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 50
+    "assetDownloadCount": 3
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "1.2.0.26",
-    "title": "v1.2.0.26",
-    "publishedAt": "2026-05-10T14:21:27Z",
-    "body": "Automated release for v1.2.0.26",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.26",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.26/mikcb-1.2.0.26-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.26-arm64-v8a.apk",
+    "version": "1.2.1.2",
+    "title": "v1.2.1.2",
+    "publishedAt": "2026-05-12T08:40:54Z",
+    "body": "# v1.2.1.2\n\n- 优化考试日期选择器：星期名称和日期格式跟随系统语言。\n- 优化自定义假期编辑弹窗：改为底部半屏样式，操作更顺手。\n- 优化节假日类型选择：标签文字精简，切换不再抖动。\n- 新增考试日期周选择器关闭按钮：支持关闭选择器而不选日期。\n- 更新日志列表补充：补全 v1.2.1.1 版本记录。\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.2",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.2/mikcb-1.2.1.2-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.2-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 19
+    "assetDownloadCount": 7
   }
 }
