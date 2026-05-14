@@ -1,5 +1,5 @@
 {
-  "releaseCount": 7,
+  "releaseCount": 8,
   "stable": {
     "channelLabel": "正式版",
     "version": "1.2.1.5",
@@ -10,7 +10,7 @@
     "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.5/mikcb-1.2.1.5-arm64-v8a.apk",
     "assetName": "mikcb-1.2.1.5-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 3
+    "assetDownloadCount": 25
   },
   "prerelease": {
     "channelLabel": "预发布",
