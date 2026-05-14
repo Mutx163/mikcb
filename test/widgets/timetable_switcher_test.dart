@@ -78,7 +78,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
         ),
       ),
     );
@@ -119,7 +119,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
         ),
       ),
     );
@@ -142,7 +142,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
         ),
       ),
     );
@@ -167,7 +167,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
         ),
       ),
     );
@@ -214,7 +214,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false),
+          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
         ),
       ),
     );

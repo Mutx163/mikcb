@@ -32,8 +32,13 @@ import 'timetable_settings_screen.dart';
 
 class TimetableScreen extends StatefulWidget {
   final bool enableUpdateCheck;
+  final bool enableProgressTimer;
 
-  const TimetableScreen({super.key, this.enableUpdateCheck = true});
+  const TimetableScreen({
+    super.key,
+    this.enableUpdateCheck = true,
+    this.enableProgressTimer = true,
+  });
 
   @override
   State<TimetableScreen> createState() => _TimetableScreenState();
@@ -94,12 +99,14 @@ class _TimetableScreenState extends State<TimetableScreen>
       vsync: this,
       duration: _dayExpandDuration,
     );
-    _dayAgendaProgressTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (!mounted || !_isDayView) {
-        return;
-      }
-      setState(() {});
-    });
+    _dayAgendaProgressTimer = widget.enableProgressTimer
+        ? Timer.periodic(const Duration(seconds: 1), (_) {
+            if (!mounted || !_isDayView) {
+              return;
+            }
+            setState(() {});
+          })
+        : null;
     _restoreViewStateFromProvider(provider);
     if (widget.enableUpdateCheck) {
       _checkForAppUpdate(
