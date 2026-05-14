@@ -189,11 +189,11 @@ class ExamListScreen extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Container(
                     width: 4,
-                    height: 56,
+                    constraints: const BoxConstraints(minHeight: 4),
                     decoration: BoxDecoration(
                       color: isPast ? color.withValues(alpha: 0.3) : color,
                       borderRadius: BorderRadius.circular(2),
@@ -219,6 +219,32 @@ class ExamListScreen extends StatelessWidget {
                                     isPast ? TextDecoration.lineThrough : null,
                               ),
                         ),
+                        if (course != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                course.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .labelSmall
+                                    ?.copyWith(
+                                      color: color,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                              ),
+                            ),
+                          ),
                         const SizedBox(height: 4),
                         Text(
                           _formatExamDateTime(exam),

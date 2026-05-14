@@ -4423,6 +4423,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get examDateLabel => 'Exam Date';
 
   @override
+  String get examDateHint => 'Select date';
+
+  @override
+  String get examDateRequired => 'Please select exam date';
+
+  @override
   String get examStartTimeLabel => 'Start Time';
 
   @override

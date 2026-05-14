@@ -4273,6 +4273,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get examDateLabel => '시험일';
 
   @override
+  String get examDateHint => '날짜 선택';
+
+  @override
+  String get examDateRequired => '시험일을 선택하세요';
+
+  @override
   String get examStartTimeLabel => '시작 시간';
 
   @override

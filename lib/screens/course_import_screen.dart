@@ -1455,6 +1455,12 @@ class _WarehouseCourseImportScreenState
           }
 
           final allSchools = [...?snapshot.data?.schools]..sort((left, right) {
+              // 通用教务/工具类学校置顶
+              final leftIsGeneric = left.name.contains('通用');
+              final rightIsGeneric = right.name.contains('通用');
+              if (leftIsGeneric != rightIsGeneric) {
+                return leftIsGeneric ? -1 : 1;
+              }
               final initialCompare = left.initial.compareTo(right.initial);
               if (initialCompare != 0) return initialCompare;
               return left.name.compareTo(right.name);
@@ -1593,6 +1599,7 @@ class _WarehouseCourseImportScreenState
                             school: bean.school,
                             isRecent: bean.isRecent,
                             onTap: () async {
+                              FocusManager.instance.primaryFocus?.unfocus();
                               final imported =
                                   await Navigator.of(context).push<bool>(
                                 MaterialPageRoute(

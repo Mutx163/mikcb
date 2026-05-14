@@ -2544,6 +2544,8 @@
   "examNameLabel": "Exam Name",
   "examNameRequired": "Please enter exam name",
   "examDateLabel": "Exam Date",
+  "examDateHint": "Select date",
+  "examDateRequired": "Please select exam date",
   "examStartTimeLabel": "Start Time",
   "examEndTimeLabel": "End Time",
   "examLocationLabel": "Exam Room",

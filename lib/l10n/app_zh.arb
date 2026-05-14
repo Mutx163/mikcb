@@ -2544,6 +2544,8 @@
   "examNameLabel": "考试名称",
   "examNameRequired": "请输入考试名称",
   "examDateLabel": "考试日期",
+  "examDateHint": "请选择日期",
+  "examDateRequired": "请选择考试日期",
   "examStartTimeLabel": "开始时间",
   "examEndTimeLabel": "结束时间",
   "examLocationLabel": "考场",

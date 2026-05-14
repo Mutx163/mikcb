@@ -7565,6 +7565,18 @@ abstract class AppLocalizations {
   /// **'考试日期'**
   String get examDateLabel;
 
+  /// No description provided for @examDateHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择日期'**
+  String get examDateHint;
+
+  /// No description provided for @examDateRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请选择考试日期'**
+  String get examDateRequired;
+
   /// No description provided for @examStartTimeLabel.
   ///
   /// In zh, this message translates to:

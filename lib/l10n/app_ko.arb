@@ -2543,6 +2543,8 @@
   "examNameLabel": "시험명",
   "examNameRequired": "시험명을 입력하세요",
   "examDateLabel": "시험일",
+  "examDateHint": "날짜 선택",
+  "examDateRequired": "시험일을 선택하세요",
   "examStartTimeLabel": "시작 시간",
   "examEndTimeLabel": "종료 시간",
   "examLocationLabel": "시험 장소",
