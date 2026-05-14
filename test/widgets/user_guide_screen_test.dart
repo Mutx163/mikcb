@@ -174,7 +174,7 @@ void main() {
     expect(find.text('同意并开始使用'), findsOneWidget);
 
     // Navigate back to page 3
-    await tester.tap(find.widgetWithText(TextButton, '上一步'));
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
     await tester.pumpAndSettle();
     expect(find.text('3 / 4'), findsOneWidget);
   });
