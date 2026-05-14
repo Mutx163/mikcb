@@ -1684,12 +1684,12 @@ class TimetableProvider with ChangeNotifier {
     _settings = _normalizeSettingsWithTimeScheme(settings);
     _currentDateWeek = _resolveCurrentDateWeek();
     await _persistActiveProfileState();
-    await _syncNativeRuntimePreferences();
+    unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
     notifyListeners();
-    await _syncLiveScheduleSnapshot();
-    await _updateLiveActivity(syncScheduleSnapshot: false);
+    unawaited(_syncLiveScheduleSnapshot());
+    unawaited(_updateLiveActivity(syncScheduleSnapshot: false));
     return null;
   }
 
