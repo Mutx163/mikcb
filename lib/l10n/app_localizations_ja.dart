@@ -4242,6 +4242,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get examDateLabel => '試験日';
 
   @override
+  String get examDateHint => '日付を選択';
+
+  @override
+  String get examDateRequired => '試験日を選択してください';
+
+  @override
   String get examStartTimeLabel => '開始時間';
 
   @override

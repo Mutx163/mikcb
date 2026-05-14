@@ -2543,6 +2543,8 @@
   "examNameLabel": "試験名",
   "examNameRequired": "試験名を入力してください",
   "examDateLabel": "試験日",
+  "examDateHint": "日付を選択",
+  "examDateRequired": "試験日を選択してください",
   "examStartTimeLabel": "開始時間",
   "examEndTimeLabel": "終了時間",
   "examLocationLabel": "試験会場",

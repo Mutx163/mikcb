@@ -4174,6 +4174,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get examDateLabel => '考试日期';
 
   @override
+  String get examDateHint => '请选择日期';
+
+  @override
+  String get examDateRequired => '请选择考试日期';
+
+  @override
   String get examStartTimeLabel => '开始时间';
 
   @override
@@ -8658,6 +8664,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get examDateLabel => '考試日期';
 
   @override
+  String get examDateHint => '請選擇日期';
+
+  @override
+  String get examDateRequired => '請選擇考試日期';
+
+  @override
   String get examStartTimeLabel => '開始時間';
 
   @override
@@ -13140,6 +13152,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get examDateLabel => '考試日期';
+
+  @override
+  String get examDateHint => '請選擇日期';
+
+  @override
+  String get examDateRequired => '請選擇考試日期';
 
   @override
   String get examStartTimeLabel => '開始時間';

@@ -32,6 +32,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
   late TimeOfDay _endTime;
   ExamReminderPreset _reminderPreset = ExamReminderPreset.day1AndHour1;
   List<int> _customReminderMinutes = [1440, 60];
+  bool _hasSelectedDate = false;
 
   bool get _isEditing => widget.exam != null;
 
@@ -43,6 +44,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
       _selectedCourseId = exam.courseId;
       _nameController.text = exam.name;
       _selectedDate = exam.dateTime;
+      _hasSelectedDate = true;
       _startTime = _parseTime(exam.startTime);
       _endTime = _parseTime(exam.endTime);
       _locationController.text = exam.location ?? '';
@@ -378,7 +380,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     // 计算当前选中日期是第几周
     String weekInfo = '';
-    if (semesterStart != null) {
+    if (_hasSelectedDate && semesterStart != null) {
       final weekIndex = _getWeekIndex(_selectedDate, semesterStart, 1); // 1=Monday
       if (weekIndex != null && weekIndex >= 1 && weekIndex <= settings.semesterWeekCount) {
         final dayNames = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
@@ -387,19 +389,30 @@ class _AddExamScreenState extends State<AddExamScreen> {
       }
     }
 
+    final displayText = _hasSelectedDate
+        ? '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}$weekInfo'
+        : '';
+
     return InkWell(
       onTap: () => _pickDate(context),
       borderRadius: BorderRadius.circular(4),
       child: InputDecorator(
+        isEmpty: !_hasSelectedDate,
         decoration: InputDecoration(
           labelText: l10n.examDateLabel,
+          hintText: _hasSelectedDate ? null : l10n.examDateHint,
           border: const OutlineInputBorder(),
           suffixIcon: semesterStart != null
               ? const Icon(Icons.view_week_rounded)
               : const Icon(Icons.calendar_today),
         ),
         child: Text(
-          '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}$weekInfo',
+          displayText,
+          style: displayText.isEmpty
+              ? Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  )
+              : null,
         ),
       ),
     );
@@ -543,40 +556,48 @@ class _AddExamScreenState extends State<AddExamScreen> {
         lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
       );
       if (picked != null) {
-        setState(() => _selectedDate = picked);
+        setState(() {
+          _selectedDate = picked;
+          _hasSelectedDate = true;
+        });
       }
       return;
     }
 
     // 有开学日期，显示周次选择器
-    final picked = await _showWeekPicker(context, semesterStart, settings);
+    final picked = await _showWeekPicker(context, semesterStart, settings, currentDate: _selectedDate);
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _hasSelectedDate = true;
+      });
     }
   }
 
   Future<DateTime?> _showWeekPicker(
     BuildContext context,
     DateTime semesterStart,
-    TimetableSettings settings,
-  ) async {
+    TimetableSettings settings, {
+    DateTime? currentDate,
+  }) async {
     final colorScheme = Theme.of(context).colorScheme;
     final totalWeeks = settings.semesterWeekCount;
     const firstDayOfWeek = 1; // 1=Mon, 7=Sun
 
-    // 计算当前周次（基于今天）
-    final now = DateTime.now();
-    final nowWeekIndex = _getWeekIndex(now, semesterStart, firstDayOfWeek);
-    final initialWeek = (nowWeekIndex != null && nowWeekIndex >= 1 && nowWeekIndex <= totalWeeks)
-        ? nowWeekIndex
+    // 基于已选日期（或今天）计算初始周次
+    final anchor = currentDate ?? DateTime.now();
+    final anchorWeekIndex = _getWeekIndex(anchor, semesterStart, firstDayOfWeek);
+    final initialWeek = (anchorWeekIndex != null && anchorWeekIndex >= 1 && anchorWeekIndex <= totalWeeks)
+        ? anchorWeekIndex
         : 1;
 
     int selectedWeek = initialWeek;
-    int? selectedDayOfWeek; // 默认不选中星期
+    // 已选日期有值时默认选中对应星期，否则不选中
+    int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
 
     // 滚动控制器，用于默认滚动到当前周
     final scrollController = ScrollController();
-    bool hasScrolledToCurrentWeek = false;
+    bool hasScrolledToInitialWeek = false;
 
     // 计算某周某天的实际日期
     const weekStartDay = 1; // 1=Monday
@@ -742,9 +763,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         final date = getDateForWeekAndDay(week, selectedDayOfWeek ?? 1);
                         final isCurrentWeek = _isCurrentWeek(week, semesterStart, weekStartDay);
 
-                        // 滚动到当前周
-                        if (!hasScrolledToCurrentWeek && isCurrentWeek) {
-                          hasScrolledToCurrentWeek = true;
+                        // 滚动到已选日期所在周
+                        if (!hasScrolledToInitialWeek && week == initialWeek) {
+                          hasScrolledToInitialWeek = true;
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             if (scrollController.hasClients) {
                               final targetOffset = (index * 56.0 - 100.0).clamp(0.0, scrollController.position.maxScrollExtent);
@@ -912,6 +933,14 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
   void _saveExam() {
     if (!_formKey.currentState!.validate()) return;
+
+    if (!_hasSelectedDate) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.examDateRequired)),
+      );
+      return;
+    }
 
     final provider = context.read<TimetableProvider>();
     final now = DateTime.now();

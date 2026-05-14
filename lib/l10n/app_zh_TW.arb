@@ -2540,6 +2540,8 @@
   "examNameLabel": "考試名稱",
   "examNameRequired": "請輸入考試名稱",
   "examDateLabel": "考試日期",
+  "examDateHint": "請選擇日期",
+  "examDateRequired": "請選擇考試日期",
   "examStartTimeLabel": "開始時間",
   "examEndTimeLabel": "結束時間",
   "examLocationLabel": "考場",
