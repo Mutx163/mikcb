@@ -1,27 +1,16 @@
 {
-  "releaseCount": 8,
+  "releaseCount": 1,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.0.13",
-    "title": "v1.2.0.13",
-    "publishedAt": "2026-04-28T08:24:40Z",
-    "body": "Automated release for v1.2.0.13",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.13",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.13/mikcb-1.2.0.13-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.13-arm64-v8a.apk",
+    "version": "1",
+    "title": "mikcb-ECJTU",
+    "publishedAt": "2026-04-27T17:12:50Z",
+    "body": "从轻屿课表二改而来，专门优化了华东交通大学的课表体验",
+    "releaseUrl": "https://github.com/stareyeXT/mikcb-for-ECJTU/releases/tag/v1",
+    "downloadUrl": "https://github.com/stareyeXT/mikcb-for-ECJTU/releases/download/v1/app-release.apk",
+    "assetName": "app-release.apk",
     "assetCount": 1,
     "assetDownloadCount": 0
   },
-  "prerelease": {
-    "channelLabel": "预发布",
-    "version": "1.2.0.9",
-    "title": "v1.2.0.9",
-    "publishedAt": "2026-04-26T07:03:52Z",
-    "body": "# v1.2.0.9\n\n- 新增节假日标记：支持法定假期和调休日，课表自动灰显对应课程。\n- 新增考试管理：添加考试信息并在小组件中显示倒计时。\n- 新增课程编辑器时间方案选择弹窗：支持直接选择、新建和编辑时间方案，替代原有下拉框。\n- 新增教师和教室快捷选择弹窗：输入框点击弹出历史记录列表，支持快速选择或手动输入。\n- 新增小组件倒计时提前分钟数设置。\n- 优化排课记录卡片布局更紧凑：字段合并为多行排列，减少页面滚动。\n- 优化课程总览页面：新增冲突横幅提示和排序功能。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.0.9",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.0.9/mikcb-1.2.0.9-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.0.9-arm64-v8a.apk",
-    "assetCount": 1,
-    "assetDownloadCount": 1
-  }
+  "prerelease": null
 }
