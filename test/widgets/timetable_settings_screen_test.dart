@@ -9,6 +9,7 @@ import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
+import 'package:university_timetable/services/storage_service.dart';
 import '../helpers_test_app.dart';
 
 Future<void> _pumpScreen(WidgetTester tester) async {
@@ -44,6 +45,7 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
+    StorageService().resetForTesting();
     _seedInitializedPrefs();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);

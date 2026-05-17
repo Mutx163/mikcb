@@ -188,22 +188,22 @@ class ExamListScreen extends StatelessWidget {
             onTap: () => _navigateToEditExam(context, exam),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 4,
-                    constraints: const BoxConstraints(minHeight: 4),
-                    decoration: BoxDecoration(
-                      color: isPast ? color.withValues(alpha: 0.3) : color,
-                      borderRadius: BorderRadius.circular(2),
+              child: IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: isPast ? color.withValues(alpha: 0.3) : color,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                         Text(
                           exam.name,
                           style: Theme.of(context)
@@ -306,6 +306,7 @@ class ExamListScreen extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
               ),
             ),
           ),

@@ -12,6 +12,7 @@ import '../models/course.dart';
 import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
@@ -936,37 +937,13 @@ List<DropdownMenuItem<String>> buildLocaleDropdownItems(BuildContext context) {
     items.add(
       DropdownMenuItem<String>(
         value: tag,
-        child: Text(localeLabel(context, locale)),
+        child: Text(nativeNameFor(locale)),
       ),
     );
   }
   return items;
 }
 
-/// Each language displays in its own native name.
-String localeLabel(BuildContext context, Locale locale) {
-  final tag = locale.countryCode?.isNotEmpty == true
-      ? '${locale.languageCode}_${locale.countryCode}'
-      : locale.languageCode;
-  switch (tag) {
-    case 'zh':
-    case 'zh_CN':
-      return '简体中文';
-    case 'zh_HK':
-      return '繁體中文（香港）';
-    case 'zh_TW':
-      return '繁體中文（台灣）';
-    case 'en':
-    case 'en_US':
-      return 'English';
-    case 'ja':
-      return '日本語';
-    case 'ko':
-      return '한국어';
-    default:
-      return tag;
-  }
-}
 
 String normalizeLocaleTagForDropdown(String tag) {
   final normalized = tag.trim();

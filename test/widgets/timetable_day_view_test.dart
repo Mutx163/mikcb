@@ -11,6 +11,7 @@ import 'package:university_timetable/models/schedule_item.dart';
 import 'package:university_timetable/models/timetable_profile.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
+import 'package:university_timetable/services/storage_service.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/screens/add_schedule_item_screen.dart';
 import 'package:university_timetable/screens/timetable_screen.dart';
@@ -161,6 +162,7 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
+    StorageService().resetForTesting();
     _seedInitializedPrefs();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(homeWidgetChannel, (call) async => null);

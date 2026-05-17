@@ -188,11 +188,16 @@ class MyApp extends StatelessWidget {
           create: (_) => TimetableProvider(autoInitialize: false),
         ),
       ],
-      child: Consumer<TimetableProvider>(
-        builder: (context, provider, child) {
-          final seedColor = _colorFromHex(provider.settings.themeSeedColor);
-          final fontFamily =
-              _fontFamilyFromSettings(provider.settings.appFontMode);
+      child: Selector<TimetableProvider, ({String seedColor, String fontMode, String themeMode, String localeTag})>(
+        selector: (_, p) => (
+          seedColor: p.settings.themeSeedColor,
+          fontMode: p.settings.appFontMode.name,
+          themeMode: p.settings.appThemeMode.name,
+          localeTag: p.settings.appLocaleTag,
+        ),
+        builder: (context, settings, child) {
+          final seedColor = _colorFromHex(settings.seedColor);
+          final fontFamily = _fontFamilyFromSettings(AppFontMode.values.asNameMap()[settings.fontMode] ?? AppFontMode.system);
 
           return MaterialApp(
             debugShowCheckedModeBanner: false,
@@ -206,8 +211,8 @@ class MyApp extends StatelessWidget {
               GlobalCupertinoLocalizations.delegate,
             ],
             supportedLocales: AppLocalizations.supportedLocales,
-            locale: _localeFromSettings(provider.settings.appLocaleTag),
-            themeMode: _themeModeFromSettings(provider.settings.appThemeMode),
+            locale: _localeFromSettings(settings.localeTag),
+            themeMode: _themeModeFromSettings(AppThemeMode.values.asNameMap()[settings.themeMode] ?? AppThemeMode.system),
             theme: _buildAppTheme(
               seedColor,
               Brightness.light,
@@ -260,9 +265,14 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       ),
     );
 
-    await _storageService.init();
+    try {
 
-    // --- 并行读取所有启动状态 ---
+    // --- 并行初始化和读取所有启动状态 ---
+    final initFuture = _storageService.init();
+    final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
+    
+    await initFuture;
+    
     final startupResults = await Future.wait([
       _storageService.isAppDataEffectivelyEmpty(),
       _storageService.hasCompletedOnboarding(),
@@ -280,8 +290,12 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return;
     }
     final provider = context.read<TimetableProvider>();
-    final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
-    await provider.initialize();
+    
+    // 并行执行 provider 初始化和旧包检测
+    await Future.wait([
+      provider.initialize(),
+      legacyPackageFuture,
+    ]);
     final legacyPackage = await legacyPackageFuture;
     final shouldShowMigrationGuide =
         !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
@@ -368,6 +382,22 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     setState(() {
       _isBootstrapping = false;
     });
+    } catch (e, stackTrace) {
+      // 初始化失败时降级进入主界面，避免白屏 hang
+      unawaited(
+        AppLogService.instance.error(
+          'startup_flow_failed',
+          'Startup flow failed, entering degraded mode',
+          error: e,
+          stackTrace: stackTrace,
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _isBootstrapping = false;
+        });
+      }
+    }
   }
 
   Future<bool> _openGuide({
