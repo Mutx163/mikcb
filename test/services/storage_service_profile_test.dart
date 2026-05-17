@@ -11,6 +11,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    StorageService().resetForTesting();
     SharedPreferences.setMockInitialValues({});
   });
 

@@ -49,10 +49,7 @@ android {
         versionName = overrideVersionName ?: flutter.versionName
         buildConfigField "String", "UMENG_APP_KEY", "\"69c1fd8f9a7f3764889fba4f\""
         buildConfigField "String", "UMENG_CHANNEL", "\"official\""
-        manifestPlaceholders = [
-                appLabel   : "轻屿课表",
-                umengScheme: "um.69c1fd8f9a7f3764889fba4f"
-        ]
+        missingDimensionStrategy 'env', 'prod'
     }
 
     signingConfigs {
@@ -66,8 +63,11 @@ android {
         }
     }
 
-    buildTypes {
-        debug {
+    // Product Flavors for different package names
+    flavorDimensions "env"
+    productFlavors {
+        dev {
+            dimension "env"
             applicationIdSuffix ".debug"
             versionNameSuffix "-debug"
             buildConfigField "String", "UMENG_CHANNEL", "\"official-debug\""
@@ -76,11 +76,34 @@ android {
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
         }
-        release {
+        perf {
+            dimension "env"
+            applicationIdSuffix ".profile"
+            versionNameSuffix "-profile"
+            buildConfigField "String", "UMENG_CHANNEL", "\"official-profile\""
+            manifestPlaceholders = [
+                    appLabel   : "轻屿课表性能版",
+                    umengScheme: "um.69c1fd8f9a7f3764889fba4f"
+            ]
+        }
+        prod {
+            dimension "env"
             manifestPlaceholders = [
                     appLabel   : "轻屿课表",
                     umengScheme: "um.69c1fd8f9a7f3764889fba4f"
             ]
+        }
+    }
+
+    buildTypes {
+        debug {
+            // Debug build type - no applicationIdSuffix here, handled by flavor
+        }
+        profile {
+            initWith(getByName("debug"))
+            matchingFallbacks = ['debug', 'release']
+        }
+        release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.release

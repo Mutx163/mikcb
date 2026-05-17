@@ -4,11 +4,13 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
+import 'package:university_timetable/services/storage_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() {
+    StorageService().resetForTesting();
     SharedPreferences.setMockInitialValues({});
   });
 

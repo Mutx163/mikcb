@@ -101,7 +101,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           OVERRIDE_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
-        run: flutter build apk --release --split-per-abi
+        run: flutter build apk --release --split-per-abi --flavor prod
 
       - name: Prepare artifact
         if: startsWith(github.ref, 'refs/tags/v')
@@ -109,14 +109,26 @@ jobs:
         run: |
           mkdir -p dist
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
+          echo "=== Available APK files ==="
+          find build/app/outputs -name '*.apk' -type f 2>/dev/null || echo 'No APK files found'
+          APK_PATH=$(find build/app/outputs -name '*arm64*release*' -type f | head -1)
+          if [[ -z "${APK_PATH}" ]]; then
+            echo "ERROR: Could not find arm64 release APK, trying any release APK..."
+            APK_PATH=$(find build/app/outputs -name '*release*.apk' -type f | head -1)
+          fi
+          if [[ -z "${APK_PATH}" ]]; then
+            echo "ERROR: Could not find any release APK"
+            exit 1
+          fi
+          echo "Found APK: ${APK_PATH}"
+          cp "${APK_PATH}" "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
       - name: Upload to pgyer
         if: startsWith(github.ref, 'refs/tags/v')
         uses: PGYER/pgyer-upload-app-action@v1.3
         with:
           _api_key: ${{ secrets.PGYER_API_KEY }}
-          appFilePath: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+          appFilePath: dist/mikcb-${{ steps.meta.outputs.version_name }}-arm64-v8a.apk
           buildInstallType: 1
           buildUpdateDescription: ${{ steps.meta.outputs.release_body }}
 

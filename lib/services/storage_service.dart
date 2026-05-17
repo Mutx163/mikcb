@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/course.dart';
 import '../models/time_scheme.dart';
@@ -34,7 +35,26 @@ class StorageService {
   bool _timeSchemesEnsured = false;
   bool _hidePrefixMigrated = false;
 
+  Future<void>? _initFuture;
+
+  /// 仅用于测试：重置缓存的初始化状态
+  @visibleForTesting
+  void resetForTesting() {
+    _initFuture = null;
+    _prefs = null;
+  }
+
   Future<void> init() async {
+    _initFuture ??= _doInit();
+    try {
+      return await _initFuture!;
+    } catch (e) {
+      _initFuture = null;
+      rethrow;
+    }
+  }
+
+  Future<void> _doInit() async {
     _prefs = await SharedPreferences.getInstance();
   }
 

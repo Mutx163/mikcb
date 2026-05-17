@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/user_guide_screen.dart';
+import 'package:university_timetable/services/storage_service.dart';
 import '../helpers_test_app.dart';
 
 void main() {
@@ -13,6 +14,8 @@ void main() {
   const liveChannel = MethodChannel('com.mutx163.qingyu/miui_live');
 
   setUp(() {
+    StorageService().resetForTesting();
+    SharedPreferences.setMockInitialValues({});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(liveChannel, (call) async {
           switch (call.method) {

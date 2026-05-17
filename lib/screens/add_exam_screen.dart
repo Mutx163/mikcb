@@ -595,9 +595,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
     // 已选日期有值时默认选中对应星期，否则不选中
     int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
 
-    // 滚动控制器，用于默认滚动到当前周
-    final scrollController = ScrollController();
-    bool hasScrolledToInitialWeek = false;
+    // 滚动控制器，初始偏移指向已选周次
+    final initialOffset = ((initialWeek - 1) * 56.0 - 100.0).clamp(0.0, double.infinity);
+    final scrollController = ScrollController(initialScrollOffset: initialOffset);
 
     // 计算某周某天的实际日期
     const weekStartDay = 1; // 1=Monday
@@ -762,17 +762,6 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         final isSelected = week == selectedWeek;
                         final date = getDateForWeekAndDay(week, selectedDayOfWeek ?? 1);
                         final isCurrentWeek = _isCurrentWeek(week, semesterStart, weekStartDay);
-
-                        // 滚动到已选日期所在周
-                        if (!hasScrolledToInitialWeek && week == initialWeek) {
-                          hasScrolledToInitialWeek = true;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (scrollController.hasClients) {
-                              final targetOffset = (index * 56.0 - 100.0).clamp(0.0, scrollController.position.maxScrollExtent);
-                              scrollController.jumpTo(targetOffset);
-                            }
-                          });
-                        }
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
