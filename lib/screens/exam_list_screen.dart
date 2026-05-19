@@ -247,7 +247,7 @@ class ExamListScreen extends StatelessWidget {
                           ),
                         const SizedBox(height: 4),
                         Text(
-                          _formatExamDateTime(exam),
+                          _formatExamDateTime(exam, provider, l10n),
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: Theme.of(context)
@@ -315,13 +315,24 @@ class ExamListScreen extends StatelessWidget {
     );
   }
 
-  String _formatExamDateTime(Exam exam) {
+  String _formatExamDateTime(Exam exam, TimetableProvider provider, AppLocalizations l10n) {
     final date = exam.dateTime;
-    final weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+    final weekdays = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
     final weekday = weekdays[date.weekday - 1];
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
-    return '$month月$day日 $weekday ${exam.startTime}-${exam.endTime}';
+    
+    // 计算周次信息
+    String weekInfo = '';
+    final semesterStart = provider.semesterStartDate;
+    if (semesterStart != null) {
+      final weekIndex = provider.getWeekIndex(date, semesterStart);
+      if (weekIndex != null && weekIndex >= 1) {
+        weekInfo = '${l10n.weekLabel(weekIndex)} ';
+      }
+    }
+    
+    return '$weekInfo$month月$day日 $weekday ${exam.startTime}-${exam.endTime}';
   }
 
   Future<bool?> _confirmDelete(
