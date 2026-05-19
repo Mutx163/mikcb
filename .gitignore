@@ -73,6 +73,9 @@ pi.ico
 # 审查输出
 reviews/
 
+# Pi 工具目录
+.pi/
+
 # MCP 工具指南
 tool/chrome-devtools-mcp-guide.md
 *.heapsnapshot

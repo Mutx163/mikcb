@@ -1331,11 +1331,24 @@ class TimetableProvider with ChangeNotifier {
     return null;
   }
 
-  Course? getCourseForExam(Exam exam) {
+  Course? getCourseForExam(Exam exam) => getCourseById(exam.courseId);
+
+  /// 根据课程 ID 查找课程，找不到返回 null。
+  Course? getCourseById(String id) {
     for (final course in _courses) {
-      if (course.id == exam.courseId) return course;
+      if (course.id == id) return course;
     }
     return null;
+  }
+
+  /// 计算 [date] 在学期中的周次（从 1 开始），周一为每周起始日。
+  /// 返回 null 表示 [date] 早于学期开始日期。
+  int? getWeekIndex(DateTime date, DateTime semesterStart) {
+    final alignedStart = _startOfWeek(semesterStart);
+    final alignedTarget = _startOfWeek(date);
+    final diffDays = alignedTarget.difference(alignedStart).inDays;
+    if (diffDays < 0) return null;
+    return (diffDays ~/ 7) + 1;
   }
 
   List<Exam> getExamsForCourse(String courseId) {
@@ -2270,15 +2283,9 @@ class TimetableProvider with ChangeNotifier {
       return fallbackWeek ?? _currentWeek;
     }
 
-    final normalizedDate = _startOfWeek(date);
-    final normalizedStart = _startOfWeek(semesterStart);
-    final week = (normalizedDate.difference(normalizedStart).inDays ~/ 7) + 1;
-    if (week < 1) {
-      return 1;
-    }
-    if (week > _settings.semesterWeekCount) {
-      return _settings.semesterWeekCount;
-    }
+    final week = getWeekIndex(date, semesterStart);
+    if (week == null) return 1;
+    if (week > _settings.semesterWeekCount) return _settings.semesterWeekCount;
     return week;
   }
 
