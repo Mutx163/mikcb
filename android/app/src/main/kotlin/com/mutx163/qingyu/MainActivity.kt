@@ -2159,7 +2159,7 @@ class LiveUpdateService : Service() {
         timeRangeText: String,
         bodyContent: String,
         visibleLocation: String,
-        stage: String,
+        stage: String?,
         classProgress: DuringClassProgress?,
         startAtMillis: Long,
         endAtMillis: Long,
@@ -2233,7 +2233,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun buildIslandSummary(
-        stage: String,
+        stage: String?,
         classProgress: DuringClassProgress?,
         islandName: String,
         visibleLocation: String,
@@ -2327,7 +2327,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun remainingTextForIsland(
-        stage: String,
+        stage: String?,
         startAtMillis: Long,
         endAtMillis: Long,
     ): String {
@@ -2357,12 +2357,15 @@ class LiveUpdateService : Service() {
         totalMillis: Long,
     ): List<MilestonePoint> {
         if (progressBreakOffsetsMillis.isEmpty() || totalMillis <= 0) return emptyList()
-        return progressBreakOffsetsMillis.mapIndexedNotNull { index, offsetMillis ->
+        val points = mutableListOf<MilestonePoint>()
+        for (index in progressBreakOffsetsMillis.indices) {
+            val offsetMillis = progressBreakOffsetsMillis[index]
             val position = ((offsetMillis.toDouble() / totalMillis.toDouble()) * 100)
                 .toInt().coerceIn(1, 99)
-            val label = progressMilestoneLabels.getOrNull(index) ?: return@mapIndexedNotNull null
-            MilestonePoint(position = position, picKey = "miui.focus.pic_milestone_$index")
-        }.distinctBy { it.position }.sortedBy { it.position }
+            val label = progressMilestoneLabels.getOrNull(index) ?: continue
+            points.add(MilestonePoint(position = position, picKey = "miui.focus.pic_milestone_$index"))
+        }
+        return points.distinctBy { it.position }.sortedBy { it.position }
     }
 
     private fun decodeSquareBitmap(path: String, targetSize: Int): Bitmap? {
