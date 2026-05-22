@@ -2383,7 +2383,6 @@ class LiveUpdateService : Service() {
 
         val expandedDetailText = buildString {
             append(stageTitle)
-            append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
             if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
                 if (classProgress.nextMilestoneDisplayText != null) {
@@ -2394,7 +2393,7 @@ class LiveUpdateService : Service() {
                 append("\n状态: ").append(detailStatusText)
             }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (visibleLocation.isNotBlank()) append("\n地点: ").append(visibleLocation)
+            if (location.isNotBlank()) append("\n地点: ").append(location)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
             if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
             if (note.isNotBlank()) append("\n备注: ").append(note)
@@ -2424,9 +2423,8 @@ class LiveUpdateService : Service() {
                 append("状态: ").append(detailStatusText)
             }
             if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (visibleLocation.isNotBlank()) append("\n地点: ").append(visibleLocation)
+            if (location.isNotBlank()) append("\n地点: ").append(location)
             if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
-            append("\n课程: ").append(courseName)
             if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
             if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
             if (note.isNotBlank()) append("\n备注: ").append(note)

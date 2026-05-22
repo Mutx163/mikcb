@@ -79,3 +79,6 @@ reviews/
 # MCP 工具指南
 tool/chrome-devtools-mcp-guide.md
 *.heapsnapshot
+
+# Antigravity CLI config
+.antigravitycli/
