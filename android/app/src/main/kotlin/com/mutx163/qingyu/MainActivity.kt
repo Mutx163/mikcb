@@ -2159,6 +2159,14 @@ class LiveUpdateService : Service() {
         timeRangeText: String,
         bodyContent: String,
         visibleLocation: String,
+        stage: String,
+        classProgress: DuringClassProgress?,
+        startAtMillis: Long,
+        endAtMillis: Long,
+        islandName: String,
+        progressBreakOffsetsMillis: LongArray,
+        progressMilestoneLabels: List<String>,
+        progressMilestoneTimeTexts: List<String>,
     ): String? {
         if (!isXiaomiFamilyDevice()) {
             return null
@@ -2172,11 +2180,26 @@ class LiveUpdateService : Service() {
                 if (nextName.isNotBlank()) put("nextCourse", nextName)
             }
 
+            // 摘要态：岛内容
+            val paramIsland = buildIslandSummary(
+                stage = stage,
+                classProgress = classProgress,
+                islandName = islandName,
+                visibleLocation = visibleLocation,
+                startAtMillis = startAtMillis,
+                endAtMillis = endAtMillis,
+                progressBreakOffsetsMillis = progressBreakOffsetsMillis,
+                progressMilestoneLabels = progressMilestoneLabels,
+                progressMilestoneTimeTexts = progressMilestoneTimeTexts,
+            )
+
             val paramV2 = JSONObject().apply {
                 put("protocol", 1)
+                put("business", "class_schedule")
                 put("updatable", true)
                 put("enableFloat", true)
                 put("ticker", title)
+                // 展开态：焦点通知卡片
                 put(
                     "baseInfo",
                     JSONObject().apply {
@@ -2197,6 +2220,7 @@ class LiveUpdateService : Service() {
                 if (extraInfo.length() > 0) {
                     put("extraInfo", extraInfo)
                 }
+                put("param_island", paramIsland)
             }
 
             JSONObject().apply {
@@ -2206,6 +2230,139 @@ class LiveUpdateService : Service() {
             Log.w(TAG, "Failed to build miui.focus.param", e)
             null
         }
+    }
+
+    private fun buildIslandSummary(
+        stage: String,
+        classProgress: DuringClassProgress?,
+        islandName: String,
+        visibleLocation: String,
+        startAtMillis: Long,
+        endAtMillis: Long,
+        progressBreakOffsetsMillis: LongArray,
+        progressMilestoneLabels: List<String>,
+        progressMilestoneTimeTexts: List<String>,
+    ): JSONObject {
+        val totalMillis = (endAtMillis - startAtMillis).coerceAtLeast(1L)
+        val now = System.currentTimeMillis()
+        val elapsedMillis = (now - startAtMillis).coerceIn(0L, totalMillis)
+        val progressPercent = classProgress?.progressPercent
+            ?: ((elapsedMillis.toDouble() / totalMillis.toDouble()) * 100).toInt().coerceIn(0, 100)
+
+        val islandContentText = when (stage) {
+            "beforeClass" -> remainingTextForIsland(stage, startAtMillis, endAtMillis)
+            "beforeEnd" -> remainingTextForIsland(stage, startAtMillis, endAtMillis)
+            else -> classProgress?.compactDisplayText ?: "上课中"
+        }
+
+        val bigIslandArea = JSONObject().apply {
+            // A 区：图文组件1
+            val imageTextInfoLeft = JSONObject().apply {
+                put("type", 1)
+                put(
+                    "textInfo",
+                    JSONObject().apply {
+                        put("title", islandName)
+                        put("content", islandContentText)
+                    }
+                )
+                // 上课中阶段显示环形进度
+                if (stage == "duringClass" && classProgress != null) {
+                    put(
+                        "progressInfo",
+                        JSONObject().apply {
+                            put("progress", progressPercent)
+                            put("colorReach", "#4CAF50")
+                            put("colorUnReach", "#33FFFFFF")
+                        }
+                    )
+                }
+            }
+            put("imageTextInfoLeft", imageTextInfoLeft)
+
+            // B 区：仅上课中阶段显示线性进度+节点
+            if (stage == "duringClass" && classProgress != null) {
+                val milestonePoints = buildMilestonePoints(
+                    progressBreakOffsetsMillis,
+                    progressMilestoneLabels,
+                    progressMilestoneTimeTexts,
+                    totalMillis,
+                )
+                val progressTextInfo = JSONObject().apply {
+                    put(
+                        "progressInfo",
+                        JSONObject().apply {
+                            put("progress", progressPercent)
+                            put("colorReach", "#4CAF50")
+                            put("colorUnReach", "#33FFFFFF")
+                            if (milestonePoints.isNotEmpty()) {
+                                put("picMiddle", milestonePoints.first().picKey)
+                            }
+                        }
+                    )
+                    put(
+                        "textInfo",
+                        JSONObject().apply {
+                            val nextMilestone = classProgress.nextMilestoneDisplayText
+                            if (nextMilestone != null) {
+                                put("title", nextMilestone)
+                            } else {
+                                put("title", classProgress.finalDismissDisplayText)
+                            }
+                        }
+                    )
+                }
+                put("progressTextInfo", progressTextInfo)
+            }
+        }
+
+        val smallIslandArea = JSONObject()
+
+        return JSONObject().apply {
+            put("islandProperty", 1)
+            put("islandTimeout", 3600)
+            put("bigIslandArea", bigIslandArea)
+            put("smallIslandArea", smallIslandArea)
+        }
+    }
+
+    private fun remainingTextForIsland(
+        stage: String,
+        startAtMillis: Long,
+        endAtMillis: Long,
+    ): String {
+        val now = System.currentTimeMillis()
+        return when (stage) {
+            "beforeClass" -> {
+                val remaining = startAtMillis - now
+                if (remaining > 0) "距上课${formatCountdownDuration(remaining)}" else "即将上课"
+            }
+            "beforeEnd" -> {
+                val remaining = endAtMillis - now
+                if (remaining > 0) "距下课${formatCountdownDuration(remaining)}" else "下课提醒"
+            }
+            else -> "上课中"
+        }
+    }
+
+    private data class MilestonePoint(
+        val position: Int,
+        val picKey: String,
+    )
+
+    private fun buildMilestonePoints(
+        progressBreakOffsetsMillis: LongArray,
+        progressMilestoneLabels: List<String>,
+        progressMilestoneTimeTexts: List<String>,
+        totalMillis: Long,
+    ): List<MilestonePoint> {
+        if (progressBreakOffsetsMillis.isEmpty() || totalMillis <= 0) return emptyList()
+        return progressBreakOffsetsMillis.mapIndexedNotNull { index, offsetMillis ->
+            val position = ((offsetMillis.toDouble() / totalMillis.toDouble()) * 100)
+                .toInt().coerceIn(1, 99)
+            val label = progressMilestoneLabels.getOrNull(index) ?: return@mapIndexedNotNull null
+            MilestonePoint(position = position, picKey = "miui.focus.pic_milestone_$index")
+        }.distinctBy { it.position }.sortedBy { it.position }
     }
 
     private fun decodeSquareBitmap(path: String, targetSize: Int): Bitmap? {
@@ -2462,6 +2619,14 @@ class LiveUpdateService : Service() {
                 timeRangeText = timeRangeText,
                 bodyContent = promotedContentText,
                 visibleLocation = visibleLocation,
+                stage = stage,
+                classProgress = classProgress,
+                startAtMillis = startAtMillis,
+                endAtMillis = endAtMillis,
+                islandName = nameToUse,
+                progressBreakOffsetsMillis = progressBreakOffsetsMillis,
+                progressMilestoneLabels = progressMilestoneLabels,
+                progressMilestoneTimeTexts = progressMilestoneTimeTexts,
             )
         }
 
