@@ -1224,7 +1224,6 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       if (savedThemes.isEmpty) return const SizedBox.shrink();
                       return Column(
                         children: [
-                          const Divider(),
                           ...savedThemes.map((theme) {
                             final config = ThemeConfig.fromJson(theme.themeData);
                             return _ThemeTile(
