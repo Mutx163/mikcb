@@ -2718,5 +2718,14 @@
   "liveTestingHolidayModeEnabled": "休日モード有効",
   "liveTestingHolidayModeDisabled": "休日モード無効",
   "liveTestingHolidayModeEnabledDesc": "授業リマインダーとウィジェットは全授業を非表示",
-  "liveTestingHolidayModeDisabledDesc": "現在通常の休日データを使用"
+  "liveTestingHolidayModeDisabledDesc": "現在通常の休日データを使用",
+  "textColorTitle": "テキストの色",
+  "textColorSubtitle": "時間割の各エリアのテキスト色をカスタマイズ",
+  "textColorIndependentDetail": "詳細色を個別に設定",
+  "textColorCourseCardTitle": "授業カードタイトル色",
+  "textColorCourseCardDetail": "授業カード詳細色",
+  "textColorWeekdayBar": "曜日バーのフォント色",
+  "textColorTimeAxis": "時間軸のフォント色",
+  "textColorSelectColor": "色を選択",
+  "textColorCurrentColor": "現在の色"
 }

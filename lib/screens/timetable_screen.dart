@@ -896,14 +896,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final isToday =
                             date != null && _isSameDate(date, DateTime.now());
                         final isSelected = _isSelectedDay(week, dayOfWeek);
+                        final isDark = Theme.of(context).brightness == Brightness.dark;
+                        final weekdayColor = isDark ? settings.weekdayBarFontColorDark : settings.weekdayBarFontColorLight;
                         final labelColor = (isSelected || isToday)
                             ? colorScheme.primary
-                            : colorScheme.onSurface;
+                            : _colorFromHex(weekdayColor, colorScheme.onSurface);
                         final subLabelColor = (isSelected || isToday)
                             ? colorScheme.primary.withValues(
                                 alpha: isSelected ? 0.9 : 0.78,
                               )
-                            : colorScheme.onSurfaceVariant;
+                            : _colorFromHex(weekdayColor, colorScheme.onSurfaceVariant);
                         final showsTodayMarker = isToday && !isSelected;
 
                         return Expanded(
@@ -3223,6 +3225,12 @@ class _TimetableScreenState extends State<TimetableScreen>
                     .clamp(7.0, 14.0),
                 compactVerticalPadding: sectionHeight < 64 ? 4 : 6,
                 compactOuterInset: cardInset,
+                titleColorHex: Theme.of(context).brightness == Brightness.dark
+                    ? settings.courseCardTitleColorDark
+                    : settings.courseCardTitleColorLight,
+                detailColorHex: Theme.of(context).brightness == Brightness.dark
+                    ? settings.courseCardDetailColorDark
+                    : settings.courseCardDetailColorLight,
               ),
             ),
           ),
@@ -4730,9 +4738,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     SectionTime section,
     TimetableSettings settings,
   ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final timeAxisColor = isDark ? settings.timeAxisFontColorDark : settings.timeAxisFontColorLight;
     final compactTextStyle = TextStyle(
       fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
-      color: Colors.grey.shade600,
+      color: _colorFromHex(timeAxisColor, Colors.grey.shade600),
       height: 1.05,
     );
 
@@ -4745,6 +4755,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           style: TextStyle(
             fontSize: settings.compactFontSize.clamp(8.0, 11.0),
             fontWeight: FontWeight.bold,
+            color: _colorFromHex(timeAxisColor, Colors.grey.shade800),
           ),
         ),
         if (settings.timetableSectionTimeDisplayMode !=

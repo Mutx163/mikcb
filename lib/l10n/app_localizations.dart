@@ -8157,6 +8157,60 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'当前使用正常假期数据'**
   String get liveTestingHolidayModeDisabledDesc;
+
+  /// No description provided for @textColorTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'文字颜色'**
+  String get textColorTitle;
+
+  /// No description provided for @textColorSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义课表各区域的文字颜色'**
+  String get textColorSubtitle;
+
+  /// No description provided for @textColorIndependentDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'独立设置详情颜色'**
+  String get textColorIndependentDetail;
+
+  /// No description provided for @textColorCourseCardTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片标题颜色'**
+  String get textColorCourseCardTitle;
+
+  /// No description provided for @textColorCourseCardDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片详情颜色'**
+  String get textColorCourseCardDetail;
+
+  /// No description provided for @textColorWeekdayBar.
+  ///
+  /// In zh, this message translates to:
+  /// **'星期栏字体颜色'**
+  String get textColorWeekdayBar;
+
+  /// No description provided for @textColorTimeAxis.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间轴字体颜色'**
+  String get textColorTimeAxis;
+
+  /// No description provided for @textColorSelectColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择颜色'**
+  String get textColorSelectColor;
+
+  /// No description provided for @textColorCurrentColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前颜色'**
+  String get textColorCurrentColor;
 }
 
 class _AppLocalizationsDelegate

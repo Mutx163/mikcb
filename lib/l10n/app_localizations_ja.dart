@@ -4560,4 +4560,31 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '現在通常の休日データを使用';
+
+  @override
+  String get textColorTitle => 'テキストの色';
+
+  @override
+  String get textColorSubtitle => '時間割の各エリアのテキスト色をカスタマイズ';
+
+  @override
+  String get textColorIndependentDetail => '詳細色を個別に設定';
+
+  @override
+  String get textColorCourseCardTitle => '授業カードタイトル色';
+
+  @override
+  String get textColorCourseCardDetail => '授業カード詳細色';
+
+  @override
+  String get textColorWeekdayBar => '曜日バーのフォント色';
+
+  @override
+  String get textColorTimeAxis => '時間軸のフォント色';
+
+  @override
+  String get textColorSelectColor => '色を選択';
+
+  @override
+  String get textColorCurrentColor => '現在の色';
 }

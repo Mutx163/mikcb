@@ -23,6 +23,8 @@ class CourseCard extends StatelessWidget {
   final double compactVerticalPadding;
   final double compactOuterInset;
   final String? overrideColorHex;
+  final String? titleColorHex;
+  final String? detailColorHex;
   final String? compactOverlineText;
   final String? topRightBadgeText;
   final bool isHighlighted;
@@ -48,6 +50,8 @@ class CourseCard extends StatelessWidget {
     this.compactVerticalPadding = 6,
     this.compactOuterInset = 2,
     this.overrideColorHex,
+    this.titleColorHex,
+    this.detailColorHex,
     this.compactOverlineText,
     this.topRightBadgeText,
     this.isHighlighted = false,
@@ -62,17 +66,23 @@ class CourseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _parseColor(overrideColorHex ?? course.color);
+    final titleColor = titleColorHex != null
+        ? _parseColor(titleColorHex!)
+        : Colors.white;
+    final detailColor = detailColorHex != null
+        ? _parseColor(detailColorHex!).withValues(alpha: 0.7)
+        : Colors.white70;
 
     if (isCompact) {
-      return _buildCompactCard(context, color);
+      return _buildCompactCard(context, color, titleColor, detailColor);
     }
 
-    return _buildFullCard(context, color);
+    return _buildFullCard(context, color, titleColor, detailColor);
   }
 
-  Widget _buildFullCard(BuildContext context, Color color) {
+  Widget _buildFullCard(BuildContext context, Color color, Color titleColor, Color detailColor) {
     final l10n = AppLocalizations.of(context)!;
-    final detailLines = _buildDetailLines(context);
+    final detailLines = _buildDetailLines(context, detailColor);
     final titleAlignment = _contentAlignment;
     final titleTextAlign = _textAlign;
 
@@ -126,10 +136,10 @@ class CourseCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               course.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                                color: titleColor,
                               ),
                               textAlign: titleTextAlign,
                               softWrap: true,
@@ -153,9 +163,9 @@ class CourseCard extends StatelessWidget {
                                     course.startSection,
                                     course.endSection,
                                   ),
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.white,
+                                    color: titleColor,
                                   ),
                                 ),
                               ),
@@ -210,8 +220,8 @@ class CourseCard extends StatelessWidget {
     return card;
   }
 
-  Widget _buildCompactCard(BuildContext context, Color color) {
-    final textLines = _buildCompactTextLines(context);
+  Widget _buildCompactCard(BuildContext context, Color color, Color titleColor, Color detailColor) {
+    final textLines = _buildCompactTextLines(context, titleColor, detailColor);
     final crossAxisAlignment = _crossAxisAlignment;
     final textAlign = _textAlign;
 
@@ -421,14 +431,14 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildDetailLines(BuildContext context) {
+  List<Widget> _buildDetailLines(BuildContext context, Color detailColor) {
     final lines = <Widget>[];
     if (showTeacher && course.teacher.trim().isNotEmpty) {
-      lines.add(_buildDetailRow(Icons.person, course.teacher));
+      lines.add(_buildDetailRow(Icons.person, course.teacher, detailColor));
     }
     if (showLocation && course.location.trim().isNotEmpty) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
-      lines.add(_buildDetailRow(Icons.location_on, course.location));
+      lines.add(_buildDetailRow(Icons.location_on, course.location, detailColor));
     }
     if (showTime) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
@@ -436,6 +446,7 @@ class CourseCard extends StatelessWidget {
         _buildDetailRow(
           Icons.access_time,
           _buildTimeText(context, isCompact: false),
+          detailColor,
         ),
       );
     }
@@ -445,29 +456,30 @@ class CourseCard extends StatelessWidget {
         _buildDetailRow(
           Icons.date_range_rounded,
           _buildWeekText(),
+          detailColor,
         ),
       );
     }
     if (showDescription && (course.description?.trim().isNotEmpty ?? false)) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
-          _buildDetailRow(Icons.notes_rounded, course.description!.trim()));
+          _buildDetailRow(Icons.notes_rounded, course.description!.trim(), detailColor));
     }
     return lines;
   }
 
-  Widget _buildDetailRow(IconData icon, String text) {
+  Widget _buildDetailRow(IconData icon, String text, Color detailColor) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: Colors.white70),
+        Icon(icon, size: 16, color: detailColor),
         const SizedBox(width: 4),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
-              color: Colors.white70,
+              color: detailColor,
               height: 1.15,
             ),
             softWrap: true,
@@ -477,7 +489,7 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  List<_CompactTextLine> _buildCompactTextLines(BuildContext context) {
+  List<_CompactTextLine> _buildCompactTextLines(BuildContext context, Color titleColor, Color detailColor) {
     final l10n = AppLocalizations.of(context)!;
     final lines = <_CompactTextLine>[];
     if (compactOverlineText?.trim().isNotEmpty ?? false) {
@@ -487,7 +499,7 @@ class CourseCard extends StatelessWidget {
           flex: 1,
           style: TextStyle(
             fontSize: (compactSubtitleFontSize - 1).clamp(6.0, 12.0),
-            color: Colors.white.withValues(alpha: 0.78),
+            color: detailColor,
             height: 1.05,
           ),
         ),
@@ -501,7 +513,7 @@ class CourseCard extends StatelessWidget {
           style: TextStyle(
             fontSize: compactTitleFontSize,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: titleColor,
             height: 1.15,
           ),
         ),
@@ -514,7 +526,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -527,7 +539,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -542,7 +554,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -553,7 +565,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -566,7 +578,7 @@ class CourseCard extends StatelessWidget {
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -579,7 +591,7 @@ class CourseCard extends StatelessWidget {
           flex: 3,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
-            color: Colors.white70,
+            color: detailColor,
             height: 1.1,
           ),
         ),
@@ -593,7 +605,7 @@ class CourseCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: compactTitleFontSize,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: titleColor,
                 height: 1.15,
               ),
             ),

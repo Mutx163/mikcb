@@ -753,6 +753,14 @@ class SectionTime {
 }
 
 class TimetableSettings {
+  // 颜色默认值常量
+  static const String defaultCourseCardTitleColor = '#FFFFFF';
+  static const String defaultCourseCardDetailColor = '#FFFFFF';
+  static const String defaultWeekdayBarFontColorLight = '#000000';
+  static const String defaultWeekdayBarFontColorDark = '#FFFFFF';
+  static const String defaultTimeAxisFontColorLight = '#757575';
+  static const String defaultTimeAxisFontColorDark = '#FFFFFF';
+
   final List<SectionTime> sections;
   final String? activeTimeSchemeId;
   final double sectionHeight;
@@ -865,6 +873,15 @@ class TimetableSettings {
   final String pgyerApiKey;
   final String pgyerAppKey;
   final bool holidayOverrideEnabled;
+  final String courseCardTitleColorLight;
+  final String courseCardTitleColorDark;
+  final String courseCardDetailColorLight;
+  final String courseCardDetailColorDark;
+  final String weekdayBarFontColorLight;
+  final String weekdayBarFontColorDark;
+  final String timeAxisFontColorLight;
+  final String timeAxisFontColorDark;
+  final bool linkCourseCardColors; // 标题和详情颜色是否关联
 
   const TimetableSettings({
     required this.sections,
@@ -986,6 +1003,15 @@ class TimetableSettings {
     this.pgyerApiKey = '',
     this.pgyerAppKey = '',
     this.holidayOverrideEnabled = false,
+    this.courseCardTitleColorLight = defaultCourseCardTitleColor,
+    this.courseCardTitleColorDark = defaultCourseCardTitleColor,
+    this.courseCardDetailColorLight = defaultCourseCardDetailColor,
+    this.courseCardDetailColorDark = defaultCourseCardDetailColor,
+    this.weekdayBarFontColorLight = defaultWeekdayBarFontColorLight,
+    this.weekdayBarFontColorDark = defaultWeekdayBarFontColorDark,
+    this.timeAxisFontColorLight = defaultTimeAxisFontColorLight,
+    this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
+    this.linkCourseCardColors = true,
   });
 
   factory TimetableSettings.defaults() {
@@ -1111,6 +1137,15 @@ class TimetableSettings {
       appUpdateIncludePrerelease: false,
       appUpdateMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
       holidayOverrideEnabled: false,
+      courseCardTitleColorLight: defaultCourseCardTitleColor,
+      courseCardTitleColorDark: defaultCourseCardTitleColor,
+      courseCardDetailColorLight: defaultCourseCardDetailColor,
+      courseCardDetailColorDark: defaultCourseCardDetailColor,
+      weekdayBarFontColorLight: defaultWeekdayBarFontColorLight,
+      weekdayBarFontColorDark: defaultWeekdayBarFontColorDark,
+      timeAxisFontColorLight: defaultTimeAxisFontColorLight,
+      timeAxisFontColorDark: defaultTimeAxisFontColorDark,
+      linkCourseCardColors: true,
     );
   }
 
@@ -1245,6 +1280,15 @@ class TimetableSettings {
       'pgyerApiKey': pgyerApiKey,
       'pgyerAppKey': pgyerAppKey,
       'holidayOverrideEnabled': holidayOverrideEnabled,
+      'courseCardTitleColorLight': courseCardTitleColorLight,
+      'courseCardTitleColorDark': courseCardTitleColorDark,
+      'courseCardDetailColorLight': courseCardDetailColorLight,
+      'courseCardDetailColorDark': courseCardDetailColorDark,
+      'weekdayBarFontColorLight': weekdayBarFontColorLight,
+      'weekdayBarFontColorDark': weekdayBarFontColorDark,
+      'timeAxisFontColorLight': timeAxisFontColorLight,
+      'timeAxisFontColorDark': timeAxisFontColorDark,
+      'linkCourseCardColors': linkCourseCardColors,
     };
   }
 
@@ -1527,6 +1571,24 @@ class TimetableSettings {
       pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
       holidayOverrideEnabled:
           json['holidayOverrideEnabled'] as bool? ?? false,
+      courseCardTitleColorLight:
+          json['courseCardTitleColorLight'] as String? ?? defaultCourseCardTitleColor,
+      courseCardTitleColorDark:
+          json['courseCardTitleColorDark'] as String? ?? defaultCourseCardTitleColor,
+      courseCardDetailColorLight:
+          json['courseCardDetailColorLight'] as String? ?? defaultCourseCardDetailColor,
+      courseCardDetailColorDark:
+          json['courseCardDetailColorDark'] as String? ?? defaultCourseCardDetailColor,
+      weekdayBarFontColorLight:
+          json['weekdayBarFontColorLight'] as String? ?? defaultWeekdayBarFontColorLight,
+      weekdayBarFontColorDark:
+          json['weekdayBarFontColorDark'] as String? ?? defaultWeekdayBarFontColorDark,
+      timeAxisFontColorLight:
+          json['timeAxisFontColorLight'] as String? ?? defaultTimeAxisFontColorLight,
+      timeAxisFontColorDark:
+          json['timeAxisFontColorDark'] as String? ?? defaultTimeAxisFontColorDark,
+      linkCourseCardColors:
+          json['linkCourseCardColors'] as bool? ?? true,
     );
   }
 
@@ -1655,6 +1717,15 @@ class TimetableSettings {
     String? pgyerApiKey,
     String? pgyerAppKey,
     bool? holidayOverrideEnabled,
+    String? courseCardTitleColorLight,
+    String? courseCardTitleColorDark,
+    String? courseCardDetailColorLight,
+    String? courseCardDetailColorDark,
+    String? weekdayBarFontColorLight,
+    String? weekdayBarFontColorDark,
+    String? timeAxisFontColorLight,
+    String? timeAxisFontColorDark,
+    bool? linkCourseCardColors,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -1881,6 +1952,24 @@ class TimetableSettings {
       pgyerAppKey: pgyerAppKey ?? this.pgyerAppKey,
       holidayOverrideEnabled:
           holidayOverrideEnabled ?? this.holidayOverrideEnabled,
+      courseCardTitleColorLight:
+          courseCardTitleColorLight ?? this.courseCardTitleColorLight,
+      courseCardTitleColorDark:
+          courseCardTitleColorDark ?? this.courseCardTitleColorDark,
+      courseCardDetailColorLight:
+          courseCardDetailColorLight ?? this.courseCardDetailColorLight,
+      courseCardDetailColorDark:
+          courseCardDetailColorDark ?? this.courseCardDetailColorDark,
+      weekdayBarFontColorLight:
+          weekdayBarFontColorLight ?? this.weekdayBarFontColorLight,
+      weekdayBarFontColorDark:
+          weekdayBarFontColorDark ?? this.weekdayBarFontColorDark,
+      timeAxisFontColorLight:
+          timeAxisFontColorLight ?? this.timeAxisFontColorLight,
+      timeAxisFontColorDark:
+          timeAxisFontColorDark ?? this.timeAxisFontColorDark,
+      linkCourseCardColors:
+          linkCourseCardColors ?? this.linkCourseCardColors,
     );
   }
 

@@ -2718,5 +2718,14 @@
   "liveTestingHolidayModeEnabled": "假期模式已開啟",
   "liveTestingHolidayModeDisabled": "假期模式已關閉",
   "liveTestingHolidayModeEnabledDesc": "課程提醒和小工具將隱藏所有課程",
-  "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據"
+  "liveTestingHolidayModeDisabledDesc": "當前使用正常假期數據",
+  "textColorTitle": "文字顏色",
+  "textColorSubtitle": "自訂課表各區域嘅文字顏色",
+  "textColorIndependentDetail": "獨立設定詳情顏色",
+  "textColorCourseCardTitle": "課程卡片標題顏色",
+  "textColorCourseCardDetail": "課程卡片詳情顏色",
+  "textColorWeekdayBar": "星期欄字體顏色",
+  "textColorTimeAxis": "時間軸字體顏色",
+  "textColorSelectColor": "選擇顏色",
+  "textColorCurrentColor": "目前顏色"
 }

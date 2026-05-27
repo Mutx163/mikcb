@@ -4491,6 +4491,33 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '当前使用正常假期数据';
+
+  @override
+  String get textColorTitle => '文字颜色';
+
+  @override
+  String get textColorSubtitle => '自定义课表各区域的文字颜色';
+
+  @override
+  String get textColorIndependentDetail => '独立设置详情颜色';
+
+  @override
+  String get textColorCourseCardTitle => '课程卡片标题颜色';
+
+  @override
+  String get textColorCourseCardDetail => '课程卡片详情颜色';
+
+  @override
+  String get textColorWeekdayBar => '星期栏字体颜色';
+
+  @override
+  String get textColorTimeAxis => '时间轴字体颜色';
+
+  @override
+  String get textColorSelectColor => '选择颜色';
+
+  @override
+  String get textColorCurrentColor => '当前颜色';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -8981,6 +9008,33 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '當前使用正常假期數據';
+
+  @override
+  String get textColorTitle => '文字顏色';
+
+  @override
+  String get textColorSubtitle => '自訂課表各區域嘅文字顏色';
+
+  @override
+  String get textColorIndependentDetail => '獨立設定詳情顏色';
+
+  @override
+  String get textColorCourseCardTitle => '課程卡片標題顏色';
+
+  @override
+  String get textColorCourseCardDetail => '課程卡片詳情顏色';
+
+  @override
+  String get textColorWeekdayBar => '星期欄字體顏色';
+
+  @override
+  String get textColorTimeAxis => '時間軸字體顏色';
+
+  @override
+  String get textColorSelectColor => '選擇顏色';
+
+  @override
+  String get textColorCurrentColor => '目前顏色';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -13471,4 +13525,31 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '當前使用正常假期數據';
+
+  @override
+  String get textColorTitle => '文字顏色';
+
+  @override
+  String get textColorSubtitle => '自訂課表各區域的文字顏色';
+
+  @override
+  String get textColorIndependentDetail => '獨立設定詳情顏色';
+
+  @override
+  String get textColorCourseCardTitle => '課程卡片標題顏色';
+
+  @override
+  String get textColorCourseCardDetail => '課程卡片詳情顏色';
+
+  @override
+  String get textColorWeekdayBar => '星期欄字體顏色';
+
+  @override
+  String get textColorTimeAxis => '時間軸字體顏色';
+
+  @override
+  String get textColorSelectColor => '選擇顏色';
+
+  @override
+  String get textColorCurrentColor => '目前顏色';
 }

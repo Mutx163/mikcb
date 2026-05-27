@@ -2718,5 +2718,14 @@
   "liveTestingHolidayModeEnabled": "휴일 모드 활성화됨",
   "liveTestingHolidayModeDisabled": "휴일 모드 비활성화됨",
   "liveTestingHolidayModeEnabledDesc": "수업 알림과 위젯이 모든 수업을 숨깁니다",
-  "liveTestingHolidayModeDisabledDesc": "현재 일반 휴일 데이터를 사용 중입니다"
+  "liveTestingHolidayModeDisabledDesc": "현재 일반 휴일 데이터를 사용 중입니다",
+  "textColorTitle": "텍스트 색상",
+  "textColorSubtitle": "시간표 각 영역의 텍스트 색상 사용자 지정",
+  "textColorIndependentDetail": "세부 색상 개별 설정",
+  "textColorCourseCardTitle": "수업 카드 제목 색상",
+  "textColorCourseCardDetail": "수업 카드 세부 색상",
+  "textColorWeekdayBar": "요일 바 글꼴 색상",
+  "textColorTimeAxis": "시간축 글꼴 색상",
+  "textColorSelectColor": "색상 선택",
+  "textColorCurrentColor": "현재 색상"
 }

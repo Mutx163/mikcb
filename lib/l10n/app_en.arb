@@ -2719,5 +2719,14 @@
   "liveTestingHolidayModeEnabled": "Holiday Mode Enabled",
   "liveTestingHolidayModeDisabled": "Holiday Mode Disabled",
   "liveTestingHolidayModeEnabledDesc": "Reminders and widgets will hide all courses",
-  "liveTestingHolidayModeDisabledDesc": "Using normal holiday data"
+  "liveTestingHolidayModeDisabledDesc": "Using normal holiday data",
+  "textColorTitle": "Text Colors",
+  "textColorSubtitle": "Customize text colors for each area of the timetable",
+  "textColorIndependentDetail": "Set detail colors independently",
+  "textColorCourseCardTitle": "Course card title color",
+  "textColorCourseCardDetail": "Course card detail color",
+  "textColorWeekdayBar": "Weekday bar font color",
+  "textColorTimeAxis": "Time axis font color",
+  "textColorSelectColor": "Select Color",
+  "textColorCurrentColor": "Current color"
 }

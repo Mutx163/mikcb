@@ -4590,4 +4590,31 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => '현재 일반 휴일 데이터를 사용 중입니다';
+
+  @override
+  String get textColorTitle => '텍스트 색상';
+
+  @override
+  String get textColorSubtitle => '시간표 각 영역의 텍스트 색상 사용자 지정';
+
+  @override
+  String get textColorIndependentDetail => '세부 색상 개별 설정';
+
+  @override
+  String get textColorCourseCardTitle => '수업 카드 제목 색상';
+
+  @override
+  String get textColorCourseCardDetail => '수업 카드 세부 색상';
+
+  @override
+  String get textColorWeekdayBar => '요일 바 글꼴 색상';
+
+  @override
+  String get textColorTimeAxis => '시간축 글꼴 색상';
+
+  @override
+  String get textColorSelectColor => '색상 선택';
+
+  @override
+  String get textColorCurrentColor => '현재 색상';
 }

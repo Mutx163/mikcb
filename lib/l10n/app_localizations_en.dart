@@ -4745,4 +4745,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get liveTestingHolidayModeDisabledDesc => 'Using normal holiday data';
+
+  @override
+  String get textColorTitle => 'Text Colors';
+
+  @override
+  String get textColorSubtitle =>
+      'Customize text colors for each area of the timetable';
+
+  @override
+  String get textColorIndependentDetail => 'Set detail colors independently';
+
+  @override
+  String get textColorCourseCardTitle => 'Course card title color';
+
+  @override
+  String get textColorCourseCardDetail => 'Course card detail color';
+
+  @override
+  String get textColorWeekdayBar => 'Weekday bar font color';
+
+  @override
+  String get textColorTimeAxis => 'Time axis font color';
+
+  @override
+  String get textColorSelectColor => 'Select Color';
+
+  @override
+  String get textColorCurrentColor => 'Current color';
 }

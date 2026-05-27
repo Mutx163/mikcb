@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -2961,6 +2962,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 16),
                 Card(
                   child: Padding(
@@ -2969,16 +2971,100 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          l10n.homeWidgetDescriptionTitle,
-                          style: TextStyle(
+                          l10n.textColorTitle,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const SizedBox(height: 8),
                         Text(
-                          l10n.layoutTipsText,
+                          l10n.textColorSubtitle,
                           style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                        const SizedBox(height: 12),
+                        // 共用开关：独立设置详情颜色
+                        Row(
+                          children: [
+                            Expanded(child: Text(l10n.textColorIndependentDetail)),
+                            Switch(
+                              value: !_draft.linkCourseCardColors,
+                              onChanged: (value) {
+                                if (!value) {
+                                  _updateDraft(_draft.copyWith(
+                                    linkCourseCardColors: true,
+                                    courseCardDetailColorLight: _draft.courseCardTitleColorLight,
+                                    courseCardDetailColorDark: _draft.courseCardTitleColorDark,
+                                  ));
+                                } else {
+                                  _updateDraft(_draft.copyWith(linkCourseCardColors: false));
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        // 浅色模式颜色设置
+                        _buildModeColorSettings(
+                          context,
+                          l10n: l10n,
+                          modeLabel: l10n.themeModeLight,
+                          containerColor: Theme.of(context).colorScheme.surfaceContainerLow,
+                          titleColor: _draft.courseCardTitleColorLight,
+                          detailColor: _draft.courseCardDetailColorLight,
+                          weekdayColor: _draft.weekdayBarFontColorLight,
+                          timeAxisColor: _draft.timeAxisFontColorLight,
+                          onTitleColorChanged: (color) {
+                            if (_draft.linkCourseCardColors) {
+                              _updateDraft(_draft.copyWith(
+                                courseCardTitleColorLight: color,
+                                courseCardDetailColorLight: color,
+                              ));
+                            } else {
+                              _updateDraft(_draft.copyWith(courseCardTitleColorLight: color));
+                            }
+                          },
+                          onDetailColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(courseCardDetailColorLight: color)),
+                          onWeekdayColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(weekdayBarFontColorLight: color)),
+                          onTimeAxisColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(timeAxisFontColorLight: color)),
+                          defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
+                          defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
+                          defaultWeekdayColor: TimetableSettings.defaultWeekdayBarFontColorLight,
+                          defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorLight,
+                        ),
+                        const SizedBox(height: 16),
+                        // 深色模式颜色设置
+                        _buildModeColorSettings(
+                          context,
+                          l10n: l10n,
+                          modeLabel: l10n.themeModeDark,
+                          containerColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                          titleColor: _draft.courseCardTitleColorDark,
+                          detailColor: _draft.courseCardDetailColorDark,
+                          weekdayColor: _draft.weekdayBarFontColorDark,
+                          timeAxisColor: _draft.timeAxisFontColorDark,
+                          onTitleColorChanged: (color) {
+                            if (_draft.linkCourseCardColors) {
+                              _updateDraft(_draft.copyWith(
+                                courseCardTitleColorDark: color,
+                                courseCardDetailColorDark: color,
+                              ));
+                            } else {
+                              _updateDraft(_draft.copyWith(courseCardTitleColorDark: color));
+                            }
+                          },
+                          onDetailColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(courseCardDetailColorDark: color)),
+                          onWeekdayColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(weekdayBarFontColorDark: color)),
+                          onTimeAxisColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(timeAxisFontColorDark: color)),
+                          defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
+                          defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
+                          defaultWeekdayColor: TimetableSettings.defaultWeekdayBarFontColorDark,
+                          defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorDark,
                         ),
                       ],
                     ),
@@ -3083,7 +3169,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                         preview.visibleDayNumbers[dayIndex] ==
                                             DateTime.now().weekday
                                         ? colorScheme.primary
-                                        : colorScheme.onSurface,
+                                        : _colorFromHex(
+                                            Theme.of(context).brightness == Brightness.dark
+                                                ? _draft.weekdayBarFontColorDark
+                                                : _draft.weekdayBarFontColorLight,
+                                            colorScheme.onSurface,
+                                          ),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -3103,7 +3194,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                         ? colorScheme.primary.withValues(
                                             alpha: 0.78,
                                           )
-                                        : colorScheme.onSurfaceVariant,
+                                        : _colorFromHex(
+                                            Theme.of(context).brightness == Brightness.dark
+                                                ? _draft.weekdayBarFontColorDark
+                                                : _draft.weekdayBarFontColorLight,
+                                            colorScheme.onSurfaceVariant,
+                                          ),
                                   ),
                                 ),
                               ],
@@ -3187,6 +3283,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                                 .clamp(7.0, 14.0),
                                         compactVerticalPadding: 4,
                                         compactOuterInset: cardInset,
+                                        titleColorHex: Theme.of(context).brightness == Brightness.dark
+                                            ? _draft.courseCardTitleColorDark
+                                            : _draft.courseCardTitleColorLight,
+                                        detailColorHex: Theme.of(context).brightness == Brightness.dark
+                                            ? _draft.courseCardDetailColorDark
+                                            : _draft.courseCardDetailColorLight,
                                       ),
                                     ),
                                 ],
@@ -3429,9 +3531,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 
   Widget _buildPreviewSectionTimeCell(int sectionNumber, SectionTime section) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final timeAxisColor = isDark ? _draft.timeAxisFontColorDark : _draft.timeAxisFontColorLight;
     final compactTextStyle = TextStyle(
       fontSize: (_draft.compactFontSize - 2).clamp(6.0, 10.0),
-      color: Colors.grey.shade600,
+      color: _colorFromHex(timeAxisColor, Colors.grey.shade600),
       height: 1.05,
     );
 
@@ -3444,6 +3548,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           style: TextStyle(
             fontSize: _draft.compactFontSize.clamp(8.0, 11.0),
             fontWeight: FontWeight.bold,
+            color: _colorFromHex(timeAxisColor, Colors.grey.shade800),
           ),
         ),
         if (_draft.timetableSectionTimeDisplayMode !=
@@ -3495,6 +3600,208 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       });
       return;
     }
+  }
+
+  Widget _buildModeColorSettings(
+    BuildContext context, {
+    required AppLocalizations l10n,
+    required String modeLabel,
+    required Color containerColor,
+    required String titleColor,
+    required String detailColor,
+    required String weekdayColor,
+    required String timeAxisColor,
+    required ValueChanged<String> onTitleColorChanged,
+    required ValueChanged<String> onDetailColorChanged,
+    required ValueChanged<String> onWeekdayColorChanged,
+    required ValueChanged<String> onTimeAxisColorChanged,
+    required String defaultTitleColor,
+    required String defaultDetailColor,
+    required String defaultWeekdayColor,
+    required String defaultTimeAxisColor,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: containerColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              modeLabel,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          _buildColorSettingRow(
+            context,
+            label: l10n.textColorCourseCardTitle,
+            currentColor: titleColor,
+            defaultValue: defaultTitleColor,
+            onColorSelected: onTitleColorChanged,
+          ),
+          _buildColorSettingRow(
+            context,
+            label: l10n.textColorCourseCardDetail,
+            currentColor: detailColor,
+            defaultValue: defaultDetailColor,
+            enabled: !_draft.linkCourseCardColors,
+            onColorSelected: onDetailColorChanged,
+          ),
+          _buildColorSettingRow(
+            context,
+            label: l10n.textColorWeekdayBar,
+            currentColor: weekdayColor,
+            defaultValue: defaultWeekdayColor,
+            onColorSelected: onWeekdayColorChanged,
+          ),
+          _buildColorSettingRow(
+            context,
+            label: l10n.textColorTimeAxis,
+            currentColor: timeAxisColor,
+            defaultValue: defaultTimeAxisColor,
+            onColorSelected: onTimeAxisColorChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildColorSettingRow(
+    BuildContext context, {
+    required String label,
+    required String currentColor,
+    required ValueChanged<String> onColorSelected,
+    String? defaultValue,
+    bool enabled = true,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label)),
+          GestureDetector(
+            onTap: enabled
+                ? () {
+                    _showColorPicker(
+                      context,
+                      currentColor: currentColor,
+                      onColorSelected: onColorSelected,
+                      defaultValue: defaultValue,
+                    );
+                  }
+                : null,
+            child: Semantics(
+              label: '${l10n.textColorCurrentColor}: $currentColor',
+              button: true,
+              child: Tooltip(
+                message: !enabled
+                    ? '$currentColor (70%)'
+                    : currentColor,
+                child: Opacity(
+                  opacity: enabled ? 1.0 : 0.4,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _colorFromHex(currentColor),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showColorPicker(
+    BuildContext context, {
+    required String currentColor,
+    required ValueChanged<String> onColorSelected,
+    String? defaultValue,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    Color pickerColor = _colorFromHex(currentColor);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.textColorSelectColor),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            color: pickerColor,
+            onColorChanged: (Color color) {
+              pickerColor = color;
+            },
+            width: 40,
+            height: 40,
+            borderRadius: 4,
+            spacing: 5,
+            runSpacing: 5,
+            wheelDiameter: 260,
+            wheelWidth: 26,
+            enableOpacity: false,
+            showColorCode: true,
+            showColorName: false,
+            showMaterialName: false,
+            copyPasteBehavior: const ColorPickerCopyPasteBehavior(
+              copyButton: true,
+              pasteButton: true,
+              longPressMenu: true,
+            ),
+            colorCodeTextStyle: Theme.of(context).textTheme.bodyMedium,
+            pickersEnabled: const <ColorPickerType, bool>{
+              ColorPickerType.both: false,
+              ColorPickerType.primary: false,
+              ColorPickerType.accent: false,
+              ColorPickerType.bw: true,
+              ColorPickerType.custom: false,
+              ColorPickerType.wheel: true,
+            },
+          ),
+        ),
+        actions: <Widget>[
+          if (defaultValue != null && defaultValue != currentColor)
+            TextButton(
+              onPressed: () {
+                onColorSelected(defaultValue!);
+                Navigator.pop(context);
+              },
+              child: Text(l10n.resetDefaultAction),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(l10n.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () {
+              final r = ((pickerColor.r * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
+              final g = ((pickerColor.g * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
+              final b = ((pickerColor.b * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
+              onColorSelected('#$r$g$b');
+              Navigator.pop(context);
+            },
+            child: Text(l10n.confirmAction),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _colorFromHex(String hexColor, [Color? fallback]) {
+    return parseHexColorOrFallback(hexColor, fallback: fallback ?? const Color(0xFF2563EB));
   }
 }
 

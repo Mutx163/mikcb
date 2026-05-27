@@ -2719,5 +2719,14 @@
   "liveTestingHolidayModeEnabled": "假期模式已开启",
   "liveTestingHolidayModeDisabled": "假期模式已关闭",
   "liveTestingHolidayModeEnabledDesc": "课程提醒和小组件将隐藏所有课程",
-  "liveTestingHolidayModeDisabledDesc": "当前使用正常假期数据"
+  "liveTestingHolidayModeDisabledDesc": "当前使用正常假期数据",
+  "textColorTitle": "文字颜色",
+  "textColorSubtitle": "自定义课表各区域的文字颜色",
+  "textColorIndependentDetail": "独立设置详情颜色",
+  "textColorCourseCardTitle": "课程卡片标题颜色",
+  "textColorCourseCardDetail": "课程卡片详情颜色",
+  "textColorWeekdayBar": "星期栏字体颜色",
+  "textColorTimeAxis": "时间轴字体颜色",
+  "textColorSelectColor": "选择颜色",
+  "textColorCurrentColor": "当前颜色"
 }
