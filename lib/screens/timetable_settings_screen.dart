@@ -1138,7 +1138,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // 导入导出
+          // 导入导出 + 保存
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -1177,12 +1177,21 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showSaveThemeDialog(context),
+                      icon: const Icon(Icons.save),
+                      label: Text(l10n.themeSaveCurrent),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
           const SizedBox(height: 16),
-          // 预设主题
+          // 统一主题列表（预设 + 保存/导入的）
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -1197,6 +1206,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  // 预设主题
                   ...List.generate(_presetThemes.length, (index) {
                     final preset = _presetThemes[index];
                     final name = _getPresetName(l10n, preset.l10nKey);
@@ -1207,103 +1217,63 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       onTap: () => _showThemePreviewDialog(context, name, preset.config),
                     );
                   }),
+                  // 保存/导入的主题
+                  Consumer<TimetableProvider>(
+                    builder: (context, provider, child) {
+                      final savedThemes = provider.settings.savedThemes;
+                      if (savedThemes.isEmpty) return const SizedBox.shrink();
+                      return Column(
+                        children: [
+                          const Divider(),
+                          ...savedThemes.map((theme) {
+                            final config = ThemeConfig.fromJson(theme.themeData);
+                            return _ThemeTile(
+                              icon: Icons.bookmark,
+                              name: theme.name,
+                              previewColors: config.previewColors,
+                              trailing: PopupMenuButton<String>(
+                                itemBuilder: (context) => [
+                                  PopupMenuItem(
+                                    value: 'rename',
+                                    child: Text(l10n.themeRename),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'duplicate',
+                                    child: Text(l10n.themeDuplicate),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Text(l10n.themeDelete),
+                                  ),
+                                ],
+                                onSelected: (action) {
+                                  switch (action) {
+                                    case 'rename':
+                                      _showRenameDialog(context, theme);
+                                      break;
+                                    case 'duplicate':
+                                      _duplicateTheme(context, theme);
+                                      break;
+                                    case 'delete':
+                                      provider.deleteTheme(theme.id);
+                                      break;
+                                  }
+                                },
+                              ),
+                              onTap: () => _showThemePreviewDialog(
+                                context,
+                                theme.name,
+                                config,
+                              ),
+                            );
+                          }),
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          // 保存当前主题
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.themeSaveCurrent,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FilledButton.icon(
-                    onPressed: () => _showSaveThemeDialog(context),
-                    icon: const Icon(Icons.save),
-                    label: Text(l10n.themeSaveCurrent),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          // 我的主题
-          Consumer<TimetableProvider>(
-            builder: (context, provider, child) {
-              final savedThemes = provider.settings.savedThemes;
-              if (savedThemes.isEmpty) return const SizedBox.shrink();
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.themeSaved,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      ...savedThemes.map((theme) {
-                        final config = ThemeConfig.fromJson(theme.themeData);
-                        return _ThemeTile(
-                          icon: Icons.bookmark,
-                          name: theme.name,
-                          previewColors: config.previewColors,
-                          trailing: PopupMenuButton<String>(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'rename',
-                                child: Text(l10n.themeRename),
-                              ),
-                              PopupMenuItem(
-                                value: 'duplicate',
-                                child: Text(l10n.themeDuplicate),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(l10n.themeDelete),
-                              ),
-                            ],
-                            onSelected: (action) {
-                              switch (action) {
-                                case 'rename':
-                                  _showRenameDialog(context, theme);
-                                  break;
-                                case 'duplicate':
-                                  _duplicateTheme(context, theme);
-                                  break;
-                                case 'delete':
-                                  provider.deleteTheme(theme.id);
-                                  break;
-                              }
-                            },
-                          ),
-                          onTap: () => _showThemePreviewDialog(
-                            context,
-                            theme.name,
-                            config,
-                            isSaved: true,
-                            savedThemeData: theme.themeData,
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              );
-            },
           ),
         ],
       ),
@@ -1323,10 +1293,8 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   void _showThemePreviewDialog(
     BuildContext context,
     String name,
-    ThemeConfig config, {
-    bool isSaved = false,
-    Map<String, dynamic>? savedThemeData,
-  }) {
+    ThemeConfig config,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     
     showDialog(
