@@ -2741,5 +2741,13 @@
   "themeSaveCurrent": "儲存當前主題",
   "themeApply": "套用",
   "themeDelete": "刪除",
-  "themeNameHint": "輸入主題名稱"
+  "themeNameHint": "輸入主題名稱",
+  "themePresetBlue": "預設藍",
+  "themePresetPurple": "暗夜紫",
+  "themePresetGreen": "森林綠",
+  "themePresetOrange": "暖陽橙",
+  "themeApplySuccess": "主題已套用",
+  "themeUndo": "撤銷",
+  "themeRename": "重新命名",
+  "themeDuplicate": "複製"
 }

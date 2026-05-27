@@ -4815,4 +4815,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeNameHint => 'Enter theme name';
+
+  @override
+  String get themePresetBlue => 'Default Blue';
+
+  @override
+  String get themePresetPurple => 'Night Purple';
+
+  @override
+  String get themePresetGreen => 'Forest Green';
+
+  @override
+  String get themePresetOrange => 'Warm Orange';
+
+  @override
+  String get themeApplySuccess => 'Theme applied';
+
+  @override
+  String get themeUndo => 'Undo';
+
+  @override
+  String get themeRename => 'Rename';
+
+  @override
+  String get themeDuplicate => 'Duplicate';
 }

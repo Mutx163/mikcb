@@ -8295,6 +8295,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'输入主题名称'**
   String get themeNameHint;
+
+  /// No description provided for @themePresetBlue.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认蓝'**
+  String get themePresetBlue;
+
+  /// No description provided for @themePresetPurple.
+  ///
+  /// In zh, this message translates to:
+  /// **'暗夜紫'**
+  String get themePresetPurple;
+
+  /// No description provided for @themePresetGreen.
+  ///
+  /// In zh, this message translates to:
+  /// **'森林绿'**
+  String get themePresetGreen;
+
+  /// No description provided for @themePresetOrange.
+  ///
+  /// In zh, this message translates to:
+  /// **'暖阳橙'**
+  String get themePresetOrange;
+
+  /// No description provided for @themeApplySuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题已应用'**
+  String get themeApplySuccess;
+
+  /// No description provided for @themeUndo.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销'**
+  String get themeUndo;
+
+  /// No description provided for @themeRename.
+  ///
+  /// In zh, this message translates to:
+  /// **'重命名'**
+  String get themeRename;
+
+  /// No description provided for @themeDuplicate.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制'**
+  String get themeDuplicate;
 }
 
 class _AppLocalizationsDelegate

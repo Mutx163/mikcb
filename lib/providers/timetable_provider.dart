@@ -173,6 +173,24 @@ class TimetableProvider with ChangeNotifier {
     notifyListeners();
   }
   
+  /// 重命名主题
+  Future<void> renameTheme(String themeId, String newName) async {
+    final updatedThemes = _settings.savedThemes.map((t) {
+      if (t.id == themeId) {
+        return SavedTheme(
+          id: t.id,
+          name: newName,
+          themeData: t.themeData,
+          createdAt: t.createdAt,
+        );
+      }
+      return t;
+    }).toList();
+    _settings = _settings.copyWith(savedThemes: updatedThemes);
+    await _persistActiveProfileState();
+    notifyListeners();
+  }
+  
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);

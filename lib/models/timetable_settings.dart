@@ -780,6 +780,175 @@ class SavedTheme {
   );
 }
 
+/// 类型化的主题配置，替代 Map。
+class ThemeConfig {
+  final int version;
+  final String? seedColor;
+  final String? backgroundColor;
+  final String? unifiedCardColor;
+  final bool? useUnifiedCardColor;
+  final String? themeMode; // "system" / "light" / "dark"
+  final String? courseCardTitleColorLight;
+  final String? courseCardTitleColorDark;
+  final String? courseCardDetailColorLight;
+  final String? courseCardDetailColorDark;
+  final String? weekdayBarFontColorLight;
+  final String? weekdayBarFontColorDark;
+  final String? timeAxisFontColorLight;
+  final String? timeAxisFontColorDark;
+  final bool? linkCourseCardColors;
+  final bool? hideWeekends;
+  final String? spacingMode;
+  final String? timeDisplayMode;
+
+  const ThemeConfig({
+    this.version = 2,
+    this.seedColor,
+    this.backgroundColor,
+    this.unifiedCardColor,
+    this.useUnifiedCardColor,
+    this.themeMode,
+    this.courseCardTitleColorLight,
+    this.courseCardTitleColorDark,
+    this.courseCardDetailColorLight,
+    this.courseCardDetailColorDark,
+    this.weekdayBarFontColorLight,
+    this.weekdayBarFontColorDark,
+    this.timeAxisFontColorLight,
+    this.timeAxisFontColorDark,
+    this.linkCourseCardColors,
+    this.hideWeekends,
+    this.spacingMode,
+    this.timeDisplayMode,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'v': version,
+    if (seedColor != null) 'seed': seedColor,
+    if (backgroundColor != null) 'bg': backgroundColor,
+    if (unifiedCardColor != null) 'uc': unifiedCardColor,
+    if (useUnifiedCardColor != null) 'ucOn': useUnifiedCardColor,
+    if (themeMode != null) 'mode': themeMode,
+    if (courseCardTitleColorLight != null) 'ccl': courseCardTitleColorLight,
+    if (courseCardTitleColorDark != null) 'ccd': courseCardTitleColorDark,
+    if (courseCardDetailColorLight != null) 'cdl': courseCardDetailColorLight,
+    if (courseCardDetailColorDark != null) 'cdd': courseCardDetailColorDark,
+    if (weekdayBarFontColorLight != null) 'wbl': weekdayBarFontColorLight,
+    if (weekdayBarFontColorDark != null) 'wbd': weekdayBarFontColorDark,
+    if (timeAxisFontColorLight != null) 'tal': timeAxisFontColorLight,
+    if (timeAxisFontColorDark != null) 'tad': timeAxisFontColorDark,
+    if (linkCourseCardColors != null) 'link': linkCourseCardColors,
+    if (hideWeekends != null) 'hideWeekend': hideWeekends,
+    if (spacingMode != null) 'spacing': spacingMode,
+    if (timeDisplayMode != null) 'timeDisplay': timeDisplayMode,
+  };
+
+  factory ThemeConfig.fromJson(Map<String, dynamic> json) {
+    final version = json['v'] as int? ?? 1;
+    if (version == 1) {
+      // v1: 仅颜色
+      return ThemeConfig(
+        version: 1,
+        courseCardTitleColorLight: json['ccl'] as String?,
+        courseCardTitleColorDark: json['ccd'] as String?,
+        courseCardDetailColorLight: json['cdl'] as String?,
+        courseCardDetailColorDark: json['cdd'] as String?,
+        weekdayBarFontColorLight: json['wbl'] as String?,
+        weekdayBarFontColorDark: json['wbd'] as String?,
+        timeAxisFontColorLight: json['tal'] as String?,
+        timeAxisFontColorDark: json['tad'] as String?,
+        linkCourseCardColors: json['link'] as bool?,
+      );
+    }
+    // v2: 完整主题
+    return ThemeConfig(
+      version: 2,
+      seedColor: json['seed'] as String?,
+      backgroundColor: json['bg'] as String?,
+      unifiedCardColor: json['uc'] as String?,
+      useUnifiedCardColor: json['ucOn'] as bool?,
+      themeMode: json['mode'] as String?,
+      courseCardTitleColorLight: json['ccl'] as String?,
+      courseCardTitleColorDark: json['ccd'] as String?,
+      courseCardDetailColorLight: json['cdl'] as String?,
+      courseCardDetailColorDark: json['cdd'] as String?,
+      weekdayBarFontColorLight: json['wbl'] as String?,
+      weekdayBarFontColorDark: json['wbd'] as String?,
+      timeAxisFontColorLight: json['tal'] as String?,
+      timeAxisFontColorDark: json['tad'] as String?,
+      linkCourseCardColors: json['link'] as bool?,
+      hideWeekends: json['hideWeekend'] as bool?,
+      spacingMode: json['spacing'] as String?,
+      timeDisplayMode: json['timeDisplay'] as String?,
+    );
+  }
+
+  /// 从当前设置创建 ThemeConfig
+  factory ThemeConfig.fromSettings(TimetableSettings settings) => ThemeConfig(
+    version: 2,
+    seedColor: settings.themeSeedColor,
+    backgroundColor: settings.timetablePageBackgroundColor,
+    unifiedCardColor: settings.timetableUnifiedCardColor,
+    useUnifiedCardColor: settings.timetableUseUnifiedCardColor,
+    themeMode: settings.appThemeMode.value,
+    courseCardTitleColorLight: settings.courseCardTitleColorLight,
+    courseCardTitleColorDark: settings.courseCardTitleColorDark,
+    courseCardDetailColorLight: settings.courseCardDetailColorLight,
+    courseCardDetailColorDark: settings.courseCardDetailColorDark,
+    weekdayBarFontColorLight: settings.weekdayBarFontColorLight,
+    weekdayBarFontColorDark: settings.weekdayBarFontColorDark,
+    timeAxisFontColorLight: settings.timeAxisFontColorLight,
+    timeAxisFontColorDark: settings.timeAxisFontColorDark,
+    linkCourseCardColors: settings.linkCourseCardColors,
+    hideWeekends: settings.timetableHideWeekends,
+    spacingMode: settings.timetableCourseSpacingMode.value,
+    timeDisplayMode: settings.timetableSectionTimeDisplayMode.value,
+  );
+
+  /// 应用主题到当前设置
+  TimetableSettings applyToSettings(TimetableSettings current) {
+    return current.copyWith(
+      themeSeedColor: seedColor ?? current.themeSeedColor,
+      timetablePageBackgroundColor: backgroundColor ?? current.timetablePageBackgroundColor,
+      timetableUnifiedCardColor: unifiedCardColor ?? current.timetableUnifiedCardColor,
+      timetableUseUnifiedCardColor: useUnifiedCardColor ?? current.timetableUseUnifiedCardColor,
+      appThemeMode: themeMode != null ? AppThemeModeX.fromValue(themeMode) : current.appThemeMode,
+      courseCardTitleColorLight: courseCardTitleColorLight ?? current.courseCardTitleColorLight,
+      courseCardTitleColorDark: courseCardTitleColorDark ?? current.courseCardTitleColorDark,
+      courseCardDetailColorLight: courseCardDetailColorLight ?? current.courseCardDetailColorLight,
+      courseCardDetailColorDark: courseCardDetailColorDark ?? current.courseCardDetailColorDark,
+      weekdayBarFontColorLight: weekdayBarFontColorLight ?? current.weekdayBarFontColorLight,
+      weekdayBarFontColorDark: weekdayBarFontColorDark ?? current.weekdayBarFontColorDark,
+      timeAxisFontColorLight: timeAxisFontColorLight ?? current.timeAxisFontColorLight,
+      timeAxisFontColorDark: timeAxisFontColorDark ?? current.timeAxisFontColorDark,
+      linkCourseCardColors: linkCourseCardColors ?? current.linkCourseCardColors,
+      timetableHideWeekends: hideWeekends ?? current.timetableHideWeekends,
+      timetableCourseSpacingMode: spacingMode != null
+          ? TimetableCourseSpacingMode.values.firstWhere(
+              (e) => e.value == spacingMode,
+              orElse: () => current.timetableCourseSpacingMode,
+            )
+          : current.timetableCourseSpacingMode,
+      timetableSectionTimeDisplayMode: timeDisplayMode != null
+          ? SectionTimeDisplayMode.values.firstWhere(
+              (e) => e.value == timeDisplayMode,
+              orElse: () => current.timetableSectionTimeDisplayMode,
+            )
+          : current.timetableSectionTimeDisplayMode,
+    );
+  }
+
+  /// 提取主题预览色块
+  List<String> get previewColors {
+    final colors = <String>[];
+    if (seedColor != null) colors.add(seedColor!);
+    if (courseCardTitleColorLight != null) colors.add(courseCardTitleColorLight!);
+    if (courseCardDetailColorLight != null) colors.add(courseCardDetailColorLight!);
+    if (weekdayBarFontColorLight != null) colors.add(weekdayBarFontColorLight!);
+    return colors.take(4).toList();
+  }
+}
+
 class TimetableSettings {
   // 颜色默认值常量
   static const String defaultCourseCardTitleColor = '#FFFFFF';

@@ -4659,4 +4659,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themeNameHint => '테마 이름 입력';
+
+  @override
+  String get themePresetBlue => '기본 블루';
+
+  @override
+  String get themePresetPurple => '나이트 퍼플';
+
+  @override
+  String get themePresetGreen => '포레스트 그린';
+
+  @override
+  String get themePresetOrange => '웜 오렌지';
+
+  @override
+  String get themeApplySuccess => '테마가 적용되었습니다';
+
+  @override
+  String get themeUndo => '실행 취소';
+
+  @override
+  String get themeRename => '이름 변경';
+
+  @override
+  String get themeDuplicate => '복사';
 }

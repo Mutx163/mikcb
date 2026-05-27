@@ -4629,4 +4629,28 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeNameHint => 'テーマ名を入力';
+
+  @override
+  String get themePresetBlue => 'デフォルトブルー';
+
+  @override
+  String get themePresetPurple => 'ナイトパープル';
+
+  @override
+  String get themePresetGreen => 'フォレストグリーン';
+
+  @override
+  String get themePresetOrange => 'ウォームオレンジ';
+
+  @override
+  String get themeApplySuccess => 'テーマを適用しました';
+
+  @override
+  String get themeUndo => '元に戻す';
+
+  @override
+  String get themeRename => '名前を変更';
+
+  @override
+  String get themeDuplicate => '複製';
 }

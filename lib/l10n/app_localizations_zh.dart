@@ -4560,6 +4560,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeNameHint => '输入主题名称';
+
+  @override
+  String get themePresetBlue => '默认蓝';
+
+  @override
+  String get themePresetPurple => '暗夜紫';
+
+  @override
+  String get themePresetGreen => '森林绿';
+
+  @override
+  String get themePresetOrange => '暖阳橙';
+
+  @override
+  String get themeApplySuccess => '主题已应用';
+
+  @override
+  String get themeUndo => '撤销';
+
+  @override
+  String get themeRename => '重命名';
+
+  @override
+  String get themeDuplicate => '复制';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -9119,6 +9143,30 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeNameHint => '輸入主題名稱';
+
+  @override
+  String get themePresetBlue => '預設藍';
+
+  @override
+  String get themePresetPurple => '暗夜紫';
+
+  @override
+  String get themePresetGreen => '森林綠';
+
+  @override
+  String get themePresetOrange => '暖陽橙';
+
+  @override
+  String get themeApplySuccess => '主題已套用';
+
+  @override
+  String get themeUndo => '撤銷';
+
+  @override
+  String get themeRename => '重新命名';
+
+  @override
+  String get themeDuplicate => '複製';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -13678,4 +13726,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeNameHint => '輸入主題名稱';
+
+  @override
+  String get themePresetBlue => '預設藍';
+
+  @override
+  String get themePresetPurple => '暗夜紫';
+
+  @override
+  String get themePresetGreen => '森林綠';
+
+  @override
+  String get themePresetOrange => '暖陽橙';
+
+  @override
+  String get themeApplySuccess => '主題已套用';
+
+  @override
+  String get themeUndo => '撤銷';
+
+  @override
+  String get themeRename => '重新命名';
+
+  @override
+  String get themeDuplicate => '複製';
 }

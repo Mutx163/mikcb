@@ -2741,5 +2741,13 @@
   "themeSaveCurrent": "現在のテーマを保存",
   "themeApply": "適用",
   "themeDelete": "削除",
-  "themeNameHint": "テーマ名を入力"
+  "themeNameHint": "テーマ名を入力",
+  "themePresetBlue": "デフォルトブルー",
+  "themePresetPurple": "ナイトパープル",
+  "themePresetGreen": "フォレストグリーン",
+  "themePresetOrange": "ウォームオレンジ",
+  "themeApplySuccess": "テーマを適用しました",
+  "themeUndo": "元に戻す",
+  "themeRename": "名前を変更",
+  "themeDuplicate": "複製"
 }

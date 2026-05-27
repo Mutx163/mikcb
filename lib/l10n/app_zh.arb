@@ -2742,5 +2742,13 @@
   "themeSaveCurrent": "保存当前主题",
   "themeApply": "应用",
   "themeDelete": "删除",
-  "themeNameHint": "输入主题名称"
+  "themeNameHint": "输入主题名称",
+  "themePresetBlue": "默认蓝",
+  "themePresetPurple": "暗夜紫",
+  "themePresetGreen": "森林绿",
+  "themePresetOrange": "暖阳橙",
+  "themeApplySuccess": "主题已应用",
+  "themeUndo": "撤销",
+  "themeRename": "重命名",
+  "themeDuplicate": "复制"
 }

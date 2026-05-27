@@ -2741,5 +2741,13 @@
   "themeSaveCurrent": "현재 테마 저장",
   "themeApply": "적용",
   "themeDelete": "삭제",
-  "themeNameHint": "테마 이름 입력"
+  "themeNameHint": "테마 이름 입력",
+  "themePresetBlue": "기본 블루",
+  "themePresetPurple": "나이트 퍼플",
+  "themePresetGreen": "포레스트 그린",
+  "themePresetOrange": "웜 오렌지",
+  "themeApplySuccess": "테마가 적용되었습니다",
+  "themeUndo": "실행 취소",
+  "themeRename": "이름 변경",
+  "themeDuplicate": "복사"
 }

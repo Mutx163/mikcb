@@ -2742,5 +2742,13 @@
   "themeSaveCurrent": "Save Current Theme",
   "themeApply": "Apply",
   "themeDelete": "Delete",
-  "themeNameHint": "Enter theme name"
+  "themeNameHint": "Enter theme name",
+  "themePresetBlue": "Default Blue",
+  "themePresetPurple": "Night Purple",
+  "themePresetGreen": "Forest Green",
+  "themePresetOrange": "Warm Orange",
+  "themeApplySuccess": "Theme applied",
+  "themeUndo": "Undo",
+  "themeRename": "Rename",
+  "themeDuplicate": "Duplicate"
 }
