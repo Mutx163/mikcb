@@ -758,6 +758,8 @@ class TimetableSettings {
   static const String defaultCourseCardDetailColor = '#FFFFFF';
   static const String defaultWeekdayBarFontColorLight = '#000000';
   static const String defaultWeekdayBarFontColorDark = '#FFFFFF';
+  static const String defaultWeekdayBarAccentColorLight = '#2563EB';
+  static const String defaultWeekdayBarAccentColorDark = '#93C5FD';
   static const String defaultTimeAxisFontColorLight = '#757575';
   static const String defaultTimeAxisFontColorDark = '#FFFFFF';
 
@@ -879,6 +881,8 @@ class TimetableSettings {
   final String courseCardDetailColorDark;
   final String weekdayBarFontColorLight;
   final String weekdayBarFontColorDark;
+  final String weekdayBarAccentColorLight;
+  final String weekdayBarAccentColorDark;
   final String timeAxisFontColorLight;
   final String timeAxisFontColorDark;
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
@@ -1009,6 +1013,8 @@ class TimetableSettings {
     this.courseCardDetailColorDark = defaultCourseCardDetailColor,
     this.weekdayBarFontColorLight = defaultWeekdayBarFontColorLight,
     this.weekdayBarFontColorDark = defaultWeekdayBarFontColorDark,
+    this.weekdayBarAccentColorLight = defaultWeekdayBarAccentColorLight,
+    this.weekdayBarAccentColorDark = defaultWeekdayBarAccentColorDark,
     this.timeAxisFontColorLight = defaultTimeAxisFontColorLight,
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
@@ -1143,6 +1149,8 @@ class TimetableSettings {
       courseCardDetailColorDark: defaultCourseCardDetailColor,
       weekdayBarFontColorLight: defaultWeekdayBarFontColorLight,
       weekdayBarFontColorDark: defaultWeekdayBarFontColorDark,
+      weekdayBarAccentColorLight: defaultWeekdayBarAccentColorLight,
+      weekdayBarAccentColorDark: defaultWeekdayBarAccentColorDark,
       timeAxisFontColorLight: defaultTimeAxisFontColorLight,
       timeAxisFontColorDark: defaultTimeAxisFontColorDark,
       linkCourseCardColors: true,
@@ -1286,6 +1294,8 @@ class TimetableSettings {
       'courseCardDetailColorDark': courseCardDetailColorDark,
       'weekdayBarFontColorLight': weekdayBarFontColorLight,
       'weekdayBarFontColorDark': weekdayBarFontColorDark,
+      'weekdayBarAccentColorLight': weekdayBarAccentColorLight,
+      'weekdayBarAccentColorDark': weekdayBarAccentColorDark,
       'timeAxisFontColorLight': timeAxisFontColorLight,
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
@@ -1583,6 +1593,10 @@ class TimetableSettings {
           json['weekdayBarFontColorLight'] as String? ?? defaultWeekdayBarFontColorLight,
       weekdayBarFontColorDark:
           json['weekdayBarFontColorDark'] as String? ?? defaultWeekdayBarFontColorDark,
+      weekdayBarAccentColorLight:
+          json['weekdayBarAccentColorLight'] as String? ?? defaultWeekdayBarAccentColorLight,
+      weekdayBarAccentColorDark:
+          json['weekdayBarAccentColorDark'] as String? ?? defaultWeekdayBarAccentColorDark,
       timeAxisFontColorLight:
           json['timeAxisFontColorLight'] as String? ?? defaultTimeAxisFontColorLight,
       timeAxisFontColorDark:
@@ -1723,6 +1737,8 @@ class TimetableSettings {
     String? courseCardDetailColorDark,
     String? weekdayBarFontColorLight,
     String? weekdayBarFontColorDark,
+    String? weekdayBarAccentColorLight,
+    String? weekdayBarAccentColorDark,
     String? timeAxisFontColorLight,
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
@@ -1964,6 +1980,10 @@ class TimetableSettings {
           weekdayBarFontColorLight ?? this.weekdayBarFontColorLight,
       weekdayBarFontColorDark:
           weekdayBarFontColorDark ?? this.weekdayBarFontColorDark,
+      weekdayBarAccentColorLight:
+          weekdayBarAccentColorLight ?? this.weekdayBarAccentColorLight,
+      weekdayBarAccentColorDark:
+          weekdayBarAccentColorDark ?? this.weekdayBarAccentColorDark,
       timeAxisFontColorLight:
           timeAxisFontColorLight ?? this.timeAxisFontColorLight,
       timeAxisFontColorDark:

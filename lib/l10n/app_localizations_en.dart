@@ -4766,6 +4766,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get textColorWeekdayBar => 'Weekday bar font color';
 
   @override
+  String get textColorWeekdayBarAccent => 'Weekday bar accent color';
+
+  @override
   String get textColorTimeAxis => 'Time axis font color';
 
   @override
@@ -4773,4 +4776,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get textColorCurrentColor => 'Current color';
+
+  @override
+  String get themeExport => 'Export Theme';
+
+  @override
+  String get themeImport => 'Import Theme';
+
+  @override
+  String get themeExportSuccess => 'Theme copied to clipboard';
+
+  @override
+  String get themeImportSuccess => 'Theme imported';
+
+  @override
+  String get themeImportFailed => 'Clipboard content format error';
 }

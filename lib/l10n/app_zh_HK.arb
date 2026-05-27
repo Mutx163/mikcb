@@ -2725,7 +2725,13 @@
   "textColorCourseCardTitle": "課程卡片標題顏色",
   "textColorCourseCardDetail": "課程卡片詳情顏色",
   "textColorWeekdayBar": "星期欄字體顏色",
+  "textColorWeekdayBarAccent": "星期欄強調顏色",
   "textColorTimeAxis": "時間軸字體顏色",
   "textColorSelectColor": "選擇顏色",
-  "textColorCurrentColor": "目前顏色"
+  "textColorCurrentColor": "目前顏色",
+  "themeExport": "匯出主題",
+  "themeImport": "匯入主題",
+  "themeExportSuccess": "主題已複製到剪貼簿",
+  "themeImportSuccess": "主題已匯入",
+  "themeImportFailed": "剪貼簿內容格式錯誤"
 }

@@ -898,14 +898,15 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final isSelected = _isSelectedDay(week, dayOfWeek);
                         final isDark = Theme.of(context).brightness == Brightness.dark;
                         final weekdayColor = isDark ? settings.weekdayBarFontColorDark : settings.weekdayBarFontColorLight;
+                        final accentColor = isDark ? settings.weekdayBarAccentColorDark : settings.weekdayBarAccentColorLight;
                         final labelColor = (isSelected || isToday)
-                            ? colorScheme.primary
+                            ? _colorFromHex(accentColor, colorScheme.primary)
                             : _colorFromHex(weekdayColor, colorScheme.onSurface);
                         final subLabelColor = (isSelected || isToday)
-                            ? colorScheme.primary.withValues(
+                            ? _colorFromHex(accentColor, colorScheme.primary).withValues(
                                 alpha: isSelected ? 0.9 : 0.78,
                               )
-                            : _colorFromHex(weekdayColor, colorScheme.onSurfaceVariant);
+                            : _colorFromHex(weekdayColor, colorScheme.onSurfaceVariant).withValues(alpha: 0.7);
                         final showsTodayMarker = isToday && !isSelected;
 
                         return Expanded(
@@ -934,7 +935,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                                   border: Border(
                                     bottom: BorderSide(
                                       color: showsTodayMarker
-                                          ? colorScheme.primary.withValues(
+                                          ? _colorFromHex(accentColor, colorScheme.primary).withValues(
                                               alpha: 0.35,
                                             )
                                           : Colors.transparent,

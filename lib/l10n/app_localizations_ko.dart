@@ -4610,6 +4610,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get textColorWeekdayBar => '요일 바 글꼴 색상';
 
   @override
+  String get textColorWeekdayBarAccent => '요일 바 강조 색상';
+
+  @override
   String get textColorTimeAxis => '시간축 글꼴 색상';
 
   @override
@@ -4617,4 +4620,19 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get textColorCurrentColor => '현재 색상';
+
+  @override
+  String get themeExport => '테마 내보내기';
+
+  @override
+  String get themeImport => '테마 가져오기';
+
+  @override
+  String get themeExportSuccess => '테마가 클립보드에 복사되었습니다';
+
+  @override
+  String get themeImportSuccess => '테마를 가져왔습니다';
+
+  @override
+  String get themeImportFailed => '클립보드 내용 형식 오류';
 }

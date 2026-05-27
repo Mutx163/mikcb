@@ -8194,6 +8194,12 @@ abstract class AppLocalizations {
   /// **'星期栏字体颜色'**
   String get textColorWeekdayBar;
 
+  /// No description provided for @textColorWeekdayBarAccent.
+  ///
+  /// In zh, this message translates to:
+  /// **'星期栏强调色'**
+  String get textColorWeekdayBarAccent;
+
   /// No description provided for @textColorTimeAxis.
   ///
   /// In zh, this message translates to:
@@ -8211,6 +8217,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'当前颜色'**
   String get textColorCurrentColor;
+
+  /// No description provided for @themeExport.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出主题'**
+  String get themeExport;
+
+  /// No description provided for @themeImport.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入主题'**
+  String get themeImport;
+
+  /// No description provided for @themeExportSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题已复制到剪贴板'**
+  String get themeExportSuccess;
+
+  /// No description provided for @themeImportSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题已导入'**
+  String get themeImportSuccess;
+
+  /// No description provided for @themeImportFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'剪贴板内容格式错误'**
+  String get themeImportFailed;
 }
 
 class _AppLocalizationsDelegate

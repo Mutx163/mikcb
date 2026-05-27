@@ -82,3 +82,6 @@ tool/chrome-devtools-mcp-guide.md
 
 # Antigravity CLI config
 .antigravitycli/
+
+# Android堆转储文件
+*.hprof

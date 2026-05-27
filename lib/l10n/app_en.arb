@@ -2726,7 +2726,13 @@
   "textColorCourseCardTitle": "Course card title color",
   "textColorCourseCardDetail": "Course card detail color",
   "textColorWeekdayBar": "Weekday bar font color",
+  "textColorWeekdayBarAccent": "Weekday bar accent color",
   "textColorTimeAxis": "Time axis font color",
   "textColorSelectColor": "Select Color",
-  "textColorCurrentColor": "Current color"
+  "textColorCurrentColor": "Current color",
+  "themeExport": "Export Theme",
+  "themeImport": "Import Theme",
+  "themeExportSuccess": "Theme copied to clipboard",
+  "themeImportSuccess": "Theme imported",
+  "themeImportFailed": "Clipboard content format error"
 }

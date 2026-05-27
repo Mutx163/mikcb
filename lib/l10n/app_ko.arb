@@ -2725,7 +2725,13 @@
   "textColorCourseCardTitle": "수업 카드 제목 색상",
   "textColorCourseCardDetail": "수업 카드 세부 색상",
   "textColorWeekdayBar": "요일 바 글꼴 색상",
+  "textColorWeekdayBarAccent": "요일 바 강조 색상",
   "textColorTimeAxis": "시간축 글꼴 색상",
   "textColorSelectColor": "색상 선택",
-  "textColorCurrentColor": "현재 색상"
+  "textColorCurrentColor": "현재 색상",
+  "themeExport": "테마 내보내기",
+  "themeImport": "테마 가져오기",
+  "themeExportSuccess": "테마가 클립보드에 복사되었습니다",
+  "themeImportSuccess": "테마를 가져왔습니다",
+  "themeImportFailed": "클립보드 내용 형식 오류"
 }

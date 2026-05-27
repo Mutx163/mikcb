@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
@@ -2970,16 +2971,37 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.textColorTitle,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          l10n.textColorSubtitle,
-                          style: Theme.of(context).textTheme.bodySmall,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.textColorTitle,
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  Text(
+                                    l10n.textColorSubtitle,
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.upload_file),
+                              tooltip: l10n.themeExport,
+                              onPressed: _exportTheme,
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.download),
+                              tooltip: l10n.themeImport,
+                              onPressed: _importTheme,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         // 共用开关：独立设置详情颜色
@@ -3013,6 +3035,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           detailColor: _draft.courseCardDetailColorLight,
                           weekdayColor: _draft.weekdayBarFontColorLight,
                           timeAxisColor: _draft.timeAxisFontColorLight,
+                          accentColor: _draft.weekdayBarAccentColorLight,
                           onTitleColorChanged: (color) {
                             if (_draft.linkCourseCardColors) {
                               _updateDraft(_draft.copyWith(
@@ -3029,10 +3052,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                               _updateDraft(_draft.copyWith(weekdayBarFontColorLight: color)),
                           onTimeAxisColorChanged: (color) =>
                               _updateDraft(_draft.copyWith(timeAxisFontColorLight: color)),
+                          onAccentColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(weekdayBarAccentColorLight: color)),
                           defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
                           defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
                           defaultWeekdayColor: TimetableSettings.defaultWeekdayBarFontColorLight,
                           defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorLight,
+                          defaultAccentColor: TimetableSettings.defaultWeekdayBarAccentColorLight,
                         ),
                         const SizedBox(height: 16),
                         // 深色模式颜色设置
@@ -3045,6 +3071,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           detailColor: _draft.courseCardDetailColorDark,
                           weekdayColor: _draft.weekdayBarFontColorDark,
                           timeAxisColor: _draft.timeAxisFontColorDark,
+                          accentColor: _draft.weekdayBarAccentColorDark,
                           onTitleColorChanged: (color) {
                             if (_draft.linkCourseCardColors) {
                               _updateDraft(_draft.copyWith(
@@ -3061,10 +3088,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                               _updateDraft(_draft.copyWith(weekdayBarFontColorDark: color)),
                           onTimeAxisColorChanged: (color) =>
                               _updateDraft(_draft.copyWith(timeAxisFontColorDark: color)),
+                          onAccentColorChanged: (color) =>
+                              _updateDraft(_draft.copyWith(weekdayBarAccentColorDark: color)),
                           defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
                           defaultDetailColor: TimetableSettings.defaultCourseCardDetailColor,
                           defaultWeekdayColor: TimetableSettings.defaultWeekdayBarFontColorDark,
                           defaultTimeAxisColor: TimetableSettings.defaultTimeAxisFontColorDark,
+                          defaultAccentColor: TimetableSettings.defaultWeekdayBarAccentColorDark,
                         ),
                       ],
                     ),
@@ -3168,7 +3198,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                     color:
                                         preview.visibleDayNumbers[dayIndex] ==
                                             DateTime.now().weekday
-                                        ? colorScheme.primary
+                                        ? _colorFromHex(
+                                            Theme.of(context).brightness == Brightness.dark
+                                                ? _draft.weekdayBarAccentColorDark
+                                                : _draft.weekdayBarAccentColorLight,
+                                            colorScheme.primary,
+                                          )
                                         : _colorFromHex(
                                             Theme.of(context).brightness == Brightness.dark
                                                 ? _draft.weekdayBarFontColorDark
@@ -3191,7 +3226,12 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                     color:
                                         preview.visibleDayNumbers[dayIndex] ==
                                             DateTime.now().weekday
-                                        ? colorScheme.primary.withValues(
+                                        ? _colorFromHex(
+                                            Theme.of(context).brightness == Brightness.dark
+                                                ? _draft.weekdayBarAccentColorDark
+                                                : _draft.weekdayBarAccentColorLight,
+                                            colorScheme.primary,
+                                          ).withValues(
                                             alpha: 0.78,
                                           )
                                         : _colorFromHex(
@@ -3199,7 +3239,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                                 ? _draft.weekdayBarFontColorDark
                                                 : _draft.weekdayBarFontColorLight,
                                             colorScheme.onSurfaceVariant,
-                                          ),
+                                          ).withValues(alpha: 0.7),
                                   ),
                                 ),
                               ],
@@ -3611,14 +3651,17 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     required String detailColor,
     required String weekdayColor,
     required String timeAxisColor,
+    required String accentColor,
     required ValueChanged<String> onTitleColorChanged,
     required ValueChanged<String> onDetailColorChanged,
     required ValueChanged<String> onWeekdayColorChanged,
     required ValueChanged<String> onTimeAxisColorChanged,
+    required ValueChanged<String> onAccentColorChanged,
     required String defaultTitleColor,
     required String defaultDetailColor,
     required String defaultWeekdayColor,
     required String defaultTimeAxisColor,
+    required String defaultAccentColor,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -3662,6 +3705,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
           _buildColorSettingRow(
             context,
+            label: l10n.textColorWeekdayBarAccent,
+            currentColor: accentColor,
+            defaultValue: defaultAccentColor,
+            onColorSelected: onAccentColorChanged,
+          ),
+          _buildColorSettingRow(
+            context,
             label: l10n.textColorTimeAxis,
             currentColor: timeAxisColor,
             defaultValue: defaultTimeAxisColor,
@@ -3701,9 +3751,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               label: '${l10n.textColorCurrentColor}: $currentColor',
               button: true,
               child: Tooltip(
-                message: !enabled
-                    ? '$currentColor (70%)'
-                    : currentColor,
+                message: currentColor,
                 child: Opacity(
                   opacity: enabled ? 1.0 : 0.4,
                   child: Container(
@@ -3724,6 +3772,79 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ],
       ),
     );
+  }
+
+  void _exportTheme() {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = {
+      'v': 1,
+      'ccl': _draft.courseCardTitleColorLight,
+      'ccd': _draft.courseCardTitleColorDark,
+      'cdl': _draft.courseCardDetailColorLight,
+      'cdd': _draft.courseCardDetailColorDark,
+      'wbl': _draft.weekdayBarFontColorLight,
+      'wbd': _draft.weekdayBarFontColorDark,
+      'tal': _draft.timeAxisFontColorLight,
+      'tad': _draft.timeAxisFontColorDark,
+      'link': _draft.linkCourseCardColors,
+    };
+    Clipboard.setData(ClipboardData(text: jsonEncode(theme)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(l10n.themeExportSuccess)),
+    );
+  }
+
+  void _importTheme() async {
+    final l10n = AppLocalizations.of(context)!;
+    final data = await Clipboard.getData('text/plain');
+    if (data?.text == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.themeImportFailed)),
+        );
+      }
+      return;
+    }
+    try {
+      final json = jsonDecode(data!.text!) as Map<String, dynamic>;
+      if (json['v'] != 1) throw FormatException('unsupported version');
+      final ccl = json['ccl'] as String?;
+      final ccd = json['ccd'] as String?;
+      final cdl = json['cdl'] as String?;
+      final cdd = json['cdd'] as String?;
+      final wbl = json['wbl'] as String?;
+      final wbd = json['wbd'] as String?;
+      final tal = json['tal'] as String?;
+      final tad = json['tad'] as String?;
+      final link = json['link'] as bool?;
+      if (ccl == null || ccd == null || cdl == null || cdd == null ||
+          wbl == null || wbd == null || tal == null || tad == null ||
+          link == null) {
+        throw FormatException('missing fields');
+      }
+      _updateDraft(_draft.copyWith(
+        courseCardTitleColorLight: ccl,
+        courseCardTitleColorDark: ccd,
+        courseCardDetailColorLight: cdl,
+        courseCardDetailColorDark: cdd,
+        weekdayBarFontColorLight: wbl,
+        weekdayBarFontColorDark: wbd,
+        timeAxisFontColorLight: tal,
+        timeAxisFontColorDark: tad,
+        linkCourseCardColors: link,
+      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.themeImportSuccess)),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.themeImportFailed)),
+        );
+      }
+    }
   }
 
   void _showColorPicker(
@@ -3773,10 +3894,10 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ),
         actions: <Widget>[
-          if (defaultValue != null && defaultValue != currentColor)
+          if (defaultValue != null && defaultValue.toLowerCase() != currentColor.toLowerCase())
             TextButton(
               onPressed: () {
-                onColorSelected(defaultValue!);
+                onColorSelected(defaultValue);
                 Navigator.pop(context);
               },
               child: Text(l10n.resetDefaultAction),

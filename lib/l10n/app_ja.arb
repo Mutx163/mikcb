@@ -2725,7 +2725,13 @@
   "textColorCourseCardTitle": "授業カードタイトル色",
   "textColorCourseCardDetail": "授業カード詳細色",
   "textColorWeekdayBar": "曜日バーのフォント色",
+  "textColorWeekdayBarAccent": "曜日バーのアクセント色",
   "textColorTimeAxis": "時間軸のフォント色",
   "textColorSelectColor": "色を選択",
-  "textColorCurrentColor": "現在の色"
+  "textColorCurrentColor": "現在の色",
+  "themeExport": "テーマをエクスポート",
+  "themeImport": "テーマをインポート",
+  "themeExportSuccess": "テーマをクリップボードにコピーしました",
+  "themeImportSuccess": "テーマをインポートしました",
+  "themeImportFailed": "クリップボードの内容の形式が正しくありません"
 }

@@ -4580,6 +4580,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get textColorWeekdayBar => '曜日バーのフォント色';
 
   @override
+  String get textColorWeekdayBarAccent => '曜日バーのアクセント色';
+
+  @override
   String get textColorTimeAxis => '時間軸のフォント色';
 
   @override
@@ -4587,4 +4590,19 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get textColorCurrentColor => '現在の色';
+
+  @override
+  String get themeExport => 'テーマをエクスポート';
+
+  @override
+  String get themeImport => 'テーマをインポート';
+
+  @override
+  String get themeExportSuccess => 'テーマをクリップボードにコピーしました';
+
+  @override
+  String get themeImportSuccess => 'テーマをインポートしました';
+
+  @override
+  String get themeImportFailed => 'クリップボードの内容の形式が正しくありません';
 }

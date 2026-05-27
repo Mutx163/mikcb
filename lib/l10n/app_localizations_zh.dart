@@ -4511,6 +4511,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get textColorWeekdayBar => '星期栏字体颜色';
 
   @override
+  String get textColorWeekdayBarAccent => '星期栏强调色';
+
+  @override
   String get textColorTimeAxis => '时间轴字体颜色';
 
   @override
@@ -4518,6 +4521,21 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get textColorCurrentColor => '当前颜色';
+
+  @override
+  String get themeExport => '导出主题';
+
+  @override
+  String get themeImport => '导入主题';
+
+  @override
+  String get themeExportSuccess => '主题已复制到剪贴板';
+
+  @override
+  String get themeImportSuccess => '主题已导入';
+
+  @override
+  String get themeImportFailed => '剪贴板内容格式错误';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -9028,6 +9046,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get textColorWeekdayBar => '星期欄字體顏色';
 
   @override
+  String get textColorWeekdayBarAccent => '星期欄強調顏色';
+
+  @override
   String get textColorTimeAxis => '時間軸字體顏色';
 
   @override
@@ -9035,6 +9056,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get textColorCurrentColor => '目前顏色';
+
+  @override
+  String get themeExport => '匯出主題';
+
+  @override
+  String get themeImport => '匯入主題';
+
+  @override
+  String get themeExportSuccess => '主題已複製到剪貼簿';
+
+  @override
+  String get themeImportSuccess => '主題已匯入';
+
+  @override
+  String get themeImportFailed => '剪貼簿內容格式錯誤';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -13545,6 +13581,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get textColorWeekdayBar => '星期欄字體顏色';
 
   @override
+  String get textColorWeekdayBarAccent => '星期欄強調色彩';
+
+  @override
   String get textColorTimeAxis => '時間軸字體顏色';
 
   @override
@@ -13552,4 +13591,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get textColorCurrentColor => '目前顏色';
+
+  @override
+  String get themeExport => '匯出主題';
+
+  @override
+  String get themeImport => '匯入主題';
+
+  @override
+  String get themeExportSuccess => '主題已複製到剪貼簿';
+
+  @override
+  String get themeImportSuccess => '主題已匯入';
+
+  @override
+  String get themeImportFailed => '剪貼簿內容格式錯誤';
 }

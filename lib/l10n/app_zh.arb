@@ -2726,7 +2726,13 @@
   "textColorCourseCardTitle": "课程卡片标题颜色",
   "textColorCourseCardDetail": "课程卡片详情颜色",
   "textColorWeekdayBar": "星期栏字体颜色",
+  "textColorWeekdayBarAccent": "星期栏强调色",
   "textColorTimeAxis": "时间轴字体颜色",
   "textColorSelectColor": "选择颜色",
-  "textColorCurrentColor": "当前颜色"
+  "textColorCurrentColor": "当前颜色",
+  "themeExport": "导出主题",
+  "themeImport": "导入主题",
+  "themeExportSuccess": "主题已复制到剪贴板",
+  "themeImportSuccess": "主题已导入",
+  "themeImportFailed": "剪贴板内容格式错误"
 }
