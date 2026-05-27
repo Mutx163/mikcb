@@ -4791,4 +4791,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeImportFailed => 'Clipboard content format error';
+
+  @override
+  String get themeManageTitle => 'Theme Manager';
+
+  @override
+  String get themeManageSubtitle => 'Export, import and switch themes';
+
+  @override
+  String get themePreset => 'Preset Themes';
+
+  @override
+  String get themeSaved => 'My Themes';
+
+  @override
+  String get themeSaveCurrent => 'Save Current Theme';
+
+  @override
+  String get themeApply => 'Apply';
+
+  @override
+  String get themeDelete => 'Delete';
+
+  @override
+  String get themeNameHint => 'Enter theme name';
 }

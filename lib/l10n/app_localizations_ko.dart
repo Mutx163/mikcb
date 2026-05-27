@@ -4635,4 +4635,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themeImportFailed => '클립보드 내용 형식 오류';
+
+  @override
+  String get themeManageTitle => '테마 관리';
+
+  @override
+  String get themeManageSubtitle => '테마 내보내기, 가져오기, 전환';
+
+  @override
+  String get themePreset => '프리셋 테마';
+
+  @override
+  String get themeSaved => '내 테마';
+
+  @override
+  String get themeSaveCurrent => '현재 테마 저장';
+
+  @override
+  String get themeApply => '적용';
+
+  @override
+  String get themeDelete => '삭제';
+
+  @override
+  String get themeNameHint => '테마 이름 입력';
 }

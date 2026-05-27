@@ -4605,4 +4605,28 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeImportFailed => 'クリップボードの内容の形式が正しくありません';
+
+  @override
+  String get themeManageTitle => 'テーマ管理';
+
+  @override
+  String get themeManageSubtitle => 'テーマのエクスポート、インポート、切り替え';
+
+  @override
+  String get themePreset => 'プリセットテーマ';
+
+  @override
+  String get themeSaved => 'マイテーマ';
+
+  @override
+  String get themeSaveCurrent => '現在のテーマを保存';
+
+  @override
+  String get themeApply => '適用';
+
+  @override
+  String get themeDelete => '削除';
+
+  @override
+  String get themeNameHint => 'テーマ名を入力';
 }

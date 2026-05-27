@@ -2734,5 +2734,13 @@
   "themeImport": "Import Theme",
   "themeExportSuccess": "Theme copied to clipboard",
   "themeImportSuccess": "Theme imported",
-  "themeImportFailed": "Clipboard content format error"
+  "themeImportFailed": "Clipboard content format error",
+  "themeManageTitle": "Theme Manager",
+  "themeManageSubtitle": "Export, import and switch themes",
+  "themePreset": "Preset Themes",
+  "themeSaved": "My Themes",
+  "themeSaveCurrent": "Save Current Theme",
+  "themeApply": "Apply",
+  "themeDelete": "Delete",
+  "themeNameHint": "Enter theme name"
 }

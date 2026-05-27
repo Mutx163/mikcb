@@ -2733,5 +2733,13 @@
   "themeImport": "匯入主題",
   "themeExportSuccess": "主題已複製到剪貼簿",
   "themeImportSuccess": "主題已匯入",
-  "themeImportFailed": "剪貼簿內容格式錯誤"
+  "themeImportFailed": "剪貼簿內容格式錯誤",
+  "themeManageTitle": "主題管理",
+  "themeManageSubtitle": "匯出、匯入和切換主題",
+  "themePreset": "預設主題",
+  "themeSaved": "我的主題",
+  "themeSaveCurrent": "儲存當前主題",
+  "themeApply": "套用",
+  "themeDelete": "刪除",
+  "themeNameHint": "輸入主題名稱"
 }

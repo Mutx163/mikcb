@@ -2734,5 +2734,13 @@
   "themeImport": "导入主题",
   "themeExportSuccess": "主题已复制到剪贴板",
   "themeImportSuccess": "主题已导入",
-  "themeImportFailed": "剪贴板内容格式错误"
+  "themeImportFailed": "剪贴板内容格式错误",
+  "themeManageTitle": "主题管理",
+  "themeManageSubtitle": "导出、导入和切换主题",
+  "themePreset": "预设主题",
+  "themeSaved": "我的主题",
+  "themeSaveCurrent": "保存当前主题",
+  "themeApply": "应用",
+  "themeDelete": "删除",
+  "themeNameHint": "输入主题名称"
 }

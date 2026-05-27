@@ -143,6 +143,36 @@ class TimetableProvider with ChangeNotifier {
   List<ScheduleItem> get scheduleItems => List.unmodifiable(_scheduleItems);
   List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
+  
+  /// 批量更新设置（用于主题导入）
+  Future<void> updateSettings(TimetableSettings newSettings) async {
+    _settings = _normalizeSettingsWithTimeScheme(newSettings);
+    await _persistActiveProfileState();
+    notifyListeners();
+  }
+  
+  /// 保存主题
+  Future<void> saveTheme(String name, Map<String, dynamic> themeData) async {
+    final theme = SavedTheme(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      themeData: themeData,
+      createdAt: DateTime.now(),
+    );
+    final updatedThemes = [..._settings.savedThemes, theme];
+    _settings = _settings.copyWith(savedThemes: updatedThemes);
+    await _persistActiveProfileState();
+    notifyListeners();
+  }
+  
+  /// 删除主题
+  Future<void> deleteTheme(String themeId) async {
+    final updatedThemes = _settings.savedThemes.where((t) => t.id != themeId).toList();
+    _settings = _settings.copyWith(savedThemes: updatedThemes);
+    await _persistActiveProfileState();
+    notifyListeners();
+  }
+  
   int get currentWeek => _currentWeek;
   int get currentDateWeek => _currentDateWeek;
   List<TimeScheme> get timeSchemes => List.unmodifiable(_timeSchemes);

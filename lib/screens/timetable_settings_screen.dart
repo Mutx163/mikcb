@@ -168,6 +168,20 @@ class TimetableSettingsScreen extends StatelessWidget {
                       onTap: openAppearance,
                     ),
                     _SettingsEntryTile(
+                      icon: Icons.style_outlined,
+                      title: l10n.themeManageTitle,
+                      subtitle: l10n.themeManageSubtitle,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(name: '/settings/theme'),
+                            builder: (_) => const _ThemeManageScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SettingsEntryTile(
                       icon: Icons.view_week_outlined,
                       title: l10n.layoutSectionEntryTitle,
                       subtitle: l10n.layoutSectionEntrySubtitle,
@@ -1009,6 +1023,541 @@ String _homeWidgetTargetLabel(
     HomeWidgetPinTarget.medium24 => l10n.homeWidgetTargetMedium24,
     HomeWidgetPinTarget.large44 => l10n.homeWidgetTargetLarge44,
   };
+}
+
+class _ThemeManageScreen extends StatefulWidget {
+  const _ThemeManageScreen();
+
+  @override
+  State<_ThemeManageScreen> createState() => _ThemeManageScreenState();
+}
+
+class _ThemeManageScreenState extends State<_ThemeManageScreen> {
+  // 预设主题
+  static const List<Map<String, dynamic>> _presetThemes = [
+    {
+      'name': '默认蓝',
+      'icon': Icons.palette,
+      'theme': {
+        'v': 2,
+        'seed': '#2563EB',
+        'bg': '#F8FAFC',
+        'uc': '#2563EB',
+        'ucOn': false,
+        'mode': 'system',
+        'ccl': '#1E293B', 'ccd': '#F1F5F9',
+        'cdl': '#475569', 'cdd': '#94A3B8',
+        'wbl': '#1E293B', 'wbd': '#F1F5F9',
+        'tal': '#757575', 'tad': '#FFFFFF',
+        'link': true,
+        'hideWeekend': false,
+        'spacing': 'narrow',
+        'timeDisplay': 'startAndEnd',
+      },
+    },
+    {
+      'name': '暗夜紫',
+      'icon': Icons.nightlight_round,
+      'theme': {
+        'v': 2,
+        'seed': '#7C3AED',
+        'bg': '#0F0A1A',
+        'uc': '#7C3AED',
+        'ucOn': false,
+        'mode': 'dark',
+        'ccl': '#F5F3FF', 'ccd': '#F5F3FF',
+        'cdl': '#C4B5FD', 'cdd': '#C4B5FD',
+        'wbl': '#F5F3FF', 'wbd': '#F5F3FF',
+        'tal': '#A78BFA', 'tad': '#A78BFA',
+        'link': true,
+        'hideWeekend': false,
+        'spacing': 'narrow',
+        'timeDisplay': 'startAndEnd',
+      },
+    },
+    {
+      'name': '森林绿',
+      'icon': Icons.forest,
+      'theme': {
+        'v': 2,
+        'seed': '#059669',
+        'bg': '#F0FDF4',
+        'uc': '#059669',
+        'ucOn': false,
+        'mode': 'light',
+        'ccl': '#14532D', 'ccd': '#F0FDF4',
+        'cdl': '#166534', 'cdd': '#86EFAC',
+        'wbl': '#14532D', 'wbd': '#F0FDF4',
+        'tal': '#22C55E', 'tad': '#4ADE80',
+        'link': true,
+        'hideWeekend': false,
+        'spacing': 'narrow',
+        'timeDisplay': 'startAndEnd',
+      },
+    },
+    {
+      'name': '暖阳橙',
+      'icon': Icons.wb_sunny,
+      'theme': {
+        'v': 2,
+        'seed': '#EA580C',
+        'bg': '#FFF7ED',
+        'uc': '#EA580C',
+        'ucOn': false,
+        'mode': 'light',
+        'ccl': '#7C2D12', 'ccd': '#FFF7ED',
+        'cdl': '#9A3412', 'cdd': '#FDBA74',
+        'wbl': '#7C2D12', 'wbd': '#FFF7ED',
+        'tal': '#F97316', 'tad': '#FB923C',
+        'link': true,
+        'hideWeekend': false,
+        'spacing': 'narrow',
+        'timeDisplay': 'startAndEnd',
+      },
+    },
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.themeManageTitle)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // 导入导出
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.themeManageTitle,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.themeManageSubtitle,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _exportTheme(context),
+                          icon: const Icon(Icons.upload_file),
+                          label: Text(l10n.themeExport),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: () => _importTheme(context),
+                          icon: const Icon(Icons.download),
+                          label: Text(l10n.themeImport),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 预设主题
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.themePreset,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ...List.generate(_presetThemes.length, (index) {
+                    final preset = _presetThemes[index];
+                    return _ThemeTile(
+                      icon: preset['icon'] as IconData,
+                      name: preset['name'] as String,
+                      onTap: () => _applyPreset(context, preset['theme'] as Map<String, dynamic>),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 保存当前主题
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.themeSaveCurrent,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  FilledButton.icon(
+                    onPressed: () => _showSaveThemeDialog(context),
+                    icon: const Icon(Icons.save),
+                    label: Text(l10n.themeSaveCurrent),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // 我的主题
+          Consumer<TimetableProvider>(
+            builder: (context, provider, child) {
+              final savedThemes = provider.settings.savedThemes;
+              if (savedThemes.isEmpty) return const SizedBox.shrink();
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.themeSaved,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...savedThemes.map((theme) => _ThemeTile(
+                        icon: Icons.bookmark,
+                        name: theme.name,
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () => provider.deleteTheme(theme.id),
+                        ),
+                        onTap: () => _applySavedTheme(context, theme.themeData),
+                      )),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSaveThemeDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final controller = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.themeSaveCurrent),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: l10n.themeNameHint,
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isEmpty) return;
+              final provider = Provider.of<TimetableProvider>(context, listen: false);
+              final settings = provider.settings;
+              final themeData = {
+                'v': 2,
+                'seed': settings.themeSeedColor,
+                'bg': settings.timetablePageBackgroundColor,
+                'uc': settings.timetableUnifiedCardColor,
+                'ucOn': settings.timetableUseUnifiedCardColor,
+                'mode': settings.appThemeMode.value,
+                'ccl': settings.courseCardTitleColorLight,
+                'ccd': settings.courseCardTitleColorDark,
+                'cdl': settings.courseCardDetailColorLight,
+                'cdd': settings.courseCardDetailColorDark,
+                'wbl': settings.weekdayBarFontColorLight,
+                'wbd': settings.weekdayBarFontColorDark,
+                'tal': settings.timeAxisFontColorLight,
+                'tad': settings.timeAxisFontColorDark,
+                'link': settings.linkCourseCardColors,
+                'hideWeekend': settings.timetableHideWeekends,
+                'spacing': settings.timetableCourseSpacingMode.value,
+                'timeDisplay': settings.timetableSectionTimeDisplayMode.value,
+              };
+              provider.saveTheme(name, themeData);
+              Navigator.pop(context);
+            },
+            child: Text(MaterialLocalizations.of(context).saveButtonLabel),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _applySavedTheme(BuildContext context, Map<String, dynamic> theme) {
+    _applyPreset(context, theme);
+  }
+
+  void _applyPreset(BuildContext context, Map<String, dynamic> theme) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = Provider.of<TimetableProvider>(context, listen: false);
+    final current = provider.settings;
+    
+    final seed = theme['seed'] as String?;
+    final bg = theme['bg'] as String?;
+    final uc = theme['uc'] as String?;
+    final ucOn = theme['ucOn'] as bool?;
+    final mode = theme['mode'] as String?;
+    final ccl = theme['ccl'] as String?;
+    final ccd = theme['ccd'] as String?;
+    final cdl = theme['cdl'] as String?;
+    final cdd = theme['cdd'] as String?;
+    final wbl = theme['wbl'] as String?;
+    final wbd = theme['wbd'] as String?;
+    final tal = theme['tal'] as String?;
+    final tad = theme['tad'] as String?;
+    final link = theme['link'] as bool?;
+    final hideWeekend = theme['hideWeekend'] as bool?;
+    final spacing = theme['spacing'] as String?;
+    final timeDisplay = theme['timeDisplay'] as String?;
+    
+    provider.updateSettings(current.copyWith(
+      themeSeedColor: seed ?? current.themeSeedColor,
+      timetablePageBackgroundColor: bg ?? current.timetablePageBackgroundColor,
+      timetableUnifiedCardColor: uc ?? current.timetableUnifiedCardColor,
+      timetableUseUnifiedCardColor: ucOn ?? current.timetableUseUnifiedCardColor,
+      appThemeMode: mode != null ? AppThemeModeX.fromValue(mode) : current.appThemeMode,
+      courseCardTitleColorLight: ccl ?? current.courseCardTitleColorLight,
+      courseCardTitleColorDark: ccd ?? current.courseCardTitleColorDark,
+      courseCardDetailColorLight: cdl ?? current.courseCardDetailColorLight,
+      courseCardDetailColorDark: cdd ?? current.courseCardDetailColorDark,
+      weekdayBarFontColorLight: wbl ?? current.weekdayBarFontColorLight,
+      weekdayBarFontColorDark: wbd ?? current.weekdayBarFontColorDark,
+      timeAxisFontColorLight: tal ?? current.timeAxisFontColorLight,
+      timeAxisFontColorDark: tad ?? current.timeAxisFontColorDark,
+      linkCourseCardColors: link ?? current.linkCourseCardColors,
+      timetableHideWeekends: hideWeekend ?? current.timetableHideWeekends,
+      timetableCourseSpacingMode: spacing != null 
+          ? TimetableCourseSpacingMode.values.firstWhere(
+              (e) => e.value == spacing,
+              orElse: () => current.timetableCourseSpacingMode,
+            )
+          : current.timetableCourseSpacingMode,
+      timetableSectionTimeDisplayMode: timeDisplay != null
+          ? SectionTimeDisplayMode.values.firstWhere(
+              (e) => e.value == timeDisplay,
+              orElse: () => current.timetableSectionTimeDisplayMode,
+            )
+          : current.timetableSectionTimeDisplayMode,
+    ));
+    
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(l10n.themeImportSuccess)));
+  }
+
+  void _exportTheme(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = Provider.of<TimetableProvider>(context, listen: false);
+    final settings = provider.settings;
+    
+    final theme = {
+      'v': 2,
+      // 主题颜色
+      'seed': settings.themeSeedColor,
+      'bg': settings.timetablePageBackgroundColor,
+      'uc': settings.timetableUnifiedCardColor,
+      'ucOn': settings.timetableUseUnifiedCardColor,
+      // 主题模式
+      'mode': settings.appThemeMode.value,
+      // 课程卡片颜色
+      'ccl': settings.courseCardTitleColorLight,
+      'ccd': settings.courseCardTitleColorDark,
+      'cdl': settings.courseCardDetailColorLight,
+      'cdd': settings.courseCardDetailColorDark,
+      'wbl': settings.weekdayBarFontColorLight,
+      'wbd': settings.weekdayBarFontColorDark,
+      'tal': settings.timeAxisFontColorLight,
+      'tad': settings.timeAxisFontColorDark,
+      'link': settings.linkCourseCardColors,
+      // 课表布局
+      'hideWeekend': settings.timetableHideWeekends,
+      'spacing': settings.timetableCourseSpacingMode.value,
+      'timeDisplay': settings.timetableSectionTimeDisplayMode.value,
+    };
+    Clipboard.setData(ClipboardData(text: jsonEncode(theme)));
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(l10n.themeExportSuccess)));
+  }
+
+  void _importTheme(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
+    final data = await Clipboard.getData('text/plain');
+    if (!context.mounted) return;
+    if (data?.text == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.themeImportFailed)),
+        );
+      }
+      return;
+    }
+    try {
+      final json = jsonDecode(data!.text!) as Map<String, dynamic>;
+      final version = json['v'] as int? ?? 1;
+      
+      final provider = Provider.of<TimetableProvider>(context, listen: false);
+      final current = provider.settings;
+      
+      if (version == 2) {
+        // v2: 完整主题
+        final seed = json['seed'] as String?;
+        final bg = json['bg'] as String?;
+        final uc = json['uc'] as String?;
+        final ucOn = json['ucOn'] as bool?;
+        final mode = json['mode'] as String?;
+        final ccl = json['ccl'] as String?;
+        final ccd = json['ccd'] as String?;
+        final cdl = json['cdl'] as String?;
+        final cdd = json['cdd'] as String?;
+        final wbl = json['wbl'] as String?;
+        final wbd = json['wbd'] as String?;
+        final tal = json['tal'] as String?;
+        final tad = json['tad'] as String?;
+        final link = json['link'] as bool?;
+        final hideWeekend = json['hideWeekend'] as bool?;
+        final spacing = json['spacing'] as String?;
+        final timeDisplay = json['timeDisplay'] as String?;
+        
+        if (seed == null || bg == null || ccl == null || ccd == null ||
+            cdl == null || cdd == null || wbl == null || wbd == null ||
+            tal == null || tad == null || link == null) {
+          throw FormatException('missing required fields');
+        }
+        
+        await provider.updateSettings(current.copyWith(
+          themeSeedColor: seed,
+          timetablePageBackgroundColor: bg,
+          timetableUnifiedCardColor: uc ?? current.timetableUnifiedCardColor,
+          timetableUseUnifiedCardColor: ucOn ?? current.timetableUseUnifiedCardColor,
+          appThemeMode: mode != null ? AppThemeModeX.fromValue(mode) : current.appThemeMode,
+          courseCardTitleColorLight: ccl,
+          courseCardTitleColorDark: ccd,
+          courseCardDetailColorLight: cdl,
+          courseCardDetailColorDark: cdd,
+          weekdayBarFontColorLight: wbl,
+          weekdayBarFontColorDark: wbd,
+          timeAxisFontColorLight: tal,
+          timeAxisFontColorDark: tad,
+          linkCourseCardColors: link,
+          timetableHideWeekends: hideWeekend ?? current.timetableHideWeekends,
+          timetableCourseSpacingMode: spacing != null 
+              ? TimetableCourseSpacingMode.values.firstWhere(
+                  (e) => e.value == spacing,
+                  orElse: () => current.timetableCourseSpacingMode,
+                )
+              : current.timetableCourseSpacingMode,
+          timetableSectionTimeDisplayMode: timeDisplay != null
+              ? SectionTimeDisplayMode.values.firstWhere(
+                  (e) => e.value == timeDisplay,
+                  orElse: () => current.timetableSectionTimeDisplayMode,
+                )
+              : current.timetableSectionTimeDisplayMode,
+        ));
+      } else if (version == 1) {
+        // v1: 仅颜色
+        final ccl = json['ccl'] as String?;
+        final ccd = json['ccd'] as String?;
+        final cdl = json['cdl'] as String?;
+        final cdd = json['cdd'] as String?;
+        final wbl = json['wbl'] as String?;
+        final wbd = json['wbd'] as String?;
+        final tal = json['tal'] as String?;
+        final tad = json['tad'] as String?;
+        final link = json['link'] as bool?;
+        
+        if (ccl == null || ccd == null || cdl == null || cdd == null ||
+            wbl == null || wbd == null || tal == null || tad == null ||
+            link == null) {
+          throw FormatException('missing fields');
+        }
+        
+        await provider.updateSettings(current.copyWith(
+          courseCardTitleColorLight: ccl,
+          courseCardTitleColorDark: ccd,
+          courseCardDetailColorLight: cdl,
+          courseCardDetailColorDark: cdd,
+          weekdayBarFontColorLight: wbl,
+          weekdayBarFontColorDark: wbd,
+          timeAxisFontColorLight: tal,
+          timeAxisFontColorDark: tad,
+          linkCourseCardColors: link,
+        ));
+      } else {
+        throw FormatException('unsupported version: $version');
+      }
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(l10n.themeImportSuccess)));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+          ..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(l10n.themeImportFailed)));
+      }
+    }
+  }
+}
+
+class _ThemeTile extends StatelessWidget {
+  final IconData icon;
+  final String name;
+  final VoidCallback onTap;
+  final Widget? trailing;
+
+  const _ThemeTile({
+    required this.icon,
+    required this.name,
+    required this.onTap,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon),
+      title: Text(name),
+      trailing: trailing ?? const Icon(Icons.chevron_right),
+      onTap: onTap,
+    );
+  }
 }
 
 class _HomeTitleStylePreview extends StatelessWidget {
@@ -2991,16 +3540,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                                 ],
                               ),
                             ),
-                            IconButton(
-                              icon: const Icon(Icons.upload_file),
-                              tooltip: l10n.themeExport,
-                              onPressed: _exportTheme,
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.download),
-                              tooltip: l10n.themeImport,
-                              onPressed: _importTheme,
-                            ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -3772,79 +4311,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ],
       ),
     );
-  }
-
-  void _exportTheme() {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = {
-      'v': 1,
-      'ccl': _draft.courseCardTitleColorLight,
-      'ccd': _draft.courseCardTitleColorDark,
-      'cdl': _draft.courseCardDetailColorLight,
-      'cdd': _draft.courseCardDetailColorDark,
-      'wbl': _draft.weekdayBarFontColorLight,
-      'wbd': _draft.weekdayBarFontColorDark,
-      'tal': _draft.timeAxisFontColorLight,
-      'tad': _draft.timeAxisFontColorDark,
-      'link': _draft.linkCourseCardColors,
-    };
-    Clipboard.setData(ClipboardData(text: jsonEncode(theme)));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.themeExportSuccess)),
-    );
-  }
-
-  void _importTheme() async {
-    final l10n = AppLocalizations.of(context)!;
-    final data = await Clipboard.getData('text/plain');
-    if (data?.text == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.themeImportFailed)),
-        );
-      }
-      return;
-    }
-    try {
-      final json = jsonDecode(data!.text!) as Map<String, dynamic>;
-      if (json['v'] != 1) throw FormatException('unsupported version');
-      final ccl = json['ccl'] as String?;
-      final ccd = json['ccd'] as String?;
-      final cdl = json['cdl'] as String?;
-      final cdd = json['cdd'] as String?;
-      final wbl = json['wbl'] as String?;
-      final wbd = json['wbd'] as String?;
-      final tal = json['tal'] as String?;
-      final tad = json['tad'] as String?;
-      final link = json['link'] as bool?;
-      if (ccl == null || ccd == null || cdl == null || cdd == null ||
-          wbl == null || wbd == null || tal == null || tad == null ||
-          link == null) {
-        throw FormatException('missing fields');
-      }
-      _updateDraft(_draft.copyWith(
-        courseCardTitleColorLight: ccl,
-        courseCardTitleColorDark: ccd,
-        courseCardDetailColorLight: cdl,
-        courseCardDetailColorDark: cdd,
-        weekdayBarFontColorLight: wbl,
-        weekdayBarFontColorDark: wbd,
-        timeAxisFontColorLight: tal,
-        timeAxisFontColorDark: tad,
-        linkCourseCardColors: link,
-      ));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.themeImportSuccess)),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.themeImportFailed)),
-        );
-      }
-    }
   }
 
   void _showColorPicker(

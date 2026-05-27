@@ -8247,6 +8247,54 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'剪贴板内容格式错误'**
   String get themeImportFailed;
+
+  /// No description provided for @themeManageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题管理'**
+  String get themeManageTitle;
+
+  /// No description provided for @themeManageSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导出、导入和切换主题'**
+  String get themeManageSubtitle;
+
+  /// No description provided for @themePreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'预设主题'**
+  String get themePreset;
+
+  /// No description provided for @themeSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'我的主题'**
+  String get themeSaved;
+
+  /// No description provided for @themeSaveCurrent.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存当前主题'**
+  String get themeSaveCurrent;
+
+  /// No description provided for @themeApply.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用'**
+  String get themeApply;
+
+  /// No description provided for @themeDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除'**
+  String get themeDelete;
+
+  /// No description provided for @themeNameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入主题名称'**
+  String get themeNameHint;
 }
 
 class _AppLocalizationsDelegate

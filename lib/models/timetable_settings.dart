@@ -752,6 +752,34 @@ class SectionTime {
   String get displayText => '$startTime-$endTime';
 }
 
+class SavedTheme {
+  final String id;
+  final String name;
+  final Map<String, dynamic> themeData;
+  final DateTime createdAt;
+
+  SavedTheme({
+    required this.id,
+    required this.name,
+    required this.themeData,
+    required this.createdAt,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'themeData': themeData,
+    'createdAt': createdAt.toIso8601String(),
+  };
+
+  factory SavedTheme.fromJson(Map<String, dynamic> json) => SavedTheme(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    themeData: json['themeData'] as Map<String, dynamic>,
+    createdAt: DateTime.parse(json['createdAt'] as String),
+  );
+}
+
 class TimetableSettings {
   // 颜色默认值常量
   static const String defaultCourseCardTitleColor = '#FFFFFF';
@@ -886,6 +914,7 @@ class TimetableSettings {
   final String timeAxisFontColorLight;
   final String timeAxisFontColorDark;
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
+  final List<SavedTheme> savedThemes; // 保存的主题列表
 
   const TimetableSettings({
     required this.sections,
@@ -1018,6 +1047,7 @@ class TimetableSettings {
     this.timeAxisFontColorLight = defaultTimeAxisFontColorLight,
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
+    this.savedThemes = const [],
   });
 
   factory TimetableSettings.defaults() {
@@ -1299,6 +1329,7 @@ class TimetableSettings {
       'timeAxisFontColorLight': timeAxisFontColorLight,
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
+      'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
     };
   }
 
@@ -1603,6 +1634,9 @@ class TimetableSettings {
           json['timeAxisFontColorDark'] as String? ?? defaultTimeAxisFontColorDark,
       linkCourseCardColors:
           json['linkCourseCardColors'] as bool? ?? true,
+      savedThemes: (json['savedThemes'] as List<dynamic>?)
+          ?.map((t) => SavedTheme.fromJson(t as Map<String, dynamic>))
+          .toList() ?? const [],
     );
   }
 
@@ -1742,6 +1776,7 @@ class TimetableSettings {
     String? timeAxisFontColorLight,
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
+    List<SavedTheme>? savedThemes,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -1990,6 +2025,7 @@ class TimetableSettings {
           timeAxisFontColorDark ?? this.timeAxisFontColorDark,
       linkCourseCardColors:
           linkCourseCardColors ?? this.linkCourseCardColors,
+      savedThemes: savedThemes ?? this.savedThemes,
     );
   }
 

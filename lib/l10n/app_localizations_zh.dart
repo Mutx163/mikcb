@@ -4536,6 +4536,30 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeImportFailed => '剪贴板内容格式错误';
+
+  @override
+  String get themeManageTitle => '主题管理';
+
+  @override
+  String get themeManageSubtitle => '导出、导入和切换主题';
+
+  @override
+  String get themePreset => '预设主题';
+
+  @override
+  String get themeSaved => '我的主题';
+
+  @override
+  String get themeSaveCurrent => '保存当前主题';
+
+  @override
+  String get themeApply => '应用';
+
+  @override
+  String get themeDelete => '删除';
+
+  @override
+  String get themeNameHint => '输入主题名称';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -9071,6 +9095,30 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeImportFailed => '剪貼簿內容格式錯誤';
+
+  @override
+  String get themeManageTitle => '主題管理';
+
+  @override
+  String get themeManageSubtitle => '匯出、匯入和切換主題';
+
+  @override
+  String get themePreset => '預設主題';
+
+  @override
+  String get themeSaved => '我的主題';
+
+  @override
+  String get themeSaveCurrent => '儲存當前主題';
+
+  @override
+  String get themeApply => '套用';
+
+  @override
+  String get themeDelete => '刪除';
+
+  @override
+  String get themeNameHint => '輸入主題名稱';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -13606,4 +13654,28 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeImportFailed => '剪貼簿內容格式錯誤';
+
+  @override
+  String get themeManageTitle => '主題管理';
+
+  @override
+  String get themeManageSubtitle => '匯出、匯入和切換主題';
+
+  @override
+  String get themePreset => '預設主題';
+
+  @override
+  String get themeSaved => '我的主題';
+
+  @override
+  String get themeSaveCurrent => '儲存當前主題';
+
+  @override
+  String get themeApply => '套用';
+
+  @override
+  String get themeDelete => '刪除';
+
+  @override
+  String get themeNameHint => '輸入主題名稱';
 }

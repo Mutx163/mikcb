@@ -2733,5 +2733,13 @@
   "themeImport": "테마 가져오기",
   "themeExportSuccess": "테마가 클립보드에 복사되었습니다",
   "themeImportSuccess": "테마를 가져왔습니다",
-  "themeImportFailed": "클립보드 내용 형식 오류"
+  "themeImportFailed": "클립보드 내용 형식 오류",
+  "themeManageTitle": "테마 관리",
+  "themeManageSubtitle": "테마 내보내기, 가져오기, 전환",
+  "themePreset": "프리셋 테마",
+  "themeSaved": "내 테마",
+  "themeSaveCurrent": "현재 테마 저장",
+  "themeApply": "적용",
+  "themeDelete": "삭제",
+  "themeNameHint": "테마 이름 입력"
 }

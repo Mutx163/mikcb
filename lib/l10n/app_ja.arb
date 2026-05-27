@@ -2733,5 +2733,13 @@
   "themeImport": "テーマをインポート",
   "themeExportSuccess": "テーマをクリップボードにコピーしました",
   "themeImportSuccess": "テーマをインポートしました",
-  "themeImportFailed": "クリップボードの内容の形式が正しくありません"
+  "themeImportFailed": "クリップボードの内容の形式が正しくありません",
+  "themeManageTitle": "テーマ管理",
+  "themeManageSubtitle": "テーマのエクスポート、インポート、切り替え",
+  "themePreset": "プリセットテーマ",
+  "themeSaved": "マイテーマ",
+  "themeSaveCurrent": "現在のテーマを保存",
+  "themeApply": "適用",
+  "themeDelete": "削除",
+  "themeNameHint": "テーマ名を入力"
 }
