@@ -4658,6 +4658,35 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeDelete => '삭제';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return '테마 \"$name\"을(를) 삭제하시겠습니까?';
+  }
+
+  @override
+  String get textColorLowContrastWarning => '색상 대비가 낮아 가독성에 영향을 줄 수 있습니다';
+
+  @override
+  String get themeCurrentTheme => '현재 테마';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return '$baseName (수정됨)';
+  }
+
+  @override
+  String get themeResetToPreset => '초기화';
+
+  @override
+  String get themeUnsavedChangesTitle => '저장되지 않은 변경사항';
+
+  @override
+  String get themeUnsavedChangesMessage =>
+      '현재 테마에 저장되지 않은 변경사항이 있습니다. 저장하시겠습니까?';
+
+  @override
+  String get themeDiscardAndApply => '버리고 적용';
+
+  @override
   String get themeNameHint => '테마 이름 입력';
 
   @override
@@ -4671,6 +4700,15 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themePresetOrange => '웜 오렌지';
+
+  @override
+  String get themePresetEyeCare => '눈 보호';
+
+  @override
+  String get themePresetHighContrast => '고대비';
+
+  @override
+  String get themePresetDarkMinimal => '다크 미니멀';
 
   @override
   String get themeApplySuccess => '테마가 적용되었습니다';

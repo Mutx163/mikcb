@@ -8290,6 +8290,54 @@ abstract class AppLocalizations {
   /// **'删除'**
   String get themeDelete;
 
+  /// No description provided for @themeDeleteConfirmMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定要删除主题“{name}”吗？'**
+  String themeDeleteConfirmMessage(String name);
+
+  /// No description provided for @textColorLowContrastWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色对比度较低，可能影响可读性'**
+  String get textColorLowContrastWarning;
+
+  /// No description provided for @themeCurrentTheme.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前主题'**
+  String get themeCurrentTheme;
+
+  /// No description provided for @themeBasedOnModified.
+  ///
+  /// In zh, this message translates to:
+  /// **'基于{baseName}（已修改）'**
+  String themeBasedOnModified(String baseName);
+
+  /// No description provided for @themeResetToPreset.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置'**
+  String get themeResetToPreset;
+
+  /// No description provided for @themeUnsavedChangesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'未保存的修改'**
+  String get themeUnsavedChangesTitle;
+
+  /// No description provided for @themeUnsavedChangesMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前主题有未保存的修改，是否保存？'**
+  String get themeUnsavedChangesMessage;
+
+  /// No description provided for @themeDiscardAndApply.
+  ///
+  /// In zh, this message translates to:
+  /// **'放弃并应用'**
+  String get themeDiscardAndApply;
+
   /// No description provided for @themeNameHint.
   ///
   /// In zh, this message translates to:
@@ -8319,6 +8367,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'暖阳橙'**
   String get themePresetOrange;
+
+  /// No description provided for @themePresetEyeCare.
+  ///
+  /// In zh, this message translates to:
+  /// **'护眼模式'**
+  String get themePresetEyeCare;
+
+  /// No description provided for @themePresetHighContrast.
+  ///
+  /// In zh, this message translates to:
+  /// **'高对比度'**
+  String get themePresetHighContrast;
+
+  /// No description provided for @themePresetDarkMinimal.
+  ///
+  /// In zh, this message translates to:
+  /// **'深色极简'**
+  String get themePresetDarkMinimal;
 
   /// No description provided for @themeApplySuccess.
   ///

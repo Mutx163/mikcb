@@ -2742,11 +2742,36 @@
   "themeSaveCurrent": "保存当前主题",
   "themeApply": "应用",
   "themeDelete": "删除",
+  "themeDeleteConfirmMessage": "确定要删除主题“{name}”吗？",
+  "@themeDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textColorLowContrastWarning": "颜色对比度较低，可能影响可读性",
+  "themeCurrentTheme": "当前主题",
+  "themeBasedOnModified": "基于{baseName}（已修改）",
+  "@themeBasedOnModified": {
+    "placeholders": {
+      "baseName": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetToPreset": "重置",
+  "themeUnsavedChangesTitle": "未保存的修改",
+  "themeUnsavedChangesMessage": "当前主题有未保存的修改，是否保存？",
+  "themeDiscardAndApply": "放弃并应用",
   "themeNameHint": "输入主题名称",
   "themePresetBlue": "默认蓝",
   "themePresetPurple": "暗夜紫",
   "themePresetGreen": "森林绿",
   "themePresetOrange": "暖阳橙",
+  "themePresetEyeCare": "护眼模式",
+  "themePresetHighContrast": "高对比度",
+  "themePresetDarkMinimal": "深色极简",
   "themeApplySuccess": "主题已应用",
   "themeUndo": "撤销",
   "themeRename": "重命名",

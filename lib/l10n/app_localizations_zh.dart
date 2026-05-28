@@ -4559,6 +4559,34 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeDelete => '删除';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return '确定要删除主题“$name”吗？';
+  }
+
+  @override
+  String get textColorLowContrastWarning => '颜色对比度较低，可能影响可读性';
+
+  @override
+  String get themeCurrentTheme => '当前主题';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return '基于$baseName（已修改）';
+  }
+
+  @override
+  String get themeResetToPreset => '重置';
+
+  @override
+  String get themeUnsavedChangesTitle => '未保存的修改';
+
+  @override
+  String get themeUnsavedChangesMessage => '当前主题有未保存的修改，是否保存？';
+
+  @override
+  String get themeDiscardAndApply => '放弃并应用';
+
+  @override
   String get themeNameHint => '输入主题名称';
 
   @override
@@ -4572,6 +4600,15 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themePresetOrange => '暖阳橙';
+
+  @override
+  String get themePresetEyeCare => '护眼模式';
+
+  @override
+  String get themePresetHighContrast => '高对比度';
+
+  @override
+  String get themePresetDarkMinimal => '深色极简';
 
   @override
   String get themeApplySuccess => '主题已应用';
@@ -9142,6 +9179,34 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get themeDelete => '刪除';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return '確定要刪除主題「$name」嗎？';
+  }
+
+  @override
+  String get textColorLowContrastWarning => '顏色對比度較低，可能會影響可讀性';
+
+  @override
+  String get themeCurrentTheme => '當前主題';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return '基於$baseName（已修改）';
+  }
+
+  @override
+  String get themeResetToPreset => '重設';
+
+  @override
+  String get themeUnsavedChangesTitle => '未儲存的修改';
+
+  @override
+  String get themeUnsavedChangesMessage => '當前主題有未儲存的修改，是否儲存？';
+
+  @override
+  String get themeDiscardAndApply => '放棄並套用';
+
+  @override
   String get themeNameHint => '輸入主題名稱';
 
   @override
@@ -9155,6 +9220,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themePresetOrange => '暖陽橙';
+
+  @override
+  String get themePresetEyeCare => '護眼模式';
+
+  @override
+  String get themePresetHighContrast => '高對比度';
+
+  @override
+  String get themePresetDarkMinimal => '深色極簡';
 
   @override
   String get themeApplySuccess => '主題已套用';
@@ -13725,6 +13799,34 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get themeDelete => '刪除';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return '確定要刪除主題「$name」嗎？';
+  }
+
+  @override
+  String get textColorLowContrastWarning => '顏色對比度較低，可能會影響可讀性';
+
+  @override
+  String get themeCurrentTheme => '當前主題';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return '基於$baseName（已修改）';
+  }
+
+  @override
+  String get themeResetToPreset => '重設';
+
+  @override
+  String get themeUnsavedChangesTitle => '未儲存的修改';
+
+  @override
+  String get themeUnsavedChangesMessage => '當前主題有未儲存的修改，是否儲存？';
+
+  @override
+  String get themeDiscardAndApply => '放棄並套用';
+
+  @override
   String get themeNameHint => '輸入主題名稱';
 
   @override
@@ -13738,6 +13840,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themePresetOrange => '暖陽橙';
+
+  @override
+  String get themePresetEyeCare => '護眼模式';
+
+  @override
+  String get themePresetHighContrast => '高對比度';
+
+  @override
+  String get themePresetDarkMinimal => '深色極簡';
 
   @override
   String get themeApplySuccess => '主題已套用';

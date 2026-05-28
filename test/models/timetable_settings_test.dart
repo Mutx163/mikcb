@@ -461,4 +461,155 @@ void main() {
     expect(restored.appUpdateMirrorPreset, AppUpdateMirrorPreset.custom.value);
     expect(restored.appUpdateMirrorUrlPrefix, 'https://mirror.example.com/');
   });
+
+  group('ThemeConfig', () {
+    test('roundtrip preserves all fields', () {
+      const original = ThemeConfig(
+        version: 2,
+        seedColor: '#FF0000',
+        backgroundColor: '#FFFFFF',
+        unifiedCardColor: '#00FF00',
+        useUnifiedCardColor: true,
+        themeMode: 'dark',
+        courseCardTitleColorLight: '#111111',
+        courseCardTitleColorDark: '#EEEEEE',
+        courseCardDetailColorLight: '#222222',
+        courseCardDetailColorDark: '#DDDDDD',
+        weekdayBarFontColorLight: '#333333',
+        weekdayBarFontColorDark: '#CCCCCC',
+        weekdayBarAccentColorLight: '#444444',
+        weekdayBarAccentColorDark: '#BBBBBB',
+        timeAxisFontColorLight: '#555555',
+        timeAxisFontColorDark: '#AAAAAA',
+        linkCourseCardColors: false,
+        hideWeekends: true,
+        spacingMode: 'wide',
+        timeDisplayMode: 'startOnly',
+      );
+
+      final restored = ThemeConfig.fromJson(original.toJson());
+
+      expect(restored.version, original.version);
+      expect(restored.seedColor, original.seedColor);
+      expect(restored.backgroundColor, original.backgroundColor);
+      expect(restored.unifiedCardColor, original.unifiedCardColor);
+      expect(restored.useUnifiedCardColor, original.useUnifiedCardColor);
+      expect(restored.themeMode, original.themeMode);
+      expect(restored.courseCardTitleColorLight, original.courseCardTitleColorLight);
+      expect(restored.courseCardTitleColorDark, original.courseCardTitleColorDark);
+      expect(restored.courseCardDetailColorLight, original.courseCardDetailColorLight);
+      expect(restored.courseCardDetailColorDark, original.courseCardDetailColorDark);
+      expect(restored.weekdayBarFontColorLight, original.weekdayBarFontColorLight);
+      expect(restored.weekdayBarFontColorDark, original.weekdayBarFontColorDark);
+      expect(restored.weekdayBarAccentColorLight, original.weekdayBarAccentColorLight);
+      expect(restored.weekdayBarAccentColorDark, original.weekdayBarAccentColorDark);
+      expect(restored.timeAxisFontColorLight, original.timeAxisFontColorLight);
+      expect(restored.timeAxisFontColorDark, original.timeAxisFontColorDark);
+      expect(restored.linkCourseCardColors, original.linkCourseCardColors);
+      expect(restored.hideWeekends, original.hideWeekends);
+      expect(restored.spacingMode, original.spacingMode);
+      expect(restored.timeDisplayMode, original.timeDisplayMode);
+    });
+
+    test('v1 compat parses correctly', () {
+      final v1 = {
+        'v': 1,
+        'ccl': '#FFFFFF',
+        'ccd': '#000000',
+        'cdl': '#CCCCCC',
+        'cdd': '#333333',
+        'wbl': '#AAAAAA',
+        'wbd': '#555555',
+        'tal': '#BBBBBB',
+        'tad': '#444444',
+        'link': true,
+      };
+
+      final config = ThemeConfig.fromJson(v1);
+
+      expect(config.version, 1);
+      expect(config.courseCardTitleColorLight, '#FFFFFF');
+      expect(config.courseCardTitleColorDark, '#000000');
+      expect(config.courseCardDetailColorLight, '#CCCCCC');
+      expect(config.courseCardDetailColorDark, '#333333');
+      expect(config.weekdayBarFontColorLight, '#AAAAAA');
+      expect(config.weekdayBarFontColorDark, '#555555');
+      expect(config.timeAxisFontColorLight, '#BBBBBB');
+      expect(config.timeAxisFontColorDark, '#444444');
+      expect(config.linkCourseCardColors, true);
+      // v1 不包含这些字段
+      expect(config.seedColor, isNull);
+      expect(config.backgroundColor, isNull);
+      expect(config.weekdayBarAccentColorLight, isNull);
+    });
+
+    test('fromSettings -> applyToSettings is identity', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        themeSeedColor: '#FF0000',
+        timetablePageBackgroundColor: '#FFFFFF',
+        courseCardTitleColorLight: '#111111',
+        weekdayBarAccentColorLight: '#2563EB',
+        weekdayBarAccentColorDark: '#93C5FD',
+      );
+
+      final config = ThemeConfig.fromSettings(settings);
+      final restored = config.applyToSettings(settings);
+
+      expect(restored.themeSeedColor, settings.themeSeedColor);
+      expect(restored.timetablePageBackgroundColor, settings.timetablePageBackgroundColor);
+      expect(restored.courseCardTitleColorLight, settings.courseCardTitleColorLight);
+      expect(restored.weekdayBarAccentColorLight, settings.weekdayBarAccentColorLight);
+      expect(restored.weekdayBarAccentColorDark, settings.weekdayBarAccentColorDark);
+    });
+
+    test('previewColors returns up to 4 colors', () {
+      const config = ThemeConfig(
+        seedColor: '#FF0000',
+        courseCardTitleColorLight: '#00FF00',
+        courseCardDetailColorLight: '#0000FF',
+        weekdayBarFontColorLight: '#FFFF00',
+        weekdayBarAccentColorLight: '#FF00FF',
+      );
+
+      final colors = config.previewColors;
+      expect(colors.length, 4);
+      expect(colors[0], '#FF0000');
+      expect(colors[1], '#00FF00');
+      expect(colors[2], '#0000FF');
+      expect(colors[3], '#FFFF00');
+    });
+  });
+
+  group('SavedTheme', () {
+    test('roundtrip preserves config', () {
+      final original = SavedTheme(
+        id: '123',
+        name: 'Test Theme',
+        config: const ThemeConfig(
+          seedColor: '#FF0000',
+          weekdayBarAccentColorLight: '#2563EB',
+        ),
+        createdAt: DateTime(2024, 1, 1),
+      );
+
+      final restored = SavedTheme.fromJson(original.toJson());
+
+      expect(restored.id, original.id);
+      expect(restored.name, original.name);
+      expect(restored.config.seedColor, original.config.seedColor);
+      expect(restored.config.weekdayBarAccentColorLight, original.config.weekdayBarAccentColorLight);
+      expect(restored.createdAt, original.createdAt);
+    });
+
+    test('themeData getter returns config toJson', () {
+      final theme = SavedTheme(
+        id: '123',
+        name: 'Test',
+        config: const ThemeConfig(seedColor: '#FF0000'),
+        createdAt: DateTime.now(),
+      );
+
+      expect(theme.themeData, theme.config.toJson());
+    });
+  });
 }

@@ -2741,11 +2741,36 @@
   "themeSaveCurrent": "현재 테마 저장",
   "themeApply": "적용",
   "themeDelete": "삭제",
+  "themeDeleteConfirmMessage": "테마 \"{name}\"을(를) 삭제하시겠습니까?",
+  "@themeDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textColorLowContrastWarning": "색상 대비가 낮아 가독성에 영향을 줄 수 있습니다",
+  "themeCurrentTheme": "현재 테마",
+  "themeBasedOnModified": "{baseName} (수정됨)",
+  "@themeBasedOnModified": {
+    "placeholders": {
+      "baseName": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetToPreset": "초기화",
+  "themeUnsavedChangesTitle": "저장되지 않은 변경사항",
+  "themeUnsavedChangesMessage": "현재 테마에 저장되지 않은 변경사항이 있습니다. 저장하시겠습니까?",
+  "themeDiscardAndApply": "버리고 적용",
   "themeNameHint": "테마 이름 입력",
   "themePresetBlue": "기본 블루",
   "themePresetPurple": "나이트 퍼플",
   "themePresetGreen": "포레스트 그린",
   "themePresetOrange": "웜 오렌지",
+  "themePresetEyeCare": "눈 보호",
+  "themePresetHighContrast": "고대비",
+  "themePresetDarkMinimal": "다크 미니멀",
   "themeApplySuccess": "테마가 적용되었습니다",
   "themeUndo": "실행 취소",
   "themeRename": "이름 변경",

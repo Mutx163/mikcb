@@ -2741,11 +2741,36 @@
   "themeSaveCurrent": "現在のテーマを保存",
   "themeApply": "適用",
   "themeDelete": "削除",
+  "themeDeleteConfirmMessage": "テーマ「{name}」を削除してもよろしいですか？",
+  "@themeDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textColorLowContrastWarning": "色のコントラストが低く、可読性に影響する可能性があります",
+  "themeCurrentTheme": "現在のテーマ",
+  "themeBasedOnModified": "{baseName}（変更済み）",
+  "@themeBasedOnModified": {
+    "placeholders": {
+      "baseName": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetToPreset": "リセット",
+  "themeUnsavedChangesTitle": "未保存の変更",
+  "themeUnsavedChangesMessage": "現在のテーマに未保存の変更があります。保存しますか？",
+  "themeDiscardAndApply": "破棄して適用",
   "themeNameHint": "テーマ名を入力",
   "themePresetBlue": "デフォルトブルー",
   "themePresetPurple": "ナイトパープル",
   "themePresetGreen": "フォレストグリーン",
   "themePresetOrange": "ウォームオレンジ",
+  "themePresetEyeCare": "アイケア",
+  "themePresetHighContrast": "ハイコントラスト",
+  "themePresetDarkMinimal": "ダークミニマル",
   "themeApplySuccess": "テーマを適用しました",
   "themeUndo": "元に戻す",
   "themeRename": "名前を変更",

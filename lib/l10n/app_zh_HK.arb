@@ -2741,11 +2741,36 @@
   "themeSaveCurrent": "儲存當前主題",
   "themeApply": "套用",
   "themeDelete": "刪除",
+  "themeDeleteConfirmMessage": "確定要刪除主題「{name}」嗎？",
+  "@themeDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textColorLowContrastWarning": "顏色對比度較低，可能會影響可讀性",
+  "themeCurrentTheme": "當前主題",
+  "themeBasedOnModified": "基於{baseName}（已修改）",
+  "@themeBasedOnModified": {
+    "placeholders": {
+      "baseName": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetToPreset": "重設",
+  "themeUnsavedChangesTitle": "未儲存的修改",
+  "themeUnsavedChangesMessage": "當前主題有未儲存的修改，是否儲存？",
+  "themeDiscardAndApply": "放棄並套用",
   "themeNameHint": "輸入主題名稱",
   "themePresetBlue": "預設藍",
   "themePresetPurple": "暗夜紫",
   "themePresetGreen": "森林綠",
   "themePresetOrange": "暖陽橙",
+  "themePresetEyeCare": "護眼模式",
+  "themePresetHighContrast": "高對比度",
+  "themePresetDarkMinimal": "深色極簡",
   "themeApplySuccess": "主題已套用",
   "themeUndo": "撤銷",
   "themeRename": "重新命名",

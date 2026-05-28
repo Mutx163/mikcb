@@ -2742,11 +2742,36 @@
   "themeSaveCurrent": "Save Current Theme",
   "themeApply": "Apply",
   "themeDelete": "Delete",
+  "themeDeleteConfirmMessage": "Are you sure you want to delete theme \"{name}\"?",
+  "@themeDeleteConfirmMessage": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "textColorLowContrastWarning": "Low color contrast may affect readability",
+  "themeCurrentTheme": "Current Theme",
+  "themeBasedOnModified": "Based on {baseName} (modified)",
+  "@themeBasedOnModified": {
+    "placeholders": {
+      "baseName": {
+        "type": "String"
+      }
+    }
+  },
+  "themeResetToPreset": "Reset",
+  "themeUnsavedChangesTitle": "Unsaved Changes",
+  "themeUnsavedChangesMessage": "Current theme has unsaved changes. Do you want to save?",
+  "themeDiscardAndApply": "Discard & Apply",
   "themeNameHint": "Enter theme name",
   "themePresetBlue": "Default Blue",
   "themePresetPurple": "Night Purple",
   "themePresetGreen": "Forest Green",
   "themePresetOrange": "Warm Orange",
+  "themePresetEyeCare": "Eye Care",
+  "themePresetHighContrast": "High Contrast",
+  "themePresetDarkMinimal": "Dark Minimal",
   "themeApplySuccess": "Theme applied",
   "themeUndo": "Undo",
   "themeRename": "Rename",

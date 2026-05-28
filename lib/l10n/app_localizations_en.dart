@@ -4814,6 +4814,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themeDelete => 'Delete';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return 'Are you sure you want to delete theme \"$name\"?';
+  }
+
+  @override
+  String get textColorLowContrastWarning =>
+      'Low color contrast may affect readability';
+
+  @override
+  String get themeCurrentTheme => 'Current Theme';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return 'Based on $baseName (modified)';
+  }
+
+  @override
+  String get themeResetToPreset => 'Reset';
+
+  @override
+  String get themeUnsavedChangesTitle => 'Unsaved Changes';
+
+  @override
+  String get themeUnsavedChangesMessage =>
+      'Current theme has unsaved changes. Do you want to save?';
+
+  @override
+  String get themeDiscardAndApply => 'Discard & Apply';
+
+  @override
   String get themeNameHint => 'Enter theme name';
 
   @override
@@ -4827,6 +4857,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themePresetOrange => 'Warm Orange';
+
+  @override
+  String get themePresetEyeCare => 'Eye Care';
+
+  @override
+  String get themePresetHighContrast => 'High Contrast';
+
+  @override
+  String get themePresetDarkMinimal => 'Dark Minimal';
 
   @override
   String get themeApplySuccess => 'Theme applied';

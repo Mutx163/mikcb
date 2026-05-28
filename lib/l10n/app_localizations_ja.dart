@@ -4628,6 +4628,34 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themeDelete => '削除';
 
   @override
+  String themeDeleteConfirmMessage(String name) {
+    return 'テーマ「$name」を削除してもよろしいですか？';
+  }
+
+  @override
+  String get textColorLowContrastWarning => '色のコントラストが低く、可読性に影響する可能性があります';
+
+  @override
+  String get themeCurrentTheme => '現在のテーマ';
+
+  @override
+  String themeBasedOnModified(String baseName) {
+    return '$baseName（変更済み）';
+  }
+
+  @override
+  String get themeResetToPreset => 'リセット';
+
+  @override
+  String get themeUnsavedChangesTitle => '未保存の変更';
+
+  @override
+  String get themeUnsavedChangesMessage => '現在のテーマに未保存の変更があります。保存しますか？';
+
+  @override
+  String get themeDiscardAndApply => '破棄して適用';
+
+  @override
   String get themeNameHint => 'テーマ名を入力';
 
   @override
@@ -4641,6 +4669,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themePresetOrange => 'ウォームオレンジ';
+
+  @override
+  String get themePresetEyeCare => 'アイケア';
+
+  @override
+  String get themePresetHighContrast => 'ハイコントラスト';
+
+  @override
+  String get themePresetDarkMinimal => 'ダークミニマル';
 
   @override
   String get themeApplySuccess => 'テーマを適用しました';

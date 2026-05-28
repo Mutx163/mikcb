@@ -156,7 +156,7 @@ class TimetableProvider with ChangeNotifier {
     final theme = SavedTheme(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
-      themeData: themeData,
+      config: ThemeConfig.fromJson(themeData),
       createdAt: DateTime.now(),
     );
     final updatedThemes = [..._settings.savedThemes, theme];
@@ -180,7 +180,7 @@ class TimetableProvider with ChangeNotifier {
         return SavedTheme(
           id: t.id,
           name: newName,
-          themeData: t.themeData,
+          config: t.config,
           createdAt: t.createdAt,
         );
       }

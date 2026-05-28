@@ -755,29 +755,35 @@ class SectionTime {
 class SavedTheme {
   final String id;
   final String name;
-  final Map<String, dynamic> themeData;
+  final ThemeConfig config;
   final DateTime createdAt;
 
   SavedTheme({
     required this.id,
     required this.name,
-    required this.themeData,
+    required this.config,
     required this.createdAt,
   });
+
+  /// 兼容旧版本的 themeData getter
+  Map<String, dynamic> get themeData => config.toJson();
 
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
-    'themeData': themeData,
+    'themeData': config.toJson(),
     'createdAt': createdAt.toIso8601String(),
   };
 
-  factory SavedTheme.fromJson(Map<String, dynamic> json) => SavedTheme(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    themeData: json['themeData'] as Map<String, dynamic>,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-  );
+  factory SavedTheme.fromJson(Map<String, dynamic> json) {
+    final themeDataJson = json['themeData'] as Map<String, dynamic>;
+    return SavedTheme(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      config: ThemeConfig.fromJson(themeDataJson),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }
 
 /// 类型化的主题配置，替代 Map。
@@ -794,6 +800,8 @@ class ThemeConfig {
   final String? courseCardDetailColorDark;
   final String? weekdayBarFontColorLight;
   final String? weekdayBarFontColorDark;
+  final String? weekdayBarAccentColorLight;
+  final String? weekdayBarAccentColorDark;
   final String? timeAxisFontColorLight;
   final String? timeAxisFontColorDark;
   final bool? linkCourseCardColors;
@@ -814,6 +822,8 @@ class ThemeConfig {
     this.courseCardDetailColorDark,
     this.weekdayBarFontColorLight,
     this.weekdayBarFontColorDark,
+    this.weekdayBarAccentColorLight,
+    this.weekdayBarAccentColorDark,
     this.timeAxisFontColorLight,
     this.timeAxisFontColorDark,
     this.linkCourseCardColors,
@@ -835,6 +845,8 @@ class ThemeConfig {
     if (courseCardDetailColorDark != null) 'cdd': courseCardDetailColorDark,
     if (weekdayBarFontColorLight != null) 'wbl': weekdayBarFontColorLight,
     if (weekdayBarFontColorDark != null) 'wbd': weekdayBarFontColorDark,
+    if (weekdayBarAccentColorLight != null) 'wal': weekdayBarAccentColorLight,
+    if (weekdayBarAccentColorDark != null) 'wad': weekdayBarAccentColorDark,
     if (timeAxisFontColorLight != null) 'tal': timeAxisFontColorLight,
     if (timeAxisFontColorDark != null) 'tad': timeAxisFontColorDark,
     if (linkCourseCardColors != null) 'link': linkCourseCardColors,
@@ -855,6 +867,8 @@ class ThemeConfig {
         courseCardDetailColorDark: json['cdd'] as String?,
         weekdayBarFontColorLight: json['wbl'] as String?,
         weekdayBarFontColorDark: json['wbd'] as String?,
+        weekdayBarAccentColorLight: json['wal'] as String?,
+        weekdayBarAccentColorDark: json['wad'] as String?,
         timeAxisFontColorLight: json['tal'] as String?,
         timeAxisFontColorDark: json['tad'] as String?,
         linkCourseCardColors: json['link'] as bool?,
@@ -874,6 +888,8 @@ class ThemeConfig {
       courseCardDetailColorDark: json['cdd'] as String?,
       weekdayBarFontColorLight: json['wbl'] as String?,
       weekdayBarFontColorDark: json['wbd'] as String?,
+      weekdayBarAccentColorLight: json['wal'] as String?,
+      weekdayBarAccentColorDark: json['wad'] as String?,
       timeAxisFontColorLight: json['tal'] as String?,
       timeAxisFontColorDark: json['tad'] as String?,
       linkCourseCardColors: json['link'] as bool?,
@@ -897,6 +913,8 @@ class ThemeConfig {
     courseCardDetailColorDark: settings.courseCardDetailColorDark,
     weekdayBarFontColorLight: settings.weekdayBarFontColorLight,
     weekdayBarFontColorDark: settings.weekdayBarFontColorDark,
+    weekdayBarAccentColorLight: settings.weekdayBarAccentColorLight,
+    weekdayBarAccentColorDark: settings.weekdayBarAccentColorDark,
     timeAxisFontColorLight: settings.timeAxisFontColorLight,
     timeAxisFontColorDark: settings.timeAxisFontColorDark,
     linkCourseCardColors: settings.linkCourseCardColors,
@@ -919,6 +937,8 @@ class ThemeConfig {
       courseCardDetailColorDark: courseCardDetailColorDark ?? current.courseCardDetailColorDark,
       weekdayBarFontColorLight: weekdayBarFontColorLight ?? current.weekdayBarFontColorLight,
       weekdayBarFontColorDark: weekdayBarFontColorDark ?? current.weekdayBarFontColorDark,
+      weekdayBarAccentColorLight: weekdayBarAccentColorLight ?? current.weekdayBarAccentColorLight,
+      weekdayBarAccentColorDark: weekdayBarAccentColorDark ?? current.weekdayBarAccentColorDark,
       timeAxisFontColorLight: timeAxisFontColorLight ?? current.timeAxisFontColorLight,
       timeAxisFontColorDark: timeAxisFontColorDark ?? current.timeAxisFontColorDark,
       linkCourseCardColors: linkCourseCardColors ?? current.linkCourseCardColors,
@@ -945,6 +965,7 @@ class ThemeConfig {
     if (courseCardTitleColorLight != null) colors.add(courseCardTitleColorLight!);
     if (courseCardDetailColorLight != null) colors.add(courseCardDetailColorLight!);
     if (weekdayBarFontColorLight != null) colors.add(weekdayBarFontColorLight!);
+    if (weekdayBarAccentColorLight != null) colors.add(weekdayBarAccentColorLight!);
     return colors.take(4).toList();
   }
 }
@@ -1084,6 +1105,8 @@ class TimetableSettings {
   final String timeAxisFontColorDark;
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
   final List<SavedTheme> savedThemes; // 保存的主题列表
+  final String? themeCheckpointName; // 当前主题来源名称（预设或保存的主题）
+  final ThemeConfig? themeCheckpointConfig; // 应用主题时的配置快照
 
   const TimetableSettings({
     required this.sections,
@@ -1217,6 +1240,8 @@ class TimetableSettings {
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
     this.savedThemes = const [],
+    this.themeCheckpointName,
+    this.themeCheckpointConfig,
   });
 
   factory TimetableSettings.defaults() {
@@ -1499,6 +1524,8 @@ class TimetableSettings {
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
       'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
+      if (themeCheckpointName != null) 'themeCheckpointName': themeCheckpointName,
+      if (themeCheckpointConfig != null) 'themeCheckpointConfig': themeCheckpointConfig!.toJson(),
     };
   }
 
@@ -1806,6 +1833,10 @@ class TimetableSettings {
       savedThemes: (json['savedThemes'] as List<dynamic>?)
           ?.map((t) => SavedTheme.fromJson(t as Map<String, dynamic>))
           .toList() ?? const [],
+      themeCheckpointName: json['themeCheckpointName'] as String?,
+      themeCheckpointConfig: json['themeCheckpointConfig'] != null
+          ? ThemeConfig.fromJson(json['themeCheckpointConfig'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -1946,6 +1977,9 @@ class TimetableSettings {
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
     List<SavedTheme>? savedThemes,
+    String? themeCheckpointName,
+    ThemeConfig? themeCheckpointConfig,
+    bool clearThemeCheckpoint = false,
   }) {
     return TimetableSettings(
       sections: sections ?? this.sections,
@@ -2195,10 +2229,46 @@ class TimetableSettings {
       linkCourseCardColors:
           linkCourseCardColors ?? this.linkCourseCardColors,
       savedThemes: savedThemes ?? this.savedThemes,
+      themeCheckpointName: clearThemeCheckpoint ? null : (themeCheckpointName ?? this.themeCheckpointName),
+      themeCheckpointConfig: clearThemeCheckpoint ? null : (themeCheckpointConfig ?? this.themeCheckpointConfig),
     );
   }
 
   int get sectionCount => sections.length;
+
+  /// 检查当前主题设置是否与检查点不同（即用户修改过）
+  bool get hasThemeModifications {
+    if (themeCheckpointConfig == null) return false;
+    final currentConfig = ThemeConfig.fromSettings(this);
+    final checkpoint = themeCheckpointConfig!;
+    
+    // 只比较检查点中非 null 的字段
+    bool differs(String? Function(ThemeConfig c) getter) {
+      final checkpointVal = getter(checkpoint);
+      if (checkpointVal == null) return false; // 检查点未设置的字段不比较
+      return getter(currentConfig) != checkpointVal;
+    }
+    
+    return differs((c) => c.seedColor) ||
+        differs((c) => c.backgroundColor) ||
+        differs((c) => c.unifiedCardColor) ||
+        differs((c) => c.useUnifiedCardColor?.toString()) ||
+        differs((c) => c.themeMode) ||
+        differs((c) => c.courseCardTitleColorLight) ||
+        differs((c) => c.courseCardTitleColorDark) ||
+        differs((c) => c.courseCardDetailColorLight) ||
+        differs((c) => c.courseCardDetailColorDark) ||
+        differs((c) => c.weekdayBarFontColorLight) ||
+        differs((c) => c.weekdayBarFontColorDark) ||
+        differs((c) => c.weekdayBarAccentColorLight) ||
+        differs((c) => c.weekdayBarAccentColorDark) ||
+        differs((c) => c.timeAxisFontColorLight) ||
+        differs((c) => c.timeAxisFontColorDark) ||
+        differs((c) => c.linkCourseCardColors?.toString()) ||
+        differs((c) => c.hideWeekends?.toString()) ||
+        differs((c) => c.spacingMode) ||
+        differs((c) => c.timeDisplayMode);
+  }
 
   LiveDisplaySettings get beforeClassDisplaySettings => LiveDisplaySettings(
     showCourseName: liveShowCourseName,

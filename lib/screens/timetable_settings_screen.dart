@@ -1044,18 +1044,20 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
         unifiedCardColor: '#2563EB',
         useUnifiedCardColor: false,
         themeMode: 'system',
-        courseCardTitleColorLight: '#1E293B',
-        courseCardTitleColorDark: '#F1F5F9',
-        courseCardDetailColorLight: '#475569',
-        courseCardDetailColorDark: '#94A3B8',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
         weekdayBarFontColorLight: '#1E293B',
         weekdayBarFontColorDark: '#F1F5F9',
+        weekdayBarAccentColorLight: '#2563EB',
+        weekdayBarAccentColorDark: '#93C5FD',
         timeAxisFontColorLight: '#757575',
         timeAxisFontColorDark: '#FFFFFF',
         linkCourseCardColors: true,
         hideWeekends: false,
         spacingMode: 'narrow',
-        timeDisplayMode: 'startAndEnd',
+        timeDisplayMode: 'start_and_end',
       ),
     ),
     (
@@ -1067,18 +1069,20 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
         unifiedCardColor: '#7C3AED',
         useUnifiedCardColor: false,
         themeMode: 'dark',
-        courseCardTitleColorLight: '#F5F3FF',
-        courseCardTitleColorDark: '#F5F3FF',
-        courseCardDetailColorLight: '#C4B5FD',
-        courseCardDetailColorDark: '#C4B5FD',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
         weekdayBarFontColorLight: '#F5F3FF',
         weekdayBarFontColorDark: '#F5F3FF',
+        weekdayBarAccentColorLight: '#A78BFA',
+        weekdayBarAccentColorDark: '#C4B5FD',
         timeAxisFontColorLight: '#A78BFA',
         timeAxisFontColorDark: '#A78BFA',
         linkCourseCardColors: true,
         hideWeekends: false,
         spacingMode: 'narrow',
-        timeDisplayMode: 'startAndEnd',
+        timeDisplayMode: 'start_and_end',
       ),
     ),
     (
@@ -1090,18 +1094,20 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
         unifiedCardColor: '#059669',
         useUnifiedCardColor: false,
         themeMode: 'light',
-        courseCardTitleColorLight: '#14532D',
-        courseCardTitleColorDark: '#F0FDF4',
-        courseCardDetailColorLight: '#166534',
-        courseCardDetailColorDark: '#86EFAC',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
         weekdayBarFontColorLight: '#14532D',
         weekdayBarFontColorDark: '#F0FDF4',
+        weekdayBarAccentColorLight: '#059669',
+        weekdayBarAccentColorDark: '#6EE7B7',
         timeAxisFontColorLight: '#22C55E',
         timeAxisFontColorDark: '#4ADE80',
         linkCourseCardColors: true,
         hideWeekends: false,
         spacingMode: 'narrow',
-        timeDisplayMode: 'startAndEnd',
+        timeDisplayMode: 'start_and_end',
       ),
     ),
     (
@@ -1113,18 +1119,98 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
         unifiedCardColor: '#EA580C',
         useUnifiedCardColor: false,
         themeMode: 'light',
-        courseCardTitleColorLight: '#7C2D12',
-        courseCardTitleColorDark: '#FFF7ED',
-        courseCardDetailColorLight: '#9A3412',
-        courseCardDetailColorDark: '#FDBA74',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
         weekdayBarFontColorLight: '#7C2D12',
         weekdayBarFontColorDark: '#FFF7ED',
+        weekdayBarAccentColorLight: '#EA580C',
+        weekdayBarAccentColorDark: '#FDBA74',
         timeAxisFontColorLight: '#F97316',
         timeAxisFontColorDark: '#FB923C',
         linkCourseCardColors: true,
         hideWeekends: false,
         spacingMode: 'narrow',
-        timeDisplayMode: 'startAndEnd',
+        timeDisplayMode: 'start_and_end',
+      ),
+    ),
+    // 护眼模式
+    (
+      icon: Icons.remove_red_eye,
+      l10nKey: 'themePresetEyeCare',
+      config: const ThemeConfig(
+        seedColor: '#D97706',
+        backgroundColor: '#FFFBEB',
+        unifiedCardColor: '#D97706',
+        useUnifiedCardColor: false,
+        themeMode: 'light',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
+        weekdayBarFontColorLight: '#451A03',
+        weekdayBarFontColorDark: '#FFFBEB',
+        weekdayBarAccentColorLight: '#D97706',
+        weekdayBarAccentColorDark: '#FCD34D',
+        timeAxisFontColorLight: '#B45309',
+        timeAxisFontColorDark: '#FBBF24',
+        linkCourseCardColors: true,
+        hideWeekends: false,
+        spacingMode: 'narrow',
+        timeDisplayMode: 'start_and_end',
+      ),
+    ),
+    // 高对比度
+    (
+      icon: Icons.contrast,
+      l10nKey: 'themePresetHighContrast',
+      config: const ThemeConfig(
+        seedColor: '#000000',
+        backgroundColor: '#FFFFFF',
+        unifiedCardColor: '#000000',
+        useUnifiedCardColor: false,
+        themeMode: 'light',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
+        weekdayBarFontColorLight: '#000000',
+        weekdayBarFontColorDark: '#FFFFFF',
+        weekdayBarAccentColorLight: '#000000',
+        weekdayBarAccentColorDark: '#FFFFFF',
+        timeAxisFontColorLight: '#374151',
+        timeAxisFontColorDark: '#D1D5DB',
+        linkCourseCardColors: true,
+        hideWeekends: false,
+        spacingMode: 'narrow',
+        timeDisplayMode: 'start_and_end',
+      ),
+    ),
+    // 深色极简
+    (
+      icon: Icons.dark_mode,
+      l10nKey: 'themePresetDarkMinimal',
+      config: const ThemeConfig(
+        seedColor: '#6B7280',
+        backgroundColor: '#111827',
+        unifiedCardColor: '#374151',
+        useUnifiedCardColor: false,
+        themeMode: 'dark',
+        courseCardTitleColorLight: '#FFFFFF',
+        courseCardTitleColorDark: '#FFFFFF',
+        courseCardDetailColorLight: '#E0E0E0',
+        courseCardDetailColorDark: '#E0E0E0',
+        weekdayBarFontColorLight: '#F9FAFB',
+        weekdayBarFontColorDark: '#F9FAFB',
+        weekdayBarAccentColorLight: '#9CA3AF',
+        weekdayBarAccentColorDark: '#6B7280',
+        timeAxisFontColorLight: '#9CA3AF',
+        timeAxisFontColorDark: '#9CA3AF',
+        linkCourseCardColors: true,
+        hideWeekends: false,
+        spacingMode: 'narrow',
+        timeDisplayMode: 'start_and_end',
       ),
     ),
   ];
@@ -1138,6 +1224,74 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // 当前主题状态
+          Consumer<TimetableProvider>(
+            builder: (context, provider, child) {
+              final settings = provider.settings;
+              final checkpointName = settings.themeCheckpointName;
+              final hasModifications = settings.hasThemeModifications;
+              
+              if (checkpointName == null) return const SizedBox.shrink();
+              
+              return Card(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        hasModifications ? Icons.edit_note : Icons.check_circle_outline,
+                        color: hasModifications
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.themeCurrentTheme,
+                              style: Theme.of(context).textTheme.labelSmall,
+                            ),
+                            Text(
+                              hasModifications
+                                  ? l10n.themeBasedOnModified(checkpointName)
+                                  : checkpointName,
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (hasModifications) ...[
+                        TextButton(
+                          onPressed: () {
+                            // 重置为检查点
+                            if (settings.themeCheckpointConfig != null) {
+                              _applyThemeWithUndo(
+                                context,
+                                settings.themeCheckpointConfig!,
+                                themeName: checkpointName,
+                              );
+                            }
+                          },
+                          child: Text(l10n.themeResetToPreset),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton.tonal(
+                          onPressed: () => _showSaveThemeDialog(context),
+                          child: Text(l10n.themeSaveCurrent),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
           // 导入导出 + 保存
           Card(
             child: Padding(
@@ -1225,7 +1379,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       return Column(
                         children: [
                           ...savedThemes.map((theme) {
-                            final config = ThemeConfig.fromJson(theme.themeData);
+                            final config = theme.config;
                             return _ThemeTile(
                               icon: Icons.bookmark,
                               name: theme.name,
@@ -1254,7 +1408,27 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                                       _duplicateTheme(context, theme);
                                       break;
                                     case 'delete':
-                                      provider.deleteTheme(theme.id);
+                                      showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: Text(l10n.confirmDeleteTitle),
+                                          content: Text(l10n.themeDeleteConfirmMessage(theme.name)),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, false),
+                                              child: Text(l10n.cancelAction),
+                                            ),
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              child: Text(l10n.confirmAction),
+                                            ),
+                                          ],
+                                        ),
+                                      ).then((confirmed) {
+                                        if (confirmed == true) {
+                                          provider.deleteTheme(theme.id);
+                                        }
+                                      });
                                       break;
                                   }
                                 },
@@ -1285,6 +1459,9 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       case 'themePresetPurple': return l10n.themePresetPurple;
       case 'themePresetGreen': return l10n.themePresetGreen;
       case 'themePresetOrange': return l10n.themePresetOrange;
+      case 'themePresetEyeCare': return l10n.themePresetEyeCare;
+      case 'themePresetHighContrast': return l10n.themePresetHighContrast;
+      case 'themePresetDarkMinimal': return l10n.themePresetDarkMinimal;
       default: return key;
     }
   }
@@ -1338,8 +1515,42 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
           ),
           FilledButton(
             onPressed: () {
-              Navigator.pop(context);
-              _applyThemeWithUndo(context, config);
+              final provider = Provider.of<TimetableProvider>(context, listen: false);
+              final hasModifications = provider.settings.hasThemeModifications;
+              
+              if (hasModifications) {
+                // 有未保存的修改，弹窗确认
+                showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    icon: const Icon(Icons.save_outlined),
+                    title: Text(l10n.themeUnsavedChangesTitle),
+                    content: Text(l10n.themeUnsavedChangesMessage),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(ctx, false);
+                          _showSaveThemeDialog(context);
+                        },
+                        child: Text(l10n.themeSaveCurrent),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: Text(l10n.themeDiscardAndApply),
+                      ),
+                    ],
+                    actionsAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ).then((confirmed) {
+                  if (confirmed == true) {
+                    Navigator.pop(context);
+                    _applyThemeWithUndo(context, config, themeName: name);
+                  }
+                });
+              } else {
+                Navigator.pop(context);
+                _applyThemeWithUndo(context, config, themeName: name);
+              }
             },
             child: Text(l10n.themeApply),
           ),
@@ -1348,13 +1559,17 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     );
   }
 
-  void _applyThemeWithUndo(BuildContext context, ThemeConfig config) {
+  void _applyThemeWithUndo(BuildContext context, ThemeConfig config, {String? themeName}) {
     final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final oldSettings = provider.settings;
     
-    // 应用新主题
-    provider.updateSettings(config.applyToSettings(oldSettings));
+    // 应用新主题并保存检查点
+    final newSettings = config.applyToSettings(oldSettings);
+    provider.updateSettings(newSettings.copyWith(
+      themeCheckpointName: themeName,
+      themeCheckpointConfig: config,
+    ));
     
     // 显示撤销 SnackBar
     ScaffoldMessenger.of(context)
@@ -1480,14 +1695,8 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
         throw FormatException('missing required fields');
       }
       
-      final provider = Provider.of<TimetableProvider>(context, listen: false);
-      await provider.updateSettings(config.applyToSettings(provider.settings));
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(l10n.themeImportSuccess)));
-      }
+      // 使用撤销保护应用导入的主题
+      _applyThemeWithUndo(context, config, themeName: l10n.themeImport);
     } catch (_) {
       if (context.mounted) {
         ScaffoldMessenger.of(context)
@@ -4210,6 +4419,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             currentColor: titleColor,
             defaultValue: defaultTitleColor,
             onColorSelected: onTitleColorChanged,
+            bgColorForContrast: _draft.timetableUseUnifiedCardColor
+                ? _draft.timetableUnifiedCardColor
+                : _draft.themeSeedColor,
           ),
           _buildColorSettingRow(
             context,
@@ -4218,6 +4430,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             defaultValue: defaultDetailColor,
             enabled: !_draft.linkCourseCardColors,
             onColorSelected: onDetailColorChanged,
+            bgColorForContrast: _draft.timetableUseUnifiedCardColor
+                ? _draft.timetableUnifiedCardColor
+                : _draft.themeSeedColor,
           ),
           _buildColorSettingRow(
             context,
@@ -4225,6 +4440,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             currentColor: weekdayColor,
             defaultValue: defaultWeekdayColor,
             onColorSelected: onWeekdayColorChanged,
+            bgColorForContrast: _draft.timetablePageBackgroundColor,
           ),
           _buildColorSettingRow(
             context,
@@ -4232,6 +4448,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             currentColor: accentColor,
             defaultValue: defaultAccentColor,
             onColorSelected: onAccentColorChanged,
+            bgColorForContrast: _draft.timetablePageBackgroundColor,
           ),
           _buildColorSettingRow(
             context,
@@ -4239,6 +4456,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             currentColor: timeAxisColor,
             defaultValue: defaultTimeAxisColor,
             onColorSelected: onTimeAxisColorChanged,
+            bgColorForContrast: _draft.timetablePageBackgroundColor,
           ),
         ],
       ),
@@ -4252,6 +4470,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     required ValueChanged<String> onColorSelected,
     String? defaultValue,
     bool enabled = true,
+    String? bgColorForContrast,
   }) {
     final l10n = AppLocalizations.of(context)!;
     return Padding(
@@ -4267,6 +4486,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                       currentColor: currentColor,
                       onColorSelected: onColorSelected,
                       defaultValue: defaultValue,
+                      bgColorForContrast: bgColorForContrast,
                     );
                   }
                 : null,
@@ -4302,6 +4522,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     required String currentColor,
     required ValueChanged<String> onColorSelected,
     String? defaultValue,
+    String? bgColorForContrast,
   }) {
     final l10n = AppLocalizations.of(context)!;
     Color pickerColor = _colorFromHex(currentColor);
@@ -4335,7 +4556,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             colorCodeTextStyle: Theme.of(context).textTheme.bodyMedium,
             pickersEnabled: const <ColorPickerType, bool>{
               ColorPickerType.both: false,
-              ColorPickerType.primary: false,
+              ColorPickerType.primary: true,
               ColorPickerType.accent: false,
               ColorPickerType.bw: true,
               ColorPickerType.custom: false,
@@ -4361,8 +4582,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               final r = ((pickerColor.r * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
               final g = ((pickerColor.g * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
               final b = ((pickerColor.b * 255.0).round() & 0xff).toRadixString(16).padLeft(2, '0');
-              onColorSelected('#$r$g$b');
+              final selectedHex = '#$r$g$b';
+              onColorSelected(selectedHex);
               Navigator.pop(context);
+              // 检查对比度
+              if (bgColorForContrast != null) {
+                _checkContrastAndWarn(context, selectedHex, bgColorForContrast);
+              }
             },
             child: Text(l10n.confirmAction),
           ),
@@ -4373,6 +4599,45 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
   Color _colorFromHex(String hexColor, [Color? fallback]) {
     return parseHexColorOrFallback(hexColor, fallback: fallback ?? const Color(0xFF2563EB));
+  }
+
+  /// 计算颜色的相对亮度（WCAG 2.1）
+  double _relativeLuminance(Color color) {
+    final r = color.r;
+    final g = color.g;
+    final b = color.b;
+    final rLinear = r <= 0.03928 ? r / 12.92 : ((r + 0.055) / 1.055) * 2.4;
+    final gLinear = g <= 0.03928 ? g / 12.92 : ((g + 0.055) / 1.055) * 2.4;
+    final bLinear = b <= 0.03928 ? b / 12.92 : ((b + 0.055) / 1.055) * 2.4;
+    return 0.2126 * rLinear + 0.7152 * gLinear + 0.0722 * bLinear;
+  }
+
+  /// 计算两个颜色之间的对比度（WCAG 2.1）
+  double _contrastRatio(Color color1, Color color2) {
+    final l1 = _relativeLuminance(color1);
+    final l2 = _relativeLuminance(color2);
+    final lighter = l1 > l2 ? l1 : l2;
+    final darker = l1 > l2 ? l2 : l1;
+    return (lighter + 0.05) / (darker + 0.05);
+  }
+
+  /// 检查颜色对比度并在不足时显示警告
+  void _checkContrastAndWarn(BuildContext context, String textColorHex, String bgColorHex) {
+    final textColor = _colorFromHex(textColorHex);
+    final bgColor = _colorFromHex(bgColorHex);
+    final ratio = _contrastRatio(textColor, bgColor);
+    
+    if (ratio < 3.0) {
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.textColorLowContrastWarning),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+    }
   }
 }
 
