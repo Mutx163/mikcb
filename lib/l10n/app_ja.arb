@@ -2771,8 +2771,15 @@
   "themePresetEyeCare": "アイケア",
   "themePresetHighContrast": "ハイコントラスト",
   "themePresetDarkMinimal": "ダークミニマル",
-  "themeApplySuccess": "テーマを適用しました",
   "themeUndo": "元に戻す",
+  "themeChanged": "{themeName} に切り替えました",
+  "@themeChanged": {
+    "placeholders": {
+      "themeName": {
+        "type": "String"
+      }
+    }
+  },
   "themeRename": "名前を変更",
   "themeDuplicate": "複製"
 }

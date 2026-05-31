@@ -1,7 +1,7 @@
 name: university_timetable
 description: 轻屿课表应用 - 支持小米超级岛
 publish_to: 'none'
-version: 1.2.1-9+98
+version: 1.2.1-10+99
 
 environment:
   sdk: ^3.9.0
@@ -29,6 +29,7 @@ dependencies:
   azlistview: ^2.0.0
   animations: ^2.0.11
   flex_color_picker: ^3.7.0
+  tdesign_flutter: ^0.2.7
 
 dev_dependencies:
   flutter_test:

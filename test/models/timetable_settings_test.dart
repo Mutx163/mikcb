@@ -612,4 +612,171 @@ void main() {
       expect(theme.themeData, theme.config.toJson());
     });
   });
+
+  group('hasThemeModifications', () {
+    test('returns false when no checkpoint', () {
+      final settings = TimetableSettings.defaults();
+      expect(settings.themeCheckpointConfig, isNull);
+      expect(settings.hasThemeModifications, isFalse);
+    });
+
+    test('returns false when settings match checkpoint', () {
+      const checkpoint = ThemeConfig(
+        seedColor: '#FF0000',
+        backgroundColor: '#FFFFFF',
+        courseCardTitleColorLight: '#111111',
+      );
+
+      final settings = TimetableSettings.defaults().copyWith(
+        themeSeedColor: '#FF0000',
+        timetablePageBackgroundColor: '#FFFFFF',
+        courseCardTitleColorLight: '#111111',
+        themeCheckpointName: 'Test Theme',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      expect(settings.hasThemeModifications, isFalse);
+    });
+
+    test('returns true when a checkpoint field is modified', () {
+      const checkpoint = ThemeConfig(
+        seedColor: '#FF0000',
+        backgroundColor: '#FFFFFF',
+      );
+
+      final settings = TimetableSettings.defaults().copyWith(
+        themeSeedColor: '#00FF00', // 修改了
+        timetablePageBackgroundColor: '#FFFFFF',
+        themeCheckpointName: 'Test Theme',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      expect(settings.hasThemeModifications, isTrue);
+    });
+
+    test('returns false when only non-checkpoint fields differ', () {
+      // checkpoint 只设置 seedColor，其他字段为 null
+      const checkpoint = ThemeConfig(
+        seedColor: '#FF0000',
+      );
+
+      final settings = TimetableSettings.defaults().copyWith(
+        themeSeedColor: '#FF0000', // 与 checkpoint 一致
+        courseCardTitleColorLight: '#999999', // checkpoint 中为 null，不应比较
+        themeCheckpointName: 'Test Theme',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      expect(settings.hasThemeModifications, isFalse);
+    });
+
+    test('handles boolean fields correctly', () {
+      const checkpoint = ThemeConfig(
+        useUnifiedCardColor: true,
+        linkCourseCardColors: true,
+        hideWeekends: false,
+      );
+
+      final settingsUnmodified = TimetableSettings.defaults().copyWith(
+        timetableUseUnifiedCardColor: true,
+        linkCourseCardColors: true,
+        timetableHideWeekends: false,
+        themeCheckpointName: 'Test',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      final settingsModified = TimetableSettings.defaults().copyWith(
+        timetableUseUnifiedCardColor: false, // 修改了
+        linkCourseCardColors: true,
+        timetableHideWeekends: false,
+        themeCheckpointName: 'Test',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      expect(settingsUnmodified.hasThemeModifications, isFalse);
+      expect(settingsModified.hasThemeModifications, isTrue);
+    });
+  });
+
+  group('clearThemeCheckpoint', () {
+    test('clears both checkpoint fields', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        themeCheckpointName: 'Test Theme',
+        themeCheckpointConfig: const ThemeConfig(seedColor: '#FF0000'),
+      );
+
+      expect(settings.themeCheckpointName, isNotNull);
+      expect(settings.themeCheckpointConfig, isNotNull);
+
+      final cleared = settings.copyWith(clearThemeCheckpoint: true);
+
+      expect(cleared.themeCheckpointName, isNull);
+      expect(cleared.themeCheckpointConfig, isNull);
+    });
+
+    test('preserves checkpoint when clearThemeCheckpoint is false', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        themeCheckpointName: 'Test Theme',
+        themeCheckpointConfig: const ThemeConfig(seedColor: '#FF0000'),
+      );
+
+      final preserved = settings.copyWith(clearThemeCheckpoint: false);
+
+      expect(preserved.themeCheckpointName, 'Test Theme');
+      expect(preserved.themeCheckpointConfig?.seedColor, '#FF0000');
+    });
+
+    test('clearThemeCheckpoint takes priority over provided values', () {
+      final settings = TimetableSettings.defaults().copyWith(
+        themeCheckpointName: 'Old Theme',
+        themeCheckpointConfig: const ThemeConfig(seedColor: '#FF0000'),
+      );
+
+      // 即使传入新值，clearThemeCheckpoint: true 也会清空
+      final cleared = settings.copyWith(
+        clearThemeCheckpoint: true,
+        themeCheckpointName: 'New Theme',
+        themeCheckpointConfig: const ThemeConfig(seedColor: '#00FF00'),
+      );
+
+      expect(cleared.themeCheckpointName, isNull);
+      expect(cleared.themeCheckpointConfig, isNull);
+    });
+  });
+
+  group('themeCheckpoint serialization', () {
+    test('roundtrip preserves checkpoint fields', () {
+      const checkpoint = ThemeConfig(
+        seedColor: '#FF0000',
+        backgroundColor: '#FFFFFF',
+        courseCardTitleColorLight: '#111111',
+        weekdayBarAccentColorLight: '#2563EB',
+      );
+
+      final settings = TimetableSettings.defaults().copyWith(
+        themeCheckpointName: 'Blue Theme',
+        themeCheckpointConfig: checkpoint,
+      );
+
+      final restored = TimetableSettings.fromJson(settings.toJson());
+
+      expect(restored.themeCheckpointName, 'Blue Theme');
+      expect(restored.themeCheckpointConfig, isNotNull);
+      expect(restored.themeCheckpointConfig!.seedColor, '#FF0000');
+      expect(restored.themeCheckpointConfig!.backgroundColor, '#FFFFFF');
+      expect(restored.themeCheckpointConfig!.courseCardTitleColorLight, '#111111');
+      expect(restored.themeCheckpointConfig!.weekdayBarAccentColorLight, '#2563EB');
+    });
+
+    test('handles null checkpoint in JSON', () {
+      final json = TimetableSettings.defaults().toJson();
+      // 默认值没有 checkpoint 字段
+      expect(json.containsKey('themeCheckpointName'), isFalse);
+      expect(json.containsKey('themeCheckpointConfig'), isFalse);
+
+      final restored = TimetableSettings.fromJson(json);
+      expect(restored.themeCheckpointName, isNull);
+      expect(restored.themeCheckpointConfig, isNull);
+    });
+  });
 }

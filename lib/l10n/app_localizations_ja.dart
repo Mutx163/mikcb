@@ -4680,10 +4680,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get themePresetDarkMinimal => 'ダークミニマル';
 
   @override
-  String get themeApplySuccess => 'テーマを適用しました';
+  String get themeUndo => '元に戻す';
 
   @override
-  String get themeUndo => '元に戻す';
+  String themeChanged(String themeName) {
+    return '$themeName に切り替えました';
+  }
 
   @override
   String get themeRename => '名前を変更';

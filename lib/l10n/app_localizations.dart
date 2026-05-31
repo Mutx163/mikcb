@@ -8386,17 +8386,17 @@ abstract class AppLocalizations {
   /// **'深色极简'**
   String get themePresetDarkMinimal;
 
-  /// No description provided for @themeApplySuccess.
-  ///
-  /// In zh, this message translates to:
-  /// **'主题已应用'**
-  String get themeApplySuccess;
-
   /// No description provided for @themeUndo.
   ///
   /// In zh, this message translates to:
   /// **'撤销'**
   String get themeUndo;
+
+  /// No description provided for @themeChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'已切换到 {themeName}'**
+  String themeChanged(String themeName);
 
   /// No description provided for @themeRename.
   ///

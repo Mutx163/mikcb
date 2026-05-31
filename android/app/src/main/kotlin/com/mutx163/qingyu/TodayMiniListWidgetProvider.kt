@@ -84,7 +84,7 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
             )
 
             val isShowingTomorrow = snapshot != null
-                && snapshot.state == "completed"
+                && (snapshot.state == "completed" || snapshot.state == "no_course")
                 && snapshot.tomorrowCourses.isNotEmpty()
             if (snapshot == null) {
                 views.setTextViewText(R.id.widget_mini_heading, "今日课程")

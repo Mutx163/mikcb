@@ -95,11 +95,11 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.widget_large_exam, View.GONE)
                 setCourseRows(views, emptyList(), primaryColor, secondaryColor)
             } else {
-                val isShowingTomorrow = snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()
+                val isShowingTomorrow = (snapshot.state == "completed" || snapshot.state == "no_course") && snapshot.tomorrowCourses.isNotEmpty()
                 views.setTextViewText(R.id.widget_large_heading, TodayWidgetSupport.headingText(snapshot))
                 views.setTextViewText(
                     R.id.widget_large_week,
-                    if (isShowingTomorrow) "第${snapshot.tomorrowWeek}周" else "第${snapshot.currentWeek}周"
+                    TodayWidgetSupport.rightInfoText(snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_large_title,
@@ -121,6 +121,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     }
                 )
                 val emptyText = when {
+                    isShowingTomorrow -> ""
                     snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() -> "今天课程已结束"
                     snapshot.state == "no_course" -> "今日无课"
                     else -> ""

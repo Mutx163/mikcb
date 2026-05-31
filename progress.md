@@ -1,22 +1,14 @@
 # Progress
 
-## Status
-In Progress
+## correctness review — 完成
 
-## Tasks
-
-### 测试充分性审查 (2026-05-28)
-- [x] 审查 ThemeConfig 新字段测试覆盖
-- [x] 审查 SavedTheme 结构迁移测试覆盖
-- [x] 审查 hasThemeModifications 测试覆盖 → **缺失，Critical**
-- [x] 审查 clearThemeCheckpoint 测试覆盖 → **缺失，High**
-- [x] 审查 themeCheckpoint 序列化 roundtrip → **缺失，High**
-- [x] 审查旧格式兼容性测试 → **缺失，Medium**
-- [x] 审查现有测试是否被破坏 → 无破坏
-- [x] 输出审查报告到 reviews/testing.md
-
-## Files Changed
-
-## Notes
-
-审查结果：新增测试覆盖核心序列化逻辑，质量良好。但 `hasThemeModifications`（Critical）、`clearThemeCheckpoint`（High）、`themeCheckpoint*` 序列化 roundtrip（High）缺少测试。
+- 审查了 git diff 全部 15 个文件（+975/-48）
+- 验证了 ThemeConfig 新字段的序列化/反序列化完整覆盖（toJson, fromJson v1/v2, fromSettings, applyToSettings, merge, previewColors）
+- 验证了 SavedTheme 结构迁移（themeData Map → config ThemeConfig）的向后兼容性
+- 验证了检查点机制（themeCheckpointName/Config, hasThemeModifications, clearThemeCheckpoint）的逻辑正确性
+- 验证了 7 个预设主题的颜色值和新增 weekdayBarAccentColor 字段
+- 验证了旧版本用户升级后的兼容性（缺失字段的 null 处理和默认值）
+- 验证了 6 语言 l10n 字符串的完整性
+- 发现预设 courseCardTitleColor 统一为白色可能在浅色课程卡片上有对比度问题（Note 级别）
+- 无 Critical/High 问题
+- 输出：reviews/correctness.md

@@ -2772,8 +2772,15 @@
   "themePresetEyeCare": "护眼模式",
   "themePresetHighContrast": "高对比度",
   "themePresetDarkMinimal": "深色极简",
-  "themeApplySuccess": "主题已应用",
   "themeUndo": "撤销",
+  "themeChanged": "已切换到 {themeName}",
+  "@themeChanged": {
+    "placeholders": {
+      "themeName": {
+        "type": "String"
+      }
+    }
+  },
   "themeRename": "重命名",
   "themeDuplicate": "复制"
 }

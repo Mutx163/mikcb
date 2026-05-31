@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -1216,6 +1217,12 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   ];
 
   @override
+  void dispose() {
+    _dismissTDMessage();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     
@@ -1543,13 +1550,13 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                   ),
                 ).then((confirmed) {
                   if (confirmed == true) {
-                    Navigator.pop(context);
                     _applyThemeWithUndo(context, config, themeName: name);
+                    Navigator.pop(context);
                   }
                 });
               } else {
-                Navigator.pop(context);
                 _applyThemeWithUndo(context, config, themeName: name);
+                Navigator.pop(context);
               }
             },
             child: Text(l10n.themeApply),
@@ -1559,31 +1566,104 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     );
   }
 
+  OverlayEntry? _currentTDMessageOverlay;
+  Timer? _tdMessageTimer;
+
+  void _dismissTDMessage() {
+    _tdMessageTimer?.cancel();
+    _tdMessageTimer = null;
+    _currentTDMessageOverlay?.remove();
+    _currentTDMessageOverlay = null;
+  }
+
+  void _showTDMessage(BuildContext context, String content, {MessageTheme? theme, int duration = 3000}) {
+    _dismissTDMessage();
+    
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (overlayContext) => Positioned(
+        top: MediaQuery.of(overlayContext).padding.top + 16,
+        left: 16,
+        right: 16,
+        child: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(8),
+          color: Theme.of(overlayContext).colorScheme.inverseSurface,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                Icon(
+                  theme == MessageTheme.error ? Icons.error_outline :
+                  theme == MessageTheme.warning ? Icons.warning_amber_outlined :
+                  Icons.check_circle,
+                  color: Theme.of(overlayContext).colorScheme.onInverseSurface,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    content,
+                    style: TextStyle(color: Theme.of(overlayContext).colorScheme.onInverseSurface),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    _tdMessageTimer?.cancel();
+                    entry.remove();
+                    if (_currentTDMessageOverlay == entry) _currentTDMessageOverlay = null;
+                  },
+                  child: Icon(
+                    Icons.close,
+                    color: Theme.of(overlayContext).colorScheme.onInverseSurface.withOpacity(0.7),
+                    size: 18,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    
+    _currentTDMessageOverlay = entry;
+    overlay.insert(entry);
+    
+    _tdMessageTimer = Timer(Duration(milliseconds: duration), () {
+      entry.remove();
+      if (_currentTDMessageOverlay == entry) _currentTDMessageOverlay = null;
+      _tdMessageTimer = null;
+    });
+  }
+
   void _applyThemeWithUndo(BuildContext context, ThemeConfig config, {String? themeName}) {
-    final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<TimetableProvider>(context, listen: false);
-    final oldSettings = provider.settings;
+    final l10n = AppLocalizations.of(context)!;
     
-    // 应用新主题并保存检查点
-    final newSettings = config.applyToSettings(oldSettings);
-    provider.updateSettings(newSettings.copyWith(
-      themeCheckpointName: themeName,
-      themeCheckpointConfig: config,
-    ));
+    // 使用 Provider 的撤销机制
+    final newSettings = config.applyToSettings(provider.settings);
+    provider.applyThemeWithUndo(
+      newSettings.copyWith(
+        themeCheckpointName: themeName,
+        themeCheckpointConfig: config,
+      ),
+      themeName: themeName,
+    );
     
-    // 显示撤销 SnackBar
+    // 使用 ScaffoldMessenger 显示撤销 SnackBar（app 级组件，不受路由 pop 影响）
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
-          content: Text(l10n.themeApplySuccess),
+          content: Text(l10n.themeChanged(themeName ?? l10n.themeManageTitle)),
           action: SnackBarAction(
             label: l10n.themeUndo,
             onPressed: () {
-              provider.updateSettings(oldSettings);
+              provider.undoThemeChange();
             },
           ),
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 8),
         ),
       );
   }
@@ -1669,9 +1749,11 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final themeConfig = ThemeConfig.fromSettings(provider.settings);
     Clipboard.setData(ClipboardData(text: jsonEncode(themeConfig.toJson())));
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(l10n.themeExportSuccess)));
+    _showTDMessage(
+      context,
+      l10n.themeExportSuccess,
+      theme: MessageTheme.success,
+    );
   }
 
   void _importTheme(BuildContext context) async {
@@ -1680,9 +1762,11 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     if (!context.mounted) return;
     if (data?.text == null) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(l10n.themeImportFailed)));
+        _showTDMessage(
+          context,
+          l10n.themeImportFailed,
+          theme: MessageTheme.error,
+        );
       }
       return;
     }
@@ -1699,9 +1783,11 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       _applyThemeWithUndo(context, config, themeName: l10n.themeImport);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..clearSnackBars()
-          ..showSnackBar(SnackBar(content: Text(l10n.themeImportFailed)));
+        _showTDMessage(
+          context,
+          l10n.themeImportFailed,
+          theme: MessageTheme.error,
+        );
       }
     }
   }
@@ -4629,14 +4715,13 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     
     if (ratio < 3.0) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(
-          SnackBar(
-            content: Text(l10n.textColorLowContrastWarning),
-            duration: const Duration(seconds: 3),
-          ),
-        );
+      TDMessage.showMessage(
+        context: context,
+        content: l10n.textColorLowContrastWarning,
+        theme: MessageTheme.warning,
+        closeBtn: true,
+        duration: 3000,
+      );
     }
   }
 }

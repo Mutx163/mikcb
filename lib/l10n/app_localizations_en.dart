@@ -4868,10 +4868,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get themePresetDarkMinimal => 'Dark Minimal';
 
   @override
-  String get themeApplySuccess => 'Theme applied';
+  String get themeUndo => 'Undo';
 
   @override
-  String get themeUndo => 'Undo';
+  String themeChanged(String themeName) {
+    return 'Switched to $themeName';
+  }
 
   @override
   String get themeRename => 'Rename';

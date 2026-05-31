@@ -2772,8 +2772,15 @@
   "themePresetEyeCare": "Eye Care",
   "themePresetHighContrast": "High Contrast",
   "themePresetDarkMinimal": "Dark Minimal",
-  "themeApplySuccess": "Theme applied",
   "themeUndo": "Undo",
+  "themeChanged": "Switched to {themeName}",
+  "@themeChanged": {
+    "placeholders": {
+      "themeName": {
+        "type": "String"
+      }
+    }
+  },
   "themeRename": "Rename",
   "themeDuplicate": "Duplicate"
 }

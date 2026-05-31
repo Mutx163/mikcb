@@ -144,11 +144,51 @@ class TimetableProvider with ChangeNotifier {
   List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
   
+  // 主题撤销状态
+  TimetableSettings? _undoSettings;
+  String? _undoThemeName;
+  Timer? _undoTimer;
+  /// 持久化写入纪元，用于检测 write-after-write 竞争
+  int _writeEpoch = 0;
+  
+  /// 是否有待撤销的主题变更
+  bool get hasPendingUndo => _undoSettings != null;
+  
+  /// 撤销主题名称
+  String? get undoThemeName => _undoThemeName;
+  
+  /// 应用主题并保存撤销状态
+  Future<void> applyThemeWithUndo(TimetableSettings newSettings, {String? themeName}) async {
+    _undoSettings = _settings;
+    _undoThemeName = themeName;
+    _undoTimer?.cancel();
+    _undoTimer = Timer(const Duration(seconds: 8), () {
+      _undoSettings = null;
+      _undoThemeName = null;
+      notifyListeners();
+    });
+    await updateSettings(newSettings);
+  }
+  
+  /// 撤销主题变更
+  Future<void> undoThemeChange() async {
+    if (_undoSettings == null) return;
+    final oldSettings = _undoSettings!;
+    _undoSettings = null;
+    _undoThemeName = null;
+    _undoTimer?.cancel();
+    await updateSettings(oldSettings);
+  }
+  
   /// 批量更新设置（用于主题导入）
   Future<void> updateSettings(TimetableSettings newSettings) async {
     _settings = _normalizeSettingsWithTimeScheme(newSettings);
+    _writeEpoch++;
+    final epoch = _writeEpoch;
     await _persistActiveProfileState();
-    notifyListeners();
+    if (_writeEpoch == epoch) {
+      notifyListeners();
+    }
   }
   
   /// 保存主题
@@ -411,6 +451,7 @@ class TimetableProvider with ChangeNotifier {
   @override
   void dispose() {
     _liveActivityTimer?.cancel();
+    _undoTimer?.cancel();
     super.dispose();
   }
 

@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:tdesign_flutter/tdesign_flutter.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -73,10 +74,16 @@ ThemeData _buildAppTheme(
     seedColor: seedColor,
     brightness: brightness,
   );
+  final isDark = brightness == Brightness.dark;
+  final tdTheme = TDTheme.defaultData();
+  final tdExtensions = <ThemeExtension>[
+    isDark ? (tdTheme.dark ?? tdTheme) : tdTheme,
+  ];
   return ThemeData(
     useMaterial3: true,
     fontFamily: fontFamily,
     colorScheme: colorScheme,
+    extensions: tdExtensions,
     scaffoldBackgroundColor: colorScheme.surface,
     appBarTheme: AppBarTheme(
       centerTitle: false,

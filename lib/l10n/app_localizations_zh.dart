@@ -4611,10 +4611,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themePresetDarkMinimal => '深色极简';
 
   @override
-  String get themeApplySuccess => '主题已应用';
+  String get themeUndo => '撤销';
 
   @override
-  String get themeUndo => '撤销';
+  String themeChanged(String themeName) {
+    return '已切换到 $themeName';
+  }
 
   @override
   String get themeRename => '重命名';
@@ -9231,10 +9233,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get themePresetDarkMinimal => '深色極簡';
 
   @override
-  String get themeApplySuccess => '主題已套用';
+  String get themeUndo => '撤銷';
 
   @override
-  String get themeUndo => '撤銷';
+  String themeChanged(String themeName) {
+    return '已切換到 $themeName';
+  }
 
   @override
   String get themeRename => '重新命名';
@@ -13851,10 +13855,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get themePresetDarkMinimal => '深色極簡';
 
   @override
-  String get themeApplySuccess => '主題已套用';
+  String get themeUndo => '撤銷';
 
   @override
-  String get themeUndo => '撤銷';
+  String themeChanged(String themeName) {
+    return '已切換到 $themeName';
+  }
 
   @override
   String get themeRename => '重新命名';

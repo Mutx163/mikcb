@@ -32,10 +32,11 @@
 
         <TextView
             android:id="@+id/widget_large_week"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
-            android:text="第 6 周"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:text="第 6 周 · 5/31 · 共5节"
             android:textSize="12sp" />
     </LinearLayout>
 

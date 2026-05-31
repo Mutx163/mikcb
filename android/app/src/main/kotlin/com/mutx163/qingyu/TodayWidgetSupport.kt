@@ -258,11 +258,11 @@ object TodayWidgetSupport {
                 if (dateOnly < todayDateStr) continue // expired
                 if (bestDate == null || dateOnly < bestDate) {
                     bestDate = dateOnly
-                    nextExamName = exam.optString("name").takeIf { it.isNotBlank() }
+                    nextExamName = sanitizeNullableField(exam.optString("name"))
                     nextExamDate = dateOnly
-                    nextExamLocation = exam.optString("location").takeIf { it.isNotBlank() }
-                    nextExamStartTime = exam.optString("startTime").takeIf { it.isNotBlank() }
-                    nextExamEndTime = exam.optString("endTime").takeIf { it.isNotBlank() }
+                    nextExamLocation = sanitizeNullableField(exam.optString("location"))
+                    nextExamStartTime = sanitizeNullableField(exam.optString("startTime"))
+                    nextExamEndTime = sanitizeNullableField(exam.optString("endTime"))
                 }
             }
             if (bestDate != null) {
@@ -296,7 +296,7 @@ object TodayWidgetSupport {
         var tomorrowWeek = currentWeek
         var tomorrowDayOfWeek = 0
         val showTomorrowCourses = settingsJson.optBoolean("widgetShowTomorrowCourses", true)
-        if (state == "completed" && !isHoliday && showTomorrowCourses) {
+        if ((state == "completed" || state == "no_course") && !isHoliday && showTomorrowCourses) {
             val tomorrowCal = Calendar.getInstance().apply {
                 timeInMillis = nowMillis
                 add(Calendar.DAY_OF_YEAR, 1)
@@ -507,8 +507,14 @@ object TodayWidgetSupport {
         }
     }
 
+    /** Returns true when today is done or has no courses AND tomorrow has courses to show. */
+    fun isShowingTomorrowCourses(snapshot: TodayWidgetSnapshotInfo): Boolean {
+        return (snapshot.state == "completed" || snapshot.state == "no_course")
+            && snapshot.tomorrowCourses.isNotEmpty()
+    }
+
     fun headingText(snapshot: TodayWidgetSnapshotInfo): String {
-        return if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+        return if (isShowingTomorrowCourses(snapshot)) {
             "明日课程"
         } else {
             "今日课程"
@@ -538,7 +544,7 @@ object TodayWidgetSupport {
         return when {
             snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
             snapshot.highlightedCourse != null -> snapshot.highlightedCourse.name
-            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() ->
+            isShowingTomorrowCourses(snapshot) ->
                 snapshot.tomorrowCourses.first().name
             snapshot.state == "completed" -> "今天课程已结束"
             else -> "今天没有课程"
@@ -556,7 +562,7 @@ object TodayWidgetSupport {
                 highlighted.endTime.isNotBlank() -> {
                 "${highlighted.startTime} - ${highlighted.endTime}"
             }
-            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() -> {
+            isShowingTomorrowCourses(snapshot) -> {
                 val first = snapshot.tomorrowCourses.first()
                 "${first.startTime} - ${first.endTime}"
             }
@@ -569,7 +575,7 @@ object TodayWidgetSupport {
         if (snapshot.state == "holiday") {
             return "第${snapshot.currentWeek}周"
         }
-        if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+        if (isShowingTomorrowCourses(snapshot)) {
             val first = snapshot.tomorrowCourses.first()
             return if (snapshot.showLocation && first.location.isNotBlank()) {
                 first.location
@@ -631,8 +637,9 @@ object TodayWidgetSupport {
         } else {
             ""
         }
-        val location = if (!snapshot.nextExamLocation.isNullOrBlank()) {
-            " ${snapshot.nextExamLocation}"
+        val rawLocation = snapshot.nextExamLocation.orEmpty()
+        val location = if (rawLocation.isNotBlank() && !rawLocation.equals("null", ignoreCase = true)) {
+            " $rawLocation"
         } else {
             ""
         }
@@ -643,11 +650,36 @@ object TodayWidgetSupport {
         }
     }
 
+    fun rightInfoText(snapshot: TodayWidgetSnapshotInfo): String {
+        val cal = Calendar.getInstance()
+        val month = cal.get(Calendar.MONTH) + 1
+        val day = cal.get(Calendar.DAY_OF_MONTH)
+        val dayNames = arrayOf("日", "一", "二", "三", "四", "五", "六")
+        val dow = dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1]
+        val datePart = "${month}/${day} ${dow}"
+
+        val isShowingTomorrow = isShowingTomorrowCourses(snapshot)
+        val week = if (isShowingTomorrow) snapshot.tomorrowWeek else snapshot.currentWeek
+
+        return when {
+            snapshot.state == "holiday" ->
+                "第${week}周 · 假期中"
+            isShowingTomorrow ->
+                "第${week}周 · 明日${snapshot.tomorrowCourses.size}节"
+            snapshot.totalTodayCourseCount == 0 ->
+                "第${week}周 · ${datePart}"
+            snapshot.state == "completed" ->
+                "第${week}周 · ${datePart}"
+            else ->
+                "第${week}周 · ${datePart} · ${snapshot.totalTodayCourseCount}节"
+        }
+    }
+
     fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
         return when {
             snapshot.state == "holiday" ->
                 "${snapshot.profileName} · ${snapshot.holidayName ?: "假期中"}"
-            snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty() ->
+            isShowingTomorrowCourses(snapshot) ->
                 "${snapshot.profileName} · 明日 ${snapshot.tomorrowCourses.size} 节"
             snapshot.totalTodayCourseCount > 0 ->
                 "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
@@ -657,7 +689,7 @@ object TodayWidgetSupport {
     }
 
     fun secondaryCourses(snapshot: TodayWidgetSnapshotInfo, limit: Int): List<TodayWidgetCourseInfo> {
-        if (snapshot.state == "completed" && snapshot.tomorrowCourses.isNotEmpty()) {
+        if (isShowingTomorrowCourses(snapshot)) {
             // 明日课程：第一个作为 hero，其余作为 secondary
             return snapshot.tomorrowCourses.drop(1).take(limit)
         }
@@ -703,13 +735,13 @@ object TodayWidgetSupport {
             visibleTodayCourses = visibleCourses,
             highlightedCourse = json.optJSONObject("highlightedCourse")?.let(::parseCourse),
             nextCourse = json.optJSONObject("nextCourse")?.let(::parseCourse),
-            nextExamName = json.optString("nextExamName").takeIf { it.isNotBlank() },
-            nextExamDate = json.optString("nextExamDate").takeIf { it.isNotBlank() },
+            nextExamName = sanitizeNullableField(json.optString("nextExamName")),
+            nextExamDate = sanitizeNullableField(json.optString("nextExamDate")),
             nextExamDaysUntil = json.optInt("nextExamDaysUntil", -1).takeIf { it >= 0 },
-            nextExamLocation = json.optString("nextExamLocation").takeIf { it.isNotBlank() },
-            nextExamStartTime = json.optString("nextExamStartTime").takeIf { it.isNotBlank() },
-            nextExamEndTime = json.optString("nextExamEndTime").takeIf { it.isNotBlank() },
-            holidayName = json.optString("holidayName").takeIf { it.isNotBlank() },
+            nextExamLocation = sanitizeNullableField(json.optString("nextExamLocation")),
+            nextExamStartTime = sanitizeNullableField(json.optString("nextExamStartTime")),
+            nextExamEndTime = sanitizeNullableField(json.optString("nextExamEndTime")),
+            holidayName = sanitizeNullableField(json.optString("holidayName")),
             tomorrowCourses = json.optJSONArray("tomorrowCourses")?.let(::parseCourses) ?: emptyList(),
             tomorrowWeek = json.optInt("tomorrowWeek", json.optInt("currentWeek", 1)),
             tomorrowDayOfWeek = json.optInt("tomorrowDayOfWeek", 0),
@@ -838,6 +870,13 @@ object TodayWidgetSupport {
             ((normalizedNow.timeInMillis - normalizedStart.timeInMillis) / 86_400_000L).toInt()
         val week = (diffDays / 7) + 1
         return week.coerceIn(1, semesterWeekCount)
+    }
+
+    /** Returns null if the string is null, blank, or the literal "null". */
+    private fun sanitizeNullableField(value: String?): String? {
+        return value?.takeIf {
+            it.isNotBlank() && !it.equals("null", ignoreCase = true)
+        }
     }
 
     private fun buildCourseDateTimeMillis(

@@ -4711,10 +4711,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themePresetDarkMinimal => '다크 미니멀';
 
   @override
-  String get themeApplySuccess => '테마가 적용되었습니다';
+  String get themeUndo => '실행 취소';
 
   @override
-  String get themeUndo => '실행 취소';
+  String themeChanged(String themeName) {
+    return '$themeName로 전환되었습니다';
+  }
 
   @override
   String get themeRename => '이름 변경';
