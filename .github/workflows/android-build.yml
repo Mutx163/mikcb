@@ -101,7 +101,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           OVERRIDE_VERSION_NAME: ${{ steps.meta.outputs.version_name }}
-        run: flutter build apk --release --split-per-abi --flavor prod
+        run: flutter build apk --release --flavor prod
 
       - name: Prepare artifact
         if: startsWith(github.ref, 'refs/tags/v')
@@ -114,13 +114,10 @@ jobs:
           find build/app/outputs -type f 2>/dev/null | head -30
           echo "=== APK files (size) ==="
           find build/app/outputs -name '*.apk' -type f -exec ls -lh {} \; 2>/dev/null || echo 'No APK files found'
-          APK_PATH=$(find build/app/outputs -path '*release*' -name '*arm64*' -type f | head -1)
+          # Try split-per-abi style first, then universal APK
+          APK_PATH=$(find build/app/outputs -name '*arm64*' -type f | head -1)
           if [[ -z "${APK_PATH}" ]]; then
-            echo "WARN: arm64 release APK not found, trying broader search..."
-            APK_PATH=$(find build/app/outputs -name '*release*' -a -name '*arm64*' -type f | head -1)
-          fi
-          if [[ -z "${APK_PATH}" ]]; then
-            echo "WARN: Still not found, trying any release APK..."
+            echo "WARN: arm64 APK not found, trying any release APK..."
             APK_PATH=$(find build/app/outputs -name '*release*' -type f | head -1)
           fi
           if [[ -z "${APK_PATH}" ]]; then
