@@ -1,27 +1,27 @@
 {
-  "releaseCount": 8,
+  "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.1.5",
-    "title": "v1.2.1.5",
-    "publishedAt": "2026-05-14T05:34:35Z",
-    "body": "# v1.2.1.5\r\n\r\n- 优化课表设置更新后的后台同步策略，减少界面等待\r\n- 优化日视图进度刷新机制，支持测试环境禁用\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.5",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.5/mikcb-1.2.1.5-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.1.5-arm64-v8a.apk",
+    "version": "1.2.1.11",
+    "title": "v1.2.1.11",
+    "publishedAt": "2026-06-03T14:55:54Z",
+    "body": "# v1.2.1.11\r\n\r\n## 新增\r\n\r\n- 全新主题系统：支持预设主题（含护眼/高对比度等）、保存自定义主题、导入导出、重命名与复制\r\n- 主题切换撤销：应用预设或导入的主题后底部出现撤销按钮，8秒内可一键还原到应用前的设置\r\n- 主题修改检测：应用主题后若调整了颜色等设置，系统自动标记，提醒用户已偏离原主题\r\n- 低对比度配色警告：文字颜色与背景对比度不足时自动弹出提醒\r\n- 小部件明日课程预览：今日课程结束或今日无课时，若明日有课程则自动显示明日课程信息\r\n\r\n## 优化\r\n\r\n- 大号小部件顶部信息区布局优化：整合显示周次、日期与课程数量，信息更清晰\r\n- 主题导入导出改用顶部浮层提示，配合图标和关闭按钮，视觉效果更醒目\r\n- 修复 CI 构建流程中 AAR metadata 检查导致的构建失败问题\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.11",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.11/mikcb-1.2.1.11-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.11-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 25
+    "assetDownloadCount": 0
   },
   "prerelease": {
     "channelLabel": "预发布",
-    "version": "1.2.1.2",
-    "title": "v1.2.1.2",
-    "publishedAt": "2026-05-12T08:40:54Z",
-    "body": "# v1.2.1.2\n\n- 优化考试日期选择器：星期名称和日期格式跟随系统语言。\n- 优化自定义假期编辑弹窗：改为底部半屏样式，操作更顺手。\n- 优化节假日类型选择：标签文字精简，切换不再抖动。\n- 新增考试日期周选择器关闭按钮：支持关闭选择器而不选日期。\n- 更新日志列表补充：补全 v1.2.1.1 版本记录。\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.2",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.2/mikcb-1.2.1.2-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.1.2-arm64-v8a.apk",
+    "version": "1.2.1.9",
+    "title": "v1.2.1.9",
+    "publishedAt": "2026-05-22T11:48:27Z",
+    "body": "# v1.2.1.9\n\n## 新增\n\n- 小米超级岛摘要态：课前提醒显示课程名和倒计时，上课中显示环形进度和课间节点进度条，课末提醒显示课程名和倒计时\n- 小米超级岛展开态：添加 `business: class_schedule` 标识\n\n## 优化\n\n- 超级岛展开详情移除重复的课程名称显示\n- 超级岛展开详情教室信息始终显示，不再受\"显示地点\"开关影响\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.9",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.9/mikcb-1.2.1.9-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.9-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 7
+    "assetDownloadCount": 26
   }
 }
