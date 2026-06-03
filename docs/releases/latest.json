@@ -2,13 +2,13 @@
   "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.1.11",
-    "title": "v1.2.1.11",
-    "publishedAt": "2026-06-03T14:55:54Z",
-    "body": "# v1.2.1.11\r\n\r\n## 新增\r\n\r\n- 全新主题系统：支持预设主题（含护眼/高对比度等）、保存自定义主题、导入导出、重命名与复制\r\n- 主题切换撤销：应用预设或导入的主题后底部出现撤销按钮，8秒内可一键还原到应用前的设置\r\n- 主题修改检测：应用主题后若调整了颜色等设置，系统自动标记，提醒用户已偏离原主题\r\n- 低对比度配色警告：文字颜色与背景对比度不足时自动弹出提醒\r\n- 小部件明日课程预览：今日课程结束或今日无课时，若明日有课程则自动显示明日课程信息\r\n\r\n## 优化\r\n\r\n- 大号小部件顶部信息区布局优化：整合显示周次、日期与课程数量，信息更清晰\r\n- 主题导入导出改用顶部浮层提示，配合图标和关闭按钮，视觉效果更醒目\r\n- 修复 CI 构建流程中 AAR metadata 检查导致的构建失败问题\r\n",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.11",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.11/mikcb-1.2.1.11-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.1.11-arm64-v8a.apk",
+    "version": "1.2.1.12",
+    "title": "v1.2.1.12",
+    "publishedAt": "2026-06-03T15:10:00Z",
+    "body": "# v1.2.1.12\r\n\r\n## 优化\r\n\r\n- 修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题\r\n- 优化构建产物大小，使用 --target-platform 精简 APK 体积\r\n- 增强工作流错误检测，避免静默吞失败\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.12",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.12/mikcb-1.2.1.12-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.12-arm64-v8a.apk",
     "assetCount": 1,
     "assetDownloadCount": 0
   },
@@ -22,6 +22,6 @@
     "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.9/mikcb-1.2.1.9-arm64-v8a.apk",
     "assetName": "mikcb-1.2.1.9-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 26
+    "assetDownloadCount": 40
   }
 }
