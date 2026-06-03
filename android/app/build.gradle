@@ -45,7 +45,10 @@ android {
         applicationId = "com.mutx163.qingyu"
         minSdk = 26
         targetSdk = 36
-        versionCode = flutter.versionCode
+        // +100000 offset: Flutter 3.35+ 的 --split-per-abi 会在 versionCode 上加 ABI 乘数 (e.g., arm64: ×2000),
+        // 移除 --split-per-abi 后 versionCode 会变小，导致 Android 误判为降级安装。
+        // 加此偏移确保 versionCode 始终高于旧版分 ABI 构建的值。
+        versionCode = (flutter.versionCode as int) + 100000
         versionName = overrideVersionName ?: flutter.versionName
         buildConfigField "String", "UMENG_APP_KEY", "\"69c1fd8f9a7f3764889fba4f\""
         buildConfigField "String", "UMENG_CHANNEL", "\"official\""
