@@ -25,8 +25,8 @@ def overrideVersionName = project.findProperty("OVERRIDE_VERSION_NAME") ?: Syste
 
 android {
     namespace = "com.mutx163.qingyu"
-    compileSdk = 35
-    ndkVersion = "26.1.10909125"
+    compileSdk = 36
+    ndkVersion = "27.0.12077973"
 
     buildFeatures {
         buildConfig = true
@@ -44,7 +44,7 @@ android {
     defaultConfig {
         applicationId = "com.mutx163.qingyu"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = flutter.versionCode
         versionName = overrideVersionName ?: flutter.versionName
         buildConfigField "String", "UMENG_APP_KEY", "\"69c1fd8f9a7f3764889fba4f\""
