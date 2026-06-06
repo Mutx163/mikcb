@@ -4,8 +4,8 @@
 
 先记住 5 句话：
 
-- 只 `git push origin main` 不会触发 GitHub Actions。
-- 当前仓库只有在 `push tag` 时才会自动构建并创建 / 更新 GitHub Release。
+- `push` / `pull_request` 会触发 CI 质量门禁。
+- 只有推送 `v*` tag 才会自动构建正式 APK 并创建 / 更新 GitHub Release。
 - 三位数版本和四位数版本都可以是正式版，不是“四位数就一定是预发布”。
 - 四位数版本可以先作为预发布发出，后面再原地转成正式版。
 - 应用里比较版本时，`1.1.10-6+36` 会按 `1.1.10.6` 去比较。
@@ -79,35 +79,32 @@
 
 ## 一、当前发布机制
 
-当前 workflow 在 [.github/workflows/android-build.yml](D:/Users/34045/Desktop/cursor/flutter/mikcb/.github/workflows/android-build.yml) 里，触发条件是：
+当前仓库有三条 GitHub Actions 线：
 
-```yml
-on:
-  push:
-    tags:
-      - 'v*'
-```
+- [.github/workflows/ci.yml](../.github/workflows/ci.yml)：`push` / `pull_request` 时执行依赖安装、静态分析和测试。
+- [.github/workflows/android-build.yml](../.github/workflows/android-build.yml)：推送 `v*` tag 时先执行检查，再签名构建 `arm64-v8a` APK 并创建 / 更新 GitHub Release。
+- [.github/workflows/update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)：GitHub Release 发布、编辑、撤销等事件后自动更新 `docs/releases/latest.json`，供应用内更新检查读取。
 
 也就是说：
 
-1. 先本地提交。
-2. 再推送 `main`。
+1. 平时 `git push origin main` 或提交 PR，会自动跑 CI 质量门禁。
+2. 发布前先本地提交并推送 `main`。
 3. 再推送一个 `v*` tag。
-4. Actions 才会开始跑。
+4. tag workflow 会先跑 `flutter analyze` 和 `flutter test`，通过后才继续构建 APK、上传蒲公英并创建 / 更新 GitHub Release。
 
-workflow 还会做这些事：
+release workflow 还会做这些事：
 
-- 读取 [pubspec.yaml](D:/Users/34045/Desktop/cursor/flutter/mikcb/pubspec.yaml) 的 `version:`
+- 读取 [pubspec.yaml](../pubspec.yaml) 的 `version:`
 - 读取 `docs/releases/v版本号.md`
-- 应用内更新检查会优先读取 `docs/releases/latest.json`，所以每次发版前后都要同步这个文件
 - 用 tag 名覆盖 Android 最终产物的 `versionName`
+- 使用 `flutter build apk --release --flavor prod --target-platform android-arm64` 构建正式包
 - 创建或更新 GitHub Release
 
 ## 二、先分清两套版本
 
 ### 1. 包内版本
 
-写在 [pubspec.yaml](D:/Users/34045/Desktop/cursor/flutter/mikcb/pubspec.yaml) 里。
+写在 [pubspec.yaml](../pubspec.yaml) 里。
 
 例如：
 
@@ -139,7 +136,7 @@ version: 1.1.10-6+36
 
 当成同一个数值版本。
 
-这点在 [lib/services/app_update_service.dart](D:/Users/34045/Desktop/cursor/flutter/mikcb/lib/services/app_update_service.dart) 和 [test/services/app_update_service_test.dart](D:/Users/34045/Desktop/cursor/flutter/mikcb/test/services/app_update_service_test.dart) 里已经覆盖到了。
+这点在 [lib/services/app_update_service.dart](../lib/services/app_update_service.dart) 和 [test/services/app_update_service_test.dart](../test/services/app_update_service_test.dart) 里已经覆盖到了。
 
 ## 三、三位数和四位数的真实规则
 
@@ -214,7 +211,7 @@ version: 1.1.10-6+36
 
 假设目标是发布 `11107`：
 
-1. 修改 [pubspec.yaml](D:/Users/34045/Desktop/cursor/flutter/mikcb/pubspec.yaml)
+1. 修改 [pubspec.yaml](../pubspec.yaml)
 
 ```yaml
 version: 1.1.10-7+37
@@ -267,7 +264,7 @@ git push origin v1.1.10.7
 
 假设目标是发布 `1.1.11`：
 
-1. 修改 [pubspec.yaml](D:/Users/34045/Desktop/cursor/flutter/mikcb/pubspec.yaml)
+1. 修改 [pubspec.yaml](../pubspec.yaml)
 
 ```yaml
 version: 1.1.11+37
@@ -301,7 +298,16 @@ git push origin v1.1.11
 
 ## 六、推荐发布前检查
 
-最少检查这几项：
+发布前本地至少跑这组命令，和 CI / release workflow 保持一致：
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --release --flavor prod --target-platform android-arm64
+```
+
+同时检查这几项：
 
 1. `pubspec.yaml` 版本号是否改对
 2. `docs/releases/` 文件名是否和 tag 完全一致
@@ -309,18 +315,13 @@ git push origin v1.1.11
 4. 工作区是否干净：`git status`
 5. 如果要验证预发布检测，新的测试包版本号必须严格高于当前已安装版本
 
-如果要更稳一点，再做：
-
-```bash
-flutter analyze
-flutter test
-```
+推送 `v*` tag 后，release workflow 也会强制执行 `flutter analyze` 和 `flutter test`；只有检查通过才会进入签名构建和发布步骤。
 
 ## 七、常见坑
 
-### 1. 为什么 Actions 没跑
+### 1. 为什么发布 workflow 没跑
 
-通常只有这几种原因：
+CI 会在 `push` / `pull_request` 时运行；正式 APK 发布 workflow 只有推送 `v*` tag 才会运行。发布没跑通常只有这几种原因：
 
 - 只推了 `main`，没推 tag
 - tag 不是 `v*`

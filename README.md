@@ -1,10 +1,10 @@
 # 轻屿课表
 
-![Flutter](https://img.shields.io/badge/Flutter-3.27.0-02569B?logo=flutter&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.35.7-02569B?logo=flutter&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-Only-34A853?logo=android&logoColor=white)
 ![HyperOS](https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00)
 ![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
-![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/android-build.yml?branch=main&label=android%20build)
+![CI](https://img.shields.io/github/actions/workflow/status/Mutx163/mikcb/ci.yml?branch=main&label=CI)
 
 一个面向校园场景的 Android 课表应用。
 
@@ -54,21 +54,41 @@
 - 应用内可读取 GitHub Releases，显示版本号、更新时间和下载入口
 - 发行流程见 [docs/RELEASE.md](./docs/RELEASE.md)
 
-## 运行与构建
+## 运行、检查与构建
 
 本仓库当前只保留 Android 发布和维护所需内容。
 
-本地运行：
+### 环境版本
+
+| 工具 | 版本 |
+|------|------|
+| Flutter | 3.35.7 |
+| Dart SDK | 3.9.2（pubspec 要求 ^3.9.0） |
+| JDK | 17 |
+| Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
+| Android NDK | 27.0.12077973 |
+| Gradle | 8.11.1 |
+| Android Gradle Plugin | 8.9.1 |
+| Kotlin | 2.1.0 |
+
+### 本地开发
 
 ```bash
 flutter pub get
-flutter run -d android
+flutter run -d android --flavor dev
 ```
 
-Android 构建：
+### 质量检查
 
 ```bash
-flutter build apk --release --split-per-abi
+flutter test
+flutter analyze
+```
+
+### 发布构建
+
+```bash
+flutter build apk --release --flavor prod --target-platform android-arm64
 ```
 
 ## 相关文档

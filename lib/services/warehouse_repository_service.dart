@@ -45,7 +45,7 @@ class WarehouseRepositoryService {
     WarehouseRepositorySource source, {
     WarehouseFetchOptions? options,
   }) async {
-    _log('获取学校列表…');
+    _log('获取学校列表...');
     final content = await _fetchText(
       source.buildRawFileUri('index/root_index.yaml'),
       options: options,
@@ -78,7 +78,7 @@ class WarehouseRepositoryService {
     WarehouseSchoolEntry school, {
     WarehouseFetchOptions? options,
   }) async {
-    _log('获取 ${school.name} 适配器列表…');
+    _log('获取 ${school.name} 适配器列表...');
     final path = 'resources/${school.resourceFolder}/adapters.yaml';
     final content = await _fetchText(
       source.buildRawFileUri(path),
@@ -128,9 +128,9 @@ class WarehouseRepositoryService {
           customMirrorUrlPrefix: defaultAppUpdateMirrorUrlPrefix,
         );
     final candidates = _buildCandidateUris(uri, effectiveOptions);
-    _log('请求 $uri，候选 ${candidates.length} 个');
+    _log('请求 $uri,候选 ${candidates.length} 个');
 
-    // 所有候选并行竞争，谁先返回 200 用谁
+    // 所有候选并行竞争,谁先返回 200 用谁
     final result = await raceFutures<http.Response, String>(
       candidates.map((candidate) {
         return _client.get(
@@ -154,22 +154,25 @@ class WarehouseRepositoryService {
     }
 
     final lastError = result.errors.isNotEmpty ? result.errors.last : null;
-    throw _buildFetchError(effectiveOptions, lastError);
+    final candidatesCount = candidates.length;
+    throw _buildFetchError(effectiveOptions, lastError,
+        candidatesCount: candidatesCount);
   }
 
   WarehouseRepositoryException _buildFetchError(
     WarehouseFetchOptions options,
-    Object? lastError,
-  ) {
+    Object? lastError, {
+    int candidatesCount = 0,
+  }) {
     final usingMirror =
         options.downloadSource == AppUpdateDownloadSource.mirror;
-    return WarehouseRepositoryException(
-      usingMirror
-          ? '暂时无法读取适配仓。当前已按“版本更新”里的国内镜像线路尝试读取，请检查网络，或切到其他镜像线路后重试。'
-              '${lastError == null ? "" : " 原始错误：$lastError"}'
-          : '暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在“版本更新”里切到国内镜像后重试。'
-              '${lastError == null ? "" : " 原始错误：$lastError"}',
-    );
+    final prefix = usingMirror
+        ? '暂时无法读取适配仓。'
+            '已尝试 $candidatesCount 个镜像线路均失败。'
+            '请检查网络，或到"版本更新"里切到其他镜像线路后重试。'
+        : '暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在"版本更新"里切到国内镜像后重试。';
+    final suffix = lastError == null ? '' : ' 原始错误：$lastError';
+    return WarehouseRepositoryException('$prefix$suffix');
   }
 
   List<Uri> _buildCandidateUris(

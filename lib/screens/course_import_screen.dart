@@ -16,19 +16,21 @@ import 'package:webview_flutter/webview_flutter.dart';
 import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
+import '../models/warehouse_macro_models.dart';
 import '../models/warehouse_repository_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_week_alignment_service.dart';
 import '../services/warehouse_import_preferences_service.dart';
+import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
+import '../widgets/warehouse_macro_recorder.dart';
+import '../widgets/warehouse_macro_replayer.dart';
+import '../widgets/warehouse_playback_overlay.dart';
 import 'feedback_screen.dart';
 
-enum _WarehouseImportMenuAction {
-  feedback,
-  customDebug,
-}
+enum _WarehouseImportMenuAction { feedback, customDebug }
 
 class CourseImportScreen extends StatelessWidget {
   const CourseImportScreen({super.key});
@@ -39,9 +41,7 @@ class CourseImportScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.courseImportTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.courseImportTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -160,9 +160,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.icsImportTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.icsImportTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -236,9 +234,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.folder_open_rounded),
-          label: Text(_isImporting
-              ? '${l10n.icsImportTitle}...'
-              : l10n.chooseIcsFileAction),
+          label: Text(
+            _isImporting
+                ? '${l10n.icsImportTitle}...'
+                : l10n.chooseIcsFileAction,
+          ),
         ),
       ),
     );
@@ -262,9 +262,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final file = result.files.single;
       final bytes = file.bytes;
       if (bytes == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importFileReadFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
         return;
       }
 
@@ -283,9 +283,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final content = utf8.decode(bytes, allowMalformed: true);
       final parsedResult = _icsImportService.parseWakeUpSchedule(content);
       if (parsedResult.courses.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importNoCoursesRecognized)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
         return;
       }
 
@@ -310,11 +310,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         parsedResult.courses,
         firstCourseWeek: semesterConfig.firstCourseWeek,
       );
-      final requiredSectionCount =
-          provider.previewImportedCourseRequiredSectionCount(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-      );
+      final requiredSectionCount = provider
+          .previewImportedCourseRequiredSectionCount(
+            alignedCourses,
+            replaceExisting: replaceExisting,
+          );
       if (!mounted) {
         return;
       }
@@ -341,8 +341,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           content: Text(
             importedCount > 0
                 ? (replaceExisting
-                    ? l10n.importOverwriteCount(importedCount)
-                    : l10n.importUpdatedCount(importedCount))
+                      ? l10n.importOverwriteCount(importedCount)
+                      : l10n.importUpdatedCount(importedCount))
                 : l10n.importNoCourseChanges,
           ),
         ),
@@ -408,11 +408,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
         parsedResult.courses,
         firstCourseWeek: semesterConfig.firstCourseWeek,
       );
-      final requiredSectionCount =
-          provider.previewImportedCourseRequiredSectionCount(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-      );
+      final requiredSectionCount = provider
+          .previewImportedCourseRequiredSectionCount(
+            alignedCourses,
+            replaceExisting: replaceExisting,
+          );
       if (!mounted) {
         return;
       }
@@ -439,8 +439,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           content: Text(
             importedCount > 0
                 ? (replaceExisting
-                    ? l10n.importOverwriteCount(importedCount)
-                    : l10n.importUpdatedCount(importedCount))
+                      ? l10n.importOverwriteCount(importedCount)
+                      : l10n.importUpdatedCount(importedCount))
                 : l10n.importNoCourseChanges,
           ),
         ),
@@ -491,9 +491,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     final colorScheme = theme.colorScheme;
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: Text(l10n.aiImportTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.aiImportTitle)),
       body: SafeArea(
         top: false,
         child: LayoutBuilder(
@@ -503,18 +501,18 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
             final sectionGap = ultraDense
                 ? 4.0
                 : dense
-                    ? 8.0
-                    : 12.0;
+                ? 8.0
+                : 12.0;
             final outerPadding = ultraDense
                 ? 10.0
                 : dense
-                    ? 12.0
-                    : 16.0;
+                ? 12.0
+                : 16.0;
             final cardRadius = ultraDense
                 ? 16.0
                 : dense
-                    ? 18.0
-                    : 20.0;
+                ? 18.0
+                : 20.0;
             final compactButtonStyle = ButtonStyle(
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -523,13 +521,13 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                   horizontal: ultraDense
                       ? 8
                       : dense
-                          ? 10
-                          : 12,
+                      ? 10
+                      : 12,
                   vertical: ultraDense
                       ? 6
                       : dense
-                          ? 8
-                          : 10,
+                      ? 8
+                      : 10,
                 ),
               ),
             );
@@ -556,12 +554,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                   );
 
             return Padding(
-              padding: EdgeInsets.fromLTRB(
-                outerPadding,
-                12,
-                outerPadding,
-                12,
-              ),
+              padding: EdgeInsets.fromLTRB(outerPadding, 12, outerPadding, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -571,8 +564,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       ultraDense
                           ? 10
                           : dense
-                              ? 14
-                              : 16,
+                          ? 14
+                          : 16,
                     ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -595,20 +588,20 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                       l10n.aiWorkflowCompactTitle,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style:
-                                          theme.textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       l10n.aiWorkflowCompactSubtitle,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 )
@@ -617,19 +610,19 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   children: [
                                     Text(
                                       l10n.aiWorkflowTitle,
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                     ),
                                     SizedBox(height: dense ? 4 : 6),
                                     Text(
                                       l10n.aiWorkflowSubtitle,
-                                      style:
-                                          theme.textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                        height: 1.35,
-                                      ),
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                            height: 1.35,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -751,8 +744,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                         FilledButton.tonalIcon(
                           onPressed: _pasteFromClipboard,
                           style: compactButtonStyle,
-                          icon:
-                              const Icon(Icons.content_paste_rounded, size: 18),
+                          icon: const Icon(
+                            Icons.content_paste_rounded,
+                            size: 18,
+                          ),
                           label: Text(l10n.pasteAction),
                         ),
                         OutlinedButton.icon(
@@ -779,7 +774,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                       if (_aiParsedResult != null)
                         _CompactStatusChip(
                           label: l10n.aiCourseCountChip(
-                              _aiParsedResult!.courses.length),
+                            _aiParsedResult!.courses.length,
+                          ),
                         ),
                       if (_aiParseError != null)
                         _CompactStatusChip(
@@ -792,17 +788,15 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     height: ultraDense
                         ? 4
                         : dense
-                            ? 6
-                            : 8,
+                        ? 6
+                        : 8,
                   ),
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
                         color: colorScheme.surfaceContainerLowest,
                         borderRadius: BorderRadius.circular(cardRadius),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant,
-                        ),
+                        border: Border.all(color: colorScheme.outlineVariant),
                       ),
                       child: TextField(
                         key: const ValueKey('ai_import_json_input'),
@@ -911,9 +905,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.promptCopiedHint)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.promptCopiedHint)));
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -924,9 +918,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.clipboardNoText)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.clipboardNoText)));
       return;
     }
     _aiController.text = text;
@@ -1018,9 +1012,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
               children: [
                 Text(
                   l10n.aiPreviewTitle,
-                  style: Theme.of(sheetContext).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    sheetContext,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 12),
                 _AiPreviewCard(result: result),
@@ -1032,10 +1026,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     );
   }
 
-  void _showMessageSheet({
-    required String title,
-    required String content,
-  }) {
+  void _showMessageSheet({required String title, required String content}) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -1077,9 +1068,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     }
   }
 
-  AiCourseImportParseResult? _parseAiResult({
-    required bool showError,
-  }) {
+  AiCourseImportParseResult? _parseAiResult({required bool showError}) {
     final l10n = AppLocalizations.of(context)!;
     final content = _aiController.text.trim();
     if (content.isEmpty) {
@@ -1090,9 +1079,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = message;
         });
         if (showError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       }
       return null;
@@ -1117,9 +1106,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = error.message;
         });
         if (showError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(error.message)));
         }
       }
       return null;
@@ -1131,9 +1120,9 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = message;
         });
         if (showError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(message)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
         }
       }
       return null;
@@ -1165,7 +1154,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 
       final semesterConfig = await _pickImportSemesterConfig(
         context,
-        initialSemesterStartDate: provider.settings.semesterStartDate ??
+        initialSemesterStartDate:
+            provider.settings.semesterStartDate ??
             _weekAlignmentService.startOfWeek(DateTime.now()),
         initialFirstCourseWeek: 1,
         title: l10n.importConfirmSemesterMappingTitle,
@@ -1179,11 +1169,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         result.courses,
         firstCourseWeek: semesterConfig.firstCourseWeek,
       );
-      final requiredSectionCount =
-          provider.previewImportedCourseRequiredSectionCount(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-      );
+      final requiredSectionCount = provider
+          .previewImportedCourseRequiredSectionCount(
+            alignedCourses,
+            replaceExisting: replaceExisting,
+          );
       if (!mounted) {
         return;
       }
@@ -1214,8 +1204,8 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           content: Text(
             importedCount > 0
                 ? (replaceExisting
-                    ? l10n.importOverwriteCount(importedCount) + warningSuffix
-                    : l10n.importUpdatedCount(importedCount) + warningSuffix)
+                      ? l10n.importOverwriteCount(importedCount) + warningSuffix
+                      : l10n.importUpdatedCount(importedCount) + warningSuffix)
                 : l10n.importNoCourseChanges,
           ),
         ),
@@ -1245,13 +1235,14 @@ class _WarehouseCourseImportScreenState
     extends State<WarehouseCourseImportScreen> {
   static final WarehouseRepositorySource _defaultSource =
       WarehouseRepositorySource.fromGitHubUrl(
-    'https://github.com/Mutx163/qingyu_warehouse',
-  );
+        'https://github.com/Mutx163/qingyu_warehouse',
+      );
 
   final WarehouseRepositoryService _repositoryService =
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
+  final WarehouseMacroService _macroService = WarehouseMacroService();
   final TextEditingController _searchController = TextEditingController();
   late Future<WarehouseRootIndex> _rootIndexFuture;
   List<String> _recentSchoolIds = const [];
@@ -1294,6 +1285,102 @@ class _WarehouseCourseImportScreenState
         await _openCustomDebugRecords();
         break;
     }
+  }
+
+  Future<void> _handleQuickImport() async {
+    final allEntries = await _macroService.getAllMacroEntries();
+    if (!mounted) return;
+    if (allEntries.isEmpty) {
+      _showLightTip(context, '暂无已保存的快捷导入记录');
+      return;
+    }
+    // 加载完整的宏记录（含学校名、适配器名）
+    final records = <WarehouseMacroRecord>[];
+    for (final entry in allEntries) {
+      final record = await _macroService.getMacro(
+        entry.schoolId,
+        entry.adapterId,
+      );
+      if (record != null) records.add(record);
+    }
+    if (!mounted) return;
+    if (records.isEmpty) {
+      _showLightTip(context, '暂无已保存的快捷导入记录');
+      return;
+    }
+    if (records.length == 1) {
+      await _startQuickImport(records.first);
+      return;
+    }
+    // 多个宏录制，弹窗选择
+    final chosen = await showDialog<WarehouseMacroRecord>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('选择快捷导入'),
+        children: records.map((r) {
+          return SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, r),
+            child: ListTile(
+              title: Text(r.schoolName),
+              subtitle: Text('${r.adapterName} · ${r.steps.length} 步'),
+              trailing: const Icon(Icons.flash_on_rounded),
+              contentPadding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+            ),
+          );
+        }).toList(),
+      ),
+    );
+    if (chosen != null && mounted) {
+      await _startQuickImport(chosen);
+    }
+  }
+
+  Future<void> _startQuickImport(WarehouseMacroRecord macro) async {
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '/courses/import/warehouse/quick-import-top',
+        ),
+        builder: (_) => WarehouseAdapterWebLoginScreen(
+          title: '快捷导入 - ${macro.schoolName}',
+          initialUrl: macro.importUrl,
+          source: _defaultSource,
+          school: WarehouseSchoolEntry(
+            id: macro.schoolId,
+            name: macro.schoolName,
+            initial: macro.schoolName.isNotEmpty ? macro.schoolName[0] : '#',
+            resourceFolder: macro.schoolResourceFolder.isNotEmpty
+                ? macro.schoolResourceFolder
+                : macro.schoolId,
+          ),
+          adapter: WarehouseAdapterEntry(
+            adapterId: macro.adapterId,
+            adapterName: macro.adapterName,
+            category: 'macro',
+            assetJsPath: macro.adapterAssetJsPath.isNotEmpty
+                ? macro.adapterAssetJsPath
+                : 'macro/${macro.adapterId}.js',
+            importUrl: macro.importUrl,
+            maintainer: 'macro',
+            description: '快捷导入 ${macro.schoolName} ${macro.adapterName}',
+          ),
+          fetchOptions: _currentFetchOptions(),
+          macroRecord: macro,
+        ),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+  }
+
+  void _showLightTip(BuildContext context, String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
+    );
   }
 
   Future<void> _openMissingSchoolFeedbackGuide() async {
@@ -1360,8 +1447,9 @@ class _WarehouseCourseImportScreenState
   Future<void> _openCustomDebugRecords() async {
     final imported = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        settings:
-            const RouteSettings(name: '/courses/import/warehouse/custom-debug'),
+        settings: const RouteSettings(
+          name: '/courses/import/warehouse/custom-debug',
+        ),
         builder: (_) => const WarehouseCustomDebugRecordsScreen(),
       ),
     );
@@ -1379,6 +1467,11 @@ class _WarehouseCourseImportScreenState
       appBar: AppBar(
         title: Text(l10n.importMethodWarehouseTitle),
         actions: [
+          IconButton(
+            tooltip: '快捷导入',
+            icon: const Icon(Icons.flash_on_rounded),
+            onPressed: _handleQuickImport,
+          ),
           PopupMenuButton<_WarehouseImportMenuAction>(
             tooltip: l10n.moreActionsTooltip,
             onSelected: _handleMoreAction,
@@ -1436,11 +1529,11 @@ class _WarehouseCourseImportScreenState
                         OutlinedButton.icon(
                           onPressed: () {
                             setState(() {
-                              _rootIndexFuture =
-                                  _repositoryService.fetchRootIndex(
-                                _defaultSource,
-                                options: _currentFetchOptions(),
-                              );
+                              _rootIndexFuture = _repositoryService
+                                  .fetchRootIndex(
+                                    _defaultSource,
+                                    options: _currentFetchOptions(),
+                                  );
                             });
                           },
                           icon: const Icon(Icons.refresh_rounded),
@@ -1454,7 +1547,8 @@ class _WarehouseCourseImportScreenState
             );
           }
 
-          final allSchools = [...?snapshot.data?.schools]..sort((left, right) {
+          final allSchools = [...?snapshot.data?.schools]
+            ..sort((left, right) {
               // 通用教务/工具类学校置顶
               final leftIsGeneric = left.name.contains('通用');
               final rightIsGeneric = right.name.contains('通用');
@@ -1552,12 +1646,14 @@ class _WarehouseCourseImportScreenState
                         indexBarOptions: IndexBarOptions(
                           needRebuild: true,
                           hapticFeedback: true,
-                          textStyle: theme.textTheme.labelSmall?.copyWith(
+                          textStyle:
+                              theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w700,
                               ) ??
                               const TextStyle(fontSize: 11),
-                          selectTextStyle: theme.textTheme.labelSmall?.copyWith(
+                          selectTextStyle:
+                              theme.textTheme.labelSmall?.copyWith(
                                 color: colorScheme.primary,
                                 fontWeight: FontWeight.w800,
                               ) ??
@@ -1572,10 +1668,10 @@ class _WarehouseCourseImportScreenState
                           ),
                           indexHintTextStyle:
                               theme.textTheme.headlineMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w800,
-                                  ) ??
-                                  const TextStyle(fontSize: 28),
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w800,
+                              ) ??
+                              const TextStyle(fontSize: 28),
                         ),
                         indexHintBuilder: (context, tag) => Container(
                           width: 72,
@@ -1600,20 +1696,22 @@ class _WarehouseCourseImportScreenState
                             isRecent: bean.isRecent,
                             onTap: () async {
                               FocusManager.instance.primaryFocus?.unfocus();
-                              final imported =
-                                  await Navigator.of(context).push<bool>(
-                                MaterialPageRoute(
-                                  settings: RouteSettings(
-                                    name:
-                                        '/courses/import/warehouse/${bean.school.id}',
-                                  ),
-                                  builder: (_) => WarehouseSchoolAdaptersScreen(
-                                    source: _defaultSource,
-                                    school: bean.school,
-                                    fetchOptions: _currentFetchOptions(),
-                                  ),
-                                ),
-                              );
+                              final imported = await Navigator.of(context)
+                                  .push<bool>(
+                                    MaterialPageRoute(
+                                      settings: RouteSettings(
+                                        name:
+                                            '/courses/import/warehouse/${bean.school.id}',
+                                      ),
+                                      builder: (_) =>
+                                          WarehouseSchoolAdaptersScreen(
+                                            source: _defaultSource,
+                                            school: bean.school,
+                                            fetchOptions:
+                                                _currentFetchOptions(),
+                                          ),
+                                    ),
+                                  );
                               if (imported == true && context.mounted) {
                                 Navigator.of(context).pop(true);
                               }
@@ -1637,12 +1735,14 @@ class _WarehouseCourseImportScreenState
     if (keyword.isEmpty) {
       return schools;
     }
-    return schools.where((school) {
-      return school.name.toLowerCase().contains(keyword) ||
-          school.id.toLowerCase().contains(keyword) ||
-          school.initial.toLowerCase().contains(keyword) ||
-          school.resourceFolder.toLowerCase().contains(keyword);
-    }).toList(growable: false);
+    return schools
+        .where((school) {
+          return school.name.toLowerCase().contains(keyword) ||
+              school.id.toLowerCase().contains(keyword) ||
+              school.initial.toLowerCase().contains(keyword) ||
+              school.resourceFolder.toLowerCase().contains(keyword);
+        })
+        .toList(growable: false);
   }
 }
 
@@ -1657,10 +1757,7 @@ class WarehouseCustomDebugRecordsScreen extends StatefulWidget {
 class _WarehouseCustomDebugRecordsScreenState
     extends State<WarehouseCustomDebugRecordsScreen> {
   static const WarehouseRepositorySource _customSource =
-      WarehouseRepositorySource(
-    owner: 'Mutx163',
-    repo: 'qingyu_warehouse',
-  );
+      WarehouseRepositorySource(owner: 'Mutx163', repo: 'qingyu_warehouse');
 
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
@@ -1868,10 +1965,10 @@ class _WarehouseCustomDebugRecordsScreenState
                                   Expanded(
                                     child: Text(
                                       record.name,
-                                      style:
-                                          theme.textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
+                                      style: theme.textTheme.titleMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w800,
+                                          ),
                                     ),
                                   ),
                                   Text(
@@ -1916,7 +2013,8 @@ class _WarehouseCustomDebugRecordsScreenState
                                   OutlinedButton.icon(
                                     onPressed: () => _deleteRecord(record),
                                     icon: const Icon(
-                                        Icons.delete_outline_rounded),
+                                      Icons.delete_outline_rounded,
+                                    ),
                                     label: Text(l10n.deleteAction),
                                   ),
                                 ],
@@ -1936,10 +2034,7 @@ class _WarehouseCustomDebugRecordsScreenState
 class WarehouseCustomDebugEditScreen extends StatefulWidget {
   final WarehouseCustomDebugRecord? initialRecord;
 
-  const WarehouseCustomDebugEditScreen({
-    super.key,
-    this.initialRecord,
-  });
+  const WarehouseCustomDebugEditScreen({super.key, this.initialRecord});
 
   @override
   State<WarehouseCustomDebugEditScreen> createState() =>
@@ -2035,21 +2130,22 @@ class _WarehouseCustomDebugEditScreenState
     }
 
     final now = DateTime.now();
-    final record = (widget.initialRecord ??
-            WarehouseCustomDebugRecord(
-              id: const Uuid().v4(),
+    final record =
+        (widget.initialRecord ??
+                WarehouseCustomDebugRecord(
+                  id: const Uuid().v4(),
+                  name: name,
+                  importUrl: importUrl,
+                  script: script,
+                  createdAt: now,
+                  updatedAt: now,
+                ))
+            .copyWith(
               name: name,
               importUrl: importUrl,
               script: script,
-              createdAt: now,
               updatedAt: now,
-            ))
-        .copyWith(
-      name: name,
-      importUrl: importUrl,
-      script: script,
-      updatedAt: now,
-    );
+            );
 
     setState(() {
       _isSaving = true;
@@ -2207,7 +2303,12 @@ class _WarehouseSchoolAdaptersScreenState
       WarehouseRepositoryService();
   final WarehouseImportPreferencesService _preferencesService =
       WarehouseImportPreferencesService();
+  final WarehouseMacroService _macroService = WarehouseMacroService();
   late Future<WarehouseAdaptersIndex> _adaptersFuture;
+  final Map<String, bool> _macroCache = {};
+  String? _macroCacheAdapterSignature;
+  bool _macroCacheCheckInFlight = false;
+  bool _recordingMode = false;
 
   @override
   void initState() {
@@ -2226,6 +2327,23 @@ class _WarehouseSchoolAdaptersScreenState
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.school.name),
+        actions: [
+          // 录制模式切换按钮
+          IconButton(
+            tooltip: _recordingMode ? '退出录制模式' : '录制模式',
+            onPressed: () {
+              setState(() {
+                _recordingMode = !_recordingMode;
+              });
+            },
+            icon: Icon(
+              _recordingMode
+                  ? Icons.fiber_manual_record_rounded
+                  : Icons.fiber_manual_record_outlined,
+              color: _recordingMode ? Colors.red : null,
+            ),
+          ),
+        ],
       ),
       body: FutureBuilder<WarehouseAdaptersIndex>(
         future: _adaptersFuture,
@@ -2250,36 +2368,62 @@ class _WarehouseSchoolAdaptersScreenState
 
           final adapters =
               snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
+          // 检查每个适配器是否有宏录制
+          _scheduleMacroCacheCheck(adapters);
           return ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: adapters.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (context, index) {
               final adapter = adapters[index];
-              return _WarehouseAdapterCard(
-                adapter: adapter,
-                importButtonLabel:
-                    adapter.importUrl.isEmpty ? '填写网址后导入' : '网页登录导入',
-                onImport: () => _openAdapterImport(adapter),
-                onInfo: () async {
-                  final imported = await Navigator.of(context).push<bool>(
-                    MaterialPageRoute(
-                      settings: RouteSettings(
-                        name:
-                            '/courses/import/warehouse/${widget.school.id}/${adapter.adapterId}',
-                      ),
-                      builder: (_) => WarehouseAdapterDetailScreen(
-                        source: widget.source,
-                        school: widget.school,
-                        adapter: adapter,
-                        fetchOptions: widget.fetchOptions,
+              final hasMacro = _macroCache[adapter.adapterId] ?? false;
+              return Column(
+                children: [
+                  _WarehouseAdapterCard(
+                    adapter: adapter,
+                    importButtonLabel: adapter.importUrl.isEmpty
+                        ? '填写网址后导入'
+                        : (_recordingMode ? '📹 录制导入' : '网页登录导入'),
+                    onImport: () =>
+                        _openAdapterImport(adapter, autoRecord: _recordingMode),
+                    onInfo: () async {
+                      final imported = await Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          settings: RouteSettings(
+                            name:
+                                '/courses/import/warehouse/${widget.school.id}/${adapter.adapterId}',
+                          ),
+                          builder: (_) => WarehouseAdapterDetailScreen(
+                            source: widget.source,
+                            school: widget.school,
+                            adapter: adapter,
+                            fetchOptions: widget.fetchOptions,
+                          ),
+                        ),
+                      );
+                      if (imported == true && context.mounted) {
+                        Navigator.of(context).pop(true);
+                      }
+                    },
+                  ),
+                  if (hasMacro)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => _openQuickImport(adapter),
+                          icon: const Icon(Icons.flash_on_rounded, size: 18),
+                          label: const Text('⚡ 快捷导入'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.primary,
+                          ),
+                        ),
                       ),
                     ),
-                  );
-                  if (imported == true && context.mounted) {
-                    Navigator.of(context).pop(true);
-                  }
-                },
+                ],
               );
             },
           );
@@ -2288,7 +2432,10 @@ class _WarehouseSchoolAdaptersScreenState
     );
   }
 
-  Future<void> _openAdapterImport(WarehouseAdapterEntry adapter) async {
+  Future<void> _openAdapterImport(
+    WarehouseAdapterEntry adapter, {
+    bool autoRecord = false,
+  }) async {
     final initialUrl = await _resolveAdapterImportUrl(adapter);
     if (initialUrl == null || !mounted) {
       return;
@@ -2303,16 +2450,22 @@ class _WarehouseSchoolAdaptersScreenState
           school: widget.school,
           adapter: adapter,
           fetchOptions: widget.fetchOptions,
+          autoRecord: autoRecord,
         ),
       ),
     );
     if (imported == true && mounted) {
       Navigator.of(context).pop(true);
     }
+    // 从导入/录制页面返回后刷新单适配器的宏缓存
+    if (mounted) {
+      await _refreshMacroCacheForAdapter(adapter.adapterId);
+    }
   }
 
   Future<String?> _resolveAdapterImportUrl(
-      WarehouseAdapterEntry adapter) async {
+    WarehouseAdapterEntry adapter,
+  ) async {
     final custom = await _preferencesService.getCustomImportUrl(
       adapter.adapterId,
     );
@@ -2338,6 +2491,119 @@ class _WarehouseSchoolAdaptersScreenState
       _showLightTip(context, AppLocalizations.of(context)!.savedImportUrlHint);
     }
     return manualUrl;
+  }
+
+  // ============ 宏录制快捷导入 ============
+
+  void _scheduleMacroCacheCheck(List<WarehouseAdapterEntry> adapters) {
+    final signature = _macroCacheSignatureForAdapters(adapters);
+    final hasAllValues = adapters.every(
+      (adapter) => _macroCache.containsKey(adapter.adapterId),
+    );
+    if (_macroCacheCheckInFlight ||
+        (_macroCacheAdapterSignature == signature && hasAllValues)) {
+      return;
+    }
+    _macroCacheCheckInFlight = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _checkMacrosForAdapters(adapters, signature);
+    });
+  }
+
+  String _macroCacheSignatureForAdapters(List<WarehouseAdapterEntry> adapters) {
+    return '${widget.school.id}|${adapters.map((a) => a.adapterId).join('|')}';
+  }
+
+  Future<void> _checkMacrosForAdapters(
+    List<WarehouseAdapterEntry> adapters,
+    String signature,
+  ) async {
+    final nextCache = <String, bool>{};
+    try {
+      for (final adapter in adapters) {
+        final has = await _macroService.hasMacro(
+          widget.school.id,
+          adapter.adapterId,
+        );
+        if (!mounted) return;
+        nextCache[adapter.adapterId] = has;
+      }
+    } catch (_) {
+      if (mounted) {
+        _macroCacheCheckInFlight = false;
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    final changed =
+        _macroCacheAdapterSignature != signature ||
+        _macroCache.length != nextCache.length ||
+        nextCache.entries.any((entry) => _macroCache[entry.key] != entry.value);
+    if (!changed) {
+      _macroCacheAdapterSignature = signature;
+      _macroCacheCheckInFlight = false;
+      return;
+    }
+
+    setState(() {
+      _macroCache
+        ..clear()
+        ..addAll(nextCache);
+      _macroCacheAdapterSignature = signature;
+      _macroCacheCheckInFlight = false;
+    });
+  }
+
+  Future<void> _refreshMacroCacheForAdapter(String adapterId) async {
+    final has = await _macroService.hasMacro(widget.school.id, adapterId);
+    if (!mounted) return;
+    if (_macroCache[adapterId] != has) {
+      setState(() {
+        _macroCache[adapterId] = has;
+      });
+    }
+  }
+
+  Future<void> _openQuickImport(WarehouseAdapterEntry adapter) async {
+    final initialUrl = await _resolveAdapterImportUrl(adapter);
+    if (!mounted || initialUrl == null) return;
+
+    final macro = await _macroService.getMacro(
+      widget.school.id,
+      adapter.adapterId,
+    );
+    if (!mounted) return;
+    if (macro == null) {
+      _showLightTip(context, '未找到录制记录，请先完成一次录制');
+      return;
+    }
+
+    final imported = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        settings: const RouteSettings(
+          name: '/courses/import/warehouse/quick-import',
+        ),
+        builder: (_) => WarehouseAdapterWebLoginScreen(
+          title: '快捷导入 - ${adapter.adapterName}',
+          initialUrl: initialUrl,
+          source: widget.source,
+          school: widget.school,
+          adapter: adapter,
+          fetchOptions: widget.fetchOptions,
+          macroRecord: macro,
+        ),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
+    if (mounted) {
+      await _refreshMacroCacheForAdapter(adapter.adapterId);
+    }
   }
 }
 
@@ -2388,16 +2654,15 @@ class _WarehouseAdapterDetailScreenState
     final colorScheme = theme.colorScheme;
     final adapter = widget.adapter;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(adapter.adapterName),
-      ),
+      appBar: AppBar(title: Text(adapter.adapterName)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _WarehouseIntroCard(
             title: adapter.adapterName,
-            subtitle:
-                adapter.description.isEmpty ? l10n.adapterIntroSubtitle : '',
+            subtitle: adapter.description.isEmpty
+                ? l10n.adapterIntroSubtitle
+                : '',
             chips: [
               '${l10n.schoolLabel}：${widget.school.name}',
               '${l10n.categoryLabel}：${adapter.category}',
@@ -2421,7 +2686,9 @@ class _WarehouseAdapterDetailScreenState
                   const SizedBox(height: 12),
                   _DetailLine(label: 'adapter_id', value: adapter.adapterId),
                   _DetailLine(
-                      label: l10n.scriptPathLabel, value: adapter.assetJsPath),
+                    label: l10n.scriptPathLabel,
+                    value: adapter.assetJsPath,
+                  ),
                   _DetailLine(
                     label: l10n.loginEntryLabel,
                     value: _effectiveImportUrl.isEmpty
@@ -2447,8 +2714,8 @@ class _WarehouseAdapterDetailScreenState
             builder: (context, snapshot) {
               final readable =
                   snapshot.connectionState == ConnectionState.done &&
-                      !snapshot.hasError &&
-                      (snapshot.data?.trim().isNotEmpty ?? false);
+                  !snapshot.hasError &&
+                  (snapshot.data?.trim().isNotEmpty ?? false);
               return Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -2510,9 +2777,9 @@ class _WarehouseAdapterDetailScreenState
                 onPressed: _effectiveImportUrl.isEmpty
                     ? null
                     : () => _copyText(
-                          _effectiveImportUrl,
-                          successMessage: l10n.copiedImportLoginUrl,
-                        ),
+                        _effectiveImportUrl,
+                        successMessage: l10n.copiedImportLoginUrl,
+                      ),
                 icon: const Icon(Icons.link_rounded),
                 label: Text(l10n.copyLoginAddressAction),
               ),
@@ -2575,7 +2842,9 @@ class _WarehouseAdapterDetailScreenState
         return;
       }
       _showLightTip(
-          context, AppLocalizations.of(context)!.invalidLoginEntryUrl);
+        context,
+        AppLocalizations.of(context)!.invalidLoginEntryUrl,
+      );
       return;
     }
     await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -2611,28 +2880,32 @@ class _WarehouseAdapterDetailScreenState
         return;
       }
       _showLightTip(
-          context, AppLocalizations.of(context)!.invalidLoginEntryUrl);
+        context,
+        AppLocalizations.of(context)!.invalidLoginEntryUrl,
+      );
       return;
     }
     await Navigator.of(context)
         .push(
-      MaterialPageRoute(
-        settings: const RouteSettings(name: '/courses/import/warehouse/login'),
-        builder: (_) => WarehouseAdapterWebLoginScreen(
-          title: widget.adapter.adapterName,
-          initialUrl: targetUrl,
-          source: widget.source,
-          school: widget.school,
-          adapter: widget.adapter,
-          fetchOptions: widget.fetchOptions,
-        ),
-      ),
-    )
+          MaterialPageRoute(
+            settings: const RouteSettings(
+              name: '/courses/import/warehouse/login',
+            ),
+            builder: (_) => WarehouseAdapterWebLoginScreen(
+              title: widget.adapter.adapterName,
+              initialUrl: targetUrl,
+              source: widget.source,
+              school: widget.school,
+              adapter: widget.adapter,
+              fetchOptions: widget.fetchOptions,
+            ),
+          ),
+        )
         .then((imported) {
-      if (imported == true && mounted) {
-        Navigator.of(context).pop(true);
-      }
-    });
+          if (imported == true && mounted) {
+            Navigator.of(context).pop(true);
+          }
+        });
   }
 
   Future<void> _editCustomImportUrl() async {
@@ -2652,7 +2925,9 @@ class _WarehouseAdapterDetailScreenState
       _customImportUrl = result;
     });
     _showLightTip(
-        context, AppLocalizations.of(context)!.savedCustomLoginAddress);
+      context,
+      AppLocalizations.of(context)!.savedCustomLoginAddress,
+    );
   }
 
   Future<void> _clearCustomImportUrl() async {
@@ -2669,10 +2944,7 @@ class _WarehouseAdapterDetailScreenState
     );
   }
 
-  Future<void> _copyText(
-    String value, {
-    required String successMessage,
-  }) async {
+  Future<void> _copyText(String value, {required String successMessage}) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) {
       return;
@@ -2690,6 +2962,8 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
   final WarehouseFetchOptions fetchOptions;
   final String? debugScriptOverride;
   final String? debugScriptName;
+  final WarehouseMacroRecord? macroRecord;
+  final bool autoRecord;
 
   const WarehouseAdapterWebLoginScreen({
     super.key,
@@ -2701,6 +2975,8 @@ class WarehouseAdapterWebLoginScreen extends StatefulWidget {
     required this.fetchOptions,
     this.debugScriptOverride,
     this.debugScriptName,
+    this.macroRecord,
+    this.autoRecord = false,
   });
 
   @override
@@ -2742,6 +3018,33 @@ class _WarehouseAdapterWebLoginScreenState
   bool _hasPromptedSave = false;
   bool _isPromptShowing = false;
   bool _useDesktopMode = true;
+
+  // --- 宏录制相关 ---
+  final WarehouseMacroService _macroService = WarehouseMacroService();
+  MacroRecordingState _macroRecordingState = MacroRecordingState.idle;
+  List<Map<String, dynamic>> _macroRawEvents = [];
+  final Map<String, dynamic> _macroDialogResponses = {};
+
+  /// 根据弹窗类型和内容生成匹配 key，用于录制时关联操作和回放时自动响应
+  String _dialogResponseKey(String type, Map<String, dynamic> message) {
+    final title = (message['title'] as String? ?? '').trim();
+    final body =
+        (message['message'] as String? ??
+                message['optionsJson'] as String? ??
+                '')
+            .trim();
+    return '$type|$title|$body';
+  }
+
+  // --- 宏回放相关 ---
+  PlaybackUiState _playbackState = PlaybackUiState.hidden;
+  ReplayProgress _playbackProgress = const ReplayProgress(
+    currentStepIndex: 0,
+    totalSteps: 0,
+    currentStep: MacroStep(type: MacroStepType.delay, waitMs: 0),
+    status: ReplayStepStatus.pending,
+  );
+  WarehouseMacroReplayer? _replayer;
 
   bool get _isUsingLocalDebugScript =>
       (widget.debugScriptOverride ?? '').trim().isNotEmpty;
@@ -2795,16 +3098,37 @@ class _WarehouseAdapterWebLoginScreenState
               }
             });
             _installLoginWatcher();
+            // 先注入录制 JS（如果在录制中），再自动填充——这样填充事件也能被录制到
+            if (_macroRecordingState == MacroRecordingState.recording) {
+              _injectMacroRecorderJs();
+            }
             _autofillRememberedLoginIfNeeded();
           },
         ),
       )
       ..loadRequest(Uri.parse(widget.initialUrl));
     _loadRememberedLogin();
+
+    // 如果是自动录制模式，延迟一帧后自动开始录制
+    if (widget.autoRecord && widget.macroRecord == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startMacroRecording();
+      });
+    }
+
+    // 如果是回放模式，延迟一帧后自动开始
+    if (widget.macroRecord != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startPlayback(widget.macroRecord!);
+      });
+    }
   }
 
   @override
   void dispose() {
+    _replayer?.cancel();
+    _replayContinueCompleter?.complete(false);
+    _replayContinueCompleter = null;
     _importTimeoutTimer?.cancel();
     _addressController.dispose();
     _addressFocusNode.dispose();
@@ -2826,7 +3150,8 @@ class _WarehouseAdapterWebLoginScreenState
     final decoded = jsonDecode(payload);
     if (decoded is! List) {
       throw FormatException(
-          AppLocalizations.of(context)!.invalidSectionTimeFormat);
+        AppLocalizations.of(context)!.invalidSectionTimeFormat,
+      );
     }
     final sections = decoded
         .whereType<Map>()
@@ -2858,8 +3183,9 @@ class _WarehouseAdapterWebLoginScreenState
 
   Future<void> _applyImportedSections(List<SectionTime> sections) async {
     final provider = context.read<TimetableProvider>();
-    final schemeName = AppLocalizations.of(context)!
-        .warehouseImportedTimeSchemeName(widget.school.name);
+    final schemeName = AppLocalizations.of(
+      context,
+    )!.warehouseImportedTimeSchemeName(widget.school.name);
     TimeScheme? existingScheme;
     for (final scheme in provider.timeSchemes) {
       if (scheme.name == schemeName) {
@@ -2920,9 +3246,10 @@ class _WarehouseAdapterWebLoginScreenState
     final colorScheme = theme.colorScheme;
     final effectiveDebugScriptName =
         (widget.debugScriptName?.trim().isNotEmpty ?? false)
-            ? widget.debugScriptName!.trim()
-            : l10n.unnamedScript;
-    final currentStatus = _lastScriptStatus ??
+        ? widget.debugScriptName!.trim()
+        : l10n.unnamedScript;
+    final currentStatus =
+        _lastScriptStatus ??
         (_isUsingLocalDebugScript
             ? l10n.localDebugModeScriptStatus(effectiveDebugScriptName)
             : null);
@@ -2930,181 +3257,301 @@ class _WarehouseAdapterWebLoginScreenState
       appBar: AppBar(
         title: Text(widget.title),
         actions: [
+          // 宏录制按钮
           IconButton(
-            tooltip: l10n.executeImportScriptTooltip,
-            onPressed: _isExecutingImport ? null : _executeImportScript,
-            icon: _isExecutingImport
+            tooltip: _macroRecordingState == MacroRecordingState.recording
+                ? '停止录制'
+                : '录制操作',
+            onPressed: _isExecutingImport ? null : _toggleMacroRecording,
+            icon: _macroRecordingState == MacroRecordingState.recording
                 ? const SizedBox(
                     width: 18,
                     height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
                   )
-                : const Icon(Icons.play_arrow_rounded),
+                : Icon(
+                    Icons.fiber_manual_record_rounded,
+                    color: _macroRecordingState == MacroRecordingState.recording
+                        ? Colors.red
+                        : null,
+                  ),
           ),
-          IconButton(
-            tooltip: _useDesktopMode
-                ? l10n.switchToMobileWebTooltip
-                : l10n.switchToDesktopWebTooltip,
-            onPressed: _toggleWebPageMode,
-            icon: Icon(
-              _useDesktopMode
-                  ? Icons.smartphone_rounded
-                  : Icons.desktop_windows_rounded,
+          if (widget.macroRecord == null)
+            IconButton(
+              tooltip: _useDesktopMode
+                  ? l10n.switchToMobileWebTooltip
+                  : l10n.switchToDesktopWebTooltip,
+              onPressed: _toggleWebPageMode,
+              icon: Icon(
+                _useDesktopMode
+                    ? Icons.smartphone_rounded
+                    : Icons.desktop_windows_rounded,
+              ),
             ),
-          ),
-          IconButton(
-            tooltip: l10n.rememberCurrentInputTooltip,
-            onPressed: _rememberCurrentLogin,
-            icon: const Icon(Icons.save_outlined),
-          ),
-          IconButton(
-            tooltip: l10n.fillRememberedTooltip,
-            onPressed:
-                _rememberedLogin == null ? null : _autofillRememberedLogin,
-            icon: const Icon(Icons.password_rounded),
-          ),
-          IconButton(
-            tooltip: l10n.clearRememberedTooltip,
-            onPressed: _rememberedLogin == null ? null : _clearRememberedLogin,
-            icon: const Icon(Icons.delete_outline_rounded),
-          ),
           IconButton(
             tooltip: l10n.reloadAction,
             onPressed: _controller.reload,
             icon: const Icon(Icons.refresh_rounded),
           ),
-          IconButton(
-            tooltip: l10n.copyCurrentAddressTooltip,
-            onPressed: () async {
-              final messenger = ScaffoldMessenger.of(context);
-              final value = _currentUrl ?? widget.initialUrl;
-              await Clipboard.setData(ClipboardData(text: value));
-              if (!mounted) {
-                return;
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) async {
+              switch (value) {
+                case 'execute':
+                  _executeImportScript();
+                  break;
+                case 'remember':
+                  _rememberCurrentLogin();
+                  break;
+                case 'fill':
+                  _autofillRememberedLogin();
+                  break;
+                case 'clear':
+                  _clearRememberedLogin();
+                  break;
+                case 'copy':
+                  final messenger = ScaffoldMessenger.of(context);
+                  final url = _currentUrl ?? widget.initialUrl;
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (context.mounted) {
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.copiedCurrentAddress)),
+                    );
+                  }
+                  break;
               }
-              messenger.showSnackBar(
-                SnackBar(content: Text(l10n.copiedCurrentAddress)),
-              );
             },
-            icon: const Icon(Icons.link_rounded),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'execute',
+                child: ListTile(
+                  leading: _isExecutingImport
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.play_arrow_rounded),
+                  title: Text(l10n.executeImportScriptAction),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  enabled: !_isExecutingImport,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'remember',
+                child: ListTile(
+                  leading: const Icon(Icons.save_outlined),
+                  title: Text(l10n.rememberCurrentInputTooltip),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'fill',
+                child: ListTile(
+                  leading: const Icon(Icons.password_rounded),
+                  title: Text(l10n.fillRememberedTooltip),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  enabled: _rememberedLogin != null,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'clear',
+                child: ListTile(
+                  leading: const Icon(Icons.delete_outline_rounded),
+                  title: Text(l10n.clearRememberedTooltip),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                  enabled: _rememberedLogin != null,
+                ),
+              ),
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'copy',
+                child: ListTile(
+                  leading: const Icon(Icons.link_rounded),
+                  title: Text(l10n.copyCurrentAddressTooltip),
+                  contentPadding: EdgeInsets.zero,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ),
+            ],
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-            color: colorScheme.surfaceContainerLowest,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _isUsingLocalDebugScript
-                      ? l10n.warehouseLoginHintLocalDebug
-                      : l10n.warehouseLoginHintImport,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  _useDesktopMode
-                      ? l10n.currentPageModeDesktop
-                      : l10n.currentPageModeMobile,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (_isUsingLocalDebugScript) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.localScriptLabel(effectiveDebugScriptName),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.tertiary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Row(
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                color: colorScheme.surfaceContainerLowest,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _addressController,
-                        focusNode: _addressFocusNode,
-                        keyboardType: TextInputType.url,
-                        textInputAction: TextInputAction.go,
-                        decoration: InputDecoration(
-                          isDense: true,
-                          hintText: l10n.webAddressHint,
-                          prefixIcon:
-                              const Icon(Icons.language_rounded, size: 18),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                    // 模式标识 + 提示文字（紧凑单行）
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
                           ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _useDesktopMode ? '🖥️' : '📱',
+                            style: const TextStyle(fontSize: 11),
                           ),
                         ),
-                        onSubmitted: (_) => _loadAddressBarUrl(),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            _isUsingLocalDebugScript
+                                ? l10n.warehouseLoginHintLocalDebug
+                                : l10n.warehouseLoginHintImport,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (_isUsingLocalDebugScript)
+                          Container(
+                            margin: const EdgeInsets.only(left: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 1,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.tertiaryContainer,
+                              borderRadius: BorderRadius.circular(3),
+                            ),
+                            child: Text(
+                              effectiveDebugScriptName,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: colorScheme.onTertiaryContainer,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    // URL 地址栏
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _addressController,
+                            focusNode: _addressFocusNode,
+                            keyboardType: TextInputType.url,
+                            textInputAction: TextInputAction.go,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              hintText: l10n.webAddressHint,
+                              prefixIcon: const Icon(
+                                Icons.language_rounded,
+                                size: 18,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 8,
+                              ),
+                            ),
+                            onSubmitted: (_) => _loadAddressBarUrl(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        FilledButton(
+                          onPressed: _loadAddressBarUrl,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            minimumSize: const Size(0, 36),
+                          ),
+                          child: Text(l10n.goAction),
+                        ),
+                      ],
+                    ),
+                    // 状态/提示行
+                    if ((currentStatus ?? '').isNotEmpty ||
+                        _rememberedLogin != null ||
+                        (_macroRecordingState ==
+                            MacroRecordingState.recording) ||
+                        (_macroRecordingState == MacroRecordingState.stopped &&
+                            _lastScriptStatus != null))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          _lastScriptStatus ??
+                              currentStatus ??
+                              (_rememberedLogin != null
+                                  ? l10n.rememberedAccountLabel(
+                                      _rememberedLogin!.username,
+                                    )
+                                  : ''),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.primary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    FilledButton(
-                      onPressed: _loadAddressBarUrl,
-                      child: Text(l10n.goAction),
-                    ),
                   ],
                 ),
-                if ((currentStatus ?? '').isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    currentStatus!,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
+              ),
+              if (_loadingProgress < 100)
+                LinearProgressIndicator(value: _loadingProgress / 100),
+              Expanded(child: WebViewWidget(controller: _controller)),
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: FilledButton.icon(
+                    onPressed: _isExecutingImport ? null : _executeImportScript,
+                    icon: _isExecutingImport
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_rounded),
+                    label: Text(
+                      _isExecutingImport
+                          ? l10n.importingAction
+                          : (_isUsingLocalDebugScript
+                                ? l10n.executeLocalDebugScriptAction
+                                : l10n.executeImportScriptAction),
                     ),
                   ),
-                ] else if (_rememberedLogin != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    l10n.rememberedAccountLabel(_rememberedLogin!.username),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (_loadingProgress < 100)
-            LinearProgressIndicator(value: _loadingProgress / 100),
-          Expanded(
-            child: WebViewWidget(controller: _controller),
-          ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              child: FilledButton.icon(
-                onPressed: _isExecutingImport ? null : _executeImportScript,
-                icon: _isExecutingImport
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_rounded),
-                label: Text(
-                  _isExecutingImport
-                      ? l10n.importingAction
-                      : (_isUsingLocalDebugScript
-                          ? l10n.executeLocalDebugScriptAction
-                          : l10n.executeImportScriptAction),
                 ),
               ),
+            ],
+          ),
+          Positioned.fill(
+            child: PlaybackOverlay(
+              progress: _playbackProgress,
+              state: _playbackState,
+              schoolName: widget.school.name,
+              adapterName: widget.adapter.adapterName,
+              onCancel: _cancelPlayback,
+              onRetry: _retryPlayback,
+              onDismiss: _dismissPlaybackResult,
+              onContinueAfterPause: _resumePlaybackAfterPause,
             ),
           ),
         ],
@@ -3192,20 +3639,63 @@ class _WarehouseAdapterWebLoginScreenState
     _importTimeoutTimer?.cancel();
     _importTimeoutTimer = Timer(_importTimeout, () {
       if (!mounted || !_isExecutingImport) return;
+      final message = AppLocalizations.of(
+        context,
+      )!.executeFailedWithError('timeout');
       setState(() {
         _isExecutingImport = false;
         _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
       });
-      _showLightTip(
-        context,
-        AppLocalizations.of(context)!.executeFailedWithError('timeout'),
-      );
+      _showMacroReplayImportError(message);
+      _showLightTip(context, message);
     });
   }
 
   void _cancelImportTimeout() {
     _importTimeoutTimer?.cancel();
     _importTimeoutTimer = null;
+  }
+
+  bool get _isMacroReplay => widget.macroRecord != null;
+
+  void _showMacroReplayImportError(String message) {
+    if (!_isMacroReplay || !mounted) return;
+    setState(() {
+      _playbackProgress = ReplayProgress(
+        currentStepIndex: _playbackProgress.currentStepIndex,
+        totalSteps: _playbackProgress.totalSteps == 0
+            ? 1
+            : _playbackProgress.totalSteps,
+        currentStep: MacroStep.executeScript,
+        status: ReplayStepStatus.failed,
+        errorMessage: message,
+      );
+      _playbackState = PlaybackUiState.error;
+    });
+  }
+
+  Future<void> _markMacroImportCompleted({
+    required bool countSuccessfulImport,
+  }) async {
+    if (!_isMacroReplay) return;
+    if (countSuccessfulImport) {
+      final existing = await _macroService.getMacro(
+        widget.school.id,
+        widget.adapter.adapterId,
+      );
+      if (existing != null) {
+        await _macroService.saveMacro(
+          existing.copyWith(
+            successfulImportCount: existing.successfulImportCount + 1,
+            updatedAt: DateTime.now(),
+          ),
+        );
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _playbackState = PlaybackUiState.finished;
+    });
   }
 
   Future<void> _executeImportScript() async {
@@ -3226,7 +3716,8 @@ class _WarehouseAdapterWebLoginScreenState
               adapter: widget.adapter,
               options: widget.fetchOptions,
             );
-      final wrappedScript = '''
+      final wrappedScript =
+          '''
 (() => {
   window.__qingyuResolvers = window.__qingyuResolvers || {};
   window.AndroidBridge = {
@@ -3323,14 +3814,15 @@ class _WarehouseAdapterWebLoginScreenState
         return;
       }
       _cancelImportTimeout();
+      final message = AppLocalizations.of(
+        context,
+      )!.executeFailedWithError('$error');
       setState(() {
         _isExecutingImport = false;
         _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
       });
-      _showLightTip(
-        context,
-        AppLocalizations.of(context)!.executeFailedWithError('$error'),
-      );
+      _showMacroReplayImportError(message);
+      _showLightTip(context, message);
     }
   }
 
@@ -3344,6 +3836,9 @@ class _WarehouseAdapterWebLoginScreenState
 
     final type = message['type'] as String? ?? '';
     switch (type) {
+      case 'macro:event':
+        _handleMacroEvent(message);
+        break;
       case 'loginState':
         await _handleLoginStateMessage(message);
         break;
@@ -3372,35 +3867,53 @@ class _WarehouseAdapterWebLoginScreenState
       case 'error':
         if (!mounted) return;
         _cancelImportTimeout();
+        final errorMessage = (message['message'] as String?) ?? '脚本执行失败';
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus = '脚本执行失败';
         });
-        _showLightTip(context, (message['message'] as String?) ?? '脚本执行失败');
+        _showMacroReplayImportError(errorMessage);
+        _showLightTip(context, errorMessage);
         break;
       case 'courses':
         await _handleImportedCoursesJson(
-            (message['payload'] as String?) ?? '[]');
+          (message['payload'] as String?) ?? '[]',
+        );
         break;
       case 'complete':
         if (!mounted) return;
         _cancelImportTimeout();
+        final status = AppLocalizations.of(context)!.importFlowFinished;
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = AppLocalizations.of(context)!.importFlowFinished;
+          _lastScriptStatus = status;
         });
+        if (_isMacroReplay &&
+            _playbackState == PlaybackUiState.executingImport) {
+          _showMacroReplayImportError('脚本执行结束，但未收到课程数据');
+        }
         break;
     }
   }
 
   Future<void> _showScriptConfirmDialog(Map<String, dynamic> message) async {
     final requestId = (message['requestId'] as String?) ?? '';
+    // 回放模式：使用录制的响应或自动确认
+    final macroRecord = widget.macroRecord;
+    if (macroRecord != null) {
+      final key = _dialogResponseKey('confirm', message);
+      final recorded = macroRecord.dialogResponses[key];
+      await _resolveJavaScriptRequest(requestId, recorded == true);
+      return;
+    }
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text((message['title'] as String?)?.trim().isNotEmpty == true
-            ? (message['title'] as String)
-            : AppLocalizations.of(context)!.confirmImportAction),
+        title: Text(
+          (message['title'] as String?)?.trim().isNotEmpty == true
+              ? (message['title'] as String)
+              : AppLocalizations.of(context)!.confirmImportAction,
+        ),
         content: Text(
           (message['message'] as String?) ??
               AppLocalizations.of(context)!.defaultContinuePrompt,
@@ -3420,11 +3933,27 @@ class _WarehouseAdapterWebLoginScreenState
         ],
       ),
     );
+    // 录制模式：记住用户的选择
+    if (_macroRecordingState == MacroRecordingState.recording) {
+      final key = _dialogResponseKey('confirm', message);
+      _macroDialogResponses[key] = confirmed == true;
+    }
     await _resolveJavaScriptRequest(requestId, confirmed == true);
   }
 
   Future<void> _showScriptPromptDialog(Map<String, dynamic> message) async {
     final requestId = (message['requestId'] as String?) ?? '';
+    // 回放模式：使用录制的响应或默认值
+    final macroRecord = widget.macroRecord;
+    if (macroRecord != null) {
+      final key = _dialogResponseKey('prompt', message);
+      final recorded = macroRecord.dialogResponses[key];
+      await _resolveJavaScriptRequest(
+        requestId,
+        '${recorded ?? (message['defaultValue'] as String? ?? '')}',
+      );
+      return;
+    }
     final validatorName = (message['validatorName'] as String?) ?? '';
     final controller = TextEditingController(
       text: (message['defaultValue'] as String?) ?? '',
@@ -3472,6 +4001,11 @@ class _WarehouseAdapterWebLoginScreenState
         ],
       ),
     );
+    // 录制模式：记住用户输入
+    if (_macroRecordingState == MacroRecordingState.recording) {
+      final key = _dialogResponseKey('prompt', message);
+      if (result != null) _macroDialogResponses[key] = result;
+    }
     await _resolveJavaScriptRequest(requestId, result);
   }
 
@@ -3479,18 +4013,41 @@ class _WarehouseAdapterWebLoginScreenState
     Map<String, dynamic> message,
   ) async {
     final requestId = (message['requestId'] as String?) ?? '';
+    // 回放模式：使用录制的响应或自动选择第一项
+    final macroRecord = widget.macroRecord;
+    if (macroRecord != null) {
+      final key = _dialogResponseKey('singleSelection', message);
+      final recorded = macroRecord.dialogResponses[key];
+      if (recorded != null) {
+        await _resolveJavaScriptRequest(requestId, '$recorded');
+        return;
+      }
+      final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
+      try {
+        final decoded = jsonDecode(optionsRaw);
+        if (decoded is List && decoded.isNotEmpty) {
+          await _resolveJavaScriptRequest(requestId, decoded[0].toString());
+          return;
+        }
+      } catch (_) {}
+      await _resolveJavaScriptRequest(requestId, '');
+      return;
+    }
     final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
     final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
     List<String> options = const [];
     try {
       final decoded = jsonDecode(optionsRaw);
       if (decoded is List) {
-        options =
-            decoded.map((item) => item.toString()).toList(growable: false);
+        options = decoded
+            .map((item) => item.toString())
+            .toList(growable: false);
       }
     } catch (_) {}
-    var currentSelection =
-        selectedIndex.clamp(0, options.isEmpty ? 0 : options.length - 1);
+    var currentSelection = selectedIndex.clamp(
+      0,
+      options.isEmpty ? 0 : options.length - 1,
+    );
     final result = await showDialog<int>(
       context: context,
       builder: (context) => AlertDialog(
@@ -3530,6 +4087,15 @@ class _WarehouseAdapterWebLoginScreenState
         ],
       ),
     );
+    // 录制模式：记住用户的选择
+    if (_macroRecordingState == MacroRecordingState.recording &&
+        result != null &&
+        options.isNotEmpty) {
+      final key = _dialogResponseKey('singleSelection', message);
+      if (result >= 0 && result < options.length) {
+        _macroDialogResponses[key] = options[result];
+      }
+    }
     await _resolveJavaScriptRequest(requestId, result);
   }
 
@@ -3543,13 +4109,11 @@ class _WarehouseAdapterWebLoginScreenState
         );
       }
       final provider = context.read<TimetableProvider>();
-      final semesterTotalWeeks =
-          (decoded['semesterTotalWeeks'] as num?)?.toInt();
+      final semesterTotalWeeks = (decoded['semesterTotalWeeks'] as num?)
+          ?.toInt();
       if (semesterTotalWeeks != null && semesterTotalWeeks > 0) {
         final result = await provider.updateTimetableSettings(
-          provider.settings.copyWith(
-            semesterWeekCount: semesterTotalWeeks,
-          ),
+          provider.settings.copyWith(semesterWeekCount: semesterTotalWeeks),
         );
         if (result != null) {
           throw FormatException(result);
@@ -3569,8 +4133,9 @@ class _WarehouseAdapterWebLoginScreenState
   Future<void> _handleSavePresetTimeSlots(Map<String, dynamic> message) async {
     final requestId = (message['requestId'] as String?) ?? '';
     try {
-      final sections =
-          _decodeImportedSections((message['payload'] as String?) ?? '[]');
+      final sections = _decodeImportedSections(
+        (message['payload'] as String?) ?? '[]',
+      );
       _pendingImportedSections = sections;
       _pendingImportedSectionsSignature = _buildSectionSignature(sections);
       await _applyPendingImportedSectionsIfNeeded();
@@ -3586,7 +4151,9 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _resolveJavaScriptRequest(
-      String requestId, Object? value) async {
+    String requestId,
+    Object? value,
+  ) async {
     final encoded = jsonEncode(value);
     await _controller.runJavaScript(
       "window.__qingyuResolvers = window.__qingyuResolvers || {}; "
@@ -3600,7 +4167,8 @@ class _WarehouseAdapterWebLoginScreenState
       final decoded = jsonDecode(payload);
       if (decoded is! List) {
         throw FormatException(
-            AppLocalizations.of(context)!.invalidCourseDataFormat);
+          AppLocalizations.of(context)!.invalidCourseDataFormat,
+        );
       }
       final parsedCourses = _parseWarehouseCourses(decoded);
       if (parsedCourses.isEmpty) {
@@ -3610,41 +4178,83 @@ class _WarehouseAdapterWebLoginScreenState
       }
 
       final provider = context.read<TimetableProvider>();
-      final replaceExisting = provider.courses.isEmpty
-          ? true
-          : await _askReplaceExisting(
-              context,
-              title: AppLocalizations.of(context)!.courseImportTitle,
-              content: AppLocalizations.of(context)!
-                  .importCourseCountPrompt(parsedCourses.length),
+      // 回放/录制模式：使用录制的替换/合并选择
+      bool? recordedReplaceExisting;
+      _ImportSemesterConfig? recordedSemesterConfig;
+      final recording = _macroRecordingState == MacroRecordingState.recording;
+      final replaying = widget.macroRecord != null;
+
+      if (replaying) {
+        final r = widget.macroRecord!.dialogResponses['replaceExisting'];
+        if (r is bool) recordedReplaceExisting = r;
+        final s = widget.macroRecord!.dialogResponses['semesterConfig'];
+        if (s is Map) {
+          final startDate = DateTime.tryParse(s['startDate'] as String? ?? '');
+          final week = s['firstCourseWeek'] as int?;
+          if (startDate != null && week != null) {
+            recordedSemesterConfig = _ImportSemesterConfig(
+              semesterStartDate: startDate,
+              firstCourseWeek: week,
             );
-      if (replaceExisting == null || !mounted) {
-        _cancelImportTimeout();
-        setState(() {
-          _isExecutingImport = false;
-          _lastScriptStatus =
-              AppLocalizations.of(context)!.importCancelledStatus;
-        });
-        return;
+          }
+        }
       }
 
-      final semesterConfig = await _pickImportSemesterConfig(
-        context,
-        initialSemesterStartDate:
-            provider.settings.semesterStartDate ?? DateTime.now(),
-        initialFirstCourseWeek: 1,
-        title: AppLocalizations.of(context)!.importConfirmSemesterMappingTitle,
-        subtitle: AppLocalizations.of(context)!
-            .importConfirmSemesterMappingSubtitleWarehouse,
-      );
-      if (semesterConfig == null || !mounted) {
+      final replaceExisting = provider.courses.isEmpty
+          ? true
+          : recordedReplaceExisting ??
+                await _askReplaceExisting(
+                  context,
+                  title: AppLocalizations.of(context)!.courseImportTitle,
+                  content: AppLocalizations.of(
+                    context,
+                  )!.importCourseCountPrompt(parsedCourses.length),
+                );
+      if (replaceExisting == null || !mounted) {
         _cancelImportTimeout();
+        if (!mounted) return;
+        final status = AppLocalizations.of(context)!.importCancelledStatus;
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus =
-              AppLocalizations.of(context)!.importCancelledStatus;
+          _lastScriptStatus = status;
         });
+        _showMacroReplayImportError(status);
         return;
+      }
+      if (recording) {
+        _macroDialogResponses['replaceExisting'] = replaceExisting;
+      }
+
+      final semesterConfig =
+          recordedSemesterConfig ??
+          await _pickImportSemesterConfig(
+            context,
+            initialSemesterStartDate:
+                provider.settings.semesterStartDate ?? DateTime.now(),
+            initialFirstCourseWeek: 1,
+            title: AppLocalizations.of(
+              context,
+            )!.importConfirmSemesterMappingTitle,
+            subtitle: AppLocalizations.of(
+              context,
+            )!.importConfirmSemesterMappingSubtitleWarehouse,
+          );
+      if (semesterConfig == null || !mounted) {
+        _cancelImportTimeout();
+        if (!mounted) return;
+        final status = AppLocalizations.of(context)!.importCancelledStatus;
+        setState(() {
+          _isExecutingImport = false;
+          _lastScriptStatus = status;
+        });
+        _showMacroReplayImportError(status);
+        return;
+      }
+      if (recording) {
+        _macroDialogResponses['semesterConfig'] = {
+          'startDate': semesterConfig.semesterStartDate.toIso8601String(),
+          'firstCourseWeek': semesterConfig.firstCourseWeek,
+        };
       }
 
       final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
@@ -3661,16 +4271,17 @@ class _WarehouseAdapterWebLoginScreenState
         if (mounted) {
           _showLightTip(
             context,
-            AppLocalizations.of(context)!
-                .applyReturnedTimeSchemeFailed('$error'),
+            AppLocalizations.of(
+              context,
+            )!.applyReturnedTimeSchemeFailed('$error'),
           );
         }
       }
-      final requiredSectionCount =
-          provider.previewImportedCourseRequiredSectionCount(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-      );
+      final requiredSectionCount = provider
+          .previewImportedCourseRequiredSectionCount(
+            alignedCourses,
+            replaceExisting: replaceExisting,
+          );
       if (!mounted) {
         return;
       }
@@ -3681,11 +4292,13 @@ class _WarehouseAdapterWebLoginScreenState
       );
       if (!capacityReady || !mounted) {
         _cancelImportTimeout();
+        if (!mounted) return;
+        final status = AppLocalizations.of(context)!.importInterruptedStatus;
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus =
-              AppLocalizations.of(context)!.importInterruptedStatus;
+          _lastScriptStatus = status;
         });
+        _showMacroReplayImportError(status);
         return;
       }
 
@@ -3714,26 +4327,34 @@ class _WarehouseAdapterWebLoginScreenState
             ? AppLocalizations.of(context)!.importUpdatedCount(importedCount)
             : AppLocalizations.of(context)!.importNoCourseChanges,
       );
+      _cancelImportTimeout();
+      setState(() {
+        _isExecutingImport = false;
+      });
       if (importedCount > 0) {
-        _cancelImportTimeout();
-        navigator.pop(true);
-      } else {
-        _cancelImportTimeout();
-        setState(() {
-          _isExecutingImport = false;
-        });
+        // 导入成功，如果正在录制宏则自动结束录制并保存
+        if (_macroRecordingState == MacroRecordingState.recording) {
+          await _completeMacroAndPop();
+        } else if (replaying) {
+          await _markMacroImportCompleted(countSuccessfulImport: true);
+        } else {
+          navigator.pop(true);
+        }
+      } else if (replaying) {
+        await _markMacroImportCompleted(countSuccessfulImport: false);
       }
     } catch (error) {
       if (!mounted) return;
       _cancelImportTimeout();
+      final message = AppLocalizations.of(
+        context,
+      )!.importFailedWithError('$error');
       setState(() {
         _isExecutingImport = false;
         _lastScriptStatus = AppLocalizations.of(context)!.importFailedStatus;
       });
-      _showLightTip(
-        context,
-        AppLocalizations.of(context)!.importFailedWithError('$error'),
-      );
+      _showMacroReplayImportError(message);
+      _showLightTip(context, message);
     }
   }
 
@@ -3752,12 +4373,13 @@ class _WarehouseAdapterWebLoginScreenState
       final day = (map['day'] as num?)?.toInt();
       final startSection = (map['startSection'] as num?)?.toInt();
       final endSection = (map['endSection'] as num?)?.toInt();
-      final weeks = (map['weeks'] as List<dynamic>?)
-          ?.map((item) => (item as num).toInt())
-          .where((item) => item > 0)
-          .toSet()
-          .toList()
-        ?..sort();
+      final weeks =
+          (map['weeks'] as List<dynamic>?)
+              ?.map((item) => (item as num).toInt())
+              .where((item) => item > 0)
+              .toSet()
+              .toList()
+            ?..sort();
       if (name.isEmpty ||
           day == null ||
           startSection == null ||
@@ -3804,14 +4426,20 @@ class _WarehouseAdapterWebLoginScreenState
         candidate.username.isEmpty &&
         candidate.password.isEmpty) {
       _hasPromptedAutofill = true;
+      // 回放模式：直接填充，不弹对话框
+      if (widget.macroRecord != null) {
+        await _autofillRememberedLogin();
+        return;
+      }
       _isPromptShowing = true;
       final shouldAutofill = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
           title: Text(AppLocalizations.of(context)!.autofillLoginTitle),
           content: Text(
-            AppLocalizations.of(context)!
-                .autofillLoginMessage(_rememberedLogin!.username),
+            AppLocalizations.of(
+              context,
+            )!.autofillLoginMessage(_rememberedLogin!.username),
           ),
           actions: [
             TextButton(
@@ -3844,14 +4472,19 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _hasPromptedSave = true;
+    // 回放模式：跳过保存密码对话框
+    if (widget.macroRecord != null) {
+      return;
+    }
     _isPromptShowing = true;
     final shouldSave = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(AppLocalizations.of(context)!.rememberPasswordTitle),
         content: Text(
-          AppLocalizations.of(context)!
-              .rememberPasswordMessage(candidate.username),
+          AppLocalizations.of(
+            context,
+          )!.rememberPasswordMessage(candidate.username),
         ),
         actions: [
           TextButton(
@@ -3876,8 +4509,9 @@ class _WarehouseAdapterWebLoginScreenState
       if (!mounted) return;
       setState(() {
         _rememberedLogin = candidate;
-        _lastScriptStatus =
-            AppLocalizations.of(context)!.savedRememberedLoginStatus;
+        _lastScriptStatus = AppLocalizations.of(
+          context,
+        )!.savedRememberedLoginStatus;
       });
     }
   }
@@ -3901,7 +4535,8 @@ class _WarehouseAdapterWebLoginScreenState
   Future<void> _autofillRememberedLogin() async {
     final login = _rememberedLogin;
     if (login == null) return;
-    final js = '''
+    final js =
+        '''
 (() => {
   const textInputs = Array.from(document.querySelectorAll('input')).filter((input) => {
     const type = (input.type || 'text').toLowerCase();
@@ -3925,8 +4560,9 @@ class _WarehouseAdapterWebLoginScreenState
     await _controller.runJavaScript(js);
     if (!mounted) return;
     setState(() {
-      _lastScriptStatus =
-          AppLocalizations.of(context)!.autofilledRememberedLoginStatus;
+      _lastScriptStatus = AppLocalizations.of(
+        context,
+      )!.autofilledRememberedLoginStatus;
     });
   }
 
@@ -3954,10 +4590,7 @@ class _WarehouseAdapterWebLoginScreenState
       }
       final login = WarehouseRememberedLogin.fromJson(decoded);
       if (login.username.isEmpty && login.password.isEmpty) {
-        _showLightTip(
-          context,
-          l10n.noUsernameOrPasswordRecognized,
-        );
+        _showLightTip(context, l10n.noUsernameOrPasswordRecognized);
         return;
       }
       await _preferencesService.setRememberedLogin(
@@ -3972,10 +4605,7 @@ class _WarehouseAdapterWebLoginScreenState
       _showLightTip(context, l10n.rememberedCurrentLoginSuccess);
     } catch (error) {
       if (!mounted) return;
-      _showLightTip(
-        context,
-        l10n.rememberLoginFailedWithError('$error'),
-      );
+      _showLightTip(context, l10n.rememberLoginFailedWithError('$error'));
     }
   }
 
@@ -3984,13 +4614,342 @@ class _WarehouseAdapterWebLoginScreenState
     if (!mounted) return;
     setState(() {
       _rememberedLogin = null;
-      _lastScriptStatus =
-          AppLocalizations.of(context)!.clearedRememberedLoginStatus;
+      _lastScriptStatus = AppLocalizations.of(
+        context,
+      )!.clearedRememberedLoginStatus;
     });
     _showLightTip(
       context,
       AppLocalizations.of(context)!.clearedRememberedLoginSuccess,
     );
+  }
+
+  // ============ 宏录制方法 ============
+
+  Future<void> _injectMacroRecorderJs() async {
+    try {
+      await _controller.runJavaScript(MacroRecorderJs.injectScript);
+    } catch (_) {}
+  }
+
+  void _handleMacroEvent(Map<String, dynamic> message) {
+    if (_macroRecordingState != MacroRecordingState.recording) return;
+    try {
+      final payloadRaw = message['payload'] as String?;
+      if (payloadRaw == null || payloadRaw.isEmpty) return;
+      final decoded = jsonDecode(payloadRaw);
+      if (decoded is! Map) return;
+      setState(() {
+        _macroRawEvents.add(Map<String, dynamic>.from(decoded));
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _toggleMacroRecording() async {
+    if (_macroRecordingState == MacroRecordingState.recording) {
+      await _stopMacroRecording();
+    } else {
+      _startMacroRecording();
+    }
+  }
+
+  void _startMacroRecording() {
+    setState(() {
+      _macroRecordingState = MacroRecordingState.recording;
+      _macroRawEvents = [];
+      _lastScriptStatus = '录制中…点击停止完成录制';
+    });
+    // 在当前页面注入录制 JS
+    _injectMacroRecorderJs();
+    _showLightTip(context, '录制已开始，请按正常流程操作教务网站');
+  }
+
+  /// 导入成功时自动完成录制并返回
+  Future<void> _completeMacroAndPop() async {
+    // 从 JS 获取剩余事件
+    try {
+      final result = await _controller.runJavaScriptReturningResult(
+        MacroRecorderJs.dumpScript,
+      );
+      final normalized = _normalizeJavaScriptResult(result);
+      if (normalized.isNotEmpty && normalized != '[]') {
+        final decoded = jsonDecode(normalized);
+        if (decoded is List) {
+          _macroRawEvents.addAll(
+            decoded.map((e) => Map<String, dynamic>.from(e)),
+          );
+        }
+      }
+    } catch (_) {}
+
+    final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
+    final steps = MacroRecordingConverter.convert(capturedEvents);
+
+    if (steps.isNotEmpty && mounted) {
+      final now = DateTime.now();
+      final record = WarehouseMacroRecord(
+        schoolId: widget.school.id,
+        adapterId: widget.adapter.adapterId,
+        schoolName: widget.school.name,
+        adapterName: widget.adapter.adapterName,
+        importUrl: widget.initialUrl,
+        schoolResourceFolder: widget.school.resourceFolder,
+        adapterAssetJsPath: widget.adapter.assetJsPath,
+        steps: steps,
+        dialogResponses: Map<String, dynamic>.from(_macroDialogResponses),
+        createdAt: now,
+        updatedAt: now,
+        successfulImportCount: 1,
+      );
+      await _macroService.saveMacro(record);
+    }
+
+    if (mounted) {
+      Navigator.of(context).pop(false);
+    }
+  }
+
+  Future<void> _stopMacroRecording() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _macroRecordingState = MacroRecordingState.stopped;
+    });
+
+    // 尝试从页面获取剩余的录制事件
+    try {
+      final result = await _controller.runJavaScriptReturningResult(
+        MacroRecorderJs.dumpScript,
+      );
+      final normalized = _normalizeJavaScriptResult(result);
+      if (normalized.isNotEmpty && normalized != '[]') {
+        final decoded = jsonDecode(normalized);
+        if (decoded is List) {
+          setState(() {
+            _macroRawEvents.addAll(
+              decoded.map((e) => Map<String, dynamic>.from(e)),
+            );
+          });
+        }
+      }
+    } catch (_) {}
+
+    // 转换为 MacroStep 列表
+    final capturedEvents = List<Map<String, dynamic>>.from(_macroRawEvents);
+    final steps = MacroRecordingConverter.convert(capturedEvents);
+    if (!mounted) return;
+
+    if (steps.isEmpty) {
+      setState(() {
+        _macroRecordingState = MacroRecordingState.idle;
+        _macroRawEvents = [];
+        _lastScriptStatus = '未录制到任何操作';
+      });
+      _showLightTip(context, '未录制到任何操作');
+      return;
+    }
+
+    // 询问用户是否要保存
+    final shouldSave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('保存录制'),
+        content: Text('录制了 ${steps.length} 个操作步骤。是否保存为快捷导入？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancelAction),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(l10n.saveAction),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldSave != true || !mounted) {
+      setState(() {
+        _macroRecordingState = MacroRecordingState.idle;
+        _macroRawEvents = [];
+        _lastScriptStatus = null;
+      });
+      return;
+    }
+
+    // 保存宏录制
+    final now = DateTime.now();
+    final record = WarehouseMacroRecord(
+      schoolId: widget.school.id,
+      adapterId: widget.adapter.adapterId,
+      schoolName: widget.school.name,
+      adapterName: widget.adapter.adapterName,
+      importUrl: widget.initialUrl,
+      schoolResourceFolder: widget.school.resourceFolder,
+      adapterAssetJsPath: widget.adapter.assetJsPath,
+      steps: steps,
+      dialogResponses: Map<String, dynamic>.from(_macroDialogResponses),
+      createdAt: now,
+      updatedAt: now,
+      successfulImportCount: 0,
+    );
+
+    await _macroService.saveMacro(record);
+    if (!mounted) return;
+
+    setState(() {
+      _macroRecordingState = MacroRecordingState.idle;
+      _macroRawEvents = [];
+      _lastScriptStatus = '录制已保存（${steps.length} 步）';
+    });
+    // 保存后自动返回适配器列表，用户即可看到快捷导入按钮
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  // ============ 宏回放方法 ============
+
+  Future<void> _startPlayback(WarehouseMacroRecord macro) async {
+    setState(() {
+      _playbackState = PlaybackUiState.playing;
+      _playbackProgress = ReplayProgress(
+        currentStepIndex: 0,
+        totalSteps: 0,
+        currentStep: const MacroStep(type: MacroStepType.delay, waitMs: 0),
+        status: ReplayStepStatus.pending,
+      );
+      _isExecutingImport = false;
+    });
+
+    final replayer = WarehouseMacroReplayer(
+      controller: _controller,
+      callbacks: ReplayCallbacks(
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _playbackProgress = progress;
+          });
+        },
+        onPauseForManualInput: (step, reason) async {
+          if (!mounted) return false;
+          if (step.fieldType == 'password') {
+            final remembered =
+                _rememberedLogin ??
+                await _preferencesService.getRememberedLogin(
+                  widget.adapter.adapterId,
+                );
+            if (!mounted) return false;
+            if (remembered != null && remembered.password.isNotEmpty) {
+              if (_rememberedLogin == null) {
+                setState(() {
+                  _rememberedLogin = remembered;
+                });
+              }
+              await _autofillRememberedLogin();
+              await Future.delayed(const Duration(milliseconds: 300));
+              if (!mounted) return false;
+              setState(() {
+                _playbackState = PlaybackUiState.playing;
+              });
+              return true;
+            }
+          }
+          setState(() {
+            _playbackState = PlaybackUiState.pausedForInput;
+          });
+          // 使用 Completer 等待用户点击继续
+          final completer = Completer<bool>();
+          _replayContinueCompleter = completer;
+          return completer.future;
+        },
+        onShowTip: (message) {
+          if (!mounted) return;
+          _showLightTip(context, message);
+        },
+        onComplete: (success, errorMessage) async {
+          if (!mounted) return;
+          if (success) {
+            setState(() {
+              _playbackState = PlaybackUiState.executingImport;
+            });
+            await _autoExecuteImportAfterPlayback();
+          } else {
+            if (!mounted) return;
+            setState(() {
+              _playbackState = PlaybackUiState.error;
+            });
+          }
+        },
+      ),
+    );
+    _replayer = replayer;
+    await replayer.execute(macro);
+  }
+
+  Completer<bool>? _replayContinueCompleter;
+
+  void _resumePlaybackAfterPause() {
+    if (_replayContinueCompleter == null) return;
+    _replayContinueCompleter!.complete(true);
+    _replayContinueCompleter = null;
+    if (mounted) {
+      setState(() {
+        _playbackState = PlaybackUiState.playing;
+      });
+    }
+  }
+
+  void _cancelPlayback() {
+    _replayer?.cancel();
+    _replayContinueCompleter?.complete(false);
+    _replayContinueCompleter = null;
+    if (mounted) {
+      setState(() {
+        _playbackState = PlaybackUiState.hidden;
+      });
+    }
+  }
+
+  Future<void> _dismissPlaybackResult() async {
+    if (_playbackState == PlaybackUiState.finished) {
+      // 成功：返回到上一页
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } else {
+      // 失败：隐藏覆盖层，让用户手动操作
+      if (mounted) {
+        setState(() {
+          _playbackState = PlaybackUiState.hidden;
+        });
+      }
+    }
+  }
+
+  Future<void> _retryPlayback() async {
+    final macro =
+        widget.macroRecord ??
+        await _macroService.getMacro(
+          widget.school.id,
+          widget.adapter.adapterId,
+        );
+    if (macro == null || !mounted) return;
+    // 重新加载初始 URL
+    final uri = Uri.tryParse(widget.initialUrl);
+    if (uri != null) {
+      await _controller.loadRequest(uri);
+    }
+    if (!mounted) return;
+    _startPlayback(macro);
+  }
+
+  /// 回放导航完成后，自动执行导入脚本
+  Future<void> _autoExecuteImportAfterPlayback() async {
+    // 给页面一点稳定时间
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    // 自动执行导入脚本
+    await _executeImportScript();
   }
 }
 
@@ -4312,11 +5271,8 @@ List<_WarehouseSchoolBean> _schoolsToBeans(
       .toList(growable: false);
   final beans = <_WarehouseSchoolBean>[
     ...recentOrdered.map(
-      (school) => _WarehouseSchoolBean(
-        school: school,
-        tag: '★',
-        isRecent: true,
-      ),
+      (school) =>
+          _WarehouseSchoolBean(school: school, tag: '★', isRecent: true),
     ),
     ...remaining.map(
       (school) => _WarehouseSchoolBean(
@@ -4336,10 +5292,7 @@ class _DetailLine extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DetailLine({
-    required this.label,
-    required this.value,
-  });
+  const _DetailLine({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -4358,10 +5311,7 @@ class _DetailLine extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          SelectableText(
-            value,
-            style: theme.textTheme.bodyMedium,
-          ),
+          SelectableText(value, style: theme.textTheme.bodyMedium),
         ],
       ),
     );
@@ -4458,10 +5408,7 @@ class _GuideLine extends StatelessWidget {
   final String title;
   final String subtitle;
 
-  const _GuideLine({
-    required this.title,
-    required this.subtitle,
-  });
+  const _GuideLine({required this.title, required this.subtitle});
 
   @override
   Widget build(BuildContext context) {
@@ -4511,10 +5458,7 @@ class _CompactHintChip extends StatelessWidget {
   final IconData icon;
   final String label;
 
-  const _CompactHintChip({
-    required this.icon,
-    required this.label,
-  });
+  const _CompactHintChip({required this.icon, required this.label});
 
   @override
   Widget build(BuildContext context) {
@@ -4589,19 +5533,18 @@ class _CompactStatusChip extends StatelessWidget {
   final String label;
   final bool isError;
 
-  const _CompactStatusChip({
-    required this.label,
-    this.isError = false,
-  });
+  const _CompactStatusChip({required this.label, this.isError = false});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final backgroundColor =
-        isError ? colorScheme.errorContainer : colorScheme.primaryContainer;
-    final foregroundColor =
-        isError ? colorScheme.onErrorContainer : colorScheme.onPrimaryContainer;
+    final backgroundColor = isError
+        ? colorScheme.errorContainer
+        : colorScheme.primaryContainer;
+    final foregroundColor = isError
+        ? colorScheme.onErrorContainer
+        : colorScheme.onPrimaryContainer;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -4641,8 +5584,9 @@ class _CompactNoticeCard extends StatelessWidget {
     final backgroundColor = isError
         ? colorScheme.errorContainer.withValues(alpha: 0.92)
         : colorScheme.surfaceContainerHigh;
-    final foregroundColor =
-        isError ? colorScheme.onErrorContainer : colorScheme.onSurface;
+    final foregroundColor = isError
+        ? colorScheme.onErrorContainer
+        : colorScheme.onSurface;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -4677,10 +5621,7 @@ class _CompactNoticeCard extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 6,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               ),
               child: Text(actionLabel!),
             ),
@@ -4694,9 +5635,7 @@ class _CompactNoticeCard extends StatelessWidget {
 class _AiPreviewCard extends StatelessWidget {
   final AiCourseImportParseResult result;
 
-  const _AiPreviewCard({
-    required this.result,
-  });
+  const _AiPreviewCard({required this.result});
 
   @override
   Widget build(BuildContext context) {
@@ -4769,8 +5708,8 @@ class _AiPreviewCard extends StatelessWidget {
     final weekText = weeks.isEmpty
         ? '未提供周次'
         : weeks.length <= 6
-            ? weeks.join('、')
-            : '${weeks.first}-${weeks.last}（共 ${weeks.length} 周）';
+        ? weeks.join('、')
+        : '${weeks.first}-${weeks.last}（共 ${weeks.length} 周）';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(
@@ -4799,8 +5738,8 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
       var selectedFirstCourseWeek = initialFirstCourseWeek < 1
           ? 1
           : initialFirstCourseWeek > 20
-              ? 20
-              : initialFirstCourseWeek;
+          ? 20
+          : initialFirstCourseWeek;
       var autoTrackWeekMapping = inferredFirstCourseDate != null;
 
       return StatefulBuilder(
@@ -5007,13 +5946,14 @@ Future<bool> _ensureSectionCapacity(
     return false;
   }
 
-  final ensureMessage =
-      await provider.ensureSectionCapacityForImport(requiredSectionCount);
+  final ensureMessage = await provider.ensureSectionCapacityForImport(
+    requiredSectionCount,
+  );
   if (ensureMessage != null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ensureMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(ensureMessage)));
     }
     return false;
   }
@@ -5128,8 +6068,10 @@ void _showLightTip(BuildContext context, String message) {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: colorScheme.inverseSurface.withValues(alpha: 0.96),
                   borderRadius: BorderRadius.circular(14),
@@ -5161,4 +6103,3 @@ void _showLightTip(BuildContext context, String message) {
     entry.remove();
   });
 }
-

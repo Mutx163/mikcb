@@ -1549,6 +1549,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                     actionsAlignment: MainAxisAlignment.spaceBetween,
                   ),
                 ).then((confirmed) {
+                  if (!context.mounted) return;
                   if (confirmed == true) {
                     _applyThemeWithUndo(context, config, themeName: name);
                     Navigator.pop(context);
@@ -1616,7 +1617,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                   },
                   child: Icon(
                     Icons.close,
-                    color: Theme.of(overlayContext).colorScheme.onInverseSurface.withOpacity(0.7),
+                    color: Theme.of(overlayContext).colorScheme.onInverseSurface.withValues(alpha: 0.7),
                     size: 18,
                   ),
                 ),

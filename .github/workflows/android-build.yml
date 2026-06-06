@@ -6,12 +6,49 @@ on:
       - 'v*'
   workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build-android:
+  check:
+    name: Analyze and Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.35.7
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Test
+        run: flutter test
+
+  publish:
+    name: Build and Publish Android APK
+    needs: check
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -61,14 +98,7 @@ jobs:
             echo "release_body=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Analyze
-        run: flutter analyze --no-fatal-infos
-
-      - name: Test
-        run: flutter test
-
       - name: Prepare signing files
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -94,7 +124,6 @@ jobs:
             gradle-${{ runner.os }}-
 
       - name: Build release APK
-        if: startsWith(github.ref, 'refs/tags/v')
         env:
           ANDROID_KEYSTORE_PATH: app/upload-keystore.jks
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -104,7 +133,6 @@ jobs:
         run: flutter build apk --release --flavor prod --target-platform android-arm64
 
       - name: Prepare artifact
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
           set -ex
@@ -114,7 +142,7 @@ jobs:
           find build/app/outputs -type f 2>/dev/null | head -30
           echo "=== APK files (size) ==="
           find build/app/outputs -name '*.apk' -type f -exec ls -lh {} \; 2>/dev/null || echo 'No APK files found'
-          # Try split-per-abi style first, then universal APK
+          # Try arm64 APK first, then any release APK.
           APK_PATH=$(find build/app/outputs -name '*arm64*' -type f | head -1)
           if [[ -z "${APK_PATH}" ]]; then
             echo "WARN: arm64 APK not found, trying any release APK..."
@@ -130,7 +158,6 @@ jobs:
           ls -lh "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
       - name: Upload to pgyer
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: PGYER/pgyer-upload-app-action@v1.3
         with:
           _api_key: ${{ secrets.PGYER_API_KEY }}
@@ -139,14 +166,12 @@ jobs:
           buildUpdateDescription: ${{ steps.meta.outputs.release_body }}
 
       - name: Upload APK artifact
-        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: android-release-apk
           path: dist/mikcb-*.apk
 
       - name: Create or update GitHub release
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
