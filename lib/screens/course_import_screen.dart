@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
@@ -31,6 +32,21 @@ import '../widgets/warehouse_playback_overlay.dart';
 import 'feedback_screen.dart';
 
 enum _WarehouseImportMenuAction { feedback, customDebug }
+
+bool shouldPromptRememberedLoginAutofill({
+  required bool hasPasswordField,
+  required WarehouseRememberedLogin? rememberedLogin,
+  required WarehouseRememberedLogin candidate,
+  required bool hasPromptedAutofill,
+  required bool isPromptShowing,
+}) {
+  return hasPasswordField &&
+      rememberedLogin != null &&
+      rememberedLogin.password.isNotEmpty &&
+      candidate.password.isEmpty &&
+      !hasPromptedAutofill &&
+      !isPromptShowing;
+}
 
 class CourseImportScreen extends StatelessWidget {
   const CourseImportScreen({super.key});
@@ -2308,7 +2324,6 @@ class _WarehouseSchoolAdaptersScreenState
   final Map<String, bool> _macroCache = {};
   String? _macroCacheAdapterSignature;
   bool _macroCacheCheckInFlight = false;
-  bool _recordingMode = false;
 
   @override
   void initState() {
@@ -2325,26 +2340,7 @@ class _WarehouseSchoolAdaptersScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.school.name),
-        actions: [
-          // 录制模式切换按钮
-          IconButton(
-            tooltip: _recordingMode ? '退出录制模式' : '录制模式',
-            onPressed: () {
-              setState(() {
-                _recordingMode = !_recordingMode;
-              });
-            },
-            icon: Icon(
-              _recordingMode
-                  ? Icons.fiber_manual_record_rounded
-                  : Icons.fiber_manual_record_outlined,
-              color: _recordingMode ? Colors.red : null,
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: Text(widget.school.name)),
       body: FutureBuilder<WarehouseAdaptersIndex>(
         future: _adaptersFuture,
         builder: (context, snapshot) {
@@ -2383,9 +2379,13 @@ class _WarehouseSchoolAdaptersScreenState
                     adapter: adapter,
                     importButtonLabel: adapter.importUrl.isEmpty
                         ? '填写网址后导入'
-                        : (_recordingMode ? '📹 录制导入' : '网页登录导入'),
-                    onImport: () =>
-                        _openAdapterImport(adapter, autoRecord: _recordingMode),
+                        : '网页登录导入',
+                    recordButtonLabel: adapter.importUrl.isEmpty
+                        ? '填写网址后录制'
+                        : '录制导入',
+                    onImport: () => _openAdapterImport(adapter),
+                    onRecord: () =>
+                        _openAdapterImport(adapter, autoRecord: true),
                     onInfo: () async {
                       final imported = await Navigator.of(context).push<bool>(
                         MaterialPageRoute(
@@ -3049,6 +3049,28 @@ class _WarehouseAdapterWebLoginScreenState
   bool get _isUsingLocalDebugScript =>
       (widget.debugScriptOverride ?? '').trim().isNotEmpty;
 
+  void _debugImportLog(String message) {
+    if (!kDebugMode) return;
+    debugPrint(
+      '[WarehouseImportDebug] '
+      'macro=$_isMacroReplay '
+      'playback=$_playbackState '
+      'executing=$_isExecutingImport '
+      'recording=$_macroRecordingState '
+      'status="${_lastScriptStatus ?? ''}" '
+      '$message',
+    );
+  }
+
+  String _bridgeMessageSummary(Map<String, dynamic> message) {
+    final type = message['type'];
+    final keys = message.keys.join(',');
+    final payload = message['payload'];
+    final payloadLength = payload is String ? payload.length : null;
+    final errorMessage = message['message'];
+    return 'type=$type keys=[$keys] payloadLength=$payloadLength message=$errorMessage';
+  }
+
   @override
   void initState() {
     super.initState();
@@ -3081,6 +3103,7 @@ class _WarehouseAdapterWebLoginScreenState
             }
             setState(() {
               _currentUrl = url;
+              _hasPromptedAutofill = false;
               if (!_addressFocusNode.hasFocus) {
                 _addressController.text = url;
               }
@@ -3097,12 +3120,11 @@ class _WarehouseAdapterWebLoginScreenState
                 _addressController.text = url;
               }
             });
-            _installLoginWatcher();
-            // 先注入录制 JS（如果在录制中），再自动填充——这样填充事件也能被录制到
+            // 先注入录制 JS（如果在录制中），再探测登录状态——这样填充事件也能被录制到
             if (_macroRecordingState == MacroRecordingState.recording) {
               _injectMacroRecorderJs();
             }
-            _autofillRememberedLoginIfNeeded();
+            _requestLoginStateProbe();
           },
         ),
       )
@@ -3607,6 +3629,7 @@ class _WarehouseAdapterWebLoginScreenState
       hasPasswordField: !!passwordInput
     }));
   };
+  window.__qingyuCollectLoginState = collect;
   if (!window.__qingyuLoginWatcherInstalled) {
     window.__qingyuLoginWatcherInstalled = true;
     document.addEventListener('input', (event) => {
@@ -3628,23 +3651,57 @@ class _WarehouseAdapterWebLoginScreenState
       collect();
       QingyuBridge.postMessage(JSON.stringify({ type: 'loginAttempt' }));
     }, true);
+    let loginProbeTimer = null;
+    const scheduleCollect = () => {
+      window.clearTimeout(loginProbeTimer);
+      loginProbeTimer = window.setTimeout(collect, 120);
+    };
+    const observer = new MutationObserver(scheduleCollect);
+    observer.observe(document.documentElement || document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['type', 'disabled', 'style', 'class']
+    });
   }
   collect();
+  window.setTimeout(collect, 0);
+  window.setTimeout(collect, 300);
+  window.setTimeout(collect, 1000);
+  window.setTimeout(collect, 2000);
 })();
 ''');
     } catch (_) {}
   }
 
+  Future<void> _requestLoginStateProbe() async {
+    await _installLoginWatcher();
+    try {
+      await _controller.runJavaScript('window.__qingyuCollectLoginState?.();');
+    } catch (_) {}
+  }
+
   void _startImportTimeout() {
+    _debugImportLog('start import timeout duration=$_importTimeout');
     _importTimeoutTimer?.cancel();
     _importTimeoutTimer = Timer(_importTimeout, () {
+      _debugImportLog(
+        'import timeout fired mounted=$mounted shouldRun=${mounted && _isExecutingImport}',
+      );
       if (!mounted || !_isExecutingImport) return;
-      final message = AppLocalizations.of(
-        context,
-      )!.executeFailedWithError('timeout');
+      final waitingForMacroCourses =
+          _isMacroReplay && _playbackState == PlaybackUiState.executingImport;
+      final message = waitingForMacroCourses
+          ? '导入脚本未返回课程数据'
+          : AppLocalizations.of(context)!.executeFailedWithError('timeout');
+      _debugImportLog(
+        'timeout -> mark import failed waitingForMacroCourses=$waitingForMacroCourses message="$message"',
+      );
       setState(() {
         _isExecutingImport = false;
-        _lastScriptStatus = AppLocalizations.of(context)!.scriptInjectionFailed;
+        _lastScriptStatus = waitingForMacroCourses
+            ? message
+            : AppLocalizations.of(context)!.scriptInjectionFailed;
       });
       _showMacroReplayImportError(message);
       _showLightTip(context, message);
@@ -3652,6 +3709,9 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   void _cancelImportTimeout() {
+    _debugImportLog(
+      'cancel import timeout hadTimer=${_importTimeoutTimer != null}',
+    );
     _importTimeoutTimer?.cancel();
     _importTimeoutTimer = null;
   }
@@ -3659,6 +3719,11 @@ class _WarehouseAdapterWebLoginScreenState
   bool get _isMacroReplay => widget.macroRecord != null;
 
   void _showMacroReplayImportError(String message) {
+    if (kDebugMode) {
+      _debugImportLog(
+        'show macro replay error message="$message"\n${StackTrace.current}',
+      );
+    }
     if (!_isMacroReplay || !mounted) return;
     setState(() {
       _playbackProgress = ReplayProgress(
@@ -3677,6 +3742,9 @@ class _WarehouseAdapterWebLoginScreenState
   Future<void> _markMacroImportCompleted({
     required bool countSuccessfulImport,
   }) async {
+    _debugImportLog(
+      'mark macro import completed countSuccessfulImport=$countSuccessfulImport',
+    );
     if (!_isMacroReplay) return;
     if (countSuccessfulImport) {
       final existing = await _macroService.getMacro(
@@ -3700,6 +3768,7 @@ class _WarehouseAdapterWebLoginScreenState
 
   Future<void> _executeImportScript() async {
     final l10n = AppLocalizations.of(context)!;
+    _debugImportLog('execute import script start');
     _resetPendingImportedArtifacts();
     setState(() {
       _isExecutingImport = true;
@@ -3799,10 +3868,13 @@ class _WarehouseAdapterWebLoginScreenState
   }
 })();
 ''';
+      _debugImportLog('run import script scriptLength=${script.length}');
       await _controller.runJavaScript(wrappedScript);
       if (!mounted) {
+        _debugImportLog('run import script finished after dispose');
         return;
       }
+      _debugImportLog('run import script injected');
       setState(() {
         _lastScriptStatus = _isUsingLocalDebugScript
             ? AppLocalizations.of(context)!.localDebugScriptInjected
@@ -3810,6 +3882,7 @@ class _WarehouseAdapterWebLoginScreenState
       });
       _startImportTimeout();
     } catch (error) {
+      _debugImportLog('execute import script caught error=$error');
       if (!mounted) {
         return;
       }
@@ -3834,6 +3907,7 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
 
+    _debugImportLog('bridge ${_bridgeMessageSummary(message)}');
     final type = message['type'] as String? ?? '';
     switch (type) {
       case 'macro:event':
@@ -3866,8 +3940,9 @@ class _WarehouseAdapterWebLoginScreenState
         break;
       case 'error':
         if (!mounted) return;
-        _cancelImportTimeout();
         final errorMessage = (message['message'] as String?) ?? '脚本执行失败';
+        _debugImportLog('bridge error -> mark failed message="$errorMessage"');
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus = '脚本执行失败';
@@ -3876,22 +3951,39 @@ class _WarehouseAdapterWebLoginScreenState
         _showLightTip(context, errorMessage);
         break;
       case 'courses':
-        await _handleImportedCoursesJson(
-          (message['payload'] as String?) ?? '[]',
+        final payload = (message['payload'] as String?) ?? '[]';
+        _debugImportLog(
+          'bridge courses -> handle payloadLength=${payload.length}',
         );
+        await _handleImportedCoursesJson(payload);
         break;
       case 'complete':
         if (!mounted) return;
-        _cancelImportTimeout();
         final status = AppLocalizations.of(context)!.importFlowFinished;
+        _debugImportLog('bridge complete entered');
+        if (_isMacroReplay) {
+          if (_playbackState == PlaybackUiState.executingImport) {
+            _debugImportLog(
+              'bridge complete ignored for macro replay while waiting for courses',
+            );
+            setState(() {
+              _lastScriptStatus = status;
+            });
+            break;
+          }
+          if (_playbackState == PlaybackUiState.finished) {
+            _debugImportLog(
+              'bridge complete ignored because macro replay already finished',
+            );
+            break;
+          }
+        }
+        _debugImportLog('bridge complete -> finish non-macro import flow');
+        _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
           _lastScriptStatus = status;
         });
-        if (_isMacroReplay &&
-            _playbackState == PlaybackUiState.executingImport) {
-          _showMacroReplayImportError('脚本执行结束，但未收到课程数据');
-        }
         break;
     }
   }
@@ -4163,14 +4255,17 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _handleImportedCoursesJson(String payload) async {
+    _debugImportLog('handle courses start payloadLength=${payload.length}');
     try {
       final decoded = jsonDecode(payload);
+      _debugImportLog('courses decoded type=${decoded.runtimeType}');
       if (decoded is! List) {
         throw FormatException(
           AppLocalizations.of(context)!.invalidCourseDataFormat,
         );
       }
       final parsedCourses = _parseWarehouseCourses(decoded);
+      _debugImportLog('courses parsed count=${parsedCourses.length}');
       if (parsedCourses.isEmpty) {
         throw FormatException(
           AppLocalizations.of(context)!.noImportableCoursesFromScript,
@@ -4211,6 +4306,9 @@ class _WarehouseAdapterWebLoginScreenState
                   )!.importCourseCountPrompt(parsedCourses.length),
                 );
       if (replaceExisting == null || !mounted) {
+        _debugImportLog(
+          'courses import aborted at replaceExisting mounted=$mounted value=$replaceExisting',
+        );
         _cancelImportTimeout();
         if (!mounted) return;
         final status = AppLocalizations.of(context)!.importCancelledStatus;
@@ -4240,6 +4338,9 @@ class _WarehouseAdapterWebLoginScreenState
             )!.importConfirmSemesterMappingSubtitleWarehouse,
           );
       if (semesterConfig == null || !mounted) {
+        _debugImportLog(
+          'courses import aborted at semesterConfig mounted=$mounted hasConfig=${semesterConfig != null}',
+        );
         _cancelImportTimeout();
         if (!mounted) return;
         final status = AppLocalizations.of(context)!.importCancelledStatus;
@@ -4291,6 +4392,9 @@ class _WarehouseAdapterWebLoginScreenState
         provider: provider,
       );
       if (!capacityReady || !mounted) {
+        _debugImportLog(
+          'courses import aborted at capacity mounted=$mounted capacityReady=$capacityReady requiredSectionCount=$requiredSectionCount',
+        );
         _cancelImportTimeout();
         if (!mounted) return;
         final status = AppLocalizations.of(context)!.importInterruptedStatus;
@@ -4302,12 +4406,16 @@ class _WarehouseAdapterWebLoginScreenState
         return;
       }
 
+      _debugImportLog(
+        'importParsedCourses start alignedCount=${alignedCourses.length} replaceExisting=$replaceExisting semesterStart=${semesterConfig.semesterStartDate.toIso8601String()}',
+      );
       final importedCount = await provider.importParsedCourses(
         alignedCourses,
         replaceExisting: replaceExisting,
         semesterStart: semesterConfig.semesterStartDate,
         source: 'warehouse',
       );
+      _debugImportLog('importParsedCourses done importedCount=$importedCount');
       if (!mounted) {
         return;
       }
@@ -4328,10 +4436,14 @@ class _WarehouseAdapterWebLoginScreenState
             : AppLocalizations.of(context)!.importNoCourseChanges,
       );
       _cancelImportTimeout();
+      _debugImportLog('courses import success path -> set executing false');
       setState(() {
         _isExecutingImport = false;
       });
       if (importedCount > 0) {
+        _debugImportLog(
+          'courses import positive result recording=$recording replaying=$replaying',
+        );
         // 导入成功，如果正在录制宏则自动结束录制并保存
         if (_macroRecordingState == MacroRecordingState.recording) {
           await _completeMacroAndPop();
@@ -4341,9 +4453,17 @@ class _WarehouseAdapterWebLoginScreenState
           navigator.pop(true);
         }
       } else if (replaying) {
+        _debugImportLog(
+          'courses import no changes but replaying -> mark completed without count',
+        );
         await _markMacroImportCompleted(countSuccessfulImport: false);
       }
     } catch (error) {
+      if (kDebugMode) {
+        _debugImportLog(
+          'handle courses caught error=$error\n${StackTrace.current}',
+        );
+      }
       if (!mounted) return;
       _cancelImportTimeout();
       final message = AppLocalizations.of(
@@ -4412,19 +4532,19 @@ class _WarehouseAdapterWebLoginScreenState
 
   Future<void> _handleLoginStateMessage(Map<String, dynamic> message) async {
     final hasPasswordField = message['hasPasswordField'] == true;
-    if (!hasPasswordField || _isPromptShowing) {
-      return;
-    }
     final candidate = WarehouseRememberedLogin(
       username: (message['username'] as String? ?? '').trim(),
       password: (message['password'] as String? ?? '').trim(),
     );
     _latestLoginCandidate = candidate;
 
-    if (_rememberedLogin != null &&
-        !_hasPromptedAutofill &&
-        candidate.username.isEmpty &&
-        candidate.password.isEmpty) {
+    if (shouldPromptRememberedLoginAutofill(
+      hasPasswordField: hasPasswordField,
+      rememberedLogin: _rememberedLogin,
+      candidate: candidate,
+      hasPromptedAutofill: _hasPromptedAutofill,
+      isPromptShowing: _isPromptShowing,
+    )) {
       _hasPromptedAutofill = true;
       // 回放模式：直接填充，不弹对话框
       if (widget.macroRecord != null) {
@@ -4524,12 +4644,14 @@ class _WarehouseAdapterWebLoginScreenState
     setState(() {
       _rememberedLogin = login;
     });
+    await _autofillRememberedLoginIfNeeded();
   }
 
   Future<void> _autofillRememberedLoginIfNeeded() async {
     if (_rememberedLogin == null || _hasPromptedAutofill || _isPromptShowing) {
       return;
     }
+    await _requestLoginStateProbe();
   }
 
   Future<void> _autofillRememberedLogin() async {
@@ -4810,6 +4932,9 @@ class _WarehouseAdapterWebLoginScreenState
   // ============ 宏回放方法 ============
 
   Future<void> _startPlayback(WarehouseMacroRecord macro) async {
+    _debugImportLog(
+      'start playback macro steps=${macro.steps.length} adapter=${macro.adapterId}',
+    );
     setState(() {
       _playbackState = PlaybackUiState.playing;
       _playbackProgress = ReplayProgress(
@@ -4867,14 +4992,19 @@ class _WarehouseAdapterWebLoginScreenState
           _showLightTip(context, message);
         },
         onComplete: (success, errorMessage) async {
+          _debugImportLog(
+            'playback onComplete success=$success errorMessage=$errorMessage mounted=$mounted',
+          );
           if (!mounted) return;
           if (success) {
+            _debugImportLog('playback success -> executing import');
             setState(() {
               _playbackState = PlaybackUiState.executingImport;
             });
             await _autoExecuteImportAfterPlayback();
           } else {
             if (!mounted) return;
+            _debugImportLog('playback failed -> playback error');
             setState(() {
               _playbackState = PlaybackUiState.error;
             });
@@ -5047,14 +5177,18 @@ class _WarehouseIntroCard extends StatelessWidget {
 class _WarehouseAdapterCard extends StatelessWidget {
   final WarehouseAdapterEntry adapter;
   final Future<void> Function()? onImport;
+  final Future<void> Function()? onRecord;
   final Future<void> Function() onInfo;
   final String importButtonLabel;
+  final String recordButtonLabel;
 
   const _WarehouseAdapterCard({
     required this.adapter,
     required this.onImport,
+    required this.onRecord,
     required this.onInfo,
     required this.importButtonLabel,
+    required this.recordButtonLabel,
   });
 
   @override
@@ -5128,12 +5262,23 @@ class _WarehouseAdapterCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                OutlinedButton.icon(
-                  onPressed: onInfo,
-                  icon: const Icon(Icons.info_outline_rounded),
-                  label: const Text('查看信息'),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: onRecord,
+                    icon: const Icon(Icons.fiber_manual_record_rounded),
+                    label: Text(recordButtonLabel),
+                  ),
                 ),
               ],
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: onInfo,
+                icon: const Icon(Icons.info_outline_rounded),
+                label: const Text('查看信息'),
+              ),
             ),
           ],
         ),
