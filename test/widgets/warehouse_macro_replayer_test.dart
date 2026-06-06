@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/models/warehouse_macro_models.dart';
 import 'package:university_timetable/widgets/warehouse_macro_replayer.dart';
 
 void main() {
@@ -30,6 +31,52 @@ void main() {
       expect(
         () => ensureMacroElementFound('true', '未找到点击元素: #login'),
         returnsNormally,
+      );
+    });
+  });
+
+  group('shouldUseRememberedPasswordForManualStep', () {
+    test('uses remembered password for explicit password manual steps', () {
+      final step = MacroStep.waitForManualInput(
+        '请手动输入密码；如已自动填充请直接继续',
+        fieldType: 'password',
+      );
+
+      expect(
+        shouldUseRememberedPasswordForManualStep(step, step.value!),
+        isTrue,
+      );
+    });
+
+    test('uses remembered password for legacy generic manual steps', () {
+      const step = MacroStep(type: MacroStepType.waitForManualInput);
+
+      expect(shouldUseRememberedPasswordForManualStep(step, '需要手动操作'), isTrue);
+    });
+
+    test('does not use remembered password for captcha steps', () {
+      final explicitCaptcha = MacroStep.waitForManualInput(
+        '请手动输入验证码；完成后点击继续',
+        fieldType: 'captcha',
+      );
+      const legacyCaptcha = MacroStep(
+        type: MacroStepType.waitForManualInput,
+        value: '请手动输入验证码；完成后点击继续',
+      );
+
+      expect(
+        shouldUseRememberedPasswordForManualStep(
+          explicitCaptcha,
+          explicitCaptcha.value!,
+        ),
+        isFalse,
+      );
+      expect(
+        shouldUseRememberedPasswordForManualStep(
+          legacyCaptcha,
+          legacyCaptcha.value!,
+        ),
+        isFalse,
       );
     });
   });

@@ -9,6 +9,23 @@ String _manualInputReasonForFieldType(String? fieldType) {
   return '请手动输入密码；如已自动填充请直接继续';
 }
 
+String? _inferManualInputFieldType(String? reason) {
+  final value = reason ?? '';
+  final lower = value.toLowerCase();
+  if (value.contains('验证码') ||
+      value.contains('校验码') ||
+      lower.contains('captcha') ||
+      lower.contains('verification')) {
+    return 'captcha';
+  }
+  if (value.contains('密码') ||
+      lower.contains('password') ||
+      lower.contains('pwd')) {
+    return 'password';
+  }
+  return null;
+}
+
 /// 宏录制中的每一步操作类型
 enum MacroStepType {
   /// 导航到指定 URL
@@ -88,11 +105,15 @@ class MacroStep {
         fieldType: fieldType,
       );
     }
+    final value = json['value'] as String?;
+    final repairedFieldType = type == MacroStepType.waitForManualInput
+        ? fieldType ?? _inferManualInputFieldType(value)
+        : fieldType;
     return MacroStep(
       type: type,
-      fieldType: fieldType,
+      fieldType: repairedFieldType,
       selector: json['selector'] as String?,
-      value: json['value'] as String?,
+      value: value,
       waitMs: (json['waitMs'] as num?)?.toInt() ?? 0,
     );
   }

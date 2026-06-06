@@ -441,6 +441,25 @@ void ensureMacroElementFound(String normalizedResult, String errorMessage) {
   }
 }
 
+bool shouldUseRememberedPasswordForManualStep(MacroStep step, String reason) {
+  final lowerReason = reason.toLowerCase();
+  final looksLikeCaptcha =
+      step.fieldType == 'captcha' ||
+      reason.contains('验证码') ||
+      reason.contains('校验码') ||
+      lowerReason.contains('captcha') ||
+      lowerReason.contains('verification');
+  if (looksLikeCaptcha) {
+    return false;
+  }
+  return step.fieldType == 'password' ||
+      (step.fieldType == null || step.fieldType!.isEmpty) &&
+          (reason.contains('密码') ||
+              lowerReason.contains('password') ||
+              lowerReason.contains('pwd') ||
+              reason == '需要手动操作');
+}
+
 /// 标准化 JS 返回值
 String _normalizeJsResult(Object? raw) {
   if (raw == null) return '';

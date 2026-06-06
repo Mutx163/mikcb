@@ -4832,7 +4832,7 @@ class _WarehouseAdapterWebLoginScreenState
         },
         onPauseForManualInput: (step, reason) async {
           if (!mounted) return false;
-          if (step.fieldType == 'password') {
+          if (shouldUseRememberedPasswordForManualStep(step, reason)) {
             final remembered =
                 _rememberedLogin ??
                 await _preferencesService.getRememberedLogin(

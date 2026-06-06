@@ -168,7 +168,7 @@ class PlaybackOverlay extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        progress.pauseReason ?? '请在网页中完成验证码或身份验证。完成操作后点击继续。',
+                        progress.pauseReason ?? '请完成当前需要的手动操作。完成后点击继续。',
                         textAlign: TextAlign.center,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
