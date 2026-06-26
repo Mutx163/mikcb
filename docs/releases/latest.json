@@ -2,15 +2,15 @@
   "releaseCount": 7,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.1.15",
-    "title": "v1.2.1.15",
-    "publishedAt": "2026-06-26T16:52:20Z",
-    "body": "# v1.2.1.15\r\n\r\n- 优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹\r\n- 优化应用启动时自动同步并结束已过期的超级岛提醒",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.15",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.15/mikcb-1.2.1.15-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.1.15-arm64-v8a.apk",
+    "version": "1.2.1.12",
+    "title": "v1.2.1.12",
+    "publishedAt": "2026-06-03T15:10:00Z",
+    "body": "# v1.2.1.12\r\n\r\n## 优化\r\n\r\n- 修复 CI 构建流程中因 AGP 8.9.1 与 --split-per-abi 不兼容导致产出空 APK 的问题\r\n- 优化构建产物大小，使用 --target-platform 精简 APK 体积\r\n- 增强工作流错误检测，避免静默吞失败\r\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.12",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.12/mikcb-1.2.1.12-arm64-v8a.apk",
+    "assetName": "mikcb-1.2.1.12-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 0
+    "assetDownloadCount": 63
   },
   "prerelease": {
     "channelLabel": "预发布",
