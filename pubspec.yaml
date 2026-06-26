@@ -1,7 +1,7 @@
-name: university_timetable
-description: 轻屿课表应用 - 支持小米超级岛
+﻿name: university_timetable
+description: 杞诲笨璇捐〃搴旂敤 - 鏀寔灏忕背瓒呯骇宀?
 publish_to: 'none'
-version: 1.2.1-14+103
+version: 1.2.1-15+104
 
 environment:
   sdk: ^3.9.0

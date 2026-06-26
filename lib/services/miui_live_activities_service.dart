@@ -556,3 +556,89 @@ class MiuiLiveActivitiesService {
     }
   }
 }
+
+/// Lightweight in-memory test double; does not call the native channel.
+@visibleForTesting
+class TestMiuiLiveActivitiesService extends MiuiLiveActivitiesService {
+  TestMiuiLiveActivitiesService() : super._internal();
+
+  int stopLiveUpdateCallCount = 0;
+  int startLiveUpdateCallCount = 0;
+
+  @override
+  Future<void> stopLiveUpdate() async {
+    stopLiveUpdateCallCount++;
+  }
+
+  @override
+  Future<void> startLiveUpdate(
+    Course currentCourse,
+    Course? nextCourse, {
+    int autoDismissAfterStartMinutes = 0,
+    String? stage,
+    int beforeClassLeadMillis = 0,
+    int? startAtMillis,
+    int? endAtMillis,
+    int? endReminderLeadMillis,
+    int liveClassReminderStartMinutes = 0,
+    int endSecondsCountdownThreshold = 60,
+    bool promoteDuringClass = true,
+    bool showNotificationDuringClass = true,
+    bool enableBeforeClass = true,
+    bool enableDuringClass = true,
+    bool enableBeforeEnd = true,
+    bool showCountdown = true,
+    LiveCountdownTextStyle countdownTextStyle = LiveCountdownTextStyle.smart,
+    bool showStageText = true,
+    bool showCourseNameInIsland = true,
+    bool showLocationInIsland = true,
+    bool useShortNameInIsland = true,
+    bool hidePrefixText = false,
+    LiveDuringClassTimeDisplayMode duringClassTimeDisplayMode =
+        LiveDuringClassTimeDisplayMode.nearest,
+    bool enableMiuiIslandLabelImage = false,
+    MiuiIslandLabelStyle miuiIslandLabelStyle = MiuiIslandLabelStyle.textOnly,
+    MiuiIslandLabelContent miuiIslandLabelContent =
+        MiuiIslandLabelContent.courseName,
+    String miuiIslandLabelFontColor = '#FFFFFF',
+    MiuiIslandLabelFontWeight miuiIslandLabelFontWeight =
+        MiuiIslandLabelFontWeight.bold,
+    MiuiIslandLabelRenderQuality miuiIslandLabelRenderQuality =
+        MiuiIslandLabelRenderQuality.standard,
+    double miuiIslandLabelFontSize = 14,
+    double miuiIslandLabelOffsetX = 0,
+    double miuiIslandLabelOffsetY = 0,
+    String? miuiIslandLabelLogoPath,
+    double miuiIslandLabelLogoCornerRadius = 8,
+    MiuiIslandExpandedIconMode miuiIslandExpandedIconMode =
+        MiuiIslandExpandedIconMode.appIcon,
+    String? miuiIslandExpandedIconPath,
+    LiveBeforeClassQuickAction beforeClassQuickAction =
+        LiveBeforeClassQuickAction.none,
+    List<int> progressBreakOffsetsMillis = const [],
+    List<String> progressMilestoneLabels = const [],
+    List<String> progressMilestoneTimeTexts = const [],
+  }) async {
+    startLiveUpdateCallCount++;
+  }
+
+  @override
+  Future<bool> syncScheduleSnapshot({
+    required List<Course> courses,
+    required TimetableSettings settings,
+    required int currentWeek,
+    DateTime? semesterStartDate,
+    required int endReminderLeadMillis,
+    bool isHoliday = false,
+    List<String> holidayDates = const [],
+    bool holidayOverrideEnabled = false,
+    bool enableHolidayMarking = true,
+  }) async {
+    return true;
+  }
+
+  @override
+  Future<bool> clearScheduleSnapshot() async {
+    return true;
+  }
+}

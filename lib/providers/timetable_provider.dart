@@ -130,7 +130,6 @@ class TimetableProvider with ChangeNotifier {
   Timer? _liveActivityTimer;
   String? _currentLiveCourseId;
   String? _lastLiveActivityStageKey;
-  bool _hasVisibleLiveUpdate = false;
   String? _lastLiveSnapshotSignature;
   String? _lastHomeWidgetSnapshotSignature;
   DateTime? _liveActivitySuspendedUntil;
@@ -422,6 +421,9 @@ class TimetableProvider with ChangeNotifier {
   void _startLiveActivityTick() {
     _liveActivityTimer?.cancel();
     unawaited(syncTemporalContext());
+    // Reconcile stale native Live Activity on startup (e.g. course weeks ended
+    // while the app process was not running).
+    unawaited(_updateLiveActivity());
     _liveActivityTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       unawaited(syncTemporalContext());
       _checkLiveActivityStageTransition();
@@ -434,7 +436,16 @@ class TimetableProvider with ChangeNotifier {
   void _checkLiveActivityStageTransition() {
     final selection = getLiveActivityCourseSelection();
     final liveCourse = selection?.currentCourse;
-    if (liveCourse == null || selection == null) return;
+    if (liveCourse == null || selection == null) {
+      // 当前没有需要展示的课程。若仍追踪着某个阶段或防抖 key（含原生端
+      // 可能残留的会话），清理状态并停止原生 Live Activity。
+      if (_lastLiveActivityStageKey != null || _currentLiveCourseId != null) {
+        _lastLiveActivityStageKey = null;
+        _currentLiveCourseId = null;
+        unawaited(_updateLiveActivity());
+      }
+      return;
+    }
 
     final stageName = selection.stage.name;
     final key =
@@ -446,6 +457,27 @@ class TimetableProvider with ChangeNotifier {
       unawaited(_updateLiveActivity());
     }
     _lastLiveActivityStageKey = key;
+  }
+
+  @visibleForTesting
+  void seedLiveActivityTrackingForTesting({
+    String? lastStageKey,
+    String? currentCourseId,
+  }) {
+    _lastLiveActivityStageKey = lastStageKey;
+    _currentLiveCourseId = currentCourseId;
+  }
+
+  @visibleForTesting
+  void checkLiveActivityStageTransitionForTesting() {
+    _checkLiveActivityStageTransition();
+  }
+
+  @visibleForTesting
+  Future<void> updateLiveActivityForTesting({
+    bool syncScheduleSnapshot = true,
+  }) {
+    return _updateLiveActivity(syncScheduleSnapshot: syncScheduleSnapshot);
   }
 
   @override
@@ -1085,7 +1117,6 @@ class TimetableProvider with ChangeNotifier {
     _applyProfileState(targetProfile);
     await _persistActiveProfileState(touchLastUsedAt: true);
     _currentLiveCourseId = null;
-    _hasVisibleLiveUpdate = false;
     _lastLiveSnapshotSignature = null;
     notifyListeners();
     await _liveActivitiesService.stopLiveUpdate();
@@ -2995,11 +3026,8 @@ class TimetableProvider with ChangeNotifier {
 
     // 假期期间暂停超级岛更新
     if (isHoliday(DateTime.now())) {
-      if (_currentLiveCourseId != null || _hasVisibleLiveUpdate) {
-        _currentLiveCourseId = null;
-        await _liveActivitiesService.stopLiveUpdate();
-        _hasVisibleLiveUpdate = false;
-      }
+      _currentLiveCourseId = null;
+      await _liveActivitiesService.stopLiveUpdate();
       return;
     }
 
@@ -3100,13 +3128,11 @@ class TimetableProvider with ChangeNotifier {
             .map((milestone) => milestone['timeText'] as String)
             .toList(),
       );
-      _hasVisibleLiveUpdate = true;
     } else {
-      if (_currentLiveCourseId != null || _hasVisibleLiveUpdate) {
-        _currentLiveCourseId = null;
-        await _liveActivitiesService.stopLiveUpdate();
-        _hasVisibleLiveUpdate = false;
-      }
+      // 无条件停止：即使 _currentLiveCourseId 已为 null，原生端可能仍有
+      // 前一个会话残留的 Live Activity 显示。stopLiveUpdate 是幂等操作。
+      _currentLiveCourseId = null;
+      await _liveActivitiesService.stopLiveUpdate();
     }
   }
 

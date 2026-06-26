@@ -4,10 +4,19 @@ import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/services/home_widget_snapshot_service.dart';
+import 'package:university_timetable/services/miui_live_activities_service.dart';
 import 'package:university_timetable/services/storage_service.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  Future<void> settleLiveActivityStartup(
+    TestMiuiLiveActivitiesService liveService,
+  ) async {
+    await pumpEventQueue();
+    liveService.stopLiveUpdateCallCount = 0;
+    liveService.startLiveUpdateCallCount = 0;
+  }
 
   setUp(() {
     StorageService().resetForTesting();
@@ -1243,5 +1252,169 @@ void main() {
     expect(provider.courses.single.shortName, '高数');
     expect(provider.courses.single.color, '#FF0000');
     expect(provider.courses.single.note, '本地备注');
+  });
+
+  test('live activity returns null when course weeks have passed', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    // 设置学期起始日期和总周数，使周次计算可以基于日期进行
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterWeekCount: 20,
+        semesterStartDate: DateTime(2026, 2, 23), // 第1周周一
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+      ),
+    );
+    await provider.setCurrentWeek(1);
+
+    // 添加一门 1-16 周的课程，周一 08:00-09:40
+    await provider.addCourse(
+      Course(
+        id: '16week-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1, // 周一
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+
+    // 第 16 周（课程最后一周）—— 应该能获取到课程
+    final week16Time = DateTime(2026, 6, 8, 8, 30); // 第16周周一
+    final selectionInWeek = provider.getLiveActivityCourseSelection(
+      now: week16Time,
+    );
+    expect(selectionInWeek, isNotNull);
+    expect(selectionInWeek!.currentCourse.name, '高等数学');
+
+    // 第 17 周（课程已结束）—— 应该返回 null
+    final week17Time = DateTime(2026, 6, 15, 8, 30); // 第17周周一
+    final selectionAfterEnd = provider.getLiveActivityCourseSelection(
+      now: week17Time,
+    );
+    expect(selectionAfterEnd, isNull);
+  });
+
+  test(
+      'live activity stage transition stops when selection null and stage tracked',
+      () async {
+    final liveService = TestMiuiLiveActivitiesService();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: true,
+      liveActivitiesService: liveService,
+    );
+    await provider.initialize();
+    await settleLiveActivityStartup(liveService);
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterWeekCount: 20,
+        semesterStartDate: DateTime(2026, 2, 23),
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: '16week-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+
+    provider.seedLiveActivityTrackingForTesting(
+      lastStageKey: '16week-course:beforeClass:高等数学:1:2:A101:张老师',
+    );
+    await pumpEventQueue();
+    liveService.stopLiveUpdateCallCount = 0;
+    liveService.startLiveUpdateCallCount = 0;
+
+    provider.checkLiveActivityStageTransitionForTesting();
+    await pumpEventQueue();
+
+    expect(liveService.stopLiveUpdateCallCount, 1);
+    expect(liveService.startLiveUpdateCallCount, 0);
+  });
+
+  test(
+      'live activity stage transition stops when selection null and debounce key tracked',
+      () async {
+    final liveService = TestMiuiLiveActivitiesService();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: true,
+      liveActivitiesService: liveService,
+    );
+    await provider.initialize();
+    await settleLiveActivityStartup(liveService);
+
+    provider.seedLiveActivityTrackingForTesting(
+      currentCourseId: 'stale-debounce-key',
+    );
+    liveService.stopLiveUpdateCallCount = 0;
+
+    provider.checkLiveActivityStageTransitionForTesting();
+    await pumpEventQueue();
+
+    expect(liveService.stopLiveUpdateCallCount, 1);
+  });
+
+  test(
+      'live activity stage transition skips stop when selection null and nothing tracked',
+      () async {
+    final liveService = TestMiuiLiveActivitiesService();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: true,
+      liveActivitiesService: liveService,
+    );
+    await provider.initialize();
+    await settleLiveActivityStartup(liveService);
+    liveService.stopLiveUpdateCallCount = 0;
+
+    provider.checkLiveActivityStageTransitionForTesting();
+    await pumpEventQueue();
+
+    expect(liveService.stopLiveUpdateCallCount, 0);
+  });
+
+  test('update live activity stops when course selection is null', () async {
+    final liveService = TestMiuiLiveActivitiesService();
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: true,
+      liveActivitiesService: liveService,
+    );
+    await provider.initialize();
+    await settleLiveActivityStartup(liveService);
+    liveService.stopLiveUpdateCallCount = 0;
+    liveService.startLiveUpdateCallCount = 0;
+
+    await provider.updateLiveActivityForTesting(syncScheduleSnapshot: false);
+    await pumpEventQueue();
+
+    expect(liveService.stopLiveUpdateCallCount, 1);
+    expect(liveService.startLiveUpdateCallCount, 0);
   });
 }
