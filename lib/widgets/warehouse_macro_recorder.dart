@@ -189,7 +189,7 @@ class MacroRecordingConverter {
       switch (eventType) {
         case 'input':
         case 'change':
-          if (_isSensitiveFieldType(fieldType)) {
+          if (isSensitiveMacroFieldType(fieldType)) {
             final sensitiveKey = selector.isNotEmpty
                 ? selector
                 : fieldType ?? '';
@@ -197,7 +197,7 @@ class MacroRecordingConverter {
                 sensitiveSelectors.add(sensitiveKey)) {
               steps.add(
                 MacroStep.waitForManualInput(
-                  _manualInputReasonForFieldType(fieldType),
+                  manualInputReasonForFieldType(fieldType),
                   selector: selector,
                   fieldType: fieldType,
                 ),
@@ -251,17 +251,6 @@ class MacroRecordingConverter {
       }
     }
     return deduped;
-  }
-
-  static bool _isSensitiveFieldType(String? fieldType) {
-    return fieldType == 'password' || fieldType == 'captcha';
-  }
-
-  static String _manualInputReasonForFieldType(String? fieldType) {
-    if (fieldType == 'captcha') {
-      return '请手动输入验证码；完成后点击继续';
-    }
-    return '请手动输入密码；如已自动填充请直接继续';
   }
 
   /// 从录制事件列表中提取登录信息（用于后续回放时覆盖）

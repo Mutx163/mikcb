@@ -1,8 +1,8 @@
-bool _isSensitiveMacroFieldType(String? fieldType) {
+bool isSensitiveMacroFieldType(String? fieldType) {
   return fieldType == 'password' || fieldType == 'captcha';
 }
 
-String _manualInputReasonForFieldType(String? fieldType) {
+String manualInputReasonForFieldType(String? fieldType) {
   if (fieldType == 'captcha') {
     return '请手动输入验证码；完成后点击继续';
   }
@@ -80,7 +80,7 @@ class MacroStep {
   Map<String, dynamic> toJson() {
     final shouldOmitValue =
         type == MacroStepType.fillField &&
-        _isSensitiveMacroFieldType(fieldType);
+        isSensitiveMacroFieldType(fieldType);
     return {
       'type': type.name,
       if (fieldType != null && fieldType!.isNotEmpty) 'fieldType': fieldType,
@@ -98,9 +98,9 @@ class MacroStep {
     );
     final fieldType = json['fieldType'] as String?;
     if (type == MacroStepType.fillField &&
-        _isSensitiveMacroFieldType(fieldType)) {
+        isSensitiveMacroFieldType(fieldType)) {
       return MacroStep.waitForManualInput(
-        _manualInputReasonForFieldType(fieldType),
+        manualInputReasonForFieldType(fieldType),
         selector: json['selector'] as String?,
         fieldType: fieldType,
       );
