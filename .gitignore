@@ -72,6 +72,10 @@ pi.ico
 
 # 审查输出
 reviews/
+progress.md
+
+# 测试覆盖率
+coverage/
 
 # Pi 工具目录
 .pi/
