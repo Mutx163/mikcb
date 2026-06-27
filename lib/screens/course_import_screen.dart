@@ -262,215 +262,124 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
 
   Future<void> _importIcsFile() async {
     final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isImporting = true;
-    });
+    setState(() { _isImporting = true; });
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['ics'],
         withData: true,
       );
-      if (result == null || result.files.isEmpty || !mounted) {
-        return;
-      }
+      if (result == null || result.files.isEmpty || !mounted) return;
 
-      final file = result.files.single;
-      final bytes = file.bytes;
+      final bytes = result.files.single.bytes;
       if (bytes == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+        }
         return;
       }
 
-      final provider = context.read<TimetableProvider>();
-      final replaceExisting = provider.courses.isEmpty
-          ? true
-          : await _askReplaceExisting(
-              context,
-              title: l10n.importReplaceExistingTitle,
-              content: l10n.importReplaceExistingMessage(file.name),
-            );
-      if (replaceExisting == null || !mounted) {
-        return;
-      }
-
-      final content = utf8.decode(bytes, allowMalformed: true);
-      final parsedResult = _icsImportService.parseWakeUpSchedule(content);
-      if (parsedResult.courses.isEmpty) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
-        return;
-      }
-
-      final semesterConfig = await _pickImportSemesterConfig(
-        context,
-        initialSemesterStartDate:
-            provider.settings.semesterStartDate ?? parsedResult.semesterStart,
-        initialFirstCourseWeek: _weekAlignmentService.inferFirstCourseWeek(
-          semesterStartDate:
-              provider.settings.semesterStartDate ?? parsedResult.semesterStart,
-          firstCourseDate: parsedResult.semesterStart,
-        ),
-        inferredFirstCourseDate: parsedResult.semesterStart,
-        title: l10n.importConfirmSemesterMappingTitle,
-        subtitle: l10n.importConfirmSemesterMappingSubtitleIcs,
+      await _executeIcsImport(
+        utf8.decode(bytes, allowMalformed: true),
+        result.files.single.name,
       );
-      if (semesterConfig == null || !mounted) {
-        return;
-      }
-
-      final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
-        parsedResult.courses,
-        firstCourseWeek: semesterConfig.firstCourseWeek,
-      );
-      final requiredSectionCount = provider
-          .previewImportedCourseRequiredSectionCount(
-            alignedCourses,
-            replaceExisting: replaceExisting,
-          );
-      if (!mounted) {
-        return;
-      }
-      final capacityReady = await _ensureSectionCapacity(
-        context,
-        requiredSectionCount: requiredSectionCount,
-        provider: provider,
-      );
-      if (!capacityReady || !mounted) {
-        return;
-      }
-
-      final importedCount = await provider.importParsedCourses(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-        semesterStart: semesterConfig.semesterStartDate,
-        source: 'ics',
-      );
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            importedCount > 0
-                ? (replaceExisting
-                      ? l10n.importOverwriteCount(importedCount)
-                      : l10n.importUpdatedCount(importedCount))
-                : l10n.importNoCourseChanges,
-          ),
-        ),
-      );
-      if (importedCount > 0) {
-        Navigator.of(context).pop(true);
-      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isImporting = false;
-        });
+        setState(() { _isImporting = false; });
       }
     }
   }
 
   Future<void> _importFromExternalIcs(String icsContent) async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isImporting = true;
-    });
+    setState(() { _isImporting = true; });
     try {
-      final provider = context.read<TimetableProvider>();
-      final replaceExisting = provider.courses.isEmpty
-          ? true
-          : await _askReplaceExisting(
-              context,
-              title: l10n.importReplaceExistingTitle,
-              content: l10n.importReplaceExistingMessage(l10n.icsImportTitle),
-            );
-      if (replaceExisting == null || !mounted) {
-        return;
-      }
-
-      final parsedResult = _icsImportService.parseWakeUpSchedule(icsContent);
-      if (parsedResult.courses.isEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.importNoCoursesRecognized)),
-          );
-        }
-        return;
-      }
-
-      final semesterConfig = await _pickImportSemesterConfig(
-        context,
-        initialSemesterStartDate:
-            provider.settings.semesterStartDate ?? parsedResult.semesterStart,
-        initialFirstCourseWeek: _weekAlignmentService.inferFirstCourseWeek(
-          semesterStartDate:
-              provider.settings.semesterStartDate ?? parsedResult.semesterStart,
-          firstCourseDate: parsedResult.semesterStart,
-        ),
-        inferredFirstCourseDate: parsedResult.semesterStart,
-        title: l10n.importConfirmSemesterMappingTitle,
-        subtitle: l10n.importConfirmSemesterMappingSubtitleIcs,
+      await _executeIcsImport(
+        icsContent,
+        AppLocalizations.of(context)!.icsImportTitle,
       );
-      if (semesterConfig == null || !mounted) {
-        return;
-      }
-
-      final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
-        parsedResult.courses,
-        firstCourseWeek: semesterConfig.firstCourseWeek,
-      );
-      final requiredSectionCount = provider
-          .previewImportedCourseRequiredSectionCount(
-            alignedCourses,
-            replaceExisting: replaceExisting,
-          );
-      if (!mounted) {
-        return;
-      }
-      final capacityReady = await _ensureSectionCapacity(
-        context,
-        requiredSectionCount: requiredSectionCount,
-        provider: provider,
-      );
-      if (!capacityReady || !mounted) {
-        return;
-      }
-
-      final importedCount = await provider.importParsedCourses(
-        alignedCourses,
-        replaceExisting: replaceExisting,
-        semesterStart: semesterConfig.semesterStartDate,
-        source: 'ics',
-      );
-      if (!mounted) {
-        return;
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            importedCount > 0
-                ? (replaceExisting
-                      ? l10n.importOverwriteCount(importedCount)
-                      : l10n.importUpdatedCount(importedCount))
-                : l10n.importNoCourseChanges,
-          ),
-        ),
-      );
-      if (importedCount > 0) {
-        Navigator.of(context).pop(true);
-      }
     } finally {
       if (mounted) {
-        setState(() {
-          _isImporting = false;
-        });
+        setState(() { _isImporting = false; });
       }
     }
+  }
+
+  /// ICS 导入核心流程：解析 → 替换选择 → 学期对齐 → 容量检查 → 导入
+  Future<void> _executeIcsImport(String icsContent, String importLabel) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+    final replaceExisting = provider.courses.isEmpty
+        ? true
+        : await _askReplaceExisting(
+            context,
+            title: l10n.importReplaceExistingTitle,
+            content: l10n.importReplaceExistingMessage(importLabel),
+          );
+    if (replaceExisting == null || !mounted) return;
+
+    final parsedResult = _icsImportService.parseWakeUpSchedule(icsContent);
+    if (parsedResult.courses.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
+      }
+      return;
+    }
+
+    final semesterConfig = await _pickImportSemesterConfig(
+      context,
+      initialSemesterStartDate:
+          provider.settings.semesterStartDate ?? parsedResult.semesterStart,
+      initialFirstCourseWeek: _weekAlignmentService.inferFirstCourseWeek(
+        semesterStartDate:
+            provider.settings.semesterStartDate ?? parsedResult.semesterStart,
+        firstCourseDate: parsedResult.semesterStart,
+      ),
+      inferredFirstCourseDate: parsedResult.semesterStart,
+      title: l10n.importConfirmSemesterMappingTitle,
+      subtitle: l10n.importConfirmSemesterMappingSubtitleIcs,
+    );
+    if (semesterConfig == null || !mounted) return;
+
+    final alignedCourses = _weekAlignmentService.shiftCoursesToSemesterWeeks(
+      parsedResult.courses,
+      firstCourseWeek: semesterConfig.firstCourseWeek,
+    );
+    final requiredSectionCount = provider
+        .previewImportedCourseRequiredSectionCount(
+          alignedCourses,
+          replaceExisting: replaceExisting,
+        );
+    if (!mounted) return;
+    final capacityReady = await _ensureSectionCapacity(
+      context,
+      requiredSectionCount: requiredSectionCount,
+      provider: provider,
+    );
+    if (!capacityReady || !mounted) return;
+
+    final importedCount = await provider.importParsedCourses(
+      alignedCourses,
+      replaceExisting: replaceExisting,
+      semesterStart: semesterConfig.semesterStartDate,
+      source: 'ics',
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          importedCount > 0
+              ? (replaceExisting
+                    ? l10n.importOverwriteCount(importedCount)
+                    : l10n.importUpdatedCount(importedCount))
+              : l10n.importNoCourseChanges,
+        ),
+      ),
+    );
+    if (importedCount > 0) Navigator.of(context).pop(true);
   }
 }
 
@@ -514,36 +423,29 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           builder: (context, constraints) {
             final dense = constraints.maxHeight < 760;
             final ultraDense = constraints.maxHeight < 520;
-            final sectionGap = ultraDense
-                ? 4.0
-                : dense
-                ? 8.0
-                : 12.0;
-            final outerPadding = ultraDense
-                ? 10.0
-                : dense
-                ? 12.0
-                : 16.0;
-            final cardRadius = ultraDense
-                ? 16.0
-                : dense
-                ? 18.0
-                : 20.0;
+            final double sectionGap;
+            final double outerPadding;
+            final double cardRadius;
+            if (ultraDense) {
+              sectionGap = 4.0;
+              outerPadding = 10.0;
+              cardRadius = 16.0;
+            } else if (dense) {
+              sectionGap = 8.0;
+              outerPadding = 12.0;
+              cardRadius = 18.0;
+            } else {
+              sectionGap = 12.0;
+              outerPadding = 16.0;
+              cardRadius = 20.0;
+            }
             final compactButtonStyle = ButtonStyle(
               visualDensity: VisualDensity.compact,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
                 EdgeInsets.symmetric(
-                  horizontal: ultraDense
-                      ? 8
-                      : dense
-                      ? 10
-                      : 12,
-                  vertical: ultraDense
-                      ? 6
-                      : dense
-                      ? 8
-                      : 10,
+                  horizontal: ultraDense ? 8 : dense ? 10 : 12,
+                  vertical: ultraDense ? 6 : dense ? 8 : 10,
                 ),
               ),
             );
@@ -577,11 +479,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                   Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(
-                      ultraDense
-                          ? 10
-                          : dense
-                          ? 14
-                          : 16,
+                      ultraDense ? 10 : dense ? 14 : 16,
                     ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -2288,12 +2186,9 @@ class _WarehouseCustomDebugEditScreenState
 
 String _formatDebugRecordDateTime(DateTime value) {
   final local = value.toLocal();
-  final year = local.year.toString().padLeft(4, '0');
-  final month = local.month.toString().padLeft(2, '0');
-  final day = local.day.toString().padLeft(2, '0');
   final hour = local.hour.toString().padLeft(2, '0');
   final minute = local.minute.toString().padLeft(2, '0');
-  return '$year-$month-$day $hour:$minute';
+  return '${_formatDate(local)} $hour:$minute';
 }
 
 class WarehouseSchoolAdaptersScreen extends StatefulWidget {
@@ -3075,7 +2970,6 @@ class _WarehouseAdapterWebLoginScreenState
   void initState() {
     super.initState();
     _currentUrl = widget.initialUrl;
-    _lastScriptStatus = _isUsingLocalDebugScript ? null : null;
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -3294,12 +3188,7 @@ class _WarehouseAdapterWebLoginScreenState
                       color: Colors.red,
                     ),
                   )
-                : Icon(
-                    Icons.fiber_manual_record_rounded,
-                    color: _macroRecordingState == MacroRecordingState.recording
-                        ? Colors.red
-                        : null,
-                  ),
+                : const Icon(Icons.fiber_manual_record_rounded),
           ),
           if (widget.macroRecord == null)
             IconButton(
