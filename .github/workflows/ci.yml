@@ -37,6 +37,29 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
+      - name: Verify pubspec encoding
+        shell: bash
+        run: |
+          set -euo pipefail
+          if head -c 3 pubspec.yaml | od -An -tx1 | grep -q 'ef bb bf'; then
+            echo "ERROR: pubspec.yaml has UTF-8 BOM"
+            exit 1
+          fi
+          python3 - <<'PY'
+          import sys
+          text = open("pubspec.yaml", encoding="utf-8").read()
+          for key in ("version:", "description:"):
+              line = next((l for l in text.splitlines() if l.startswith(key)), None)
+              if line is None:
+                  print(f"ERROR: missing {key} line in pubspec.yaml", file=sys.stderr)
+                  sys.exit(1)
+              value = line.split(":", 1)[1].strip()
+              if not value:
+                  print(f"ERROR: empty value for {key} in pubspec.yaml", file=sys.stderr)
+                  sys.exit(1)
+          print("pubspec.yaml encoding OK")
+          PY
+
       - name: Analyze
         run: flutter analyze
 

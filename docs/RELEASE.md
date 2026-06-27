@@ -2,13 +2,14 @@
 
 这份文档只写当前仓库实际在用的发布方法。
 
-先记住 5 句话：
+先记住 6 句话：
 
 - `push` / `pull_request` 会触发 CI 质量门禁。
 - 只有推送 `v*` tag 才会自动构建正式 APK 并创建 / 更新 GitHub Release。
 - 三位数版本和四位数版本都可以是正式版，不是“四位数就一定是预发布”。
 - 四位数版本可以先作为预发布发出，后面再原地转成正式版。
 - 应用里比较版本时，`1.1.10-6+36` 会按 `1.1.10.6` 去比较。
+- **推送 tag 后必须完成第六节 Post-tag 验证（CI 绿勾 + APK > 5 MB）才能宣告发布完成。**
 
 ## 更新日志写法规则（强制）
 
@@ -296,7 +297,44 @@ git push origin main
 git push origin v1.1.11
 ```
 
-## 六、推荐发布前检查
+## 六、Post-tag 验证（必做）
+
+推送 `v*` tag **不等于**发布完成。必须等 CI 产出有效 APK 后才能对用户或渠道宣告 release 就绪。
+
+### 检查清单
+
+| 步骤 | 检查项 | 通过标准 |
+|------|--------|----------|
+| 1 | GitHub Actions **Android Build**（对应 tag） | **Analyze and Test** 与 **Build and Publish Android APK** 均为 green |
+| 2 | Workflow 产物 **`android-release-apk`** | 体积 **> 5 MB**（CI 在 Prepare artifact 与上传 Release 前各校验一次） |
+| 3 | GitHub Release 页面同名 tag | 附件 APK **> 5 MB**；约 12 KB / ≤1 MB 视为失败产物 |
+| 4 | 禁止手工绕过 | 不得 `gh release create` 不带 APK，或上传占位/空资产 |
+
+### 发布前本地脚本（推荐）
+
+切版本提交前运行（与 CI 编码门禁一致）：
+
+```bash
+bash tool/verify_release_pubspec.sh
+```
+
+### 不要用脆弱的 APK 选择方式
+
+- **禁止**在本地或临时脚本里用 `find` / 通配符“猜”哪个 `.apk` 是正式包并当作 release 依据。
+- 仓库已在 [.github/workflows/android-build.yml](../.github/workflows/android-build.yml) 固化：显式路径 → 最大 eligible 回退 → **5 MB** 体积门禁 → `file(1)` 归档类型检查 → 上传 Release 前再次校验体积。
+- 应用内 `latest.json` 更新（[update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)）也会跳过 **< 5 MB** 的 APK 资产。
+
+### Tag 恢复（远端已有坏 release）
+
+若某次 tag 指向了错误构建（例如 Release 上只有 ~12 KB stub APK）：
+
+1. 在 `main` 上合并修复（workflow / 构建问题），确保本地 `flutter analyze` / `flutter test` 通过。
+2. 删除远端坏 tag：`git push origin :refs/tags/vX.Y.Z.W`
+3. 在**当前** `main` HEAD 重新打同名 tag：`git tag -f vX.Y.Z.W`
+4. 再次推送 tag：`git push origin vX.Y.Z.W`
+5. 重新执行本节 Post-tag 验证清单，确认 Release APK **> 5 MB** 后再宣告完成。
+
+## 七、推荐发布前检查
 
 发布前本地至少跑这组命令，和 CI / release workflow 保持一致：
 
@@ -309,15 +347,16 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 同时检查这几项：
 
-1. `pubspec.yaml` 版本号是否改对
-2. `docs/releases/` 文件名是否和 tag 完全一致
-3. `build number` 是否比上一个版本大
-4. 工作区是否干净：`git status`
-5. 如果要验证预发布检测，新的测试包版本号必须严格高于当前已安装版本
+1. `bash tool/verify_release_pubspec.sh`（无 BOM、`version` / `description` 可解析）
+2. `pubspec.yaml` 版本号是否改对
+3. `docs/releases/` 文件名是否和 tag 完全一致
+4. `build number` 是否比上一个版本大
+5. 工作区是否干净：`git status`
+6. 如果要验证预发布检测，新的测试包版本号必须严格高于当前已安装版本
 
 推送 `v*` tag 后，release workflow 也会强制执行 `flutter analyze` 和 `flutter test`；只有检查通过才会进入签名构建和发布步骤。
 
-## 七、常见坑
+## 八、常见坑
 
 ### 1. 为什么发布 workflow 没跑
 
@@ -368,7 +407,17 @@ git push origin main
 git push origin v你的版本号
 ```
 
-## 八、最常用模板
+### 5. 为什么 GitHub Release 上是几 KB 的假 APK
+
+根因通常是 CI 用松散规则选错了 `.apk`（例如 stub 或未签名碎片），而不是真正的 `app-prod-release.apk`。
+
+**不要**在本地用 `find` 猜路径上传。**必须**依赖仓库 workflow 内的显式路径、5 MB 门禁与 Post-tag 验证（见第六节）。若已发布坏资产，按第六节 Tag 恢复流程处理。
+
+### 6. pubspec.yaml 出现乱码或 description 异常
+
+写入 `pubspec.yaml` 时必须 **UTF-8 无 BOM**。带 BOM 会导致 `description` 等字段乱码；CI 与 `tool/verify_release_pubspec.sh` 会在 PR 与发布前拦截。
+
+## 九、最常用模板
 
 ### 新预发布模板
 
