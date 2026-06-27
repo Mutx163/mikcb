@@ -184,6 +184,17 @@ jobs:
             exit 1
           fi
 
+          if command -v file >/dev/null 2>&1; then
+            FILE_TYPE=$(file -b "${APK_PATH}")
+            echo "file(1) reports: ${FILE_TYPE}"
+            if ! echo "${FILE_TYPE}" | grep -qiE 'zip|android|apk|archive'; then
+              echo "ERROR: file(1) does not recognize APK as ZIP/archive: ${FILE_TYPE}"
+              exit 1
+            fi
+          else
+            echo "WARN: file(1) not available, skipping archive type check"
+          fi
+
           cp "${APK_PATH}" "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           ls -lh "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 
@@ -211,12 +222,19 @@ jobs:
           IS_PRERELEASE: ${{ steps.meta.outputs.is_prerelease }}
         run: |
           set -ex
+          MIN_APK_BYTES=5242880
           RELEASE_APK="dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           if [[ ! -f "${RELEASE_APK}" ]]; then
             echo "ERROR: Release APK not found at ${RELEASE_APK}"
             exit 1
           fi
+          RELEASE_APK_SIZE=$(stat -c%s "${RELEASE_APK}")
+          echo "Release APK size: ${RELEASE_APK_SIZE} bytes"
           ls -lh "${RELEASE_APK}"
+          if [[ "${RELEASE_APK_SIZE}" -lt "${MIN_APK_BYTES}" ]]; then
+            echo "ERROR: Refusing gh release upload (${RELEASE_APK_SIZE} bytes < ${MIN_APK_BYTES} bytes)."
+            exit 1
+          fi
           if [[ -f "${RELEASE_NOTES_FILE}" ]]; then
             RELEASE_NOTES_OPTION=(--notes-file "${RELEASE_NOTES_FILE}")
           else

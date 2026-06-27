@@ -37,7 +37,7 @@ jobs:
 
           function pickDownloadAsset(assets) {
             const normalizedAssets = Array.isArray(assets) ? assets : [];
-            const MIN_APK_BYTES = 1048576;
+            const MIN_APK_BYTES = 5242880;
             const apkAssets = normalizedAssets.filter((asset) =>
               String(asset?.name || "").toLowerCase().endsWith(".apk")
             );
