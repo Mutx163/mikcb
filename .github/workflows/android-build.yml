@@ -138,22 +138,52 @@ jobs:
           set -ex
           mkdir -p dist
           VERSION_NAME="${{ steps.meta.outputs.version_name }}"
+          MIN_APK_BYTES=5242880
           echo "=== Build output tree ==="
           find build/app/outputs -type f 2>/dev/null | head -30
           echo "=== APK files (size) ==="
           find build/app/outputs -name '*.apk' -type f -exec ls -lh {} \; 2>/dev/null || echo 'No APK files found'
-          # Try arm64 APK first, then any release APK.
-          APK_PATH=$(find build/app/outputs -name '*arm64*' -type f | head -1)
+
+          APK_PATH=""
+          CANDIDATES=(
+            "build/app/outputs/flutter-apk/app-prod-release.apk"
+            "build/app/outputs/apk/prod/release/app-prod-release.apk"
+          )
+          for candidate in "${CANDIDATES[@]}"; do
+            if [[ -f "${candidate}" ]]; then
+              APK_PATH="${candidate}"
+              echo "Using explicit APK path: ${APK_PATH}"
+              break
+            fi
+          done
+
           if [[ -z "${APK_PATH}" ]]; then
-            echo "WARN: arm64 APK not found, trying any release APK..."
-            APK_PATH=$(find build/app/outputs -name '*release*' -type f | head -1)
+            echo "WARN: explicit APK paths not found, selecting largest eligible *.apk..."
+            APK_PATH=$(
+              find build/app/outputs -name '*.apk' -type f \
+                ! -iname '*debug*' \
+                ! -iname '*unsigned*' \
+                -printf '%s %p\n' 2>/dev/null \
+              | sort -n \
+              | tail -1 \
+              | cut -d' ' -f2-
+            )
           fi
-          if [[ -z "${APK_PATH}" ]]; then
-            echo "ERROR: Could not find any release APK"
+
+          if [[ -z "${APK_PATH}" || ! -f "${APK_PATH}" ]]; then
+            echo "ERROR: Could not find any release APK under build/app/outputs"
             exit 1
           fi
-          echo "Found APK: ${APK_PATH}"
+
+          APK_SIZE=$(stat -c%s "${APK_PATH}")
+          echo "Found APK: ${APK_PATH} (${APK_SIZE} bytes)"
           ls -lh "${APK_PATH}"
+
+          if [[ "${APK_SIZE}" -lt "${MIN_APK_BYTES}" ]]; then
+            echo "ERROR: APK is too small (${APK_SIZE} bytes < ${MIN_APK_BYTES} bytes). Likely not a real release build."
+            exit 1
+          fi
+
           cp "${APK_PATH}" "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
           ls -lh "dist/mikcb-${VERSION_NAME}-arm64-v8a.apk"
 

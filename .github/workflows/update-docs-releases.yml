@@ -37,10 +37,14 @@ jobs:
 
           function pickDownloadAsset(assets) {
             const normalizedAssets = Array.isArray(assets) ? assets : [];
-            const apkAsset = normalizedAssets.find((asset) =>
+            const MIN_APK_BYTES = 1048576;
+            const apkAssets = normalizedAssets.filter((asset) =>
               String(asset?.name || "").toLowerCase().endsWith(".apk")
             );
-            return apkAsset || normalizedAssets[0] || null;
+            const eligibleApk = apkAssets.find(
+              (asset) => (Number(asset?.size) || 0) >= MIN_APK_BYTES
+            );
+            return eligibleApk || apkAssets[0] || normalizedAssets[0] || null;
           }
 
           function simplifyRelease(release, channelLabel) {
