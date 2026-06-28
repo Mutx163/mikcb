@@ -1120,6 +1120,7 @@ class TimetableProvider with ChangeNotifier {
     _lastLiveSnapshotSignature = null;
     notifyListeners();
     await _liveActivitiesService.stopLiveUpdate();
+    _lastLiveActivityStageKey = null;
     await _syncLiveScheduleSnapshot();
     await _updateLiveActivity(syncScheduleSnapshot: false);
   }
@@ -1313,6 +1314,41 @@ class TimetableProvider with ChangeNotifier {
       name: 'course_group_updated',
       parameters: {
         'schedule_count': updatedCourses.length,
+        'remaining_course_count': _courses.length,
+      },
+    );
+    _updateLiveActivity();
+  }
+
+  /// Add multiple schedule entries for a new course group in one persist.
+  Future<void> addCourseGroup(List<Course> courses) async {
+    if (courses.isEmpty) {
+      return;
+    }
+    final shared = courses.first;
+    for (final course in courses) {
+      final validationMessage = validateCourseTimeSchemeOverride(
+        timeSchemeId: course.timeSchemeIdOverride,
+        startSection: course.startSection,
+        endSection: course.endSection,
+      );
+      if (validationMessage != null) {
+        throw ArgumentError(validationMessage);
+      }
+      final normalized = _syncCourseWithEffectiveTimeScheme(
+        _normalizeCourse(_applySharedCourseFields(course, shared)),
+      );
+      _courses.add(normalized);
+      await recordTeacher(normalized.teacher);
+      await recordLocation(normalized.location);
+    }
+    await _persistActiveProfileState();
+    _currentLiveCourseId = null;
+    notifyListeners();
+    _analytics.logEventLater(
+      name: 'course_group_created',
+      parameters: {
+        'schedule_count': courses.length,
         'remaining_course_count': _courses.length,
       },
     );
@@ -2409,6 +2445,23 @@ class TimetableProvider with ChangeNotifier {
     return week;
   }
 
+  /// Real calendar week for [date] without clamping to [semesterWeekCount].
+  ///
+  /// UI week display clamps so users can stay on the last configured week after
+  /// the term ends. Live activity must use the calendar week so courses past
+  /// their [Course.endWeek] are not shown again (each school may use a
+  /// different [semesterWeekCount]).
+  int _calculateCalendarWeekForDate(DateTime date, {int? fallbackWeek}) {
+    final semesterStart = _settings.semesterStartDate;
+    if (semesterStart == null) {
+      return fallbackWeek ?? _currentWeek;
+    }
+
+    final week = getWeekIndex(date, semesterStart);
+    if (week == null) return 1;
+    return week;
+  }
+
   int _resolveCurrentDateWeek() {
     if (_settings.semesterStartDate == null) {
       return _currentWeek;
@@ -2777,7 +2830,7 @@ class TimetableProvider with ChangeNotifier {
     int? week,
   }) {
     final currentTime = now ?? DateTime.now();
-    final targetWeek = week ?? _calculateWeekForDate(currentTime);
+    final targetWeek = week ?? _calculateCalendarWeekForDate(currentTime);
     final todayCourses = getActiveCoursesForDay(
       currentTime.weekday,
       week: targetWeek,
@@ -3027,6 +3080,7 @@ class TimetableProvider with ChangeNotifier {
     // 假期期间暂停超级岛更新
     if (isHoliday(DateTime.now())) {
       _currentLiveCourseId = null;
+      _lastLiveActivityStageKey = null;
       await _liveActivitiesService.stopLiveUpdate();
       return;
     }
@@ -3132,6 +3186,7 @@ class TimetableProvider with ChangeNotifier {
       // 无条件停止：即使 _currentLiveCourseId 已为 null，原生端可能仍有
       // 前一个会话残留的 Live Activity 显示。stopLiveUpdate 是幂等操作。
       _currentLiveCourseId = null;
+      _lastLiveActivityStageKey = null;
       await _liveActivitiesService.stopLiveUpdate();
     }
   }

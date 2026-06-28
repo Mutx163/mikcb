@@ -1307,6 +1307,53 @@ void main() {
   });
 
   test(
+      'live activity returns null after course end week when semesterWeekCount equals endWeek',
+      () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await provider.updateTimetableSettings(
+      provider.settings.copyWith(
+        semesterWeekCount: 16,
+        semesterStartDate: DateTime(2026, 2, 23),
+        liveEnableBeforeClass: true,
+        liveEnableDuringClass: true,
+        liveEnableBeforeEnd: true,
+      ),
+    );
+    await provider.addCourse(
+      Course(
+        id: '16week-course',
+        name: '高等数学',
+        teacher: '张老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+
+    final week16Time = DateTime(2026, 6, 8, 8, 30);
+    expect(
+      provider.getLiveActivityCourseSelection(now: week16Time),
+      isNotNull,
+    );
+
+    final week17Time = DateTime(2026, 6, 15, 8, 30);
+    expect(
+      provider.getLiveActivityCourseSelection(now: week17Time),
+      isNull,
+    );
+  });
+
+  test(
       'live activity stage transition stops when selection null and stage tracked',
       () async {
     final liveService = TestMiuiLiveActivitiesService();
@@ -1342,11 +1389,11 @@ void main() {
         endWeek: 16,
       ),
     );
+    await pumpEventQueue();
 
     provider.seedLiveActivityTrackingForTesting(
       lastStageKey: '16week-course:beforeClass:高等数学:1:2:A101:张老师',
     );
-    await pumpEventQueue();
     liveService.stopLiveUpdateCallCount = 0;
     liveService.startLiveUpdateCallCount = 0;
 

@@ -77,6 +77,20 @@ internal fun liveSchedulerCalculateWeekForDate(
     return week
 }
 
+/** Calendar week for live-activity scheduling (no [semesterWeekCount] clamp). */
+internal fun liveSchedulerCalculateCalendarWeekForDate(
+    semesterStartMillis: Long?,
+    currentWeek: Int,
+    dateMillis: Long,
+): Int {
+    return liveSchedulerCalculateWeekForDate(
+        semesterStartMillis = semesterStartMillis,
+        currentWeek = currentWeek,
+        dateMillis = dateMillis,
+        semesterWeekCount = null,
+    )
+}
+
 private data class NativeSectionTime(
     val startTime: String,
     val endTime: String,
@@ -331,8 +345,13 @@ object LiveUpdateScheduler {
             category = "live_update_snapshot_cleared",
             message = "Live update schedule snapshot cleared",
         )
-        cancelScheduledAlarm(context)
+        cancelPendingTriggers(context)
         LiveUpdateRefreshWorker.cancel(context)
+    }
+
+    /** Cancel AlarmManager triggers without clearing the schedule snapshot. */
+    fun cancelPendingTriggers(context: Context) {
+        cancelScheduledAlarm(context)
     }
 
     fun handleAlarm(context: Context) {
@@ -879,7 +898,7 @@ object LiveUpdateScheduler {
         if (isDateHoliday(snapshot, nowCalendar)) {
             return null
         }
-        val targetWeek = calculateWeekForDate(snapshot, nowCalendar)
+        val targetWeek = calculateCalendarWeekForDate(snapshot, nowCalendar)
         val todayCourses = snapshot.courses
             .filter { it.dayOfWeek == nowCalendar.get(Calendar.DAY_OF_WEEK).toWeekday() && it.isInWeek(targetWeek) }
             .sortedBy { it.startSection }
@@ -938,7 +957,7 @@ object LiveUpdateScheduler {
         nowMillis: Long,
     ): ScheduledSelection? {
         val nowCalendar = Calendar.getInstance().apply { timeInMillis = nowMillis }
-        val targetWeek = calculateWeekForDate(snapshot, nowCalendar)
+        val targetWeek = calculateCalendarWeekForDate(snapshot, nowCalendar)
         val todayStart = Calendar.getInstance().apply {
             timeInMillis = nowMillis
             set(Calendar.HOUR_OF_DAY, 0)
@@ -1405,6 +1424,17 @@ object LiveUpdateScheduler {
             currentWeek = snapshot.currentWeek,
             dateMillis = dateCalendar.timeInMillis,
             semesterWeekCount = snapshot.settings.semesterWeekCount,
+        )
+    }
+
+    private fun calculateCalendarWeekForDate(
+        snapshot: NativeScheduleSnapshot,
+        dateCalendar: Calendar,
+    ): Int {
+        return liveSchedulerCalculateCalendarWeekForDate(
+            semesterStartMillis = snapshot.semesterStartMillis,
+            currentWeek = snapshot.currentWeek,
+            dateMillis = dateCalendar.timeInMillis,
         )
     }
 

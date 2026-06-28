@@ -75,6 +75,54 @@ class LiveUpdateSchedulerLogicTest {
         )
     }
 
+    @Test
+    fun calendarWeekDoesNotClampToSemesterWeekCount() {
+        val semesterStart = calendarOf(2026, Calendar.FEBRUARY, 23, 8, 0).timeInMillis
+        val week17Monday = calendarOf(2026, Calendar.JUNE, 15, 8, 30).timeInMillis
+
+        assertEquals(
+            17,
+            liveSchedulerCalculateCalendarWeekForDate(
+                semesterStartMillis = semesterStart,
+                currentWeek = 1,
+                dateMillis = week17Monday,
+            ),
+        )
+        assertEquals(
+            16,
+            liveSchedulerCalculateWeekForDate(
+                semesterStartMillis = semesterStart,
+                currentWeek = 1,
+                dateMillis = week17Monday,
+                semesterWeekCount = 16,
+            ),
+        )
+    }
+
+    @Test
+    fun courseNotActiveAfterEndWeekOnCalendarWeek17() {
+        assertFalse(
+            liveSchedulerCourseIsInWeek(
+                week = 17,
+                startWeek = 1,
+                endWeek = 16,
+                isOddWeek = false,
+                isEvenWeek = false,
+                customWeeks = null,
+            ),
+        )
+        assertTrue(
+            liveSchedulerCourseIsInWeek(
+                week = 16,
+                startWeek = 1,
+                endWeek = 16,
+                isOddWeek = false,
+                isEvenWeek = false,
+                customWeeks = null,
+            ),
+        )
+    }
+
     private fun calendarOf(
         year: Int,
         month: Int,
