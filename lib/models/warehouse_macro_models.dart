@@ -9,6 +9,22 @@ String manualInputReasonForFieldType(String? fieldType) {
   return '请手动输入密码；如已自动填充请直接继续';
 }
 
+/// Builds a stable key for matching script dialog responses during macro replay.
+/// Prefer [dialogId] when the adapter script provides one.
+String warehouseDialogResponseKey(String type, Map<String, dynamic> message) {
+  final dialogId = (message['dialogId'] as String?)?.trim();
+  if (dialogId != null && dialogId.isNotEmpty) {
+    return '$type|id:$dialogId';
+  }
+  final title = (message['title'] as String? ?? '').trim();
+  final body =
+      (message['message'] as String? ??
+              message['optionsJson'] as String? ??
+              '')
+          .trim();
+  return '$type|$title|$body';
+}
+
 String? _inferManualInputFieldType(String? reason) {
   final value = reason ?? '';
   final lower = value.toLowerCase();
@@ -179,6 +195,9 @@ class WarehouseMacroRecord {
   final DateTime updatedAt;
   final int successfulImportCount;
 
+  /// WebView desktop UA mode used during recording; null defaults to desktop.
+  final bool? useDesktopMode;
+
   const WarehouseMacroRecord({
     required this.schoolId,
     required this.adapterId,
@@ -192,6 +211,7 @@ class WarehouseMacroRecord {
     required this.createdAt,
     required this.updatedAt,
     this.successfulImportCount = 0,
+    this.useDesktopMode,
   });
 
   Map<String, dynamic> toJson() => {
@@ -207,6 +227,7 @@ class WarehouseMacroRecord {
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt.toIso8601String(),
     'successfulImportCount': successfulImportCount,
+    if (useDesktopMode != null) 'useDesktopMode': useDesktopMode,
   };
 
   factory WarehouseMacroRecord.fromJson(Map<String, dynamic> json) {
@@ -235,6 +256,7 @@ class WarehouseMacroRecord {
           DateTime.fromMillisecondsSinceEpoch(0),
       successfulImportCount:
           (json['successfulImportCount'] as num?)?.toInt() ?? 0,
+      useDesktopMode: json['useDesktopMode'] as bool?,
     );
   }
 
@@ -251,6 +273,7 @@ class WarehouseMacroRecord {
     DateTime? createdAt,
     DateTime? updatedAt,
     int? successfulImportCount,
+    bool? useDesktopMode,
   }) {
     return WarehouseMacroRecord(
       schoolId: schoolId ?? this.schoolId,
@@ -266,6 +289,7 @@ class WarehouseMacroRecord {
       updatedAt: updatedAt ?? this.updatedAt,
       successfulImportCount:
           successfulImportCount ?? this.successfulImportCount,
+      useDesktopMode: useDesktopMode ?? this.useDesktopMode,
     );
   }
 

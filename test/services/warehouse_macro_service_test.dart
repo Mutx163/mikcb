@@ -94,4 +94,27 @@ void main() {
     expect(await service.getMacro('school-1', 'adapter-1'), isNull);
     expect(await service.getAllMacroEntries(), isEmpty);
   });
+
+  test('persists optional useDesktopMode', () async {
+    final service = WarehouseMacroService();
+    final now = DateTime(2024, 1, 2, 3, 4, 5);
+    final record = WarehouseMacroRecord(
+      schoolId: 'school-1',
+      adapterId: 'adapter-1',
+      schoolName: '测试学校',
+      adapterName: '测试教务',
+      importUrl: 'https://example.com/login',
+      schoolResourceFolder: 'school-1',
+      adapterAssetJsPath: 'adapter.js',
+      steps: const [],
+      createdAt: now,
+      updatedAt: now,
+      useDesktopMode: false,
+    );
+
+    await service.saveMacro(record);
+
+    final restored = await service.getMacro('school-1', 'adapter-1');
+    expect(restored?.useDesktopMode, isFalse);
+  });
 }

@@ -9,7 +9,9 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -23,6 +25,7 @@ import '../providers/timetable_provider.dart';
 import '../services/ai_course_import_service.dart';
 import '../services/ics_import_service.dart';
 import '../services/import_week_alignment_service.dart';
+import '../services/spreadsheet_import_service.dart';
 import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
@@ -122,6 +125,17 @@ class CourseImportScreen extends StatelessWidget {
             onTap: () => _openImportPage<bool>(
               context,
               builder: (_) => const WarehouseCourseImportScreen(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _ImportEntryCard(
+            icon: Icons.table_chart_outlined,
+            title: l10n.importMethodSpreadsheetTitle,
+            subtitle: l10n.importMethodSpreadsheetSubtitle,
+            footer: l10n.importMethodSpreadsheetFooter,
+            onTap: () => _openImportPage<bool>(
+              context,
+              builder: (_) => const SpreadsheetCourseImportScreen(),
             ),
           ),
         ],
@@ -380,6 +394,349 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       ),
     );
     if (importedCount > 0) Navigator.of(context).pop(true);
+  }
+}
+
+class SpreadsheetCourseImportScreen extends StatefulWidget {
+  const SpreadsheetCourseImportScreen({super.key});
+
+  @override
+  State<SpreadsheetCourseImportScreen> createState() =>
+      _SpreadsheetCourseImportScreenState();
+}
+
+class _SpreadsheetCourseImportScreenState
+    extends State<SpreadsheetCourseImportScreen> {
+  final SpreadsheetImportService _spreadsheetImportService =
+      SpreadsheetImportService();
+
+  bool _isImporting = false;
+  bool _isSharingTemplate = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: Text(l10n.spreadsheetImportTitle)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.applicableScenarioTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(l10n.spreadsheetScenarioIntro),
+                  const SizedBox(height: 14),
+                  _GuideLine(
+                    title: l10n.stepLabel('1'),
+                    subtitle: l10n.spreadsheetStep1Subtitle,
+                  ),
+                  const SizedBox(height: 10),
+                  _GuideLine(
+                    title: l10n.stepLabel('2'),
+                    subtitle: l10n.spreadsheetStep2Subtitle,
+                  ),
+                  const SizedBox(height: 10),
+                  _GuideLine(
+                    title: l10n.stepLabel('3'),
+                    subtitle: l10n.spreadsheetStep3Subtitle,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerLowest,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.supportedFilesTitle,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(l10n.spreadsheetSupportedFilesSuffix),
+              ],
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            OutlinedButton.icon(
+              onPressed: _isSharingTemplate ? null : _shareTemplate,
+              icon: _isSharingTemplate
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_rounded),
+              label: Text(l10n.downloadSpreadsheetTemplateAction),
+            ),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: _isImporting ? null : _importSpreadsheetFile,
+              icon: _isImporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.folder_open_rounded),
+              label: Text(
+                _isImporting
+                    ? '${l10n.spreadsheetImportTitle}...'
+                    : l10n.chooseSpreadsheetFileAction,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareTemplate() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isSharingTemplate = true;
+    });
+    try {
+      final data = await rootBundle.load(
+        'assets/templates/mikcb_course_import_template.csv',
+      );
+      final tempDir = await getTemporaryDirectory();
+      final file = File(
+        '${tempDir.path}/mikcb_course_import_template.csv',
+      );
+      await file.writeAsBytes(data.buffer.asUint8List());
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: l10n.downloadSpreadsheetTemplateAction,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSharingTemplate = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _importSpreadsheetFile() async {
+    final l10n = AppLocalizations.of(context)!;
+    setState(() {
+      _isImporting = true;
+    });
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['csv', 'xlsx'],
+        withData: true,
+      );
+      if (result == null || result.files.isEmpty || !mounted) return;
+
+      final file = result.files.single;
+      final bytes = file.bytes;
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(l10n.importFileReadFailed)),
+          );
+        }
+        return;
+      }
+
+      await _executeSpreadsheetImport(bytes, file.name);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _executeSpreadsheetImport(
+    List<int> bytes,
+    String fileName,
+  ) async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = context.read<TimetableProvider>();
+
+    late final SpreadsheetImportResult parsedResult;
+    try {
+      parsedResult = _spreadsheetImportService.parseBytes(
+        bytes,
+        fileName: fileName,
+        settings: provider.settings,
+      );
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            error.message.contains('未识别')
+                ? l10n.spreadsheetFormatUnrecognized
+                : error.message,
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (parsedResult.courses.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.importNoCoursesRecognized)),
+        );
+      }
+      return;
+    }
+
+    if (parsedResult.warnings.isNotEmpty) {
+      final shouldContinue = await _showSpreadsheetWarnings(
+        context,
+        warnings: parsedResult.warnings,
+      );
+      if (shouldContinue != true || !mounted) return;
+    }
+
+    final replaceExisting = provider.courses.isEmpty
+        ? true
+        : await _askReplaceExisting(
+            context,
+            title: l10n.importReplaceExistingTitle,
+            content: l10n.importReplaceExistingMessage(
+              l10n.spreadsheetImportTitle,
+            ),
+          );
+    if (replaceExisting == null || !mounted) return;
+
+    await _completeParsedCourseImport(
+      context: context,
+      provider: provider,
+      courses: parsedResult.courses,
+      replaceExisting: replaceExisting,
+      source: 'spreadsheet',
+      semesterStart: provider.settings.semesterStartDate,
+      warningCount: parsedResult.warnings.length,
+    );
+  }
+}
+
+Future<bool?> _showSpreadsheetWarnings(
+  BuildContext context, {
+  required List<String> warnings,
+}) {
+  final l10n = AppLocalizations.of(context)!;
+  return showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: Text(l10n.spreadsheetImportWarningsTitle),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.spreadsheetImportWarningsMessage),
+                const SizedBox(height: 12),
+                ...warnings.map(
+                  (warning) => Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text('• $warning'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.spreadsheetImportWarningsContinue),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> _completeParsedCourseImport({
+  required BuildContext context,
+  required TimetableProvider provider,
+  required List<Course> courses,
+  required bool replaceExisting,
+  required String source,
+  DateTime? semesterStart,
+  int warningCount = 0,
+}) async {
+  final l10n = AppLocalizations.of(context)!;
+  final requiredSectionCount = provider.previewImportedCourseRequiredSectionCount(
+    courses,
+    replaceExisting: replaceExisting,
+  );
+  if (!context.mounted) return;
+  final capacityReady = await _ensureSectionCapacity(
+    context,
+    requiredSectionCount: requiredSectionCount,
+    provider: provider,
+  );
+  if (!capacityReady || !context.mounted) return;
+
+  final importedCount = await provider.importParsedCourses(
+    courses,
+    replaceExisting: replaceExisting,
+    semesterStart: semesterStart,
+    source: source,
+  );
+  if (!context.mounted) return;
+
+  final warningSuffix = warningCount == 0
+      ? ''
+      : l10n.aiWarningExtraSuffix(warningCount);
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        importedCount > 0
+            ? (replaceExisting
+                  ? l10n.importOverwriteCount(importedCount) + warningSuffix
+                  : l10n.importUpdatedCount(importedCount) + warningSuffix)
+            : l10n.importNoCourseChanges,
+      ),
+    ),
+  );
+  if (importedCount > 0) {
+    Navigator.of(context).pop(true);
   }
 }
 
@@ -1251,6 +1608,20 @@ class _WarehouseCourseImportScreenState
   }
 
   Future<void> _startQuickImport(WarehouseMacroRecord macro) async {
+    final customUrl = await _preferencesService.getCustomImportUrl(
+      macro.adapterId,
+    );
+    final initialUrl = resolveWarehouseImportUrl(
+      customImportUrl: customUrl,
+      defaultUrl: macro.importUrl,
+    );
+    if (!mounted || initialUrl == null) {
+      if (mounted) {
+        _showLightTip(context, '未找到有效的教务登录地址');
+      }
+      return;
+    }
+
     final imported = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         settings: const RouteSettings(
@@ -1258,7 +1629,7 @@ class _WarehouseCourseImportScreenState
         ),
         builder: (_) => WarehouseAdapterWebLoginScreen(
           title: '快捷导入 - ${macro.schoolName}',
-          initialUrl: macro.importUrl,
+          initialUrl: initialUrl,
           source: _defaultSource,
           school: WarehouseSchoolEntry(
             id: macro.schoolId,
@@ -2364,10 +2735,11 @@ class _WarehouseSchoolAdaptersScreenState
     final custom = await _preferencesService.getCustomImportUrl(
       adapter.adapterId,
     );
-    final effectiveUrl = (custom ?? '').trim().isNotEmpty
-        ? custom!.trim()
-        : adapter.importUrl.trim();
-    if (effectiveUrl.isNotEmpty) {
+    final effectiveUrl = resolveWarehouseImportUrl(
+      customImportUrl: custom,
+      defaultUrl: adapter.importUrl,
+    );
+    if (effectiveUrl != null) {
       return effectiveUrl;
     }
     if (!mounted) {
@@ -2921,15 +3293,8 @@ class _WarehouseAdapterWebLoginScreenState
   final Map<String, dynamic> _macroDialogResponses = {};
 
   /// 根据弹窗类型和内容生成匹配 key，用于录制时关联操作和回放时自动响应
-  String _dialogResponseKey(String type, Map<String, dynamic> message) {
-    final title = (message['title'] as String? ?? '').trim();
-    final body =
-        (message['message'] as String? ??
-                message['optionsJson'] as String? ??
-                '')
-            .trim();
-    return '$type|$title|$body';
-  }
+  String _dialogResponseKey(String type, Map<String, dynamic> message) =>
+      warehouseDialogResponseKey(type, message);
 
   // --- 宏回放相关 ---
   PlaybackUiState _playbackState = PlaybackUiState.hidden;
@@ -2969,12 +3334,13 @@ class _WarehouseAdapterWebLoginScreenState
   @override
   void initState() {
     super.initState();
+    _useDesktopMode = widget.macroRecord?.useDesktopMode ?? true;
     _currentUrl = widget.initialUrl;
     _addressController = TextEditingController(text: widget.initialUrl);
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..enableZoom(true)
-      ..setUserAgent(_desktopUserAgent)
+      ..setUserAgent(_useDesktopMode ? _desktopUserAgent : _mobileUserAgent)
       ..addJavaScriptChannel(
         'QingyuBridge',
         onMessageReceived: (message) {
@@ -3710,7 +4076,7 @@ class _WarehouseAdapterWebLoginScreenState
         }));
       });
     },
-    showSingleSelection: async (title, optionsJson, selectedIndex) => {
+    showSingleSelection: async (title, optionsJson, selectedIndex, dialogId) => {
       const requestId = 'single_selection_' + Date.now() + '_' + Math.random().toString(36).slice(2);
       return await new Promise((resolve) => {
         window.__qingyuResolvers[requestId] = resolve;
@@ -3719,7 +4085,8 @@ class _WarehouseAdapterWebLoginScreenState
           requestId,
           title: String(title ?? ''),
           optionsJson: String(optionsJson ?? '[]'),
-          selectedIndex: Number(selectedIndex ?? 0)
+          selectedIndex: Number(selectedIndex ?? 0),
+          dialogId: dialogId ? String(dialogId) : undefined
         }));
       });
     },
@@ -3994,7 +4361,6 @@ class _WarehouseAdapterWebLoginScreenState
     Map<String, dynamic> message,
   ) async {
     final requestId = (message['requestId'] as String?) ?? '';
-    // 回放模式：使用录制的响应或自动选择第一项
     final macroRecord = widget.macroRecord;
     if (macroRecord != null) {
       final key = _dialogResponseKey('singleSelection', message);
@@ -4003,16 +4369,6 @@ class _WarehouseAdapterWebLoginScreenState
         await _resolveJavaScriptRequest(requestId, '$recorded');
         return;
       }
-      final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
-      try {
-        final decoded = jsonDecode(optionsRaw);
-        if (decoded is List && decoded.isNotEmpty) {
-          await _resolveJavaScriptRequest(requestId, decoded[0].toString());
-          return;
-        }
-      } catch (_) {}
-      await _resolveJavaScriptRequest(requestId, '');
-      return;
     }
     final optionsRaw = (message['optionsJson'] as String?) ?? '[]';
     final selectedIndex = (message['selectedIndex'] as num?)?.toInt() ?? 0;
@@ -4711,6 +5067,7 @@ class _WarehouseAdapterWebLoginScreenState
         createdAt: now,
         updatedAt: now,
         successfulImportCount: 1,
+        useDesktopMode: _useDesktopMode,
       );
       await _macroService.saveMacro(record);
     }
@@ -4802,6 +5159,7 @@ class _WarehouseAdapterWebLoginScreenState
       createdAt: now,
       updatedAt: now,
       successfulImportCount: 0,
+      useDesktopMode: _useDesktopMode,
     );
 
     await _macroService.saveMacro(record);

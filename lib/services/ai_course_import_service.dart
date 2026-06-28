@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import 'week_expression_parser.dart';
 
 class AiCourseImportParseResult {
   final List<Course> courses;
@@ -323,7 +324,9 @@ class AiCourseImportService {
     if (value is List) {
       for (final item in value) {
         if (item is String) {
-          weeks.addAll(_parseWeekExpression(item, itemName: itemName));
+          weeks.addAll(
+            WeekExpressionParser.parse(item, itemName: itemName),
+          );
           continue;
         }
         final parsed = _readInt(item);
@@ -333,68 +336,15 @@ class AiCourseImportService {
         weeks.add(parsed);
       }
     } else if (value is String) {
-      weeks.addAll(_parseWeekExpression(value, itemName: itemName));
+      weeks.addAll(
+        WeekExpressionParser.parse(value, itemName: itemName),
+      );
     } else {
       throw FormatException('$key 必须是整数数组或周次字符串');
     }
 
     final sorted = weeks.toList()..sort();
     return sorted;
-  }
-
-  List<int> _parseWeekExpression(
-    String raw, {
-    required String itemName,
-  }) {
-    var normalized = raw.trim();
-    if (normalized.isEmpty) {
-      return const [];
-    }
-
-    normalized = normalized
-        .replaceAll(' ', '')
-        .replaceAll(RegExp(r'\[[^\]]*节\]'), '')
-        .replaceAll(RegExp(r'【[^】]*节】'), '');
-
-    final modeMatch =
-        RegExp(r'[（(](全部|单|双)[）)]').firstMatch(normalized)?.group(1);
-    normalized = normalized.replaceAll(RegExp(r'[（(][^）)]*[）)]'), '');
-
-    final result = <int>{};
-    final parts = normalized.split(RegExp(r'[，,、]'));
-    for (final part in parts) {
-      final token = part.trim();
-      if (token.isEmpty) {
-        continue;
-      }
-      final rangeMatch = RegExp(r'^(\d+)-(\d+)$').firstMatch(token);
-      if (rangeMatch != null) {
-        final start = int.parse(rangeMatch.group(1)!);
-        final end = int.parse(rangeMatch.group(2)!);
-        if (start > end) {
-          throw FormatException('$itemName 周次范围不合法');
-        }
-        for (var week = start; week <= end; week++) {
-          result.add(week);
-        }
-        continue;
-      }
-
-      final parsed = int.tryParse(token);
-      if (parsed == null || parsed < 1) {
-        throw FormatException('$itemName 含有无法识别的周次：$token');
-      }
-      result.add(parsed);
-    }
-
-    final weeks = result.toList()..sort();
-    if (modeMatch == '单') {
-      return weeks.where((week) => week.isOdd).toList();
-    }
-    if (modeMatch == '双') {
-      return weeks.where((week) => week.isEven).toList();
-    }
-    return weeks;
   }
 
   String _normalizeCourseName(String rawName) {

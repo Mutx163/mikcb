@@ -272,3 +272,16 @@ class WarehouseImportPreferencesService {
     );
   }
 }
+
+/// Prefers a user-set custom import URL, otherwise falls back to [defaultUrl].
+String? resolveWarehouseImportUrl({
+  String? customImportUrl,
+  required String defaultUrl,
+}) {
+  final custom = (customImportUrl ?? '').trim();
+  if (custom.isNotEmpty) {
+    return custom;
+  }
+  final fallback = defaultUrl.trim();
+  return fallback.isNotEmpty ? fallback : null;
+}

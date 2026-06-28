@@ -216,6 +216,8 @@ class MacroRecordingConverter {
         case 'click':
           if (selector.isNotEmpty) {
             steps.add(MacroStep.click(selector));
+            // Allow navigation/DOM updates before the next step.
+            steps.add(MacroStep.delay(800));
           }
           break;
         case 'submit':
@@ -223,7 +225,7 @@ class MacroRecordingConverter {
           if (selector.isNotEmpty) {
             steps.add(MacroStep.click(selector));
           }
-          steps.add(MacroStep.delay(2000));
+          steps.add(MacroStep.delay(2500));
           break;
       }
 
