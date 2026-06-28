@@ -44,7 +44,7 @@ jobs:
             const eligibleApk = apkAssets.find(
               (asset) => (Number(asset?.size) || 0) >= MIN_APK_BYTES
             );
-            return eligibleApk || apkAssets[0] || normalizedAssets[0] || null;
+            return eligibleApk || null;
           }
 
           function simplifyRelease(release, channelLabel) {
