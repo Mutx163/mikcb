@@ -29,11 +29,16 @@ class HolidayLogEntry {
 class HolidayService {
   static const _cacheKeyPrefix = 'holiday_data_';
   static const _customHolidaysKey = 'custom_holidays';
+  static const _remoteHolidayBaseUrl = 'https://api.haoshenqi.top/holiday';
+
+  final http.Client _client;
 
   /// 内存缓存
   final Map<int, HolidayData> _memoryCache = {};
 
   SharedPreferences? _prefs;
+
+  HolidayService({http.Client? client}) : _client = client ?? http.Client();
 
   /// Update process logs (most recent first, capped at 50).
   final List<HolidayLogEntry> logs = [];
@@ -135,9 +140,17 @@ class HolidayService {
 
   Future<HolidayData?> _fetchRemoteUpdate(int year) async {
     try {
-      final uri = Uri.parse('http://api.haoshenqi.top/holiday?date=$year');
+      final uri = Uri.parse('$_remoteHolidayBaseUrl?date=$year');
       _log('正在请求 $uri …');
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .get(
+            uri,
+            headers: const {
+              'Accept': 'application/json',
+              'User-Agent': 'mikcb-holiday-sync',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) {
         _log('远程响应 ${response.statusCode}，跳过');
         return null;
@@ -226,6 +239,12 @@ class HolidayService {
     }
 
     return entries;
+  }
+
+  /// Exposed for unit tests that validate API → [HolidayEntry] conversion.
+  @visibleForTesting
+  List<HolidayEntry> convertApiEntriesForTest(List<dynamic> list, int year) {
+    return _convertApiEntries(list, year);
   }
 
   bool _isConsecutive(DateTime a, DateTime b) =>
