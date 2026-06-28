@@ -30,6 +30,7 @@ dependencies:
   animations: ^2.0.11
   flex_color_picker: ^3.7.0
   tdesign_flutter: ^0.2.7
+  table_parser: ^1.0.1
 
 dev_dependencies:
   flutter_test:
@@ -46,3 +47,5 @@ flutter:
     - assets/donate/alipay.png
     - assets/holidays/
     - docs/releases/
+    - assets/lan_edit/
+    - assets/templates/

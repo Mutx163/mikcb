@@ -130,6 +130,75 @@ class AppLocalizationsEn extends AppLocalizations {
       'Export a complete timetable file for others to import directly';
 
   @override
+  String get lanEditEntryTitle => 'LAN editing';
+
+  @override
+  String get lanEditEntrySubtitle =>
+      'Edit the current timetable from a desktop browser';
+
+  @override
+  String get lanEditTitle => 'LAN editing';
+
+  @override
+  String get lanEditIntro =>
+      'While enabled, a computer on the same Wi-Fi or phone hotspot can edit the current timetable in a browser. Data stays on your LAN and access stops when you turn this off.';
+
+  @override
+  String get lanEditStart => 'Start LAN editing';
+
+  @override
+  String get lanEditStop => 'Stop';
+
+  @override
+  String get lanEditStatusRunning => 'LAN editing is active';
+
+  @override
+  String get lanEditAddressLabel => 'Address';
+
+  @override
+  String get lanEditAddressUnavailable =>
+      'No LAN IP detected. Connect to Wi-Fi or enable hotspot.';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => 'Port';
+
+  @override
+  String get lanEditCopyAddress => 'Copy address';
+
+  @override
+  String get lanEditCopied => 'Address copied';
+
+  @override
+  String get lanEditHotspotHint =>
+      'If dorm Wi-Fi blocks device-to-device access, try phone hotspot instead.';
+
+  @override
+  String get lanEditStartFailed => 'Failed to start';
+
+  @override
+  String get lanEditConnectedClientsLabel => 'Connected';
+
+  @override
+  String get lanEditConnectedClientsNone => 'None';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count devices',
+      one: '1 device',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => 'Last activity';
+
+  @override
   String get aboutSupportSectionTitle => 'About & Support';
 
   @override
@@ -216,6 +285,60 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get importMethodWarehouseFooter =>
       'Choose a school and adapter, then open the academic system page and run the import.';
+
+  @override
+  String get importMethodSpreadsheetTitle => 'Spreadsheet Import';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      'Fill in the mikcb template in Excel/WPS and import without exporting .ics first.';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      'Supports .csv and .xlsx. Download the template, fill it in, then pick a file.';
+
+  @override
+  String get spreadsheetImportTitle => 'Spreadsheet Import';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      'The mikcb template maps columns by header: required fields are course name, weekday, sections, and weeks; others are optional. Download the full template or keep only required columns. WakeUp 7-column layout is also supported.';
+
+  @override
+  String get spreadsheetStep1Subtitle =>
+      'Download the full template, or keep only required columns plus 上课周 (or 开始周+结束周) for minimal import.';
+
+  @override
+  String get spreadsheetStep2Subtitle =>
+      'Save as .csv or keep .xlsx when finished.';
+
+  @override
+  String get spreadsheetStep3Subtitle =>
+      'Pick a file to import. Warnings are shown first, then choose append or replace.';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix =>
+      'Supports .csv and .xlsx (first sheet only).';
+
+  @override
+  String get chooseSpreadsheetFileAction => 'Choose spreadsheet file';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => 'Download mikcb template';
+
+  @override
+  String get spreadsheetImportWarningsTitle => 'Import warnings';
+
+  @override
+  String get spreadsheetImportWarningsMessage =>
+      'These rows were skipped. You can still import the rest:';
+
+  @override
+  String get spreadsheetImportWarningsContinue => 'Continue import';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      'Unrecognized format. Please use the mikcb template; WakeUp-like column layouts are also supported.';
 
   @override
   String get icsImportTitle => '.ics Calendar Import';

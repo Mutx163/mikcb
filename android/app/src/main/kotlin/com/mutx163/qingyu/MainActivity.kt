@@ -69,21 +69,27 @@ class MainActivity : FlutterActivity() {
         private const val POST_PROMOTED_NOTIFICATIONS_PERMISSION =
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
         private const val ICS_CHANNEL = "com.mutx163.qingyu/ics_import"
+        private const val LAN_EDIT_CHANNEL = "com.mutx163.qingyu/lan_edit"
     }
 
     private var notificationManager: NotificationManager? = null
     private var permissionResult: MethodChannel.Result? = null
     private var pendingIcsContent: String? = null
+    private var pendingOpenLanEdit = false
     private var flutterChannel: MethodChannel? = null
+    private var lanEditChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         handleIcsIntent(intent)
+        handleLanEditIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIcsIntent(intent)
+        handleLanEditIntent(intent)
     }
 
     override fun onResume() {
@@ -389,6 +395,27 @@ class MainActivity : FlutterActivity() {
                         } else {
                             result.success(openPackage(packageName))
                         }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LAN_EDIT_CHANNEL)
+            .also { lanEditChannel = it }
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "startLanEditForeground" -> {
+                        startLanEditForegroundService()
+                        result.success(true)
+                    }
+                    "stopLanEditForeground" -> {
+                        stopLanEditForegroundService()
+                        result.success(true)
+                    }
+                    "getPendingLanEditOpen" -> {
+                        val pending = pendingOpenLanEdit
+                        pendingOpenLanEdit = false
+                        result.success(pending)
                     }
                     else -> result.notImplemented()
                 }
@@ -911,7 +938,37 @@ class MainActivity : FlutterActivity() {
             category = "live_update_stop_requested",
             message = "Flutter requested live update stop",
         )
+        LiveUpdateScheduler.cancelPendingTriggers(applicationContext)
         stopService(Intent(this, LiveUpdateService::class.java))
+    }
+
+    private fun startLanEditForegroundService() {
+        val intent = LanEditForegroundService.buildStartIntent(this)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
+    }
+
+    private fun stopLanEditForegroundService() {
+        stopService(
+            Intent(this, LanEditForegroundService::class.java).apply {
+                action = LanEditForegroundService.ACTION_STOP
+            },
+        )
+    }
+
+    private fun handleLanEditIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra(LanEditForegroundService.EXTRA_OPEN_LAN_EDIT, false) != true) {
+            return
+        }
+        pendingOpenLanEdit = true
+        intent.removeExtra(LanEditForegroundService.EXTRA_OPEN_LAN_EDIT)
+        try {
+            lanEditChannel?.invokeMethod("onLanEditNotificationTapped", null)
+        } catch (_: Exception) {
+        }
     }
 
     private fun persistHideFromRecents(hidden: Boolean) {

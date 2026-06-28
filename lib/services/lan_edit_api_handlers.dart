@@ -1,0 +1,469 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import '../models/course.dart';
+import '../models/timetable_settings.dart';
+import 'lan_edit_audit_log.dart';
+import 'lan_edit_host.dart';
+import 'lan_edit_network_utils.dart';
+import 'lan_edit_provider_host.dart';
+import 'lan_edit_session.dart';
+
+class LanEditApiHandlers {
+  final LanEditHost host;
+  final LanEditSession session;
+
+  LanEditApiHandlers({
+    required this.host,
+    required this.session,
+  });
+
+  Future<void> handle(HttpRequest request) async {
+    try {
+      if (request.method == 'OPTIONS') {
+        await _writeJson(request, 204, const {});
+        return;
+      }
+
+      final path = request.uri.path;
+      if (path == '/api/v1/health') {
+        await _writeJson(request, 200, {
+          'ok': true,
+          'serverTime': DateTime.now().toIso8601String(),
+        });
+        return;
+      }
+
+      if (path == '/api/v1/auth/verify' && request.method == 'POST') {
+        await _handleVerify(request);
+        return;
+      }
+
+      if (!await _authorize(request)) {
+        return;
+      }
+
+      if (path == '/api/v1/session' && request.method == 'GET') {
+        await host.ensureInitialized();
+        await _writeJson(request, 200, {
+          'profileName': host.activeProfileName,
+          'activeWeek': host.currentWeek,
+          'semesterWeekCount': host.semesterWeekCount,
+          'serverTime': DateTime.now().toIso8601String(),
+          'expiresAt': session.expiresAt.toIso8601String(),
+        });
+        return;
+      }
+
+      if (path == '/api/v1/meta' && request.method == 'GET') {
+        await host.ensureInitialized();
+        await _writeJson(request, 200, host.buildMetaJson());
+        return;
+      }
+
+      if (path == '/api/v1/profile/active' && request.method == 'GET') {
+        await host.ensureInitialized();
+        await _writeJson(
+          request,
+          200,
+          jsonDecode(host.buildProfileBackupJson()) as Map<String, dynamic>,
+        );
+        return;
+      }
+
+      if (path == '/api/v1/profile/active' && request.method == 'PUT') {
+        await _handleImportProfile(request);
+        return;
+      }
+
+      if (path == '/api/v1/courses' && request.method == 'GET') {
+        await host.ensureInitialized();
+        await _writeJson(request, 200, {
+          'courses': host.courses.map((course) => course.toJson()).toList(),
+        });
+        return;
+      }
+
+      if (path == '/api/v1/courses' && request.method == 'POST') {
+        await _handleCreateCourse(request);
+        return;
+      }
+
+      if (path == '/api/v1/courses/group' && request.method == 'PUT') {
+        await _handleReplaceCourseGroup(request);
+        return;
+      }
+
+      final courseMatch = RegExp(r'^/api/v1/courses/([^/]+)$').firstMatch(path);
+      if (courseMatch != null) {
+        final courseId = Uri.decodeComponent(courseMatch.group(1)!);
+        if (request.method == 'GET') {
+          await _handleGetCourse(request, courseId);
+          return;
+        }
+        if (request.method == 'PATCH') {
+          await _handlePatchCourse(request, courseId);
+          return;
+        }
+        if (request.method == 'DELETE') {
+          await _handleDeleteCourse(request, courseId);
+          return;
+        }
+      }
+
+      await _writeError(request, 404, 'not_found', 'Resource not found');
+    } catch (error) {
+      await _writeError(
+        request,
+        500,
+        'internal_error',
+        error is ArgumentError ? error.message ?? '$error' : '$error',
+      );
+    }
+  }
+
+  Future<void> _handleVerify(HttpRequest request) async {
+    final clientIp = clientIpFromRequest(request);
+    if (session.isExpired) {
+      lanEditAuditInfo(
+        'lan_edit_auth_failed',
+        'LAN edit auth failed',
+        extras: {'reason': 'session_expired', 'clientIp': clientIp},
+      );
+      await _writeError(request, 401, 'session_expired', 'Session expired');
+      return;
+    }
+    if (session.isPinRateLimited(clientIp)) {
+      lanEditAuditInfo(
+        'lan_edit_auth_failed',
+        'LAN edit auth failed',
+        extras: {'reason': 'rate_limited', 'clientIp': clientIp},
+      );
+      await _writeError(request, 429, 'rate_limited', 'Too many PIN attempts');
+      return;
+    }
+
+    final body = await _readJsonBody(request);
+    final pin = body['pin']?.toString() ?? '';
+    if (!session.verifyPin(pin, clientIp)) {
+      lanEditAuditInfo(
+        'lan_edit_auth_failed',
+        'LAN edit auth failed',
+        extras: {'reason': 'invalid_pin', 'clientIp': clientIp},
+      );
+      await _writeError(request, 401, 'invalid_pin', 'Invalid PIN');
+      return;
+    }
+
+    await _writeJson(request, 200, {
+      'token': session.token,
+      'expiresAt': session.expiresAt.toIso8601String(),
+    });
+  }
+
+  Future<void> _handleCreateCourse(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final context = _courseContext();
+      final draft = LanEditProviderHost.courseFromApiJson(
+        body,
+        sections: context.sections,
+        semesterWeekCount: context.semesterWeekCount,
+      );
+      if (draft.name.trim().isEmpty) {
+        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        return;
+      }
+      final created = await host.createCourse(draft);
+      lanEditAuditInfo(
+        'lan_edit_course_created',
+        'LAN edit course created',
+        extras: {
+          'courseId': created.id,
+          'courseName': created.name,
+        },
+      );
+      await _writeJson(request, 201, created.toJson());
+    } on ArgumentError catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message ?? '$error',
+      );
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleGetCourse(HttpRequest request, String courseId) async {
+    await host.ensureInitialized();
+    final course = host.findCourse(courseId);
+    if (course == null) {
+      await _writeError(request, 404, 'not_found', 'Course not found');
+      return;
+    }
+    await _writeJson(request, 200, course.toJson());
+  }
+
+  Future<void> _handlePatchCourse(HttpRequest request, String courseId) async {
+    try {
+      await host.ensureInitialized();
+      final existing = host.findCourse(courseId);
+      if (existing == null) {
+        await _writeError(request, 404, 'not_found', 'Course not found');
+        return;
+      }
+      final patch = await _readJsonBody(request);
+      final context = _courseContext();
+      final updated = LanEditProviderHost.mergeCoursePatch(
+        existing,
+        patch,
+        sections: context.sections,
+        semesterWeekCount: context.semesterWeekCount,
+      );
+      if (updated.name.trim().isEmpty) {
+        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        return;
+      }
+      await host.updateCourse(updated);
+      lanEditAuditInfo(
+        'lan_edit_course_updated',
+        'LAN edit course updated',
+        extras: {
+          'courseId': updated.id,
+          'courseName': updated.name,
+        },
+      );
+      await _writeJson(request, 200, updated.toJson());
+    } on ArgumentError catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message ?? '$error',
+      );
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleDeleteCourse(HttpRequest request, String courseId) async {
+    try {
+      await host.ensureInitialized();
+      final existing = host.findCourse(courseId);
+      if (existing == null) {
+        await _writeError(request, 404, 'not_found', 'Course not found');
+        return;
+      }
+      await host.deleteCourse(courseId);
+      lanEditAuditInfo(
+        'lan_edit_course_deleted',
+        'LAN edit course deleted',
+        extras: {
+          'courseId': courseId,
+          'courseName': existing.name,
+        },
+      );
+      await _writeJson(request, 200, {'deleted': true, 'id': courseId});
+    } on ArgumentError catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message ?? '$error',
+      );
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleReplaceCourseGroup(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final originalName = body['originalName']?.toString();
+      final rawSlots = body['slots'];
+      if (rawSlots is! List || rawSlots.isEmpty) {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          '至少需要保留一个上课时间段',
+        );
+        return;
+      }
+
+      final context = _courseContext();
+      final slots = <Course>[];
+      for (final item in rawSlots) {
+        if (item is! Map) {
+          await _writeError(request, 400, 'invalid_request', 'Invalid slot entry');
+          return;
+        }
+        final slotMap = Map<String, dynamic>.from(item);
+        slots.add(
+          LanEditProviderHost.courseFromApiJson(
+            slotMap,
+            sections: context.sections,
+            semesterWeekCount: context.semesterWeekCount,
+            existingId: slotMap['id'] as String?,
+          ),
+        );
+      }
+
+      if (slots.first.name.trim().isEmpty) {
+        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        return;
+      }
+
+      final saved = await host.replaceCourseGroup(
+        originalName: originalName,
+        slots: slots,
+      );
+      lanEditAuditInfo(
+        'lan_edit_course_group_saved',
+        'LAN edit course group saved',
+        extras: {
+          'originalName': originalName,
+          'courseName': saved.first.name,
+          'scheduleCount': saved.length,
+        },
+      );
+      await _writeJson(request, 200, {
+        'courses': saved.map((course) => course.toJson()).toList(),
+      });
+    } on ArgumentError catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message ?? '$error',
+      );
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleImportProfile(HttpRequest request) async {
+    await host.ensureInitialized();
+    final body = await _readBody(request);
+    await host.importProfileBackupJson(body);
+    await _writeJson(request, 200, {'imported': true});
+  }
+
+  Future<bool> _authorize(HttpRequest request) async {
+    final clientIp = clientIpFromRequest(request);
+    if (session.isExpired) {
+      lanEditAuditInfo(
+        'lan_edit_auth_failed',
+        'LAN edit auth failed',
+        extras: {'reason': 'session_expired', 'clientIp': clientIp},
+      );
+      await _writeError(request, 401, 'session_expired', 'Session expired');
+      return false;
+    }
+    final header = request.headers.value(HttpHeaders.authorizationHeader);
+    final token = _extractBearerToken(header);
+    if (!session.verifyTokenForRequest(token, clientIp)) {
+      lanEditAuditInfo(
+        'lan_edit_auth_failed',
+        'LAN edit auth failed',
+        extras: {
+          'reason': token == null || token.isEmpty ? 'missing_token' : 'invalid_token',
+          'clientIp': clientIp,
+        },
+      );
+      await _writeError(request, 401, 'unauthorized', 'Unauthorized');
+      return false;
+    }
+    return true;
+  }
+
+  String? _extractBearerToken(String? header) {
+    if (header == null) {
+      return null;
+    }
+    const prefix = 'Bearer ';
+    if (!header.startsWith(prefix)) {
+      return null;
+    }
+    return header.substring(prefix.length).trim();
+  }
+
+  Future<Map<String, dynamic>> _readJsonBody(HttpRequest request) async {
+    final raw = await _readBody(request);
+    if (raw.trim().isEmpty) {
+      return {};
+    }
+    final decoded = jsonDecode(raw);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Expected JSON object');
+    }
+    return decoded;
+  }
+
+  Future<String> _readBody(HttpRequest request) async {
+    return utf8.decodeStream(request);
+  }
+
+  Future<void> _writeJson(HttpRequest request, int statusCode, Object body) async {
+    try {
+      request.response.statusCode = statusCode;
+      if (statusCode != 204) {
+        request.response.headers.contentType = ContentType.json;
+        request.response.headers.set('Cache-Control', 'no-store');
+        request.response.write(jsonEncode(body));
+      }
+      await request.response.close();
+    } catch (_) {
+      // Client disconnected; ignore to avoid crashing the LAN server.
+    }
+  }
+
+  Future<void> _writeError(
+    HttpRequest request,
+    int statusCode,
+    String error,
+    String message,
+  ) async {
+    await _writeJson(request, statusCode, {
+      'error': error,
+      'message': message,
+    });
+  }
+
+  _CourseBuildContext _courseContext() {
+    if (host is LanEditProviderHost) {
+      final providerHost = host as LanEditProviderHost;
+      return _CourseBuildContext(
+        sections: providerHost.sections,
+        semesterWeekCount: providerHost.semesterWeekCountValue,
+      );
+    }
+    final meta = host.buildMetaJson();
+    final rawSections = meta['sections'] as List<dynamic>? ?? const [];
+    return _CourseBuildContext(
+      sections: rawSections
+          .map(
+            (item) => SectionTime.fromJson(
+              Map<String, dynamic>.from(item as Map),
+            ),
+          )
+          .toList(),
+      semesterWeekCount: meta['semesterWeekCount'] as int? ?? 20,
+    );
+  }
+}
+
+class _CourseBuildContext {
+  final List<SectionTime> sections;
+  final int semesterWeekCount;
+
+  const _CourseBuildContext({
+    required this.sections,
+    required this.semesterWeekCount,
+  });
+}

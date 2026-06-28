@@ -23,6 +23,7 @@ import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
+import 'lan_edit_screen.dart';
 import 'feedback_screen.dart';
 import 'live_settings_subpages.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
@@ -95,6 +96,16 @@ class TimetableSettingsScreen extends StatelessWidget {
             MaterialPageRoute(
               settings: const RouteSettings(name: '/settings/data-transfer'),
               builder: (_) => const DataTransferScreen(),
+            ),
+          );
+        }
+
+        void openLanEdit() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/lan-edit'),
+              builder: (_) => const LanEditScreen(),
             ),
           );
         }
@@ -264,6 +275,12 @@ class TimetableSettingsScreen extends StatelessWidget {
                       title: l10n.dataTransferEntryTitle,
                       subtitle: l10n.dataTransferEntrySubtitle,
                       onTap: openDataTransfer,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.lan_rounded,
+                      title: l10n.lanEditEntryTitle,
+                      subtitle: l10n.lanEditEntrySubtitle,
+                      onTap: openLanEdit,
                     ),
                   ],
                 ),

@@ -123,6 +123,66 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dataTransferEntrySubtitle => '시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다';
 
   @override
+  String get lanEditEntryTitle => 'LAN 편집';
+
+  @override
+  String get lanEditEntrySubtitle => 'PC 브라우저에서 현재 시간표 편집';
+
+  @override
+  String get lanEditTitle => 'LAN 편집';
+
+  @override
+  String get lanEditIntro =>
+      '활성화하면 같은 Wi-Fi 또는 핫스팟의 PC 브라우저에서 현재 시간표를 편집할 수 있습니다.';
+
+  @override
+  String get lanEditStart => 'LAN 편집 시작';
+
+  @override
+  String get lanEditStop => '중지';
+
+  @override
+  String get lanEditStatusRunning => 'LAN 편집 세션 진행 중';
+
+  @override
+  String get lanEditAddressLabel => '접속 주소';
+
+  @override
+  String get lanEditAddressUnavailable => 'LAN IP를 찾을 수 없습니다';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => '포트';
+
+  @override
+  String get lanEditCopyAddress => '주소 복사';
+
+  @override
+  String get lanEditCopied => '주소가 복사되었습니다';
+
+  @override
+  String get lanEditHotspotHint => '기숙사 Wi-Fi에서 연결되지 않으면 휴대폰 핫스팟을 사용해 보세요.';
+
+  @override
+  String get lanEditStartFailed => '시작 실패';
+
+  @override
+  String get lanEditConnectedClientsLabel => '연결됨';
+
+  @override
+  String get lanEditConnectedClientsNone => '없음';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    return '$count대';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => '최근 활동';
+
+  @override
   String get aboutSupportSectionTitle => '앱 정보 및 지원';
 
   @override
@@ -206,6 +266,58 @@ class AppLocalizationsKo extends AppLocalizations {
   @override
   String get importMethodWarehouseFooter =>
       '진입 후 학교와 어댑터를 선택하면 교무 웹페이지를 열어 로그인 후 가져오기를 실행할 수 있습니다.';
+
+  @override
+  String get importMethodSpreadsheetTitle => '표 가져오기';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      'Excel/WPS에서 경량섬 시간표 템플릿을 작성한 뒤 가져오기. .ics 사전보내기 불필요.';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      '.csv와 .xlsx 지원. 템플릿을 다운로드해 작성 후 파일을 선택하세요.';
+
+  @override
+  String get spreadsheetImportTitle => '표 가져오기';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      '경량섬 템플릿은 헤더로 열을 인식합니다. 필수: 과목명, 요일, 시작/종료 절, 주차. 나머지는 선택. 전체 템플릿을 받거나 필수 열만 유지해도 됩니다. WakeUp 7열 형식도 지원.';
+
+  @override
+  String get spreadsheetStep1Subtitle =>
+      '전체 템플릿을 받아 작성하거나, 필수 열과 上课周(또는 시작周+结束周)만 남겨 최소 가져오기.';
+
+  @override
+  String get spreadsheetStep2Subtitle => '작성 후 .csv로 저장하거나 .xlsx를 그대로 사용합니다.';
+
+  @override
+  String get spreadsheetStep3Subtitle =>
+      '파일을 선택해 가져옵니다. 인식 경고가 있으면 먼저 표시한 뒤 추가 또는 대체를 선택합니다.';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix => '.csv와 .xlsx 지원(첫 번째 시트만).';
+
+  @override
+  String get chooseSpreadsheetFileAction => '표 파일 선택';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => '경량섬 시간표 템플릿 다운로드';
+
+  @override
+  String get spreadsheetImportWarningsTitle => '가져오기 알림';
+
+  @override
+  String get spreadsheetImportWarningsMessage =>
+      '다음 행은 가져오지 못했습니다. 나머지 수업은 계속할 수 있습니다:';
+
+  @override
+  String get spreadsheetImportWarningsContinue => '가져오기 계속';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      '표 형식을 인식하지 못했습니다. 경량섬 시간표 템플릿을 사용하세요. WakeUp 등 동일 열 형식도 지원합니다.';
 
   @override
   String get icsImportTitle => '.ics 캘린더 가져오기';

@@ -17,7 +17,9 @@ import 'screens/course_import_screen.dart';
 import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
+import 'screens/lan_edit_screen.dart';
 import 'services/app_log_service.dart';
+import 'services/lan_edit_foreground_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
@@ -342,6 +344,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       unawaited(AppLogService.instance.updatePrivacyAccepted(true));
       unawaited(UmengAnalyticsService.initializeIfNeeded());
       unawaited(_checkPendingIcsIntent());
+      unawaited(_installLanEditNotificationHandler());
       unawaited(
         AppLogService.instance.info(
           'startup_flow_completed',
@@ -380,6 +383,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
 
     unawaited(_checkPendingIcsIntent());
+    unawaited(_installLanEditNotificationHandler());
     unawaited(
       AppLogService.instance.info(
         'startup_flow_completed',
@@ -571,6 +575,43 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       }
     } catch (e) {
       // Silently ignore - this is a non-critical feature
+    }
+  }
+
+  Future<void> _installLanEditNotificationHandler() async {
+    await LanEditForegroundBridge.installNotificationTapHandler();
+    LanEditForegroundBridge.onNotificationTapped = () {
+      unawaited(_openLanEditFromNotification());
+    };
+    await _openLanEditFromNotification();
+  }
+
+  Future<void> _openLanEditFromNotification() async {
+    try {
+      final pending = await LanEditForegroundBridge.consumePendingOpen();
+      if (!pending || !mounted) {
+        return;
+      }
+      final navigator = Navigator.of(context);
+      var alreadyOnLanEdit = false;
+      navigator.popUntil((route) {
+        if (route.settings.name == '/settings/lan-edit') {
+          alreadyOnLanEdit = true;
+          return true;
+        }
+        return route.isFirst;
+      });
+      if (alreadyOnLanEdit) {
+        return;
+      }
+      await navigator.push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/settings/lan-edit'),
+          builder: (_) => const LanEditScreen(),
+        ),
+      );
+    } catch (_) {
+      // Non-critical navigation helper.
     }
   }
 

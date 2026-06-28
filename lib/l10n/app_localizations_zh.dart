@@ -122,6 +122,66 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataTransferEntrySubtitle => '导出完整课表文件，给别人直接导入使用';
 
   @override
+  String get lanEditEntryTitle => '局域网编辑';
+
+  @override
+  String get lanEditEntrySubtitle => '在电脑浏览器中编辑当前课表';
+
+  @override
+  String get lanEditTitle => '局域网编辑';
+
+  @override
+  String get lanEditIntro =>
+      '开启后，同一 WiFi 或手机热点下的电脑可通过浏览器编辑当前课表。数据不会上传云端，关闭后即停止访问。';
+
+  @override
+  String get lanEditStart => '开启局域网编辑';
+
+  @override
+  String get lanEditStop => '停止';
+
+  @override
+  String get lanEditStatusRunning => '编辑会话进行中';
+
+  @override
+  String get lanEditAddressLabel => '访问地址';
+
+  @override
+  String get lanEditAddressUnavailable => '未检测到局域网 IP，请确认已连接 WiFi 或已开启热点';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => '端口';
+
+  @override
+  String get lanEditCopyAddress => '复制地址';
+
+  @override
+  String get lanEditCopied => '地址已复制';
+
+  @override
+  String get lanEditHotspotHint => '如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。';
+
+  @override
+  String get lanEditStartFailed => '启动失败';
+
+  @override
+  String get lanEditConnectedClientsLabel => '已连接';
+
+  @override
+  String get lanEditConnectedClientsNone => '暂无';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    return '$count 台';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => '最近活动';
+
+  @override
   String get aboutSupportSectionTitle => '关于与支持';
 
   @override
@@ -200,6 +260,55 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get importMethodWarehouseFooter => '进入后选择学校和适配器，可直接打开教务网页登录并执行导入。';
+
+  @override
+  String get importMethodSpreadsheetTitle => '表格导入';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      '适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics。';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      '支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入。';
+
+  @override
+  String get spreadsheetImportTitle => '表格导入';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      '轻屿模板按表头识别列：必填列为课程名、星期、开始节、结束节及周次；其余列为可选。可下载完整模板，也可只保留必要列。也兼容 WakeUp 7 列格式。';
+
+  @override
+  String get spreadsheetStep1Subtitle => '下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入。';
+
+  @override
+  String get spreadsheetStep2Subtitle => '填写完成后另存为 .csv 或直接保留 .xlsx。';
+
+  @override
+  String get spreadsheetStep3Subtitle => '选择文件导入；如有识别提醒会先展示，再选择追加或替换。';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix => '支持 .csv 与 .xlsx（仅读取第一个工作表）。';
+
+  @override
+  String get chooseSpreadsheetFileAction => '选择表格文件';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => '下载轻屿课表模板';
+
+  @override
+  String get spreadsheetImportWarningsTitle => '导入提醒';
+
+  @override
+  String get spreadsheetImportWarningsMessage => '以下行未能导入，其余课程可继续：';
+
+  @override
+  String get spreadsheetImportWarningsContinue => '继续导入';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      '未识别表格格式，请使用轻屿课表模板；也兼容 WakeUp 等同列格式';
 
   @override
   String get icsImportTitle => '.ics 日历导入';
@@ -4743,6 +4852,66 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get lanEditEntryTitle => '局域網編輯';
+
+  @override
+  String get lanEditEntrySubtitle => '在電腦瀏覽器中編輯當前課表';
+
+  @override
+  String get lanEditTitle => '局域網編輯';
+
+  @override
+  String get lanEditIntro =>
+      '開啟後，同一 Wi-Fi 或手機熱點下的電腦可透過瀏覽器編輯當前課表。資料不會上傳雲端，關閉後即停止存取。';
+
+  @override
+  String get lanEditStart => '開啟局域網編輯';
+
+  @override
+  String get lanEditStop => '停止';
+
+  @override
+  String get lanEditStatusRunning => '編輯會話進行中';
+
+  @override
+  String get lanEditAddressLabel => '存取網址';
+
+  @override
+  String get lanEditAddressUnavailable => '未偵測到局域網 IP，請確認已連接 Wi-Fi 或已開啟熱點';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => '連接埠';
+
+  @override
+  String get lanEditCopyAddress => '複製網址';
+
+  @override
+  String get lanEditCopied => '網址已複製';
+
+  @override
+  String get lanEditHotspotHint => '若宿舍 Wi-Fi 無法存取，請嘗試用手機開熱點，再讓電腦連接該熱點。';
+
+  @override
+  String get lanEditStartFailed => '啟動失敗';
+
+  @override
+  String get lanEditConnectedClientsLabel => '已連接';
+
+  @override
+  String get lanEditConnectedClientsNone => '暫無';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    return '$count 台';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => '最近活動';
+
+  @override
   String get aboutSupportSectionTitle => '關於與支持';
 
   @override
@@ -4821,6 +4990,55 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入。';
+
+  @override
+  String get importMethodSpreadsheetTitle => '表格匯入';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      '適合用 Excel/WPS 填寫輕嶼課表模板後匯入，無需先匯出 .ics。';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      '支持 .csv 與 .xlsx，可下載官方模板填寫後選擇檔案匯入。';
+
+  @override
+  String get spreadsheetImportTitle => '表格匯入';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      '輕嶼模板依表頭辨識欄位：必填為課程名、星期、開始節、結束節及週次；其餘為可選。可下載完整模板，或只保留必要欄。亦相容 WakeUp 7 欄格式。';
+
+  @override
+  String get spreadsheetStep1Subtitle => '下載完整模板填寫，或只保留必填欄與上課週（或開始週+結束週）做最小匯入。';
+
+  @override
+  String get spreadsheetStep2Subtitle => '填寫完成後另存為 .csv 或直接保留 .xlsx。';
+
+  @override
+  String get spreadsheetStep3Subtitle => '選擇檔案匯入；如有識別提醒會先展示，再選擇追加或替換。';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix => '支持 .csv 與 .xlsx（僅讀取第一個工作表）。';
+
+  @override
+  String get chooseSpreadsheetFileAction => '選擇表格檔案';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => '下載輕嶼課表模板';
+
+  @override
+  String get spreadsheetImportWarningsTitle => '匯入提醒';
+
+  @override
+  String get spreadsheetImportWarningsMessage => '以下行未能匯入，其餘課程可繼續：';
+
+  @override
+  String get spreadsheetImportWarningsContinue => '繼續匯入';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      '未識別表格格式，請使用輕嶼課表模板；也相容 WakeUp 等同列格式';
 
   @override
   String get icsImportTitle => '.ics 日歷匯入';
@@ -9365,6 +9583,66 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
 
   @override
+  String get lanEditEntryTitle => '區域網路編輯';
+
+  @override
+  String get lanEditEntrySubtitle => '在電腦瀏覽器中編輯目前課表';
+
+  @override
+  String get lanEditTitle => '區域網路編輯';
+
+  @override
+  String get lanEditIntro =>
+      '開啟後，同一 Wi-Fi 或手機熱點下的電腦可透過瀏覽器編輯目前課表。資料不會上傳雲端，關閉後即停止存取。';
+
+  @override
+  String get lanEditStart => '開啟區域網路編輯';
+
+  @override
+  String get lanEditStop => '停止';
+
+  @override
+  String get lanEditStatusRunning => '編輯工作階段進行中';
+
+  @override
+  String get lanEditAddressLabel => '存取網址';
+
+  @override
+  String get lanEditAddressUnavailable => '未偵測到區域網路 IP，請確認已連接 Wi-Fi 或已開啟熱點';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => '連接埠';
+
+  @override
+  String get lanEditCopyAddress => '複製網址';
+
+  @override
+  String get lanEditCopied => '網址已複製';
+
+  @override
+  String get lanEditHotspotHint => '若宿舍 Wi-Fi 無法存取，請嘗試用手機開熱點，再讓電腦連接該熱點。';
+
+  @override
+  String get lanEditStartFailed => '啟動失敗';
+
+  @override
+  String get lanEditConnectedClientsLabel => '已連接';
+
+  @override
+  String get lanEditConnectedClientsNone => '暫無';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    return '$count 台';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => '最近活動';
+
+  @override
   String get aboutSupportSectionTitle => '關於與支持';
 
   @override
@@ -9443,6 +9721,55 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get importMethodWarehouseFooter => '進入後選擇學校和適配器，可直接打開教務網頁登錄並執行匯入。';
+
+  @override
+  String get importMethodSpreadsheetTitle => '表格匯入';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      '適合用 Excel/WPS 填寫輕嶼課表模板後匯入，無需先匯出 .ics。';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      '支持 .csv 與 .xlsx，可下載官方模板填寫後選擇檔案匯入。';
+
+  @override
+  String get spreadsheetImportTitle => '表格匯入';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      '輕嶼模板依表頭辨識欄位：必填為課程名、星期、開始節、結束節及週次；其餘為可選。可下載完整模板，或只保留必要欄。亦相容 WakeUp 7 欄格式。';
+
+  @override
+  String get spreadsheetStep1Subtitle => '下載完整模板填寫，或只保留必填欄與上課週（或開始週+結束週）做最小匯入。';
+
+  @override
+  String get spreadsheetStep2Subtitle => '填寫完成後另存為 .csv 或直接保留 .xlsx。';
+
+  @override
+  String get spreadsheetStep3Subtitle => '選擇檔案匯入；如有識別提醒會先展示，再選擇追加或替換。';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix => '支持 .csv 與 .xlsx（僅讀取第一個工作表）。';
+
+  @override
+  String get chooseSpreadsheetFileAction => '選擇表格檔案';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => '下載輕嶼課表模板';
+
+  @override
+  String get spreadsheetImportWarningsTitle => '匯入提醒';
+
+  @override
+  String get spreadsheetImportWarningsMessage => '以下行未能匯入，其餘課程可繼續：';
+
+  @override
+  String get spreadsheetImportWarningsContinue => '繼續匯入';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      '未識別表格格式，請使用輕嶼課表模板；也相容 WakeUp 等同列格式';
 
   @override
   String get icsImportTitle => '.ics 日歷匯入';

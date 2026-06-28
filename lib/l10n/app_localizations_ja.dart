@@ -123,6 +123,67 @@ class AppLocalizationsJa extends AppLocalizations {
   String get dataTransferEntrySubtitle => '時間割ファイルをエクスポートして、他の人が直接インポート可能';
 
   @override
+  String get lanEditEntryTitle => 'LAN編集';
+
+  @override
+  String get lanEditEntrySubtitle => 'PCブラウザから現在の時間割を編集';
+
+  @override
+  String get lanEditTitle => 'LAN編集';
+
+  @override
+  String get lanEditIntro =>
+      '有効にすると、同じWi-Fiまたはテザリング中のPCブラウザから現在の時間割を編集できます。データはクラウドに送信されず、停止するとアクセスできなくなります。';
+
+  @override
+  String get lanEditStart => 'LAN編集を開始';
+
+  @override
+  String get lanEditStop => '停止';
+
+  @override
+  String get lanEditStatusRunning => 'LAN編集セッション実行中';
+
+  @override
+  String get lanEditAddressLabel => 'アクセスURL';
+
+  @override
+  String get lanEditAddressUnavailable =>
+      'LAN IPが見つかりません。Wi-Fiまたはテザリングを確認してください';
+
+  @override
+  String get lanEditPinLabel => 'PIN';
+
+  @override
+  String get lanEditPortLabel => 'ポート';
+
+  @override
+  String get lanEditCopyAddress => 'URLをコピー';
+
+  @override
+  String get lanEditCopied => 'コピーしました';
+
+  @override
+  String get lanEditHotspotHint => '寮Wi-Fiで接続できない場合は、スマホのテザリングを試してください。';
+
+  @override
+  String get lanEditStartFailed => '開始に失敗しました';
+
+  @override
+  String get lanEditConnectedClientsLabel => '接続中';
+
+  @override
+  String get lanEditConnectedClientsNone => 'なし';
+
+  @override
+  String lanEditConnectedClientsValue(int count) {
+    return '$count 台';
+  }
+
+  @override
+  String get lanEditLastActivityLabel => '最終アクティビティ';
+
+  @override
   String get aboutSupportSectionTitle => 'アプリ情報とサポート';
 
   @override
@@ -203,6 +264,57 @@ class AppLocalizationsJa extends AppLocalizations {
   @override
   String get importMethodWarehouseFooter =>
       '進入後、学校とアダプタを選択し、教務Webページでログインしてインポートを実行。';
+
+  @override
+  String get importMethodSpreadsheetTitle => '表インポート';
+
+  @override
+  String get importMethodSpreadsheetSubtitle =>
+      'Excel/WPSで軽嶼課表テンプレートを記入してインポート。.icsの事前エクスポートは不要。';
+
+  @override
+  String get importMethodSpreadsheetFooter =>
+      '.csvと.xlsxに対応。テンプレートをダウンロードして記入後、ファイルを選択。';
+
+  @override
+  String get spreadsheetImportTitle => '表インポート';
+
+  @override
+  String get spreadsheetScenarioIntro =>
+      '軽嶼テンプレートはヘッダーで列を識別。必須は科目名・曜日・開始節・終了節・週次、他は任意。完全版をDLするか、必須列のみでも可。WakeUp 7列形式にも対応。';
+
+  @override
+  String get spreadsheetStep1Subtitle =>
+      '完全テンプレートをDLして記入するか、必須列と上课周（または開始週+終了週）だけで最小インポート。';
+
+  @override
+  String get spreadsheetStep2Subtitle => '記入後、.csvとして保存するか.xlsxのまま使用。';
+
+  @override
+  String get spreadsheetStep3Subtitle =>
+      'ファイルを選択してインポート。警告がある場合は先に表示し、追加または置換を選択。';
+
+  @override
+  String get spreadsheetSupportedFilesSuffix => '.csvと.xlsxに対応（最初のシートのみ）。';
+
+  @override
+  String get chooseSpreadsheetFileAction => '表ファイルを選択';
+
+  @override
+  String get downloadSpreadsheetTemplateAction => '軽嶼課表テンプレートをダウンロード';
+
+  @override
+  String get spreadsheetImportWarningsTitle => 'インポート警告';
+
+  @override
+  String get spreadsheetImportWarningsMessage => '以下の行はスキップされました。残りの授業は続行できます：';
+
+  @override
+  String get spreadsheetImportWarningsContinue => 'インポートを続行';
+
+  @override
+  String get spreadsheetFormatUnrecognized =>
+      '表形式を認識できません。軽嶼課表テンプレートを使用してください。WakeUpなど同列形式にも対応。';
 
   @override
   String get icsImportTitle => '.icsカレンダーインポート';

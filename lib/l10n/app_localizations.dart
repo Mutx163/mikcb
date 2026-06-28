@@ -326,6 +326,120 @@ abstract class AppLocalizations {
   /// **'导出完整课表文件，给别人直接导入使用'**
   String get dataTransferEntrySubtitle;
 
+  /// No description provided for @lanEditEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑'**
+  String get lanEditEntryTitle;
+
+  /// No description provided for @lanEditEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在电脑浏览器中编辑当前课表'**
+  String get lanEditEntrySubtitle;
+
+  /// No description provided for @lanEditTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑'**
+  String get lanEditTitle;
+
+  /// No description provided for @lanEditIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，同一 WiFi 或手机热点下的电脑可通过浏览器编辑当前课表。数据不会上传云端，关闭后即停止访问。'**
+  String get lanEditIntro;
+
+  /// No description provided for @lanEditStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启局域网编辑'**
+  String get lanEditStart;
+
+  /// No description provided for @lanEditStop.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止'**
+  String get lanEditStop;
+
+  /// No description provided for @lanEditStatusRunning.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑会话进行中'**
+  String get lanEditStatusRunning;
+
+  /// No description provided for @lanEditAddressLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'访问地址'**
+  String get lanEditAddressLabel;
+
+  /// No description provided for @lanEditAddressUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'未检测到局域网 IP，请确认已连接 WiFi 或已开启热点'**
+  String get lanEditAddressUnavailable;
+
+  /// No description provided for @lanEditPinLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'PIN'**
+  String get lanEditPinLabel;
+
+  /// No description provided for @lanEditPortLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'端口'**
+  String get lanEditPortLabel;
+
+  /// No description provided for @lanEditCopyAddress.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制地址'**
+  String get lanEditCopyAddress;
+
+  /// No description provided for @lanEditCopied.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址已复制'**
+  String get lanEditCopied;
+
+  /// No description provided for @lanEditHotspotHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。'**
+  String get lanEditHotspotHint;
+
+  /// No description provided for @lanEditStartFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动失败'**
+  String get lanEditStartFailed;
+
+  /// No description provided for @lanEditConnectedClientsLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已连接'**
+  String get lanEditConnectedClientsLabel;
+
+  /// No description provided for @lanEditConnectedClientsNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无'**
+  String get lanEditConnectedClientsNone;
+
+  /// No description provided for @lanEditConnectedClientsValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 台'**
+  String lanEditConnectedClientsValue(int count);
+
+  /// No description provided for @lanEditLastActivityLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近活动'**
+  String get lanEditLastActivityLabel;
+
   /// No description provided for @aboutSupportSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -475,6 +589,96 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'进入后选择学校和适配器，可直接打开教务网页登录并执行导入。'**
   String get importMethodWarehouseFooter;
+
+  /// No description provided for @importMethodSpreadsheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'表格导入'**
+  String get importMethodSpreadsheetTitle;
+
+  /// No description provided for @importMethodSpreadsheetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'适合用 Excel/WPS 填写轻屿课表模板后导入，无需先导出 .ics。'**
+  String get importMethodSpreadsheetSubtitle;
+
+  /// No description provided for @importMethodSpreadsheetFooter.
+  ///
+  /// In zh, this message translates to:
+  /// **'支持 .csv 与 .xlsx，可下载官方模板填写后选择文件导入。'**
+  String get importMethodSpreadsheetFooter;
+
+  /// No description provided for @spreadsheetImportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'表格导入'**
+  String get spreadsheetImportTitle;
+
+  /// No description provided for @spreadsheetScenarioIntro.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿模板按表头识别列：必填列为课程名、星期、开始节、结束节及周次；其余列为可选。可下载完整模板，也可只保留必要列。也兼容 WakeUp 7 列格式。'**
+  String get spreadsheetScenarioIntro;
+
+  /// No description provided for @spreadsheetStep1Subtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载完整模板填写，或只保留必填列与上课周（或开始周+结束周）做最小导入。'**
+  String get spreadsheetStep1Subtitle;
+
+  /// No description provided for @spreadsheetStep2Subtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写完成后另存为 .csv 或直接保留 .xlsx。'**
+  String get spreadsheetStep2Subtitle;
+
+  /// No description provided for @spreadsheetStep3Subtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择文件导入；如有识别提醒会先展示，再选择追加或替换。'**
+  String get spreadsheetStep3Subtitle;
+
+  /// No description provided for @spreadsheetSupportedFilesSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **'支持 .csv 与 .xlsx（仅读取第一个工作表）。'**
+  String get spreadsheetSupportedFilesSuffix;
+
+  /// No description provided for @chooseSpreadsheetFileAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择表格文件'**
+  String get chooseSpreadsheetFileAction;
+
+  /// No description provided for @downloadSpreadsheetTemplateAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载轻屿课表模板'**
+  String get downloadSpreadsheetTemplateAction;
+
+  /// No description provided for @spreadsheetImportWarningsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入提醒'**
+  String get spreadsheetImportWarningsTitle;
+
+  /// No description provided for @spreadsheetImportWarningsMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'以下行未能导入，其余课程可继续：'**
+  String get spreadsheetImportWarningsMessage;
+
+  /// No description provided for @spreadsheetImportWarningsContinue.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续导入'**
+  String get spreadsheetImportWarningsContinue;
+
+  /// No description provided for @spreadsheetFormatUnrecognized.
+  ///
+  /// In zh, this message translates to:
+  /// **'未识别表格格式，请使用轻屿课表模板；也兼容 WakeUp 等同列格式'**
+  String get spreadsheetFormatUnrecognized;
 
   /// No description provided for @icsImportTitle.
   ///
