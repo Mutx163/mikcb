@@ -59,6 +59,7 @@
   "lanEditCopyAddress": "주소 복사",
   "lanEditCopied": "주소가 복사되었습니다",
   "lanEditHotspotHint": "기숙사 Wi-Fi에서 연결되지 않으면 휴대폰 핫스팟을 사용해 보세요.",
+  "lanEditQrHint": "같은 LAN의 PC 브라우저로 QR 코드를 스캔하세요(PIN 포함 링크).",
   "lanEditStartFailed": "시작 실패",
   "lanEditConnectedClientsLabel": "연결됨",
   "lanEditConnectedClientsNone": "없음",

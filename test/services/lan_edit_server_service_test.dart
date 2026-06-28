@@ -8,6 +8,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/services/lan_edit_host.dart';
 import 'package:university_timetable/services/lan_edit_server_service.dart';
 import 'package:university_timetable/services/lan_edit_session.dart';
+import 'package:university_timetable/services/spreadsheet_import_service.dart';
 
 class _FakeLanEditHost implements LanEditHost {
   @override
@@ -84,6 +85,33 @@ class _FakeLanEditHost implements LanEditHost {
   Future<void> importProfileBackupJson(String content) async {}
 
   @override
+  Future<int> importMergeBackupJson(String content) async {
+    final decoded = jsonDecode(content) as Map<String, dynamic>;
+    final raw = decoded['courses'] as List<dynamic>? ?? [];
+    for (final item in raw) {
+      if (item is Map<String, dynamic>) {
+        courses.add(Course.fromJson(item));
+      } else if (item is Map) {
+        courses.add(Course.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+    return raw.length;
+  }
+
+  @override
+  Future<int> deleteCoursesBatch(List<String> courseIds) async {
+    var removed = 0;
+    for (final id in courseIds) {
+      final before = courses.length;
+      courses.removeWhere((course) => course.id == id);
+      if (courses.length < before) {
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+
+  @override
   Map<String, dynamic> buildMetaJson() => {
         'profileName': activeProfileName,
         'currentWeek': currentWeek,
@@ -95,6 +123,29 @@ class _FakeLanEditHost implements LanEditHost {
 
   @override
   int get semesterWeekCount => settings.semesterWeekCount;
+
+  @override
+  TimetableSettings get timetableSettings => settings;
+
+  @override
+  Future<int> importSpreadsheetCourses(
+    SpreadsheetImportResult result, {
+    required bool replaceExisting,
+  }) async {
+    if (replaceExisting) {
+      courses
+        ..clear()
+        ..addAll(result.courses);
+    } else {
+      courses.addAll(result.courses);
+    }
+    return result.courses.length;
+  }
+
+  @override
+  Future<void> setCurrentWeek(int week) async {
+    currentWeek = week;
+  }
 }
 
 Future<_HttpClientResponse> _request({
@@ -500,6 +551,296 @@ void main() {
       );
       expect(response.statusCode, 204);
       expect(response.body, isEmpty);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('spreadsheet import accepts mikcb CSV', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([456789, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    const csv = '''# mikcb-course-import-v1
+课程名,星期,开始节,结束节,上课周
+测试课,2,1,2,1-4
+''';
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/import/spreadsheet',
+        token: token,
+        body: jsonEncode({
+          'fileName': 'courses.csv',
+          'contentBase64': base64Encode(utf8.encode(csv)),
+          'replaceExisting': true,
+        }),
+      );
+      expect(response.statusCode, 200);
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      expect(body['importedCount'], 1);
+      expect(host.courses, hasLength(1));
+      expect(host.courses.single.name, '测试课');
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('week expression parse returns weeks', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([567890, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/week-expression/parse',
+        token: token,
+        body: jsonEncode({
+          'expression': '1-3、5',
+          'itemName': '高等数学',
+        }),
+      );
+      expect(response.statusCode, 200);
+      final weeks =
+          (jsonDecode(response.body) as Map<String, dynamic>)['weeks'] as List;
+      expect(weeks, [1, 2, 3, 5]);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('PATCH session updates current week', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([678012, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'PATCH',
+        path: '/api/v1/session',
+        token: token,
+        body: jsonEncode({'currentWeek': 7}),
+      );
+      expect(response.statusCode, 200);
+      expect(host.currentWeek, 7);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('course group save applies weekExpression', () async {
+    final host = _FakeLanEditHost();
+    final session = LanEditSession.create(
+      random: _SequenceRandom([789123, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'PUT',
+        path: '/api/v1/courses/group',
+        token: token,
+        body: jsonEncode({
+          'slots': [
+            {
+              'name': '表达式课',
+              'dayOfWeek': 1,
+              'startSection': 1,
+              'endSection': 2,
+              'weekExpression': '1-2、4',
+            },
+          ],
+        }),
+      );
+      expect(response.statusCode, 200);
+      expect(host.courses.single.customWeeks, [1, 2, 4]);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('merge import adds courses without clearing existing', () async {
+    final host = _FakeLanEditHost();
+    host.courses.add(
+      Course(
+        id: 'keep-me',
+        name: '保留课',
+        teacher: '',
+        location: '',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 1,
+        startTime: '08:00',
+        endTime: '08:45',
+        color: '#2196F3',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+    final session = LanEditSession.create(
+      random: _SequenceRandom([890234, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final mergePayload = jsonEncode({
+        'app': 'mikcb',
+        'schemaVersion': 1,
+        'courses': [
+          {
+            'id': 'new-1',
+            'name': '合并新课',
+            'teacher': '',
+            'location': '',
+            'dayOfWeek': 2,
+            'startSection': 1,
+            'endSection': 2,
+            'startTime': '08:00',
+            'endTime': '09:30',
+            'color': '#4CAF50',
+            'startWeek': 1,
+            'endWeek': 16,
+          },
+        ],
+      });
+
+      final response = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/import/merge',
+        token: token,
+        body: mergePayload,
+      );
+      expect(response.statusCode, 200);
+      expect(host.courses, hasLength(2));
+      expect(host.courses.any((c) => c.id == 'keep-me'), isTrue);
+      expect(host.courses.any((c) => c.name == '合并新课'), isTrue);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('batch delete removes multiple courses', () async {
+    final host = _FakeLanEditHost();
+    host.courses.addAll([
+      Course(
+        id: 'a',
+        name: 'A',
+        teacher: '',
+        location: '',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 1,
+        startTime: '08:00',
+        endTime: '08:45',
+        color: '#2196F3',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+      Course(
+        id: 'b',
+        name: 'B',
+        teacher: '',
+        location: '',
+        dayOfWeek: 2,
+        startSection: 1,
+        endSection: 1,
+        startTime: '08:00',
+        endTime: '08:45',
+        color: '#2196F3',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    ]);
+    final session = LanEditSession.create(
+      random: _SequenceRandom([901345, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/courses/batch-delete',
+        token: token,
+        body: jsonEncode({'ids': ['a', 'b']}),
+      );
+      expect(response.statusCode, 200);
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      expect(body['deletedCount'], 2);
+      expect(host.courses, isEmpty);
     } finally {
       await server.stop();
     }

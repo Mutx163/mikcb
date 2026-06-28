@@ -1181,6 +1181,37 @@ void main() {
     expect(provider.settings.semesterWeekCount, 18);
   });
 
+  test('import parsed courses accepts spreadsheet source', () async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    final count = await provider.importParsedCourses(
+      [
+        Course(
+          id: 'sheet-course',
+          name: '表格导入课',
+          teacher: '赵老师',
+          location: 'D101',
+          dayOfWeek: 2,
+          startSection: 1,
+          endSection: 2,
+          startTime: '08:00',
+          endTime: '09:40',
+          customWeeks: const [1, 2, 3, 4],
+        ),
+      ],
+      replaceExisting: true,
+      source: 'spreadsheet',
+    );
+
+    expect(count, 1);
+    expect(provider.courses, hasLength(1));
+    expect(provider.courses.single.name, '表格导入课');
+  });
+
   test(
       'import parsed courses updates current timetable by replacement while keeping local metadata',
       () async {

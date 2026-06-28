@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -217,6 +218,31 @@ class _LanEditScreenState extends State<LanEditScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
+                    if (_lanAddress != null) ...[
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: theme.colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: _lanAddress!,
+                            version: QrVersions.auto,
+                            size: 200,
+                            gapless: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.lanEditQrHint,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     _InfoRow(
                       label: l10n.lanEditAddressLabel,
                       value: _lanAddress ?? l10n.lanEditAddressUnavailable,

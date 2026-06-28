@@ -58,6 +58,7 @@
   "lanEditCopyAddress": "複製網址",
   "lanEditCopied": "網址已複製",
   "lanEditHotspotHint": "若宿舍 Wi-Fi 無法存取，請嘗試用手機開熱點，再讓電腦連接該熱點。",
+  "lanEditQrHint": "電腦瀏覽器掃描上方二維碼可開啟控制台（連結已含 PIN，需同一區域網路）。",
   "lanEditStartFailed": "啟動失敗",
   "lanEditConnectedClientsLabel": "已連接",
   "lanEditConnectedClientsNone": "暫無",

@@ -21,14 +21,21 @@ class LanEditForegroundBridge {
     });
   }
 
-  static Future<void> start() async {
+  /// Returns `true` when the native foreground service started successfully.
+  static Future<bool> start() async {
     if (!Platform.isAndroid) {
-      return;
+      return true;
     }
     try {
-      await _channel.invokeMethod('startLanEditForeground');
+      await _channel.invokeMethod<void>('startLanEditForeground');
+      return true;
+    } on PlatformException catch (e) {
+      if (e.code == 'START_FOREGROUND_FAILED') {
+        return false;
+      }
+      return false;
     } catch (_) {
-      // Non-fatal on unsupported platforms or permission issues.
+      return false;
     }
   }
 

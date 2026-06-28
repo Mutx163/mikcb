@@ -9,6 +9,8 @@ import 'lan_edit_host.dart';
 import 'lan_edit_network_utils.dart';
 import 'lan_edit_provider_host.dart';
 import 'lan_edit_session.dart';
+import 'spreadsheet_import_service.dart';
+import 'week_expression_parser.dart';
 
 class LanEditApiHandlers {
   final LanEditHost host;
@@ -53,6 +55,31 @@ class LanEditApiHandlers {
           'serverTime': DateTime.now().toIso8601String(),
           'expiresAt': session.expiresAt.toIso8601String(),
         });
+        return;
+      }
+
+      if (path == '/api/v1/session' && request.method == 'PATCH') {
+        await _handlePatchSession(request);
+        return;
+      }
+
+      if (path == '/api/v1/import/spreadsheet' && request.method == 'POST') {
+        await _handleSpreadsheetImport(request);
+        return;
+      }
+
+      if (path == '/api/v1/import/merge' && request.method == 'POST') {
+        await _handleMergeImport(request);
+        return;
+      }
+
+      if (path == '/api/v1/courses/batch-delete' && request.method == 'POST') {
+        await _handleBatchDeleteCourses(request);
+        return;
+      }
+
+      if (path == '/api/v1/week-expression/parse' && request.method == 'POST') {
+        await _handleParseWeekExpression(request);
         return;
       }
 
@@ -304,6 +331,13 @@ class LanEditApiHandlers {
           return;
         }
         final slotMap = Map<String, dynamic>.from(item);
+        final courseName =
+            (slotMap['name'] as String?)?.trim() ?? originalName?.trim() ?? '课程';
+        LanEditProviderHost.applyWeekExpressionFields(
+          slotMap,
+          courseName: courseName,
+          semesterWeekCount: context.semesterWeekCount,
+        );
         slots.add(
           LanEditProviderHost.courseFromApiJson(
             slotMap,
@@ -352,6 +386,184 @@ class LanEditApiHandlers {
     final body = await _readBody(request);
     await host.importProfileBackupJson(body);
     await _writeJson(request, 200, {'imported': true});
+  }
+
+  Future<void> _handleMergeImport(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readBody(request);
+      if (body.trim().isEmpty) {
+        await _writeError(request, 400, 'invalid_request', '备份内容不能为空');
+        return;
+      }
+      final count = await host.importMergeBackupJson(body);
+      lanEditAuditInfo(
+        'lan_edit_merge_imported',
+        'LAN edit merge backup imported',
+        extras: {'mergedCourseCount': count},
+      );
+      await _writeJson(request, 200, {'mergedCount': count});
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleBatchDeleteCourses(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final rawIds = body['ids'];
+      if (rawIds is! List || rawIds.isEmpty) {
+        await _writeError(request, 400, 'invalid_request', 'ids 不能为空');
+        return;
+      }
+      final ids = rawIds.map((item) => item.toString()).toList();
+      final deletedCount = await host.deleteCoursesBatch(ids);
+      lanEditAuditInfo(
+        'lan_edit_courses_batch_deleted',
+        'LAN edit courses batch deleted',
+        extras: {'deletedCount': deletedCount, 'requested': ids.length},
+      );
+      await _writeJson(request, 200, {'deletedCount': deletedCount});
+    } on ArgumentError catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message ?? '$error',
+      );
+    }
+  }
+
+  Future<void> _handlePatchSession(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final week = (body['currentWeek'] as num?)?.toInt();
+      if (week == null || week < 1) {
+        await _writeError(request, 400, 'invalid_request', 'currentWeek 无效');
+        return;
+      }
+      if (week > host.semesterWeekCount) {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'currentWeek 不能超过学期周数 ${host.semesterWeekCount}',
+        );
+        return;
+      }
+      await host.setCurrentWeek(week);
+      lanEditAuditInfo(
+        'lan_edit_current_week_set',
+        'LAN edit current week set',
+        extras: {'currentWeek': week},
+      );
+      await _writeJson(request, 200, {'currentWeek': host.currentWeek});
+    } on FormatException catch (error) {
+      await _writeError(request, 400, 'invalid_request', error.message);
+    }
+  }
+
+  Future<void> _handleSpreadsheetImport(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final fileName = body['fileName']?.toString() ?? 'import.csv';
+      final encoded = body['contentBase64']?.toString() ?? '';
+      if (encoded.trim().isEmpty) {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'contentBase64 不能为空',
+        );
+        return;
+      }
+      final replaceExisting = body['replaceExisting'] == true;
+      late final List<int> bytes;
+      try {
+        bytes = base64Decode(encoded);
+      } on FormatException {
+        await _writeError(
+          request,
+          400,
+          'invalid_request',
+          'contentBase64 无效',
+        );
+        return;
+      }
+      final service = SpreadsheetImportService();
+      final result = service.parseBytes(
+        bytes,
+        fileName: fileName,
+        settings: host.timetableSettings,
+      );
+      if (result.courses.isEmpty) {
+        await _writeJson(request, 200, {
+          'importedCount': 0,
+          'warnings': result.warnings,
+          'format': result.format,
+        });
+        return;
+      }
+      final count = await host.importSpreadsheetCourses(
+        result,
+        replaceExisting: replaceExisting,
+      );
+      lanEditAuditInfo(
+        'lan_edit_spreadsheet_imported',
+        'LAN edit spreadsheet imported',
+        extras: {
+          'importedCount': count,
+          'replaceExisting': replaceExisting,
+          'format': result.format,
+        },
+      );
+      await _writeJson(request, 200, {
+        'importedCount': count,
+        'warnings': result.warnings,
+        'format': result.format,
+      });
+    } on FormatException catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message,
+      );
+    }
+  }
+
+  Future<void> _handleParseWeekExpression(HttpRequest request) async {
+    try {
+      await host.ensureInitialized();
+      final body = await _readJsonBody(request);
+      final expression = body['expression']?.toString().trim() ?? '';
+      if (expression.isEmpty) {
+        await _writeError(request, 400, 'invalid_request', 'expression 不能为空');
+        return;
+      }
+      final itemName = body['itemName']?.toString().trim() ?? '课程';
+      final warnings = <String>[];
+      final weeks = WeekExpressionParser.parse(
+        expression,
+        itemName: itemName,
+        semesterWeekCount: host.semesterWeekCount,
+        warnings: warnings,
+      );
+      await _writeJson(request, 200, {
+        'weeks': weeks,
+        'warnings': warnings,
+      });
+    } on FormatException catch (error) {
+      await _writeError(
+        request,
+        400,
+        'invalid_request',
+        error.message,
+      );
+    }
   }
 
   Future<bool> _authorize(HttpRequest request) async {

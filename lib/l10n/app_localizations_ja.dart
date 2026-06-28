@@ -167,6 +167,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get lanEditHotspotHint => '寮Wi-Fiで接続できない場合は、スマホのテザリングを試してください。';
 
   @override
+  String get lanEditQrHint => '同じLANのPCブラウザでQRコードを読み取ってください（PIN付きリンク）。';
+
+  @override
   String get lanEditStartFailed => '開始に失敗しました';
 
   @override

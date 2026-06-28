@@ -59,5 +59,21 @@ void main() {
         throwsA(isA<FormatException>()),
       );
     });
+
+    test('clamps weeks above semesterWeekCount and records warning', () {
+      final warnings = <String>[];
+      expect(
+        WeekExpressionParser.parse(
+          '1-20',
+          itemName: '周数',
+          semesterWeekCount: 16,
+          warnings: warnings,
+        ),
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
+      );
+      expect(warnings, hasLength(1));
+      expect(warnings.first, contains('16'));
+      expect(warnings.first, contains('20'));
+    });
   });
 }

@@ -176,6 +176,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'If dorm Wi-Fi blocks device-to-device access, try phone hotspot instead.';
 
   @override
+  String get lanEditQrHint =>
+      'Scan the QR code on a PC browser on the same LAN (link includes PIN).';
+
+  @override
   String get lanEditStartFailed => 'Failed to start';
 
   @override

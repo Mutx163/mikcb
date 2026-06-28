@@ -65,3 +65,7 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Android unit tests
+        shell: bash
+        run: cd android && ./gradlew :app:testProdDebugUnitTest --no-daemon

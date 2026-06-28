@@ -5,9 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>轻屿课表 · 局域网控制台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%F0%9F%93%85%3C/text%3E%3C/svg%3E" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/style.css" />
 </head>
 <body>
@@ -208,6 +205,9 @@
                 <select id="week-picker" class="select-modern"></select>
               </label>
               <button id="next-week-btn" type="button" class="btn btn-secondary icon-btn" title="下一周">›</button>
+              <button id="sync-phone-week-btn" type="button" class="btn btn-primary btn-small" title="将当前查看周同步为手机 App 的当前周">
+                设为手机当前周
+              </button>
             </div>
             <div class="timetable-tips">
               <span>💡 提示：点击任意空白的课表格子即可在该时段快速添加新课程</span>
@@ -237,9 +237,14 @@
                 <option value="elective">选修课</option>
               </select>
             </div>
-            <button id="btn-add-course" type="button" class="btn btn-primary">
-              <span>➕ 新建课程</span>
-            </button>
+            <div class="library-actions">
+              <button id="btn-batch-delete-courses" type="button" class="btn btn-danger btn-small hidden" disabled>
+                批量删除选中
+              </button>
+              <button id="btn-add-course" type="button" class="btn btn-primary">
+                <span>➕ 新建课程</span>
+              </button>
+            </div>
           </div>
 
           <div class="library-summary-row">
@@ -276,6 +281,29 @@
 
             <div class="panel-card card-half">
               <div class="panel-card-header">
+                <h3>🔀 合并导入备份（仅课程）</h3>
+              </div>
+              <div class="panel-card-body flex-column">
+                <p class="description-text">
+                  上传课表备份 JSON，将其中课程<b>合并</b>进手机当前课表，不会删除已有课程或覆盖学期设置。
+                </p>
+                <div id="merge-drop-zone" class="upload-drop-zone">
+                  <span class="upload-icon">🔀</span>
+                  <p>将备份 JSON 拖到这里，或 <span class="upload-link-text">点击选择</span></p>
+                  <input type="file" id="merge-file-input" accept=".json" class="hidden" />
+                  <span id="merge-selected-filename" class="selected-filename hidden">未选择文件</span>
+                </div>
+                <div class="action-container-full mt-auto">
+                  <button id="btn-import-merge" type="button" class="btn btn-primary btn-large" disabled>
+                    <span>合并导入到手机</span>
+                  </button>
+                </div>
+                <pre id="merge-import-result" class="import-result-log hidden"></pre>
+              </div>
+            </div>
+
+            <div class="panel-card card-half">
+              <div class="panel-card-header">
                 <h3>📥 覆盖性导入备份</h3>
               </div>
               <div class="panel-card-body flex-column">
@@ -300,6 +328,34 @@
                   </button>
                 </div>
               </div>
+            </div>
+          </div>
+
+          <div class="panel-card mt-6">
+            <div class="panel-card-header">
+              <h3>📊 表格导入课程 (CSV / XLSX)</h3>
+            </div>
+            <div class="panel-card-body flex-column">
+              <p class="description-text">
+                上传与 App 相同的轻屿课表模板或 WakeUp 兼容表格，解析后写入手机当前课表。格式说明见仓库 <code>assets/templates/mikcb_course_import_template.csv</code>。
+              </p>
+              <label class="checkbox-container">
+                <input type="checkbox" id="spreadsheet-replace-existing" />
+                <span class="checkbox-checkmark"></span>
+                <span>覆盖现有课程（不勾选则合并导入）</span>
+              </label>
+              <div id="spreadsheet-drop-zone" class="upload-drop-zone">
+                <span class="upload-icon">📊</span>
+                <p>将 CSV / XLSX 拖到这里，或 <span class="upload-link-text">点击选择</span></p>
+                <input type="file" id="spreadsheet-file-input" accept=".csv,.xlsx,text/csv" class="hidden" />
+                <span id="spreadsheet-selected-filename" class="selected-filename hidden">未选择文件</span>
+              </div>
+              <div class="action-container-full mt-auto">
+                <button id="btn-import-spreadsheet" type="button" class="btn btn-primary btn-large" disabled>
+                  <span>导入表格到手机</span>
+                </button>
+              </div>
+              <pre id="spreadsheet-import-result" class="import-result-log hidden"></pre>
             </div>
           </div>
 

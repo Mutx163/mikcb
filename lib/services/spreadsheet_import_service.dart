@@ -144,12 +144,14 @@ class SpreadsheetImportService {
                 row,
                 rowNumber: rowNumber,
                 settings: settings,
+                warnings: warnings,
               )
             : _parseMikcbDataRow(
                 row,
                 rowNumber: rowNumber,
                 settings: settings,
                 columns: columnMap!,
+                warnings: warnings,
               );
         if (course != null) {
           courses.add(course);
@@ -264,6 +266,7 @@ class SpreadsheetImportService {
     List<String> row, {
     required int rowNumber,
     required TimetableSettings settings,
+    required List<String> warnings,
   }) {
     final name = row[0].trim();
     if (name.isEmpty) {
@@ -286,6 +289,8 @@ class SpreadsheetImportService {
     final customWeeks = WeekExpressionParser.parse(
       row[6],
       itemName: '第 $rowNumber 行周数',
+      semesterWeekCount: settings.semesterWeekCount,
+      warnings: warnings,
     );
     if (customWeeks.isEmpty) {
       throw FormatException('周数 不能为空');
@@ -315,6 +320,7 @@ class SpreadsheetImportService {
     required int rowNumber,
     required TimetableSettings settings,
     required _SpreadsheetColumnMap columns,
+    required List<String> warnings,
   }) {
     final nameField =
         columns.indexOf('课程名', const []) != null ? '课程名' : '课程名称';
@@ -370,6 +376,8 @@ class SpreadsheetImportService {
       customWeeks = WeekExpressionParser.parse(
         customWeeksRaw,
         itemName: '第 $rowNumber 行上课周',
+        semesterWeekCount: settings.semesterWeekCount,
+        warnings: warnings,
       );
       if (customWeeks.isEmpty) {
         throw FormatException('上课周 不能为空');
@@ -390,6 +398,18 @@ class SpreadsheetImportService {
       }
       if (endWeek < startWeek) {
         throw FormatException('结束周 不能小于开始周');
+      }
+      if (endWeek > settings.semesterWeekCount) {
+        warnings.add(
+          '第 $rowNumber 行：结束周 $endWeek 超过学期周数 '
+          '${settings.semesterWeekCount}，已调整为 ${settings.semesterWeekCount}',
+        );
+        endWeek = settings.semesterWeekCount;
+      }
+      if (startWeek > settings.semesterWeekCount) {
+        throw FormatException(
+          '开始周 $startWeek 超过学期周数 ${settings.semesterWeekCount}',
+        );
       }
       if (columns.hasColumn('单周', const [])) {
         isOddWeek = _readOptionalBool(columns.cell(row, '单周', const []));
@@ -427,6 +447,8 @@ class SpreadsheetImportService {
         suspendedWeeks = WeekExpressionParser.parse(
           suspendedRaw,
           itemName: '第 $rowNumber 行停课周',
+          semesterWeekCount: settings.semesterWeekCount,
+          warnings: warnings,
         );
       }
     }

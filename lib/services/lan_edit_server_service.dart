@@ -42,7 +42,13 @@ class LanEditServerService {
         unawaited(stop(reason: 'idle_timeout'));
       }
     });
-    unawaited(LanEditForegroundBridge.start());
+    final foregroundStarted = await LanEditForegroundBridge.start();
+    if (!foregroundStarted) {
+      await stop(reason: 'foreground_start_failed');
+      throw StateError(
+        '无法启动前台服务（可能缺少通知或前台服务权限），局域网编辑已停止',
+      );
+    }
     lanEditAuditInfo(
       'lan_edit_session_started',
       'LAN edit session started',

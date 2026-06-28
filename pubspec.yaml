@@ -31,6 +31,7 @@ dependencies:
   flex_color_picker: ^3.7.0
   tdesign_flutter: ^0.2.7
   table_parser: ^1.0.1
+  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:

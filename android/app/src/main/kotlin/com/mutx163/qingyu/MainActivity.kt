@@ -405,8 +405,24 @@ class MainActivity : FlutterActivity() {
             .setMethodCallHandler { call, result ->
                 when (call.method) {
                     "startLanEditForeground" -> {
-                        startLanEditForegroundService()
-                        result.success(true)
+                        try {
+                            startLanEditForegroundService()
+                            result.success(true)
+                        } catch (e: SecurityException) {
+                            Log.e("MainActivity", "LAN edit foreground start denied", e)
+                            result.error(
+                                "START_FOREGROUND_FAILED",
+                                e.message,
+                                e.javaClass.simpleName,
+                            )
+                        } catch (e: IllegalStateException) {
+                            Log.e("MainActivity", "LAN edit foreground start failed", e)
+                            result.error(
+                                "START_FOREGROUND_FAILED",
+                                e.message,
+                                e.javaClass.simpleName,
+                            )
+                        }
                     }
                     "stopLanEditForeground" -> {
                         stopLanEditForegroundService()

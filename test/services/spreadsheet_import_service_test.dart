@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
@@ -109,6 +110,41 @@ void main() {
     expect(course.isOddWeek, isTrue);
     expect(course.isEvenWeek, isFalse);
     expect(course.activeWeeks, [1, 3, 5, 7, 9, 11, 13, 15]);
+  });
+
+  test('parses mikcb official template XLSX sample', () {
+    final bytes = File('test/fixtures/mikcb_course_import_template.xlsx')
+        .readAsBytesSync();
+    final result = service.parseBytes(
+      bytes,
+      fileName: 'courses.xlsx',
+      settings: settings,
+    );
+
+    expect(result.format, SpreadsheetImportService.formatMikcb);
+    expect(result.warnings, isEmpty);
+    expect(result.courses, hasLength(3));
+    expect(result.courses.first.name, '高等数学');
+    expect(result.courses[2].customWeeks, [1, 2, 3, 4, 5, 7, 9, 11]);
+  });
+
+  test('warns when custom weeks exceed semester week count', () {
+    const csv = '''
+课程名,星期,开始节,结束节,上课周
+超限课程,2,1,2,1-20
+''';
+
+    final result = service.parseBytes(
+      utf8.encode(csv),
+      fileName: 'courses.csv',
+      settings: settings.copyWith(semesterWeekCount: 16),
+    );
+
+    expect(result.courses, hasLength(1));
+    expect(result.courses.first.customWeeks, hasLength(16));
+    expect(result.courses.first.customWeeks!.last, 16);
+    expect(result.warnings, isNotEmpty);
+    expect(result.warnings.first, contains('16'));
   });
 
   test('parses mikcb official template CSV sample', () {

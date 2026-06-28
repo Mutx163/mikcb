@@ -4,6 +4,8 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import 'lan_edit_host.dart';
+import 'spreadsheet_import_service.dart';
+import 'week_expression_parser.dart';
 
 const _presetCourseColors = [
   '#2196F3',
@@ -31,6 +33,9 @@ class LanEditProviderHost implements LanEditHost {
 
   @override
   int get currentWeek => _provider.currentWeek;
+
+  @override
+  TimetableSettings get timetableSettings => _provider.settings;
 
   @override
   int get semesterWeekCount => _provider.settings.semesterWeekCount;
@@ -62,6 +67,19 @@ class LanEditProviderHost implements LanEditHost {
   @override
   Future<void> deleteCourse(String courseId) async {
     await _provider.deleteCourse(courseId);
+  }
+
+  @override
+  Future<int> deleteCoursesBatch(List<String> courseIds) async {
+    var removed = 0;
+    for (final id in courseIds) {
+      if (findCourse(id) == null) {
+        continue;
+      }
+      await _provider.deleteCourse(id);
+      removed += 1;
+    }
+    return removed;
   }
 
   @override
@@ -101,6 +119,37 @@ class LanEditProviderHost implements LanEditHost {
   }
 
   @override
+  Future<int> importMergeBackupJson(String content) async {
+    if (_provider.dataTransferService.isFullBackupJson(content)) {
+      throw const FormatException('请使用课表档案备份 JSON，而非全部数据备份');
+    }
+    final backup = _provider.dataTransferService.parseBackupJson(content);
+    if (backup.courses.isEmpty) {
+      return 0;
+    }
+    return _provider.importParsedCourses(
+      backup.courses,
+      replaceExisting: false,
+      source: 'lan_merge',
+    );
+  }
+
+  @override
+  Future<int> importSpreadsheetCourses(
+    SpreadsheetImportResult result, {
+    required bool replaceExisting,
+  }) {
+    return _provider.importParsedCourses(
+      result.courses,
+      replaceExisting: replaceExisting,
+      source: 'spreadsheet',
+    );
+  }
+
+  @override
+  Future<void> setCurrentWeek(int week) => _provider.setCurrentWeek(week);
+
+  @override
   Map<String, dynamic> buildMetaJson() {
     final settings = _provider.settings;
     return {
@@ -120,6 +169,41 @@ class LanEditProviderHost implements LanEditHost {
         '周日',
       ],
     };
+  }
+
+  /// Applies [weekExpression] / [suspendedWeekExpression] on a slot JSON map.
+  static void applyWeekExpressionFields(
+    Map<String, dynamic> slotMap, {
+    required String courseName,
+    required int semesterWeekCount,
+    List<String>? warnings,
+  }) {
+    final weekExpression = slotMap.remove('weekExpression')?.toString().trim() ?? '';
+    if (weekExpression.isNotEmpty) {
+      final weeks = WeekExpressionParser.parse(
+        weekExpression,
+        itemName: courseName,
+        semesterWeekCount: semesterWeekCount,
+        warnings: warnings,
+      );
+      slotMap['customWeeks'] = weeks;
+      if (weeks.isNotEmpty) {
+        slotMap['startWeek'] = weeks.first;
+        slotMap['endWeek'] = weeks.last;
+      }
+      slotMap['isOddWeek'] = false;
+      slotMap['isEvenWeek'] = false;
+    }
+    final suspendedExpression =
+        slotMap.remove('suspendedWeekExpression')?.toString().trim() ?? '';
+    if (suspendedExpression.isNotEmpty) {
+      slotMap['suspendedWeeks'] = WeekExpressionParser.parse(
+        suspendedExpression,
+        itemName: '$courseName 停课周',
+        semesterWeekCount: semesterWeekCount,
+        warnings: warnings,
+      );
+    }
   }
 
   /// Builds a [Course] from API JSON, filling required defaults.

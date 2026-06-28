@@ -974,6 +974,18 @@ body {
   margin-bottom: 12px;
 }
 
+.library-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.library-select-checkbox {
+  flex-shrink: 0;
+  margin-right: 4px;
+}
+
 .search-and-filter {
   display: flex;
   align-items: center;
@@ -1216,6 +1228,28 @@ body {
   background-color: var(--success-light);
   padding: 3px 10px;
   border-radius: 4px;
+}
+
+.import-result-log {
+  margin-top: 12px;
+  padding: 10px 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  white-space: pre-wrap;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.field-hint {
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.text-muted {
+  color: var(--text-muted);
 }
 
 .mt-auto {

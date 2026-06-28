@@ -5,6 +5,8 @@ class WeekExpressionParser {
   static List<int> parse(
     String raw, {
     required String itemName,
+    int? semesterWeekCount,
+    List<String>? warnings,
   }) {
     var normalized = raw.trim();
     if (normalized.isEmpty) {
@@ -59,14 +61,39 @@ class WeekExpressionParser {
       result.addAll(_applyParity([parsed], tokenParity));
     }
 
-    final weeks = result.toList()..sort();
+    var weeks = result.toList()..sort();
     if (modeMatch == '单') {
-      return weeks.where((week) => week.isOdd).toList();
+      weeks = weeks.where((week) => week.isOdd).toList();
+    } else if (modeMatch == '双') {
+      weeks = weeks.where((week) => week.isEven).toList();
     }
-    if (modeMatch == '双') {
-      return weeks.where((week) => week.isEven).toList();
+
+    return _clampToSemesterWeekCount(
+      weeks,
+      semesterWeekCount: semesterWeekCount,
+      itemName: itemName,
+      warnings: warnings,
+    );
+  }
+
+  static List<int> _clampToSemesterWeekCount(
+    List<int> weeks, {
+    required String itemName,
+    int? semesterWeekCount,
+    List<String>? warnings,
+  }) {
+    if (semesterWeekCount == null || semesterWeekCount < 1 || weeks.isEmpty) {
+      return weeks;
     }
-    return weeks;
+    final over = weeks.where((week) => week > semesterWeekCount).toList();
+    if (over.isEmpty) {
+      return weeks;
+    }
+    warnings?.add(
+      '$itemName 含有超过学期周数 $semesterWeekCount 的周次（'
+      '${over.join('、')}），已忽略超出部分',
+    );
+    return weeks.where((week) => week <= semesterWeekCount).toList();
   }
 
   static List<int> _applyParity(List<int> weeks, String? parity) {

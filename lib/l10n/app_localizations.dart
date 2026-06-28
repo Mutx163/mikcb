@@ -410,6 +410,12 @@ abstract class AppLocalizations {
   /// **'如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。'**
   String get lanEditHotspotHint;
 
+  /// No description provided for @lanEditQrHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）。'**
+  String get lanEditQrHint;
+
   /// No description provided for @lanEditStartFailed.
   ///
   /// In zh, this message translates to:

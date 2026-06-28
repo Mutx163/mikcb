@@ -63,8 +63,55 @@ const selectedFilename = document.getElementById('selected-filename');
 const metaSectionsContainer = document.getElementById('meta-sections-container');
 const btnAddSlotField = document.getElementById('btn-add-slot-field');
 const scheduleSlotsContainer = document.getElementById('schedule-slots-container');
+const spreadsheetDropZone = document.getElementById('spreadsheet-drop-zone');
+const spreadsheetFileInput = document.getElementById('spreadsheet-file-input');
+const spreadsheetSelectedFilename = document.getElementById('spreadsheet-selected-filename');
+const btnImportSpreadsheet = document.getElementById('btn-import-spreadsheet');
+const spreadsheetReplaceExisting = document.getElementById('spreadsheet-replace-existing');
+const spreadsheetImportResult = document.getElementById('spreadsheet-import-result');
+const syncPhoneWeekBtn = document.getElementById('sync-phone-week-btn');
+const mergeDropZone = document.getElementById('merge-drop-zone');
+const mergeFileInput = document.getElementById('merge-file-input');
+const mergeSelectedFilename = document.getElementById('merge-selected-filename');
+const btnImportMerge = document.getElementById('btn-import-merge');
+const mergeImportResult = document.getElementById('merge-import-result');
+const btnBatchDeleteCourses = document.getElementById('btn-batch-delete-courses');
 
 let slotCounter = 0;
+let selectedSpreadsheetFile = null;
+let selectedMergeFileContent = null;
+const selectedCourseIds = new Set();
+
+function updateLibraryBatchDeleteUi() {
+  if (!btnBatchDeleteCourses) return;
+  const count = selectedCourseIds.size;
+  if (count === 0) {
+    hide(btnBatchDeleteCourses);
+    btnBatchDeleteCourses.disabled = true;
+    return;
+  }
+  show(btnBatchDeleteCourses);
+  btnBatchDeleteCourses.disabled = false;
+  btnBatchDeleteCourses.textContent = `批量删除选中 (${count})`;
+}
+
+function formatWeeksForExpression(weeks) {
+  if (!weeks || !weeks.length) return '';
+  return weeks.join('、');
+}
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = String(dataUrl).split(',')[1] || '';
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 // 通用助手函数
 function show(el) {
@@ -455,6 +502,8 @@ function renderCoursesTable() {
 
   courseCount.textContent = String(filteredGroups.length);
   container.innerHTML = '';
+  selectedCourseIds.clear();
+  updateLibraryBatchDeleteUi();
 
   if (filteredGroups.length === 0) {
     container.innerHTML = `
@@ -499,6 +548,10 @@ function renderCoursesTable() {
       <div class="card-header-band" style="background-color: ${group.color || '#4f46e5'}"></div>
       <div class="card-body">
         <div class="card-title-row">
+          <label class="checkbox-container library-select-checkbox" title="选中用于批量删除">
+            <input type="checkbox" class="library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
+            <span class="checkbox-checkmark"></span>
+          </label>
           <div class="title-left">
             <h3 class="card-title-text">${escapeHtml(group.name)}</h3>
             ${group.shortName ? `<span class="card-subtitle-text">(${escapeHtml(group.shortName)})</span>` : ''}
@@ -536,6 +589,17 @@ function renderCoursesTable() {
       hide(duplicateCourseBtn);
     });
     card.querySelector('.action-delete-btn').addEventListener('click', () => deleteCourseGroupDirectly(group));
+
+    const selectInput = card.querySelector('.library-course-select');
+    selectInput.addEventListener('change', () => {
+      const ids = (selectInput.dataset.courseIds || '').split(',').filter(Boolean);
+      if (selectInput.checked) {
+        ids.forEach((id) => selectedCourseIds.add(id));
+      } else {
+        ids.forEach((id) => selectedCourseIds.delete(id));
+      }
+      updateLibraryBatchDeleteUi();
+    });
 
     container.appendChild(card);
   });
@@ -765,8 +829,46 @@ function addSlotField(data = {}) {
         <label class="form-label">上课地点</label>
         <input type="text" class="field-slot-location" placeholder="可选，例如：主楼 201" value="${data.location || ''}" />
       </div>
+
+      <div class="form-group col-span-2 slot-advanced">
+        <label class="form-label">上课周（表达式，可选）</label>
+        <div class="form-inline-row">
+          <input type="text" class="field-slot-weekExpression" placeholder="如 1-8、10-16(单)；留空则用起止周+单双周" value="${escapeHtml(formatWeeksForExpression(data.customWeeks) || '')}" />
+          <button type="button" class="btn btn-secondary btn-small btn-preview-week">预览</button>
+        </div>
+        <p class="field-hint field-slot-week-preview text-muted"></p>
+      </div>
+      <div class="form-group col-span-2 slot-advanced">
+        <label class="form-label">停课周（表达式，可选）</label>
+        <input type="text" class="field-slot-suspendedWeekExpression" placeholder="如 6、12" value="${escapeHtml(formatWeeksForExpression(data.suspendedWeeks) || '')}" />
+      </div>
     </div>
   `;
+
+  card.querySelector('.btn-preview-week')?.addEventListener('click', async () => {
+    const input = card.querySelector('.field-slot-weekExpression');
+    const preview = card.querySelector('.field-slot-week-preview');
+    const expression = input.value.trim();
+    if (!expression) {
+      preview.textContent = '';
+      return;
+    }
+    try {
+      const result = await api('/api/v1/week-expression/parse', {
+        method: 'POST',
+        body: JSON.stringify({
+          expression,
+          itemName: courseForm?.name?.value?.trim() || '课程',
+        }),
+      });
+      const weeks = result.weeks || [];
+      preview.textContent = weeks.length
+        ? `解析为周次：${weeks.join('、')}`
+        : '未解析到有效周次';
+    } catch (error) {
+      preview.textContent = error.message;
+    }
+  });
 
   card.querySelector('.btn-remove-slot').addEventListener('click', () => {
     if (scheduleSlotsContainer.querySelectorAll('.slot-card').length <= 1) {
@@ -1075,6 +1177,179 @@ document.getElementById('refresh-btn').addEventListener('click', () => {
   loadEditorData({ silent: true, notifyRefresh: true }).catch(() => {});
 });
 
+if (syncPhoneWeekBtn) {
+  syncPhoneWeekBtn.addEventListener('click', async () => {
+    try {
+      setLoading(true, '正在同步手机当前周…');
+      await api('/api/v1/session', {
+        method: 'PATCH',
+        body: JSON.stringify({ currentWeek: state.viewWeek }),
+      });
+      showToast(`已将手机当前周设为第 ${state.viewWeek} 周`, 'success');
+      addActivityLog('同步当前周', `手机当前周 → 第 ${state.viewWeek} 周`);
+      await loadEditorData({ silent: true });
+    } catch (error) {
+      showToast(error.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  });
+}
+
+function handleSpreadsheetFile(file) {
+  if (!file) return;
+  const lower = file.name.toLowerCase();
+  if (!lower.endsWith('.csv') && !lower.endsWith('.xlsx')) {
+    showToast('请选择 .csv 或 .xlsx 文件', 'error');
+    return;
+  }
+  selectedSpreadsheetFile = file;
+  spreadsheetSelectedFilename.textContent = `已选: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+  show(spreadsheetSelectedFilename);
+  btnImportSpreadsheet.disabled = false;
+}
+
+if (spreadsheetDropZone) {
+  spreadsheetDropZone.addEventListener('click', () => spreadsheetFileInput?.click());
+  spreadsheetFileInput?.addEventListener('change', (e) => {
+    handleSpreadsheetFile(e.target.files[0]);
+  });
+  spreadsheetDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    spreadsheetDropZone.classList.add('dragover');
+  });
+  ['dragleave', 'dragend'].forEach((type) => {
+    spreadsheetDropZone.addEventListener(type, () => {
+      spreadsheetDropZone.classList.remove('dragover');
+    });
+  });
+  spreadsheetDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    spreadsheetDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) {
+      handleSpreadsheetFile(e.dataTransfer.files[0]);
+    }
+  });
+}
+
+btnImportSpreadsheet?.addEventListener('click', async () => {
+  if (!selectedSpreadsheetFile) return;
+  const replace = spreadsheetReplaceExisting?.checked === true;
+  if (replace && !window.confirm('覆盖模式将替换手机端现有全部课程，确定继续？')) {
+    return;
+  }
+  try {
+    setLoading(true, '正在解析并导入表格…');
+    const contentBase64 = await readFileAsBase64(selectedSpreadsheetFile);
+    const result = await api('/api/v1/import/spreadsheet', {
+      method: 'POST',
+      body: JSON.stringify({
+        fileName: selectedSpreadsheetFile.name,
+        contentBase64,
+        replaceExisting: replace,
+      }),
+    });
+    const lines = [
+      `成功导入 ${result.importedCount ?? 0} 条课程`,
+      `格式: ${result.format ?? '-'}`,
+    ];
+    if (result.warnings?.length) {
+      lines.push('警告:', ...result.warnings.map((w) => `· ${w}`));
+    }
+    spreadsheetImportResult.textContent = lines.join('\n');
+    show(spreadsheetImportResult);
+    showToast(`表格导入完成：${result.importedCount ?? 0} 门课`, 'success');
+    addActivityLog('表格导入', `导入 ${result.importedCount ?? 0} 门课 (${replace ? '覆盖' : '合并'})`);
+    selectedSpreadsheetFile = null;
+    btnImportSpreadsheet.disabled = true;
+    await loadEditorData();
+  } catch (error) {
+    showToast('表格导入失败: ' + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+function handleMergeBackupFile(file) {
+  if (!file || !file.name.toLowerCase().endsWith('.json')) {
+    showToast('请选择 .json 备份文件', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    selectedMergeFileContent = String(reader.result);
+    mergeSelectedFilename.textContent = `已选: ${file.name}`;
+    show(mergeSelectedFilename);
+    if (btnImportMerge) btnImportMerge.disabled = false;
+  };
+  reader.onerror = () => showToast('读取文件失败', 'error');
+  reader.readAsText(file, 'utf-8');
+}
+
+if (mergeDropZone) {
+  mergeDropZone.addEventListener('click', () => mergeFileInput?.click());
+  mergeFileInput?.addEventListener('change', (e) => handleMergeBackupFile(e.target.files[0]));
+  mergeDropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.add('dragover');
+  });
+  ['dragleave', 'dragend'].forEach((type) => {
+    mergeDropZone.addEventListener(type, () => mergeDropZone.classList.remove('dragover'));
+  });
+  mergeDropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    mergeDropZone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleMergeBackupFile(e.dataTransfer.files[0]);
+  });
+}
+
+btnImportMerge?.addEventListener('click', async () => {
+  if (!selectedMergeFileContent) return;
+  try {
+    setLoading(true, '正在合并导入…');
+    const result = await api('/api/v1/import/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: selectedMergeFileContent,
+    });
+    const merged = result.mergedCount ?? 0;
+    if (mergeImportResult) {
+      mergeImportResult.textContent = `合并完成，处理 ${merged} 门课程（与现有课表智能合并）`;
+      show(mergeImportResult);
+    }
+    showToast(`合并导入完成`, 'success');
+    addActivityLog('合并导入', `合并备份课程 ${merged} 门`);
+    selectedMergeFileContent = null;
+    if (btnImportMerge) btnImportMerge.disabled = true;
+    await loadEditorData();
+  } catch (error) {
+    showToast('合并导入失败: ' + error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
+btnBatchDeleteCourses?.addEventListener('click', async () => {
+  const ids = [...selectedCourseIds];
+  if (!ids.length) return;
+  if (!window.confirm(`确定批量删除选中的 ${ids.length} 个上课时间段记录吗？`)) return;
+  try {
+    setLoading(true, '正在批量删除…');
+    const result = await api('/api/v1/courses/batch-delete', {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    });
+    showToast(`已删除 ${result.deletedCount ?? 0} 条`, 'success');
+    addActivityLog('批量删除', `删除 ${result.deletedCount ?? 0} 条课程记录`);
+    selectedCourseIds.clear();
+    await loadEditorData({ silent: true });
+  } catch (error) {
+    showToast(error.message, 'error');
+  } finally {
+    setLoading(false);
+  }
+});
+
 document.getElementById('prev-week-btn').addEventListener('click', () => {
   setViewWeek(state.viewWeek - 1);
 });
@@ -1227,7 +1502,7 @@ duplicateCourseBtn.addEventListener('click', async () => {
 courseForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   setError(formError, '');
-  
+
   const name = courseForm.name.value.trim();
   const shortName = courseForm.shortName.value.trim() || null;
   const courseNature = courseForm.courseNature.value;
@@ -1253,23 +1528,26 @@ courseForm.addEventListener('submit', async (event) => {
     const isEvenWeek = card.querySelector('.field-slot-isEvenWeek').checked;
     const teacher = card.querySelector('.field-slot-teacher').value.trim();
     const location = card.querySelector('.field-slot-location').value.trim();
+    const weekExpression = card.querySelector('.field-slot-weekExpression')?.value.trim() || '';
+    const suspendedWeekExpression =
+      card.querySelector('.field-slot-suspendedWeekExpression')?.value.trim() || '';
 
     if (endSection < startSection) {
       setError(formError, '结束节次不能小于开始节次');
       return;
     }
-    if (endWeek < startWeek) {
+    if (!weekExpression && endWeek < startWeek) {
       setError(formError, '结束周次不能小于开始周次');
       return;
     }
-    
+
     const maxSection = state.meta?.sectionCount || state.meta?.sections?.length || 12;
     if (startSection < 1 || endSection > maxSection) {
       setError(formError, `节次范围应在 1-${maxSection} 之间`);
       return;
     }
 
-    slots.push({
+    const slotEntry = {
       id: slotId,
       dayOfWeek,
       startSection,
@@ -1279,8 +1557,15 @@ courseForm.addEventListener('submit', async (event) => {
       isOddWeek,
       isEvenWeek,
       teacher,
-      location
-    });
+      location,
+    };
+    if (weekExpression) {
+      slotEntry.weekExpression = weekExpression;
+    }
+    if (suspendedWeekExpression) {
+      slotEntry.suspendedWeekExpression = suspendedWeekExpression;
+    }
+    slots.push(slotEntry);
   }
 
   if (slots.length === 0) {
@@ -1306,7 +1591,11 @@ courseForm.addEventListener('submit', async (event) => {
       isOddWeek: slot.isOddWeek,
       isEvenWeek: slot.isEvenWeek,
       teacher: slot.teacher,
-      location: slot.location
+      location: slot.location,
+      ...(slot.weekExpression ? { weekExpression: slot.weekExpression } : {}),
+      ...(slot.suspendedWeekExpression
+        ? { suspendedWeekExpression: slot.suspendedWeekExpression }
+        : {}),
     });
 
     await api('/api/v1/courses/group', {

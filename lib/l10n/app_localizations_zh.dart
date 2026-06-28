@@ -165,6 +165,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get lanEditHotspotHint => '如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。';
 
   @override
+  String get lanEditQrHint => '电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）。';
+
+  @override
   String get lanEditStartFailed => '启动失败';
 
   @override
@@ -4893,6 +4896,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get lanEditHotspotHint => '若宿舍 Wi-Fi 無法存取，請嘗試用手機開熱點，再讓電腦連接該熱點。';
+
+  @override
+  String get lanEditQrHint => '電腦瀏覽器掃描上方二維碼可開啟控制台（連結已含 PIN，需同一區域網路）。';
 
   @override
   String get lanEditStartFailed => '啟動失敗';
@@ -9624,6 +9630,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get lanEditHotspotHint => '若宿舍 Wi-Fi 無法存取，請嘗試用手機開熱點，再讓電腦連接該熱點。';
+
+  @override
+  String get lanEditQrHint => '電腦瀏覽器掃描上方二維碼可開啟控制台（連結已含 PIN，需同一區域網路）。';
 
   @override
   String get lanEditStartFailed => '啟動失敗';

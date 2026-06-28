@@ -58,6 +58,7 @@
   "lanEditCopyAddress": "复制地址",
   "lanEditCopied": "地址已复制",
   "lanEditHotspotHint": "如果宿舍 WiFi 无法访问，请尝试用手机开热点，再让电脑连接该热点。",
+  "lanEditQrHint": "电脑浏览器扫描上方二维码可打开控制台（链接已含 PIN，需同一局域网）。",
   "lanEditStartFailed": "启动失败",
   "lanEditConnectedClientsLabel": "已连接",
   "lanEditConnectedClientsNone": "暂无",

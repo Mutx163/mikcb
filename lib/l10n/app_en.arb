@@ -58,6 +58,7 @@
   "lanEditCopyAddress": "Copy address",
   "lanEditCopied": "Address copied",
   "lanEditHotspotHint": "If dorm Wi-Fi blocks device-to-device access, try phone hotspot instead.",
+  "lanEditQrHint": "Scan the QR code on a PC browser on the same LAN (link includes PIN).",
   "lanEditStartFailed": "Failed to start",
   "lanEditConnectedClientsLabel": "Connected",
   "lanEditConnectedClientsNone": "None",

@@ -58,6 +58,7 @@
   "lanEditCopyAddress": "URLをコピー",
   "lanEditCopied": "コピーしました",
   "lanEditHotspotHint": "寮Wi-Fiで接続できない場合は、スマホのテザリングを試してください。",
+  "lanEditQrHint": "同じLANのPCブラウザでQRコードを読み取ってください（PIN付きリンク）。",
   "lanEditStartFailed": "開始に失敗しました",
   "lanEditConnectedClientsLabel": "接続中",
   "lanEditConnectedClientsNone": "なし",
