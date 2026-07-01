@@ -8619,6 +8619,108 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'复制'**
   String get themeDuplicate;
+
+  /// No description provided for @courseNatureRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'必修'**
+  String get courseNatureRequired;
+
+  /// No description provided for @courseNatureElective.
+  ///
+  /// In zh, this message translates to:
+  /// **'选修'**
+  String get courseNatureElective;
+
+  /// No description provided for @homeMenuStatisticsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程统计'**
+  String get homeMenuStatisticsTitle;
+
+  /// No description provided for @statisticsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程统计'**
+  String get statisticsTitle;
+
+  /// No description provided for @statisticsOverview.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周概览'**
+  String get statisticsOverview;
+
+  /// No description provided for @statisticsCourseCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程门数'**
+  String get statisticsCourseCount;
+
+  /// No description provided for @statisticsSectionCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周课时'**
+  String get statisticsSectionCount;
+
+  /// No description provided for @statisticsWeeklyCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'本周课程'**
+  String get statisticsWeeklyCourses;
+
+  /// No description provided for @statisticsDailyDistribution.
+  ///
+  /// In zh, this message translates to:
+  /// **'每日课时分布'**
+  String get statisticsDailyDistribution;
+
+  /// No description provided for @statisticsNatureRatio.
+  ///
+  /// In zh, this message translates to:
+  /// **'必修 / 选修'**
+  String get statisticsNatureRatio;
+
+  /// No description provided for @statisticsCourseList.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程列表'**
+  String get statisticsCourseList;
+
+  /// No description provided for @statisticsSectionsUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'节'**
+  String get statisticsSectionsUnit;
+
+  /// No description provided for @statisticsSectionUnit.
+  ///
+  /// In zh, this message translates to:
+  /// **'节'**
+  String get statisticsSectionUnit;
+
+  /// No description provided for @statisticsNoData.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无课程数据'**
+  String get statisticsNoData;
+
+  /// No description provided for @statisticsCourseCountRatio.
+  ///
+  /// In zh, this message translates to:
+  /// **'门数比例'**
+  String get statisticsCourseCountRatio;
+
+  /// No description provided for @statisticsSectionCountRatio.
+  ///
+  /// In zh, this message translates to:
+  /// **'课时比例'**
+  String get statisticsSectionCountRatio;
+
+  /// No description provided for @statisticsWeekSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {week} 周'**
+  String statisticsWeekSelector(int week);
 }
 
 class _AppLocalizationsDelegate

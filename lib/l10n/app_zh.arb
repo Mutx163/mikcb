@@ -2824,5 +2824,29 @@
     }
   },
   "themeRename": "重命名",
-  "themeDuplicate": "复制"
+  "themeDuplicate": "复制",
+  "courseNatureRequired": "必修",
+  "courseNatureElective": "选修",
+  "homeMenuStatisticsTitle": "课程统计",
+  "statisticsTitle": "课程统计",
+  "statisticsOverview": "本周概览",
+  "statisticsCourseCount": "课程门数",
+  "statisticsSectionCount": "本周课时",
+  "statisticsWeeklyCourses": "本周课程",
+  "statisticsDailyDistribution": "每日课时分布",
+  "statisticsNatureRatio": "必修 / 选修",
+  "statisticsCourseList": "课程列表",
+  "statisticsSectionsUnit": "节",
+  "statisticsSectionUnit": "节",
+  "statisticsNoData": "暂无课程数据",
+  "statisticsCourseCountRatio": "门数比例",
+  "statisticsSectionCountRatio": "课时比例",
+  "statisticsWeekSelector": "第 {week} 周",
+  "@statisticsWeekSelector": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  }
 }

@@ -5007,4 +5007,57 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDuplicate => 'Duplicate';
+
+  @override
+  String get courseNatureRequired => 'Required';
+
+  @override
+  String get courseNatureElective => 'Elective';
+
+  @override
+  String get homeMenuStatisticsTitle => 'Statistics';
+
+  @override
+  String get statisticsTitle => 'Course Statistics';
+
+  @override
+  String get statisticsOverview => 'This Week';
+
+  @override
+  String get statisticsCourseCount => 'Courses';
+
+  @override
+  String get statisticsSectionCount => 'Sections';
+
+  @override
+  String get statisticsWeeklyCourses => 'This Week';
+
+  @override
+  String get statisticsDailyDistribution => 'Daily Distribution';
+
+  @override
+  String get statisticsNatureRatio => 'Required / Elective';
+
+  @override
+  String get statisticsCourseList => 'Course List';
+
+  @override
+  String get statisticsSectionsUnit => 'sections';
+
+  @override
+  String get statisticsSectionUnit => '';
+
+  @override
+  String get statisticsNoData => 'No course data';
+
+  @override
+  String get statisticsCourseCountRatio => 'By Count';
+
+  @override
+  String get statisticsSectionCountRatio => 'By Sections';
+
+  @override
+  String statisticsWeekSelector(int week) {
+    return 'Week $week';
+  }
 }

@@ -2824,5 +2824,29 @@
     }
   },
   "themeRename": "Rename",
-  "themeDuplicate": "Duplicate"
+  "themeDuplicate": "Duplicate",
+  "courseNatureRequired": "Required",
+  "courseNatureElective": "Elective",
+  "homeMenuStatisticsTitle": "Statistics",
+  "statisticsTitle": "Course Statistics",
+  "statisticsOverview": "This Week",
+  "statisticsCourseCount": "Courses",
+  "statisticsSectionCount": "Sections",
+  "statisticsWeeklyCourses": "This Week",
+  "statisticsDailyDistribution": "Daily Distribution",
+  "statisticsNatureRatio": "Required / Elective",
+  "statisticsCourseList": "Course List",
+  "statisticsSectionsUnit": "sections",
+  "statisticsSectionUnit": "",
+  "statisticsNoData": "No course data",
+  "statisticsCourseCountRatio": "By Count",
+  "statisticsSectionCountRatio": "By Sections",
+  "statisticsWeekSelector": "Week {week}",
+  "@statisticsWeekSelector": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  }
 }

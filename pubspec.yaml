@@ -32,6 +32,7 @@ dependencies:
   tdesign_flutter: ^0.2.7
   table_parser: ^1.0.1
   qr_flutter: ^4.1.0
+  fl_chart: ^0.68.0
 
 dev_dependencies:
   flutter_test:
@@ -49,4 +50,5 @@ flutter:
     - assets/holidays/
     - docs/releases/
     - assets/lan_edit/
+    - assets/lan_edit/vendor/
     - assets/templates/
