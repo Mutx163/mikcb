@@ -408,15 +408,12 @@ class MainActivity : FlutterActivity() {
                         try {
                             startLanEditForegroundService()
                             result.success(true)
-                        } catch (e: SecurityException) {
-                            Log.e("MainActivity", "LAN edit foreground start denied", e)
-                            result.error(
-                                "START_FOREGROUND_FAILED",
-                                e.message,
-                                e.javaClass.simpleName,
-                            )
-                        } catch (e: IllegalStateException) {
-                            Log.e("MainActivity", "LAN edit foreground start failed", e)
+                        } catch (e: Exception) {
+                            val tag = when (e) {
+                                is SecurityException -> "LAN edit foreground start denied"
+                                else -> "LAN edit foreground start failed"
+                            }
+                            Log.e("MainActivity", tag, e)
                             result.error(
                                 "START_FOREGROUND_FAILED",
                                 e.message,

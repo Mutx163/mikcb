@@ -1326,6 +1326,10 @@ class TimetableProvider with ChangeNotifier {
       return;
     }
     final shared = courses.first;
+    // 先收集到临时列表，验证全部通过后再批量添加，避免中途失败导致状态不一致
+    final normalizedCourses = <Course>[];
+    final teachers = <String>{};
+    final locations = <String>{};
     for (final course in courses) {
       final validationMessage = validateCourseTimeSchemeOverride(
         timeSchemeId: course.timeSchemeIdOverride,
@@ -1338,9 +1342,17 @@ class TimetableProvider with ChangeNotifier {
       final normalized = _syncCourseWithEffectiveTimeScheme(
         _normalizeCourse(_applySharedCourseFields(course, shared)),
       );
-      _courses.add(normalized);
-      await recordTeacher(normalized.teacher);
-      await recordLocation(normalized.location);
+      normalizedCourses.add(normalized);
+      if (normalized.teacher.isNotEmpty) teachers.add(normalized.teacher);
+      if (normalized.location.isNotEmpty) locations.add(normalized.location);
+    }
+    // 所有验证通过，批量添加
+    _courses.addAll(normalizedCourses);
+    for (final teacher in teachers) {
+      await recordTeacher(teacher);
+    }
+    for (final location in locations) {
+      await recordLocation(location);
     }
     await _persistActiveProfileState();
     _currentLiveCourseId = null;
@@ -2458,7 +2470,7 @@ class TimetableProvider with ChangeNotifier {
     }
 
     final week = getWeekIndex(date, semesterStart);
-    if (week == null) return 1;
+    if (week == null) return 0; // 学期开始前返回 0，避免课程提前显示
     return week;
   }
 

@@ -170,10 +170,19 @@ void main() {
 
       expect(key, 'confirm|确认导入|是否继续？');
     });
+
+    test('uses optionsJson as body fallback when message is absent', () {
+      final key = warehouseDialogResponseKey('singleSelection', {
+        'title': '选择学期',
+        'optionsJson': '["2024春","2024秋"]',
+      });
+
+      expect(key, 'singleSelection|选择学期|["2024春","2024秋"]');
+    });
   });
 
   group('WarehouseMacroRecord', () {
-    test('round-trips optional useDesktopMode', () {
+    test('round-trips optional useDesktopMode false', () {
       final record = WarehouseMacroRecord(
         schoolId: 's1',
         adapterId: 'a1',
@@ -191,6 +200,26 @@ void main() {
       final restored = WarehouseMacroRecord.fromJson(record.toJson());
 
       expect(restored.useDesktopMode, isFalse);
+    });
+
+    test('round-trips optional useDesktopMode true', () {
+      final record = WarehouseMacroRecord(
+        schoolId: 's1',
+        adapterId: 'a1',
+        schoolName: 'School',
+        adapterName: 'Adapter',
+        importUrl: 'https://example.com',
+        schoolResourceFolder: 's1',
+        adapterAssetJsPath: 'a.js',
+        steps: const [],
+        createdAt: DateTime(2024),
+        updatedAt: DateTime(2024),
+        useDesktopMode: true,
+      );
+
+      final restored = WarehouseMacroRecord.fromJson(record.toJson());
+
+      expect(restored.useDesktopMode, isTrue);
     });
 
     test('legacy JSON without useDesktopMode stays null', () {

@@ -64,34 +64,23 @@ class GlassContainer extends StatelessWidget {
   }
 }
 
-/// 玻璃拟态弹窗背景
+/// 玻璃拟态弹窗内容包装
 ///
-/// 用于 showModalBottomSheet 的 backgroundColor 参数
-class GlassModalBackground extends StatelessWidget {
+/// 在弹窗内部使用，不改变外部布局
+class GlassModalContent extends StatelessWidget {
   final Widget child;
 
-  const GlassModalBackground({super.key, required this.child});
+  const GlassModalContent({
+    super.key,
+    required this.child,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+    return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHigh.withValues(alpha: 0.85),
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(
-              color: colorScheme.outlineVariant.withValues(alpha: 0.15),
-              width: 1,
-            ),
-          ),
-          child: child,
-        ),
+        filter: ImageFilter.blur(sigmaX: 25, sigmaY: 25),
+        child: child,
       ),
     );
   }

@@ -33,6 +33,7 @@ dependencies:
   table_parser: ^1.0.1
   qr_flutter: ^4.1.0
   fl_chart: ^0.68.0
+  liqkit_ui: ^0.4.0
 
 dev_dependencies:
   flutter_test:

@@ -469,6 +469,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.1.1"
+  liqkit_ui:
+    dependency: "direct main"
+    description:
+      name: liqkit_ui
+      sha256: "361398357a0f11b98939f78a646477300d9a7d994bf6769a4d5bfecc03f874f8"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.4.0"
+  lucide_icons_flutter:
+    dependency: transitive
+    description:
+      name: lucide_icons_flutter
+      sha256: "7c5dc01a32a9905ae34e2d84224e92d6d0c42acf8926df9e01c35a1446bf1b69"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.14+2"
   markdown:
     dependency: transitive
     description:
