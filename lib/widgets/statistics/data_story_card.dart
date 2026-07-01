@@ -33,9 +33,10 @@ class DataStoryCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: Text(
+                child: Icon(
                   story.icon,
-                  style: const TextStyle(fontSize: 22),
+                  size: 22,
+                  color: colorScheme.onSecondaryContainer,
                 ),
               ),
             ),

@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../models/course.dart';
 
 /// 学期统计总览（账单式）
@@ -41,7 +43,7 @@ class Achievement {
   final String id;
   final String name; // 成就名称
   final String description; // 成就描述
-  final String icon; // 图标（emoji）
+  final IconData icon; // 图标（Material Icons）
   final bool isUnlocked; // 是否已解锁
 
   const Achievement({
@@ -57,7 +59,7 @@ class Achievement {
 class DataStory {
   final String title; // 故事标题
   final String content; // 故事内容
-  final String icon; // 图标
+  final IconData icon; // 图标（Material Icons）
   final StoryType type; // 故事类型
 
   const DataStory({

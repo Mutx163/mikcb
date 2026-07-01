@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 import '../models/course.dart';
 import '../models/statistics_models.dart';
 
@@ -129,7 +131,7 @@ class StatisticsService {
         id: 'early_bird',
         name: '早八战士',
         description: '有 8:00 的课，真棒！',
-        icon: '🌅',
+        icon: Icons.wb_sunny_rounded,
         isUnlocked: allStartTimes.any((t) => t.compareTo('08:00') <= 0),
       ),
       // 全勤达人
@@ -137,7 +139,7 @@ class StatisticsService {
         id: 'perfect_attendance',
         name: '全勤达人',
         description: '某门课每周都有',
-        icon: '⭐',
+        icon: Icons.star_rounded,
         isUnlocked: allCourses.any((c) {
           final weeks = _countActiveWeeks(c, currentWeek);
           return weeks == currentWeek;
@@ -148,7 +150,7 @@ class StatisticsService {
         id: 'weekend_warrior',
         name: '周末战士',
         description: '周末有课',
-        icon: '🏆',
+        icon: Icons.emoji_events_rounded,
         isUnlocked: allCourses.any((c) => c.dayOfWeek >= 6),
       ),
       // 课王
@@ -156,7 +158,7 @@ class StatisticsService {
         id: 'class_king',
         name: '课王',
         description: '某天 ≥ 6 节课',
-        icon: '👑',
+        icon: Icons.workspace_premium_rounded,
         isUnlocked: dailyMaxSections >= 6,
       ),
       // 学霸
@@ -164,7 +166,7 @@ class StatisticsService {
         id: 'scholar',
         name: '学霸',
         description: '总课时 ≥ 100',
-        icon: '📚',
+        icon: Icons.auto_stories_rounded,
         isUnlocked: totalSections >= 100,
       ),
       // 均衡大师
@@ -172,7 +174,7 @@ class StatisticsService {
         id: 'balanced',
         name: '均衡大师',
         description: '每天课时差距 ≤ 2',
-        icon: '⚖️',
+        icon: Icons.balance_rounded,
         isUnlocked: _isBalanced(allCourses),
       ),
       // 夜猫子
@@ -180,7 +182,7 @@ class StatisticsService {
         id: 'night_owl',
         name: '夜猫子',
         description: '有 18:00 以后的课',
-        icon: '🌙',
+        icon: Icons.nights_stay_rounded,
         isUnlocked: allEndTimes.any((t) => t.compareTo('18:00') > 0),
       ),
       // 教室探索家
@@ -188,7 +190,7 @@ class StatisticsService {
         id: 'explorer',
         name: '教室探索家',
         description: '使用过 ≥ 5 个不同教室',
-        icon: '🗺️',
+        icon: Icons.explore_rounded,
         isUnlocked: allRooms.length >= 5,
       ),
     ];
@@ -219,9 +221,9 @@ class StatisticsService {
 
       stories.add(DataStory(
         title: '最忙的一天',
-        content: '这学期你最忙的一天是 $busiestDayName，'
+        content: '截至第${currentWeek}周，这学期你最忙的一天是 $busiestDayName，'
             '平均 ${busiestAvg.toStringAsFixed(1)} 节课',
-        icon: '📅',
+        icon: Icons.calendar_today_rounded,
         type: StoryType.busiestDay,
       ));
 
@@ -235,9 +237,9 @@ class StatisticsService {
 
         stories.add(DataStory(
           title: '最轻松的一天',
-          content: '你最轻松的一天是 $lightestDayName，'
+          content: '截至第${currentWeek}周，你最轻松的一天是 $lightestDayName，'
               '只有 ${lightestAvg.toStringAsFixed(1)} 节课',
-          icon: '😎',
+          icon: Icons.sentiment_satisfied_rounded,
           type: StoryType.lightestDay,
         ));
       }
@@ -258,9 +260,9 @@ class StatisticsService {
       final favorite = sortedRooms.first;
       stories.add(DataStory(
         title: '最常去的教室',
-        content: '你最常去的教室是 ${favorite.key}，'
+        content: '截至第${currentWeek}周，你最常去的教室是 ${favorite.key}，'
             '共去了 ${favorite.value} 次',
-        icon: '🏫',
+        icon: Icons.location_on_rounded,
         type: StoryType.favoriteRoom,
       ));
 
@@ -271,8 +273,8 @@ class StatisticsService {
       if (buildings.length > 1) {
         stories.add(DataStory(
           title: '教学楼探险',
-          content: '你的课程分布在 ${buildings.length} 栋不同的教学楼',
-          icon: '🏢',
+          content: '截至第${currentWeek}周，你的课程分布在 ${buildings.length} 栋不同的教学楼',
+          icon: Icons.domain_rounded,
           type: StoryType.buildingCount,
         ));
       }
@@ -287,7 +289,7 @@ class StatisticsService {
         title: '时间跨度',
         content: '你最早的课是 ${allStartTimes.first}，'
             '最晚的课是 ${allEndTimes.last}',
-        icon: '⏰',
+        icon: Icons.access_time_rounded,
         type: StoryType.timeRange,
       ));
     }

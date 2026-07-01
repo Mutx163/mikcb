@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/statistics_models.dart';
 import '../providers/timetable_provider.dart';
 import '../services/statistics_service.dart';
+import '../services/statistics_share_service.dart';
 import '../widgets/statistics/overview_section.dart';
 import '../widgets/statistics/achievement_badge.dart';
 import '../widgets/statistics/data_story_card.dart';
@@ -13,8 +14,15 @@ import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/course_ranking.dart';
 
 /// 课程统计页面（账单式）
-class CourseStatisticsScreen extends StatelessWidget {
+class CourseStatisticsScreen extends StatefulWidget {
   const CourseStatisticsScreen({super.key});
+
+  @override
+  State<CourseStatisticsScreen> createState() => _CourseStatisticsScreenState();
+}
+
+class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
+  final GlobalKey _shareKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +58,18 @@ class CourseStatisticsScreen extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(l10n.statisticsTitle),
+            actions: [
+              if (hasData)
+                IconButton(
+                  icon: const Icon(Icons.share_rounded),
+                  tooltip: '分享统计',
+                  onPressed: () => StatisticsShareService.shareWidgetAsImage(
+                    context: context,
+                    repaintBoundaryKey: _shareKey,
+                    title: '我的学期统计',
+                  ),
+                ),
+            ],
           ),
           body: hasData
               ? _buildContent(
@@ -74,44 +94,50 @@ class CourseStatisticsScreen extends StatelessWidget {
     AppLocalizations l10n,
     ColorScheme colorScheme,
   ) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-      children: [
-        // 1. 学期总览（大数字）
-        OverviewSection(stats: semesterStats),
-        const SizedBox(height: 24),
+    return RepaintBoundary(
+      key: _shareKey,
+      child: Container(
+        color: colorScheme.surface,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            // 1. 学期总览（大数字）
+            OverviewSection(stats: semesterStats),
+            const SizedBox(height: 24),
 
-        // 2. 成就徽章
-        _buildSectionTitle('🎓 成就徽章', colorScheme),
-        const SizedBox(height: 12),
-        AchievementGrid(achievements: achievements),
-        const SizedBox(height: 24),
+            // 2. 成就徽章
+            _buildSectionTitle('成就徽章', colorScheme),
+            const SizedBox(height: 12),
+            AchievementGrid(achievements: achievements),
+            const SizedBox(height: 24),
 
-        // 3. 数据故事
-        if (stories.isNotEmpty) ...[
-          _buildSectionTitle('💡 数据故事', colorScheme),
-          const SizedBox(height: 12),
-          DataStoryList(stories: stories),
-          const SizedBox(height: 24),
-        ],
+            // 3. 数据故事
+            if (stories.isNotEmpty) ...[
+              _buildSectionTitle('数据故事', colorScheme),
+              const SizedBox(height: 12),
+              DataStoryList(stories: stories),
+              const SizedBox(height: 24),
+            ],
 
-        // 4. 每日分布
-        _buildSectionTitle(l10n.statisticsDailyDistribution, colorScheme),
-        const SizedBox(height: 12),
-        DailyChart(dailyAverages: semesterStats.dailyAverages),
-        const SizedBox(height: 24),
+            // 4. 每日分布
+            _buildSectionTitle(l10n.statisticsDailyDistribution, colorScheme),
+            const SizedBox(height: 12),
+            DailyChart(dailyAverages: semesterStats.dailyAverages),
+            const SizedBox(height: 24),
 
-        // 5. 必修/选修比例
-        _buildSectionTitle(l10n.statisticsNatureRatio, colorScheme),
-        const SizedBox(height: 12),
-        NatureRatio(stats: semesterStats.natureStats),
-        const SizedBox(height: 24),
+            // 5. 必修/选修比例
+            _buildSectionTitle(l10n.statisticsNatureRatio, colorScheme),
+            const SizedBox(height: 12),
+            NatureRatio(stats: semesterStats.natureStats),
+            const SizedBox(height: 24),
 
-        // 6. 课程排行
-        _buildSectionTitle('📊 课程排行', colorScheme),
-        const SizedBox(height: 12),
-        CourseRanking(courseRanking: semesterStats.courseRanking),
-      ],
+            // 6. 课程排行
+            _buildSectionTitle('课程排行', colorScheme),
+            const SizedBox(height: 12),
+            CourseRanking(courseRanking: semesterStats.courseRanking),
+          ],
+        ),
+      ),
     );
   }
 

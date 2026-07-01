@@ -31,12 +31,12 @@ class AchievementBadge extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           // 图标
-          Text(
+          Icon(
             achievement.icon,
-            style: TextStyle(
-              fontSize: 24,
-              color: achievement.isUnlocked ? null : Colors.grey,
-            ),
+            size: 24,
+            color: achievement.isUnlocked
+                ? colorScheme.onPrimaryContainer
+                : Colors.grey,
           ),
           const SizedBox(height: 4),
           // 名称

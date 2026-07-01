@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
@@ -19,12 +20,14 @@ import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
+import '../widgets/glass_container.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
 import 'about_screen.dart';
 import 'course_import_screen.dart';
 import 'course_overview_screen.dart';
+import 'course_statistics_screen.dart';
 import 'exam_list_screen.dart';
 import 'support_creator_screen.dart';
 import 'timetable_profiles_screen.dart';
@@ -4957,6 +4960,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       l10n.homeMenuUpdateTitle,
       l10n.homeMenuProfilesTitle,
       l10n.homeMenuOverviewTitle,
+      l10n.homeMenuStatisticsTitle,
       l10n.homeMenuAddCourseTitle,
       l10n.homeMenuImportTitle,
       l10n.homeMenuSettingsTitle,
@@ -4999,6 +5003,13 @@ class _TimetableScreenState extends State<TimetableScreen>
                   title: l10n.homeMenuOverviewTitle,
                   reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
                   pageBuilder: (_) => const CourseOverviewScreen(),
+                ),
+                _HomeActionPageButton(
+                  sheetRoute: ModalRoute.of(sheetContext),
+                  icon: Icons.bar_chart_rounded,
+                  title: l10n.homeMenuStatisticsTitle,
+                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
+                  pageBuilder: (_) => const CourseStatisticsScreen(),
                 ),
                 _HomeActionButton(
                   icon: Icons.add_circle_outline_rounded,
