@@ -41,7 +41,7 @@ const sessionCountdown = document.getElementById('session-countdown');
 const toastContainer = document.getElementById('toast-container');
 
 // Tab 面板
-const navItems = document.querySelectorAll('.nav-item');
+const navItems = document.querySelectorAll('.nav-link[data-tab]');
 const tabPanels = document.querySelectorAll('.tab-panel');
 const pageTitle = document.getElementById('page-title');
 
@@ -1163,7 +1163,8 @@ function stripPinFromUrl() {
 
 // 导航栏 Tab 切换
 navItems.forEach(item => {
-  item.addEventListener('click', () => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
     const tabName = item.getAttribute('data-tab');
     setViewTab(tabName);
   });
