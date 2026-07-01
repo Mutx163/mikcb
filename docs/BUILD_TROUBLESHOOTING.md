@@ -272,6 +272,21 @@ android docs search connectedDevice foreground service permission
 2. `android layout` 可确认局域网编辑页是否处于「进行中」或「待开启」状态，无需用户口述。
 3. `dumpsys activity services` + 布局/截图组合，可发现 **HTTP 服务已停但 FGS 通知仍在** 的状态不同步问题。
 
+### 局域网 Web 控制台出现 HTTP 502 / 504
+
+手机内嵌的 `HttpServer` **不会** 返回 502；浏览器里对 `/api/v1/session` 等接口出现 **502 Bad Gateway** 或 **504**，说明请求 **没有到达** 手机上的 Dart 服务（中间代理/端口转发失败或目标已断开）。
+
+| 现象 | 常见原因 | 处理 |
+|------|----------|------|
+| 地址为 `localhost:38xxx` 或 IDE 自动打开的端口 | 电脑上的转发/插件代理连不上真机 | 改用 App 显示的 **`http://192.168.x.x:端口/`**（同一 WiFi 或手机热点） |
+| 刚 F5 断连、App 在后台被杀 | 服务已 `stop()`，转发仍指向旧端口 | 回 App 重新「开启局域网编辑」，用新 PIN/新端口 |
+| 宿舍 WiFi AP 隔离 | 电脑访问不到手机 IP | 手机开热点，电脑连热点（见 App 内提示） |
+| 仅 `/api/v1/session` 失败，页面能开 | 少见；多为转发对部分请求失败 | 同上，避免代理；直连 IP |
+
+**自检**：在手机浏览器访问 `http://127.0.0.1:<端口>/api/v1/health` 应返回 `{"ok":true,...}`（需服务开启中）。电脑侧应对 **局域网 IP** 访问同一 health 路径；若 health 也 502，与 session 无关，纯属网络/转发问题。
+
+**adb 调试（仅 USB 开发）**：`adb reverse tcp:<端口> tcp:<端口>` 后可用电脑 `http://127.0.0.1:<端口>/`；这与真机 LAN 场景不同，勿与「复制地址」混用。
+
 **工具选择速记**：
 
 ```

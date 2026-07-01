@@ -13,6 +13,7 @@ concurrency:
 jobs:
   update-json:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write # 需要写入代码仓库的权限
 
@@ -94,7 +95,7 @@ jobs:
           EOF
 
       - name: Commit and Push changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@9e2d21ebded4a05927217d32825b200636237643 # v5.0.1
         with:
           branch: ${{ github.event.repository.default_branch }}
           commit_message: "chore(docs): auto-update releases json"

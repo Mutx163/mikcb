@@ -49,7 +49,7 @@ jobs:
           import sys
           text = open("pubspec.yaml", encoding="utf-8").read()
           for key in ("version:", "description:"):
-              line = next((l for l in text.splitlines() if l.startswith(key)), None)
+              line = next((l for l in text.splitlines() if l.startswith(key) and not l[0:1].isspace()), None)
               if line is None:
                   print(f"ERROR: missing {key} line in pubspec.yaml", file=sys.stderr)
                   sys.exit(1)
