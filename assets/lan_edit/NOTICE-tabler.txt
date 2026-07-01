@@ -1,0 +1,4 @@
+LAN Web console shell uses Tabler (MIT).
+Source: https://github.com/tabler/tabler
+Bundled files: vendor/tabler.min.css, vendor/tabler.min.js
+Version: @tabler/core 1.4.0 (via jsDelivr)

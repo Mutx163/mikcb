@@ -122,6 +122,51 @@ function hide(el) {
   if (el) el.classList.add('hidden');
 }
 
+/** Tabler/Bootstrap 5 标准模态框（tabler.min.js 提供 bootstrap.Modal） */
+let _courseBootstrapModal = null;
+function getCourseBootstrapModal() {
+  if (!modal) return null;
+  const BsModal = window.bootstrap?.Modal;
+  if (!BsModal) return null;
+  if (!_courseBootstrapModal) {
+    _courseBootstrapModal = new BsModal(modal, { backdrop: true, keyboard: true });
+  }
+  return _courseBootstrapModal;
+}
+
+function showCourseModal() {
+  const bs = getCourseBootstrapModal();
+  if (bs) {
+    bs.show();
+    return;
+  }
+  modal.classList.remove('hidden');
+  modal.classList.add('show');
+  modal.style.display = 'block';
+  modal.setAttribute('aria-modal', 'true');
+  document.body.classList.add('modal-open');
+  if (!document.getElementById('lan-modal-backdrop')) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop fade show';
+    backdrop.id = 'lan-modal-backdrop';
+    document.body.appendChild(backdrop);
+  }
+}
+
+function hideCourseModal() {
+  const bs = getCourseBootstrapModal();
+  if (bs) {
+    bs.hide();
+    return;
+  }
+  modal.classList.remove('show');
+  modal.style.display = '';
+  modal.classList.add('hidden');
+  modal.removeAttribute('aria-modal');
+  document.body.classList.remove('modal-open');
+  document.getElementById('lan-modal-backdrop')?.remove();
+}
+
 function setError(el, message) {
   if (!message) {
     hide(el);
@@ -203,7 +248,25 @@ async function api(path, options = {}) {
     }
   }
   if (!response.ok) {
-    throw new Error(data.message || data.error || `HTTP ${response.status}`);
+    const code = response.status;
+    if (code === 502 || code === 504) {
+      throw new Error(
+        '无法连上手机上的编辑服务（HTTP ' +
+          code +
+          '）。请确认：① 手机 App 里「局域网编辑」仍为开启状态；② 电脑与手机在同一 WiFi 或手机热点；③ 浏览器地址为手机显示的 IP:端口（勿用 localhost）；④ 勿经 IDE/插件端口转发打开页面。'
+      );
+    }
+    if (code === 503) {
+      throw new Error('手机端编辑服务正在关闭或尚未就绪，请在 App 中重新开启局域网编辑。');
+    }
+    if (code === 401) {
+      const reason = data.error || data.message || '';
+      if (reason === 'session_expired' || String(data.message || '').includes('expired')) {
+        throw new Error('会话已过期，请在手机端重新开启局域网编辑并重新登录。');
+      }
+      throw new Error(data.message || data.error || '未授权，请重新输入 PIN');
+    }
+    throw new Error(data.message || data.error || `HTTP ${code}`);
   }
   return data;
 }
@@ -541,34 +604,29 @@ function renderCoursesTable() {
     }).join('');
 
     const natureBadge = group.courseNature === 'elective'
-      ? '<span class="badge badge-success">选修</span>'
-      : '<span class="badge badge-danger">必修</span>';
+      ? '<span class="badge bg-green-lt">选修</span>'
+      : '<span class="badge bg-red-lt">必修</span>';
 
+    card.className = 'card course-group-card';
     card.innerHTML = `
       <div class="card-header-band" style="background-color: ${group.color || '#4f46e5'}"></div>
       <div class="card-body">
-        <div class="card-title-row">
-          <label class="checkbox-container library-select-checkbox" title="选中用于批量删除">
-            <input type="checkbox" class="library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
-            <span class="checkbox-checkmark"></span>
+        <div class="d-flex align-items-start gap-2 mb-2">
+          <label class="form-check mb-0" title="批量删除">
+            <input type="checkbox" class="form-check-input library-course-select" data-course-ids="${group.courses.map(c => c.id).join(',')}" />
           </label>
-          <div class="title-left">
-            <h3 class="card-title-text">${escapeHtml(group.name)}</h3>
-            ${group.shortName ? `<span class="card-subtitle-text">(${escapeHtml(group.shortName)})</span>` : ''}
+          <div class="flex-fill">
+            <h3 class="card-title mb-0">${escapeHtml(group.name)}</h3>
+            ${group.shortName ? `<div class="text-secondary small">${escapeHtml(group.shortName)}</div>` : ''}
           </div>
           ${natureBadge}
         </div>
-        
-        <div class="card-slots-list">
-          ${slotsHtml}
-        </div>
-
-        ${group.note ? `<p class="card-note-text">📝 备注: ${escapeHtml(group.note)}</p>` : ''}
-        
-        <div class="card-actions">
-          <button type="button" class="btn btn-secondary btn-small action-edit-btn">✏️ 编辑</button>
-          <button type="button" class="btn btn-secondary btn-small action-copy-btn">📋 复制</button>
-          <button type="button" class="btn btn-danger btn-small action-delete-btn">🗑️ 删除</button>
+        <div class="card-slots-list">${slotsHtml}</div>
+        ${group.note ? `<p class="text-secondary small mt-2 mb-0">📝 ${escapeHtml(group.note)}</p>` : ''}
+        <div class="btn-list mt-3">
+          <button type="button" class="btn btn-sm action-edit-btn">编辑</button>
+          <button type="button" class="btn btn-sm action-copy-btn">复制</button>
+          <button type="button" class="btn btn-sm btn-danger action-delete-btn">删除</button>
         </div>
       </div>
     `;
@@ -985,12 +1043,12 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
   }
   
   setError(formError, '');
-  show(modal);
+  showCourseModal();
   courseForm.name.focus();
 }
 
 function closeEditor() {
-  hide(modal);
+  hideCourseModal();
   state.editingGroupName = null;
 }
 
@@ -1005,22 +1063,19 @@ function updateSessionBadge() {
   const remainingMs = new Date(expiresAt).getTime() - Date.now();
   if (remainingMs <= 0) {
     sessionBadge.textContent = '连接已过期';
+    sessionBadge.className = 'badge bg-danger';
     sessionCountdown.textContent = '请安全退出并在手机端重新开启';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.backgroundColor = 'var(--danger)';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.boxShadow = '0 0 8px var(--danger)';
     return;
   }
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
-  
+
   if (minutes < 5) {
     sessionBadge.textContent = '连接即将断开';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.backgroundColor = 'var(--warning)';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.boxShadow = '0 0 8px var(--warning)';
+    sessionBadge.className = 'badge bg-warning';
   } else {
     sessionBadge.textContent = '安全连接中';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.backgroundColor = 'var(--success)';
-    sessionBadge.parentNode.querySelector('.status-indicator').style.boxShadow = '0 0 8px var(--success)';
+    sessionBadge.className = 'badge bg-success';
   }
   sessionCountdown.textContent = minutes > 0 ? `倒计时 ${minutes} 分 ${seconds} 秒` : `倒计时 ${seconds} 秒`;
 }
@@ -1383,7 +1438,7 @@ document.getElementById('cancel-course-btn').addEventListener('click', closeEdit
 document.getElementById('close-modal-x').addEventListener('click', closeEditor);
 
 modal.addEventListener('click', (event) => {
-  if (event.target === modal) {
+  if (!window.bootstrap?.Modal && event.target === modal) {
     closeEditor();
   }
 });
@@ -1626,7 +1681,7 @@ courseForm.addEventListener('submit', async (event) => {
 
 // 快捷键绑定
 document.addEventListener('keydown', (event) => {
-  if (!modal.classList.contains('hidden')) {
+  if (modal.classList.contains('show')) {
     if (event.key === 'Escape') {
       event.preventDefault();
       closeEditor();

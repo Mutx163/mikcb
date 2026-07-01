@@ -82,7 +82,21 @@ class _FakeLanEditHost implements LanEditHost {
       });
 
   @override
-  Future<void> importProfileBackupJson(String content) async {}
+  Future<void> importProfileBackupJson(String content) async {
+    final decoded = jsonDecode(content) as Map<String, dynamic>;
+    final raw = decoded['courses'] as List<dynamic>? ?? [];
+    courses.clear();
+    for (final item in raw) {
+      if (item is Map<String, dynamic>) {
+        courses.add(Course.fromJson(item));
+      } else if (item is Map) {
+        courses.add(Course.fromJson(Map<String, dynamic>.from(item)));
+      }
+    }
+    if (decoded.containsKey('currentWeek')) {
+      currentWeek = decoded['currentWeek'] as int;
+    }
+  }
 
   @override
   Future<int> importMergeBackupJson(String content) async {
@@ -872,6 +886,142 @@ void main() {
         body: jsonEncode({'pin': session.pin}),
       );
       expect(blocked.statusCode, 429);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('GET profile/active returns full backup JSON', () async {
+    final host = _FakeLanEditHost();
+    host.courses.addAll([
+      Course(
+        id: 'p1',
+        name: '备份课程',
+        teacher: '王老师',
+        location: 'A101',
+        dayOfWeek: 3,
+        startSection: 5,
+        endSection: 6,
+        startTime: '14:00',
+        endTime: '15:30',
+        color: '#FF5722',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    ]);
+    final session = LanEditSession.create(
+      random: _SequenceRandom([111222, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final response = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/api/v1/profile/active',
+        token: token,
+      );
+      expect(response.statusCode, 200);
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      expect(body['app'], 'mikcb');
+      expect(body['schemaVersion'], 1);
+      expect(body['courses'], hasLength(1));
+      expect(body['courses'][0]['name'], '备份课程');
+      expect(body['settings'], isA<Map>());
+      expect(body['currentWeek'], 3);
+    } finally {
+      await server.stop();
+    }
+  });
+
+  test('PUT profile/active replaces all courses', () async {
+    final host = _FakeLanEditHost();
+    host.courses.add(
+      Course(
+        id: 'old-1',
+        name: '旧课程',
+        teacher: '',
+        location: '',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 1,
+        startTime: '08:00',
+        endTime: '08:45',
+        color: '#2196F3',
+        startWeek: 1,
+        endWeek: 16,
+      ),
+    );
+    final session = LanEditSession.create(
+      random: _SequenceRandom([222333, 1, 2, 3]),
+    );
+    final server = LanEditServerService();
+    await server.start(host: host, session: session);
+
+    try {
+      final verify = await _request(
+        port: server.port!,
+        method: 'POST',
+        path: '/api/v1/auth/verify',
+        body: jsonEncode({'pin': session.pin}),
+      );
+      final token =
+          (jsonDecode(verify.body) as Map<String, dynamic>)['token'] as String;
+
+      final newProfile = jsonEncode({
+        'app': 'mikcb',
+        'schemaVersion': 1,
+        'courses': [
+          {
+            'id': 'new-1',
+            'name': '新课程',
+            'teacher': '李老师',
+            'location': 'B202',
+            'dayOfWeek': 2,
+            'startSection': 3,
+            'endSection': 4,
+            'startTime': '10:00',
+            'endTime': '11:30',
+            'color': '#4CAF50',
+            'startWeek': 1,
+            'endWeek': 16,
+          },
+        ],
+        'settings': host.settings.toJson(),
+        'currentWeek': 5,
+      });
+
+      final response = await _request(
+        port: server.port!,
+        method: 'PUT',
+        path: '/api/v1/profile/active',
+        token: token,
+        body: newProfile,
+      );
+      expect(response.statusCode, 200);
+
+      // Verify courses were replaced
+      final list = await _request(
+        port: server.port!,
+        method: 'GET',
+        path: '/api/v1/courses',
+        token: token,
+      );
+      final courses =
+          (jsonDecode(list.body) as Map<String, dynamic>)['courses'] as List;
+      expect(courses, hasLength(1));
+      expect(courses[0]['name'], '新课程');
+      expect(host.courses.any((c) => c.name == '旧课程'), isFalse);
     } finally {
       await server.stop();
     }

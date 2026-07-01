@@ -218,7 +218,7 @@ class _LanEditScreenState extends State<LanEditScreen>
                       ),
                     ),
                     const SizedBox(height: 12),
-                    if (_lanAddress != null) ...[
+                    if (_lanAddress != null && _lanAddress!.isNotEmpty) ...[
                       Center(
                         child: Container(
                           padding: const EdgeInsets.all(12),
@@ -229,7 +229,7 @@ class _LanEditScreenState extends State<LanEditScreen>
                           child: QrImageView(
                             data: _lanAddress!,
                             version: QrVersions.auto,
-                            size: 200,
+                            size: MediaQuery.of(context).size.width * 0.5,
                             gapless: true,
                           ),
                         ),

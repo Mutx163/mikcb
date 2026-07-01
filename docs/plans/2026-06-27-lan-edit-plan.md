@@ -68,7 +68,7 @@
 | 会话 | `lib/services/lan_edit_session.dart` | PIN、token、过期、审计 |
 | 服务 | `lib/services/lan_edit_server_service.dart` | `HttpServer` 绑定、路由分发 |
 | 协议 | `lib/services/lan_edit_api_handlers.dart` | 解析请求、调用 Provider |
-| Web | `assets/lan_edit/index.html` + `app.js` + `style.css` | 浏览器端 UI |
+| Web | `assets/lan_edit/index.html` + Tabler `vendor/` + `lan-timetable.css` + `app.js` | 浏览器端 UI |
 | 集成 | `lib/providers/timetable_provider.dart` | 仅新增薄封装，不内嵌 HTTP |
 
 **原则**：HTTP 层不直接操作 `SharedPreferences`；所有写入走 `TimetableProvider`，保证超级岛 / 小组件 / 持久化与 App 内编辑一致。
@@ -398,10 +398,10 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 
 ## 十三、后续演进（非 MVP）
 
-- 二维码一键打开（`qr_flutter`）
-- mDNS 服务名 `mikcb-lan.local`（`multicast_dns`）
+- ~~二维码一键打开（`qr_flutter`）~~ ✅（2026-06-29）
+- mDNS 服务名 `mikcb-lan.local`（进行中，见 `docs/plans/2026-06-30-lan-edit-mdns.md`）
 - 日程 / 考试编辑
-- Web 端周次切换、批量删除
+- ~~Web 端周次切换、批量删除~~ ✅（周次导航 + `batch-delete` API，2026-06-29）
 - 乐观锁 `profileRevision` 防双端覆盖
 - 可选 HTTPS 自签证书（一般 LAN 不必）
 
@@ -449,8 +449,8 @@ Future<void> lanEditImportActiveProfile(AppDataBackup backup);
 
 ### 状态
 
-- MVP 已完成；单元测试 **8/8** 通过
-- 变更尚未提交；真机热点 + PC 浏览器 **E2E 待验证**
+- MVP 已完成；LAN 单测 **14/14**（`lan_edit_server_service_test`），全量 **322** 通过（2026-06-29）
+- Web 路线图 P0–P2 已提交（`b30c174`）；真机热点 + PC 浏览器 **E2E 建议人工回归**
 
 ### Web UI v1.1
 

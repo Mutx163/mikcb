@@ -46,7 +46,7 @@ class LanEditServerService {
     if (!foregroundStarted) {
       await stop(reason: 'foreground_start_failed');
       throw StateError(
-        '无法启动前台服务（可能缺少通知或前台服务权限），局域网编辑已停止',
+        'Failed to start foreground service (missing notification or foreground service permission), LAN edit stopped',
       );
     }
     lanEditAuditInfo(
@@ -145,7 +145,16 @@ class LanEditServerService {
       return 'assets/lan_edit/app.js';
     }
     if (path == '/assets/style.css') {
-      return 'assets/lan_edit/style.css';
+      return 'assets/lan_edit/lan-timetable.css';
+    }
+    if (path == '/assets/lan-timetable.css') {
+      return 'assets/lan_edit/lan-timetable.css';
+    }
+    if (path.startsWith('/assets/vendor/')) {
+      final name = path.substring('/assets/vendor/'.length);
+      if (name == 'tabler.min.css' || name == 'tabler.min.js') {
+        return 'assets/lan_edit/vendor/$name';
+      }
     }
     return null;
   }

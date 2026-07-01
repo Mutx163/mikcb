@@ -5,447 +5,335 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>轻屿课表 · 局域网控制台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='24' font-size='24'%3E%F0%9F%93%85%3C/text%3E%3C/svg%3E" />
-  <link rel="stylesheet" href="/assets/style.css" />
+  <link rel="stylesheet" href="/assets/vendor/tabler.min.css" />
+  <link rel="stylesheet" href="/assets/lan-timetable.css" />
 </head>
 <body>
-  <!-- Toast 消息容器 -->
   <div id="toast-container" aria-live="polite"></div>
-
-  <!-- Loading 遮罩层 -->
   <div id="loading-overlay" class="loading-overlay hidden">
     <div class="spinner" aria-hidden="true"></div>
     <p id="loading-text">加载课表数据…</p>
   </div>
 
-  <!-- 1. 登录面板视图 -->
-  <div id="login-view" class="login-container">
-    <div class="login-card">
-      <div class="login-brand">
-        <div class="login-logo-badge" aria-hidden="true">📅</div>
-        <h1>轻屿课表</h1>
-        <p class="subtitle">局域网管理后台 · 高效管理您的课程数据</p>
+  <!-- 登录（Tabler 登录页） -->
+  <div id="login-view" class="page page-center">
+    <div class="container container-tight py-4">
+      <div class="text-center mb-4">
+        <span class="avatar avatar-lg bg-primary-lt mb-3">📅</span>
+        <h1 class="h2">轻屿课表</h1>
+        <p class="text-secondary">局域网管理后台</p>
       </div>
-      <form id="login-form">
-        <div class="form-group">
-          <label class="pin-label" for="pin-input">输入手机 App 显示的 6 位 PIN 验证码</label>
-          <input
-            id="pin-input"
-            class="pin-input"
-            type="text"
-            inputmode="numeric"
-            maxlength="6"
-            placeholder="• • • • • •"
-            autocomplete="one-time-code"
-            required
-          />
+      <div class="card card-md">
+        <div class="card-body">
+          <form id="login-form">
+            <div class="mb-3">
+              <label class="form-label" for="pin-input">手机 App 显示的 6 位 PIN</label>
+              <input
+                id="pin-input"
+                class="form-control pin-input"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="• • • • • •"
+                autocomplete="one-time-code"
+                required
+              />
+            </div>
+            <div class="form-footer">
+              <button type="submit" class="btn btn-primary w-100">验证并进入</button>
+            </div>
+          </form>
+          <p id="login-error" class="text-danger mt-3 hidden"></p>
         </div>
-        <button type="submit" class="btn btn-primary btn-large">验证并进入系统</button>
-      </form>
-      <p id="login-error" class="error hidden"></p>
-      <div class="login-tips">
-        <h3>💡 连接提示</h3>
-        <ul>
-          <li>确保电脑与手机连接到<strong>同一个 Wi‑Fi</strong> 网络，或者电脑连接了手机开启的<strong>热点</strong>。</li>
-          <li>在手机 App 的「局域网编辑」功能页中，即可查看到当前的访问 IP 地址与 6 位随机 PIN。</li>
-          <li>出于安全考虑，PIN 具有时效性。若已失效，需在手机 App 端重新生成并输入。</li>
-        </ul>
       </div>
+      <p class="text-secondary text-center mt-3 small">
+        电脑与手机需在同一 Wi‑Fi 或手机热点；PIN 失效请在 App 重新开启局域网编辑。
+      </p>
     </div>
   </div>
 
-  <!-- 2. 后台管理系统主界面 (登录后可见) -->
-  <div id="editor-view" class="admin-layout hidden">
-    <!-- 侧边导航栏 -->
-    <aside class="sidebar">
-      <div class="sidebar-brand">
-        <span class="brand-icon">📅</span>
-        <div class="brand-text">
-          <h2>轻屿课表</h2>
-          <span class="brand-tag">局域网控制台</span>
-        </div>
-      </div>
-      
-      <div class="profile-card">
-        <div class="profile-info">
-          <span class="profile-label">当前课表档案</span>
-          <span id="profile-name" class="profile-value">加载中...</span>
-        </div>
-      </div>
-
-      <nav class="sidebar-menu">
-        <button type="button" class="nav-item active" data-tab="overview">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-text">控制台概览</span>
+  <!-- 后台主界面（Tabler 侧栏布局） -->
+  <div id="editor-view" class="hidden">
+    <div class="page layout-fluid">
+    <aside class="navbar navbar-vertical navbar-expand-lg" data-bs-theme="dark">
+      <div class="container-fluid">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="切换导航">
+          <span class="navbar-toggler-icon"></span>
         </button>
-        <button type="button" class="nav-item" data-tab="timetable">
-          <span class="nav-icon">📅</span>
-          <span class="nav-text">课表网格</span>
-        </button>
-        <button type="button" class="nav-item" data-tab="courses">
-          <span class="nav-icon">📚</span>
-          <span class="nav-text">课程库管理</span>
-        </button>
-        <button type="button" class="nav-item" data-tab="backup">
-          <span class="nav-icon">💾</span>
-          <span class="nav-text">导入与备份</span>
-        </button>
-      </nav>
-
-      <div class="sidebar-footer">
-        <div class="session-status-panel">
-          <div class="session-status-header">
-            <span class="status-indicator"></span>
-            <span id="session-badge" class="session-badge connected">连接正常</span>
+        <h1 class="navbar-brand navbar-brand-autodark">
+          <span class="navbar-brand-text">轻屿课表</span>
+          <small class="d-block text-secondary fw-normal" style="font-size:0.65rem">局域网控制台</small>
+        </h1>
+        <div class="card card-sm mb-3">
+          <div class="card-body py-2">
+            <div class="text-secondary small">当前课表</div>
+            <div id="profile-name" class="fw-bold text-truncate">加载中…</div>
           </div>
-          <span id="session-countdown" class="session-countdown-text">计算过期时间中...</span>
         </div>
-        <div class="footer-actions">
-          <button id="refresh-btn" type="button" class="btn btn-secondary btn-small" title="重新从手机同步数据">
-            <span>🔄 刷新同步</span>
-          </button>
-          <button id="logout-btn" type="button" class="btn btn-danger btn-small">
-            <span>🚪 退出连接</span>
-          </button>
+        <div class="collapse navbar-collapse" id="sidebar-menu">
+          <ul class="navbar-nav pt-lg-3">
+            <li class="nav-item">
+              <button type="button" class="nav-link nav-item w-100 text-start active" data-tab="overview">
+                <span class="nav-link-icon">🏠</span>
+                <span class="nav-link-title">控制台概览</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link nav-item w-100 text-start" data-tab="timetable">
+                <span class="nav-link-icon">📅</span>
+                <span class="nav-link-title">课表网格</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link nav-item w-100 text-start" data-tab="courses">
+                <span class="nav-link-icon">📚</span>
+                <span class="nav-link-title">课程库</span>
+              </button>
+            </li>
+            <li class="nav-item">
+              <button type="button" class="nav-link nav-item w-100 text-start" data-tab="backup">
+                <span class="nav-link-icon">💾</span>
+                <span class="nav-link-title">导入与备份</span>
+              </button>
+            </li>
+          </ul>
+          <div class="mt-auto pt-3 border-top border-secondary">
+            <div class="px-2 mb-2 small">
+              <span id="session-badge" class="badge bg-success">连接正常</span>
+              <div id="session-countdown" class="text-secondary mt-1">—</div>
+            </div>
+            <button id="refresh-btn" type="button" class="btn btn-outline-light btn-sm w-100 mb-1">🔄 刷新同步</button>
+            <button id="logout-btn" type="button" class="btn btn-outline-danger btn-sm w-100">退出连接</button>
+          </div>
         </div>
       </div>
     </aside>
 
-    <!-- 主工作区 -->
-    <main class="main-content">
-      <!-- 头部状态栏 -->
-      <header class="top-bar">
-        <div class="top-bar-left">
-          <h1 id="page-title">控制台概览</h1>
-          <p id="week-label" class="subtitle">获取时间轴数据中...</p>
-        </div>
-      </header>
-
-      <!-- 工作区面板容器 -->
-      <div class="workspace-panels">
-        
-        <!-- 面板 A: 控制台概览 (Overview) -->
-        <section id="overview-panel" class="tab-panel">
-          <!-- 概览欢迎卡片 -->
-          <div class="overview-welcome-card">
-            <div class="welcome-text">
-              <h2>局域网连接已建立 🟢</h2>
-              <p>手机与电脑数据已实时连通。你在电脑端对课程库做出的所有调整（如添加、修改、删除时间段），都会立竿见影地呈现在手机端轻屿课表 App 中。</p>
-            </div>
-            <div class="quick-actions">
-              <button id="quick-add-btn" type="button" class="btn btn-primary">➕ 新建课程</button>
+    <div class="page-wrapper">
+      <div class="page-header d-print-none">
+        <div class="container-xl">
+          <div class="row g-2 align-items-center">
+            <div class="col">
+              <h2 id="page-title" class="page-title">控制台概览</h2>
+              <div id="week-label" class="text-secondary">获取时间轴数据中…</div>
             </div>
           </div>
+        </div>
+      </div>
+      <div class="page-body">
+        <div class="container-xl workspace-panels">
 
-          <!-- 双栏布局 -->
-          <div class="overview-two-columns">
-            <div class="overview-column-main">
-              <!-- 今日课程 -->
-              <div class="panel-card">
-                <div class="panel-card-header">
-                  <h3>📖 今日课程安排</h3>
-                  <span id="overview-today-date" class="badge badge-success">获取今日日期中...</span>
+          <section id="overview-panel" class="tab-panel">
+            <div class="alert alert-success" role="alert">
+              <h4 class="alert-title">局域网连接已建立</h4>
+              <div class="text-secondary">电脑端修改会实时同步到手机 App。</div>
+              <div class="mt-2">
+                <button id="quick-add-btn" type="button" class="btn btn-primary">➕ 新建课程</button>
+              </div>
+            </div>
+            <div class="row row-deck row-cards">
+              <div class="col-lg-8">
+                <div class="card">
+                  <div class="card-header">
+                    <h3 class="card-title">📖 今日课程</h3>
+                    <span id="overview-today-date" class="badge bg-green-lt">—</span>
+                  </div>
+                  <div class="card-body">
+                    <ul id="today-course-list" class="list-unstyled mb-0">
+                      <li class="text-secondary">加载中…</li>
+                    </ul>
+                  </div>
                 </div>
-                <div class="panel-card-body">
-                  <ul id="today-course-list" class="list-cards">
-                    <li class="empty-list-hint">今天放假啦，没有检测到今天的课程计划</li>
-                  </ul>
+                <div class="card mt-3">
+                  <div class="card-header"><h3 class="card-title">🔐 服务明细</h3></div>
+                  <div class="card-body">
+                    <div class="row g-2">
+                      <div class="col-6 col-md-3"><div class="text-secondary small">IP</div><strong id="info-ip" class="user-select-all">-</strong></div>
+                      <div class="col-6 col-md-3"><div class="text-secondary small">端口</div><strong id="info-port">-</strong></div>
+                      <div class="col-6 col-md-3"><div class="text-secondary small">PIN</div><strong id="info-pin" class="user-select-all">-</strong></div>
+                      <div class="col-6 col-md-3"><div class="text-secondary small">设备</div><strong id="info-clients">-</strong></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <!-- 本地连接配置 -->
-              <div class="panel-card">
-                <div class="panel-card-header">
-                  <h3>🔐 局域网服务明细</h3>
-                </div>
-                <div class="panel-card-body">
-                  <div class="connection-grid">
-                    <div class="connection-item">
-                      <span class="c-key">局域网 IP</span>
-                      <strong id="info-ip" class="c-val select-all">-</strong>
-                    </div>
-                    <div class="connection-item">
-                      <span class="c-key">Http 端口</span>
-                      <strong id="info-port" class="c-val">-</strong>
-                    </div>
-                    <div class="connection-item">
-                      <span class="c-key">PIN 验证码</span>
-                      <strong id="info-pin" class="c-val select-all font-mono">-</strong>
-                    </div>
-                    <div class="connection-item">
-                      <span class="c-key">在线编辑设备</span>
-                      <strong id="info-clients" class="c-val">-</strong>
+              <div class="col-lg-4">
+                <div class="card" style="max-height:420px">
+                  <div class="card-header"><h3 class="card-title">📜 操作日志</h3></div>
+                  <div class="card-body overflow-auto">
+                    <div id="activity-log-list" class="activity-log-timeline">
+                      <div class="text-secondary">暂无记录</div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </section>
 
-            <!-- 操作日志 -->
-            <div class="overview-column-side">
-              <div class="panel-card scrollable-card">
-                <div class="panel-card-header">
-                  <h3>📜 浏览器操作日志</h3>
+          <section id="timetable-panel" class="tab-panel hidden">
+            <div class="card mb-3">
+              <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+                <button id="prev-week-btn" type="button" class="btn btn-outline-secondary btn-icon">‹</button>
+                <select id="week-picker" class="form-select w-auto"></select>
+                <button id="next-week-btn" type="button" class="btn btn-outline-secondary btn-icon">›</button>
+                <button id="sync-phone-week-btn" type="button" class="btn btn-primary btn-sm">设为手机当前周</button>
+                <span class="text-secondary small ms-auto">点击空格快速添加课程</span>
+              </div>
+            </div>
+            <div class="card">
+              <div id="grid-wrapper" class="table-responsive">
+                <table id="timetable-grid" class="table table-bordered mb-0"></table>
+              </div>
+            </div>
+          </section>
+
+          <section id="courses-panel" class="tab-panel hidden">
+            <div class="card mb-3">
+              <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+                <input id="course-search" class="form-control" type="search" placeholder="搜索课程、教师、教室…" style="max-width:280px" />
+                <select id="filter-nature" class="form-select w-auto">
+                  <option value="">全部性质</option>
+                  <option value="required">必修</option>
+                  <option value="elective">选修</option>
+                </select>
+                <button id="btn-batch-delete-courses" type="button" class="btn btn-danger btn-sm hidden" disabled>批量删除</button>
+                <button id="btn-add-course" type="button" class="btn btn-primary ms-auto">➕ 新建课程</button>
+              </div>
+            </div>
+            <p class="text-secondary">共 <strong id="course-count">0</strong> 门课程</p>
+            <div id="courses-cards-container" class="courses-cards-grid"></div>
+          </section>
+
+          <section id="backup-panel" class="tab-panel hidden">
+            <div class="row row-cards">
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header"><h3 class="card-title">📤 导出备份</h3></div>
+                  <div class="card-body">
+                    <p class="text-secondary">下载完整课表 JSON。</p>
+                    <p>档案：<strong id="backup-profile-name">-</strong></p>
+                    <button id="btn-export-backup" type="button" class="btn btn-primary w-100">下载 .json</button>
+                  </div>
                 </div>
-                <div class="panel-card-body">
-                  <div id="activity-log-list" class="activity-log-timeline">
-                    <div class="log-empty-hint">暂无操作记录</div>
+              </div>
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header"><h3 class="card-title">🔀 合并导入</h3></div>
+                  <div class="card-body">
+                    <div id="merge-drop-zone" class="upload-drop-zone mb-2">
+                      <input type="file" id="merge-file-input" accept=".json" class="hidden" />
+                      <span id="merge-selected-filename" class="selected-filename hidden"></span>
+                      <span>拖放或点击选择 JSON</span>
+                    </div>
+                    <button id="btn-import-merge" type="button" class="btn btn-primary w-100" disabled>合并到手机</button>
+                    <pre id="merge-import-result" class="import-result-log hidden"></pre>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-danger">
+                  <div class="card-header"><h3 class="card-title">📥 覆盖导入</h3></div>
+                  <div class="card-body">
+                    <div class="alert alert-warning py-2 small">将完全替换手机当前课表</div>
+                    <div id="drop-zone" class="upload-drop-zone mb-2">
+                      <input type="file" id="backup-file-input" accept=".json" class="hidden" />
+                      <span id="selected-filename" class="selected-filename hidden"></span>
+                      <span>拖放或点击选择 JSON</span>
+                    </div>
+                    <button id="btn-import-backup" type="button" class="btn btn-danger w-100" disabled>确认覆盖</button>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header"><h3 class="card-title">📊 表格导入</h3></div>
+                  <div class="card-body">
+                    <label class="form-check mb-2">
+                      <input type="checkbox" id="spreadsheet-replace-existing" class="form-check-input" />
+                      <span class="form-check-label">覆盖现有课程</span>
+                    </label>
+                    <div id="spreadsheet-drop-zone" class="upload-drop-zone mb-2">
+                      <input type="file" id="spreadsheet-file-input" accept=".csv,.xlsx" class="hidden" />
+                      <span id="spreadsheet-selected-filename" class="selected-filename hidden"></span>
+                      <span>CSV / XLSX</span>
+                    </div>
+                    <button id="btn-import-spreadsheet" type="button" class="btn btn-primary w-100" disabled>导入表格</button>
+                    <pre id="spreadsheet-import-result" class="import-result-log hidden"></pre>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
-
-        <!-- 面板 B: 课表网格 (Timetable Grid) -->
-        <section id="timetable-panel" class="tab-panel hidden">
-          <div class="timetable-header-toolbar">
-            <div class="week-nav-container">
-              <button id="prev-week-btn" type="button" class="btn btn-secondary icon-btn" title="上一周">‹</button>
-              <label class="week-picker-wrapper">
-                <select id="week-picker" class="select-modern"></select>
-              </label>
-              <button id="next-week-btn" type="button" class="btn btn-secondary icon-btn" title="下一周">›</button>
-              <button id="sync-phone-week-btn" type="button" class="btn btn-primary btn-small" title="将当前查看周同步为手机 App 的当前周">
-                设为手机当前周
-              </button>
-            </div>
-            <div class="timetable-tips">
-              <span>💡 提示：点击任意空白的课表格子即可在该时段快速添加新课程</span>
-            </div>
-          </div>
-          <div class="grid-card">
-            <div id="grid-wrapper" class="grid-main">
-              <table id="timetable-grid"></table>
-            </div>
-          </div>
-        </section>
-
-        <!-- 面板 C: 课程库管理 (Courses Library) -->
-        <section id="courses-panel" class="tab-panel hidden">
-          <div class="library-toolbar">
-            <div class="search-and-filter">
-              <input
-                id="course-search"
-                class="input-search"
-                type="search"
-                placeholder="🔍 输入课程名称、教师或教室进行搜索..."
-                autocomplete="off"
-              />
-              <select id="filter-nature" class="select-modern">
-                <option value="">全部性质</option>
-                <option value="required">必修课</option>
-                <option value="elective">选修课</option>
-              </select>
-            </div>
-            <div class="library-actions">
-              <button id="btn-batch-delete-courses" type="button" class="btn btn-danger btn-small hidden" disabled>
-                批量删除选中
-              </button>
-              <button id="btn-add-course" type="button" class="btn btn-primary">
-                <span>➕ 新建课程</span>
-              </button>
-            </div>
-          </div>
-
-          <div class="library-summary-row">
-            <span>课程库中共管理了 <strong id="course-count" class="count-tag">0</strong> 门独立课程</span>
-          </div>
-
-          <!-- 课程卡片网格容器 -->
-          <div id="courses-cards-container" class="courses-cards-grid">
-            <!-- 由 JS 渲染 -->
-          </div>
-        </section>
-
-        <!-- 面板 D: 数据导入与备份 (Backup & Import) -->
-        <section id="backup-panel" class="tab-panel hidden">
-          <div class="backup-layout">
-            <div class="panel-card card-half">
-              <div class="panel-card-header">
-                <h3>📤 导出课表备份</h3>
-              </div>
-              <div class="panel-card-body flex-column">
-                <p class="description-text">
-                  将当前手机端<b>整个课表档案</b>（含全部课程、考试安排以及设置）打包下载为一个备份 JSON 文件。可用于在其他手机轻屿课表 App 中导入恢复。
-                </p>
-                <div class="card-info-badge">
-                  <span>当前活跃配置：</span><strong id="backup-profile-name">-</strong>
-                </div>
-                <div class="action-container-full mt-auto">
-                  <button id="btn-export-backup" type="button" class="btn btn-primary btn-large">
-                    <span>💾 生成并下载备份文件 (.json)</span>
-                  </button>
-                </div>
+            <div class="card mt-3">
+              <div class="card-header"><h3 class="card-title">⚙️ 作息节次</h3></div>
+              <div class="card-body">
+                <div id="meta-sections-container" class="row g-2"></div>
               </div>
             </div>
-
-            <div class="panel-card card-half">
-              <div class="panel-card-header">
-                <h3>🔀 合并导入备份（仅课程）</h3>
-              </div>
-              <div class="panel-card-body flex-column">
-                <p class="description-text">
-                  上传课表备份 JSON，将其中课程<b>合并</b>进手机当前课表，不会删除已有课程或覆盖学期设置。
-                </p>
-                <div id="merge-drop-zone" class="upload-drop-zone">
-                  <span class="upload-icon">🔀</span>
-                  <p>将备份 JSON 拖到这里，或 <span class="upload-link-text">点击选择</span></p>
-                  <input type="file" id="merge-file-input" accept=".json" class="hidden" />
-                  <span id="merge-selected-filename" class="selected-filename hidden">未选择文件</span>
-                </div>
-                <div class="action-container-full mt-auto">
-                  <button id="btn-import-merge" type="button" class="btn btn-primary btn-large" disabled>
-                    <span>合并导入到手机</span>
-                  </button>
-                </div>
-                <pre id="merge-import-result" class="import-result-log hidden"></pre>
-              </div>
-            </div>
-
-            <div class="panel-card card-half">
-              <div class="panel-card-header">
-                <h3>📥 覆盖性导入备份</h3>
-              </div>
-              <div class="panel-card-body flex-column">
-                <p class="description-text">
-                  通过上传轻屿课表的备份 JSON 文件，来完全替换手机端当前档案的全部数据。
-                </p>
-                <div class="danger-alert">
-                  <strong>⚠️ 警告</strong>: 导入为覆盖性操作。成功导入后，手机端及网页控制台当前的全部课程将丢失，且无法撤销！
-                </div>
-                
-                <!-- 拖拽上传区域 -->
-                <div id="drop-zone" class="upload-drop-zone">
-                  <span class="upload-icon">📄</span>
-                  <p>将备份 JSON 文件拖到这里，或 <span class="upload-link-text">点击选择文件</span></p>
-                  <input type="file" id="backup-file-input" accept=".json" class="hidden" />
-                  <span id="selected-filename" class="selected-filename hidden">未选择文件</span>
-                </div>
-
-                <div class="action-container-full mt-auto">
-                  <button id="btn-import-backup" type="button" class="btn btn-danger btn-large" disabled>
-                    <span>⚠️ 确认上传并覆盖手机端</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel-card mt-6">
-            <div class="panel-card-header">
-              <h3>📊 表格导入课程 (CSV / XLSX)</h3>
-            </div>
-            <div class="panel-card-body flex-column">
-              <p class="description-text">
-                上传与 App 相同的轻屿课表模板或 WakeUp 兼容表格，解析后写入手机当前课表。格式说明见仓库 <code>assets/templates/mikcb_course_import_template.csv</code>。
-              </p>
-              <label class="checkbox-container">
-                <input type="checkbox" id="spreadsheet-replace-existing" />
-                <span class="checkbox-checkmark"></span>
-                <span>覆盖现有课程（不勾选则合并导入）</span>
-              </label>
-              <div id="spreadsheet-drop-zone" class="upload-drop-zone">
-                <span class="upload-icon">📊</span>
-                <p>将 CSV / XLSX 拖到这里，或 <span class="upload-link-text">点击选择</span></p>
-                <input type="file" id="spreadsheet-file-input" accept=".csv,.xlsx,text/csv" class="hidden" />
-                <span id="spreadsheet-selected-filename" class="selected-filename hidden">未选择文件</span>
-              </div>
-              <div class="action-container-full mt-auto">
-                <button id="btn-import-spreadsheet" type="button" class="btn btn-primary btn-large" disabled>
-                  <span>导入表格到手机</span>
-                </button>
-              </div>
-              <pre id="spreadsheet-import-result" class="import-result-log hidden"></pre>
-            </div>
-          </div>
-
-          <!-- 系统节次设置详情卡片 -->
-          <div class="panel-card mt-6">
-            <div class="panel-card-header">
-              <h3>⚙️ 作息节次时间表</h3>
-            </div>
-            <div class="panel-card-body">
-              <div class="meta-sections-grid" id="meta-sections-container">
-                <!-- 由 JavaScript 填充 -->
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </div>
-    </main>
-  </div>
-
-  <!-- 3. 新增/编辑课程的浮动 Modal 弹窗 -->
-  <div id="editor-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-    <div class="modal-card">
-      <div class="modal-card-header">
-        <h3 id="modal-title">编辑课程</h3>
-        <button type="button" id="close-modal-x" class="modal-close-btn">&times;</button>
-      </div>
-      <form id="course-form">
-        <div class="form-grid">
-          
-          <div class="form-group col-span-2">
-            <label class="form-label" for="field-name">课程名称 <span class="required-star">*</span></label>
-            <input name="name" id="field-name" placeholder="请输入课程名称，例如：高等数学" required />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="field-shortName">课程简称</label>
-            <input name="shortName" id="field-shortName" placeholder="可选，用于在格子中精简显示" />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="field-courseNature">课程性质</label>
-            <select name="courseNature" id="field-courseNature" class="select-modern">
-              <option value="required">必修</option>
-              <option value="elective">选修</option>
-            </select>
-          </div>
-
-          <div class="form-group col-span-2">
-            <fieldset class="color-fieldset">
-              <legend>课程颜色</legend>
-              <div id="color-swatches" class="color-swatches"></div>
-              <input type="hidden" name="color" id="color-input" />
-            </fieldset>
-          </div>
-
-          <div class="form-group col-span-2">
-            <label class="form-label" for="field-note">备注信息</label>
-            <textarea name="note" id="field-note" rows="2" placeholder="可选，输入关于课程的备注"></textarea>
-          </div>
-
-          <!-- 动态上课时间段段落 -->
-          <div class="form-group col-span-2 mt-4">
-            <div class="slots-section-header">
-              <h3>⏰ 上课时间与地点</h3>
-              <button type="button" id="btn-add-slot-field" class="btn btn-secondary btn-small">➕ 添加时间段</button>
-            </div>
-            <div id="schedule-slots-container" class="schedule-slots-container">
-              <!-- 由 JavaScript 动态插入 -->
-            </div>
-          </div>
+          </section>
 
         </div>
-
-        <div class="modal-actions">
-          <button type="button" id="delete-course-btn" class="btn btn-danger hidden">
-            <span>🗑️ 删除整个课程</span>
-          </button>
-          <button type="button" id="duplicate-course-btn" class="btn btn-secondary hidden">
-            <span>📋 复制课程</span>
-          </button>
-          <div class="spacer"></div>
-          <button type="button" id="cancel-course-btn" class="btn btn-secondary">取消</button>
-          <button type="submit" class="btn btn-primary">保存修改</button>
-        </div>
-      </form>
-      <p id="form-error" class="error hidden"></p>
+      </div>
+    </div>
     </div>
   </div>
 
+  <div id="editor-modal" class="modal modal-blur fade" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="modal-title" class="modal-title">编辑课程</h5>
+          <button type="button" id="close-modal-x" class="btn-close" aria-label="关闭"></button>
+        </div>
+        <form id="course-form">
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="field-name">课程名称 *</label>
+                <input name="name" id="field-name" class="form-control" required />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="field-shortName">简称</label>
+                <input name="shortName" id="field-shortName" class="form-control" />
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="field-courseNature">性质</label>
+                <select name="courseNature" id="field-courseNature" class="form-select">
+                  <option value="required">必修</option>
+                  <option value="elective">选修</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <fieldset class="border rounded p-2">
+                  <legend class="float-none w-auto px-1 small">颜色</legend>
+                  <div id="color-swatches" class="color-swatches"></div>
+                  <input type="hidden" name="color" id="color-input" />
+                </fieldset>
+              </div>
+              <div class="col-12">
+                <label class="form-label" for="field-note">备注</label>
+                <textarea name="note" id="field-note" class="form-control" rows="2"></textarea>
+              </div>
+              <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <strong>上课时间段</strong>
+                  <button type="button" id="btn-add-slot-field" class="btn btn-sm btn-outline-primary">添加</button>
+                </div>
+                <div id="schedule-slots-container" class="schedule-slots-container"></div>
+              </div>
+            </div>
+            <p id="form-error" class="text-danger hidden mt-2"></p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" id="delete-course-btn" class="btn btn-danger me-auto hidden">删除课程</button>
+            <button type="button" id="duplicate-course-btn" class="btn btn-outline-secondary hidden">复制</button>
+            <button type="button" id="cancel-course-btn" class="btn btn-link">取消</button>
+            <button type="submit" class="btn btn-primary">保存</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="/assets/vendor/tabler.min.js"></script>
   <script src="/assets/app.js"></script>
 </body>
 </html>
