@@ -89,3 +89,4 @@ tool/chrome-devtools-mcp-guide.md
 
 # Android堆转储文件
 *.hprof
+*.patch
