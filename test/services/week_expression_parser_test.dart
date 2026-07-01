@@ -60,6 +60,62 @@ void main() {
       );
     });
 
+    test('rejects non-numeric token', () {
+      expect(
+        () => WeekExpressionParser.parse('abc', itemName: '周数'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects week number zero', () {
+      expect(
+        () => WeekExpressionParser.parse('0', itemName: '周数'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects range starting from zero', () {
+      expect(
+        () => WeekExpressionParser.parse('0-5', itemName: '周数'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('rejects range exceeding 30', () {
+      expect(
+        () => WeekExpressionParser.parse('1-31', itemName: '周数'),
+        throwsA(isA<FormatException>()),
+      );
+    });
+
+    test('parses single week number', () {
+      expect(
+        WeekExpressionParser.parse('5', itemName: '周数'),
+        [5],
+      );
+    });
+
+    test('parses single-element range', () {
+      expect(
+        WeekExpressionParser.parse('5-5', itemName: '周数'),
+        [5],
+      );
+    });
+
+    test('returns empty list for empty string', () {
+      expect(
+        WeekExpressionParser.parse('', itemName: '周数'),
+        <int>[],
+      );
+    });
+
+    test('returns empty list for whitespace-only string', () {
+      expect(
+        WeekExpressionParser.parse('   ', itemName: '周数'),
+        <int>[],
+      );
+    });
+
     test('clamps weeks above semesterWeekCount and records warning', () {
       final warnings = <String>[];
       expect(

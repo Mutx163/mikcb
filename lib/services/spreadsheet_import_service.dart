@@ -218,16 +218,21 @@ class SpreadsheetImportService {
   }
 
   List<List<String>> _decodeXlsxRows(List<int> bytes) {
-    final decoder = TableParser.decodeBytes(bytes);
-    if (decoder.tables.isEmpty) {
-      return const [];
+    try {
+      final decoder = TableParser.decodeBytes(bytes);
+      if (decoder.tables.isEmpty) {
+        return const [];
+      }
+      return _tableToStringRows(decoder.tables.values.first);
+    } catch (error) {
+      throw FormatException('XLSX 文件解析失败：$error');
     }
-    return _tableToStringRows(decoder.tables.values.first);
   }
 
   List<List<String>> _tableToStringRows(TableSheet table) {
     final rows = <List<String>>[];
-    for (var rowIndex = 0; rowIndex < table.maxRows; rowIndex++) {
+    final length = table.rows.length;
+    for (var rowIndex = 0; rowIndex < length; rowIndex++) {
       final row = table.rows[rowIndex];
       rows.add(
         List<String>.generate(
@@ -268,6 +273,12 @@ class SpreadsheetImportService {
     required TimetableSettings settings,
     required List<String> warnings,
   }) {
+    if (row.length < 7) {
+      throw FormatException(
+        'WakeUp 格式需要至少 7 列（课程名称, 星期, 开始节数, 结束节数, 老师, 地点, 周数），'
+        '但第 $rowNumber 行只有 ${row.length} 列',
+      );
+    }
     final name = row[0].trim();
     if (name.isEmpty) {
       throw FormatException('课程名称 不能为空');
@@ -396,6 +407,14 @@ class SpreadsheetImportService {
       if (startWeek < 1) {
         throw FormatException('开始周 必须大于等于 1');
       }
+      if (startWeek < 1) {
+        throw FormatException('开始周 必须大于等于 1');
+      }
+      if (startWeek > settings.semesterWeekCount) {
+        throw FormatException(
+          '开始周 $startWeek 超过学期周数 ${settings.semesterWeekCount}',
+        );
+      }
       if (endWeek < startWeek) {
         throw FormatException('结束周 不能小于开始周');
       }
@@ -405,11 +424,6 @@ class SpreadsheetImportService {
           '${settings.semesterWeekCount}，已调整为 ${settings.semesterWeekCount}',
         );
         endWeek = settings.semesterWeekCount;
-      }
-      if (startWeek > settings.semesterWeekCount) {
-        throw FormatException(
-          '开始周 $startWeek 超过学期周数 ${settings.semesterWeekCount}',
-        );
       }
       if (columns.hasColumn('单周', const [])) {
         isOddWeek = _readOptionalBool(columns.cell(row, '单周', const []));
@@ -517,7 +531,9 @@ class SpreadsheetImportService {
     required bool isStart,
   }) {
     if (section < 1 || section > settings.sectionCount) {
-      return '00:00';
+      throw FormatException(
+        '节次 $section 超出时间模板范围（1-${settings.sectionCount}）',
+      );
     }
     final sectionInfo = settings.sections[section - 1];
     return isStart ? sectionInfo.startTime : sectionInfo.endTime;
@@ -536,7 +552,13 @@ class SpreadsheetImportService {
     if (trimmed.isEmpty || trimmed == '无' || trimmed == '-') {
       return _defaultColor;
     }
-    return trimmed.startsWith('#') ? trimmed : '#$trimmed';
+    final color = trimmed.startsWith('#') ? trimmed : '#$trimmed';
+    // 校验 hex 颜色格式：#RGB、#RRGGBB 或 #AARRGGBB
+    final hexPattern = RegExp(r'^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$');
+    if (!hexPattern.hasMatch(color)) {
+      return _defaultColor;
+    }
+    return color;
   }
 
   CourseNature _parseCourseNature(String raw) {

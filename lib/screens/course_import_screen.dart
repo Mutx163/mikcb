@@ -536,6 +536,12 @@ class _SpreadsheetCourseImportScreenState
         [XFile(file.path)],
         subject: l10n.downloadSpreadsheetTemplateAction,
       );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.importFileReadFailed)),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -603,6 +609,12 @@ class _SpreadsheetCourseImportScreenState
                 : error.message,
           ),
         ),
+      );
+      return;
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.importFileReadFailed)),
       );
       return;
     }
@@ -679,7 +691,7 @@ Future<bool?> _showSpreadsheetWarnings(
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('取消'),
+            child: Text(l10n.cancelAction),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(dialogContext, true),

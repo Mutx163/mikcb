@@ -43,8 +43,14 @@ class WeekExpressionParser {
       if (rangeMatch != null) {
         final start = int.parse(rangeMatch.group(1)!);
         final end = int.parse(rangeMatch.group(2)!);
+        if (start < 1) {
+          throw FormatException('$itemName 周次起始值不合法');
+        }
         if (start > end) {
           throw FormatException('$itemName 周次范围不合法');
+        }
+        if (end > 30) {
+          throw FormatException('$itemName 周次范围过大，请检查');
         }
         var weeks = <int>[];
         for (var week = start; week <= end; week++) {
