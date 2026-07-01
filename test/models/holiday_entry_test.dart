@@ -21,7 +21,7 @@ void main() {
       expect(restored.isAdjustedWorkday, isFalse);
     });
 
-    test('type helpers distinguish vacation and makeup workday', () {
+    test('type helpers distinguish vacation, makeup workday, and adjusted restday', () {
       final vacation = HolidayEntry(
         date: DateTime(2026, 10, 1),
         name: '国庆节',
@@ -32,10 +32,18 @@ void main() {
         name: '调休上班',
         type: HolidayType.adjustedWorkday,
       );
+      final restday = HolidayEntry(
+        date: DateTime(2026, 10, 5),
+        name: '调休休息',
+        type: HolidayType.adjustedRestday,
+      );
 
       expect(vacation.shouldHideCourses, isTrue);
+      expect(vacation.isAdjustedWorkday, isFalse);
       expect(makeup.shouldHideCourses, isFalse);
       expect(makeup.isAdjustedWorkday, isTrue);
+      expect(restday.shouldHideCourses, isTrue);
+      expect(restday.isAdjustedWorkday, isFalse);
     });
   });
 

@@ -29,16 +29,27 @@ class HolidayLogEntry {
 class HolidayService {
   static const _cacheKeyPrefix = 'holiday_data_';
   static const _customHolidaysKey = 'custom_holidays';
-  static const _remoteHolidayBaseUrl = 'https://api.haoshenqi.top/holiday';
+  static const _remoteHolidayBaseUrl = 'https://publicapi.xiaoai.me/holiday/year';
+  static const _fallbackHolidayBaseUrl = 'https://holiday.ailcc.com/api/holiday/year';
 
   final http.Client _client;
+  final bool _ownsClient;
 
   /// 内存缓存
   final Map<int, HolidayData> _memoryCache = {};
 
   SharedPreferences? _prefs;
 
-  HolidayService({http.Client? client}) : _client = client ?? http.Client();
+  HolidayService({http.Client? client})
+      : _client = client ?? http.Client(),
+        _ownsClient = client == null;
+
+  /// 释放 HTTP 客户端资源
+  void dispose() {
+    if (_ownsClient) {
+      _client.close();
+    }
+  }
 
   /// Update process logs (most recent first, capped at 50).
   final List<HolidayLogEntry> logs = [];
@@ -139,8 +150,16 @@ class HolidayService {
   }
 
   Future<HolidayData?> _fetchRemoteUpdate(int year) async {
+    // Try primary API first, then fallback
+    final result = await _fetchFromXiaoai(year);
+    if (result != null) return result;
+    _log('主 API 失败，尝试备用 API…');
+    return _fetchFromAilcc(year);
+  }
+
+  Future<HolidayData?> _fetchFromXiaoai(int year) async {
     try {
-      final uri = Uri.parse('$_remoteHolidayBaseUrl?date=$year');
+      final uri = Uri.parse('$_remoteHolidayBaseUrl?year=$year');
       _log('正在请求 $uri …');
       final response = await _client
           .get(
@@ -150,14 +169,19 @@ class HolidayService {
               'User-Agent': 'mikcb-holiday-sync',
             },
           )
-          .timeout(const Duration(seconds: 10));
+          .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) {
-        _log('远程响应 ${response.statusCode}，跳过');
+        _log('主 API 响应 ${response.statusCode}，跳过');
         return null;
       }
 
-      final list = jsonDecode(response.body) as List<dynamic>;
-      _log('远程返回 ${list.length} 条原始数据，正在解析…');
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      if (json['code'] != 0) {
+        _log('主 API 返回错误：${json['msg']}');
+        return null;
+      }
+      final list = json['data'] as List<dynamic>;
+      _log('主 API 返回 ${list.length} 条原始数据，正在解析…');
       final entries = _convertApiEntries(list, year);
       if (entries.isEmpty) {
         _log('解析后无有效条目，跳过');
@@ -166,23 +190,62 @@ class HolidayService {
 
       return HolidayData(year: year, version: 1, entries: entries);
     } catch (e) {
-      _log('远程请求异常：$e');
+      _log('主 API 异常：$e');
       return null;
     }
   }
 
-  /// Convert flat API response to grouped HolidayEntry list.
-  /// API status: 0=workday, 1=weekend, 2=makeup workday, 3=holiday
+  Future<HolidayData?> _fetchFromAilcc(int year) async {
+    try {
+      final uri = Uri.parse('$_fallbackHolidayBaseUrl/$year');
+      _log('正在请求 $uri …');
+      final response = await _client
+          .get(
+            uri,
+            headers: const {
+              'Accept': 'application/json',
+              'User-Agent': 'mikcb-holiday-sync',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
+      if (response.statusCode != 200) {
+        _log('备用 API 响应 ${response.statusCode}，跳过');
+        return null;
+      }
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+      if (json['code'] != 0) {
+        _log('备用 API 返回错误');
+        return null;
+      }
+      final holidayMap = json['holiday'] as Map<String, dynamic>;
+      _log('备用 API 返回 ${holidayMap.length} 条原始数据，正在解析…');
+      final entries = _convertAilccEntries(holidayMap, year);
+      if (entries.isEmpty) {
+        _log('解析后无有效条目，跳过');
+        return null;
+      }
+
+      return HolidayData(year: year, version: 1, entries: entries);
+    } catch (e) {
+      _log('备用 API 异常：$e');
+      return null;
+    }
+  }
+
+  /// Convert API response to grouped HolidayEntry list.
+  /// xiaoai API daytype: 1=holiday, 2=makeup workday, 3=weekend, 4=workday
   List<HolidayEntry> _convertApiEntries(List<dynamic> list, int year) {
     // Collect holidays and makeup workdays
     final holidayDates = <DateTime>[];
     final makeupDates = <DateTime>[];
     for (final item in list) {
       final map = item as Map<String, dynamic>;
-      final status = map['status'] as int;
+      final daytype = map['daytype'] as int;
+      final rest = map['rest'] as int? ?? 1;
       final date = DateTime.parse(map['date'] as String);
-      if (status == 3) holidayDates.add(date);
-      if (status == 2) makeupDates.add(date);
+      if (daytype == 1) holidayDates.add(date); // 假期
+      if (daytype == 3 && rest == 0) makeupDates.add(date); // 调休上班
     }
 
     // Group consecutive holidays
@@ -241,6 +304,82 @@ class HolidayService {
     return entries;
   }
 
+  /// Convert ailcc API response to grouped HolidayEntry list.
+  /// ailcc format: {"01-01": {holiday: true, name: "元旦节（休）", ...}}
+  List<HolidayEntry> _convertAilccEntries(
+    Map<String, dynamic> holidayMap,
+    int year,
+  ) {
+    final holidayDates = <DateTime>[];
+    final makeupDates = <DateTime>[];
+
+    for (final entry in holidayMap.entries) {
+      final map = entry.value as Map<String, dynamic>;
+      final date = DateTime.parse(map['date'] as String);
+      final isHoliday = map['holiday'] as bool;
+      final name = map['name'] as String? ?? '';
+
+      if (isHoliday) {
+        holidayDates.add(date);
+      } else if (name.contains('班')) {
+        makeupDates.add(date);
+      }
+    }
+
+    // Group consecutive holidays
+    final groups = <List<DateTime>>[];
+    List<DateTime>? current;
+    for (final date in holidayDates) {
+      if (current != null && _isConsecutive(current.last, date)) {
+        current.add(date);
+      } else {
+        if (current != null) groups.add(current);
+        current = [date];
+      }
+    }
+    if (current != null) groups.add(current);
+
+    // Build entries
+    final entries = <HolidayEntry>[];
+    final groupIds = <String>[];
+    for (int i = 0; i < groups.length; i++) {
+      final group = groups[i];
+      final name = _nameForGroup(group);
+      final groupId = 'holiday-$year-$i';
+      groupIds.add(groupId);
+      for (final date in group) {
+        entries.add(HolidayEntry(
+          date: date,
+          name: name,
+          type: HolidayType.vacation,
+          groupId: groupId,
+        ));
+      }
+    }
+    for (final date in makeupDates) {
+      String? nearestGroupId;
+      int minDist = 22;
+      for (int i = 0; i < groups.length; i++) {
+        final group = groups[i];
+        final dist = _absDays(date, group.first);
+        final distEnd = _absDays(date, group.last);
+        final d = dist < distEnd ? dist : distEnd;
+        if (d < minDist) {
+          minDist = d;
+          nearestGroupId = groupIds[i];
+        }
+      }
+      entries.add(HolidayEntry(
+        date: date,
+        name: '调休上班',
+        type: HolidayType.adjustedWorkday,
+        groupId: nearestGroupId,
+      ));
+    }
+
+    return entries;
+  }
+
   /// Exposed for unit tests that validate API → [HolidayEntry] conversion.
   @visibleForTesting
   List<HolidayEntry> convertApiEntriesForTest(List<dynamic> list, int year) {
@@ -255,12 +394,16 @@ class HolidayService {
 
   String _nameForGroup(List<DateTime> group) {
     final first = group.first;
+    final last = group.last;
     final spanDays = group.length;
 
     // Fixed-date holidays
     if (first.month == 1 && first.day <= 3) return '元旦';
     if (first.month == 5 && first.day <= 5) return '劳动节';
     if (first.month == 10 && first.day <= 7) return '国庆节';
+
+    // 跨年假期：12月31日开始，1月结束 → 元旦
+    if (first.month == 12 && last.month == 1) return '元旦';
 
     // Lunar holidays by approximate date range
     if (first.month >= 1 && first.month <= 2 && spanDays >= 5) return '春节';
