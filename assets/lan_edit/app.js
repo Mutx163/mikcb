@@ -374,7 +374,7 @@ function renderDashboard() {
 
   todayCourseList.innerHTML = '';
   if (todayCourses.length === 0) {
-    todayCourseList.innerHTML = '<li class="empty-list-hint">🎉 今天放假啦，没有检测到今天的课程计划</li>';
+    todayCourseList.innerHTML = '<li class="empty-list-hint"><i class="ti ti-mood-smile me-1"></i>今天放假啦，没有检测到今天的课程计划</li>';
   } else {
     todayCourses.forEach(course => {
       const item = document.createElement('li');
@@ -392,7 +392,7 @@ function renderDashboard() {
         <div class="item-color-indicator" style="background-color: ${course.color || '#4f46e5'}"></div>
         <div class="item-info">
           <h4>${escapeHtml(course.name)}</h4>
-          <p>${escapeHtml(course.teacher || '未填教师')} · 📍 ${escapeHtml(course.location || '未指定教室')}</p>
+          <p><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher || '未填教师')} · <i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location || '未指定教室')}</p>
         </div>
         <div class="item-meta">
           <div><strong>${sectionText}</strong></div>
@@ -594,10 +594,10 @@ function renderCoursesTable() {
 
       return `
         <div class="card-slot-item">
-          <span class="slot-time">📅 ${dayName} ${sectionText} <span class="slot-weeks">(${weekText})</span></span>
+          <span class="slot-time"><i class="ti ti-calendar me-1"></i>${dayName} ${sectionText} <span class="slot-weeks">(${weekText})</span></span>
           <div class="slot-details">
-            ${course.teacher ? `<span class="slot-detail-pill">👤 ${escapeHtml(course.teacher)}</span>` : ''}
-            ${course.location ? `<span class="slot-detail-pill">📍 ${escapeHtml(course.location)}</span>` : ''}
+            ${course.teacher ? `<span class="slot-detail-pill"><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher)}</span>` : ''}
+            ${course.location ? `<span class="slot-detail-pill"><i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location)}</span>` : ''}
           </div>
         </div>
       `;
@@ -622,7 +622,7 @@ function renderCoursesTable() {
           ${natureBadge}
         </div>
         <div class="card-slots-list">${slotsHtml}</div>
-        ${group.note ? `<p class="text-secondary small mt-2 mb-0">📝 ${escapeHtml(group.note)}</p>` : ''}
+        ${group.note ? `<p class="text-secondary small mt-2 mb-0"><i class="ti ti-notes me-1"></i>${escapeHtml(group.note)}</p>` : ''}
         <div class="btn-list mt-3">
           <button type="button" class="btn btn-sm action-edit-btn">编辑</button>
           <button type="button" class="btn btn-sm action-copy-btn">复制</button>
