@@ -249,7 +249,21 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return l10n.guideTipsPageTitle;
   }
 
-  // ── Language selector ────────────────────────────────────────
+ // ── Language selector ────────────────────────────────────────
+
+  List<DropdownMenuItem<String>> buildLocaleDropdownItems(
+    BuildContext context,
+  ) {
+    final map = buildLocaleMenuMap(context);
+    return map.entries
+        .map(
+          (e) => DropdownMenuItem<String>(
+            value: e.value,
+            child: Text(e.key),
+          ),
+        )
+        .toList();
+  }
 
   Widget _buildLanguageSelector(
     ThemeData theme,

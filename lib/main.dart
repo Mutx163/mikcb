@@ -6,7 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:tdesign_flutter/tdesign_flutter.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -76,16 +76,10 @@ ThemeData _buildAppTheme(
     seedColor: seedColor,
     brightness: brightness,
   );
-  final isDark = brightness == Brightness.dark;
-  final tdTheme = TDTheme.defaultData();
-  final tdExtensions = <ThemeExtension>[
-    isDark ? (tdTheme.dark ?? tdTheme) : tdTheme,
-  ];
   return ThemeData(
     useMaterial3: true,
     fontFamily: fontFamily,
     colorScheme: colorScheme,
-    extensions: tdExtensions,
     scaffoldBackgroundColor: colorScheme.surface,
     appBarTheme: AppBarTheme(
       centerTitle: false,
@@ -103,9 +97,7 @@ ThemeData _buildAppTheme(
       elevation: 0,
       margin: EdgeInsets.zero,
       color: colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -113,44 +105,64 @@ ThemeData _buildAppTheme(
       contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
     ),
     chipTheme: ChipThemeData(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       side: BorderSide(color: colorScheme.outlineVariant),
     ),
   );
 }
 
 Future<void> main() async {
-  runZonedGuarded(() {
-    WidgetsFlutterBinding.ensureInitialized();
-    unawaited(AppLogService.instance.initialize());
-    WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
+      unawaited(AppLogService.instance.initialize());
+      WidgetsBinding.instance.addObserver(_AppLifecycleLogObserver());
 
-    FlutterError.onError = (details) {
-      FlutterError.presentError(details);
-      final stackTrace = details.stack ?? StackTrace.current;
+      FlutterError.onError = (details) {
+        FlutterError.presentError(details);
+        final stackTrace = details.stack ?? StackTrace.current;
+        unawaited(
+          AppLogService.instance.error(
+            'flutter_framework_error',
+            details.exceptionAsString(),
+            error: details.exception,
+            stackTrace: stackTrace,
+          ),
+        );
+        unawaited(
+          UmengAnalyticsService.reportUnhandledError(
+            details.exception,
+            stackTrace,
+            category: 'flutter_framework_error',
+          ),
+        );
+      };
+
+      PlatformDispatcher.instance.onError = (error, stackTrace) {
+        unawaited(
+          AppLogService.instance.error(
+            'flutter_platform_error',
+            error.toString(),
+            error: error,
+            stackTrace: stackTrace,
+          ),
+        );
+        unawaited(
+          UmengAnalyticsService.reportUnhandledError(
+            error,
+            stackTrace,
+            category: 'flutter_platform_error',
+          ),
+        );
+        return false;
+      };
+
+      runApp(const MyApp());
+    },
+    (error, stackTrace) {
       unawaited(
         AppLogService.instance.error(
-          'flutter_framework_error',
-          details.exceptionAsString(),
-          error: details.exception,
-          stackTrace: stackTrace,
-        ),
-      );
-      unawaited(
-        UmengAnalyticsService.reportUnhandledError(
-          details.exception,
-          stackTrace,
-          category: 'flutter_framework_error',
-        ),
-      );
-    };
-
-    PlatformDispatcher.instance.onError = (error, stackTrace) {
-      unawaited(
-        AppLogService.instance.error(
-          'flutter_platform_error',
+          'flutter_zone_error',
           error.toString(),
           error: error,
           stackTrace: stackTrace,
@@ -160,30 +172,11 @@ Future<void> main() async {
         UmengAnalyticsService.reportUnhandledError(
           error,
           stackTrace,
-          category: 'flutter_platform_error',
+          category: 'flutter_zone_error',
         ),
       );
-      return false;
-    };
-
-    runApp(const MyApp());
-  }, (error, stackTrace) {
-    unawaited(
-      AppLogService.instance.error(
-        'flutter_zone_error',
-        error.toString(),
-        error: error,
-        stackTrace: stackTrace,
-      ),
-    );
-    unawaited(
-      UmengAnalyticsService.reportUnhandledError(
-        error,
-        stackTrace,
-        category: 'flutter_zone_error',
-      ),
-    );
-  });
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -197,48 +190,71 @@ class MyApp extends StatelessWidget {
           create: (_) => TimetableProvider(autoInitialize: false),
         ),
       ],
-      child: Selector<TimetableProvider, ({String seedColor, String fontMode, String themeMode, String localeTag})>(
-        selector: (_, p) => (
-          seedColor: p.settings.themeSeedColor,
-          fontMode: p.settings.appFontMode.name,
-          themeMode: p.settings.appThemeMode.name,
-          localeTag: p.settings.appLocaleTag,
-        ),
-        builder: (context, settings, child) {
-          final seedColor = _colorFromHex(settings.seedColor);
-          final fontFamily = _fontFamilyFromSettings(AppFontMode.values.asNameMap()[settings.fontMode] ?? AppFontMode.system);
+      child:
+          Selector<
+            TimetableProvider,
+            ({
+              String seedColor,
+              String fontMode,
+              String themeMode,
+              String localeTag,
+            })
+          >(
+            selector: (_, p) => (
+              seedColor: p.settings.themeSeedColor,
+              fontMode: p.settings.appFontMode.name,
+              themeMode: p.settings.appThemeMode.name,
+              localeTag: p.settings.appLocaleTag,
+            ),
+            builder: (context, settings, child) {
+              final seedColor = _colorFromHex(settings.seedColor);
+              final fontFamily = _fontFamilyFromSettings(
+                AppFontMode.values.asNameMap()[settings.fontMode] ??
+                    AppFontMode.system,
+              );
 
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            onGenerateTitle: (context) => kReleaseMode
-                ? AppLocalizations.of(context)!.appTitle
-                : AppLocalizations.of(context)!.appTitleDebug,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: _localeFromSettings(settings.localeTag),
-            themeMode: _themeModeFromSettings(AppThemeMode.values.asNameMap()[settings.themeMode] ?? AppThemeMode.system),
-            theme: _buildAppTheme(
-              seedColor,
-              Brightness.light,
-              fontFamily: fontFamily,
-            ),
-            darkTheme: _buildAppTheme(
-              seedColor,
-              Brightness.dark,
-              fontFamily: fontFamily,
-            ),
-            navigatorObservers: <NavigatorObserver>[
-              _AppRouteLogObserver(),
-            ],
-            home: const AppEntryScreen(),
-          );
-        },
-      ),
+              return MaterialApp(
+                debugShowCheckedModeBanner: false,
+                onGenerateTitle: (context) => kReleaseMode
+                    ? AppLocalizations.of(context)!.appTitle
+                    : AppLocalizations.of(context)!.appTitleDebug,
+                localizationsDelegates: const [
+                  AppLocalizations.delegate,
+                  GlobalMaterialLocalizations.delegate,
+                  GlobalWidgetsLocalizations.delegate,
+                  GlobalCupertinoLocalizations.delegate,
+                ],
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: _localeFromSettings(settings.localeTag),
+                themeMode: _themeModeFromSettings(
+                  AppThemeMode.values.asNameMap()[settings.themeMode] ??
+                      AppThemeMode.system,
+                ),
+                theme: _buildAppTheme(
+                  seedColor,
+                  Brightness.light,
+                  fontFamily: fontFamily,
+                ),
+                darkTheme: _buildAppTheme(
+                  seedColor,
+                  Brightness.dark,
+                  fontFamily: fontFamily,
+                ),
+                navigatorObservers: <NavigatorObserver>[_AppRouteLogObserver()],
+                builder: (context, child) {
+                  final isDark =
+                      Theme.of(context).brightness == Brightness.dark;
+                  return FTheme(
+                    data: isDark
+                        ? FThemes.zinc.dark.touch
+                        : FThemes.zinc.light.touch,
+                    child: FToaster(child: FTooltipGroup(child: child!)),
+                  );
+                },
+                home: const AppEntryScreen(),
+              );
+            },
+          ),
     );
   }
 }
@@ -275,124 +291,120 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     );
 
     try {
+      // --- 并行初始化和读取所有启动状态 ---
+      final initFuture = _storageService.init();
+      final legacyPackageFuture = _migrationService
+          .findInstalledLegacyPackage();
 
-    // --- 并行初始化和读取所有启动状态 ---
-    final initFuture = _storageService.init();
-    final legacyPackageFuture = _migrationService.findInstalledLegacyPackage();
-    
-    await initFuture;
-    
-    final startupResults = await Future.wait([
-      _storageService.isAppDataEffectivelyEmpty(),
-      _storageService.hasCompletedOnboarding(),
-      _storageService.hasHandledPackageMigration(),
-      _storageService.hasAcceptedPrivacyPolicy(),
-      _storageService.hasSeenUserGuide(),
-    ]);
+      await initFuture;
 
-    final isDataEmpty = startupResults[0];
-    final hasHandledPackageMigration = startupResults[2];
-    final hasAcceptedPrivacy = startupResults[3];
-    final hasSeenGuide = startupResults[4];
+      final startupResults = await Future.wait([
+        _storageService.isAppDataEffectivelyEmpty(),
+        _storageService.hasCompletedOnboarding(),
+        _storageService.hasHandledPackageMigration(),
+        _storageService.hasAcceptedPrivacyPolicy(),
+        _storageService.hasSeenUserGuide(),
+      ]);
 
-    if (!mounted) {
-      return;
-    }
-    final provider = context.read<TimetableProvider>();
-    
-    // 并行执行 provider 初始化和旧包检测
-    await Future.wait([
-      provider.initialize(),
-      legacyPackageFuture,
-    ]);
-    final legacyPackage = await legacyPackageFuture;
-    final shouldShowMigrationGuide =
-        !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
+      final isDataEmpty = startupResults[0];
+      final hasHandledPackageMigration = startupResults[2];
+      final hasAcceptedPrivacy = startupResults[3];
+      final hasSeenGuide = startupResults[4];
 
-    if (!mounted) {
-      return;
-    }
-
-    if (shouldShowMigrationGuide) {
-      final action = await Navigator.of(context).push<MigrationFlowAction>(
-        MaterialPageRoute(
-          builder: (_) => PackageMigrationGuideScreen(
-            legacyPackageName: legacyPackage,
-          ),
-          fullscreenDialog: true,
-        ),
-      );
       if (!mounted) {
         return;
       }
-      if (action == MigrationFlowAction.restoreBackup) {
-        final imported = await _runBackupImportFlow(
-          forcedMode: _BackupImportMode.replaceCurrent,
+      final provider = context.read<TimetableProvider>();
+
+      // 并行执行 provider 初始化和旧包检测
+      await Future.wait([provider.initialize(), legacyPackageFuture]);
+      final legacyPackage = await legacyPackageFuture;
+      final shouldShowMigrationGuide =
+          !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
+
+      if (!mounted) {
+        return;
+      }
+
+      if (shouldShowMigrationGuide) {
+        final action = await Navigator.of(context).push<MigrationFlowAction>(
+          MaterialPageRoute(
+            builder: (_) =>
+                PackageMigrationGuideScreen(legacyPackageName: legacyPackage),
+            fullscreenDialog: true,
+          ),
         );
-        if (imported) {
+        if (!mounted) {
+          return;
+        }
+        if (action == MigrationFlowAction.restoreBackup) {
+          final imported = await _runBackupImportFlow(
+            forcedMode: _BackupImportMode.replaceCurrent,
+          );
+          if (imported) {
+            await _storageService.setHandledPackageMigration(true);
+            await _storageService.setCompletedOnboarding(true);
+          }
+        } else if (action == MigrationFlowAction.skip) {
           await _storageService.setHandledPackageMigration(true);
           await _storageService.setCompletedOnboarding(true);
         }
-      } else if (action == MigrationFlowAction.skip) {
-        await _storageService.setHandledPackageMigration(true);
-        await _storageService.setCompletedOnboarding(true);
       }
-    }
 
-    if (hasAcceptedPrivacy && hasSeenGuide) {
-      // 非关键初始化：后台执行，不阻塞首帧
-      unawaited(AppLogService.instance.updatePrivacyAccepted(true));
-      unawaited(UmengAnalyticsService.initializeIfNeeded());
+      if (hasAcceptedPrivacy && hasSeenGuide) {
+        // 非关键初始化：后台执行，不阻塞首帧
+        unawaited(AppLogService.instance.updatePrivacyAccepted(true));
+        unawaited(UmengAnalyticsService.initializeIfNeeded());
+        unawaited(_checkPendingIcsIntent());
+        unawaited(_installLanEditNotificationHandler());
+        unawaited(
+          AppLogService.instance.info(
+            'startup_flow_completed',
+            'Startup flow completed without onboarding screens',
+          ),
+        );
+        setState(() {
+          _isBootstrapping = false;
+        });
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return;
+      }
+
+      final guideCompleted = await _openGuide(
+        requirePrivacyConsent: !hasAcceptedPrivacy,
+        initialPrivacyChecked: hasAcceptedPrivacy,
+        markGuideSeenAfterExit: !hasSeenGuide,
+      );
+      if (!mounted || !guideCompleted) {
+        return;
+      }
+
+      if (await _storageService.hasAcceptedPrivacyPolicy()) {
+        unawaited(UmengAnalyticsService.initializeIfNeeded());
+      }
+      if (!mounted) {
+        return;
+      }
+
       unawaited(_checkPendingIcsIntent());
       unawaited(_installLanEditNotificationHandler());
       unawaited(
         AppLogService.instance.info(
           'startup_flow_completed',
-          'Startup flow completed without onboarding screens',
+          'Startup flow completed after guide/onboarding',
         ),
       );
       setState(() {
         _isBootstrapping = false;
       });
-      return;
-    }
-
-    if (!mounted) {
-      return;
-    }
-
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
-    }
-
-    final guideCompleted = await _openGuide(
-      requirePrivacyConsent: !hasAcceptedPrivacy,
-      initialPrivacyChecked: hasAcceptedPrivacy,
-      markGuideSeenAfterExit: !hasSeenGuide,
-    );
-    if (!mounted || !guideCompleted) {
-      return;
-    }
-
-    if (await _storageService.hasAcceptedPrivacyPolicy()) {
-      unawaited(UmengAnalyticsService.initializeIfNeeded());
-    }
-    if (!mounted) {
-      return;
-    }
-
-    unawaited(_checkPendingIcsIntent());
-    unawaited(_installLanEditNotificationHandler());
-    unawaited(
-      AppLogService.instance.info(
-        'startup_flow_completed',
-        'Startup flow completed after guide/onboarding',
-      ),
-    );
-    setState(() {
-      _isBootstrapping = false;
-    });
     } catch (e, stackTrace) {
       // 初始化失败时降级进入主界面，避免白屏 hang
       unawaited(
@@ -453,15 +465,14 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     return true;
   }
 
-  Future<bool> _runBackupImportFlow({
-    _BackupImportMode? forcedMode,
-  }) async {
+  Future<bool> _runBackupImportFlow({_BackupImportMode? forcedMode}) async {
     if (!mounted) {
       return false;
     }
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final importMode = forcedMode ??
+    final importMode =
+        forcedMode ??
         await showDialog<_BackupImportMode>(
           context: context,
           builder: (context) {
@@ -509,8 +520,9 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       }
 
       final message = switch (importMode) {
-        _BackupImportMode.replaceCurrent =>
-          await provider.importAppDataBackup(content),
+        _BackupImportMode.replaceCurrent => await provider.importAppDataBackup(
+          content,
+        ),
         _BackupImportMode.importAsNew =>
           await provider.importAppDataBackupAsNewProfile(content),
       };
@@ -531,15 +543,15 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       return true;
     } on FormatException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importFailedInvalidFile)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importFailedInvalidFile)));
       }
     }
     return false;
@@ -564,12 +576,15 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
           _checkPendingIcsIntent();
         }
       });
-      final icsContent = await channel.invokeMethod<String?>('getInitialIcsIntent');
+      final icsContent = await channel.invokeMethod<String?>(
+        'getInitialIcsIntent',
+      );
       if (icsContent != null && icsContent.isNotEmpty && mounted) {
         Navigator.of(context).push(
           MaterialPageRoute(
             settings: const RouteSettings(name: '/courses/import/ics-external'),
-            builder: (_) => IcsCourseImportScreen(initialIcsContent: icsContent),
+            builder: (_) =>
+                IcsCourseImportScreen(initialIcsContent: icsContent),
           ),
         );
       }
@@ -624,10 +639,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
   }
 }
 
-enum _BackupImportMode {
-  replaceCurrent,
-  importAsNew,
-}
+enum _BackupImportMode { replaceCurrent, importAsNew }
 
 class _AppLifecycleLogObserver with WidgetsBindingObserver {
   @override
@@ -698,4 +710,3 @@ class _AppRouteLogObserver extends NavigatorObserver {
     return route.runtimeType.toString();
   }
 }
-
