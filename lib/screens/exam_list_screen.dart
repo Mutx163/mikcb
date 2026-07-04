@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -20,20 +21,24 @@ class ExamListScreen extends StatelessWidget {
     final pastExams = exams.where((e) => e.isExpired).toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.examListTitle),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: l10n.addExam,
-            onPressed: () => _navigateToAddExam(context),
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(Icons.add_rounded),
+            semanticsLabel: l10n.addExam,
+            onPress: () => _navigateToAddExam(context),
           ),
         ],
       ),
-      body: exams.isEmpty
-          ? _buildEmptyState(context, l10n)
-          : ListView(
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: exams.isEmpty
+            ? _buildEmptyState(context, l10n)
+            : ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               children: [
                 if (upcomingExams.isNotEmpty) ...[
@@ -74,12 +79,7 @@ class ExamListScreen extends StatelessWidget {
                 const SizedBox(height: 80),
               ],
             ),
-      floatingActionButton: exams.isNotEmpty
-          ? FloatingActionButton(
-              onPressed: () => _navigateToAddExam(context),
-              child: const Icon(Icons.add),
-            )
-          : null,
+      ),
     );
   }
 
