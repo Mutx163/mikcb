@@ -19,6 +19,7 @@ import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
 import 'screens/lan_edit_screen.dart';
 import 'services/app_log_service.dart';
+import 'services/bundled_assets.dart';
 import 'services/lan_edit_foreground_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
@@ -135,7 +136,10 @@ Future<void> main() async {
         return false;
       };
 
-      runApp(const MyApp());
+      unawaited(() async {
+        await BundledAssets.warmUp();
+        runApp(const MyApp());
+      }());
     },
     (error, stackTrace) {
       unawaited(

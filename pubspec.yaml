@@ -44,9 +44,8 @@ flutter:
   uses-material-design: true
   generate: true
   assets:
-    - assets/branding/launcher_icon.png
-    - assets/donate/wechatpay.png
-    - assets/donate/alipay.png
+    - assets/branding/
+    - assets/donate/
     - assets/holidays/
     - docs/releases/
     - assets/lan_edit/
