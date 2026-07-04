@@ -217,7 +217,17 @@ class MyApp extends StatelessWidget {
                       Theme.of(context).brightness == Brightness.dark;
                   return FTheme(
                     data: isDark ? foruiDark : foruiLight,
-                    child: FToaster(child: FTooltipGroup(child: child!)),
+                    child: FToaster(
+                      child: FTooltipGroup(
+                        child: ScaffoldMessenger(
+                          child: Scaffold(
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: false,
+                            body: child!,
+                          ),
+                        ),
+                      ),
+                    ),
                   );
                 },
                 home: const AppEntryScreen(),
