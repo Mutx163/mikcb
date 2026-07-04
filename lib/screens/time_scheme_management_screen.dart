@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -9,10 +10,7 @@ import '../providers/timetable_provider.dart';
 class TimeSchemeManagementScreen extends StatefulWidget {
   final String? initialEditSchemeId;
 
-  const TimeSchemeManagementScreen({
-    super.key,
-    this.initialEditSchemeId,
-  });
+  const TimeSchemeManagementScreen({super.key, this.initialEditSchemeId});
 
   @override
   State<TimeSchemeManagementScreen> createState() =>
@@ -46,32 +44,39 @@ class _TimeSchemeManagementScreenState
         final schemes = provider.timeSchemes;
         final activeSchemeId = provider.activeTimeScheme?.id;
 
-        return Scaffold(
-          appBar: AppBar(
+        return FScaffold(
+          header: FHeader.nested(
+            prefixes: [
+              FHeaderAction.back(onPress: () => Navigator.pop(context)),
+            ],
             title: Text(l10n.timeSchemeTitle),
-            actions: [
-              IconButton(
-                tooltip: l10n.newSchemeTooltip,
-                onPressed: () => _createScheme(context),
+            suffixes: [
+              FHeaderAction(
                 icon: const Icon(Icons.add_rounded),
+                semanticsLabel: l10n.newSchemeTooltip,
+                onPress: () => _createScheme(context),
               ),
             ],
           ),
-          body: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: schemes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final scheme = schemes[index];
-              final isActive = scheme.id == activeSchemeId;
-              final usage = _buildUsageSummary(provider, scheme.id);
-              return _buildSchemeCard(
-                context,
-                scheme: scheme,
-                usage: usage,
-                isActive: isActive,
-              );
-            },
+          childPad: false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: ListView.separated(
+              padding: const EdgeInsets.all(16),
+              itemCount: schemes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final scheme = schemes[index];
+                final isActive = scheme.id == activeSchemeId;
+                final usage = _buildUsageSummary(provider, scheme.id);
+                return _buildSchemeCard(
+                  context,
+                  scheme: scheme,
+                  usage: usage,
+                  isActive: isActive,
+                );
+              },
+            ),
           ),
         );
       },
@@ -103,10 +108,11 @@ class _TimeSchemeManagementScreenState
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: (isActive
-                              ? colorScheme.primary
-                              : colorScheme.secondaryContainer)
-                          .withValues(alpha: 0.14),
+                      color:
+                          (isActive
+                                  ? colorScheme.primary
+                                  : colorScheme.secondaryContainer)
+                              .withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Icon(
@@ -242,7 +248,9 @@ class _TimeSchemeManagementScreenState
                         ),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      onPressed: isActive ? null : () => _applyScheme(context, scheme),
+                      onPressed: isActive
+                          ? null
+                          : () => _applyScheme(context, scheme),
                       child: Text(
                         isActive ? l10n.usingNow : l10n.applyToCurrentTimetable,
                       ),
@@ -275,9 +283,7 @@ class _TimeSchemeManagementScreenState
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => _TimeSchemeEditorScreen(
-          schemeId: schemeId,
-        ),
+        builder: (_) => _TimeSchemeEditorScreen(schemeId: schemeId),
       ),
     );
   }
@@ -315,8 +321,8 @@ class _TimeSchemeManagementScreenState
     }
 
     final scheme = await context.read<TimetableProvider>().createTimeScheme(
-          name: name,
-        );
+      name: name,
+    );
     if (!context.mounted) {
       return;
     }
@@ -359,9 +365,9 @@ class _TimeSchemeManagementScreenState
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.renamedToMessage(name))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.renamedToMessage(name))));
   }
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
@@ -389,8 +395,8 @@ class _TimeSchemeManagementScreenState
     }
 
     final deleted = await context.read<TimetableProvider>().deleteTimeScheme(
-          scheme.id,
-        );
+      scheme.id,
+    );
     if (!context.mounted) {
       return;
     }
@@ -426,16 +432,17 @@ class _TimeSchemeManagementScreenState
         .map((profile) => profile.name)
         .toList(growable: false);
     final references = provider.getTimeSchemeCourseUsages(schemeId);
-    final overrideReferences =
-        references.where((item) => item.usesOverride).toList(growable: false);
+    final overrideReferences = references
+        .where((item) => item.usesOverride)
+        .toList(growable: false);
     final previewText = references.isEmpty
         ? null
         : references.length == 1
-            ? _formatUsageReference(l10n, references.first)
-            : l10n.timeSchemeBottomUsageMulti(
-                _formatUsageReference(l10n, references.first),
-                references.length,
-              );
+        ? _formatUsageReference(l10n, references.first)
+        : l10n.timeSchemeBottomUsageMulti(
+            _formatUsageReference(l10n, references.first),
+            references.length,
+          );
     return _TimeSchemeUsageSummary(
       profileNames: profileNames,
       courseReferences: references,
@@ -505,7 +512,9 @@ class _TimeSchemeManagementScreenState
                       ),
                       _TimeSchemeInfoChip(
                         label: l10n.overrideTimeSchemeLabel,
-                        value: l10n.courseSectionCountValue(usage.overrideCourseCount),
+                        value: l10n.courseSectionCountValue(
+                          usage.overrideCourseCount,
+                        ),
                       ),
                     ],
                   ),
@@ -630,8 +639,9 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   void initState() {
     super.initState();
     final provider = context.read<TimetableProvider>();
-    final scheme =
-        provider.timeSchemes.firstWhere((item) => item.id == widget.schemeId);
+    final scheme = provider.timeSchemes.firstWhere(
+      (item) => item.id == widget.schemeId,
+    );
     _nameController = TextEditingController(text: scheme.name);
     _sections = List<SectionTime>.from(scheme.sections);
   }
@@ -651,198 +661,217 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.editTimeSchemeTitle),
-        actions: [
-          TextButton(
-            onPressed: _save,
-            child: Text(l10n.saveAction),
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(Icons.check_rounded),
+            semanticsLabel: l10n.saveAction,
+            onPress: _save,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.timeSchemeNameLabel,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: l10n.timeSchemeNameLabel,
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.timeSchemeNameLabel,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (isActive)
-                        _TimeSchemeBadge(
-                          text: l10n.currentInUse,
-                          icon: Icons.check_circle_outline_rounded,
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        labelText: l10n.timeSchemeNameLabel,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (isActive)
+                          _TimeSchemeBadge(
+                            text: l10n.currentInUse,
+                            icon: Icons.check_circle_outline_rounded,
+                          ),
+                        _TimeSchemeInfoChip(
+                          label: l10n.profileCountLabel,
+                          value: l10n.profileCountValue(usage.profileCount),
                         ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.profileCountLabel,
-                        value: l10n.profileCountValue(usage.profileCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.courseCountLabel,
-                        value: l10n.courseSectionCountValue(usage.courseCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.overrideTimeSchemeLabel,
-                        value: l10n.courseSectionCountValue(usage.overrideCourseCount),
+                        _TimeSchemeInfoChip(
+                          label: l10n.courseCountLabel,
+                          value: l10n.courseSectionCountValue(
+                            usage.courseCount,
+                          ),
+                        ),
+                        _TimeSchemeInfoChip(
+                          label: l10n.overrideTimeSchemeLabel,
+                          value: l10n.courseSectionCountValue(
+                            usage.overrideCourseCount,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isActive || usage.courseCount > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        isActive && usage.courseCount > 0
+                            ? l10n.timeSchemeEditorActiveAndCoursesHint
+                            : isActive
+                            ? l10n.timeSchemeEditorActiveHint
+                            : l10n.timeSchemeEditorOverrideHint,
+                        style: theme.textTheme.bodySmall,
                       ),
                     ],
-                  ),
-                  if (isActive || usage.courseCount > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      isActive && usage.courseCount > 0
-                          ? l10n.timeSchemeEditorActiveAndCoursesHint
-                          : isActive
-                              ? l10n.timeSchemeEditorActiveHint
-                              : l10n.timeSchemeEditorOverrideHint,
-                      style: theme.textTheme.bodySmall,
-                    ),
+                    if (usage.previewText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        usage.previewText!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
                   ],
-                  if (usage.previewText != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      usage.previewText!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.sectionTimesTitle,
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.sectionTimesSubtitle,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FilledButton.tonalIcon(
-                        onPressed: _openQuickGenerate,
-                        icon: const Icon(Icons.auto_fix_high_rounded),
-                        label: Text(l10n.quickGenerateAction),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.sectionTimesTitle,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
                       ),
-                      FilledButton.tonalIcon(
-                        onPressed: _sections.length >= 20 ? null : _addSection,
-                        icon: const Icon(Icons.add),
-                        label: Text(l10n.addSectionAction),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed:
-                            _sections.length <= 1 ? null : _removeSection,
-                        icon: const Icon(Icons.remove),
-                        label: Text(l10n.removeLastSectionAction),
-                      ),
-                      FilledButton.tonalIcon(
-                        onPressed: _resetSections,
-                        icon: const Icon(Icons.restart_alt),
-                        label: Text(l10n.resetDefaultAction),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...List.generate(_sections.length, (index) {
-                    final section = _sections[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.sectionTimesSubtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: _openQuickGenerate,
+                          icon: const Icon(Icons.auto_fix_high_rounded),
+                          label: Text(l10n.quickGenerateAction),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(alpha: 0.10),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: theme.textTheme.labelLarge?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
+                        FilledButton.tonalIcon(
+                          onPressed: _sections.length >= 20
+                              ? null
+                              : _addSection,
+                          icon: const Icon(Icons.add),
+                          label: Text(l10n.addSectionAction),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _sections.length <= 1
+                              ? null
+                              : _removeSection,
+                          icon: const Icon(Icons.remove),
+                          label: Text(l10n.removeLastSectionAction),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: _resetSections,
+                          icon: const Icon(Icons.restart_alt),
+                          label: Text(l10n.resetDefaultAction),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...List.generate(_sections.length, (index) {
+                      final section = _sections[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerLowest,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: colorScheme.outlineVariant),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: colorScheme.primary.withValues(
+                                  alpha: 0.10,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${index + 1}',
+                                style: theme.textTheme.labelLarge?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.sectionLabel(index + 1),
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w700,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    l10n.sectionLabel(index + 1),
+                                    style: theme.textTheme.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${section.startTime} - ${section.endTime}',
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${section.startTime} - ${section.endTime}',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            tooltip: l10n.editTimeAction,
-                            onPressed: () => _editSectionTime(index),
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
+                            IconButton(
+                              tooltip: l10n.editTimeAction,
+                              onPressed: () => _editSectionTime(index),
+                              icon: const Icon(Icons.edit_outlined),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -882,9 +911,9 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     nextSections[index] = editedSection;
     final validationMessage = validateSectionTimes(nextSections);
     if (validationMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
       return;
     }
 
@@ -921,16 +950,17 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
         .map((profile) => profile.name)
         .toList(growable: false);
     final references = provider.getTimeSchemeCourseUsages(schemeId);
-    final overrideReferences =
-        references.where((item) => item.usesOverride).toList(growable: false);
+    final overrideReferences = references
+        .where((item) => item.usesOverride)
+        .toList(growable: false);
     final previewText = references.isEmpty
         ? null
         : references.length == 1
-            ? _formatUsageReference(l10n, references.first)
-            : l10n.timeSchemeBottomUsageMulti(
-                _formatUsageReference(l10n, references.first),
-                references.length,
-              );
+        ? _formatUsageReference(l10n, references.first)
+        : l10n.timeSchemeBottomUsageMulti(
+            _formatUsageReference(l10n, references.first),
+            references.length,
+          );
     return _TimeSchemeUsageSummary(
       profileNames: profileNames,
       courseReferences: references,
@@ -981,9 +1011,8 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   Future<void> _openQuickGenerate() async {
     final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
-      builder: (context) => _QuickGenerateDialog(
-        initialPreset: _lastQuickGeneratePreset,
-      ),
+      builder: (context) =>
+          _QuickGenerateDialog(initialPreset: _lastQuickGeneratePreset),
     );
     if (preset == null || !mounted) {
       return;
@@ -1009,25 +1038,25 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
   Future<void> _save() async {
     final message = await context.read<TimetableProvider>().updateTimeScheme(
-          schemeId: widget.schemeId,
-          name: _nameController.text.trim(),
-          sections: _sections,
-        );
+      schemeId: widget.schemeId,
+      name: _nameController.text.trim(),
+      sections: _sections,
+    );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     Navigator.pop(context);
@@ -1051,7 +1080,9 @@ class _TimeSchemeUsageSummary {
   int get courseCount => courseReferences.length;
   int get overrideCourseCount => overrideReferences.length;
   List<TimeSchemeCourseUsageReference> get directCourseReferences =>
-      courseReferences.where((item) => !item.usesOverride).toList(growable: false);
+      courseReferences
+          .where((item) => !item.usesOverride)
+          .toList(growable: false);
   bool get isUnused => profileCount == 0 && courseCount == 0;
 }
 
@@ -1116,10 +1147,7 @@ class _UsageLine extends StatelessWidget {
   final String primary;
   final String? secondary;
 
-  const _UsageLine({
-    required this.primary,
-    this.secondary,
-  });
+  const _UsageLine({required this.primary, this.secondary});
 
   @override
   Widget build(BuildContext context) {
@@ -1169,10 +1197,7 @@ class _TimeSchemeInfoChip extends StatelessWidget {
   final String label;
   final String value;
 
-  const _TimeSchemeInfoChip({
-    required this.label,
-    required this.value,
-  });
+  const _TimeSchemeInfoChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1199,10 +1224,7 @@ class _TimeSchemeBadge extends StatelessWidget {
   final String text;
   final IconData icon;
 
-  const _TimeSchemeBadge({
-    required this.text,
-    required this.icon,
-  });
+  const _TimeSchemeBadge({required this.text, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -1234,10 +1256,7 @@ class _TimeSchemeBadge extends StatelessWidget {
 
 TimeOfDay _parseTimeOfDay(String value) {
   final parts = value.split(':');
-  return TimeOfDay(
-    hour: int.parse(parts[0]),
-    minute: int.parse(parts[1]),
-  );
+  return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
 }
 
 String _formatTimeOfDay(TimeOfDay time) {
@@ -1293,9 +1312,7 @@ class _QuickGeneratePreset {
 class _QuickGenerateDialog extends StatefulWidget {
   final _QuickGeneratePreset initialPreset;
 
-  const _QuickGenerateDialog({
-    required this.initialPreset,
-  });
+  const _QuickGenerateDialog({required this.initialPreset});
 
   @override
   State<_QuickGenerateDialog> createState() => _QuickGenerateDialogState();
@@ -1318,16 +1335,21 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   void initState() {
     super.initState();
     final preset = widget.initialPreset;
-    _morningCountController =
-        TextEditingController(text: '${preset.morningCount}');
-    _afternoonCountController =
-        TextEditingController(text: '${preset.afternoonCount}');
-    _eveningCountController =
-        TextEditingController(text: '${preset.eveningCount}');
-    _classDurationController =
-        TextEditingController(text: '${preset.classDurationMinutes}');
-    _breakDurationController =
-        TextEditingController(text: '${preset.breakDurationMinutes}');
+    _morningCountController = TextEditingController(
+      text: '${preset.morningCount}',
+    );
+    _afternoonCountController = TextEditingController(
+      text: '${preset.afternoonCount}',
+    );
+    _eveningCountController = TextEditingController(
+      text: '${preset.eveningCount}',
+    );
+    _classDurationController = TextEditingController(
+      text: '${preset.classDurationMinutes}',
+    );
+    _breakDurationController = TextEditingController(
+      text: '${preset.breakDurationMinutes}',
+    );
     _morningStartTime = preset.morningStartTime ?? '08:00';
     _afternoonStartTime = preset.afternoonStartTime ?? '14:00';
     _eveningStartTime = preset.eveningStartTime ?? '19:00';
@@ -1451,10 +1473,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.cancelAction),
         ),
-        TextButton(
-          onPressed: _submit,
-          child: Text(l10n.generateAction),
-        ),
+        TextButton(onPressed: _submit, child: Text(l10n.generateAction)),
       ],
     );
   }
@@ -1465,17 +1484,15 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
       ],
     );
@@ -1589,7 +1606,8 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 
     final breakOverrideRules = _breakOverrides
         .where(
-            (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
+          (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0,
+        )
         .map(
           (item) => BreakOverrideRule(
             afterSection: item.afterSection,
@@ -1632,4 +1650,3 @@ class _BreakOverrideDraft {
     required this.breakDurationMinutes,
   });
 }
-
