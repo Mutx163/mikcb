@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -74,57 +75,65 @@ class _AddExamScreenState extends State<AddExamScreen> {
     final l10n = AppLocalizations.of(context)!;
     final courseGroups = provider.courseGroups;
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(_isEditing ? l10n.editExam : l10n.addExam),
-        actions: [
+        suffixes: [
           if (_isEditing)
-            IconButton(
+            FHeaderAction(
               icon: const Icon(Icons.delete_outline_rounded),
-              tooltip: l10n.deleteExam,
-              onPressed: () => _confirmDelete(l10n),
+              semanticsLabel: l10n.deleteExam,
+              onPress: () => _confirmDelete(l10n),
             ),
-          IconButton(
+          FHeaderAction(
             icon: const Icon(Icons.check_rounded),
-            tooltip: l10n.saveExam,
-            onPressed: _saveExam,
+            semanticsLabel: l10n.saveExam,
+            onPress: _saveExam,
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
-          children: [
-            _buildCourseDropdown(courseGroups, l10n, provider),
-            const SizedBox(height: 16),
-            _buildNameField(l10n),
-            const SizedBox(height: 16),
-            _buildDatePicker(l10n),
-            const SizedBox(height: 16),
-            _buildTimePickers(l10n),
-            const SizedBox(height: 16),
-            _buildLocationField(l10n, provider),
-            const SizedBox(height: 16),
-            _buildSeatField(l10n),
-            const SizedBox(height: 16),
-            _buildReminderDropdown(l10n),
-            const SizedBox(height: 16),
-            _buildNoteField(l10n),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: _saveExam,
-              child: Text(l10n.saveExam),
-            ),
-          ],
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+            children: [
+              _buildCourseDropdown(courseGroups, l10n, provider),
+              const SizedBox(height: 16),
+              _buildNameField(l10n),
+              const SizedBox(height: 16),
+              _buildDatePicker(l10n),
+              const SizedBox(height: 16),
+              _buildTimePickers(l10n),
+              const SizedBox(height: 16),
+              _buildLocationField(l10n, provider),
+              const SizedBox(height: 16),
+              _buildSeatField(l10n),
+              const SizedBox(height: 16),
+              _buildReminderDropdown(l10n),
+              const SizedBox(height: 16),
+              _buildNoteField(l10n),
+              const SizedBox(height: 24),
+              FilledButton(onPressed: _saveExam, child: Text(l10n.saveExam)),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCourseDropdown(List<CourseGroup> courseGroups, AppLocalizations l10n, TimetableProvider provider) {
+  Widget _buildCourseDropdown(
+    List<CourseGroup> courseGroups,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final selected = _selectedCourseId != null ? provider.getCourseById(_selectedCourseId!) : null;
+    final selected = _selectedCourseId != null
+        ? provider.getCourseById(_selectedCourseId!)
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +147,13 @@ class _AddExamScreenState extends State<AddExamScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        _buildCourseTrigger(selected, courseGroups, colorScheme, l10n, provider),
+        _buildCourseTrigger(
+          selected,
+          courseGroups,
+          colorScheme,
+          l10n,
+          provider,
+        ),
         if (_selectedCourseId == null)
           Padding(
             padding: const EdgeInsets.only(top: 4),
@@ -170,7 +185,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => _showCourseSheet(courseGroups, colorScheme, l10n, provider),
+        onTap: () =>
+            _showCourseSheet(courseGroups, colorScheme, l10n, provider),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -207,7 +223,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   ),
                 ),
               ] else ...[
-                Icon(Icons.link_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+                Icon(
+                  Icons.link_rounded,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -219,7 +239,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   ),
                 ),
               ],
-              Icon(Icons.unfold_more_rounded, size: 20, color: colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.unfold_more_rounded,
+                size: 20,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ],
           ),
         ),
@@ -227,7 +251,12 @@ class _AddExamScreenState extends State<AddExamScreen> {
     );
   }
 
-  void _showCourseSheet(List<CourseGroup> courseGroups, ColorScheme colorScheme, AppLocalizations l10n, TimetableProvider provider) {
+  void _showCourseSheet(
+    List<CourseGroup> courseGroups,
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+  ) {
     if (courseGroups.isEmpty) return;
 
     showModalBottomSheet(
@@ -256,7 +285,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   children: [
                     Text(
                       l10n.linkCourse,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -271,7 +303,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   itemCount: courseGroups.length,
                   itemBuilder: (_, i) {
                     final group = courseGroups[i];
-                    final isSelected = group.courses.any((c) => c.id == _selectedCourseId);
+                    final isSelected = group.courses.any(
+                      (c) => c.id == _selectedCourseId,
+                    );
                     final courseColor = parseHexColorOrFallback(
                       group.color,
                       fallback: colorScheme.primary,
@@ -296,7 +330,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
                             Navigator.pop(ctx);
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
                             decoration: isSelected
                                 ? BoxDecoration(
                                     border: Border.all(
@@ -319,14 +356,17 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         group.name,
                                         style: TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 14,
-                                          color: isSelected ? courseColor : colorScheme.onSurface,
+                                          color: isSelected
+                                              ? courseColor
+                                              : colorScheme.onSurface,
                                         ),
                                       ),
                                       if (group.teacher.isNotEmpty)
@@ -341,7 +381,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                   ),
                                 ),
                                 if (isSelected)
-                                  Icon(Icons.check_circle_rounded, size: 20, color: courseColor),
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 20,
+                                    color: courseColor,
+                                  ),
                               ],
                             ),
                           ),
@@ -383,8 +427,18 @@ class _AddExamScreenState extends State<AddExamScreen> {
     String weekInfo = '';
     if (_hasSelectedDate && semesterStart != null) {
       final weekIndex = provider.getWeekIndex(_selectedDate, semesterStart);
-      if (weekIndex != null && weekIndex >= 1 && weekIndex <= settings.semesterWeekCount) {
-        final dayNames = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
+      if (weekIndex != null &&
+          weekIndex >= 1 &&
+          weekIndex <= settings.semesterWeekCount) {
+        final dayNames = [
+          l10n.weekdayMon,
+          l10n.weekdayTue,
+          l10n.weekdayWed,
+          l10n.weekdayThu,
+          l10n.weekdayFri,
+          l10n.weekdaySat,
+          l10n.weekdaySun,
+        ];
         final dayOfWeek = _selectedDate.weekday; // 1=Monday, 7=Sunday
         weekInfo = ' ${l10n.weekLabel(weekIndex)} ${dayNames[dayOfWeek - 1]}';
       }
@@ -411,8 +465,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
           displayText,
           style: displayText.isEmpty
               ? Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  )
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                )
               : null,
         ),
       ),
@@ -453,7 +507,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
     );
   }
 
-  Widget _buildLocationField(AppLocalizations l10n, TimetableProvider provider) {
+  Widget _buildLocationField(
+    AppLocalizations l10n,
+    TimetableProvider provider,
+  ) {
     String? hint;
     if (_selectedCourseId != null) {
       final course = provider.getCourseById(_selectedCourseId!);
@@ -489,10 +546,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
         border: const OutlineInputBorder(),
       ),
       items: ExamReminderPreset.values.map((preset) {
-        return DropdownMenuItem(
-          value: preset,
-          child: Text(preset.label),
-        );
+        return DropdownMenuItem(value: preset, child: Text(preset.label));
       }).toList(),
       onChanged: (value) {
         if (value != null) {
@@ -539,7 +593,13 @@ class _AddExamScreenState extends State<AddExamScreen> {
     }
 
     // 有开学日期，显示周次选择器
-    final picked = await _showWeekPicker(context, semesterStart, settings, provider: provider, currentDate: _selectedDate);
+    final picked = await _showWeekPicker(
+      context,
+      semesterStart,
+      settings,
+      provider: provider,
+      currentDate: _selectedDate,
+    );
     if (picked != null) {
       setState(() {
         _selectedDate = picked;
@@ -560,7 +620,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
     // 基于已选日期（或今天）计算初始周次
     final anchor = currentDate ?? DateTime.now();
     final anchorWeekIndex = provider.getWeekIndex(anchor, semesterStart);
-    final initialWeek = (anchorWeekIndex != null && anchorWeekIndex >= 1 && anchorWeekIndex <= totalWeeks)
+    final initialWeek =
+        (anchorWeekIndex != null &&
+            anchorWeekIndex >= 1 &&
+            anchorWeekIndex <= totalWeeks)
         ? anchorWeekIndex
         : 1;
 
@@ -569,8 +632,13 @@ class _AddExamScreenState extends State<AddExamScreen> {
     int? selectedDayOfWeek = _hasSelectedDate ? currentDate?.weekday : null;
 
     // 滚动控制器，初始偏移指向已选周次
-    final initialOffset = ((initialWeek - 1) * 56.0 - 100.0).clamp(0.0, double.infinity);
-    final scrollController = ScrollController(initialScrollOffset: initialOffset);
+    final initialOffset = ((initialWeek - 1) * 56.0 - 100.0).clamp(
+      0.0,
+      double.infinity,
+    );
+    final scrollController = ScrollController(
+      initialScrollOffset: initialOffset,
+    );
 
     // 计算某周某天的实际日期
     const weekStartDay = 1; // 1=Monday
@@ -578,7 +646,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
       // 学期开始日期所在周的起始日
       final startWeekday = semesterStart.weekday;
       final daysToSubtract = (startWeekday - weekStartDay + 7) % 7;
-      final alignedStart = semesterStart.subtract(Duration(days: daysToSubtract));
+      final alignedStart = semesterStart.subtract(
+        Duration(days: daysToSubtract),
+      );
       // 目标日期 = 对齐后的起始日 + (周数-1)*7 + (星期几 - weekStartDay)
       final dayOffset = (dayOfWeek - weekStartDay + 7) % 7;
       return alignedStart.add(Duration(days: (week - 1) * 7 + dayOffset));
@@ -594,7 +664,15 @@ class _AddExamScreenState extends State<AddExamScreen> {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             final l10n = AppLocalizations.of(ctx)!;
-            final dayNames = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
+            final dayNames = [
+              l10n.weekdayMon,
+              l10n.weekdayTue,
+              l10n.weekdayWed,
+              l10n.weekdayThu,
+              l10n.weekdayFri,
+              l10n.weekdaySat,
+              l10n.weekdaySun,
+            ];
 
             return SafeArea(
               child: Column(
@@ -606,7 +684,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -619,13 +699,18 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         const SizedBox(width: 8),
                         Text(
                           l10n.examDateWeekPickerTitle,
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const Spacer(),
                         // Close button
                         IconButton(
                           icon: const Icon(Icons.close, size: 20),
-                          tooltip: MaterialLocalizations.of(ctx).closeButtonTooltip,
+                          tooltip: MaterialLocalizations.of(
+                            ctx,
+                          ).closeButtonTooltip,
                           onPressed: () => Navigator.pop(ctx),
                         ),
                         // 切换到标准日历选择器
@@ -635,9 +720,16 @@ class _AddExamScreenState extends State<AddExamScreen> {
                           onPressed: () async {
                             final picked = await showDatePicker(
                               context: ctx,
-                              initialDate: getDateForWeekAndDay(selectedWeek, selectedDayOfWeek ?? DateTime.now().weekday),
-                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                              lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+                              initialDate: getDateForWeekAndDay(
+                                selectedWeek,
+                                selectedDayOfWeek ?? DateTime.now().weekday,
+                              ),
+                              firstDate: DateTime.now().subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDate: DateTime.now().add(
+                                const Duration(days: 365 * 2),
+                              ),
                             );
                             if (picked != null && ctx.mounted) {
                               Navigator.pop(ctx, picked);
@@ -647,7 +739,12 @@ class _AddExamScreenState extends State<AddExamScreen> {
                         // 显示当前选中的实际日期
                         Text(
                           selectedDayOfWeek != null
-                              ? DateFormat.Md().format(getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!))
+                              ? DateFormat.Md().format(
+                                  getDateForWeekAndDay(
+                                    selectedWeek,
+                                    selectedDayOfWeek!,
+                                  ),
+                                )
                               : l10n.weekLabel(selectedWeek),
                           style: TextStyle(
                             fontSize: 14,
@@ -660,12 +757,18 @@ class _AddExamScreenState extends State<AddExamScreen> {
                   ),
                   // 星期几选择
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       children: List.generate(7, (index) {
                         final dayOfWeek = index + 1; // 1=Mon, 7=Sun
                         final isSelected = dayOfWeek == selectedDayOfWeek;
-                        final date = getDateForWeekAndDay(selectedWeek, dayOfWeek);
+                        final date = getDateForWeekAndDay(
+                          selectedWeek,
+                          dayOfWeek,
+                        );
                         return Expanded(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 2),
@@ -683,18 +786,25 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                   // 选完星期后自动确定
                                   Navigator.pop(
                                     ctx,
-                                    getDateForWeekAndDay(selectedWeek, dayOfWeek),
+                                    getDateForWeekAndDay(
+                                      selectedWeek,
+                                      dayOfWeek,
+                                    ),
                                   );
                                 },
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 10,
+                                  ),
                                   child: Column(
                                     children: [
                                       Text(
                                         dayNames[index],
                                         style: TextStyle(
                                           fontSize: 12,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          fontWeight: isSelected
+                                              ? FontWeight.bold
+                                              : FontWeight.normal,
                                           color: isSelected
                                               ? colorScheme.onPrimaryContainer
                                               : colorScheme.onSurfaceVariant,
@@ -707,7 +817,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                           fontSize: 11,
                                           color: isSelected
                                               ? colorScheme.onPrimaryContainer
-                                              : colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                              : colorScheme.onSurfaceVariant
+                                                    .withValues(alpha: 0.7),
                                         ),
                                       ),
                                     ],
@@ -733,8 +844,15 @@ class _AddExamScreenState extends State<AddExamScreen> {
                       itemBuilder: (_, index) {
                         final week = index + 1;
                         final isSelected = week == selectedWeek;
-                        final date = getDateForWeekAndDay(week, selectedDayOfWeek ?? 1);
-                        final isCurrentWeek = _isCurrentWeek(week, semesterStart, provider);
+                        final date = getDateForWeekAndDay(
+                          week,
+                          selectedDayOfWeek ?? 1,
+                        );
+                        final isCurrentWeek = _isCurrentWeek(
+                          week,
+                          semesterStart,
+                          provider,
+                        );
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
@@ -742,8 +860,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
                             color: isSelected
                                 ? colorScheme.primaryContainer
                                 : isCurrentWeek
-                                    ? colorScheme.secondaryContainer.withValues(alpha: 0.3)
-                                    : Colors.transparent,
+                                ? colorScheme.secondaryContainer.withValues(
+                                    alpha: 0.3,
+                                  )
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(12),
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
@@ -751,7 +871,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                 if (selectedDayOfWeek != null) {
                                   Navigator.pop(
                                     ctx,
-                                    getDateForWeekAndDay(week, selectedDayOfWeek!),
+                                    getDateForWeekAndDay(
+                                      week,
+                                      selectedDayOfWeek!,
+                                    ),
                                   );
                                 } else {
                                   setModalState(() {
@@ -760,19 +883,27 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                 }
                               },
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
                                 child: Row(
                                   children: [
                                     // 周次标签
                                     Container(
                                       width: 52,
-                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
                                         color: isSelected
                                             ? colorScheme.primary
                                             : isCurrentWeek
-                                                ? colorScheme.secondary.withValues(alpha: 0.2)
-                                                : colorScheme.surfaceContainerHighest,
+                                            ? colorScheme.secondary.withValues(
+                                                alpha: 0.2,
+                                              )
+                                            : colorScheme
+                                                  .surfaceContainerHighest,
                                         borderRadius: BorderRadius.circular(6),
                                       ),
                                       child: Center(
@@ -784,8 +915,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                             color: isSelected
                                                 ? colorScheme.onPrimary
                                                 : isCurrentWeek
-                                                    ? colorScheme.secondary
-                                                    : colorScheme.onSurfaceVariant,
+                                                ? colorScheme.secondary
+                                                : colorScheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ),
@@ -794,7 +925,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                     // 日期信息
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             selectedDayOfWeek != null
@@ -802,9 +934,12 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                                 : l10n.weekLabel(week),
                                             style: TextStyle(
                                               fontSize: 14,
-                                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                              fontWeight: isSelected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
                                               color: isSelected
-                                                  ? colorScheme.onPrimaryContainer
+                                                  ? colorScheme
+                                                        .onPrimaryContainer
                                                   : colorScheme.onSurface,
                                             ),
                                           ),
@@ -846,7 +981,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
     return result;
   }
 
-  bool _isCurrentWeek(int week, DateTime semesterStart, TimetableProvider provider) {
+  bool _isCurrentWeek(
+    int week,
+    DateTime semesterStart,
+    TimetableProvider provider,
+  ) {
     final now = DateTime.now();
     final currentWeekIndex = provider.getWeekIndex(now, semesterStart);
     return currentWeekIndex == week;
@@ -854,10 +993,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
   Future<void> _pickTime({required bool isStart}) async {
     final initial = isStart ? _startTime : _endTime;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked != null) {
       setState(() {
         if (isStart) {
@@ -898,9 +1034,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     if (!_hasSelectedDate) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.examDateRequired)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.examDateRequired)));
       return;
     }
 
