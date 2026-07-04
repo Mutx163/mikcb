@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -30,11 +31,15 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.supportCreatorTitle),
       ),
-      body: LayoutBuilder(
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxHeight < 760;
           return ListView(
@@ -107,6 +112,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
           );
         },
       ),
+    ),
     );
   }
 

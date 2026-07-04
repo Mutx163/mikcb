@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -27,11 +28,15 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     final activeProfileName =
         provider.activeProfile?.name ?? l10n.timetableAppName;
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.dataTransferTitle),
       ),
-      body: ListView(
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Card(
@@ -156,6 +161,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
