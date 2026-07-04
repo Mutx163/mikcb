@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -156,10 +157,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       builder: (context, provider, child) {
         _syncViewStateIfNeeded(provider);
         _scheduleUpdateCheckIfNeeded(provider);
-        _syncWeekPageWithProvider(
-          provider.currentWeek,
-          provider.settings,
-        );
+        _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
         final colorScheme = Theme.of(context).colorScheme;
         final backgroundColor = Theme.of(context).brightness == Brightness.dark
             ? colorScheme.surface
@@ -167,17 +165,18 @@ class _TimetableScreenState extends State<TimetableScreen>
                 provider.settings.timetablePageBackgroundColor,
                 colorScheme.surface,
               );
-        return Scaffold(
+        return FScaffold(
           resizeToAvoidBottomInset: false,
-          backgroundColor: backgroundColor,
-          appBar: AppBar(
+          scaffoldStyle: FScaffoldStyleDelta.delta(
             backgroundColor: backgroundColor,
-            surfaceTintColor: backgroundColor,
+          ),
+          header: FHeader(
+            style: FHeaderStyleDelta.delta(
+              decoration: DecorationDelta.boxDelta(color: backgroundColor),
+            ),
             title: _buildProfileSwitcherTrigger(provider),
-            actions: [
-              IconButton(
-                tooltip: l10n.moreTooltip,
-                onPressed: _showTopActionsSheet,
+            suffixes: [
+              FHeaderAction(
                 icon: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -201,51 +200,57 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                   ],
                 ),
+                semanticsLabel: l10n.moreTooltip,
+                onPress: _showTopActionsSheet,
               ),
             ],
           ),
-          body: provider.isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : MediaQuery.removeViewInsets(
-                  context: context,
-                  removeBottom: true,
-                  child: Stack(
-                    children: [
-                      Container(
-                        color: backgroundColor,
-                        child: Padding(
-                          key: _timetableSurfaceKey,
-                          padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              return _buildWeekPager(
-                                provider,
-                                provider.settings,
-                                constraints.maxWidth,
-                                constraints.maxHeight,
-                              );
-                            },
+          childPad: false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: provider.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : MediaQuery.removeViewInsets(
+                    context: context,
+                    removeBottom: true,
+                    child: Stack(
+                      children: [
+                        Container(
+                          color: backgroundColor,
+                          child: Padding(
+                            key: _timetableSurfaceKey,
+                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                return _buildWeekPager(
+                                  provider,
+                                  provider.settings,
+                                  constraints.maxWidth,
+                                  constraints.maxHeight,
+                                );
+                              },
+                            ),
                           ),
                         ),
-                      ),
-                      ValueListenableBuilder<int>(
-                        valueListenable: _visibleWeekListenable,
-                        builder: (context, visibleWeek, child) {
-                          if (!_shouldShowFloatingBackToCurrentWeekButton(
-                            provider,
-                            provider.settings,
-                            visibleWeek,
-                          )) {
-                            return const SizedBox.shrink();
-                          }
-                          return _buildFloatingBackToCurrentWeekButton(
-                            provider,
-                          );
-                        },
-                      ),
-                    ],
+                        ValueListenableBuilder<int>(
+                          valueListenable: _visibleWeekListenable,
+                          builder: (context, visibleWeek, child) {
+                            if (!_shouldShowFloatingBackToCurrentWeekButton(
+                              provider,
+                              provider.settings,
+                              visibleWeek,
+                            )) {
+                              return const SizedBox.shrink();
+                            }
+                            return _buildFloatingBackToCurrentWeekButton(
+                              provider,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+          ),
         );
       },
     );
@@ -899,17 +904,29 @@ class _TimetableScreenState extends State<TimetableScreen>
                         final isToday =
                             date != null && _isSameDate(date, DateTime.now());
                         final isSelected = _isSelectedDay(week, dayOfWeek);
-                        final isDark = Theme.of(context).brightness == Brightness.dark;
-                        final weekdayColor = isDark ? settings.weekdayBarFontColorDark : settings.weekdayBarFontColorLight;
-                        final accentColor = isDark ? settings.weekdayBarAccentColorDark : settings.weekdayBarAccentColorLight;
+                        final isDark =
+                            Theme.of(context).brightness == Brightness.dark;
+                        final weekdayColor = isDark
+                            ? settings.weekdayBarFontColorDark
+                            : settings.weekdayBarFontColorLight;
+                        final accentColor = isDark
+                            ? settings.weekdayBarAccentColorDark
+                            : settings.weekdayBarAccentColorLight;
                         final labelColor = (isSelected || isToday)
                             ? _colorFromHex(accentColor, colorScheme.primary)
-                            : _colorFromHex(weekdayColor, colorScheme.onSurface);
+                            : _colorFromHex(
+                                weekdayColor,
+                                colorScheme.onSurface,
+                              );
                         final subLabelColor = (isSelected || isToday)
-                            ? _colorFromHex(accentColor, colorScheme.primary).withValues(
-                                alpha: isSelected ? 0.9 : 0.78,
-                              )
-                            : _colorFromHex(weekdayColor, colorScheme.onSurfaceVariant).withValues(alpha: 0.7);
+                            ? _colorFromHex(
+                                accentColor,
+                                colorScheme.primary,
+                              ).withValues(alpha: isSelected ? 0.9 : 0.78)
+                            : _colorFromHex(
+                                weekdayColor,
+                                colorScheme.onSurfaceVariant,
+                              ).withValues(alpha: 0.7);
                         final showsTodayMarker = isToday && !isSelected;
 
                         return Expanded(
@@ -938,9 +955,10 @@ class _TimetableScreenState extends State<TimetableScreen>
                                   border: Border(
                                     bottom: BorderSide(
                                       color: showsTodayMarker
-                                          ? _colorFromHex(accentColor, colorScheme.primary).withValues(
-                                              alpha: 0.35,
-                                            )
+                                          ? _colorFromHex(
+                                              accentColor,
+                                              colorScheme.primary,
+                                            ).withValues(alpha: 0.35)
                                           : Colors.transparent,
                                       width: showsTodayMarker ? 2 : 0,
                                     ),
@@ -1684,17 +1702,19 @@ class _TimetableScreenState extends State<TimetableScreen>
     final countBadgeColor = hasAgenda
         ? colorScheme.primary.withValues(alpha: 0.10)
         : colorScheme.surfaceContainerHigh;
-    final targetDate = selectedDate ??
+    final targetDate =
+        selectedDate ??
         _resolveDisplayDateForWeekDay(
           provider: provider,
           settings: settings,
           week: week,
           dayOfWeek: dayOfWeek,
         );
-    final dayExams = provider.exams
-        .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
-        .toList()
-      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    final dayExams =
+        provider.exams
+            .where((e) => !e.isExpired && _isSameDate(e.dateTime, targetDate))
+            .toList()
+          ..sort((a, b) => a.startTime.compareTo(b.startTime));
     final countBadgeTextColor = hasAgenda
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
@@ -2118,7 +2138,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     required _DayAgendaItem item,
   }) {
     if (item.isExam) {
-      return _buildExamAgendaEntry(item.exam!, provider: context.read<TimetableProvider>());
+      return _buildExamAgendaEntry(
+        item.exam!,
+        provider: context.read<TimetableProvider>(),
+      );
     }
     if (item.isScheduleItem) {
       return _buildScheduleAgendaEntry(item);
@@ -2219,7 +2242,9 @@ class _TimetableScreenState extends State<TimetableScreen>
         openBuilder: (context, _) => ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: AddCourseScreen(
-            courseGroup: context.read<TimetableProvider>().courseGroupForCourse(courseItem.course),
+            courseGroup: context.read<TimetableProvider>().courseGroupForCourse(
+              courseItem.course,
+            ),
             initialCourse: courseItem.course,
           ),
         ),
@@ -2492,7 +2517,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Widget _buildExamAgendaEntry(Exam exam, {required TimetableProvider provider}) {
+  Widget _buildExamAgendaEntry(
+    Exam exam, {
+    required TimetableProvider provider,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
@@ -2539,10 +2567,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                     colors: [
                       colorScheme.error,
                       Color.lerp(
-                        colorScheme.error,
-                        colorScheme.errorContainer,
-                        0.25,
-                      ) ?? colorScheme.error,
+                            colorScheme.error,
+                            colorScheme.errorContainer,
+                            0.25,
+                          ) ??
+                          colorScheme.error,
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
@@ -3831,7 +3860,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     final targetWeek = _clampWeek(week, maxWeek);
     final targetPage = targetWeek - 1;
     final shouldSyncDayView =
-        _isDayView && !_isDaySwipeAnimating && _selectedWeekForDayView != targetWeek;
+        _isDayView &&
+        !_isDaySwipeAnimating &&
+        _selectedWeekForDayView != targetWeek;
     final needsVisualSync =
         _visibleWeek != targetWeek ||
         shouldSyncDayView ||
@@ -3953,10 +3984,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       context,
       MaterialPageRoute(
         settings: const RouteSettings(name: '/course/edit'),
-        builder: (context) => AddCourseScreen(
-          courseGroup: group,
-          initialCourse: course,
-        ),
+        builder: (context) =>
+            AddCourseScreen(courseGroup: group, initialCourse: course),
       ),
     );
   }
@@ -4267,32 +4296,40 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final chips = <_StatusChip>[];
     if (isDayHoliday) {
-      chips.add(_StatusChip(
-        label: l10n.holidayStatusLabel,
-        color: Colors.orange.shade700,
-        icon: Icons.beach_access_rounded,
-      ));
+      chips.add(
+        _StatusChip(
+          label: l10n.holidayStatusLabel,
+          color: Colors.orange.shade700,
+          icon: Icons.beach_access_rounded,
+        ),
+      );
     }
     if (isSuspended) {
-      chips.add(_StatusChip(
-        label: l10n.suspendedStatusLabel,
-        color: Colors.red.shade700,
-        icon: Icons.pause_circle_outline_rounded,
-      ));
+      chips.add(
+        _StatusChip(
+          label: l10n.suspendedStatusLabel,
+          color: Colors.red.shade700,
+          icon: Icons.pause_circle_outline_rounded,
+        ),
+      );
     }
     if (isNonCurrentWeek) {
-      chips.add(_StatusChip(
-        label: l10n.nonCurrentWeekLabel,
-        color: theme.colorScheme.outline,
-        icon: Icons.schedule_outlined,
-      ));
+      chips.add(
+        _StatusChip(
+          label: l10n.nonCurrentWeekLabel,
+          color: theme.colorScheme.outline,
+          icon: Icons.schedule_outlined,
+        ),
+      );
     }
     if (course.suspensionDescription != null) {
-      chips.add(_StatusChip(
-        label: course.suspensionDescription!,
-        color: Colors.red.shade300,
-        icon: Icons.info_outline_rounded,
-      ));
+      chips.add(
+        _StatusChip(
+          label: course.suspensionDescription!,
+          color: Colors.red.shade300,
+          icon: Icons.info_outline_rounded,
+        ),
+      );
     }
     if (chips.isEmpty) return const SizedBox.shrink();
 
@@ -4369,8 +4406,12 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         _HomeActionButton(
           key: ValueKey('course-action-suspend-${course.id}'),
-          icon: isSuspended ? Icons.play_circle_outline_rounded : Icons.pause_circle_outline_rounded,
-          title: isSuspended ? l10n.courseActionUnsuspend : l10n.courseActionSuspend,
+          icon: isSuspended
+              ? Icons.play_circle_outline_rounded
+              : Icons.pause_circle_outline_rounded,
+          title: isSuspended
+              ? l10n.courseActionUnsuspend
+              : l10n.courseActionSuspend,
           accentColor: isSuspended ? null : theme.colorScheme.error,
           onTap: () {
             Navigator.of(context).pop();
@@ -4414,10 +4455,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                 children: [
                   Text(
                     l10n.deleteModeTitle,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(l10n.deleteModeSubtitle, style: theme.textTheme.bodySmall),
+                  Text(
+                    l10n.deleteModeSubtitle,
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 12,
@@ -4435,7 +4482,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                         title: l10n.deleteOccurrenceAction,
                         accentColor: theme.colorScheme.error,
                         enabled: canDeleteOccurrence,
-                        onTap: () => Navigator.of(sheetContext).pop('occurrence'),
+                        onTap: () =>
+                            Navigator.of(sheetContext).pop('occurrence'),
                       ),
                     ],
                   ),
@@ -4494,10 +4542,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                 children: [
                   Text(
                     l10n.suspendSheetTitle,
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
-                  Text(l10n.suspendSheetSubtitle, style: theme.textTheme.bodySmall),
+                  Text(
+                    l10n.suspendSheetSubtitle,
+                    style: theme.textTheme.bodySmall,
+                  ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 12,
@@ -4508,23 +4562,35 @@ class _TimetableScreenState extends State<TimetableScreen>
                         icon: isSuspended
                             ? Icons.play_circle_outline_rounded
                             : Icons.pause_circle_outline_rounded,
-                        title: isSuspended ? l10n.courseActionUnsuspend : l10n.suspendThisWeek,
-                        accentColor: isSuspended ? null : theme.colorScheme.error,
-                        onTap: () => Navigator.of(sheetContext).pop('this_week'),
+                        title: isSuspended
+                            ? l10n.courseActionUnsuspend
+                            : l10n.suspendThisWeek,
+                        accentColor: isSuspended
+                            ? null
+                            : theme.colorScheme.error,
+                        onTap: () =>
+                            Navigator.of(sheetContext).pop('this_week'),
                       ),
                       _HomeActionButton(
                         icon: hasAnySuspended
                             ? Icons.play_circle_filled_rounded
                             : Icons.pause_circle_filled_rounded,
-                        title: hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
-                        accentColor: hasAnySuspended ? null : theme.colorScheme.error,
-                        onTap: () => Navigator.of(sheetContext).pop('all_weeks'),
+                        title: hasAnySuspended
+                            ? l10n.unsuspendAllWeeks
+                            : l10n.suspendAllWeeks,
+                        accentColor: hasAnySuspended
+                            ? null
+                            : theme.colorScheme.error,
+                        onTap: () =>
+                            Navigator.of(sheetContext).pop('all_weeks'),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    hasAnySuspended ? l10n.unsuspendAllWeeksDesc : l10n.suspendAllWeeksDesc,
+                    hasAnySuspended
+                        ? l10n.unsuspendAllWeeksDesc
+                        : l10n.suspendAllWeeksDesc,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -4743,7 +4809,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableSettings settings,
   ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final timeAxisColor = isDark ? settings.timeAxisFontColorDark : settings.timeAxisFontColorLight;
+    final timeAxisColor = isDark
+        ? settings.timeAxisFontColorDark
+        : settings.timeAxisFontColorLight;
     final compactTextStyle = TextStyle(
       fontSize: (settings.compactFontSize - 2).clamp(6.0, 10.0),
       color: _colorFromHex(timeAxisColor, Colors.grey.shade600),
@@ -5678,8 +5746,8 @@ class _DayAgendaItem {
 
   bool get isScheduleItem => scheduleItem != null;
   bool get isExam => exam != null;
-  String get id => exam?.id ??
-      (isScheduleItem ? scheduleItem!.id : courseItem!.course.id);
+  String get id =>
+      exam?.id ?? (isScheduleItem ? scheduleItem!.id : courseItem!.course.id);
 }
 
 class _DayAgendaProgressInfo {

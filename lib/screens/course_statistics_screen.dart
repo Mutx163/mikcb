@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
@@ -55,32 +56,40 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
 
         final hasData = courses.isNotEmpty;
 
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(l10n.statisticsTitle),
-            actions: [
-              if (hasData)
-                IconButton(
-                  icon: const Icon(Icons.share_rounded),
-                  tooltip: '分享统计',
-                  onPressed: () => StatisticsShareService.shareWidgetAsImage(
-                    context: context,
-                    repaintBoundaryKey: _shareKey,
-                    title: '我的学期统计',
-                  ),
-                ),
+        return FScaffold(
+          header: FHeader.nested(
+            prefixes: [
+              FHeaderAction.back(onPress: () => Navigator.pop(context)),
             ],
+            title: Text(l10n.statisticsTitle),
+            suffixes: hasData
+                ? [
+                    FHeaderAction(
+                      icon: const Icon(Icons.share_rounded),
+                      semanticsLabel: '分享统计',
+                      onPress: () => StatisticsShareService.shareWidgetAsImage(
+                        context: context,
+                        repaintBoundaryKey: _shareKey,
+                        title: '我的学期统计',
+                      ),
+                    ),
+                  ]
+                : const [],
           ),
-          body: hasData
-              ? _buildContent(
-                  context,
-                  semesterStats,
-                  achievements,
-                  stories,
-                  l10n,
-                  colorScheme,
-                )
-              : _buildEmptyState(context, l10n, colorScheme),
+          childPad: false,
+          child: Material(
+            type: MaterialType.transparency,
+            child: hasData
+                ? _buildContent(
+                    context,
+                    semesterStats,
+                    achievements,
+                    stories,
+                    l10n,
+                    colorScheme,
+                  )
+                : _buildEmptyState(context, l10n, colorScheme),
+          ),
         );
       },
     );
