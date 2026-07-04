@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -77,8 +78,9 @@ class _ScheduleEntryData {
       endWeek: course.endWeek,
       isOddWeek: course.isOddWeek,
       isEvenWeek: course.isEvenWeek,
-      weekSelectionMode:
-          customWeeks != null ? _WeekSelectionMode.custom : _WeekSelectionMode.range,
+      weekSelectionMode: customWeeks != null
+          ? _WeekSelectionMode.custom
+          : _WeekSelectionMode.range,
       selectedCustomWeeks: customWeeks?.toSet() ?? <int>{},
       timeSchemeIdOverride: course.timeSchemeIdOverride,
     );
@@ -197,9 +199,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       } else if (widget.course != null) {
         // Editing a single existing course in group mode: wrap as one entry.
         _loadCourseData(widget.course!);
-        _scheduleEntries = [
-          _ScheduleEntryData.fromCourse(widget.course!),
-        ];
+        _scheduleEntries = [_ScheduleEntryData.fromCourse(widget.course!)];
       } else {
         // Adding new course: start with one empty schedule entry.
         _scheduleEntries = [
@@ -216,8 +216,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ];
       }
       for (final entry in _scheduleEntries) {
-        _entryTeacherControllers.add(TextEditingController(text: entry.teacher));
-        _entryLocationControllers.add(TextEditingController(text: entry.location));
+        _entryTeacherControllers.add(
+          TextEditingController(text: entry.teacher),
+        );
+        _entryLocationControllers.add(
+          TextEditingController(text: entry.location),
+        );
       }
     }
   }
@@ -244,34 +248,37 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(_resolveTitle()),
-        actions: [
+        suffixes: [
           if (widget.courseGroup != null)
-            IconButton(
-              tooltip: l10n.deleteCourseTitle,
-              onPressed: _confirmDeleteGroup,
+            FHeaderAction(
               icon: const Icon(Icons.delete_outline_rounded),
+              semanticsLabel: l10n.deleteCourseTitle,
+              onPress: _confirmDeleteGroup,
             )
           else if (widget.course != null)
-            IconButton(
-              tooltip: l10n.deleteCourseTitle,
-              onPressed: _confirmDeleteCourse,
+            FHeaderAction(
               icon: const Icon(Icons.delete_outline_rounded),
+              semanticsLabel: l10n.deleteCourseTitle,
+              onPress: _confirmDeleteCourse,
             ),
-          TextButton(
-            onPressed: () => _saveCourse(provider, settings),
-            child: Text(
-              l10n.saveAction,
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
+          FHeaderAction(
+            icon: const Icon(Icons.check_rounded),
+            semanticsLabel: l10n.saveAction,
+            onPress: () => _saveCourse(provider, settings),
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: _buildGroupEditingBody(provider, settings),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Form(
+          key: _formKey,
+          child: _buildGroupEditingBody(provider, settings),
+        ),
       ),
     );
   }
@@ -358,8 +365,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             final filtered = controller.text.isEmpty
                 ? suggestions
                 : suggestions
-                    .where((s) => s.contains(controller.text))
-                    .toList();
+                      .where((s) => s.contains(controller.text))
+                      .toList();
             return Padding(
               padding: EdgeInsets.only(
                 left: 16,
@@ -371,9 +378,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: controller,
@@ -400,10 +411,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   ),
                   if (filtered.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text(l10n.historyRecordsLabel,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(
+                      l10n.historyRecordsLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
@@ -423,10 +437,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   ] else if (suggestions.isNotEmpty &&
                       controller.text.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    Text(l10n.noHistoryRecords,
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(
+                      l10n.noHistoryRecords,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                   const SizedBox(height: 16),
                   SizedBox(
@@ -465,7 +482,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final followLabel = provider.activeTimeScheme?.name ?? l10n.timetableAppName;
+    final followLabel =
+        provider.activeTimeScheme?.name ?? l10n.timetableAppName;
 
     showModalBottomSheet(
       context: context,
@@ -491,7 +509,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         child: Text(
                           l10n.selectTimeSchemeTitle,
                           style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                       TextButton.icon(
@@ -503,7 +523,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             context,
                             MaterialPageRoute(
                               settings: const RouteSettings(
-                                  name: '/settings/time-schemes'),
+                                name: '/settings/time-schemes',
+                              ),
                               builder: (_) =>
                                   const TimeSchemeManagementScreen(),
                             ),
@@ -526,7 +547,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         children: [
                           // "Follow profile" option
                           _buildSchemeTile(
-                            title: l10n.followCurrentTimetableWithName(followLabel),
+                            title: l10n.followCurrentTimetableWithName(
+                              followLabel,
+                            ),
                             subtitle: null,
                             isSelected: currentValue == null,
                             onTap: () {
@@ -556,15 +579,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                   Navigator.pop(sheetContext);
                                 },
                                 trailing: IconButton(
-                                  icon: const Icon(Icons.edit_rounded, size: 20),
+                                  icon: const Icon(
+                                    Icons.edit_rounded,
+                                    size: 20,
+                                  ),
                                   tooltip: l10n.editTimeSchemeTitle,
                                   onPressed: () async {
                                     await Navigator.push(
                                       context,
                                       MaterialPageRoute(
                                         settings: const RouteSettings(
-                                            name: '/settings/time-schemes'),
-                                        builder: (_) => TimeSchemeManagementScreen(
+                                          name: '/settings/time-schemes',
+                                        ),
+                                        builder: (_) =>
+                                            TimeSchemeManagementScreen(
                                               initialEditSchemeId: scheme.id,
                                             ),
                                       ),
@@ -593,7 +621,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           context,
                           MaterialPageRoute(
                             settings: const RouteSettings(
-                                name: '/settings/time-schemes'),
+                              name: '/settings/time-schemes',
+                            ),
                             builder: (_) => const TimeSchemeManagementScreen(),
                           ),
                         );
@@ -650,8 +679,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            isSelected ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -698,7 +728,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     );
   }
 
-  Widget _buildGroupSharedInfoSection(TimetableProvider provider, AppLocalizations l10n) {
+  Widget _buildGroupSharedInfoSection(
+    TimetableProvider provider,
+    AppLocalizations l10n,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -725,7 +758,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         onPressed: () => _showCourseTemplateSheet(provider),
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 isDense: true,
               ),
               validator: (value) {
@@ -746,7 +782,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       labelText: l10n.courseShortNameOptional,
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.short_text_rounded, size: 18),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       isDense: true,
                     ),
                   ),
@@ -759,14 +798,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     decoration: InputDecoration(
                       labelText: l10n.courseNatureLabel,
                       border: OutlineInputBorder(),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       isDense: true,
                     ),
                     items: CourseNature.values
                         .map(
                           (item) => DropdownMenuItem(
                             value: item,
-                            child: Text(item.label, style: const TextStyle(fontSize: 13)),
+                            child: Text(
+                              item.label,
+                              style: const TextStyle(fontSize: 13),
+                            ),
                           ),
                         )
                         .toList(),
@@ -786,7 +831,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 labelText: l10n.courseDescriptionOptional,
                 border: OutlineInputBorder(),
                 prefixIcon: Icon(Icons.notes_rounded, size: 18),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 isDense: true,
               ),
               maxLines: null,
@@ -850,14 +898,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }) {
     return InputDecoration(
       labelText: labelText,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       isDense: true,
-      prefixIcon: prefixIcon != null
-          ? Icon(prefixIcon, size: 18)
-          : null,
+      prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18) : null,
       suffixIcon: suffixIcon,
     );
   }
@@ -870,8 +914,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     final entry = _scheduleEntries[index];
     final weekDays = _weekdayLabels(l10n);
-    final sectionNumbers =
-        List.generate(settings.sectionCount, (i) => i + 1);
+    final sectionNumbers = List.generate(settings.sectionCount, (i) => i + 1);
     final availableWeeks = settings.availableWeeks;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -885,13 +928,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             // ── Header: title + time scheme + delete ──
             Row(
               children: [
-                Icon(Icons.schedule_rounded,
-                    size: 16, color: colorScheme.primary),
+                Icon(
+                  Icons.schedule_rounded,
+                  size: 16,
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   l10n.scheduleEntryTitle(index + 1),
                   style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
                 const Spacer(),
                 if (_scheduleEntries.length > 1)
@@ -899,8 +947,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     width: 28,
                     height: 28,
                     child: IconButton(
-                      icon: Icon(Icons.close_rounded,
-                          size: 16, color: colorScheme.error),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 16,
+                        color: colorScheme.error,
+                      ),
                       tooltip: l10n.deleteScheduleEntryAction,
                       padding: EdgeInsets.zero,
                       onPressed: () => _removeScheduleEntry(index),
@@ -926,8 +977,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     items: List.generate(weekDays.length, (i) {
                       return DropdownMenuItem(
                         value: i + 1,
-                        child: Text(weekDays[i],
-                            style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          weekDays[i],
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       );
                     }),
                     onChanged: (value) {
@@ -947,8 +1000,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     items: sectionNumbers.map((section) {
                       return DropdownMenuItem(
                         value: section,
-                        child: Text(l10n.sectionLabel(section),
-                            style: const TextStyle(fontSize: 13)),
+                        child: Text(
+                          l10n.sectionLabel(section),
+                          style: const TextStyle(fontSize: 13),
+                        ),
                       );
                     }).toList(),
                     onChanged: (value) {
@@ -973,12 +1028,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     items: sectionNumbers
                         .where((s) => s >= entry.startSection)
                         .map((section) {
-                      return DropdownMenuItem(
-                        value: section,
-                        child: Text(l10n.sectionLabel(section),
-                            style: const TextStyle(fontSize: 13)),
-                      );
-                    }).toList(),
+                          return DropdownMenuItem(
+                            value: section,
+                            child: Text(
+                              l10n.sectionLabel(section),
+                              style: const TextStyle(fontSize: 13),
+                            ),
+                          );
+                        })
+                        .toList(),
                     onChanged: (value) {
                       setState(() => entry.endSection = value!);
                     },
@@ -997,15 +1055,17 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     style: const TextStyle(fontSize: 13),
                     decoration: _compactInputDecoration(
                       labelText: l10n.teacherLabel,
-                      suffixIcon: const Icon(Icons.arrow_drop_down_rounded,
-                          size: 20),
+                      suffixIcon: const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 20,
+                      ),
                     ),
                     onTap: () => _showPickerSheet(
                       title: l10n.selectTeacherTitle,
                       suggestions: provider.uniqueTeachers,
                       controller: _entryTeacherControllers[index],
-                      onEntrySync: () => entry.teacher =
-                          _entryTeacherControllers[index].text,
+                      onEntrySync: () =>
+                          entry.teacher = _entryTeacherControllers[index].text,
                     ),
                   ),
                 ),
@@ -1018,8 +1078,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     decoration: _compactInputDecoration(
                       labelText: l10n.locationLabel,
                       prefixIcon: Icons.location_on_outlined,
-                      suffixIcon: const Icon(Icons.arrow_drop_down_rounded,
-                          size: 20),
+                      suffixIcon: const Icon(
+                        Icons.arrow_drop_down_rounded,
+                        size: 20,
+                      ),
                     ),
                     onTap: () => _showPickerSheet(
                       title: l10n.selectLocationTitle,
@@ -1038,8 +1100,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               builder: (context) {
                 final entrySelectedWeeks =
                     entry.weekSelectionMode == _WeekSelectionMode.range
-                        ? _buildEntryWeeksFromRange(entry)
-                        : (entry.selectedCustomWeeks.toList()..sort());
+                    ? _buildEntryWeeksFromRange(entry)
+                    : (entry.selectedCustomWeeks.toList()..sort());
                 final entrySummary = _selectedWeeksSummaryText(
                   entrySelectedWeeks,
                   availableWeeks,
@@ -1075,10 +1137,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final currentName = entry.timeSchemeIdOverride == null
         ? l10n.followCurrentTimetableWithName(followLabel)
         : provider.timeSchemes
-                .where((s) => s.id == entry.timeSchemeIdOverride)
-                .firstOrNull
-                ?.name ??
-            l10n.followCurrentTimetableWithName(followLabel);
+                  .where((s) => s.id == entry.timeSchemeIdOverride)
+                  .firstOrNull
+                  ?.name ??
+              l10n.followCurrentTimetableWithName(followLabel);
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () => _showTimeSchemePickerSheet(
@@ -1093,8 +1155,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         decoration: _compactInputDecoration(
           labelText: l10n.timeSchemeLabel,
           prefixIcon: Icons.schedule_rounded,
-          suffixIcon:
-              const Icon(Icons.arrow_drop_down_rounded, size: 20),
+          suffixIcon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
         ),
         child: Text(
           currentName,
@@ -1132,9 +1193,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       );
       _scheduleEntries.add(newEntry);
       _entryTeacherControllers.add(
-          TextEditingController(text: newEntry.teacher));
+        TextEditingController(text: newEntry.teacher),
+      );
       _entryLocationControllers.add(
-          TextEditingController(text: newEntry.location));
+        TextEditingController(text: newEntry.location),
+      );
     });
   }
 
@@ -1174,9 +1237,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     await context.read<TimetableProvider>().deleteCourseGroup(name);
     if (!mounted) return;
     final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(content: Text(l10n.courseDeleted)),
-    );
+    messenger.showSnackBar(SnackBar(content: Text(l10n.courseDeleted)));
     Navigator.pop(context);
   }
 
@@ -1262,7 +1323,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                           onTap: () {
-                            setState(() => _applyCourseTemplate(representative));
+                            setState(
+                              () => _applyCourseTemplate(representative),
+                            );
                             Navigator.pop(sheetContext);
                           },
                         );
@@ -1327,8 +1390,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               if (match == null) {
                 return;
               }
-              final withHash =
-                  normalized.startsWith('#') ? normalized : '#$normalized';
+              final withHash = normalized.startsWith('#')
+                  ? normalized
+                  : '#$normalized';
               updateFromColor(_parseColor(withHash));
             }
 
@@ -1370,9 +1434,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       max: 360,
                       onChanged: (value) {
                         setDialogState(() {
-                          updateFromColor(
-                            hsv.withHue(value).toColor(),
-                          );
+                          updateFromColor(hsv.withHue(value).toColor());
                         });
                       },
                     ),
@@ -1383,9 +1445,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       max: 1,
                       onChanged: (value) {
                         setDialogState(() {
-                          updateFromColor(
-                            hsv.withSaturation(value).toColor(),
-                          );
+                          updateFromColor(hsv.withSaturation(value).toColor());
                         });
                       },
                     ),
@@ -1396,9 +1456,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       max: 1,
                       onChanged: (value) {
                         setDialogState(() {
-                          updateFromColor(
-                            hsv.withValue(value).toColor(),
-                          );
+                          updateFromColor(hsv.withValue(value).toColor());
                         });
                       },
                     ),
@@ -1478,7 +1536,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     AppLocalizations l10n,
   ) {
     if (mode == _WeekSelectionMode.range) {
-      final isAll = startWeek == availableWeeks.first &&
+      final isAll =
+          startWeek == availableWeeks.first &&
           endWeek == availableWeeks.last &&
           !isOddWeek &&
           !isEvenWeek;
@@ -1489,7 +1548,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       return range;
     }
     if (selectedWeeks.isEmpty) return '';
-    if (selectedWeeks.length == availableWeeks.length) return l10n.allWeeksFilter;
+    if (selectedWeeks.length == availableWeeks.length)
+      return l10n.allWeeksFilter;
     return _formatWeekList(selectedWeeks);
   }
 
@@ -1514,7 +1574,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.date_range_rounded, size: 20, color: colorScheme.primary),
+            Icon(
+              Icons.date_range_rounded,
+              size: 20,
+              color: colorScheme.primary,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -1523,20 +1587,24 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   Text(
                     title,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     summary,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.edit_rounded, size: 18, color: colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.edit_rounded,
+              size: 18,
+              color: colorScheme.onSurfaceVariant,
+            ),
           ],
         ),
       ),
@@ -1662,11 +1730,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           items: availableWeeks
                               .where((w) => w >= tempStartWeek)
                               .map((week) {
-                            return DropdownMenuItem(
-                              value: week,
-                              child: Text(l10n.weekLabel(week)),
-                            );
-                          }).toList(),
+                                return DropdownMenuItem(
+                                  value: week,
+                                  child: Text(l10n.weekLabel(week)),
+                                );
+                              })
+                              .toList(),
                           onChanged: (value) {
                             setDialogState(() => tempEndWeek = value!);
                           },
@@ -1681,9 +1750,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             label: Text(l10n.allWeeksFilter),
                             selected: !tempIsOddWeek && !tempIsEvenWeek,
                             showCheckmark: false,
-                            selectedColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
                             onSelected: (_) {
                               setDialogState(() {
                                 tempIsOddWeek = false;
@@ -1695,9 +1764,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             label: Text(l10n.oddWeeksFilter),
                             selected: tempIsOddWeek,
                             showCheckmark: false,
-                            selectedColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
                             onSelected: (_) {
                               setDialogState(() {
                                 tempIsOddWeek = true;
@@ -1709,9 +1778,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             label: Text(l10n.evenWeeksFilter),
                             selected: tempIsEvenWeek,
                             showCheckmark: false,
-                            selectedColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
+                            selectedColor: Theme.of(
+                              context,
+                            ).colorScheme.primaryContainer,
                             onSelected: (_) {
                               setDialogState(() {
                                 tempIsOddWeek = false;
@@ -1727,8 +1796,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           final theme = Theme.of(context);
                           final colorScheme = theme.colorScheme;
                           final width = constraints.maxWidth;
-                          final crossAxisCount =
-                              width < 340 ? 4 : width < 420 ? 5 : 6;
+                          final crossAxisCount = width < 340
+                              ? 4
+                              : width < 420
+                              ? 5
+                              : 6;
                           final availableWidth =
                               width - (crossAxisCount - 1) * 8;
                           final tileWidth = availableWidth / crossAxisCount;
@@ -1740,22 +1812,22 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             itemCount: availableWeeks.length,
                             gridDelegate:
                                 SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              mainAxisSpacing: 8,
-                              crossAxisSpacing: 8,
-                              childAspectRatio: childAspectRatio,
-                            ),
+                                  crossAxisCount: crossAxisCount,
+                                  mainAxisSpacing: 8,
+                                  crossAxisSpacing: 8,
+                                  childAspectRatio: childAspectRatio,
+                                ),
                             itemBuilder: (context, i) {
                               final week = availableWeeks[i];
-                              final isSelected =
-                                  tempCustomWeeks.contains(week);
+                              final isSelected = tempCustomWeeks.contains(week);
                               return FilledButton.tonal(
                                 style: FilledButton.styleFrom(
                                   minimumSize: const Size(48, 44),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.padded,
+                                  tapTargetSize: MaterialTapTargetSize.padded,
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 6, vertical: 10),
+                                    horizontal: 6,
+                                    vertical: 10,
+                                  ),
                                   backgroundColor: isSelected
                                       ? colorScheme.primaryContainer
                                       : colorScheme.surfaceContainerHighest,
@@ -1899,8 +1971,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     AppLocalizations l10n,
   ) async {
     final name = _nameController.text;
-    final shortName =
-        _shortNameController.text.isEmpty ? null : _shortNameController.text;
+    final shortName = _shortNameController.text.isEmpty
+        ? null
+        : _shortNameController.text;
     final description = _descriptionController.text.isEmpty
         ? null
         : _descriptionController.text;
@@ -1952,24 +2025,23 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ? settings.sectionAt(entry.endSection).endTime
           : resolvedScheme.sections[entry.endSection - 1].endTime;
 
-      courses.add(entry.toCourse(
-        name: name,
-        shortName: shortName,
-        color: _selectedColor,
-        courseNature: _courseNature,
-        description: description,
-        startTime: startTime,
-        endTime: endTime,
-      ));
+      courses.add(
+        entry.toCourse(
+          name: name,
+          shortName: shortName,
+          color: _selectedColor,
+          courseNature: _courseNature,
+          description: description,
+          startTime: startTime,
+          endTime: endTime,
+        ),
+      );
     }
 
     try {
       if (widget.courseGroup != null) {
         // Editing existing group: replace all entries.
-        await provider.updateCourseGroup(
-          widget.courseGroup!.name,
-          courses,
-        );
+        await provider.updateCourseGroup(widget.courseGroup!.name, courses);
       } else if (widget.course != null) {
         // Editing a single existing course: delete original, add all new entries.
         await provider.deleteCourse(widget.course!.id);
@@ -2018,6 +2090,4 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
     return null;
   }
-
 }
-
