@@ -1314,4 +1314,3 @@ class _ImagePreview extends StatelessWidget {
 Color _parseColor(String hexColor) {
   return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
 }
-

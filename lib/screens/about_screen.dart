@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -68,10 +69,11 @@ class _MirrorProbeState {
 AppUpdateMirrorPreset? resolveRecommendedMirrorPreset(
   Map<AppUpdateMirrorPreset, AppUpdateDownloadProbeResult> probeResults,
 ) {
-  final successfulEntries = probeResults.entries
-      .where((entry) => entry.value.isSuccess)
-      .toList()
-    ..sort((left, right) => left.value.elapsed.compareTo(right.value.elapsed));
+  final successfulEntries =
+      probeResults.entries.where((entry) => entry.value.isSuccess).toList()
+        ..sort(
+          (left, right) => left.value.elapsed.compareTo(right.value.elapsed),
+        );
   return successfulEntries.isEmpty ? null : successfulEntries.first.key;
 }
 
@@ -119,8 +121,9 @@ class _AboutScreenState extends State<AboutScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final settings =
-        context.select<TimetableProvider, TimetableSettings>((provider) {
+    final settings = context.select<TimetableProvider, TimetableSettings>((
+      provider,
+    ) {
       return provider.settings;
     });
     final versionText = _packageInfo == null
@@ -129,116 +132,127 @@ class _AboutScreenState extends State<AboutScreen> {
             '${_packageInfo!.version} (${_packageInfo!.buildNumber})',
           );
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.aboutTitle),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  Container(
-                    width: 84,
-                    height: 84,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.primary.withValues(alpha: 0.18),
-                          blurRadius: 18,
-                          offset: const Offset(0, 10),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerLowest,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: colorScheme.primary.withValues(alpha: 0.18),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/branding/launcher_icon.png',
+                          fit: BoxFit.cover,
+                          cacheWidth: 168,
+                          cacheHeight: 168,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.calendar_view_week_rounded,
+                              color: colorScheme.primary,
+                              size: 42,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.timetableAppName,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      versionText,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.aboutHeroSubtitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _buildInfoChip(
+                          theme,
+                          label: l10n.platformLabel,
+                          value: 'Android',
+                        ),
+                        _buildInfoChip(
+                          theme,
+                          label: l10n.focusLabel,
+                          value: 'HyperOS',
+                        ),
+                        _buildInfoChip(
+                          theme,
+                          label: l10n.updateLabel,
+                          value: settings.appUpdateIncludePrerelease
+                              ? l10n.prereleaseIncluded
+                              : l10n.stableOnly,
                         ),
                       ],
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: Image.asset(
-                        'assets/branding/launcher_icon.png',
-                        fit: BoxFit.cover,
-                        cacheWidth: 168,
-                        cacheHeight: 168,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(
-                            Icons.calendar_view_week_rounded,
-                            color: colorScheme.primary,
-                            size: 42,
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    l10n.timetableAppName,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    versionText,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.aboutHeroSubtitle,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildInfoChip(theme,
-                          label: l10n.platformLabel, value: 'Android'),
-                      _buildInfoChip(theme,
-                          label: l10n.focusLabel, value: 'HyperOS'),
-                      _buildInfoChip(
-                        theme,
-                        label: l10n.updateLabel,
-                        value: settings.appUpdateIncludePrerelease
-                            ? l10n.prereleaseIncluded
-                            : l10n.stableOnly,
-                      ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Column(
+            const SizedBox(height: 16),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                _AboutNavTile(
-                  icon: Icons.system_update_alt_rounded,
-                  title: l10n.aboutUpdatesTitle,
-                  subtitle: l10n.aboutUpdatesSubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.system_update_alt_rounded),
+                  title: Text(l10n.aboutUpdatesTitle),
+                  subtitle: Text(l10n.aboutUpdatesSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AboutUpdateScreen(
-                          packageInfo: _packageInfo,
-                        ),
+                        builder: (_) =>
+                            AboutUpdateScreen(packageInfo: _packageInfo),
                       ),
                     );
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.history_rounded,
-                  title: l10n.aboutChangelogTitle,
-                  subtitle: l10n.aboutChangelogSubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.history_rounded),
+                  title: Text(l10n.aboutChangelogTitle),
+                  subtitle: Text(l10n.aboutChangelogSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -247,87 +261,79 @@ class _AboutScreenState extends State<AboutScreen> {
                     );
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.flag_outlined,
-                  title: l10n.aboutPositioningTitle,
-                  subtitle: l10n.aboutPositioningSubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.flag_outlined),
+                  title: Text(l10n.aboutPositioningTitle),
+                  subtitle: Text(l10n.aboutPositioningSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     _showInfoSheet(
                       context,
                       title: l10n.aboutPositioningTitle,
                       children: [
                         _AboutBullet(text: l10n.aboutPositioningBullet1),
-                        _AboutBullet(
-                          text: l10n.aboutPositioningBullet2,
-                        ),
-                        _AboutBullet(
-                          text: l10n.aboutPositioningBullet3,
-                        ),
-                        _AboutBullet(
-                          text: l10n.aboutPositioningBullet4,
-                        ),
+                        _AboutBullet(text: l10n.aboutPositioningBullet2),
+                        _AboutBullet(text: l10n.aboutPositioningBullet3),
+                        _AboutBullet(text: l10n.aboutPositioningBullet4),
                       ],
                     );
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.import_export_rounded,
-                  title: l10n.aboutImportMigrationTitle,
-                  subtitle: l10n.aboutImportMigrationSubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.import_export_rounded),
+                  title: Text(l10n.aboutImportMigrationTitle),
+                  subtitle: Text(l10n.aboutImportMigrationSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     _showInfoSheet(
                       context,
                       title: l10n.aboutImportMigrationTitle,
                       children: [
-                        _AboutBullet(
-                          text: l10n.aboutImportMigrationBullet1,
-                        ),
-                        _AboutBullet(
-                          text: l10n.aboutImportMigrationBullet2,
-                        ),
-                        _AboutBullet(
-                          text: l10n.aboutImportMigrationBullet3,
-                        ),
-                        _AboutBullet(
-                          text: l10n.aboutImportMigrationBullet4,
-                        ),
+                        _AboutBullet(text: l10n.aboutImportMigrationBullet1),
+                        _AboutBullet(text: l10n.aboutImportMigrationBullet2),
+                        _AboutBullet(text: l10n.aboutImportMigrationBullet3),
+                        _AboutBullet(text: l10n.aboutImportMigrationBullet4),
                       ],
                     );
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.group_outlined,
-                  title: l10n.aboutContributorsTitle,
-                  subtitle: l10n.aboutContributorsSubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.group_outlined),
+                  title: Text(l10n.aboutContributorsTitle),
+                  subtitle: Text(l10n.aboutContributorsSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        settings:
-                            const RouteSettings(name: '/about/contributors'),
+                        settings: const RouteSettings(
+                          name: '/about/contributors',
+                        ),
                         builder: (_) => const ContributorsScreen(),
                       ),
                     );
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.code_rounded,
-                  title: l10n.aboutRepositoryTitle,
-                  subtitle: l10n.aboutRepositorySubtitle,
-                  onTap: () {
+                FTile(
+                  prefix: Icon(Icons.code_rounded),
+                  title: Text(l10n.aboutRepositoryTitle),
+                  subtitle: Text(l10n.aboutRepositorySubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: () {
                     _showRepositorySheet(context, theme);
                   },
                 ),
-                _AboutNavTile(
-                  icon: Icons.article_outlined,
-                  title: l10n.aboutAppLogsTitle,
-                  subtitle: l10n.aboutAppLogsSubtitle,
-                  onTap: _openAppLogsPage,
+                FTile(
+                  prefix: Icon(Icons.article_outlined),
+                  title: Text(l10n.aboutAppLogsTitle),
+                  subtitle: Text(l10n.aboutAppLogsSubtitle),
+                  suffix: const Icon(Icons.chevron_right_rounded),
+                  onPress: _openAppLogsPage,
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -350,9 +356,9 @@ class _AboutScreenState extends State<AboutScreen> {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 16),
                 ...children,
@@ -443,8 +449,8 @@ class _AboutScreenState extends State<AboutScreen> {
   Future<void> _openAppLogsPage() async {
     final settings = context.read<TimetableProvider>().settings;
     final l10n = AppLocalizations.of(context)!;
-    final nativeRawLog =
-        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final nativeRawLog = await MiuiLiveActivitiesService()
+        .readLiveDiagnosticsText();
     final rawLog = await AppLogService.instance.readMergedLogsText(
       nativeRawLog: nativeRawLog,
     );
@@ -457,7 +463,8 @@ class _AboutScreenState extends State<AboutScreen> {
           title: AppLocalizations.of(context)!.aboutAppLogsTitle,
           rawLog: rawLog,
           isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-          onRecordingChanged: (value) => _updateLiveDiagnosticsPreference(value),
+          onRecordingChanged: (value) =>
+              _updateLiveDiagnosticsPreference(value),
           onExport: (text) async {
             final path = await AppLogService.instance.exportMergedLogsFile(
               nativeRawLog: nativeRawLog,
@@ -473,8 +480,8 @@ class _AboutScreenState extends State<AboutScreen> {
           },
           onClear: () async {
             final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-            final clearedNativeLogs =
-                await MiuiLiveActivitiesService().clearLiveDiagnostics();
+            final clearedNativeLogs = await MiuiLiveActivitiesService()
+                .clearLiveDiagnostics();
             return clearedAppLogs || clearedNativeLogs;
           },
         ),
@@ -486,24 +493,24 @@ class _AboutScreenState extends State<AboutScreen> {
     final provider = context.read<TimetableProvider>();
     final l10n = AppLocalizations.of(context)!;
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        liveEnableLocalDiagnostics: value,
-      ),
+      provider.settings.copyWith(liveEnableLocalDiagnostics: value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(value
-            ? l10n.aboutLiveDiagnosticsEnabled
-            : l10n.aboutLiveDiagnosticsDisabled),
+        content: Text(
+          value
+              ? l10n.aboutLiveDiagnosticsEnabled
+              : l10n.aboutLiveDiagnosticsDisabled,
+        ),
       ),
     );
   }
@@ -559,7 +566,8 @@ class _AboutScreenState extends State<AboutScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress)),
+        content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress),
+      ),
     );
   }
 
@@ -575,10 +583,7 @@ class _AboutScreenState extends State<AboutScreen> {
 class AboutUpdateScreen extends StatefulWidget {
   final PackageInfo? packageInfo;
 
-  const AboutUpdateScreen({
-    super.key,
-    required this.packageInfo,
-  });
+  const AboutUpdateScreen({super.key, required this.packageInfo});
 
   @override
   State<AboutUpdateScreen> createState() => _AboutUpdateScreenState();
@@ -614,8 +619,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final settings =
-        context.select<TimetableProvider, TimetableSettings>((provider) {
+    final settings = context.select<TimetableProvider, TimetableSettings>((
+      provider,
+    ) {
       return provider.settings;
     });
 
@@ -630,14 +636,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           ),
         ],
       ),
-      bottomNavigationBar:
-          _isDownloading ? _buildDownloadProgressBar(theme) : null,
+      bottomNavigationBar: _isDownloading
+          ? _buildDownloadProgressBar(theme)
+          : null,
       body: Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         child: Column(
-          children: [
-            Expanded(child: _buildUpdateCard(theme, settings)),
-          ],
+          children: [Expanded(child: _buildUpdateCard(theme, settings))],
         ),
       ),
     );
@@ -659,26 +664,26 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                  _UpdateCheckAnimation(colorScheme: colorScheme),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.aboutCheckingLatestVersion,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
+                    _UpdateCheckAnimation(colorScheme: colorScheme),
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.aboutCheckingLatestVersion,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '正在连接更新服务器...',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    const SizedBox(height: 8),
+                    Text(
+                      '正在连接更新服务器...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
+          );
         }
 
         final result = snapshot.data;
@@ -759,8 +764,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       channel: downloadChannel,
     );
     final primaryButtonLabel = switch (primaryAction) {
-      AboutUpdatePrimaryAction.openReleasePage =>
-        l10n.aboutViewReleaseAction,
+      AboutUpdatePrimaryAction.openReleasePage => l10n.aboutViewReleaseAction,
       AboutUpdatePrimaryAction.downloadInApp => l10n.aboutDownloadNowAction,
       AboutUpdatePrimaryAction.openDownloadLink =>
         l10n.aboutOpenDownloadPageAction,
@@ -771,8 +775,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       AboutUpdatePrimaryAction.openReleasePage => Icons.open_in_new_rounded,
     };
     final statusColor = result.hasUpdate ? colorScheme.primary : Colors.green;
-    final statusIcon =
-        result.hasUpdate ? Icons.system_update_rounded : Icons.check_circle;
+    final statusIcon = result.hasUpdate
+        ? Icons.system_update_rounded
+        : Icons.check_circle;
 
     return Card(
       child: Padding(
@@ -864,9 +869,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: FilledButton.icon(
                 onPressed: result.hasRelease
                     ? () {
-                        if (primaryAction == AboutUpdatePrimaryAction.openReleasePage) {
+                        if (primaryAction ==
+                            AboutUpdatePrimaryAction.openReleasePage) {
                           _openUrl(release?.releaseUrl);
-                        } else if (downloadChannel == AppUpdateDownloadChannel.pgyer) {
+                        } else if (downloadChannel ==
+                            AppUpdateDownloadChannel.pgyer) {
                           // 蒲公英渠道：用浏览器打开下载页面
                           _openUrl(effectiveDownloadUrl);
                         } else if (effectiveDownloadUrl != null) {
@@ -882,12 +889,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                         }
                       }
                     : null,
-                icon: Icon(_isDownloading
-                    ? Icons.cancel_rounded
-                    : primaryButtonIcon),
-                label: Text(_isDownloading
-                    ? l10n.aboutDownloadCancelling
-                    : primaryButtonLabel),
+                icon: Icon(
+                  _isDownloading ? Icons.cancel_rounded : primaryButtonIcon,
+                ),
+                label: Text(
+                  _isDownloading
+                      ? l10n.aboutDownloadCancelling
+                      : primaryButtonLabel,
+                ),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -932,8 +941,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.update_rounded,
-                    size: 18, color: colorScheme.primary),
+                Icon(
+                  Icons.update_rounded,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   l10n.aboutReleaseNotesTitle,
@@ -1015,7 +1027,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             child: _SegmentedTabButton(
               label: '蒲公英下载',
               isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
-              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+              onTap: () =>
+                  _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
               selectedColor: colorScheme.primary,
               selectedTextColor: colorScheme.onPrimary,
               unselectedTextColor: colorScheme.onSurfaceVariant,
@@ -1026,7 +1039,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             child: _SegmentedTabButton(
               label: 'GitHub 下载',
               isSelected: downloadChannel == AppUpdateDownloadChannel.github,
-              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.github),
+              onTap: () =>
+                  _updateDownloadChannel(AppUpdateDownloadChannel.github),
               selectedColor: colorScheme.primary,
               selectedTextColor: colorScheme.onPrimary,
               unselectedTextColor: colorScheme.onSurfaceVariant,
@@ -1065,8 +1079,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               height: 22,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color:
-                    value ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+                color: value
+                    ? colorScheme.onPrimary
+                    : colorScheme.onSurfaceVariant,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.1),
@@ -1163,17 +1178,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _updatePrereleasePreference(bool value) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateIncludePrerelease: value,
-      ),
+      provider.settings.copyWith(appUpdateIncludePrerelease: value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     _analytics.logEventLater(
@@ -1186,32 +1199,32 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _updateLiveDiagnosticsPreference(bool value) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        liveEnableLocalDiagnostics: value,
-      ),
+      provider.settings.copyWith(liveEnableLocalDiagnostics: value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(value
-            ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
-            : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled),
+        content: Text(
+          value
+              ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
+              : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled,
+        ),
       ),
     );
   }
 
   Future<void> _openLiveDiagnosticsViewer() async {
     final settings = context.read<TimetableProvider>().settings;
-    final nativeRawLog =
-        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final nativeRawLog = await MiuiLiveActivitiesService()
+        .readLiveDiagnosticsText();
     final rawLog = await AppLogService.instance.readMergedLogsText(
       nativeRawLog: nativeRawLog,
     );
@@ -1233,8 +1246,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Future<void> _exportLiveDiagnostics([String? _]) async {
-    final nativeRawLog =
-        await MiuiLiveActivitiesService().readLiveDiagnosticsText();
+    final nativeRawLog = await MiuiLiveActivitiesService()
+        .readLiveDiagnosticsText();
     final path = await AppLogService.instance.exportMergedLogsFile(
       nativeRawLog: nativeRawLog,
     );
@@ -1244,8 +1257,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (path == null || path.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(
-                AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet)),
+          content: Text(
+            AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet,
+          ),
+        ),
       );
       return;
     }
@@ -1259,8 +1274,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<bool> _clearLiveDiagnostics() async {
     final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-    final clearedNativeLogs =
-        await MiuiLiveActivitiesService().clearLiveDiagnostics();
+    final clearedNativeLogs = await MiuiLiveActivitiesService()
+        .clearLiveDiagnostics();
     final cleared = clearedAppLogs || clearedNativeLogs;
     if (!mounted) {
       return cleared;
@@ -1280,23 +1295,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _updateDownloadSource(AppUpdateDownloadSource source) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateDownloadSource: source.value,
-      ),
+      provider.settings.copyWith(appUpdateDownloadSource: source.value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } else {
       _analytics.logEventLater(
         name: 'update_source_changed',
-        parameters: {
-          'source': source.value,
-        },
+        parameters: {'source': source.value},
       );
     }
   }
@@ -1304,23 +1315,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateDownloadChannel: channel.value,
-      ),
+      provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } else {
       _analytics.logEventLater(
         name: 'update_channel_changed',
-        parameters: {
-          'channel': channel.value,
-        },
+        parameters: {'channel': channel.value},
       );
     }
   }
@@ -1328,24 +1335,20 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Future<void> _updateMirrorPreset(AppUpdateMirrorPreset preset) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateMirrorPreset: preset.value,
-      ),
+      provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
     );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
     _analytics.logEventLater(
       name: 'update_mirror_preset_changed',
-      parameters: {
-        'preset': preset.value,
-      },
+      parameters: {'preset': preset.value},
     );
   }
 
@@ -1410,8 +1413,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         ),
       ),
     ];
-    final normalizedCustomPrefix =
-        _normalizeMirrorUrlPrefix(customMirrorUrlPrefix);
+    final normalizedCustomPrefix = _normalizeMirrorUrlPrefix(
+      customMirrorUrlPrefix,
+    );
     if (normalizedCustomPrefix != null) {
       candidates.add(
         MapEntry(AppUpdateMirrorPreset.custom, normalizedCustomPrefix),
@@ -1475,9 +1479,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       for (final item in nextStates) item.preset: item.result,
     });
     if (recommendedPreset == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.aboutProbeNoMirrorFound)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.aboutProbeNoMirrorFound)));
       return;
     }
 
@@ -1486,14 +1490,13 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
     _analytics.logEventLater(
       name: 'update_mirror_probe_completed',
-      parameters: {
-        'recommended': recommendedPreset.value,
-      },
+      parameters: {'recommended': recommendedPreset.value},
     );
     if (recommendedPreset == currentPreset) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label))),
+          content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label)),
+        ),
       );
       return;
     }
@@ -1544,17 +1547,18 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     });
     final fallbackPreset =
         recommendedPreset != null && recommendedPreset != currentPreset
-            ? recommendedPreset
-            : resolveMirrorFallbackPreset(
-                currentPreset: currentPreset,
-                availablePresets: availablePresets,
-              );
+        ? recommendedPreset
+        : resolveMirrorFallbackPreset(
+            currentPreset: currentPreset,
+            availablePresets: availablePresets,
+          );
 
     if (fallbackPreset != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label)),
+            l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label),
+          ),
           action: SnackBarAction(
             label: l10n.switchAction,
             onPressed: () {
@@ -1566,9 +1570,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(error)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
   }
 
   Future<void> _editMirrorUrlPrefix() async {
@@ -1613,9 +1615,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     final normalizedPrefix = _normalizeMirrorUrlPrefix(result);
     if (normalizedPrefix == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.aboutMirrorPrefixInvalid)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.aboutMirrorPrefixInvalid)));
       return;
     }
 
@@ -1631,9 +1633,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     setState(() {
       _mirrorProbeStates = const [];
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message ?? l10n.aboutMirrorSaved)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message ?? l10n.aboutMirrorSaved)));
     _analytics.logEventLater(name: 'update_mirror_saved');
   }
 
@@ -1649,18 +1651,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       _downloadController = controller;
     });
 
-    final error = await _updateService.downloadAndInstallUpdate(
-      url,
-      (downloadedBytes, totalBytes) {
-        if (mounted) {
-          setState(() {
-            _downloadedBytes = downloadedBytes;
-            _downloadTotalBytes = totalBytes;
-          });
-        }
-      },
-      controller,
-    );
+    final error = await _updateService.downloadAndInstallUpdate(url, (
+      downloadedBytes,
+      totalBytes,
+    ) {
+      if (mounted) {
+        setState(() {
+          _downloadedBytes = downloadedBytes;
+          _downloadTotalBytes = totalBytes;
+        });
+      }
+    }, controller);
 
     if (!mounted) {
       return;
@@ -1675,9 +1676,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (error != null) {
       if (error == AppUpdateService.downloadCancelledMessage) {
         _analytics.logEventLater(name: 'update_download_cancelled');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.aboutDownloadCancelled)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.aboutDownloadCancelled)));
         return;
       }
       _analytics.logEventLater(name: 'update_download_failed');
@@ -1686,11 +1687,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
 
     _analytics.logEventLater(name: 'update_download_completed');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.aboutInstallReady),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.aboutInstallReady)));
   }
 
   void _cancelDownload() {
@@ -1725,15 +1724,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       }
       _analytics.logEventLater(
         name: 'update_system_download_enqueued',
-        parameters: {
-          'has_download_id': downloadId != null,
-        },
+        parameters: {'has_download_id': downloadId != null},
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.aboutSystemDownloaderQueued),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.aboutSystemDownloaderQueued)));
     } on PlatformException catch (error) {
       if (!mounted) {
         return;
@@ -1753,9 +1748,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         return;
       }
       _analytics.logEventLater(name: 'update_system_download_failed');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.aboutSystemDownloaderFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.aboutSystemDownloaderFailed)));
     }
   }
 
@@ -1793,8 +1788,8 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final progressText = _isCancellingDownload
         ? l10n.aboutDownloadCancelling
         : progress == null
-            ? l10n.aboutDownloadingBytes(_formatBytes(_downloadedBytes))
-            : l10n.aboutDownloadingPercent((progress * 100).toStringAsFixed(1));
+        ? l10n.aboutDownloadingBytes(_formatBytes(_downloadedBytes))
+        : l10n.aboutDownloadingPercent((progress * 100).toStringAsFixed(1));
     return SafeArea(
       top: false,
       child: Container(
@@ -1837,10 +1832,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             const SizedBox(height: 8),
             ClipRRect(
               borderRadius: BorderRadius.circular(999),
-              child: LinearProgressIndicator(
-                value: progress,
-                minHeight: 8,
-              ),
+              child: LinearProgressIndicator(value: progress, minHeight: 8),
             ),
             const SizedBox(height: 10),
             Align(
@@ -1848,9 +1840,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: TextButton.icon(
                 onPressed: _isCancellingDownload ? null : _cancelDownload,
                 icon: const Icon(Icons.close_rounded),
-                label: Text(_isCancellingDownload
-                    ? l10n.aboutDownloadCancelling
-                    : l10n.aboutCancelDownloadAction),
+                label: Text(
+                  _isCancellingDownload
+                      ? l10n.aboutDownloadCancelling
+                      : l10n.aboutCancelDownloadAction,
+                ),
               ),
             ),
           ],
@@ -2003,13 +1997,7 @@ class _ArcPainter extends CustomPainter {
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawArc(
-      rect,
-      startAngle + 3.14159,
-      sweepAngle * 0.6,
-      false,
-      paint2,
-    );
+    canvas.drawArc(rect, startAngle + 3.14159, sweepAngle * 0.6, false, paint2);
   }
 
   @override
@@ -2119,7 +2107,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = widget.theme;
-    final settings = context.select<TimetableProvider, TimetableSettings>((p) => p.settings);
+    final settings = context.select<TimetableProvider, TimetableSettings>(
+      (p) => p.settings,
+    );
     final colorScheme = theme.colorScheme;
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
@@ -2133,13 +2123,12 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final probeResultByPreset = {
       for (final item in _mirrorProbeStates) item.preset: item.result,
     };
-    final recommendedMirrorPreset =
-        resolveRecommendedMirrorPreset(probeResultByPreset);
+    final recommendedMirrorPreset = resolveRecommendedMirrorPreset(
+      probeResultByPreset,
+    );
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.aboutAdvancedOptionsTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.aboutAdvancedOptionsTitle)),
       body: FutureBuilder<AppUpdateCheckResult>(
         future: widget.updateFuture,
         builder: (context, snapshot) {
@@ -2221,7 +2210,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                               value: settings.appUpdateIncludePrerelease,
                               onChanged: widget.packageInfo == null
                                   ? null
-                                  : (value) => _updatePrereleasePreference(value),
+                                  : (value) =>
+                                        _updatePrereleasePreference(value),
                             ),
                           ],
                         ),
@@ -2253,7 +2243,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                             preset: preset,
                             currentPreset: mirrorPreset,
                             recommendedPreset: recommendedMirrorPreset,
-                            onTap: () => _handleMirrorPresetTap(preset, settings),
+                            onTap: () =>
+                                _handleMirrorPresetTap(preset, settings),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -2261,14 +2252,15 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                           children: [
                             Expanded(
                               child: FilledButton.tonalIcon(
-                                onPressed: originalDownloadUrl == null ||
+                                onPressed:
+                                    originalDownloadUrl == null ||
                                         _isProbingMirrors
                                     ? null
                                     : () => _probeAndRecommendMirrors(
-                                          originalDownloadUrl,
-                                          customMirrorUrlPrefix:
-                                              settings.appUpdateMirrorUrlPrefix,
-                                        ),
+                                        originalDownloadUrl,
+                                        customMirrorUrlPrefix:
+                                            settings.appUpdateMirrorUrlPrefix,
+                                      ),
                                 icon: Icon(
                                   _isProbingMirrors
                                       ? Icons.hourglass_top_rounded
@@ -2281,7 +2273,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                                       : l10n.aboutProbeMirrorsAction,
                                 ),
                                 style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -2299,7 +2293,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                                       : l10n.aboutSetCustomMirrorAction,
                                 ),
                                 style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 12,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -2341,7 +2337,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             child: _SegmentedTabButton(
               label: '蒲公英下载',
               isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
-              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+              onTap: () =>
+                  _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
               selectedColor: colorScheme.primary,
               selectedTextColor: colorScheme.onPrimary,
               unselectedTextColor: colorScheme.onSurfaceVariant,
@@ -2352,7 +2349,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             child: _SegmentedTabButton(
               label: 'GitHub 下载',
               isSelected: downloadChannel == AppUpdateDownloadChannel.github,
-              onTap: () => _updateDownloadChannel(AppUpdateDownloadChannel.github),
+              onTap: () =>
+                  _updateDownloadChannel(AppUpdateDownloadChannel.github),
               selectedColor: colorScheme.primary,
               selectedTextColor: colorScheme.onPrimary,
               unselectedTextColor: colorScheme.onSurfaceVariant,
@@ -2421,8 +2419,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
           color: onChanged == null
               ? colorScheme.surfaceContainerHighest
               : value
-                  ? colorScheme.primary
-                  : colorScheme.surfaceContainerHighest,
+              ? colorScheme.primary
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Stack(
@@ -2438,8 +2436,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                   color: onChanged == null
                       ? colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
                       : value
-                          ? colorScheme.onPrimary
-                          : colorScheme.onSurfaceVariant,
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
                   shape: BoxShape.circle,
                 ),
               ),
@@ -2459,20 +2457,22 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
-    final probeState = _mirrorProbeStates.where((s) => s.preset == preset).firstOrNull;
+    final probeState = _mirrorProbeStates
+        .where((s) => s.preset == preset)
+        .firstOrNull;
     final isSelected = currentPreset == preset;
     final isRecommended =
         recommendedPreset == preset && probeState?.result.isSuccess == true;
     final settings = context.read<TimetableProvider>().settings;
-    final subtitleText = preset.usesCustomUrl &&
-            settings.appUpdateMirrorUrlPrefix.trim().isEmpty
+    final subtitleText =
+        preset.usesCustomUrl && settings.appUpdateMirrorUrlPrefix.trim().isEmpty
         ? l10n.aboutFillCustomMirrorFirst
         : (preset.usesCustomUrl
-            ? resolveAppUpdateMirrorUrlPrefix(
-                preset: preset,
-                customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
-              )
-            : preset.description);
+              ? resolveAppUpdateMirrorUrlPrefix(
+                  preset: preset,
+                  customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+                )
+              : preset.description);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -2569,18 +2569,16 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   ) {
     final colorScheme = theme.colorScheme;
     final (label, background, foreground) = switch (result) {
-      AppUpdateDownloadProbeResult(isSuccess: true, :final elapsed) =>
-        (
-          '${elapsed.inMilliseconds}ms',
-          Colors.green.withValues(alpha: 0.12),
-          Colors.green,
-        ),
-      AppUpdateDownloadProbeResult(isSuccess: false) =>
-        (
-          '失败',
-          colorScheme.errorContainer,
-          colorScheme.onErrorContainer,
-        ),
+      AppUpdateDownloadProbeResult(isSuccess: true, :final elapsed) => (
+        '${elapsed.inMilliseconds}ms',
+        Colors.green.withValues(alpha: 0.12),
+        Colors.green,
+      ),
+      AppUpdateDownloadProbeResult(isSuccess: false) => (
+        '失败',
+        colorScheme.errorContainer,
+        colorScheme.onErrorContainer,
+      ),
     };
 
     return Container(
@@ -2600,10 +2598,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
-  Widget _buildDiagnosticsCard(
-    ThemeData theme,
-    TimetableSettings settings,
-  ) {
+  Widget _buildDiagnosticsCard(ThemeData theme, TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
     return Card(
@@ -2655,30 +2650,26 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   Future<void> _updateDownloadChannel(AppUpdateDownloadChannel channel) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateDownloadChannel: channel.value,
-      ),
+      provider.settings.copyWith(appUpdateDownloadChannel: channel.value),
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
   Future<void> _updatePrereleasePreference(bool value) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateIncludePrerelease: value,
-      ),
+      provider.settings.copyWith(appUpdateIncludePrerelease: value),
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -2688,15 +2679,13 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   ) async {
     final provider = context.read<TimetableProvider>();
     final message = await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateMirrorPreset: preset.value,
-      ),
+      provider.settings.copyWith(appUpdateMirrorPreset: preset.value),
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -2751,7 +2740,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             source: AppUpdateDownloadSource.mirror,
             mirrorUrlPrefix: candidate.value,
           );
-          final probeResult = await widget.updateService.probeDownloadUrl(probeUrl);
+          final probeResult = await widget.updateService.probeDownloadUrl(
+            probeUrl,
+          );
           return _MirrorProbeState(
             preset: candidate.key,
             prefix: candidate.value,
@@ -2768,9 +2759,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       if (recommended != null) {
         final provider = context.read<TimetableProvider>();
         await provider.updateTimetableSettings(
-          provider.settings.copyWith(
-            appUpdateMirrorPreset: recommended.value,
-          ),
+          provider.settings.copyWith(appUpdateMirrorPreset: recommended.value),
         );
       }
     } finally {
@@ -2781,8 +2770,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   Future<void> _editMirrorUrlPrefix() async {
     final l10n = AppLocalizations.of(context)!;
     final settings = context.read<TimetableProvider>().settings;
-    final controller =
-        TextEditingController(text: settings.appUpdateMirrorUrlPrefix);
+    final controller = TextEditingController(
+      text: settings.appUpdateMirrorUrlPrefix,
+    );
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -2810,12 +2800,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     if (result == null || !mounted) return;
     final provider = context.read<TimetableProvider>();
     await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        appUpdateMirrorUrlPrefix: result,
-      ),
+      provider.settings.copyWith(appUpdateMirrorUrlPrefix: result),
     );
   }
-
 }
 
 class _MirrorBadge extends StatelessWidget {
@@ -2853,11 +2840,7 @@ class ReleaseNotesMarkdown extends StatelessWidget {
   final String data;
   final ValueChanged<String?>? onTapLink;
 
-  const ReleaseNotesMarkdown({
-    super.key,
-    required this.data,
-    this.onTapLink,
-  });
+  const ReleaseNotesMarkdown({super.key, required this.data, this.onTapLink});
 
   @override
   Widget build(BuildContext context) {
@@ -2881,8 +2864,8 @@ class ContributorsScreen extends StatefulWidget {
 class _ContributorsScreenState extends State<ContributorsScreen> {
   static final WarehouseRepositorySource _warehouseSource =
       WarehouseRepositorySource.fromGitHubUrl(
-    'https://github.com/Mutx163/qingyu_warehouse',
-  );
+        'https://github.com/Mutx163/qingyu_warehouse',
+      );
   static const String _maintainersCacheKey = 'warehouse_maintainers_cache_v1';
 
   final WarehouseRepositoryService _repositoryService =
@@ -2898,7 +2881,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
   }
 
   Future<List<_WarehouseMaintainerGroup>>
-      _fetchMaintainersFromWarehouse() async {
+  _fetchMaintainersFromWarehouse() async {
     final settings = context.read<TimetableProvider>().settings;
     final options = WarehouseFetchOptions.fromSettings(settings);
     final rootIndex = await _repositoryService.fetchRootIndex(
@@ -2907,26 +2890,28 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
     );
     final groups = <String, List<String>>{};
 
-    final futures = rootIndex.schools.map((school) async {
-      try {
-        final adapters = await _repositoryService.fetchAdaptersIndex(
-          _warehouseSource,
-          school,
-          options: options,
-        );
-        return adapters.adapters
-            .where((adapter) => adapter.maintainer.trim().isNotEmpty)
-            .map(
-              (adapter) => (
-                adapter.maintainer.trim(),
-                '${school.name} · ${adapter.adapterName}',
-              ),
-            )
-            .toList(growable: false);
-      } catch (_) {
-        return const <(String, String)>[];
-      }
-    }).toList(growable: false);
+    final futures = rootIndex.schools
+        .map((school) async {
+          try {
+            final adapters = await _repositoryService.fetchAdaptersIndex(
+              _warehouseSource,
+              school,
+              options: options,
+            );
+            return adapters.adapters
+                .where((adapter) => adapter.maintainer.trim().isNotEmpty)
+                .map(
+                  (adapter) => (
+                    adapter.maintainer.trim(),
+                    '${school.name} · ${adapter.adapterName}',
+                  ),
+                )
+                .toList(growable: false);
+          } catch (_) {
+            return const <(String, String)>[];
+          }
+        })
+        .toList(growable: false);
 
     final results = await Future.wait(futures);
     for (final entries in results) {
@@ -2936,15 +2921,16 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
       }
     }
 
-    final result = groups.entries
-        .map(
-          (entry) => _WarehouseMaintainerGroup(
-            name: entry.key,
-            adapterLabels: [...entry.value]..sort(),
-          ),
-        )
-        .toList(growable: false)
-      ..sort((left, right) => left.name.compareTo(right.name));
+    final result =
+        groups.entries
+            .map(
+              (entry) => _WarehouseMaintainerGroup(
+                name: entry.key,
+                adapterLabels: [...entry.value]..sort(),
+              ),
+            )
+            .toList(growable: false)
+          ..sort((left, right) => left.name.compareTo(right.name));
     return result;
   }
 
@@ -3030,9 +3016,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.aboutContributorsScreenTitle),
-      ),
+      appBar: AppBar(title: Text(l10n.aboutContributorsScreenTitle)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -3093,7 +3077,8 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                   if (_maintainersError != null && _maintainers.isEmpty)
                     Text(
                       l10n.aboutWarehouseMaintainersLoadFailed(
-                          _maintainersError!),
+                        _maintainersError!,
+                      ),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.error,
                       ),
@@ -3112,7 +3097,8 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                         child: _ContributorRow(
                           name: group.name,
                           subtitle: l10n.aboutWarehouseMaintainerCount(
-                              group.adapterLabels.length),
+                            group.adapterLabels.length,
+                          ),
                           details: group.adapterLabels,
                         ),
                       ),
@@ -3182,8 +3168,10 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(
-              AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress)),
+        content: Text(
+          AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress,
+        ),
+      ),
     );
   }
 }
@@ -3241,40 +3229,12 @@ class _ContributorRow extends StatelessWidget {
             ...details.map(
               (detail) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  '• $detail',
-                  style: theme.textTheme.bodySmall,
-                ),
+                child: Text('• $detail', style: theme.textTheme.bodySmall),
               ),
             ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _AboutNavTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _AboutNavTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right_rounded),
-      onTap: onTap,
     );
   }
 }
@@ -3310,4 +3270,3 @@ class _AboutBullet extends StatelessWidget {
     );
   }
 }
-

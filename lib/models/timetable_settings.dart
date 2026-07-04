@@ -12,6 +12,45 @@ enum AppThemeMode { system, light, dark }
 
 enum AppFontMode { system, miSans }
 
+enum ForuiTheme {
+  neutral,
+  zinc,
+  slate,
+  blue,
+  green,
+  orange,
+  red,
+  rose,
+  violet,
+  yellow,
+}
+
+extension ForuiThemeX on ForuiTheme {
+  String get value => name;
+
+  /// Representative brand hex for this forui theme; synced into [TimetableSettings.themeSeedColor]
+  /// and used to seed the Material ColorScheme so Material accents follow the forui theme.
+  String get seedHex => switch (this) {
+    ForuiTheme.neutral => '#171717',
+    ForuiTheme.zinc => '#18181B',
+    ForuiTheme.slate => '#0F172B',
+    ForuiTheme.blue => '#1447E6',
+    ForuiTheme.green => '#5EA500',
+    ForuiTheme.orange => '#F54A00',
+    ForuiTheme.red => '#E7000B',
+    ForuiTheme.rose => '#EC003F',
+    ForuiTheme.violet => '#7F22FE',
+    ForuiTheme.yellow => '#FCC800',
+  };
+
+  static ForuiTheme fromValue(String? value) {
+    return ForuiTheme.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => ForuiTheme.blue,
+    );
+  }
+}
+
 enum HomeTitleStyle { classic, brand }
 
 enum TimetableHomeViewMode { week, day }
@@ -1082,6 +1121,7 @@ class TimetableSettings {
   final int liveTimeCorrectionSeconds;
   final LiveBeforeClassQuickAction liveBeforeClassQuickAction;
   final String themeSeedColor;
+  final ForuiTheme foruiTheme;
   final String timetablePageBackgroundColor;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
@@ -1217,6 +1257,7 @@ class TimetableSettings {
     this.liveTimeCorrectionSeconds = 0,
     this.liveBeforeClassQuickAction = LiveBeforeClassQuickAction.none,
     this.themeSeedColor = '#2563EB',
+    this.foruiTheme = ForuiTheme.blue,
     this.timetablePageBackgroundColor = '#F8FAFC',
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
@@ -1359,6 +1400,7 @@ class TimetableSettings {
       liveTimeCorrectionSeconds: 0,
       liveBeforeClassQuickAction: LiveBeforeClassQuickAction.none,
       themeSeedColor: '#2563EB',
+      foruiTheme: ForuiTheme.blue,
       timetablePageBackgroundColor: '#F8FAFC',
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
@@ -1501,6 +1543,7 @@ class TimetableSettings {
       'liveTimeCorrectionSeconds': liveTimeCorrectionSeconds,
       'liveBeforeClassQuickAction': liveBeforeClassQuickAction.value,
       'themeSeedColor': themeSeedColor,
+      'foruiTheme': foruiTheme.value,
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
@@ -1786,6 +1829,7 @@ class TimetableSettings {
         json['liveBeforeClassQuickAction'] as String?,
       ),
       themeSeedColor: json['themeSeedColor'] as String? ?? '#2563EB',
+      foruiTheme: ForuiThemeX.fromValue(json['foruiTheme'] as String?),
       timetablePageBackgroundColor:
           json['timetablePageBackgroundColor'] as String? ?? '#F8FAFC',
       timetableUseUnifiedCardColor:
@@ -1954,6 +1998,7 @@ class TimetableSettings {
     int? liveTimeCorrectionSeconds,
     LiveBeforeClassQuickAction? liveBeforeClassQuickAction,
     String? themeSeedColor,
+    ForuiTheme? foruiTheme,
     String? timetablePageBackgroundColor,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
@@ -2186,6 +2231,7 @@ class TimetableSettings {
       liveBeforeClassQuickAction:
           liveBeforeClassQuickAction ?? this.liveBeforeClassQuickAction,
       themeSeedColor: themeSeedColor ?? this.themeSeedColor,
+      foruiTheme: foruiTheme ?? this.foruiTheme,
       timetablePageBackgroundColor:
           timetablePageBackgroundColor ?? this.timetablePageBackgroundColor,
       timetableUseUnifiedCardColor:

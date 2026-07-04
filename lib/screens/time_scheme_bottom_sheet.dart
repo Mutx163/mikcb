@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -17,18 +18,15 @@ Future<void> showTimeSchemeBottomSheet(
     useRootNavigator: true,
     showDragHandle: true,
     isScrollControlled: true,
-    builder: (_) => _TimeSchemeBottomSheet(
-      initialEditSchemeId: initialEditSchemeId,
-    ),
+    builder: (_) =>
+        _TimeSchemeBottomSheet(initialEditSchemeId: initialEditSchemeId),
   );
 }
 
 class _TimeSchemeBottomSheet extends StatefulWidget {
   final String? initialEditSchemeId;
 
-  const _TimeSchemeBottomSheet({
-    this.initialEditSchemeId,
-  });
+  const _TimeSchemeBottomSheet({this.initialEditSchemeId});
 
   @override
   State<_TimeSchemeBottomSheet> createState() => _TimeSchemeBottomSheetState();
@@ -103,8 +101,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final provider = context.watch<TimetableProvider>();
     final schemes = provider.timeSchemes;
     final currentSchemeId = provider.activeTimeScheme?.id;
-    final activeSchemeName =
-        provider.activeTimeScheme?.name ?? l10n.unsetLabel;
+    final activeSchemeName = provider.activeTimeScheme?.name ?? l10n.unsetLabel;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,8 +121,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                   children: [
                     Text(
                       l10n.timeSchemeTitle,
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -181,8 +180,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.watch<TimetableProvider>();
     final schemeId = _editingSchemeId!;
-    final scheme =
-        provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+    final scheme = provider.timeSchemes.firstWhere(
+      (item) => item.id == schemeId,
+    );
     final isActive = provider.activeTimeScheme?.id == schemeId;
     final usage = _buildUsageInfo(provider, schemeId);
     final theme = Theme.of(context);
@@ -248,7 +248,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           ),
                           _TimeSchemeInfoChip(
                             label: l10n.courseCountLabel,
-                            value: l10n.courseSectionCountValue(usage.courseCount),
+                            value: l10n.courseSectionCountValue(
+                              usage.courseCount,
+                            ),
                           ),
                         ],
                       ),
@@ -258,8 +260,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                           isActive && usage.courseCount > 0
                               ? l10n.timeSchemeEditorActiveAndCoursesHint
                               : isActive
-                                  ? l10n.timeSchemeEditorActiveHint
-                                  : l10n.timeSchemeEditorOverrideHint,
+                              ? l10n.timeSchemeEditorActiveHint
+                              : l10n.timeSchemeEditorOverrideHint,
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -306,14 +308,16 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                             label: Text(l10n.quickGenerateAction),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed:
-                                _sections.length >= 20 ? null : _addSection,
+                            onPressed: _sections.length >= 20
+                                ? null
+                                : _addSection,
                             icon: const Icon(Icons.add),
                             label: Text(l10n.addSectionAction),
                           ),
                           FilledButton.tonalIcon(
-                            onPressed:
-                                _sections.length <= 1 ? null : _removeSection,
+                            onPressed: _sections.length <= 1
+                                ? null
+                                : _removeSection,
                             icon: const Icon(Icons.remove),
                             label: Text(l10n.removeLastSectionAction),
                           ),
@@ -367,18 +371,18 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                                   children: [
                                     Text(
                                       l10n.sectionLabel(index + 1),
-                                      style:
-                                          theme.textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      style: theme.textTheme.titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
                                       '${section.startTime} - ${section.endTime}',
-                                      style:
-                                          theme.textTheme.bodyMedium?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -446,8 +450,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   void _beginEditing(String schemeId) {
     final provider = context.read<TimetableProvider>();
-    final scheme =
-        provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+    final scheme = provider.timeSchemes.firstWhere(
+      (item) => item.id == schemeId,
+    );
     _nameController?.dispose();
     _nameController = TextEditingController(text: scheme.name)
       ..addListener(_scheduleAutoSave);
@@ -520,8 +525,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
 
     final scheme = await context.read<TimetableProvider>().createTimeScheme(
-          name: name,
-        );
+      name: name,
+    );
     if (!mounted) {
       return;
     }
@@ -562,9 +567,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.renamedToMessage(name))),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.renamedToMessage(name))));
   }
 
   Future<void> _deleteScheme(TimeScheme scheme) async {
@@ -593,8 +598,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
 
     final deleted = await context.read<TimetableProvider>().deleteTimeScheme(
-          scheme.id,
-        );
+      scheme.id,
+    );
     if (!mounted) {
       return;
     }
@@ -626,7 +631,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('${l10n.profileCountLabel}：${l10n.profileCountValue(usage.profileCount)}'),
+                Text(
+                  '${l10n.profileCountLabel}：${l10n.profileCountValue(usage.profileCount)}',
+                ),
                 if (usage.profileNames.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ...usage.profileNames.map(
@@ -637,7 +644,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
                   ),
                 ],
                 const SizedBox(height: 16),
-                Text('${l10n.courseCountLabel}：${l10n.courseSectionCountValue(usage.courseCount)}'),
+                Text(
+                  '${l10n.courseCountLabel}：${l10n.courseSectionCountValue(usage.courseCount)}',
+                ),
                 if (usage.courseReferences.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   ...usage.courseReferences.map(
@@ -696,12 +705,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final previewText = courseReferences.isEmpty
         ? null
         : courseReferences.length == 1
-            ? l10n.timeSchemeUsageCourseRefPrefix + courseReferences.first
-            : l10n.timeSchemeUsageCourseRefPrefix +
-                l10n.timeSchemeBottomUsageMulti(
-                  courseReferences.take(2).join('；'),
-                  courseReferences.length,
-                );
+        ? l10n.timeSchemeUsageCourseRefPrefix + courseReferences.first
+        : l10n.timeSchemeUsageCourseRefPrefix +
+              l10n.timeSchemeBottomUsageMulti(
+                courseReferences.take(2).join('；'),
+                courseReferences.length,
+              );
 
     return _TimeSchemeUsageInfo(
       profileNames: profileNames,
@@ -719,116 +728,70 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: isCurrent ? null : () => _applyScheme(scheme.id),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+    return FTileGroup(
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        FTile(
+          prefix: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color:
+                  (isCurrent
+                          ? colorScheme.primary
+                          : colorScheme.secondaryContainer)
+                      .withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(
+              isCurrent ? Icons.schedule_rounded : Icons.access_time_rounded,
+              color: isCurrent
+                  ? colorScheme.primary
+                  : colorScheme.onSecondaryContainer,
+            ),
+          ),
+          title: Text(
+            scheme.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: (isCurrent
-                              ? colorScheme.primary
-                              : colorScheme.secondaryContainer)
-                          .withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(14),
+                  if (isCurrent)
+                    _TimeSchemeBadge(
+                      text: AppLocalizations.of(context)!.currentInUse,
+                      icon: Icons.check_circle_outline_rounded,
                     ),
-                    child: Icon(
-                      isCurrent
-                          ? Icons.schedule_rounded
-                          : Icons.access_time_rounded,
-                      color: isCurrent
-                          ? colorScheme.primary
-                          : colorScheme.onSecondaryContainer,
-                    ),
+                  _TimeSchemeInfoChip(
+                    label: AppLocalizations.of(context)!.sectionCountLabel,
+                    value: AppLocalizations.of(
+                      context,
+                    )!.courseSectionCountValue(scheme.sectionCount),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          scheme.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (isCurrent)
-                              _TimeSchemeBadge(
-                                text: AppLocalizations.of(context)!.currentInUse,
-                                icon: Icons.check_circle_outline_rounded,
-                              ),
-                            _TimeSchemeInfoChip(
-                              label: AppLocalizations.of(context)!.sectionCountLabel,
-                              value: AppLocalizations.of(context)!.courseSectionCountValue(scheme.sectionCount),
-                            ),
-                            _TimeSchemeInfoChip(
-                              label: AppLocalizations.of(context)!.profileCountLabel,
-                              value: l10n.profileCountValue(usage.profileCount),
-                            ),
-                            _TimeSchemeInfoChip(
-                              label: AppLocalizations.of(context)!.courseCountLabel,
-                              value: l10n.courseSectionCountValue(usage.courseCount),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                  _TimeSchemeInfoChip(
+                    label: AppLocalizations.of(context)!.profileCountLabel,
+                    value: l10n.profileCountValue(usage.profileCount),
                   ),
-                  PopupMenuButton<String>(
-                    onSelected: (value) =>
-                        _handleSchemeMenu(context, scheme, usage, value),
-                    itemBuilder: (context) => [
-                      if (!usage.isUnused)
-                        PopupMenuItem(
-                          value: 'usage',
-                          child: Text(AppLocalizations.of(context)!.viewUsageAction),
-                        ),
-                      if (!isCurrent)
-                        PopupMenuItem(
-                          value: 'apply',
-                          child: Text(AppLocalizations.of(context)!.applyToCurrentTimetable),
-                        ),
-                      PopupMenuItem(
-                        value: 'edit',
-                        child: Text(AppLocalizations.of(context)!.editSectionsAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'rename',
-                        child: Text(AppLocalizations.of(context)!.renameAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'duplicate',
-                        child: Text(AppLocalizations.of(context)!.duplicateAction),
-                      ),
-                      PopupMenuItem(
-                        value: 'delete',
-                        enabled: usage.isUnused,
-                        child: Text(AppLocalizations.of(context)!.deleteAction),
-                      ),
-                    ],
+                  _TimeSchemeInfoChip(
+                    label: AppLocalizations.of(context)!.courseCountLabel,
+                    value: l10n.courseSectionCountValue(usage.courseCount),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
                 scheme.sectionCount > 1
-                    ? AppLocalizations.of(context)!
-                        .timeSchemeStartsAt(scheme.sections.first.displayText)
+                    ? AppLocalizations.of(
+                        context,
+                      )!.timeSchemeStartsAt(scheme.sections.first.displayText)
                     : scheme.sections.first.displayText,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: colorScheme.onSurfaceVariant,
@@ -847,8 +810,44 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
               ],
             ],
           ),
+          suffix: PopupMenuButton<String>(
+            onSelected: (value) =>
+                _handleSchemeMenu(context, scheme, usage, value),
+            itemBuilder: (context) => [
+              if (!usage.isUnused)
+                PopupMenuItem(
+                  value: 'usage',
+                  child: Text(AppLocalizations.of(context)!.viewUsageAction),
+                ),
+              if (!isCurrent)
+                PopupMenuItem(
+                  value: 'apply',
+                  child: Text(
+                    AppLocalizations.of(context)!.applyToCurrentTimetable,
+                  ),
+                ),
+              PopupMenuItem(
+                value: 'edit',
+                child: Text(AppLocalizations.of(context)!.editSectionsAction),
+              ),
+              PopupMenuItem(
+                value: 'rename',
+                child: Text(AppLocalizations.of(context)!.renameAction),
+              ),
+              PopupMenuItem(
+                value: 'duplicate',
+                child: Text(AppLocalizations.of(context)!.duplicateAction),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                enabled: usage.isUnused,
+                child: Text(AppLocalizations.of(context)!.deleteAction),
+              ),
+            ],
+          ),
+          onPress: isCurrent ? null : () => _applyScheme(scheme.id),
         ),
-      ),
+      ],
     );
   }
 
@@ -911,9 +910,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     nextSections[index] = editedSection;
     final validationMessage = validateSectionTimes(nextSections);
     if (validationMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationMessage)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(validationMessage)));
       return;
     }
 
@@ -948,9 +947,8 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
       useRootNavigator: true,
-      builder: (context) => _QuickGenerateDialog(
-        initialPreset: _lastQuickGeneratePreset,
-      ),
+      builder: (context) =>
+          _QuickGenerateDialog(initialPreset: _lastQuickGeneratePreset),
     );
     if (preset == null || !mounted) {
       return;
@@ -977,9 +975,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
     }
   }
 
@@ -992,8 +990,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   void _enqueuePersistEditingScheme() {
-    _saveQueue =
-        _saveQueue.catchError((_) {}).then((_) => _persistEditingScheme());
+    _saveQueue = _saveQueue
+        .catchError((_) {})
+        .then((_) => _persistEditingScheme());
   }
 
   Future<void> _persistEditingScheme() async {
@@ -1004,8 +1003,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final trimmedName = _nameController!.text.trim();
     if (trimmedName.isEmpty) {
       final provider = context.read<TimetableProvider>();
-      final scheme =
-          provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      final scheme = provider.timeSchemes.firstWhere(
+        (item) => item.id == schemeId,
+      );
       _nameController!
         ..removeListener(_scheduleAutoSave)
         ..text = scheme.name
@@ -1019,16 +1019,17 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
     final provider = context.read<TimetableProvider>();
     final message = await context.read<TimetableProvider>().updateTimeScheme(
-          schemeId: schemeId,
-          name: trimmedName,
-          sections: _sections,
-        );
+      schemeId: schemeId,
+      name: trimmedName,
+      sections: _sections,
+    );
     if (!mounted) {
       return;
     }
     if (message != null) {
-      final scheme =
-          provider.timeSchemes.firstWhere((item) => item.id == schemeId);
+      final scheme = provider.timeSchemes.firstWhere(
+        (item) => item.id == schemeId,
+      );
       _nameController!
         ..removeListener(_scheduleAutoSave)
         ..text = scheme.name
@@ -1037,9 +1038,9 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       setState(() {
         _sections = List<SectionTime>.from(scheme.sections);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       return;
     }
   }
@@ -1047,10 +1048,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
 TimeOfDay _parseTimeOfDay(String value) {
   final parts = value.split(':');
-  return TimeOfDay(
-    hour: int.parse(parts[0]),
-    minute: int.parse(parts[1]),
-  );
+  return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
 }
 
 String _formatTimeOfDay(TimeOfDay time) {
@@ -1123,10 +1121,7 @@ class _TimeSchemeInfoChip extends StatelessWidget {
   final String label;
   final String value;
 
-  const _TimeSchemeInfoChip({
-    required this.label,
-    required this.value,
-  });
+  const _TimeSchemeInfoChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1153,10 +1148,7 @@ class _TimeSchemeBadge extends StatelessWidget {
   final String text;
   final IconData icon;
 
-  const _TimeSchemeBadge({
-    required this.text,
-    required this.icon,
-  });
+  const _TimeSchemeBadge({required this.text, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -1189,9 +1181,7 @@ class _TimeSchemeBadge extends StatelessWidget {
 class _QuickGenerateDialog extends StatefulWidget {
   final _QuickGeneratePreset initialPreset;
 
-  const _QuickGenerateDialog({
-    required this.initialPreset,
-  });
+  const _QuickGenerateDialog({required this.initialPreset});
 
   @override
   State<_QuickGenerateDialog> createState() => _QuickGenerateDialogState();
@@ -1214,16 +1204,21 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   void initState() {
     super.initState();
     final preset = widget.initialPreset;
-    _morningCountController =
-        TextEditingController(text: '${preset.morningCount}');
-    _afternoonCountController =
-        TextEditingController(text: '${preset.afternoonCount}');
-    _eveningCountController =
-        TextEditingController(text: '${preset.eveningCount}');
-    _classDurationController =
-        TextEditingController(text: '${preset.classDurationMinutes}');
-    _breakDurationController =
-        TextEditingController(text: '${preset.breakDurationMinutes}');
+    _morningCountController = TextEditingController(
+      text: '${preset.morningCount}',
+    );
+    _afternoonCountController = TextEditingController(
+      text: '${preset.afternoonCount}',
+    );
+    _eveningCountController = TextEditingController(
+      text: '${preset.eveningCount}',
+    );
+    _classDurationController = TextEditingController(
+      text: '${preset.classDurationMinutes}',
+    );
+    _breakDurationController = TextEditingController(
+      text: '${preset.breakDurationMinutes}',
+    );
     _morningStartTime = preset.morningStartTime ?? '08:00';
     _afternoonStartTime = preset.afternoonStartTime ?? '14:00';
     _eveningStartTime = preset.eveningStartTime ?? '19:00';
@@ -1347,10 +1342,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
           onPressed: () => Navigator.pop(context),
           child: Text(l10n.cancelAction),
         ),
-        TextButton(
-          onPressed: _submit,
-          child: Text(l10n.generateAction),
-        ),
+        TextButton(onPressed: _submit, child: Text(l10n.generateAction)),
       ],
     );
   }
@@ -1361,17 +1353,15 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-          ),
+          decoration: const InputDecoration(border: OutlineInputBorder()),
         ),
       ],
     );
@@ -1485,7 +1475,8 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 
     final breakOverrideRules = _breakOverrides
         .where(
-            (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0)
+          (item) => item.afterSection > 0 && item.breakDurationMinutes >= 0,
+        )
         .map(
           (item) => BreakOverrideRule(
             afterSection: item.afterSection,
@@ -1528,4 +1519,3 @@ class _BreakOverrideDraft {
     required this.breakDurationMinutes,
   });
 }
-

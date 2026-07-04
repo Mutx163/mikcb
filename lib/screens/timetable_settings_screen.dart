@@ -167,160 +167,182 @@ class TimetableSettingsScreen extends StatelessWidget {
                   currentWeek: provider.currentWeek,
                   semesterWeekCount: settings.semesterWeekCount,
                   semesterStartDate: settings.semesterStartDate,
-                  onPickSemesterStartDate: () =>
-                      _pickSemesterStartDate(context),
-                  onSyncCurrentWeek: settings.semesterStartDate == null
-                      ? null
-                      : () => _syncCurrentWeek(context),
-                  onPickSemesterWeekCount: () =>
-                      _pickSemesterWeekCount(context),
                 ),
                 const SizedBox(height: 8),
-                _SettingsSectionCard(
-                  title: l10n.dailyUsageSectionTitle,
-                  child: Column(
-                    children: [
-                      _SettingsEntryTile(
-                        icon: Icons.palette_outlined,
-                        title: l10n.appearanceEntryTitle,
-                        subtitle: l10n.appearanceEntrySubtitle,
-                        trailing: _ColorDot(
-                          color: _colorFromHex(settings.themeSeedColor),
-                        ),
-                        onTap: openAppearance,
+                FTileGroup(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    FTile(
+                      prefix: const Icon(Icons.event_outlined),
+                      title: Text(
+                        settings.semesterStartDate == null
+                            ? l10n.setSemesterStartDateAction
+                            : l10n.semesterStartDateAction,
                       ),
-                      _SettingsEntryTile(
-                        icon: Icons.style_outlined,
-                        title: l10n.themeManageTitle,
-                        subtitle: l10n.themeManageSubtitle,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              settings: const RouteSettings(
-                                name: '/settings/theme',
+                      subtitle: Text(
+                        settings.semesterStartDate == null
+                            ? l10n.semesterStartUnset
+                            : l10n.semesterStartSet(
+                                _formatDate(settings.semesterStartDate!),
                               ),
-                              builder: (_) => const _ThemeManageScreen(),
+                      ),
+                      suffix: const Icon(Icons.chevron_right_rounded),
+                      onPress: () => _pickSemesterStartDate(context),
+                    ),
+                    FTile(
+                      prefix: const Icon(Icons.sync_outlined),
+                      title: Text(l10n.syncCurrentWeekAction),
+                      suffix: const Icon(Icons.chevron_right_rounded),
+                      onPress: settings.semesterStartDate == null
+                          ? null
+                          : () => _syncCurrentWeek(context),
+                    ),
+                    FTile(
+                      prefix: const Icon(Icons.view_week_outlined),
+                      title: Text(l10n.selectSemesterWeekCountTitle),
+                      suffix: Text(
+                        l10n.semesterWeekCountAction(
+                          settings.semesterWeekCount,
+                        ),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      onPress: () => _pickSemesterWeekCount(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                FTileGroup(
+                  label: Text(l10n.dailyUsageSectionTitle),
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.palette_outlined,
+                      title: l10n.appearanceEntryTitle,
+                      subtitle: l10n.appearanceEntrySubtitle,
+                      trailing: _ColorDot(
+                        color: _colorFromHex(settings.themeSeedColor),
+                      ),
+                      onTap: openAppearance,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.style_outlined,
+                      title: l10n.themeManageTitle,
+                      subtitle: l10n.themeManageSubtitle,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            settings: const RouteSettings(
+                              name: '/settings/theme',
                             ),
-                          );
-                        },
+                            builder: (_) => const _ThemeManageScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.view_week_outlined,
+                      title: l10n.layoutSectionEntryTitle,
+                      subtitle: l10n.layoutSectionEntrySubtitle,
+                      onTap: openLayoutSettings,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.widgets_outlined,
+                      title: l10n.homeWidgetEntryTitle,
+                      subtitle: l10n.homeWidgetEntrySubtitle,
+                      trailing: Text(
+                        settings.widgetBackgroundStyle.label,
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      _SettingsEntryTile(
-                        icon: Icons.view_week_outlined,
-                        title: l10n.layoutSectionEntryTitle,
-                        subtitle: l10n.layoutSectionEntrySubtitle,
-                        onTap: openLayoutSettings,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.widgets_outlined,
-                        title: l10n.homeWidgetEntryTitle,
-                        subtitle: l10n.homeWidgetEntrySubtitle,
-                        trailing: Text(
-                          settings.widgetBackgroundStyle.label,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        onTap: openHomeWidgetSettings,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.celebration_outlined,
-                        title: l10n.holidaySettingsEntryTitle,
-                        subtitle: l10n.holidaySettingsEntrySubtitle,
-                        trailing: settings.enableHolidayMarking
-                            ? Icon(
-                                Icons.check_circle_outline,
-                                size: 18,
-                                color: Theme.of(context).colorScheme.primary,
-                              )
-                            : null,
-                        onTap: openHolidaySettings,
-                      ),
-                    ],
-                  ),
+                      onTap: openHomeWidgetSettings,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.celebration_outlined,
+                      title: l10n.holidaySettingsEntryTitle,
+                      subtitle: l10n.holidaySettingsEntrySubtitle,
+                      trailing: settings.enableHolidayMarking
+                          ? Icon(
+                              Icons.check_circle_outline,
+                              size: 18,
+                              color: Theme.of(context).colorScheme.primary,
+                            )
+                          : null,
+                      onTap: openHolidaySettings,
+                    ),
+                  ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: FDivider(),
+                const SizedBox(height: 8),
+                FTileGroup(
+                  label: Text(l10n.reminderNotificationSectionTitle),
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.notifications_active_outlined,
+                      title: l10n.liveSettingsTitle,
+                      subtitle: l10n.liveSettingsEntrySubtitle,
+                      onTap: openLiveSettings,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.menu_book_outlined,
+                      title: l10n.userGuideEntryTitle,
+                      subtitle: l10n.userGuideEntrySubtitle,
+                      onTap: openUserGuide,
+                    ),
+                  ],
                 ),
-                _SettingsSectionCard(
-                  title: l10n.reminderNotificationSectionTitle,
-                  child: Column(
-                    children: [
-                      _SettingsEntryTile(
-                        icon: Icons.notifications_active_outlined,
-                        title: l10n.liveSettingsTitle,
-                        subtitle: l10n.liveSettingsEntrySubtitle,
-                        onTap: openLiveSettings,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.menu_book_outlined,
-                        title: l10n.userGuideEntryTitle,
-                        subtitle: l10n.userGuideEntrySubtitle,
-                        onTap: openUserGuide,
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                FTileGroup(
+                  label: Text(l10n.timetableManagementSectionTitle),
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.layers_outlined,
+                      title: l10n.timetableManagement,
+                      subtitle: l10n.timetableProfilesEntrySubtitle,
+                      onTap: openProfiles,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.schedule_rounded,
+                      title: l10n.timeSchemeEntryTitle,
+                      subtitle: settings.activeTimeSchemeId == null
+                          ? l10n.timeSchemeEntrySubtitleNoneSelected
+                          : l10n.timeSchemeEntrySubtitleSelected(
+                              provider.activeTimeScheme?.name ?? '',
+                            ),
+                      onTap: () => _openTimeSchemeQuickSwitcher(context),
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.swap_horiz_rounded,
+                      title: l10n.dataTransferEntryTitle,
+                      subtitle: l10n.dataTransferEntrySubtitle,
+                      onTap: openDataTransfer,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.lan_rounded,
+                      title: l10n.lanEditEntryTitle,
+                      subtitle: l10n.lanEditEntrySubtitle,
+                      onTap: openLanEdit,
+                    ),
+                  ],
                 ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: FDivider(),
-                ),
-                _SettingsSectionCard(
-                  title: l10n.timetableManagementSectionTitle,
-                  child: Column(
-                    children: [
-                      _SettingsEntryTile(
-                        icon: Icons.layers_outlined,
-                        title: l10n.timetableManagement,
-                        subtitle: l10n.timetableProfilesEntrySubtitle,
-                        onTap: openProfiles,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.schedule_rounded,
-                        title: l10n.timeSchemeEntryTitle,
-                        subtitle: settings.activeTimeSchemeId == null
-                            ? l10n.timeSchemeEntrySubtitleNoneSelected
-                            : l10n.timeSchemeEntrySubtitleSelected(
-                                provider.activeTimeScheme?.name ?? '',
-                              ),
-                        onTap: () => _openTimeSchemeQuickSwitcher(context),
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.swap_horiz_rounded,
-                        title: l10n.dataTransferEntryTitle,
-                        subtitle: l10n.dataTransferEntrySubtitle,
-                        onTap: openDataTransfer,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.lan_rounded,
-                        title: l10n.lanEditEntryTitle,
-                        subtitle: l10n.lanEditEntrySubtitle,
-                        onTap: openLanEdit,
-                      ),
-                    ],
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4),
-                  child: FDivider(),
-                ),
-                _SettingsSectionCard(
-                  title: l10n.aboutSupportSectionTitle,
-                  child: Column(
-                    children: [
-                      _SettingsEntryTile(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: l10n.feedbackEntryTitle,
-                        subtitle: l10n.feedbackEntrySubtitle,
-                        onTap: openFeedback,
-                      ),
-                      _SettingsEntryTile(
-                        icon: Icons.info_outline_rounded,
-                        title: l10n.aboutEntryTitle,
-                        subtitle: l10n.aboutEntrySubtitle,
-                        onTap: openAbout,
-                      ),
-                    ],
-                  ),
+                const SizedBox(height: 8),
+                FTileGroup(
+                  label: Text(l10n.aboutSupportSectionTitle),
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _SettingsEntryTile(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      title: l10n.feedbackEntryTitle,
+                      subtitle: l10n.feedbackEntrySubtitle,
+                      onTap: openFeedback,
+                    ),
+                    _SettingsEntryTile(
+                      icon: Icons.info_outline_rounded,
+                      title: l10n.aboutEntryTitle,
+                      subtitle: l10n.aboutEntrySubtitle,
+                      onTap: openAbout,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
               ],
@@ -447,17 +469,11 @@ class _SemesterOverviewCard extends StatelessWidget {
   final int currentWeek;
   final int semesterWeekCount;
   final DateTime? semesterStartDate;
-  final VoidCallback onPickSemesterStartDate;
-  final VoidCallback? onSyncCurrentWeek;
-  final VoidCallback onPickSemesterWeekCount;
 
   const _SemesterOverviewCard({
     required this.currentWeek,
     required this.semesterWeekCount,
     required this.semesterStartDate,
-    required this.onPickSemesterStartDate,
-    required this.onSyncCurrentWeek,
-    required this.onPickSemesterWeekCount,
   });
 
   @override
@@ -514,43 +530,6 @@ class _SemesterOverviewCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                FButton(
-                  variant: FButtonVariant.outline,
-                  onPress: onPickSemesterStartDate,
-                  prefix: const Icon(Icons.event_outlined),
-                  child: Text(
-                    semesterStartDate == null
-                        ? AppLocalizations.of(
-                            context,
-                          )!.setSemesterStartDateAction
-                        : AppLocalizations.of(context)!.semesterStartDateAction,
-                  ),
-                ),
-                FButton(
-                  variant: FButtonVariant.outline,
-                  onPress: onSyncCurrentWeek,
-                  prefix: const Icon(Icons.sync_outlined),
-                  child: Text(
-                    AppLocalizations.of(context)!.syncCurrentWeekAction,
-                  ),
-                ),
-                FButton(
-                  variant: FButtonVariant.outline,
-                  onPress: onPickSemesterWeekCount,
-                  prefix: const Icon(Icons.view_week_outlined),
-                  child: Text(
-                    AppLocalizations.of(
-                      context,
-                    )!.semesterWeekCountAction(semesterWeekCount),
-                  ),
-                ),
-              ],
-            ),
           ],
         ),
       ),
@@ -567,17 +546,6 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
-  static const List<String> _themeColors = [
-    '#2563EB',
-    '#0891B2',
-    '#0F766E',
-    '#4F46E5',
-    '#DC2626',
-    '#EA580C',
-    '#CA8A04',
-    '#111827',
-  ];
-
   static const List<String> _backgroundColors = [
     '#F8FAFC',
     '#F7F7F5',
@@ -806,20 +774,23 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
             _SettingsSectionCard(
               title: l10n.themeSeedSectionTitle,
               subtitle: l10n.themeSeedSectionSubtitle,
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: _themeColors
-                    .map(
-                      (color) => _SelectableColorChip(
-                        colorHex: color,
-                        selected: _draft.themeSeedColor == color,
-                        onTap: () {
-                          _updateDraft(_draft.copyWith(themeSeedColor: color));
-                        },
+              child: FSelect<ForuiTheme>(
+                hint: l10n.themeSeedSectionTitle,
+                items: {
+                  for (final v in ForuiTheme.values) _foruiThemeLabel(v): v,
+                },
+                control: FSelectControl.lifted(
+                  value: _draft.foruiTheme,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDraft(
+                      _draft.copyWith(
+                        foruiTheme: value,
+                        themeSeedColor: value.seedHex,
                       ),
-                    )
-                    .toList(),
+                    );
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -954,6 +925,11 @@ String _fontModeLabel(BuildContext context, AppFontMode mode) {
   };
 }
 
+String _foruiThemeLabel(ForuiTheme theme) {
+  final name = theme.name;
+  return name[0].toUpperCase() + name.substring(1);
+}
+
 Map<String, String> buildLocaleMenuMap(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
   final seen = <String>{''};
@@ -1042,189 +1018,6 @@ class _ThemeManageScreen extends StatefulWidget {
 }
 
 class _ThemeManageScreenState extends State<_ThemeManageScreen> {
-  // 预设主题
-  static final List<({IconData icon, String l10nKey, ThemeConfig config})>
-  _presetThemes = [
-    (
-      icon: Icons.palette,
-      l10nKey: 'themePresetBlue',
-      config: const ThemeConfig(
-        seedColor: '#2563EB',
-        backgroundColor: '#F8FAFC',
-        unifiedCardColor: '#2563EB',
-        useUnifiedCardColor: false,
-        themeMode: 'system',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#1E293B',
-        weekdayBarFontColorDark: '#F1F5F9',
-        weekdayBarAccentColorLight: '#2563EB',
-        weekdayBarAccentColorDark: '#93C5FD',
-        timeAxisFontColorLight: '#757575',
-        timeAxisFontColorDark: '#FFFFFF',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    (
-      icon: Icons.nightlight_round,
-      l10nKey: 'themePresetPurple',
-      config: const ThemeConfig(
-        seedColor: '#7C3AED',
-        backgroundColor: '#0F0A1A',
-        unifiedCardColor: '#7C3AED',
-        useUnifiedCardColor: false,
-        themeMode: 'dark',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#F5F3FF',
-        weekdayBarFontColorDark: '#F5F3FF',
-        weekdayBarAccentColorLight: '#A78BFA',
-        weekdayBarAccentColorDark: '#C4B5FD',
-        timeAxisFontColorLight: '#A78BFA',
-        timeAxisFontColorDark: '#A78BFA',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    (
-      icon: Icons.forest,
-      l10nKey: 'themePresetGreen',
-      config: const ThemeConfig(
-        seedColor: '#059669',
-        backgroundColor: '#F0FDF4',
-        unifiedCardColor: '#059669',
-        useUnifiedCardColor: false,
-        themeMode: 'light',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#14532D',
-        weekdayBarFontColorDark: '#F0FDF4',
-        weekdayBarAccentColorLight: '#059669',
-        weekdayBarAccentColorDark: '#6EE7B7',
-        timeAxisFontColorLight: '#22C55E',
-        timeAxisFontColorDark: '#4ADE80',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    (
-      icon: Icons.wb_sunny,
-      l10nKey: 'themePresetOrange',
-      config: const ThemeConfig(
-        seedColor: '#EA580C',
-        backgroundColor: '#FFF7ED',
-        unifiedCardColor: '#EA580C',
-        useUnifiedCardColor: false,
-        themeMode: 'light',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#7C2D12',
-        weekdayBarFontColorDark: '#FFF7ED',
-        weekdayBarAccentColorLight: '#EA580C',
-        weekdayBarAccentColorDark: '#FDBA74',
-        timeAxisFontColorLight: '#F97316',
-        timeAxisFontColorDark: '#FB923C',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    // 护眼模式
-    (
-      icon: Icons.remove_red_eye,
-      l10nKey: 'themePresetEyeCare',
-      config: const ThemeConfig(
-        seedColor: '#D97706',
-        backgroundColor: '#FFFBEB',
-        unifiedCardColor: '#D97706',
-        useUnifiedCardColor: false,
-        themeMode: 'light',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#451A03',
-        weekdayBarFontColorDark: '#FFFBEB',
-        weekdayBarAccentColorLight: '#D97706',
-        weekdayBarAccentColorDark: '#FCD34D',
-        timeAxisFontColorLight: '#B45309',
-        timeAxisFontColorDark: '#FBBF24',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    // 高对比度
-    (
-      icon: Icons.contrast,
-      l10nKey: 'themePresetHighContrast',
-      config: const ThemeConfig(
-        seedColor: '#000000',
-        backgroundColor: '#FFFFFF',
-        unifiedCardColor: '#000000',
-        useUnifiedCardColor: false,
-        themeMode: 'light',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#000000',
-        weekdayBarFontColorDark: '#FFFFFF',
-        weekdayBarAccentColorLight: '#000000',
-        weekdayBarAccentColorDark: '#FFFFFF',
-        timeAxisFontColorLight: '#374151',
-        timeAxisFontColorDark: '#D1D5DB',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-    // 深色极简
-    (
-      icon: Icons.dark_mode,
-      l10nKey: 'themePresetDarkMinimal',
-      config: const ThemeConfig(
-        seedColor: '#6B7280',
-        backgroundColor: '#111827',
-        unifiedCardColor: '#374151',
-        useUnifiedCardColor: false,
-        themeMode: 'dark',
-        courseCardTitleColorLight: '#FFFFFF',
-        courseCardTitleColorDark: '#FFFFFF',
-        courseCardDetailColorLight: '#E0E0E0',
-        courseCardDetailColorDark: '#E0E0E0',
-        weekdayBarFontColorLight: '#F9FAFB',
-        weekdayBarFontColorDark: '#F9FAFB',
-        weekdayBarAccentColorLight: '#9CA3AF',
-        weekdayBarAccentColorDark: '#6B7280',
-        timeAxisFontColorLight: '#9CA3AF',
-        timeAxisFontColorDark: '#9CA3AF',
-        linkCourseCardColors: true,
-        hideWeekends: false,
-        spacingMode: 'narrow',
-        timeDisplayMode: 'start_and_end',
-      ),
-    ),
-  ];
-
   @override
   void dispose() {
     super.dispose();
@@ -1379,160 +1172,120 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
             ),
             const SizedBox(height: 16),
             // 统一主题列表（预设 + 保存/导入的）
-            FCard.raw(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            // 预设主题（forui 内置）
+            Consumer<TimetableProvider>(
+              builder: (context, provider, child) {
+                final current = provider.settings.foruiTheme;
+                return FTileGroup(
+                  label: Text(l10n.themePreset),
+                  physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    Text(
-                      l10n.themePreset,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                    for (final theme in ForuiTheme.values)
+                      FTile(
+                        prefix: _ColorDot(color: _colorFromHex(theme.seedHex)),
+                        title: Text(_foruiThemeLabel(theme)),
+                        suffix: current == theme
+                            ? Icon(
+                                Icons.check_rounded,
+                                color: Theme.of(context).colorScheme.primary,
+                              )
+                            : const Icon(Icons.chevron_right_rounded),
+                        onPress: () => _applyForuiTheme(context, theme),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    // 预设主题
-                    ...List.generate(_presetThemes.length, (index) {
-                      final preset = _presetThemes[index];
-                      final name = _getPresetName(l10n, preset.l10nKey);
-                      return _ThemeTile(
-                        icon: preset.icon,
-                        name: name,
-                        previewColors: preset.config.previewColors,
-                        onTap: () => _showThemePreviewDialog(
-                          context,
-                          name,
-                          preset.config,
-                        ),
-                      );
-                    }),
-                    // 保存/导入的主题
-                    Consumer<TimetableProvider>(
-                      builder: (context, provider, child) {
-                        final savedThemes = provider.settings.savedThemes;
-                        if (savedThemes.isEmpty) return const SizedBox.shrink();
-                        return Column(
-                          children: [
-                            ...savedThemes.map((theme) {
-                              final config = theme.config;
-                              return _ThemeTile(
-                                icon: Icons.bookmark,
-                                name: theme.name,
-                                previewColors: config.previewColors,
-                                trailing: PopupMenuButton<String>(
-                                  itemBuilder: (context) => [
-                                    PopupMenuItem(
-                                      value: 'rename',
-                                      child: Text(l10n.themeRename),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'duplicate',
-                                      child: Text(l10n.themeDuplicate),
-                                    ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Text(l10n.themeDelete),
-                                    ),
-                                  ],
-                                  onSelected: (action) {
-                                    switch (action) {
-                                      case 'rename':
-                                        _showRenameDialog(context, theme);
-                                        break;
-                                      case 'duplicate':
-                                        _duplicateTheme(context, theme);
-                                        break;
-                                      case 'delete':
-                                        showFDialog<bool>(
-                                          context: context,
-                                          builder: (ctx, style, animation) =>
-                                              FDialog(
-                                                title: Text(
-                                                  l10n.confirmDeleteTitle,
-                                                ),
-                                                body: Text(
-                                                  l10n.themeDeleteConfirmMessage(
-                                                    theme.name,
-                                                  ),
-                                                ),
-                                                actions: [
-                                                  FButton(
-                                                    variant:
-                                                        FButtonVariant.ghost,
-                                                    onPress: () =>
-                                                        Navigator.pop(
-                                                          ctx,
-                                                          false,
-                                                        ),
-                                                    child: Text(
-                                                      l10n.cancelAction,
-                                                    ),
-                                                  ),
-                                                  FButton(
-                                                    variant:
-                                                        FButtonVariant.ghost,
-                                                    onPress: () =>
-                                                        Navigator.pop(
-                                                          ctx,
-                                                          true,
-                                                        ),
-                                                    child: Text(
-                                                      l10n.confirmAction,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                        ).then((confirmed) {
-                                          if (confirmed == true) {
-                                            provider.deleteTheme(theme.id);
-                                          }
-                                        });
-                                        break;
-                                    }
-                                  },
-                                ),
-                                onTap: () => _showThemePreviewDialog(
-                                  context,
-                                  theme.name,
-                                  config,
-                                ),
-                              );
-                            }),
-                          ],
-                        );
-                      },
-                    ),
                   ],
-                ),
-              ),
+                );
+              },
+            ),
+            // 保存/导入的主题
+            Consumer<TimetableProvider>(
+              builder: (context, provider, child) {
+                final savedThemes = provider.settings.savedThemes;
+                if (savedThemes.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: FTileGroup(
+                    label: Text(l10n.themeSaved),
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      for (final theme in savedThemes)
+                        FTile(
+                          prefix: const Icon(Icons.bookmark),
+                          title: Text(theme.name),
+                          subtitle: _ThemePreviewDots(
+                            colors: theme.config.previewColors,
+                          ),
+                          suffix: PopupMenuButton<String>(
+                            itemBuilder: (context) => [
+                              PopupMenuItem(
+                                value: 'rename',
+                                child: Text(l10n.themeRename),
+                              ),
+                              PopupMenuItem(
+                                value: 'duplicate',
+                                child: Text(l10n.themeDuplicate),
+                              ),
+                              PopupMenuItem(
+                                value: 'delete',
+                                child: Text(l10n.themeDelete),
+                              ),
+                            ],
+                            onSelected: (action) {
+                              switch (action) {
+                                case 'rename':
+                                  _showRenameDialog(context, theme);
+                                  break;
+                                case 'duplicate':
+                                  _duplicateTheme(context, theme);
+                                  break;
+                                case 'delete':
+                                  showFDialog<bool>(
+                                    context: context,
+                                    builder: (ctx, style, animation) => FDialog(
+                                      title: Text(l10n.confirmDeleteTitle),
+                                      body: Text(
+                                        l10n.themeDeleteConfirmMessage(
+                                          theme.name,
+                                        ),
+                                      ),
+                                      actions: [
+                                        FButton(
+                                          variant: FButtonVariant.ghost,
+                                          onPress: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: Text(l10n.cancelAction),
+                                        ),
+                                        FButton(
+                                          variant: FButtonVariant.ghost,
+                                          onPress: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: Text(l10n.confirmAction),
+                                        ),
+                                      ],
+                                    ),
+                                  ).then((confirmed) {
+                                    if (confirmed == true) {
+                                      provider.deleteTheme(theme.id);
+                                    }
+                                  });
+                                  break;
+                              }
+                            },
+                          ),
+                          onPress: () => _showThemePreviewDialog(
+                            context,
+                            theme.name,
+                            theme.config,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
     );
-  }
-
-  String _getPresetName(AppLocalizations l10n, String key) {
-    switch (key) {
-      case 'themePresetBlue':
-        return l10n.themePresetBlue;
-      case 'themePresetPurple':
-        return l10n.themePresetPurple;
-      case 'themePresetGreen':
-        return l10n.themePresetGreen;
-      case 'themePresetOrange':
-        return l10n.themePresetOrange;
-      case 'themePresetEyeCare':
-        return l10n.themePresetEyeCare;
-      case 'themePresetHighContrast':
-        return l10n.themePresetHighContrast;
-      case 'themePresetDarkMinimal':
-        return l10n.themePresetDarkMinimal;
-      default:
-        return key;
-    }
   }
 
   void _showThemePreviewDialog(
@@ -1669,6 +1422,33 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       );
   }
 
+  void _applyForuiTheme(BuildContext context, ForuiTheme theme) {
+    final provider = Provider.of<TimetableProvider>(context, listen: false);
+    final l10n = AppLocalizations.of(context)!;
+    final name = _foruiThemeLabel(theme);
+    // forui 主题没有 ThemeConfig 快照，清除旧检查点
+    provider.applyThemeWithUndo(
+      provider.settings.copyWith(
+        foruiTheme: theme,
+        themeSeedColor: theme.seedHex,
+        clearThemeCheckpoint: true,
+      ),
+      themeName: name,
+    );
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(l10n.themeChanged(name)),
+          action: SnackBarAction(
+            label: l10n.themeUndo,
+            onPressed: () => provider.undoThemeChange(),
+          ),
+          duration: const Duration(seconds: 8),
+        ),
+      );
+  }
+
   void _showSaveThemeDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
@@ -1676,12 +1456,12 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     showFDialog(
       context: context,
       builder: (context, style, animation) => FDialog(
-       title: Text(l10n.themeSaveCurrent),
-       body: FTextField(
-         control: FTextFieldControl.managed(controller: controller),
+        title: Text(l10n.themeSaveCurrent),
+        body: FTextField(
+          control: FTextFieldControl.managed(controller: controller),
           hint: l10n.themeNameHint,
-         autofocus: true,
-       ),
+          autofocus: true,
+        ),
         actions: [
           FButton(
             variant: FButtonVariant.ghost,
@@ -1715,13 +1495,13 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     showFDialog(
       context: context,
       builder: (context, style, animation) => FDialog(
-       title: Text(l10n.themeRename),
-       body: FTextField(
-         control: FTextFieldControl.managed(controller: controller),
+        title: Text(l10n.themeRename),
+        body: FTextField(
+          control: FTextFieldControl.managed(controller: controller),
           hint: l10n.themeNameHint,
-         autofocus: true,
-       ),
-       actions: [
+          autofocus: true,
+        ),
+        actions: [
           FButton(
             variant: FButtonVariant.ghost,
             onPress: () => Navigator.pop(context),
@@ -1796,48 +1576,31 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
   }
 }
 
-class _ThemeTile extends StatelessWidget {
-  final IconData icon;
-  final String name;
-  final VoidCallback onTap;
-  final Widget? trailing;
-  final List<String>? previewColors;
+class _ThemePreviewDots extends StatelessWidget {
+ final List<String> colors;
 
-  const _ThemeTile({
-    required this.icon,
-    required this.name,
-    required this.onTap,
-    this.trailing,
-    this.previewColors,
-  });
+  const _ThemePreviewDots({required this.colors});
 
-  @override
-  Widget build(BuildContext context) {
-    return FTile(
-      prefix: Icon(icon),
-      title: Text(name),
-      subtitle: previewColors != null && previewColors!.isNotEmpty
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: previewColors!.take(4).map((hex) {
-                final color = _colorFromHex(hex);
-                return Container(
-                  width: 16,
-                  height: 16,
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                    ),
-                  ),
-                );
-              }).toList(),
-            )
-          : null,
-      suffix: trailing ?? const Icon(Icons.chevron_right),
-      onPress: onTap,
+ @override
+ Widget build(BuildContext context) {
+   if (colors.isEmpty) return const SizedBox.shrink();
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: colors.take(4).map((hex) {
+        return Container(
+          width: 14,
+          height: 14,
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            color: _colorFromHex(hex),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+              width: 0.5,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -4880,7 +4643,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 }
 
-class _SettingsEntryTile extends StatelessWidget {
+class _SettingsEntryTile extends StatelessWidget with FTileMixin {
   final IconData icon;
   final String title;
   final String subtitle;
@@ -4950,10 +4713,28 @@ class _SettingsSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FCard(
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle!) : null,
-      child: child,
+    final typo = context.theme.typography.body;
+    final header = Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 2),
+            Text(subtitle!, style: typo.xs2),
+          ],
+        ],
+      ),
+    );
+    return FCard.raw(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [header, child],
+        ),
+      ),
     );
   }
 }

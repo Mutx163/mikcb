@@ -23,11 +23,6 @@ import 'services/lan_edit_foreground_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/umeng_analytics_service.dart';
-import 'utils/hex_color.dart';
-
-Color _colorFromHex(String hexColor) {
-  return parseHexColorOrFallback(hexColor, fallback: const Color(0xFF2563EB));
-}
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -67,47 +62,30 @@ Locale? _localeFromSettings(String localeTag) {
   return Locale(languageCode);
 }
 
-ThemeData _buildAppTheme(
-  Color seedColor,
-  Brightness brightness, {
-  String? fontFamily,
-}) {
-  final colorScheme = ColorScheme.fromSeed(
-    seedColor: seedColor,
-    brightness: brightness,
-  );
-  return ThemeData(
-    useMaterial3: true,
-    fontFamily: fontFamily,
-    colorScheme: colorScheme,
-    scaffoldBackgroundColor: colorScheme.surface,
-    appBarTheme: AppBarTheme(
-      centerTitle: false,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: colorScheme.surface,
-      foregroundColor: colorScheme.onSurface,
-      titleTextStyle: TextStyle(
-        fontSize: 22,
-        fontWeight: FontWeight.w800,
-        color: colorScheme.onSurface,
-      ),
-    ),
-    cardTheme: CardThemeData(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: colorScheme.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-    ),
-    snackBarTheme: SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: colorScheme.inverseSurface,
-      contentTextStyle: TextStyle(color: colorScheme.onInverseSurface),
-    ),
-    chipTheme: ChipThemeData(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      side: BorderSide(color: colorScheme.outlineVariant),
-    ),
+FThemeData _foruiThemeData(ForuiTheme theme, Brightness brightness) {
+  final pair = switch (theme) {
+    ForuiTheme.neutral => FThemes.neutral,
+    ForuiTheme.zinc => FThemes.zinc,
+    ForuiTheme.slate => FThemes.slate,
+    ForuiTheme.blue => FThemes.blue,
+    ForuiTheme.green => FThemes.green,
+    ForuiTheme.orange => FThemes.orange,
+    ForuiTheme.red => FThemes.red,
+    ForuiTheme.rose => FThemes.rose,
+    ForuiTheme.violet => FThemes.violet,
+    ForuiTheme.yellow => FThemes.yellow,
+  };
+  return brightness == Brightness.dark ? pair.dark.touch : pair.light.touch;
+}
+
+ThemeData _appThemeData(FThemeData forui, {String? fontFamily}) {
+  final material = forui.toApproximateMaterialTheme();
+  if (fontFamily == null || fontFamily.isEmpty) {
+    return material;
+  }
+  return material.copyWith(
+    textTheme: material.textTheme.apply(fontFamily: fontFamily),
+    primaryTextTheme: material.primaryTextTheme.apply(fontFamily: fontFamily),
   );
 }
 
@@ -194,23 +172,27 @@ class MyApp extends StatelessWidget {
           Selector<
             TimetableProvider,
             ({
-              String seedColor,
-              String fontMode,
-              String themeMode,
+              ForuiTheme foruiTheme,
+              AppFontMode fontMode,
+              AppThemeMode themeMode,
               String localeTag,
             })
           >(
             selector: (_, p) => (
-              seedColor: p.settings.themeSeedColor,
-              fontMode: p.settings.appFontMode.name,
-              themeMode: p.settings.appThemeMode.name,
+              foruiTheme: p.settings.foruiTheme,
+              fontMode: p.settings.appFontMode,
+              themeMode: p.settings.appThemeMode,
               localeTag: p.settings.appLocaleTag,
             ),
             builder: (context, settings, child) {
-              final seedColor = _colorFromHex(settings.seedColor);
-              final fontFamily = _fontFamilyFromSettings(
-                AppFontMode.values.asNameMap()[settings.fontMode] ??
-                    AppFontMode.system,
+              final fontFamily = _fontFamilyFromSettings(settings.fontMode);
+              final foruiLight = _foruiThemeData(
+                settings.foruiTheme,
+                Brightness.light,
+              );
+              final foruiDark = _foruiThemeData(
+                settings.foruiTheme,
+                Brightness.dark,
               );
 
               return MaterialApp(
@@ -226,28 +208,15 @@ class MyApp extends StatelessWidget {
                 ],
                 supportedLocales: AppLocalizations.supportedLocales,
                 locale: _localeFromSettings(settings.localeTag),
-                themeMode: _themeModeFromSettings(
-                  AppThemeMode.values.asNameMap()[settings.themeMode] ??
-                      AppThemeMode.system,
-                ),
-                theme: _buildAppTheme(
-                  seedColor,
-                  Brightness.light,
-                  fontFamily: fontFamily,
-                ),
-                darkTheme: _buildAppTheme(
-                  seedColor,
-                  Brightness.dark,
-                  fontFamily: fontFamily,
-                ),
+                themeMode: _themeModeFromSettings(settings.themeMode),
+                theme: _appThemeData(foruiLight, fontFamily: fontFamily),
+                darkTheme: _appThemeData(foruiDark, fontFamily: fontFamily),
                 navigatorObservers: <NavigatorObserver>[_AppRouteLogObserver()],
                 builder: (context, child) {
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
                   return FTheme(
-                    data: isDark
-                        ? FThemes.zinc.dark.touch
-                        : FThemes.zinc.light.touch,
+                    data: isDark ? foruiDark : foruiLight,
                     child: FToaster(child: FTooltipGroup(child: child!)),
                   );
                 },
