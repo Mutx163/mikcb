@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/app_migration_service.dart';
@@ -32,14 +33,17 @@ class _PackageMigrationGuideScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [],
         title: Text(l10n.migrationTitle),
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          child: Column(
+            children: [
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
@@ -179,6 +183,7 @@ class _PackageMigrationGuideScreenState
           ],
         ),
       ),
+    ),
     );
   }
 
