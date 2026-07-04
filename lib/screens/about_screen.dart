@@ -23,6 +23,8 @@ import 'changelog_screen.dart';
 import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
+import '../services/bundled_assets.dart';
+import '../widgets/bundled_asset_image.dart';
 import '../services/warehouse_repository_service.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
 
@@ -164,18 +166,11 @@ class _AboutScreenState extends State<AboutScreen> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/branding/launcher_icon.png',
+                        child: BundledAssetImage(
+                          assetPath: BundledAssets.launcherIcon,
                           fit: BoxFit.cover,
                           cacheWidth: 168,
                           cacheHeight: 168,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Icon(
-                              Icons.calendar_view_week_rounded,
-                              color: colorScheme.primary,
-                              size: 42,
-                            );
-                          },
                         ),
                       ),
                     ),

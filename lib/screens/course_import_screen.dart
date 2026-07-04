@@ -6,6 +6,7 @@ import 'package:azlistview/azlistview.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter/services.dart';
@@ -59,86 +60,133 @@ class CourseImportScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.courseImportTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  colorScheme.primaryContainer,
-                  colorScheme.surfaceContainerHighest,
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.courseImportTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _ImportSectionCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.chooseImportMethodTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.chooseImportMethodSubtitle,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
-              borderRadius: BorderRadius.circular(24),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 16),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                Text(
-                  l10n.chooseImportMethodTitle,
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
+                FTile(
+                  prefix: const Icon(Icons.event_note_rounded),
+                  title: Text(l10n.importMethodIcsTitle),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.importMethodIcsSubtitle),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.importMethodIcsFooter,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  suffix: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onPress: () => _openImportPage<bool>(
+                    context,
+                    builder: (_) => const IcsCourseImportScreen(),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.chooseImportMethodSubtitle,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                FTile(
+                  prefix: const Icon(Icons.auto_awesome_rounded),
+                  title: Text(l10n.importMethodAiTitle),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.importMethodAiSubtitle),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.importMethodAiFooter,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  suffix: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onPress: () => _openImportPage<bool>(
+                    context,
+                    builder: (_) => const AiImageCourseImportScreen(),
+                  ),
+                ),
+                FTile(
+                  prefix: const Icon(Icons.school_outlined),
+                  title: Text(l10n.importMethodWarehouseTitle),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.importMethodWarehouseSubtitle),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.importMethodWarehouseFooter,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  suffix: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onPress: () => _openImportPage<bool>(
+                    context,
+                    builder: (_) => const WarehouseCourseImportScreen(),
+                  ),
+                ),
+                FTile(
+                  prefix: const Icon(Icons.table_chart_outlined),
+                  title: Text(l10n.importMethodSpreadsheetTitle),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l10n.importMethodSpreadsheetSubtitle),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.importMethodSpreadsheetFooter,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  suffix: const Icon(Icons.chevron_right_rounded, size: 18),
+                  onPress: () => _openImportPage<bool>(
+                    context,
+                    builder: (_) => const SpreadsheetCourseImportScreen(),
                   ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _ImportEntryCard(
-            icon: Icons.event_note_rounded,
-            title: l10n.importMethodIcsTitle,
-            subtitle: l10n.importMethodIcsSubtitle,
-            footer: l10n.importMethodIcsFooter,
-            onTap: () => _openImportPage<bool>(
-              context,
-              builder: (_) => const IcsCourseImportScreen(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _ImportEntryCard(
-            icon: Icons.auto_awesome_rounded,
-            title: l10n.importMethodAiTitle,
-            subtitle: l10n.importMethodAiSubtitle,
-            footer: l10n.importMethodAiFooter,
-            onTap: () => _openImportPage<bool>(
-              context,
-              builder: (_) => const AiImageCourseImportScreen(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _ImportEntryCard(
-            icon: Icons.school_outlined,
-            title: l10n.importMethodWarehouseTitle,
-            subtitle: l10n.importMethodWarehouseSubtitle,
-            footer: l10n.importMethodWarehouseFooter,
-            onTap: () => _openImportPage<bool>(
-              context,
-              builder: (_) => const WarehouseCourseImportScreen(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _ImportEntryCard(
-            icon: Icons.table_chart_outlined,
-            title: l10n.importMethodSpreadsheetTitle,
-            subtitle: l10n.importMethodSpreadsheetSubtitle,
-            footer: l10n.importMethodSpreadsheetFooter,
-            onTap: () => _openImportPage<bool>(
-              context,
-              builder: (_) => const SpreadsheetCourseImportScreen(),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -187,88 +235,46 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.icsImportTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.applicableScenarioTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(l10n.icsScenarioIntro),
-                  const SizedBox(height: 14),
-                  _GuideLine(
-                    title: l10n.stepLabel('1'),
-                    subtitle: l10n.icsStep1Subtitle,
-                  ),
-                  const SizedBox(height: 10),
-                  _GuideLine(
-                    title: l10n.stepLabel('2'),
-                    subtitle: l10n.icsStep2Subtitle,
-                  ),
-                  const SizedBox(height: 10),
-                  _GuideLine(
-                    title: l10n.stepLabel('3'),
-                    subtitle: l10n.icsStep3Subtitle,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.supportedFilesTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.supportedFilesSuffix),
-                const SizedBox(height: 4),
-                Text(l10n.supportedFilesImageHint),
-              ],
-            ),
-          ),
-        ],
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.icsImportTitle),
       ),
-      bottomNavigationBar: SafeArea(
+      childPad: false,
+      footer: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: FilledButton.icon(
-          onPressed: _isImporting ? null : _importIcsFile,
-          icon: _isImporting
+        child: FButton(
+          variant: FButtonVariant.primary,
+          onPress: _isImporting ? null : _importIcsFile,
+          prefix: _isImporting
               ? const SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.folder_open_rounded),
-          label: Text(
+          child: Text(
             _isImporting
                 ? '${l10n.icsImportTitle}...'
                 : l10n.chooseIcsFileAction,
           ),
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _ImportGuidePanel(
+              scenarioIntro: l10n.icsScenarioIntro,
+              step1Subtitle: l10n.icsStep1Subtitle,
+              step2Subtitle: l10n.icsStep2Subtitle,
+              step3Subtitle: l10n.icsStep3Subtitle,
+              supportedFilesSuffix: l10n.supportedFilesSuffix,
+              supportedFilesExtra: l10n.supportedFilesImageHint,
+            ),
+          ],
         ),
       ),
     );
@@ -276,7 +282,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
 
   Future<void> _importIcsFile() async {
     final l10n = AppLocalizations.of(context)!;
-    setState(() { _isImporting = true; });
+    setState(() {
+      _isImporting = true;
+    });
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -301,13 +309,17 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() { _isImporting = false; });
+        setState(() {
+          _isImporting = false;
+        });
       }
     }
   }
 
   Future<void> _importFromExternalIcs(String icsContent) async {
-    setState(() { _isImporting = true; });
+    setState(() {
+      _isImporting = true;
+    });
     try {
       await _executeIcsImport(
         icsContent,
@@ -315,7 +327,9 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() { _isImporting = false; });
+        setState(() {
+          _isImporting = false;
+        });
       }
     }
   }
@@ -416,101 +430,61 @@ class _SpreadsheetCourseImportScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.spreadsheetImportTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.applicableScenarioTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(l10n.spreadsheetScenarioIntro),
-                  const SizedBox(height: 14),
-                  _GuideLine(
-                    title: l10n.stepLabel('1'),
-                    subtitle: l10n.spreadsheetStep1Subtitle,
-                  ),
-                  const SizedBox(height: 10),
-                  _GuideLine(
-                    title: l10n.stepLabel('2'),
-                    subtitle: l10n.spreadsheetStep2Subtitle,
-                  ),
-                  const SizedBox(height: 10),
-                  _GuideLine(
-                    title: l10n.stepLabel('3'),
-                    subtitle: l10n.spreadsheetStep3Subtitle,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.supportedFilesTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(l10n.spreadsheetSupportedFilesSuffix),
-              ],
-            ),
-          ),
-        ],
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.spreadsheetImportTitle),
       ),
-      bottomNavigationBar: SafeArea(
+      childPad: false,
+      footer: SafeArea(
         top: false,
         minimum: const EdgeInsets.fromLTRB(16, 12, 16, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            OutlinedButton.icon(
-              onPressed: _isSharingTemplate ? null : _shareTemplate,
-              icon: _isSharingTemplate
+            FButton(
+              variant: FButtonVariant.outline,
+              onPress: _isSharingTemplate ? null : _shareTemplate,
+              prefix: _isSharingTemplate
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.download_rounded),
-              label: Text(l10n.downloadSpreadsheetTemplateAction),
+              child: Text(l10n.downloadSpreadsheetTemplateAction),
             ),
             const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: _isImporting ? null : _importSpreadsheetFile,
-              icon: _isImporting
+            FButton(
+              variant: FButtonVariant.primary,
+              onPress: _isImporting ? null : _importSpreadsheetFile,
+              prefix: _isImporting
                   ? const SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : const Icon(Icons.folder_open_rounded),
-              label: Text(
+              child: Text(
                 _isImporting
                     ? '${l10n.spreadsheetImportTitle}...'
                     : l10n.chooseSpreadsheetFileAction,
               ),
+            ),
+          ],
+        ),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _ImportGuidePanel(
+              scenarioIntro: l10n.spreadsheetScenarioIntro,
+              step1Subtitle: l10n.spreadsheetStep1Subtitle,
+              step2Subtitle: l10n.spreadsheetStep2Subtitle,
+              step3Subtitle: l10n.spreadsheetStep3Subtitle,
+              supportedFilesSuffix: l10n.spreadsheetSupportedFilesSuffix,
             ),
           ],
         ),
@@ -528,19 +502,16 @@ class _SpreadsheetCourseImportScreenState
         'assets/templates/mikcb_course_import_template.csv',
       );
       final tempDir = await getTemporaryDirectory();
-      final file = File(
-        '${tempDir.path}/mikcb_course_import_template.csv',
-      );
+      final file = File('${tempDir.path}/mikcb_course_import_template.csv');
       await file.writeAsBytes(data.buffer.asUint8List());
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: l10n.downloadSpreadsheetTemplateAction,
-      );
+      await Share.shareXFiles([
+        XFile(file.path),
+      ], subject: l10n.downloadSpreadsheetTemplateAction);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importFileReadFailed)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
       }
     } finally {
       if (mounted) {
@@ -568,9 +539,9 @@ class _SpreadsheetCourseImportScreenState
       final bytes = file.bytes;
       if (bytes == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.importFileReadFailed)),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
         }
         return;
       }
@@ -613,17 +584,17 @@ class _SpreadsheetCourseImportScreenState
       return;
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.importFileReadFailed)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
       return;
     }
 
     if (parsedResult.courses.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.importNoCoursesRecognized)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
       }
       return;
     }
@@ -713,10 +684,11 @@ Future<void> _completeParsedCourseImport({
   int warningCount = 0,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final requiredSectionCount = provider.previewImportedCourseRequiredSectionCount(
-    courses,
-    replaceExisting: replaceExisting,
-  );
+  final requiredSectionCount = provider
+      .previewImportedCourseRequiredSectionCount(
+        courses,
+        replaceExisting: replaceExisting,
+      );
   if (!context.mounted) return;
   final capacityReady = await _ensureSectionCapacity(
     context,
@@ -783,398 +755,389 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
+    return FScaffold(
       resizeToAvoidBottomInset: true,
-      appBar: AppBar(title: Text(l10n.aiImportTitle)),
-      body: SafeArea(
-        top: false,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final dense = constraints.maxHeight < 760;
-            final ultraDense = constraints.maxHeight < 520;
-            final double sectionGap;
-            final double outerPadding;
-            final double cardRadius;
-            if (ultraDense) {
-              sectionGap = 4.0;
-              outerPadding = 10.0;
-              cardRadius = 16.0;
-            } else if (dense) {
-              sectionGap = 8.0;
-              outerPadding = 12.0;
-              cardRadius = 18.0;
-            } else {
-              sectionGap = 12.0;
-              outerPadding = 16.0;
-              cardRadius = 20.0;
-            }
-            final compactButtonStyle = ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-                EdgeInsets.symmetric(
-                  horizontal: ultraDense ? 8 : dense ? 10 : 12,
-                  vertical: ultraDense ? 6 : dense ? 8 : 10,
-                ),
-              ),
-            );
-            final compactBottomButtonStyle = ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              padding: WidgetStatePropertyAll<EdgeInsetsGeometry>(
-                EdgeInsets.symmetric(
-                  horizontal: ultraDense ? 8 : 12,
-                  vertical: ultraDense ? 8 : 10,
-                ),
-              ),
-            );
-            final previewSummary = _aiParsedResult == null
-                ? null
-                : l10n.aiPreviewSummary(
-                    _aiParsedResult!.courses.length,
-                    _aiParsedResult!.requiredSectionCount,
-                    _aiParsedResult!.warnings.isEmpty
-                        ? ''
-                        : l10n.aiWarningCountSuffix(
-                            _aiParsedResult!.warnings.length,
-                          ),
-                  );
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.aiImportTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: SafeArea(
+          top: false,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final dense = constraints.maxHeight < 760;
+              final ultraDense = constraints.maxHeight < 520;
+              final double sectionGap;
+              final double outerPadding;
+              if (ultraDense) {
+                sectionGap = 4.0;
+                outerPadding = 10.0;
+              } else if (dense) {
+                sectionGap = 8.0;
+                outerPadding = 12.0;
+              } else {
+                sectionGap = 12.0;
+                outerPadding = 16.0;
+              }
+              final previewSummary = _aiParsedResult == null
+                  ? null
+                  : l10n.aiPreviewSummary(
+                      _aiParsedResult!.courses.length,
+                      _aiParsedResult!.requiredSectionCount,
+                      _aiParsedResult!.warnings.isEmpty
+                          ? ''
+                          : l10n.aiWarningCountSuffix(
+                              _aiParsedResult!.warnings.length,
+                            ),
+                    );
 
-            return Padding(
-              padding: EdgeInsets.fromLTRB(outerPadding, 12, outerPadding, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(
-                      ultraDense ? 10 : dense ? 14 : 16,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          colorScheme.primaryContainer,
-                          colorScheme.surfaceContainerHighest,
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  outerPadding,
+                  12,
+                  outerPadding,
+                  12,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ImportSectionCard(
+                      padding: EdgeInsets.all(
+                        ultraDense
+                            ? 10
+                            : dense
+                            ? 14
+                            : 16,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: ultraDense
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.aiWorkflowCompactTitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        l10n.aiWorkflowCompactSubtitle,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        l10n.aiWorkflowTitle,
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                      ),
+                                      SizedBox(height: dense ? 4 : 6),
+                                      Text(
+                                        l10n.aiWorkflowSubtitle,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                              height: 1.35,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                          SizedBox(width: ultraDense ? 8 : 12),
+                          if (ultraDense)
+                            FButton(
+                              variant: FButtonVariant.ghost,
+                              size: FButtonSizeVariant.sm,
+                              onPress: _showPromptSheet,
+                              child: Text(l10n.aiPromptShortAction),
+                            )
+                          else
+                            Icon(
+                              Icons.auto_awesome_rounded,
+                              size: dense ? 30 : 34,
+                              color: colorScheme.primary,
+                            ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(cardRadius + 2),
                     ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ultraDense
-                              ? Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.aiWorkflowCompactTitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.titleSmall
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      l10n.aiWorkflowCompactSubtitle,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                    ),
-                                  ],
-                                )
-                              : Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.aiWorkflowTitle,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                    ),
-                                    SizedBox(height: dense ? 4 : 6),
-                                    Text(
-                                      l10n.aiWorkflowSubtitle,
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                            height: 1.35,
-                                          ),
-                                    ),
-                                  ],
-                                ),
+                    SizedBox(height: sectionGap),
+                    if (ultraDense)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: Text(
+                          l10n.aiExpertModeSuggestion,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                        SizedBox(width: ultraDense ? 8 : 12),
-                        if (ultraDense)
-                          TextButton(
-                            onPressed: _showPromptSheet,
-                            style: TextButton.styleFrom(
-                              visualDensity: VisualDensity.compact,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              minimumSize: Size.zero,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 6,
-                              ),
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _CompactHintChip(
+                            icon: Icons.smart_toy_outlined,
+                            label: l10n.aiHintExpertMode,
+                          ),
+                          _CompactHintChip(
+                            icon: Icons.photo_library_outlined,
+                            label: l10n.aiHintSendScreenshot,
+                          ),
+                          _CompactHintChip(
+                            icon: Icons.content_copy_rounded,
+                            label: l10n.aiHintCopyJsonBack,
+                          ),
+                          _CompactHintChip(
+                            icon: Icons.event_available_rounded,
+                            label: l10n.aiHintPickSemesterAfterImport,
+                          ),
+                        ],
+                      ),
+                    SizedBox(height: sectionGap),
+                    if (ultraDense)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _CompactActionButton(
+                              icon: Icons.copy_all_rounded,
+                              label: l10n.copyAddress,
+                              onPressed: _copyAiPrompt,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _CompactActionButton(
+                              icon: Icons.article_outlined,
+                              label: l10n.aiPromptShortAction,
+                              onPressed: _showPromptSheet,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _CompactActionButton(
+                              icon: Icons.content_paste_rounded,
+                              label: l10n.pasteAction,
+                              onPressed: _pasteFromClipboard,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: _CompactActionButton(
+                              icon: Icons.clear_rounded,
+                              label: l10n.clearAction,
+                              onPressed: _clearInput,
+                            ),
+                          ),
+                        ],
+                      )
+                    else
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          FButton(
+                            variant: FButtonVariant.secondary,
+                            size: FButtonSizeVariant.sm,
+                            mainAxisSize: MainAxisSize.min,
+                            onPress: _copyAiPrompt,
+                            prefix: const Icon(
+                              Icons.copy_all_rounded,
+                              size: 18,
+                            ),
+                            child: Text(l10n.copyAddress),
+                          ),
+                          FButton(
+                            variant: FButtonVariant.outline,
+                            size: FButtonSizeVariant.sm,
+                            mainAxisSize: MainAxisSize.min,
+                            onPress: _showPromptSheet,
+                            prefix: const Icon(
+                              Icons.article_outlined,
+                              size: 18,
                             ),
                             child: Text(l10n.aiPromptShortAction),
-                          )
-                        else
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: dense ? 30 : 34,
-                            color: colorScheme.primary,
                           ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: sectionGap),
-                  if (ultraDense)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2),
-                      child: Text(
-                        l10n.aiExpertModeSuggestion,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                          FButton(
+                            variant: FButtonVariant.secondary,
+                            size: FButtonSizeVariant.sm,
+                            mainAxisSize: MainAxisSize.min,
+                            onPress: _pasteFromClipboard,
+                            prefix: const Icon(
+                              Icons.content_paste_rounded,
+                              size: 18,
+                            ),
+                            child: Text(l10n.pasteAction),
+                          ),
+                          FButton(
+                            variant: FButtonVariant.outline,
+                            size: FButtonSizeVariant.sm,
+                            mainAxisSize: MainAxisSize.min,
+                            onPress: _clearInput,
+                            prefix: const Icon(Icons.clear_rounded, size: 18),
+                            child: Text(l10n.clearAction),
+                          ),
+                        ],
                       ),
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _CompactHintChip(
-                          icon: Icons.smart_toy_outlined,
-                          label: l10n.aiHintExpertMode,
-                        ),
-                        _CompactHintChip(
-                          icon: Icons.photo_library_outlined,
-                          label: l10n.aiHintSendScreenshot,
-                        ),
-                        _CompactHintChip(
-                          icon: Icons.content_copy_rounded,
-                          label: l10n.aiHintCopyJsonBack,
-                        ),
-                        _CompactHintChip(
-                          icon: Icons.event_available_rounded,
-                          label: l10n.aiHintPickSemesterAfterImport,
-                        ),
-                      ],
-                    ),
-                  SizedBox(height: sectionGap),
-                  if (ultraDense)
+                    SizedBox(height: sectionGap),
                     Row(
                       children: [
                         Expanded(
-                          child: _CompactActionButton(
-                            icon: Icons.copy_all_rounded,
-                            label: l10n.copyAddress,
-                            onPressed: _copyAiPrompt,
+                          child: Text(
+                            ultraDense
+                                ? l10n.jsonLabelShort
+                                : l10n.aiPasteJsonTitle,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: _CompactActionButton(
-                            icon: Icons.article_outlined,
-                            label: l10n.aiPromptShortAction,
-                            onPressed: _showPromptSheet,
+                        if (_aiParsedResult != null)
+                          _CompactStatusChip(
+                            label: l10n.aiCourseCountChip(
+                              _aiParsedResult!.courses.length,
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: _CompactActionButton(
-                            icon: Icons.content_paste_rounded,
-                            label: l10n.pasteAction,
-                            onPressed: _pasteFromClipboard,
+                        if (_aiParseError != null)
+                          _CompactStatusChip(
+                            label: l10n.aiParseFailedChip,
+                            isError: true,
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: _CompactActionButton(
-                            icon: Icons.clear_rounded,
-                            label: l10n.clearAction,
-                            onPressed: _clearInput,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: _copyAiPrompt,
-                          style: compactButtonStyle,
-                          icon: const Icon(Icons.copy_all_rounded, size: 18),
-                          label: Text(l10n.copyAddress),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _showPromptSheet,
-                          style: compactButtonStyle,
-                          icon: const Icon(Icons.article_outlined, size: 18),
-                          label: Text(l10n.aiPromptShortAction),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: _pasteFromClipboard,
-                          style: compactButtonStyle,
-                          icon: const Icon(
-                            Icons.content_paste_rounded,
-                            size: 18,
-                          ),
-                          label: Text(l10n.pasteAction),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: _clearInput,
-                          style: compactButtonStyle,
-                          icon: const Icon(Icons.clear_rounded, size: 18),
-                          label: Text(l10n.clearAction),
-                        ),
                       ],
                     ),
-                  SizedBox(height: sectionGap),
-                  Row(
-                    children: [
-                      Expanded(
+                    SizedBox(
+                      height: ultraDense
+                          ? 4
+                          : dense
+                          ? 6
+                          : 8,
+                    ),
+                    Expanded(
+                      child: _ImportSectionCard(
+                        padding: EdgeInsets.zero,
+                        child: TextField(
+                          key: const ValueKey('ai_import_json_input'),
+                          controller: _aiController,
+                          focusNode: _aiFocusNode,
+                          expands: true,
+                          minLines: null,
+                          maxLines: null,
+                          textAlignVertical: TextAlignVertical.top,
+                          onChanged: (_) {
+                            if (_aiParsedResult != null ||
+                                _aiParseError != null) {
+                              setState(() {
+                                _aiParsedResult = null;
+                                _aiParseError = null;
+                              });
+                            }
+                          },
+                          decoration: InputDecoration(
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.all(
+                              ultraDense ? 10 : 14,
+                            ),
+                            hintText: ultraDense
+                                ? l10n.aiPasteJsonHintShort
+                                : l10n.aiPasteJsonHintLong,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: sectionGap),
+                    if (_aiParseError != null)
+                      _CompactNoticeCard(
+                        icon: Icons.error_outline_rounded,
+                        message: _aiParseError!,
+                        isError: true,
+                        actionLabel: l10n.detailAction,
+                        onAction: () => _showMessageSheet(
+                          title: l10n.aiParseErrorTitle,
+                          content: _aiParseError!,
+                        ),
+                      )
+                    else if (_aiParsedResult != null)
+                      _CompactNoticeCard(
+                        icon: Icons.check_circle_outline_rounded,
+                        message: previewSummary!,
+                        actionLabel: l10n.viewDetailsAction,
+                        onAction: () => _showPreviewSheet(_aiParsedResult!),
+                      )
+                    else if (!ultraDense)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
                         child: Text(
-                          ultraDense
-                              ? l10n.jsonLabelShort
-                              : l10n.aiPasteJsonTitle,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                          l10n.aiWorkflowFooter,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
-                      if (_aiParsedResult != null)
-                        _CompactStatusChip(
-                          label: l10n.aiCourseCountChip(
-                            _aiParsedResult!.courses.length,
+                    SizedBox(height: sectionGap),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FButton(
+                            variant: FButtonVariant.outline,
+                            onPress: _previewAiResult,
+                            prefix: const Icon(Icons.preview_rounded),
+                            child: Text(l10n.previewAction),
                           ),
                         ),
-                      if (_aiParseError != null)
-                        _CompactStatusChip(
-                          label: l10n.aiParseFailedChip,
-                          isError: true,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FButton(
+                            variant: FButtonVariant.primary,
+                            onPress: _isImporting ? null : _importAiResult,
+                            prefix: _isImporting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.cloud_upload_rounded),
+                            child: Text(
+                              _isImporting
+                                  ? '${l10n.importReplaceExistingTitle}...'
+                                  : l10n.confirmImportAction,
+                            ),
+                          ),
                         ),
-                    ],
-                  ),
-                  SizedBox(
-                    height: ultraDense
-                        ? 4
-                        : dense
-                        ? 6
-                        : 8,
-                  ),
-                  Expanded(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(cardRadius),
-                        border: Border.all(color: colorScheme.outlineVariant),
-                      ),
-                      child: TextField(
-                        key: const ValueKey('ai_import_json_input'),
-                        controller: _aiController,
-                        focusNode: _aiFocusNode,
-                        expands: true,
-                        minLines: null,
-                        maxLines: null,
-                        textAlignVertical: TextAlignVertical.top,
-                        onChanged: (_) {
-                          if (_aiParsedResult != null ||
-                              _aiParseError != null) {
-                            setState(() {
-                              _aiParsedResult = null;
-                              _aiParseError = null;
-                            });
-                          }
-                        },
-                        decoration: InputDecoration(
-                          border: InputBorder.none,
-                          contentPadding: EdgeInsets.all(ultraDense ? 10 : 14),
-                          hintText: ultraDense
-                              ? l10n.aiPasteJsonHintShort
-                              : l10n.aiPasteJsonHintLong,
-                        ),
-                      ),
+                      ],
                     ),
-                  ),
-                  SizedBox(height: sectionGap),
-                  if (_aiParseError != null)
-                    _CompactNoticeCard(
-                      icon: Icons.error_outline_rounded,
-                      message: _aiParseError!,
-                      isError: true,
-                      actionLabel: l10n.detailAction,
-                      onAction: () => _showMessageSheet(
-                        title: l10n.aiParseErrorTitle,
-                        content: _aiParseError!,
-                      ),
-                    )
-                  else if (_aiParsedResult != null)
-                    _CompactNoticeCard(
-                      icon: Icons.check_circle_outline_rounded,
-                      message: previewSummary!,
-                      actionLabel: l10n.viewDetailsAction,
-                      onAction: () => _showPreviewSheet(_aiParsedResult!),
-                    )
-                  else if (!ultraDense)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        l10n.aiWorkflowFooter,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  SizedBox(height: sectionGap),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _previewAiResult,
-                          style: compactBottomButtonStyle,
-                          icon: const Icon(Icons.preview_rounded),
-                          label: Text(l10n.previewAction),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _isImporting ? null : _importAiResult,
-                          style: compactBottomButtonStyle,
-                          icon: _isImporting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.cloud_upload_rounded),
-                          label: Text(
-                            _isImporting
-                                ? '${l10n.importReplaceExistingTitle}...'
-                                : l10n.confirmImportAction,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            );
-          },
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -1714,14 +1677,16 @@ class _WarehouseCourseImportScreenState
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(sheetContext, false),
+                    FButton(
+                      variant: FButtonVariant.outline,
+                      onPress: () => Navigator.pop(sheetContext, false),
                       child: Text(l10n.laterAction),
                     ),
-                    FilledButton.icon(
-                      onPressed: () => Navigator.pop(sheetContext, true),
-                      icon: const Icon(Icons.open_in_new_rounded),
-                      label: Text(l10n.goFeedbackAction),
+                    FButton(
+                      variant: FButtonVariant.primary,
+                      onPress: () => Navigator.pop(sheetContext, true),
+                      prefix: const Icon(Icons.open_in_new_rounded),
+                      child: Text(l10n.goFeedbackAction),
                     ),
                   ],
                 ),
@@ -1760,14 +1725,15 @@ class _WarehouseCourseImportScreenState
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.importMethodWarehouseTitle),
-        actions: [
-          IconButton(
-            tooltip: '快捷导入',
+        suffixes: [
+          FHeaderAction(
             icon: const Icon(Icons.flash_on_rounded),
-            onPressed: _handleQuickImport,
+            semanticsLabel: '快捷导入',
+            onPress: _handleQuickImport,
           ),
           PopupMenuButton<_WarehouseImportMenuAction>(
             tooltip: l10n.moreActionsTooltip,
@@ -1793,19 +1759,20 @@ class _WarehouseCourseImportScreenState
           ),
         ],
       ),
-      body: FutureBuilder<WarehouseRootIndex>(
-        future: _rootIndexFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: FutureBuilder<WarehouseRootIndex>(
+          future: _rootIndexFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _ImportSectionCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1823,8 +1790,9 @@ class _WarehouseCourseImportScreenState
                           ),
                         ),
                         const SizedBox(height: 12),
-                        OutlinedButton.icon(
-                          onPressed: () {
+                        FButton(
+                          variant: FButtonVariant.outline,
+                          onPress: () {
                             setState(() {
                               _rootIndexFuture = _repositoryService
                                   .fetchRootIndex(
@@ -1833,193 +1801,207 @@ class _WarehouseCourseImportScreenState
                                   );
                             });
                           },
-                          icon: const Icon(Icons.refresh_rounded),
-                          label: Text(l10n.reloadAction),
+                          prefix: const Icon(Icons.refresh_rounded),
+                          child: Text(l10n.reloadAction),
                         ),
                       ],
                     ),
                   ),
+                ],
+              );
+            }
+
+            final allSchools = [...?snapshot.data?.schools]
+              ..sort((left, right) {
+                // 通用教务/工具类学校置顶
+                final leftIsGeneric = left.name.contains('通用');
+                final rightIsGeneric = right.name.contains('通用');
+                if (leftIsGeneric != rightIsGeneric) {
+                  return leftIsGeneric ? -1 : 1;
+                }
+                final initialCompare = left.initial.compareTo(right.initial);
+                if (initialCompare != 0) return initialCompare;
+                return left.name.compareTo(right.name);
+              });
+            final filteredSchools = _filterSchools(allSchools, _searchQuery);
+            final beans = _schoolsToBeans(filteredSchools, _recentSchoolIds);
+            final indexTags = beans
+                .map((bean) => bean.getSuspensionTag())
+                .toSet()
+                .toList(growable: false);
+            final isSearching = _searchQuery.trim().isNotEmpty;
+            return Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                    textInputAction: TextInputAction.search,
+                    decoration: InputDecoration(
+                      hintText: l10n.searchSchoolHint,
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      suffixIcon: _searchQuery.trim().isEmpty
+                          ? null
+                          : IconButton(
+                              tooltip: l10n.clearSearchTooltip,
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      isDense: true,
+                      filled: true,
+                      fillColor: context.theme.colors.muted,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: beans.isEmpty
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.search_off_rounded,
+                                  size: 36,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  isSearching
+                                      ? l10n.noMatchingSchools
+                                      : l10n.noAvailableSchools,
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                if (isSearching) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    l10n.searchSchoolSuggestion,
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        )
+                      : AzListView(
+                          data: beans,
+                          itemCount: beans.length,
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          indexBarData: isSearching ? const [] : indexTags,
+                          indexBarOptions: IndexBarOptions(
+                            needRebuild: true,
+                            hapticFeedback: true,
+                            textStyle:
+                                theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w700,
+                                ) ??
+                                const TextStyle(fontSize: 11),
+                            selectTextStyle:
+                                theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w800,
+                                ) ??
+                                const TextStyle(fontSize: 11),
+                            selectItemDecoration: BoxDecoration(
+                              color: context.theme.colors.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            indexHintDecoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            indexHintTextStyle:
+                                theme.textTheme.headlineMedium?.copyWith(
+                                  color: colorScheme.primary,
+                                  fontWeight: FontWeight.w800,
+                                ) ??
+                                const TextStyle(fontSize: 28),
+                          ),
+                          indexHintBuilder: (context, tag) => Container(
+                            width: 72,
+                            height: 72,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: colorScheme.surfaceContainerHighest,
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Text(
+                              tag,
+                              style: theme.textTheme.headlineMedium?.copyWith(
+                                color: colorScheme.primary,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          itemBuilder: (context, index) {
+                            final bean = beans[index];
+                            final school = bean.school;
+                            return FTile(
+                              prefix: _ImportInitialBadge(
+                                label: school.initial,
+                              ),
+                              title: Text(school.name),
+                              subtitle: Text(
+                                bean.isRecent
+                                    ? '最近 · 资源目录：${school.resourceFolder}'
+                                    : '资源目录：${school.resourceFolder}',
+                              ),
+                              suffix: const Icon(
+                                Icons.chevron_right_rounded,
+                                size: 18,
+                              ),
+                              onPress: () async {
+                                FocusManager.instance.primaryFocus?.unfocus();
+                                final imported = await Navigator.of(context)
+                                    .push<bool>(
+                                      MaterialPageRoute(
+                                        settings: RouteSettings(
+                                          name:
+                                              '/courses/import/warehouse/${school.id}',
+                                        ),
+                                        builder: (_) =>
+                                            WarehouseSchoolAdaptersScreen(
+                                              source: _defaultSource,
+                                              school: school,
+                                              fetchOptions:
+                                                  _currentFetchOptions(),
+                                            ),
+                                      ),
+                                    );
+                                if (imported == true && context.mounted) {
+                                  Navigator.of(context).pop(true);
+                                }
+                              },
+                            );
+                          },
+                        ),
                 ),
               ],
             );
-          }
-
-          final allSchools = [...?snapshot.data?.schools]
-            ..sort((left, right) {
-              // 通用教务/工具类学校置顶
-              final leftIsGeneric = left.name.contains('通用');
-              final rightIsGeneric = right.name.contains('通用');
-              if (leftIsGeneric != rightIsGeneric) {
-                return leftIsGeneric ? -1 : 1;
-              }
-              final initialCompare = left.initial.compareTo(right.initial);
-              if (initialCompare != 0) return initialCompare;
-              return left.name.compareTo(right.name);
-            });
-          final filteredSchools = _filterSchools(allSchools, _searchQuery);
-          final beans = _schoolsToBeans(filteredSchools, _recentSchoolIds);
-          final indexTags = beans
-              .map((bean) => bean.getSuspensionTag())
-              .toSet()
-              .toList(growable: false);
-          final isSearching = _searchQuery.trim().isNotEmpty;
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  textInputAction: TextInputAction.search,
-                  decoration: InputDecoration(
-                    hintText: l10n.searchSchoolHint,
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    suffixIcon: _searchQuery.trim().isEmpty
-                        ? null
-                        : IconButton(
-                            tooltip: l10n.clearSearchTooltip,
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                            icon: const Icon(Icons.close_rounded),
-                          ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    isDense: true,
-                    filled: true,
-                    fillColor: colorScheme.surfaceContainerLowest,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: beans.isEmpty
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.search_off_rounded,
-                                size: 36,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                isSearching
-                                    ? l10n.noMatchingSchools
-                                    : l10n.noAvailableSchools,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              if (isSearching) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  l10n.searchSchoolSuggestion,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      )
-                    : AzListView(
-                        data: beans,
-                        itemCount: beans.length,
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        indexBarData: isSearching ? const [] : indexTags,
-                        indexBarOptions: IndexBarOptions(
-                          needRebuild: true,
-                          hapticFeedback: true,
-                          textStyle:
-                              theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
-                              ) ??
-                              const TextStyle(fontSize: 11),
-                          selectTextStyle:
-                              theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w800,
-                              ) ??
-                              const TextStyle(fontSize: 11),
-                          selectItemDecoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          indexHintDecoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          indexHintTextStyle:
-                              theme.textTheme.headlineMedium?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w800,
-                              ) ??
-                              const TextStyle(fontSize: 28),
-                        ),
-                        indexHintBuilder: (context, tag) => Container(
-                          width: 72,
-                          height: 72,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                          child: Text(
-                            tag,
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        itemBuilder: (context, index) {
-                          final bean = beans[index];
-                          return _WarehouseSchoolCard(
-                            school: bean.school,
-                            isRecent: bean.isRecent,
-                            onTap: () async {
-                              FocusManager.instance.primaryFocus?.unfocus();
-                              final imported = await Navigator.of(context)
-                                  .push<bool>(
-                                    MaterialPageRoute(
-                                      settings: RouteSettings(
-                                        name:
-                                            '/courses/import/warehouse/${bean.school.id}',
-                                      ),
-                                      builder: (_) =>
-                                          WarehouseSchoolAdaptersScreen(
-                                            source: _defaultSource,
-                                            school: bean.school,
-                                            fetchOptions:
-                                                _currentFetchOptions(),
-                                          ),
-                                    ),
-                                  );
-                              if (imported == true && context.mounted) {
-                                Navigator.of(context).pop(true);
-                              }
-                            },
-                          );
-                        },
-                      ),
-              ),
-            ],
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -2170,25 +2152,27 @@ class _WarehouseCustomDebugRecordsScreenState
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.warehouseCustomDebugTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.addDebugRecordTooltip,
-            onPressed: () => _openEditor(),
+        suffixes: [
+          FHeaderAction(
             icon: const Icon(Icons.add_rounded),
+            semanticsLabel: l10n.addDebugRecordTooltip,
+            onPress: () => _openEditor(),
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _ImportSectionCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -2207,19 +2191,18 @@ class _WarehouseCustomDebugRecordsScreenState
                           ),
                         ),
                         const SizedBox(height: 12),
-                        FilledButton.icon(
-                          onPressed: () => _openEditor(),
-                          icon: const Icon(Icons.terminal_rounded),
-                          label: Text(l10n.addDebugRecordAction),
+                        FButton(
+                          variant: FButtonVariant.primary,
+                          onPress: () => _openEditor(),
+                          prefix: const Icon(Icons.terminal_rounded),
+                          child: Text(l10n.addDebugRecordAction),
                         ),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                if (_records.isEmpty)
-                  Card(
-                    child: Padding(
+                  const SizedBox(height: 16),
+                  if (_records.isEmpty)
+                    _ImportSectionCard(
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
@@ -2245,15 +2228,12 @@ class _WarehouseCustomDebugRecordsScreenState
                           ),
                         ],
                       ),
-                    ),
-                  )
-                else
-                  ..._records.map(
-                    (record) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
+                    )
+                  else
+                    ..._records.map(
+                      (record) => Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _ImportSectionCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -2297,22 +2277,27 @@ class _WarehouseCustomDebugRecordsScreenState
                                 spacing: 8,
                                 runSpacing: 8,
                                 children: [
-                                  FilledButton.icon(
-                                    onPressed: () => _openDebug(record),
-                                    icon: const Icon(Icons.play_arrow_rounded),
-                                    label: Text(l10n.startDebugAction),
+                                  FButton(
+                                    variant: FButtonVariant.primary,
+                                    onPress: () => _openDebug(record),
+                                    prefix: const Icon(
+                                      Icons.play_arrow_rounded,
+                                    ),
+                                    child: Text(l10n.startDebugAction),
                                   ),
-                                  OutlinedButton.icon(
-                                    onPressed: () => _openEditor(record),
-                                    icon: const Icon(Icons.edit_rounded),
-                                    label: Text(l10n.editAction),
+                                  FButton(
+                                    variant: FButtonVariant.outline,
+                                    onPress: () => _openEditor(record),
+                                    prefix: const Icon(Icons.edit_rounded),
+                                    child: Text(l10n.editAction),
                                   ),
-                                  OutlinedButton.icon(
-                                    onPressed: () => _deleteRecord(record),
-                                    icon: const Icon(
+                                  FButton(
+                                    variant: FButtonVariant.outline,
+                                    onPress: () => _deleteRecord(record),
+                                    prefix: const Icon(
                                       Icons.delete_outline_rounded,
                                     ),
-                                    label: Text(l10n.deleteAction),
+                                    child: Text(l10n.deleteAction),
                                   ),
                                 ],
                               ),
@@ -2321,9 +2306,9 @@ class _WarehouseCustomDebugRecordsScreenState
                         ),
                       ),
                     ),
-                  ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -2459,24 +2444,27 @@ class _WarehouseCustomDebugEditScreenState
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(
           _isEditing ? l10n.editDebugRecordTitle : l10n.addDebugRecordTitle,
         ),
-        actions: [
-          TextButton(
-            onPressed: _isSaving ? null : _saveRecord,
-            child: Text(_isSaving ? l10n.savingAction : l10n.saveAction),
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(Icons.check_rounded),
+            semanticsLabel: l10n.saveAction,
+            onPress: _isSaving ? null : _saveRecord,
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _ImportSectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2497,71 +2485,74 @@ class _WarehouseCustomDebugEditScreenState
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _nameController,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.debugRecordNameLabel,
-              hintText: l10n.debugRecordNameHint,
-              border: const OutlineInputBorder(),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _nameController,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l10n.debugRecordNameLabel,
+                hintText: l10n.debugRecordNameHint,
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _urlController,
-            keyboardType: TextInputType.url,
-            textInputAction: TextInputAction.next,
-            decoration: InputDecoration(
-              labelText: l10n.importUrlLabel,
-              hintText: 'https://...',
-              border: const OutlineInputBorder(),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _urlController,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.next,
+              decoration: InputDecoration(
+                labelText: l10n.importUrlLabel,
+                hintText: 'https://...',
+                border: const OutlineInputBorder(),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  l10n.debugScriptLabel,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.debugScriptLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
+                FButton(
+                  variant: FButtonVariant.outline,
+                  size: FButtonSizeVariant.sm,
+                  onPress: _pickScriptFromFile,
+                  prefix: const Icon(Icons.upload_file_rounded),
+                  child: Text(l10n.importFromFileAction),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _scriptController,
+              minLines: 14,
+              maxLines: 24,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 13,
+                height: 1.45,
               ),
-              OutlinedButton.icon(
-                onPressed: _pickScriptFromFile,
-                icon: const Icon(Icons.upload_file_rounded),
-                label: Text(l10n.importFromFileAction),
+              decoration: InputDecoration(
+                hintText: l10n.debugScriptHint,
+                border: const OutlineInputBorder(),
+                alignLabelWithHint: true,
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _scriptController,
-            minLines: 14,
-            maxLines: 24,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 13,
-              height: 1.45,
             ),
-            decoration: InputDecoration(
-              hintText: l10n.debugScriptHint,
-              border: const OutlineInputBorder(),
-              alignLabelWithHint: true,
+            const SizedBox(height: 16),
+            FButton(
+              variant: FButtonVariant.primary,
+              onPress: _isSaving ? null : _saveRecord,
+              prefix: const Icon(Icons.save_rounded),
+              child: Text(
+                _isSaving ? l10n.savingAction : l10n.saveDebugRecordAction,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _isSaving ? null : _saveRecord,
-            icon: const Icon(Icons.save_rounded),
-            label: Text(
-              _isSaving ? l10n.savingAction : l10n.saveDebugRecordAction,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2617,95 +2608,90 @@ class _WarehouseSchoolAdaptersScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.school.name)),
-      body: FutureBuilder<WarehouseAdaptersIndex>(
-        future: _adaptersFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(
-                  '${snapshot.error}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(widget.school.name),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: FutureBuilder<WarehouseAdaptersIndex>(
+          future: _adaptersFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (snapshot.hasError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Text(
+                    '${snapshot.error}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
-            );
-          }
+              );
+            }
 
-          final adapters =
-              snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
-          // 检查每个适配器是否有宏录制
-          _scheduleMacroCacheCheck(adapters);
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: adapters.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final adapter = adapters[index];
-              final hasMacro = _macroCache[adapter.adapterId] ?? false;
-              return Column(
-                children: [
-                  _WarehouseAdapterCard(
-                    adapter: adapter,
-                    importButtonLabel: adapter.importUrl.isEmpty
-                        ? '填写网址后导入'
-                        : '网页登录导入',
-                    recordButtonLabel: adapter.importUrl.isEmpty
-                        ? '填写网址后录制'
-                        : '录制导入',
-                    onImport: () => _openAdapterImport(adapter),
-                    onRecord: () =>
-                        _openAdapterImport(adapter, autoRecord: true),
-                    onInfo: () async {
-                      final imported = await Navigator.of(context).push<bool>(
-                        MaterialPageRoute(
-                          settings: RouteSettings(
-                            name:
-                                '/courses/import/warehouse/${widget.school.id}/${adapter.adapterId}',
-                          ),
-                          builder: (_) => WarehouseAdapterDetailScreen(
-                            source: widget.source,
-                            school: widget.school,
-                            adapter: adapter,
-                            fetchOptions: widget.fetchOptions,
-                          ),
+            final adapters =
+                snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
+            // 检查每个适配器是否有宏录制
+            _scheduleMacroCacheCheck(adapters);
+            return ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                FTileGroup(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    for (final adapter in adapters)
+                      FTile.raw(
+                        prefix: const _ImportIconBadge(
+                          icon: Icons.extension_outlined,
                         ),
-                      );
-                      if (imported == true && context.mounted) {
-                        Navigator.of(context).pop(true);
-                      }
-                    },
-                  ),
-                  if (hasMacro)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: () => _openQuickImport(adapter),
-                          icon: const Icon(Icons.flash_on_rounded, size: 18),
-                          label: const Text('⚡ 快捷导入'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                          ),
+                        child: _WarehouseAdapterTileBody(
+                          adapter: adapter,
+                          hasMacro: _macroCache[adapter.adapterId] ?? false,
+                          importButtonLabel: adapter.importUrl.isEmpty
+                              ? '填写网址后导入'
+                              : '网页登录导入',
+                          recordButtonLabel: adapter.importUrl.isEmpty
+                              ? '填写网址后录制'
+                              : '录制导入',
+                          onImport: () => _openAdapterImport(adapter),
+                          onRecord: () =>
+                              _openAdapterImport(adapter, autoRecord: true),
+                          onInfo: () async {
+                            final imported = await Navigator.of(context).push<bool>(
+                              MaterialPageRoute(
+                                settings: RouteSettings(
+                                  name:
+                                      '/courses/import/warehouse/${widget.school.id}/${adapter.adapterId}',
+                                ),
+                                builder: (_) => WarehouseAdapterDetailScreen(
+                                  source: widget.source,
+                                  school: widget.school,
+                                  adapter: adapter,
+                                  fetchOptions: widget.fetchOptions,
+                                ),
+                              ),
+                            );
+                            if (imported == true && context.mounted) {
+                              Navigator.of(context).pop(true);
+                            }
+                          },
+                          onQuickImport: () => _openQuickImport(adapter),
                         ),
                       ),
-                    ),
-                ],
-              );
-            },
-          );
-        },
+                  ],
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -2932,27 +2918,33 @@ class _WarehouseAdapterDetailScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final adapter = widget.adapter;
-    return Scaffold(
-      appBar: AppBar(title: Text(adapter.adapterName)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _WarehouseIntroCard(
-            title: adapter.adapterName,
-            subtitle: adapter.description.isEmpty
-                ? l10n.adapterIntroSubtitle
-                : '',
-            chips: [
-              '${l10n.schoolLabel}：${widget.school.name}',
-              '${l10n.categoryLabel}：${adapter.category}',
-              '${l10n.maintainerLabel}：${adapter.maintainer}',
-            ],
-            markdown: adapter.description.isEmpty ? null : adapter.description,
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(adapter.adapterName),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _WarehouseIntroCard(
+              title: adapter.adapterName,
+              subtitle: adapter.description.isEmpty
+                  ? l10n.adapterIntroSubtitle
+                  : '',
+              chips: [
+                '${l10n.schoolLabel}：${widget.school.name}',
+                '${l10n.categoryLabel}：${adapter.category}',
+                '${l10n.maintainerLabel}：${adapter.maintainer}',
+              ],
+              markdown: adapter.description.isEmpty
+                  ? null
+                  : adapter.description,
+            ),
+            const SizedBox(height: 16),
+            _ImportSectionCard(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2986,18 +2978,15 @@ class _WarehouseAdapterDetailScreenState
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          FutureBuilder<String>(
-            future: _scriptFuture,
-            builder: (context, snapshot) {
-              final readable =
-                  snapshot.connectionState == ConnectionState.done &&
-                  !snapshot.hasError &&
-                  (snapshot.data?.trim().isNotEmpty ?? false);
-              return Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
+            const SizedBox(height: 16),
+            FutureBuilder<String>(
+              future: _scriptFuture,
+              builder: (context, snapshot) {
+                final readable =
+                    snapshot.connectionState == ConnectionState.done &&
+                    !snapshot.hasError &&
+                    (snapshot.data?.trim().isNotEmpty ?? false);
+                return _ImportSectionCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -3026,76 +3015,92 @@ class _WarehouseAdapterDetailScreenState
                         ),
                     ],
                   ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: () => _openInAppLogin(),
-            icon: const Icon(Icons.web_rounded),
-            label: Text(
-              _effectiveImportUrl.isEmpty
-                  ? l10n.fillUrlThenImport
-                  : l10n.openLoginInAppAction,
+                );
+              },
             ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: _effectiveImportUrl.isEmpty
-                    ? null
-                    : () => _openImportUrl(_effectiveImportUrl),
-                icon: const Icon(Icons.open_in_new_rounded),
-                label: Text(l10n.openInSystemBrowserAction),
+            const SizedBox(height: 16),
+            FButton(
+              variant: FButtonVariant.primary,
+              onPress: () => _openInAppLogin(),
+              prefix: const Icon(Icons.web_rounded),
+              child: Text(
+                _effectiveImportUrl.isEmpty
+                    ? l10n.fillUrlThenImport
+                    : l10n.openLoginInAppAction,
               ),
-              OutlinedButton.icon(
-                onPressed: _effectiveImportUrl.isEmpty
-                    ? null
-                    : () => _copyText(
-                        _effectiveImportUrl,
-                        successMessage: l10n.copiedImportLoginUrl,
-                      ),
-                icon: const Icon(Icons.link_rounded),
-                label: Text(l10n.copyLoginAddressAction),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _copyText(
-                  widget.source
-                      .buildRawFileUri(
-                        'resources/${widget.school.resourceFolder}/${adapter.assetJsPath}',
-                      )
-                      .toString(),
-                  successMessage: l10n.copiedScriptRawUrl,
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FButton(
+                  variant: FButtonVariant.outline,
+                  size: FButtonSizeVariant.sm,
+                  mainAxisSize: MainAxisSize.min,
+                  onPress: _effectiveImportUrl.isEmpty
+                      ? null
+                      : () => _openImportUrl(_effectiveImportUrl),
+                  prefix: const Icon(Icons.open_in_new_rounded),
+                  child: Text(l10n.openInSystemBrowserAction),
                 ),
-                icon: const Icon(Icons.code_rounded),
-                label: Text(l10n.copyScriptAddressAction),
-              ),
-              OutlinedButton.icon(
-                onPressed: _editCustomImportUrl,
-                icon: const Icon(Icons.edit_road_rounded),
-                label: Text(
-                  (_customImportUrl ?? '').isEmpty
-                      ? l10n.customLoginAddressAction
-                      : l10n.editCustomLoginAddressAction,
+                FButton(
+                  variant: FButtonVariant.outline,
+                  size: FButtonSizeVariant.sm,
+                  mainAxisSize: MainAxisSize.min,
+                  onPress: _effectiveImportUrl.isEmpty
+                      ? null
+                      : () => _copyText(
+                          _effectiveImportUrl,
+                          successMessage: l10n.copiedImportLoginUrl,
+                        ),
+                  prefix: const Icon(Icons.link_rounded),
+                  child: Text(l10n.copyLoginAddressAction),
                 ),
-              ),
-              if ((_customImportUrl ?? '').isNotEmpty)
-                OutlinedButton.icon(
-                  onPressed: _clearCustomImportUrl,
-                  icon: const Icon(Icons.restart_alt_rounded),
-                  label: Text(
-                    adapter.importUrl.isEmpty
-                        ? l10n.clearCustomLoginAddressAction
-                        : l10n.restoreRepositoryAddressAction,
+                FButton(
+                  variant: FButtonVariant.outline,
+                  size: FButtonSizeVariant.sm,
+                  mainAxisSize: MainAxisSize.min,
+                  onPress: () => _copyText(
+                    widget.source
+                        .buildRawFileUri(
+                          'resources/${widget.school.resourceFolder}/${adapter.assetJsPath}',
+                        )
+                        .toString(),
+                    successMessage: l10n.copiedScriptRawUrl,
+                  ),
+                  prefix: const Icon(Icons.code_rounded),
+                  child: Text(l10n.copyScriptAddressAction),
+                ),
+                FButton(
+                  variant: FButtonVariant.outline,
+                  size: FButtonSizeVariant.sm,
+                  mainAxisSize: MainAxisSize.min,
+                  onPress: _editCustomImportUrl,
+                  prefix: const Icon(Icons.edit_road_rounded),
+                  child: Text(
+                    (_customImportUrl ?? '').isEmpty
+                        ? l10n.customLoginAddressAction
+                        : l10n.editCustomLoginAddressAction,
                   ),
                 ),
-            ],
-          ),
-        ],
+                if ((_customImportUrl ?? '').isNotEmpty)
+                  FButton(
+                    variant: FButtonVariant.outline,
+                    size: FButtonSizeVariant.sm,
+                    mainAxisSize: MainAxisSize.min,
+                    onPress: _clearCustomImportUrl,
+                    prefix: const Icon(Icons.restart_alt_rounded),
+                    child: Text(
+                      adapter.importUrl.isEmpty
+                          ? l10n.clearCustomLoginAddressAction
+                          : l10n.restoreRepositoryAddressAction,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -3547,16 +3552,12 @@ class _WarehouseAdapterWebLoginScreenState
         (_isUsingLocalDebugScript
             ? l10n.localDebugModeScriptStatus(effectiveDebugScriptName)
             : null);
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(widget.title),
-        actions: [
-          // 宏录制按钮
-          IconButton(
-            tooltip: _macroRecordingState == MacroRecordingState.recording
-                ? '停止录制'
-                : '录制操作',
-            onPressed: _isExecutingImport ? null : _toggleMacroRecording,
+        suffixes: [
+          FHeaderAction(
             icon: _macroRecordingState == MacroRecordingState.recording
                 ? const SizedBox(
                     width: 18,
@@ -3567,23 +3568,28 @@ class _WarehouseAdapterWebLoginScreenState
                     ),
                   )
                 : const Icon(Icons.fiber_manual_record_rounded),
+            semanticsLabel:
+                _macroRecordingState == MacroRecordingState.recording
+                ? '停止录制'
+                : '录制操作',
+            onPress: _isExecutingImport ? null : _toggleMacroRecording,
           ),
           if (widget.macroRecord == null)
-            IconButton(
-              tooltip: _useDesktopMode
-                  ? l10n.switchToMobileWebTooltip
-                  : l10n.switchToDesktopWebTooltip,
-              onPressed: _toggleWebPageMode,
+            FHeaderAction(
               icon: Icon(
                 _useDesktopMode
                     ? Icons.smartphone_rounded
                     : Icons.desktop_windows_rounded,
               ),
+              semanticsLabel: _useDesktopMode
+                  ? l10n.switchToMobileWebTooltip
+                  : l10n.switchToDesktopWebTooltip,
+              onPress: _toggleWebPageMode,
             ),
-          IconButton(
-            tooltip: l10n.reloadAction,
-            onPressed: _controller.reload,
+          FHeaderAction(
             icon: const Icon(Icons.refresh_rounded),
+            semanticsLabel: l10n.reloadAction,
+            onPress: _controller.reload,
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded),
@@ -3673,177 +3679,182 @@ class _WarehouseAdapterWebLoginScreenState
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                color: colorScheme.surfaceContainerLowest,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 模式标识 + 提示文字（紧凑单行）
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.primaryContainer,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            _useDesktopMode ? '🖥️' : '📱',
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            _isUsingLocalDebugScript
-                                ? l10n.warehouseLoginHintLocalDebug
-                                : l10n.warehouseLoginHintImport,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (_isUsingLocalDebugScript)
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Stack(
+          children: [
+            Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  color: context.theme.colors.muted,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 模式标识 + 提示文字（紧凑单行）
+                      Row(
+                        children: [
                           Container(
-                            margin: const EdgeInsets.only(left: 4),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 1,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: colorScheme.tertiaryContainer,
-                              borderRadius: BorderRadius.circular(3),
+                              color: context.theme.colors.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
-                              effectiveDebugScriptName,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onTertiaryContainer,
+                              _useDesktopMode ? '🖥️' : '📱',
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              _isUsingLocalDebugScript
+                                  ? l10n.warehouseLoginHintLocalDebug
+                                  : l10n.warehouseLoginHintImport,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    // URL 地址栏
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _addressController,
-                            focusNode: _addressFocusNode,
-                            keyboardType: TextInputType.url,
-                            textInputAction: TextInputAction.go,
-                            decoration: InputDecoration(
-                              isDense: true,
-                              hintText: l10n.webAddressHint,
-                              prefixIcon: const Icon(
-                                Icons.language_rounded,
-                                size: 18,
+                          if (_isUsingLocalDebugScript)
+                            Container(
+                              margin: const EdgeInsets.only(left: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 1,
                               ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                              decoration: BoxDecoration(
+                                color: colorScheme.tertiaryContainer,
+                                borderRadius: BorderRadius.circular(3),
                               ),
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                              child: Text(
+                                effectiveDebugScriptName,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onTertiaryContainer,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            onSubmitted: (_) => _loadAddressBarUrl(),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: _loadAddressBarUrl,
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            minimumSize: const Size(0, 36),
-                          ),
-                          child: Text(l10n.goAction),
-                        ),
-                      ],
-                    ),
-                    // 状态/提示行
-                    if ((currentStatus ?? '').isNotEmpty ||
-                        _rememberedLogin != null ||
-                        (_macroRecordingState ==
-                            MacroRecordingState.recording) ||
-                        (_macroRecordingState == MacroRecordingState.stopped &&
-                            _lastScriptStatus != null))
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          _lastScriptStatus ??
-                              currentStatus ??
-                              (_rememberedLogin != null
-                                  ? l10n.rememberedAccountLabel(
-                                      _rememberedLogin!.username,
-                                    )
-                                  : ''),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.primary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                        ],
                       ),
-                  ],
+                      const SizedBox(height: 6),
+                      // URL 地址栏
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _addressController,
+                              focusNode: _addressFocusNode,
+                              keyboardType: TextInputType.url,
+                              textInputAction: TextInputAction.go,
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText: l10n.webAddressHint,
+                                prefixIcon: const Icon(
+                                  Icons.language_rounded,
+                                  size: 18,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                              onSubmitted: (_) => _loadAddressBarUrl(),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          FButton(
+                            size: FButtonSizeVariant.sm,
+                            onPress: _loadAddressBarUrl,
+                            child: Text(l10n.goAction),
+                          ),
+                        ],
+                      ),
+                      // 状态/提示行
+                      if ((currentStatus ?? '').isNotEmpty ||
+                          _rememberedLogin != null ||
+                          (_macroRecordingState ==
+                              MacroRecordingState.recording) ||
+                          (_macroRecordingState ==
+                                  MacroRecordingState.stopped &&
+                              _lastScriptStatus != null))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            _lastScriptStatus ??
+                                currentStatus ??
+                                (_rememberedLogin != null
+                                    ? l10n.rememberedAccountLabel(
+                                        _rememberedLogin!.username,
+                                      )
+                                    : ''),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
-              ),
-              if (_loadingProgress < 100)
-                LinearProgressIndicator(value: _loadingProgress / 100),
-              Expanded(child: WebViewWidget(controller: _controller)),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: FilledButton.icon(
-                    onPressed: _isExecutingImport ? null : _executeImportScript,
-                    icon: _isExecutingImport
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.download_rounded),
-                    label: Text(
-                      _isExecutingImport
-                          ? l10n.importingAction
-                          : (_isUsingLocalDebugScript
-                                ? l10n.executeLocalDebugScriptAction
-                                : l10n.executeImportScriptAction),
+                if (_loadingProgress < 100)
+                  LinearProgressIndicator(value: _loadingProgress / 100),
+                Expanded(child: WebViewWidget(controller: _controller)),
+                SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: FButton(
+                      variant: FButtonVariant.primary,
+                      onPress: _isExecutingImport ? null : _executeImportScript,
+                      prefix: _isExecutingImport
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.download_rounded),
+                      child: Text(
+                        _isExecutingImport
+                            ? l10n.importingAction
+                            : (_isUsingLocalDebugScript
+                                  ? l10n.executeLocalDebugScriptAction
+                                  : l10n.executeImportScriptAction),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Positioned.fill(
-            child: PlaybackOverlay(
-              progress: _playbackProgress,
-              state: _playbackState,
-              schoolName: widget.school.name,
-              adapterName: widget.adapter.adapterName,
-              onCancel: _cancelPlayback,
-              onRetry: _retryPlayback,
-              onDismiss: _dismissPlaybackResult,
-              onContinueAfterPause: _resumePlaybackAfterPause,
+              ],
             ),
-          ),
-        ],
+            Positioned.fill(
+              child: PlaybackOverlay(
+                progress: _playbackProgress,
+                state: _playbackState,
+                schoolName: widget.school.name,
+                adapterName: widget.adapter.adapterName,
+                onCancel: _cancelPlayback,
+                onRetry: _retryPlayback,
+                onDismiss: _dismissPlaybackResult,
+                onContinueAfterPause: _resumePlaybackAfterPause,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -5342,6 +5353,144 @@ class _WarehouseAdapterWebLoginScreenState
   }
 }
 
+class _ImportInitialBadge extends StatelessWidget {
+  final String label;
+
+  const _ImportInitialBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typo = context.theme.typography;
+    final text = label.trim().isEmpty ? '#' : label.trim();
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        text,
+        style: typo.body.sm.copyWith(
+          color: colors.primary,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+class _ImportIconBadge extends StatelessWidget {
+  final IconData icon;
+
+  const _ImportIconBadge({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: colors.primary.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, size: 18, color: colors.primary),
+    );
+  }
+}
+
+class _ImportSectionCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  const _ImportSectionCard({
+    required this.child,
+    this.padding = const EdgeInsets.all(16),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FCard.raw(
+      child: Padding(padding: padding, child: child),
+    );
+  }
+}
+
+class _ImportGuidePanel extends StatelessWidget {
+  final String scenarioIntro;
+  final String step1Subtitle;
+  final String step2Subtitle;
+  final String step3Subtitle;
+  final String supportedFilesSuffix;
+  final String? supportedFilesExtra;
+
+  const _ImportGuidePanel({
+    required this.scenarioIntro,
+    required this.step1Subtitle,
+    required this.step2Subtitle,
+    required this.step3Subtitle,
+    required this.supportedFilesSuffix,
+    this.supportedFilesExtra,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ImportSectionCard(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.applicableScenarioTitle,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(scenarioIntro),
+              const SizedBox(height: 14),
+              _GuideLine(title: l10n.stepLabel('1'), subtitle: step1Subtitle),
+              const SizedBox(height: 10),
+              _GuideLine(title: l10n.stepLabel('2'), subtitle: step2Subtitle),
+              const SizedBox(height: 10),
+              _GuideLine(title: l10n.stepLabel('3'), subtitle: step3Subtitle),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _ImportSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.supportedFilesTitle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(supportedFilesSuffix),
+              if (supportedFilesExtra != null) ...[
+                const SizedBox(height: 4),
+                Text(supportedFilesExtra!),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _WarehouseIntroCard extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -5359,24 +5508,15 @@ class _WarehouseIntroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Container(
+    return _ImportSectionCard(
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.surfaceContainerHighest,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 8),
@@ -5406,22 +5546,9 @@ class _WarehouseIntroCard extends StatelessWidget {
               runSpacing: 8,
               children: chips
                   .map(
-                    (item) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerLowest,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        item,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                    (item) => FBadge(
+                      variant: FBadgeVariant.secondary,
+                      child: Text(item),
                     ),
                   )
                   .toList(growable: false),
@@ -5433,19 +5560,23 @@ class _WarehouseIntroCard extends StatelessWidget {
   }
 }
 
-class _WarehouseAdapterCard extends StatelessWidget {
+class _WarehouseAdapterTileBody extends StatelessWidget {
   final WarehouseAdapterEntry adapter;
+  final bool hasMacro;
   final Future<void> Function()? onImport;
   final Future<void> Function()? onRecord;
   final Future<void> Function() onInfo;
+  final Future<void> Function()? onQuickImport;
   final String importButtonLabel;
   final String recordButtonLabel;
 
-  const _WarehouseAdapterCard({
+  const _WarehouseAdapterTileBody({
     required this.adapter,
+    required this.hasMacro,
     required this.onImport,
     required this.onRecord,
     required this.onInfo,
+    required this.onQuickImport,
     required this.importButtonLabel,
     required this.recordButtonLabel,
   });
@@ -5453,196 +5584,74 @@ class _WarehouseAdapterCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Icon(
-                    Icons.extension_outlined,
-                    color: colorScheme.primary,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        adapter.adapterName,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '类别：${adapter.category} · 维护者：${adapter.maintainer}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (adapter.description.trim().isNotEmpty) ...[
-              const SizedBox(height: 12),
-              MarkdownBody(
-                data: adapter.description,
-                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                  p: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.4,
-                  ),
-                ),
+    final colors = context.theme.colors;
+    final typo = context.theme.typography;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          adapter.adapterName,
+          style: typo.body.lg.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '类别：${adapter.category} · 维护者：${adapter.maintainer}',
+          style: typo.body.sm.copyWith(color: colors.mutedForeground),
+        ),
+        if (adapter.description.trim().isNotEmpty) ...[
+          const SizedBox(height: 12),
+          MarkdownBody(
+            data: adapter.description,
+            styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+              p: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.mutedForeground,
+                height: 1.4,
               ),
-            ],
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: onImport,
-                    icon: const Icon(Icons.web_rounded),
-                    label: Text(importButtonLabel),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onRecord,
-                    icon: const Icon(Icons.fiber_manual_record_rounded),
-                    label: Text(recordButtonLabel),
-                  ),
-                ),
-              ],
             ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: onInfo,
-                icon: const Icon(Icons.info_outline_rounded),
-                label: const Text('查看信息'),
+          ),
+        ],
+        const SizedBox(height: 14),
+        Row(
+          children: [
+            Expanded(
+              child: FButton(
+                variant: FButtonVariant.primary,
+                onPress: onImport,
+                prefix: const Icon(Icons.web_rounded),
+                child: Text(importButtonLabel),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: FButton(
+                variant: FButtonVariant.outline,
+                onPress: onRecord,
+                prefix: const Icon(Icons.fiber_manual_record_rounded),
+                child: Text(recordButtonLabel),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _WarehouseSchoolCard extends StatelessWidget {
-  final WarehouseSchoolEntry school;
-  final bool isRecent;
-  final VoidCallback onTap;
-
-  const _WarehouseSchoolCard({
-    required this.school,
-    this.isRecent = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Material(
-      color: colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  school.initial,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: colorScheme.primary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      school.name,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        if (isRecent) ...[
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              '最近',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        Expanded(
-                          child: Text(
-                            '资源目录：${school.resourceFolder}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: FButton(
+            variant: FButtonVariant.ghost,
+            onPress: onInfo,
+            prefix: const Icon(Icons.info_outline_rounded),
+            child: const Text('查看详情'),
           ),
         ),
-      ),
+        if (hasMacro) ...[
+          const SizedBox(height: 10),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: onQuickImport,
+            prefix: const Icon(Icons.flash_on_rounded, size: 18),
+            child: const Text('⚡ 快捷导入'),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -5732,82 +5741,6 @@ class _ImportSemesterConfig {
   });
 }
 
-class _ImportEntryCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final String footer;
-  final VoidCallback onTap;
-
-  const _ImportEntryCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.footer,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Material(
-      color: colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(24),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(subtitle),
-                    const SizedBox(height: 8),
-                    Text(
-                      footer,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _GuideLine extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -5817,7 +5750,7 @@ class _GuideLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.theme.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5826,13 +5759,13 @@ class _GuideLine extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: colorScheme.primaryContainer,
+            color: colors.primary.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
           child: Text(
             title.replaceAll('步骤 ', ''),
             style: TextStyle(
-              color: colorScheme.onPrimaryContainer,
+              color: colors.primary,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -5867,22 +5800,22 @@ class _CompactHintChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.theme.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
+        color: colors.muted,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          Icon(icon, size: 16, color: colors.mutedForeground),
           const SizedBox(width: 6),
           Text(
             label,
             style: theme.textTheme.labelLarge?.copyWith(
-              color: colorScheme.onSurfaceVariant,
+              color: colors.mutedForeground,
             ),
           ),
         ],
@@ -5906,14 +5839,10 @@ class _CompactActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return OutlinedButton(
-      onPressed: onPressed,
-      style: OutlinedButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        minimumSize: const Size(0, 36),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      ),
+    return FButton(
+      variant: FButtonVariant.outline,
+      size: FButtonSizeVariant.sm,
+      onPress: onPressed,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -5942,13 +5871,11 @@ class _CompactStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colors = context.theme.colors;
     final backgroundColor = isError
-        ? colorScheme.errorContainer
-        : colorScheme.primaryContainer;
-    final foregroundColor = isError
-        ? colorScheme.onErrorContainer
-        : colorScheme.onPrimaryContainer;
+        ? colors.error.withValues(alpha: 0.12)
+        : colors.primary.withValues(alpha: 0.12);
+    final foregroundColor = isError ? colors.error : colors.primary;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -6255,15 +6182,17 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                   Row(
                     children: [
                       Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.pop(context),
+                        child: FButton(
+                          variant: FButtonVariant.outline,
+                          onPress: () => Navigator.pop(context),
                           child: const Text('取消'),
                         ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: FilledButton(
-                          onPressed: () => Navigator.pop(
+                        child: FButton(
+                          variant: FButtonVariant.primary,
+                          onPress: () => Navigator.pop(
                             context,
                             _ImportSemesterConfig(
                               semesterStartDate: selectedSemesterStartDate,
