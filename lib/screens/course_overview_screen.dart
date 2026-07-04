@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
@@ -28,34 +29,45 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
 
     final sorted = _sortGroups(List.of(groups), conflictMap);
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.courseOverviewTitle),
-        actions: [
+        suffixes: [
           _buildSortButton(l10n),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: l10n.addNewCourseTooltip,
-            onPressed: () => _navigateToAddCourse(context),
+          FHeaderAction(
+            icon: const Icon(Icons.add_rounded),
+            semanticsLabel: l10n.addNewCourseTooltip,
+            onPress: () => _navigateToAddCourse(context),
           ),
         ],
       ),
-      body: sorted.isEmpty
-          ? _buildEmptyState(context, l10n)
-          : Column(
-              children: [
-                if (conflictingCourseCount > 0) _buildConflictBanner(context, l10n, conflictingCourseCount),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: sorted.length,
-                    itemBuilder: (context, index) {
-                      return _buildGroupCard(context, l10n, sorted[index], conflictMap);
-                    },
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: sorted.isEmpty
+            ? _buildEmptyState(context, l10n)
+            : Column(
+                children: [
+                  if (conflictingCourseCount > 0)
+                    _buildConflictBanner(context, l10n, conflictingCourseCount),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: sorted.length,
+                      itemBuilder: (context, index) {
+                        return _buildGroupCard(
+                          context,
+                          l10n,
+                          sorted[index],
+                          conflictMap,
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
+      ),
     );
   }
 
@@ -119,7 +131,11 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.school_outlined, size: 64, color: Theme.of(context).colorScheme.outline),
+            Icon(
+              Icons.school_outlined,
+              size: 64,
+              color: Theme.of(context).colorScheme.outline,
+            ),
             const SizedBox(height: 16),
             Text(l10n.emptyCourseOverviewHint, textAlign: TextAlign.center),
             const SizedBox(height: 24),
@@ -138,7 +154,11 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
   // Conflict banner
   // ---------------------------------------------------------------------------
 
-  Widget _buildConflictBanner(BuildContext context, AppLocalizations l10n, int count) {
+  Widget _buildConflictBanner(
+    BuildContext context,
+    AppLocalizations l10n,
+    int count,
+  ) {
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
@@ -164,7 +184,11 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
               color: colorScheme.error.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.warning_amber_rounded, size: 18, color: colorScheme.error),
+            child: Icon(
+              Icons.warning_amber_rounded,
+              size: 18,
+              color: colorScheme.error,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -193,11 +217,16 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
     Map<String, List<Course>> conflictMap,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final courseColor = parseHexColorOrFallback(group.color, fallback: colorScheme.primary);
+    final courseColor = parseHexColorOrFallback(
+      group.color,
+      fallback: colorScheme.primary,
+    );
     final hasConflict = group.courses.any((c) => conflictMap.containsKey(c.id));
     final chipLabels = group.scheduleChipLabels(l10n);
 
-    final conflictCount = group.courses.where((c) => conflictMap.containsKey(c.id)).length;
+    final conflictCount = group.courses
+        .where((c) => conflictMap.containsKey(c.id))
+        .length;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -237,15 +266,25 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        group.name + (group.shortName != null && group.shortName!.isNotEmpty ? ' (${group.shortName})' : ''),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        group.name +
+                            (group.shortName != null &&
+                                    group.shortName!.isNotEmpty
+                                ? ' (${group.shortName})'
+                                : ''),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                     _buildNatureChip(l10n, group.courseNature),
                     if (hasConflict) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: colorScheme.errorContainer,
                           borderRadius: BorderRadius.circular(999),
@@ -267,7 +306,10 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                   const SizedBox(height: 6),
                   Text(
                     group.teacher,
-                    style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 13),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
                 // Row 3: schedule chips
@@ -276,21 +318,26 @@ class _CourseOverviewScreenState extends State<CourseOverviewScreen> {
                   spacing: 6,
                   runSpacing: 4,
                   children: chipLabels
-                      .map((label) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: courseColor.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(999),
+                      .map(
+                        (label) => Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: courseColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: courseColor,
+                              fontWeight: FontWeight.w600,
                             ),
-                            child: Text(
-                              label,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: courseColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ))
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ],
