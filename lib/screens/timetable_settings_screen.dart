@@ -20,7 +20,10 @@ import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../utils/hex_color.dart';
-import '../widgets/course_card.dart';
+import '../widgets/settings_section_widgets.dart';
+import '../widgets/timetable_week_preview.dart';
+import '../services/bundled_assets.dart';
+import '../widgets/bundled_asset_image.dart';
 import 'about_screen.dart';
 import 'data_transfer_screen.dart';
 import 'lan_edit_screen.dart';
@@ -168,7 +171,7 @@ class TimetableSettingsScreen extends StatelessWidget {
                   semesterWeekCount: settings.semesterWeekCount,
                   semesterStartDate: settings.semesterStartDate,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FTileGroup(
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
@@ -179,13 +182,9 @@ class TimetableSettingsScreen extends StatelessWidget {
                             ? l10n.setSemesterStartDateAction
                             : l10n.semesterStartDateAction,
                       ),
-                      subtitle: Text(
-                        settings.semesterStartDate == null
-                            ? l10n.semesterStartUnset
-                            : l10n.semesterStartSet(
-                                _formatDate(settings.semesterStartDate!),
-                              ),
-                      ),
+                      details: settings.semesterStartDate == null
+                          ? null
+                          : Text(_formatDate(settings.semesterStartDate!)),
                       suffix: const Icon(Icons.chevron_right_rounded),
                       onPress: () => _pickSemesterStartDate(context),
                     ),
@@ -200,34 +199,32 @@ class TimetableSettingsScreen extends StatelessWidget {
                     FTile(
                       prefix: const Icon(Icons.view_week_outlined),
                       title: Text(l10n.selectSemesterWeekCountTitle),
-                      suffix: Text(
+                      details: Text(
                         l10n.semesterWeekCountAction(
                           settings.semesterWeekCount,
                         ),
-                        style: Theme.of(context).textTheme.bodySmall,
                       ),
+                      suffix: const Icon(Icons.chevron_right_rounded),
                       onPress: () => _pickSemesterWeekCount(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FTileGroup(
                   label: Text(l10n.dailyUsageSectionTitle),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.palette_outlined,
                       title: l10n.appearanceEntryTitle,
-                      subtitle: l10n.appearanceEntrySubtitle,
                       trailing: _ColorDot(
                         color: _colorFromHex(settings.themeSeedColor),
                       ),
                       onTap: openAppearance,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.style_outlined,
                       title: l10n.themeManageTitle,
-                      subtitle: l10n.themeManageSubtitle,
                       onTap: () {
                         Navigator.push(
                           context,
@@ -240,26 +237,20 @@ class TimetableSettingsScreen extends StatelessWidget {
                         );
                       },
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.view_week_outlined,
                       title: l10n.layoutSectionEntryTitle,
-                      subtitle: l10n.layoutSectionEntrySubtitle,
                       onTap: openLayoutSettings,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.widgets_outlined,
                       title: l10n.homeWidgetEntryTitle,
-                      subtitle: l10n.homeWidgetEntrySubtitle,
-                      trailing: Text(
-                        settings.widgetBackgroundStyle.label,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      details: settings.widgetBackgroundStyle.label,
                       onTap: openHomeWidgetSettings,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.celebration_outlined,
                       title: l10n.holidaySettingsEntryTitle,
-                      subtitle: l10n.holidaySettingsEntrySubtitle,
                       trailing: settings.enableHolidayMarking
                           ? Icon(
                               Icons.check_circle_outline,
@@ -271,80 +262,71 @@ class TimetableSettingsScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FTileGroup(
                   label: Text(l10n.reminderNotificationSectionTitle),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.notifications_active_outlined,
                       title: l10n.liveSettingsTitle,
-                      subtitle: l10n.liveSettingsEntrySubtitle,
                       onTap: openLiveSettings,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.menu_book_outlined,
                       title: l10n.userGuideEntryTitle,
-                      subtitle: l10n.userGuideEntrySubtitle,
                       onTap: openUserGuide,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FTileGroup(
                   label: Text(l10n.timetableManagementSectionTitle),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.layers_outlined,
                       title: l10n.timetableManagement,
-                      subtitle: l10n.timetableProfilesEntrySubtitle,
                       onTap: openProfiles,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.schedule_rounded,
                       title: l10n.timeSchemeEntryTitle,
-                      subtitle: settings.activeTimeSchemeId == null
-                          ? l10n.timeSchemeEntrySubtitleNoneSelected
-                          : l10n.timeSchemeEntrySubtitleSelected(
-                              provider.activeTimeScheme?.name ?? '',
-                            ),
+                      details: settings.activeTimeSchemeId == null
+                          ? null
+                          : provider.activeTimeScheme?.name,
                       onTap: () => _openTimeSchemeQuickSwitcher(context),
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.swap_horiz_rounded,
                       title: l10n.dataTransferEntryTitle,
-                      subtitle: l10n.dataTransferEntrySubtitle,
                       onTap: openDataTransfer,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.lan_rounded,
                       title: l10n.lanEditEntryTitle,
-                      subtitle: l10n.lanEditEntrySubtitle,
                       onTap: openLanEdit,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 FTileGroup(
                   label: Text(l10n.aboutSupportSectionTitle),
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.chat_bubble_outline_rounded,
                       title: l10n.feedbackEntryTitle,
-                      subtitle: l10n.feedbackEntrySubtitle,
                       onTap: openFeedback,
                     ),
-                    _SettingsEntryTile(
+                    SettingsEntryTile(
                       icon: Icons.info_outline_rounded,
                       title: l10n.aboutEntryTitle,
-                      subtitle: l10n.aboutEntrySubtitle,
                       onTap: openAbout,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
               ],
             ),
           ),
@@ -479,56 +461,50 @@ class _SemesterOverviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
 
     return FCard.raw(
       child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.asset(
-                    'assets/branding/launcher_icon.png',
-                    width: 36,
-                    height: 36,
-                    fit: BoxFit.cover,
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: BundledAssetImage(
+                assetPath: BundledAssets.launcherIcon,
+                width: 44,
+                height: 44,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.semesterOverviewCurrentWeek(
+                      currentWeek,
+                      semesterWeekCount,
+                    ),
+                    style: typo.sm.copyWith(
+                      fontWeight: FontWeight.w500,
+                      color: colors.foreground,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        l10n.semesterOverviewCurrentWeek(
-                          currentWeek,
-                          semesterWeekCount,
-                        ),
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        semesterStartDate == null
-                            ? l10n.semesterStartUnset
-                            : l10n.semesterStartSet(
-                                _formatDate(semesterStartDate!),
-                              ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 2),
+                  Text(
+                    semesterStartDate == null
+                        ? l10n.semesterStartUnset
+                        : l10n.semesterStartSet(
+                            _formatDate(semesterStartDate!),
+                          ),
+                    style: typo.xs.copyWith(color: colors.mutedForeground),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -685,8 +661,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.displayModeTitle,
               subtitle: l10n.displayModeSubtitle,
               child: FSelect<AppThemeMode>(
@@ -704,8 +680,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.fontSectionTitle,
               subtitle: l10n.fontSectionSubtitle,
               child: FSelect<AppFontMode>(
@@ -723,8 +699,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.languageSectionTitle,
               subtitle: l10n.languageSectionSubtitle,
               child: FSelect<String>(
@@ -739,8 +715,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.homeTitleSectionTitle,
               subtitle: l10n.homeTitleSectionSubtitle,
               child: Column(
@@ -770,8 +746,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.themeSeedSectionTitle,
               subtitle: l10n.themeSeedSectionSubtitle,
               child: FSelect<ForuiTheme>(
@@ -793,8 +769,8 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.timetableBackgroundColorSectionTitle,
               subtitle: l10n.timetableBackgroundColorSectionSubtitle,
               child: Wrap(
@@ -817,11 +793,11 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                     .toList(),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             FCard.raw(
               child: Column(
                 children: [
-                  _SettingSwitchTile(
+                  SettingSwitchTile(
                     title: Text(l10n.unifiedCourseCardColorTitle),
                     subtitle: Text(l10n.unifiedCourseCardColorSubtitle),
                     value: _draft.timetableUseUnifiedCardColor,
@@ -1114,7 +1090,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                 );
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // 导入导出 + 保存
             FCard.raw(
               child: Padding(
@@ -1134,7 +1110,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                       l10n.themeManageSubtitle,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Row(
                       children: [
                         Expanded(
@@ -1170,7 +1146,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // 统一主题列表（预设 + 保存/导入的）
             // 预设主题（forui 内置）
             Consumer<TimetableProvider>(
@@ -1322,7 +1298,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             // 主题信息
             if (config.themeMode != null)
               Text('${l10n.appearanceEntryTitle}: ${config.themeMode}'),
@@ -1577,13 +1553,13 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
 }
 
 class _ThemePreviewDots extends StatelessWidget {
- final List<String> colors;
+  final List<String> colors;
 
   const _ThemePreviewDots({required this.colors});
 
- @override
- Widget build(BuildContext context) {
-   if (colors.isEmpty) return const SizedBox.shrink();
+  @override
+  Widget build(BuildContext context) {
+    if (colors.isEmpty) return const SizedBox.shrink();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: colors.take(4).map((hex) {
@@ -1696,102 +1672,98 @@ class _LiveSettingsScreenState extends State<_LiveSettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            FCard.raw(
-              child: Column(
-                children: [
-                  _SettingsEntryTile(
-                    icon: Icons.alarm_outlined,
-                    title: l10n.liveReminderTimingTitle,
-                    subtitle: l10n.liveReminderTimingEntrySubtitle,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LiveReminderTimingScreen(),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SettingsEntryTile(
+                  icon: Icons.alarm_outlined,
+                  title: l10n.liveReminderTimingTitle,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveReminderTimingScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                SettingsEntryTile(
+                  icon: Icons.upcoming_outlined,
+                  title: l10n.beforeClassDisplaySettingsTitle,
+                  details: beforeClassSummary,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveDisplaySettingsScreen(
+                          title: l10n.beforeClassDisplaySettingsTitle,
+                          forDuringEnd: false,
                         ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                  _SettingsEntryTile(
-                    icon: Icons.upcoming_outlined,
-                    title: l10n.beforeClassDisplaySettingsTitle,
-                    subtitle: beforeClassSummary,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LiveDisplaySettingsScreen(
-                            title: l10n.beforeClassDisplaySettingsTitle,
-                            forDuringEnd: false,
-                          ),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                SettingsEntryTile(
+                  icon: Icons.timelapse_rounded,
+                  title: l10n.duringEndDisplaySettingsTitle,
+                  details: duringEndSummary,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LiveDisplaySettingsScreen(
+                          title: l10n.duringEndDisplaySettingsTitle,
+                          forDuringEnd: true,
                         ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                  _SettingsEntryTile(
-                    icon: Icons.timelapse_rounded,
-                    title: l10n.duringEndDisplaySettingsTitle,
-                    subtitle: duringEndSummary,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LiveDisplaySettingsScreen(
-                            title: l10n.duringEndDisplaySettingsTitle,
-                            forDuringEnd: true,
-                          ),
-                        ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                  _SettingsEntryTile(
-                    icon: Icons.shield_outlined,
-                    title: l10n.liveKeepAliveTitle,
-                    subtitle: l10n.liveKeepAliveEntrySubtitle,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LiveKeepAliveSettingsScreen(),
-                        ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                  _SettingsEntryTile(
-                    icon: Icons.science_outlined,
-                    title: l10n.liveTestingEntryTitle,
-                    subtitle: l10n.liveTestingEntrySubtitle,
-                    onTap: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const _LiveTestingSettingsScreen(),
-                        ),
-                      );
-                      if (!mounted) return;
-                      setState(() {
-                        _draft = context.read<TimetableProvider>().settings;
-                      });
-                    },
-                  ),
-                ],
-              ),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                SettingsEntryTile(
+                  icon: Icons.shield_outlined,
+                  title: l10n.liveKeepAliveTitle,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const LiveKeepAliveSettingsScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+                SettingsEntryTile(
+                  icon: Icons.science_outlined,
+                  title: l10n.liveTestingEntryTitle,
+                  onTap: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const _LiveTestingSettingsScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    setState(() {
+                      _draft = context.read<TimetableProvider>().settings;
+                    });
+                  },
+                ),
+              ],
             ),
           ],
         ),
@@ -2023,10 +1995,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           padding: const EdgeInsets.all(16),
           children: [
             if (!kReleaseMode) ...[
-              _SettingsSectionCard(
+              SettingsSectionCard(
                 title: l10n.liveTestingHolidayOverride,
                 subtitle: l10n.liveTestingHolidayOverrideSubtitle,
-                child: _SettingSwitchTile(
+                child: SettingSwitchTile(
                   value: _holidayOverrideEnabled,
                   onChanged: (value) {
                     setState(() {
@@ -2050,9 +2022,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
-            _SettingsSectionCard(
+            SettingsSectionCard(
               title: l10n.liveTestingNotificationTitle,
               subtitle: l10n.liveTestingNotificationSubtitle,
               child: Column(
@@ -2099,8 +2071,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-            _SettingsSectionCard(
+            const SizedBox(height: 12),
+            SettingsSectionCard(
               title: l10n.liveTestingIslandStatusTitle,
               subtitle: l10n.liveTestingIslandStatusSubtitle,
               child: Column(
@@ -2200,7 +2172,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        _SettingSwitchTile(
+                        SettingSwitchTile(
                           value: _autoRefreshEnabled,
                           onChanged: (value) {
                             setState(() {
@@ -2226,49 +2198,49 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             if (_debugStatus != null) ...[
               _DebugSectionCard(
                 title: l10n.liveTestingSectionEnvironment,
                 data: environment,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionService,
                 data: service,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionCourse,
                 data: course,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionTiming,
                 data: timing,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionSwitches,
                 data: switches,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionDisplay,
                 data: display,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionNotification,
                 data: notification,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               _DebugSectionCard(
                 title: l10n.liveTestingSectionRecentLogs,
                 data: recentDiagnostics,
               ),
-              const SizedBox(height: 16),
-              _SettingsSectionCard(
+              const SizedBox(height: 12),
+              SettingsSectionCard(
                 title: l10n.liveTestingRawDataTitle,
                 subtitle: l10n.liveTestingRawDataSubtitle,
                 child: FAccordion(
@@ -2295,9 +2267,9 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
             ],
-            _SettingsSectionCard(
+            SettingsSectionCard(
               title: l10n.liveTestingLocalLogsTitle,
               subtitle: l10n.liveTestingLocalLogsSubtitle,
               child: Wrap(
@@ -2415,7 +2387,7 @@ class _DebugSectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SettingsSectionCard(
+    return SettingsSectionCard(
       title: title,
       subtitle: AppLocalizations.of(
         context,
@@ -2738,270 +2710,226 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            FCard.raw(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            SettingsSectionCard(
+              title: l10n.homeWidgetQuickAddTitle,
+              subtitle: _isCheckingPinSupport
+                  ? l10n.homeWidgetCheckingPinSupport
+                  : (_canRequestPinWidget
+                        ? l10n.homeWidgetPinSupported
+                        : l10n.homeWidgetPinUnsupported),
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
+                  _buildPinWidgetButton(HomeWidgetPinTarget.miniList22),
+                  _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
+                  _buildPinWidgetButton(HomeWidgetPinTarget.large44),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.homeWidgetTodayCourseTitle,
+              subtitle: l10n.homeWidgetTodayCourseSubtitle,
+              child: FSelect<WidgetBackgroundStyle>(
+                hint: l10n.homeWidgetBackgroundStyleLabel,
+                items: {
+                  for (final v in WidgetBackgroundStyle.values)
+                    _widgetBackgroundStyleLabel(context, v): v,
+                },
+                control: FSelectControl.lifted(
+                  value: _draft.widgetBackgroundStyle,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SettingSwitchTile(
+                  title: Text(l10n.homeWidgetShowLocationTitle),
+                  value: _draft.widgetShowLocation,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(widgetShowLocation: value));
+                  },
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.homeWidgetShowCountdownTitle),
+                  value: _draft.widgetShowCountdown,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(widgetShowCountdown: value));
+                  },
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.homeWidgetHideCompletedTitle),
+                  value: _draft.widgetHideCompletedCourses,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(widgetHideCompletedCourses: value),
+                    );
+                  },
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.homeWidgetShowTomorrowTitle),
+                  value: _draft.widgetShowTomorrowCourses,
+                  onChanged: (value) {
+                    _updateDraft(
+                      _draft.copyWith(widgetShowTomorrowCourses: value),
+                    );
+                  },
+                ),
+              ],
+            ),
+            if (_draft.widgetShowCountdown) ...[
+              const SizedBox(height: 12),
+              SettingsSectionCard(
+                title: l10n.homeWidgetCountdownLeadTitle,
+                subtitle: l10n.homeWidgetCountdownLeadSubtitle,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      l10n.homeWidgetTodayCourseTitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.homeWidgetTodayCourseSubtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.homeWidgetQuickAddTitle,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _isCheckingPinSupport
-                          ? l10n.homeWidgetCheckingPinSupport
-                          : (_canRequestPinWidget
-                                ? l10n.homeWidgetPinSupported
-                                : l10n.homeWidgetPinUnsupported),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
-                        _buildPinWidgetButton(HomeWidgetPinTarget.miniList22),
-                        _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
-                        _buildPinWidgetButton(HomeWidgetPinTarget.large44),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    FSelect<WidgetBackgroundStyle>(
-                      hint: l10n.homeWidgetBackgroundStyleLabel,
+                    FSelect<int>(
+                      hint: l10n.homeWidgetCountdownLeadTitle,
                       items: {
-                        for (final v in WidgetBackgroundStyle.values)
-                          _widgetBackgroundStyleLabel(context, v): v,
+                        l10n.homeWidgetCountdownLeadAlways: 0,
+                        for (final m in const [
+                          1,
+                          5,
+                          10,
+                          15,
+                          20,
+                          30,
+                          40,
+                          50,
+                          60,
+                        ])
+                          l10n.beforeClassMinutesOption(m): m,
                       },
                       control: FSelectControl.lifted(
-                        value: _draft.widgetBackgroundStyle,
+                        value: _draft.widgetCountdownLeadMinutes,
                         onChange: (value) {
                           if (value == null) return;
                           _updateDraft(
-                            _draft.copyWith(widgetBackgroundStyle: value),
+                            _draft.copyWith(widgetCountdownLeadMinutes: value),
                           );
                         },
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _SettingSwitchTile(
-                      title: Text(l10n.homeWidgetShowLocationTitle),
-                      subtitle: Text(l10n.homeWidgetShowLocationSubtitle),
-                      value: _draft.widgetShowLocation,
-                      onChanged: (value) {
-                        _updateDraft(
-                          _draft.copyWith(widgetShowLocation: value),
-                        );
+                    FSelect<LiveCountdownTextStyle>(
+                      hint: l10n.widgetCountdownStyleTitle,
+                      items: {
+                        for (final v in LiveCountdownTextStyle.values)
+                          v.label: v,
                       },
-                    ),
-                    _SettingSwitchTile(
-                      title: Text(l10n.homeWidgetShowCountdownTitle),
-                      subtitle: Text(l10n.homeWidgetShowCountdownSubtitle),
-                      value: _draft.widgetShowCountdown,
-                      onChanged: (value) {
-                        _updateDraft(
-                          _draft.copyWith(widgetShowCountdown: value),
-                        );
-                      },
-                    ),
-                    if (_draft.widgetShowCountdown) ...[
-                      const SizedBox(height: 8),
-                      FSelect<int>(
-                        hint: l10n.homeWidgetCountdownLeadTitle,
-                        items: {
-                          l10n.homeWidgetCountdownLeadAlways: 0,
-                          for (final m in const [
-                            1,
-                            5,
-                            10,
-                            15,
-                            20,
-                            30,
-                            40,
-                            50,
-                            60,
-                          ])
-                            l10n.beforeClassMinutesOption(m): m,
+                      control: FSelectControl.lifted(
+                        value: _draft.widgetCountdownTextStyle,
+                        onChange: (value) {
+                          if (value == null) return;
+                          _updateDraft(
+                            _draft.copyWith(widgetCountdownTextStyle: value),
+                          );
                         },
-                        control: FSelectControl.lifted(
-                          value: _draft.widgetCountdownLeadMinutes,
-                          onChange: (value) {
-                            if (value == null) return;
-                            _updateDraft(
-                              _draft.copyWith(
-                                widgetCountdownLeadMinutes: value,
-                              ),
-                            );
-                          },
-                        ),
                       ),
-                      const SizedBox(height: 8),
-                      FSelect<LiveCountdownTextStyle>(
-                        hint: l10n.widgetCountdownStyleTitle,
-                        items: {
-                          for (final v in LiveCountdownTextStyle.values)
-                            v.label: v,
-                        },
-                        control: FSelectControl.lifted(
-                          value: _draft.widgetCountdownTextStyle,
-                          onChange: (value) {
-                            if (value == null) return;
-                            _updateDraft(
-                              _draft.copyWith(widgetCountdownTextStyle: value),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                    _SettingSwitchTile(
-                      title: Text(l10n.homeWidgetHideCompletedTitle),
-                      subtitle: Text(l10n.homeWidgetHideCompletedSubtitle),
-                      value: _draft.widgetHideCompletedCourses,
-                      onChanged: (value) {
-                        _updateDraft(
-                          _draft.copyWith(widgetHideCompletedCourses: value),
-                        );
-                      },
-                    ),
-                    _SettingSwitchTile(
-                      title: Text(l10n.homeWidgetShowTomorrowTitle),
-                      subtitle: Text(l10n.homeWidgetShowTomorrowSubtitle),
-                      value: _draft.widgetShowTomorrowCourses,
-                      onChanged: (value) {
-                        _updateDraft(
-                          _draft.copyWith(widgetShowTomorrowCourses: value),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.homeWidgetHeightAdjustTitle,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _draft.widgetHeightAdjustment ==
-                              _defaultWidgetHeightAdjustment
-                          ? l10n.defaultLabel
-                          : (_draft.widgetHeightAdjustment >
-                                    _defaultWidgetHeightAdjustment
-                                ? l10n.higherByValue(
-                                    (_draft.widgetHeightAdjustment -
-                                            _defaultWidgetHeightAdjustment)
-                                        .toStringAsFixed(0),
-                                  )
-                                : l10n.lowerByValue(
-                                    (_defaultWidgetHeightAdjustment -
-                                            _draft.widgetHeightAdjustment)
-                                        .toStringAsFixed(0),
-                                  )),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    FSlider(
-                      control: FSliderControl.managedDiscrete(
-                        initial: FSliderValue(
-                          max:
-                              ((_draft.widgetHeightAdjustment -
-                                          _defaultWidgetHeightAdjustment)
-                                      .clamp(-16, 16)
-                                      .toDouble() +
-                                  16) /
-                              32,
-                        ),
-                        onChange: (sv) => _updateDraft(
-                          _draft.copyWith(
-                            widgetHeightAdjustment:
-                                _defaultWidgetHeightAdjustment -
-                                16 +
-                                sv.max * 32,
-                          ),
-                          debounce: true,
-                        ),
-                      ),
-                      marks: [
-                        for (var i = 0; i <= 32; i++)
-                          FSliderMark(value: i / 32),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.homeWidgetCornerRadiusTitle,
-                      style: Theme.of(context).textTheme.titleSmall,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    FSlider(
-                      control: FSliderControl.managedDiscrete(
-                        initial: FSliderValue(
-                          max:
-                              ((_draft.widgetCornerRadius -
-                                          _defaultWidgetCornerRadius)
-                                      .clamp(-14, 14)
-                                      .toDouble() +
-                                  14) /
-                              28,
-                        ),
-                        onChange: (sv) => _updateDraft(
-                          _draft.copyWith(
-                            widgetCornerRadius:
-                                _defaultWidgetCornerRadius - 14 + sv.max * 28,
-                          ),
-                          debounce: true,
-                        ),
-                      ),
-                      marks: [
-                        for (var i = 0; i <= 28; i++)
-                          FSliderMark(value: i / 28),
-                      ],
                     ),
                   ],
                 ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.homeWidgetHeightAdjustTitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _widgetHeightAdjustmentLabel(l10n),
+                    style: context.theme.typography.body.sm,
+                  ),
+                  FSlider(
+                    control: FSliderControl.managedDiscrete(
+                      initial: FSliderValue(
+                        max:
+                            ((_draft.widgetHeightAdjustment -
+                                        _defaultWidgetHeightAdjustment)
+                                    .clamp(-16, 16)
+                                    .toDouble() +
+                                16) /
+                            32,
+                      ),
+                      onChange: (sv) => _updateDraft(
+                        _draft.copyWith(
+                          widgetHeightAdjustment:
+                              _defaultWidgetHeightAdjustment - 16 + sv.max * 32,
+                        ),
+                        debounce: true,
+                      ),
+                    ),
+                    marks: [
+                      for (var i = 0; i <= 32; i++) FSliderMark(value: i / 32),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    '${l10n.homeWidgetCornerRadiusTitle} · ${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
+                    style: context.theme.typography.body.sm,
+                  ),
+                  FSlider(
+                    control: FSliderControl.managedDiscrete(
+                      initial: FSliderValue(
+                        max:
+                            ((_draft.widgetCornerRadius -
+                                        _defaultWidgetCornerRadius)
+                                    .clamp(-14, 14)
+                                    .toDouble() +
+                                14) /
+                            28,
+                      ),
+                      onChange: (sv) => _updateDraft(
+                        _draft.copyWith(
+                          widgetCornerRadius:
+                              _defaultWidgetCornerRadius - 14 + sv.max * 28,
+                        ),
+                        debounce: true,
+                      ),
+                    ),
+                    marks: [
+                      for (var i = 0; i <= 28; i++) FSliderMark(value: i / 28),
+                    ],
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            FCard.raw(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.homeWidgetDescriptionTitle,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.homeWidgetDescriptionText,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.homeWidgetDescriptionTitle,
+              subtitle: l10n.homeWidgetDescriptionText,
+              child: const SizedBox.shrink(),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {
+    if (_draft.widgetHeightAdjustment == _defaultWidgetHeightAdjustment) {
+      return l10n.defaultLabel;
+    }
+    if (_draft.widgetHeightAdjustment > _defaultWidgetHeightAdjustment) {
+      return l10n.higherByValue(
+        (_draft.widgetHeightAdjustment - _defaultWidgetHeightAdjustment)
+            .toStringAsFixed(0),
+      );
+    }
+    return l10n.lowerByValue(
+      (_defaultWidgetHeightAdjustment - _draft.widgetHeightAdjustment)
+          .toStringAsFixed(0),
     );
   }
 
@@ -3150,661 +3078,571 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         child: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 16),
-              child: _buildLayoutPreviewCard(provider),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: TimetableWeekPreview(
+                provider: provider,
+                settings: _draft,
+                week: provider.currentWeek,
+              ),
             ),
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  FCard.raw(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.layoutDensityTitle,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                  FTileGroup(
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutAutoFitHeightTitle),
+                        value: _draft.timetableAutoFitSectionHeight,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(
+                              timetableAutoFitSectionHeight: value,
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          FTile(
-                            title: Text(l10n.layoutAutoFitHeightTitle),
-                            subtitle: Text(l10n.layoutAutoFitHeightSubtitle),
-                            suffix: FSwitch(
-                              value: _draft.timetableAutoFitSectionHeight,
-                              onChange: (value) {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    timetableAutoFitSectionHeight: value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          FTile(
-                            title: Text(l10n.layoutHideWeekendsTitle),
-                            subtitle: Text(l10n.layoutHideWeekendsSubtitle),
-                            suffix: FSwitch(
-                              value: _draft.timetableHideWeekends,
-                              onChange: (value) {
-                                _updateDraft(
-                                  _draft.copyWith(timetableHideWeekends: value),
-                                );
-                              },
-                            ),
-                          ),
-                          FTile(
-                            title: Text(l10n.layoutEnableHapticsTitle),
-                            subtitle: Text(l10n.layoutEnableHapticsSubtitle),
-                            suffix: FSwitch(
-                              value: _draft.enableHaptics,
-                              onChange: (value) {
-                                _updateDraft(
-                                  _draft.copyWith(enableHaptics: value),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          FSelect<SectionTimeDisplayMode>(
-                            hint: l10n.layoutTimeColumnDisplayLabel,
-                            items: {
-                              for (final v in SectionTimeDisplayMode.values)
-                                v.label: v,
-                            },
-                            control: FSelectControl.lifted(
-                              value: _draft.timetableSectionTimeDisplayMode,
-                              onChange: (value) {
-                                if (value == null) return;
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    timetableSectionTimeDisplayMode: value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FSelect<TimetableTimeColumnWidthMode>(
-                            hint: l10n.layoutTimeColumnWidthLabel,
-                            items: {
-                              for (final v
-                                  in TimetableTimeColumnWidthMode.values)
-                                v.label: v,
-                            },
-                            control: FSelectControl.lifted(
-                              value: _draft.timetableTimeColumnWidthMode,
-                              onChange: (value) {
-                                if (value == null) return;
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    timetableTimeColumnWidthMode: value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FSelect<BackToCurrentWeekButtonStyle>(
-                            hint: l10n.layoutBackToCurrentWeekButtonStyleLabel,
-                            items: {
-                              for (final v
-                                  in BackToCurrentWeekButtonStyle.values)
-                                _backToCurrentWeekButtonStyleLabel(l10n, v): v,
-                            },
-                            control: FSelectControl.lifted(
-                              value:
-                                  _draft.timetableBackToCurrentWeekButtonStyle,
-                              onChange: (value) {
-                                if (value == null) return;
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    timetableBackToCurrentWeekButtonStyle:
-                                        value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            l10n.layoutBackToCurrentWeekButtonStyleHelper,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          if (_draft.timetableBackToCurrentWeekButtonStyle ==
-                              BackToCurrentWeekButtonStyle.floating) ...[
-                            const SizedBox(height: 16),
-                            Text(
-                              l10n.layoutBackToCurrentWeekButtonOpacityLabel(
-                                (_draft.timetableFloatingBackToCurrentWeekButtonOpacity *
-                                        100)
-                                    .round(),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.layoutBackToCurrentWeekButtonOpacitySubtitle,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 12),
-                            FSlider(
-                              control: FSliderControl.managedDiscrete(
-                                initial: FSliderValue(
-                                  max:
-                                      ((_draft.timetableFloatingBackToCurrentWeekButtonOpacity -
-                                                  0.55) /
-                                              0.45)
-                                          .clamp(0.0, 1.0),
-                                ),
-                                onChange: (sv) => _updateDraft(
-                                  _draft.copyWith(
-                                    timetableFloatingBackToCurrentWeekButtonOpacity:
-                                        0.55 + sv.max * 0.45,
-                                  ),
-                                  debounce: true,
-                                ),
-                              ),
-                              marks: [
-                                for (var i = 0; i <= 9; i++)
-                                  FSliderMark(value: i / 9),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          Text(
-                            l10n.layoutCourseCardGapLabel(
-                              _draft.timetableCourseCardGap.toStringAsFixed(1),
-                            ),
-                          ),
-                          FSlider(
-                            control: FSliderControl.managedDiscrete(
-                              initial: FSliderValue(
-                                max:
-                                    (_draft.timetableCourseCardGap.clamp(
-                                              0.0,
-                                              3.0,
-                                            ) /
-                                            3)
-                                        .clamp(0.0, 1.0),
-                              ),
-                              onChange: (sv) => _updateDraft(
-                                _draft.copyWith(
-                                  timetableCourseCardGap: sv.max * 3,
-                                ),
-                                debounce: true,
-                              ),
-                            ),
-                            marks: [
-                              for (var i = 0; i <= 12; i++)
-                                FSliderMark(value: i / 12),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.layoutSectionHeightLabel(
-                              _draft.sectionHeight.toStringAsFixed(0),
-                            ),
-                          ),
-                          FSlider(
-                            control: FSliderControl.managedDiscrete(
-                              initial: FSliderValue(
-                                max: ((_draft.sectionHeight - 48) / 44).clamp(
-                                  0.0,
-                                  1.0,
-                                ),
-                              ),
-                              onChange: !_draft.timetableAutoFitSectionHeight
-                                  ? (sv) => _updateDraft(
-                                      _draft.copyWith(
-                                        sectionHeight: 48 + sv.max * 44,
-                                      ),
-                                      debounce: true,
-                                    )
-                                  : null,
-                            ),
-                            enabled: !_draft.timetableAutoFitSectionHeight,
-                            marks: [
-                              for (var i = 0; i <= 11; i++)
-                                FSliderMark(value: i / 11),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.layoutCompactFontSizeLabel(
-                              _draft.compactFontSize.toStringAsFixed(1),
-                            ),
-                          ),
-                          FSlider(
-                            control: FSliderControl.managedDiscrete(
-                              initial: FSliderValue(
-                                max: ((_draft.compactFontSize - 7) / 5).clamp(
-                                  0.0,
-                                  1.0,
-                                ),
-                              ),
-                              onChange: (sv) => _updateDraft(
-                                _draft.copyWith(
-                                  compactFontSize: 7 + sv.max * 5,
-                                ),
-                                debounce: true,
-                              ),
-                            ),
-                            marks: [
-                              for (var i = 0; i <= 10; i++)
-                                FSliderMark(value: i / 10),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.layoutCourseCardFontSizeLabel(
-                              _draft.courseCardFontSize.toStringAsFixed(1),
-                            ),
-                          ),
-                          FSlider(
-                            control: FSliderControl.managedDiscrete(
-                              initial: FSliderValue(
-                                max: ((_draft.courseCardFontSize - 7) / 5)
-                                    .clamp(0.0, 1.0),
-                              ),
-                              onChange: (sv) => _updateDraft(
-                                _draft.copyWith(
-                                  courseCardFontSize: 7 + sv.max * 5,
-                                ),
-                                debounce: true,
-                              ),
-                            ),
-                            marks: [
-                              for (var i = 0; i <= 10; i++)
-                                FSliderMark(value: i / 10),
-                            ],
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FCard.raw(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.layoutCourseCardDisplayTitle,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.layoutCourseCardDisplaySubtitle,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 12),
-                          _SettingSwitchTile(
-                            title: Text(l10n.showCourseNameTitle),
-                            value: _draft.courseCardShowName,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(courseCardShowName: value),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowTeacherTitle),
-                            value: _draft.courseCardShowTeacher,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(courseCardShowTeacher: value),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowClassroomTitle),
-                            value: _draft.courseCardShowLocation,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(courseCardShowLocation: value),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowTimeTitle),
-                            value: _draft.courseCardShowTime,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(courseCardShowTime: value),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowTimeLabelsTitle),
-                            subtitle: Text(l10n.layoutShowTimeLabelsSubtitle),
-                            value: _draft.courseCardShowTimeLabels,
-                            onChanged: _draft.courseCardShowTime
-                                ? (value) {
-                                    _updateDraft(
-                                      _draft.copyWith(
-                                        courseCardShowTimeLabels: value,
-                                      ),
-                                    );
-                                  }
-                                : null,
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowWeeksTitle),
-                            subtitle: Text(l10n.layoutShowWeeksSubtitle),
-                            value: _draft.courseCardShowWeeks,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(courseCardShowWeeks: value),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowDescriptionTitle),
-                            subtitle: Text(l10n.layoutShowDescriptionSubtitle),
-                            value: _draft.courseCardShowDescription,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(
-                                  courseCardShowDescription: value,
-                                ),
-                              );
-                            },
-                          ),
-                          _SettingSwitchTile(
-                            title: Text(l10n.layoutShowOtherWeeksTitle),
-                            subtitle: Text(l10n.layoutShowOtherWeeksSubtitle),
-                            value: _draft.timetableShowNonCurrentWeekCourses,
-                            onChanged: (value) {
-                              _updateDraft(
-                                _draft.copyWith(
-                                  timetableShowNonCurrentWeekCourses: value,
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          FSelect<CourseCardVerticalAlign>(
-                            hint: l10n.layoutVerticalAlignLabel,
-                            items: {
-                              for (final v in CourseCardVerticalAlign.values)
-                                v.label: v,
-                            },
-                            control: FSelectControl.lifted(
-                              value: _draft.courseCardVerticalAlign,
-                              onChange: (value) {
-                                if (value == null) return;
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardVerticalAlign: value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          FSelect<CourseCardHorizontalAlign>(
-                            hint: l10n.layoutHorizontalAlignLabel,
-                            items: {
-                              for (final v in CourseCardHorizontalAlign.values)
-                                v.label: v,
-                            },
-                            control: FSelectControl.lifted(
-                              value: _draft.courseCardHorizontalAlign,
-                              onChange: (value) {
-                                if (value == null) return;
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardHorizontalAlign: value,
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutHideWeekendsTitle),
+                        value: _draft.timetableHideWeekends,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(timetableHideWeekends: value),
+                          );
+                        },
                       ),
-                    ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutEnableHapticsTitle),
+                        value: _draft.enableHaptics,
+                        onChanged: (value) {
+                          _updateDraft(_draft.copyWith(enableHaptics: value));
+                        },
+                      ),
+                    ],
                   ),
-                  FCard.raw(
-                    child: _SettingSwitchTile(
-                      title: Text(l10n.layoutShowConflictBadgeTitle),
-                      subtitle: Text(l10n.layoutShowConflictBadgeSubtitle),
-                      value: _draft.showConflictBadgeOnTimetable,
-                      onChanged: (value) {
-                        _updateDraft(
-                          _draft.copyWith(showConflictBadgeOnTimetable: value),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FCard.raw(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
+                  const SizedBox(height: 12),
+                  SettingsSectionCard(
+                    subtitle: l10n.layoutEntrySubtitle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FSelect<SectionTimeDisplayMode>(
+                          hint: l10n.layoutTimeColumnDisplayLabel,
+                          items: {
+                            for (final v in SectionTimeDisplayMode.values)
+                              v.label: v,
+                          },
+                          control: FSelectControl.lifted(
+                            value: _draft.timetableSectionTimeDisplayMode,
+                            onChange: (value) {
+                              if (value == null) return;
+                              _updateDraft(
+                                _draft.copyWith(
+                                  timetableSectionTimeDisplayMode: value,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FSelect<TimetableTimeColumnWidthMode>(
+                          hint: l10n.layoutTimeColumnWidthLabel,
+                          items: {
+                            for (final v in TimetableTimeColumnWidthMode.values)
+                              v.label: v,
+                          },
+                          control: FSelectControl.lifted(
+                            value: _draft.timetableTimeColumnWidthMode,
+                            onChange: (value) {
+                              if (value == null) return;
+                              _updateDraft(
+                                _draft.copyWith(
+                                  timetableTimeColumnWidthMode: value,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FSelect<BackToCurrentWeekButtonStyle>(
+                          hint: l10n.layoutBackToCurrentWeekButtonStyleLabel,
+                          items: {
+                            for (final v in BackToCurrentWeekButtonStyle.values)
+                              _backToCurrentWeekButtonStyleLabel(l10n, v): v,
+                          },
+                          control: FSelectControl.lifted(
+                            value: _draft.timetableBackToCurrentWeekButtonStyle,
+                            onChange: (value) {
+                              if (value == null) return;
+                              _updateDraft(
+                                _draft.copyWith(
+                                  timetableBackToCurrentWeekButtonStyle: value,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          l10n.layoutBackToCurrentWeekButtonStyleHelper,
+                          style: context.theme.typography.body.xs.copyWith(
+                            color: context.theme.colors.mutedForeground,
+                          ),
+                        ),
+                        if (_draft.timetableBackToCurrentWeekButtonStyle ==
+                            BackToCurrentWeekButtonStyle.floating) ...[
+                          const SizedBox(height: 12),
                           Text(
-                            l10n.layoutConflictOpacityLabel(
-                              (_draft.timetableConflictCourseOpacity * 100)
+                            l10n.layoutBackToCurrentWeekButtonOpacityLabel(
+                              (_draft.timetableFloatingBackToCurrentWeekButtonOpacity *
+                                      100)
                                   .round(),
                             ),
-                            style: Theme.of(context).textTheme.titleMedium,
+                            style: context.theme.typography.body.sm,
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            l10n.layoutConflictOpacitySubtitle,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 12),
                           FSlider(
                             control: FSliderControl.managedDiscrete(
                               initial: FSliderValue(
                                 max:
-                                    ((_draft.timetableConflictCourseOpacity -
-                                                0.2) /
-                                            0.8)
+                                    ((_draft.timetableFloatingBackToCurrentWeekButtonOpacity -
+                                                0.55) /
+                                            0.45)
                                         .clamp(0.0, 1.0),
                               ),
                               onChange: (sv) => _updateDraft(
                                 _draft.copyWith(
-                                  timetableConflictCourseOpacity:
-                                      0.2 + sv.max * 0.8,
+                                  timetableFloatingBackToCurrentWeekButtonOpacity:
+                                      0.55 + sv.max * 0.45,
                                 ),
                                 debounce: true,
                               ),
                             ),
                             marks: [
-                              for (var i = 0; i <= 16; i++)
-                                FSliderMark(value: i / 16),
+                              for (var i = 0; i <= 9; i++)
+                                FSliderMark(value: i / 9),
                             ],
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.layoutCourseCardGapLabel(
+                            _draft.timetableCourseCardGap.toStringAsFixed(1),
+                          ),
+                          style: context.theme.typography.body.sm,
+                        ),
+                        FSlider(
+                          control: FSliderControl.managedDiscrete(
+                            initial: FSliderValue(
+                              max:
+                                  (_draft.timetableCourseCardGap.clamp(
+                                            0.0,
+                                            3.0,
+                                          ) /
+                                          3)
+                                      .clamp(0.0, 1.0),
+                            ),
+                            onChange: (sv) => _updateDraft(
+                              _draft.copyWith(
+                                timetableCourseCardGap: sv.max * 3,
+                              ),
+                              debounce: true,
+                            ),
+                          ),
+                          marks: [
+                            for (var i = 0; i <= 12; i++)
+                              FSliderMark(value: i / 12),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.layoutSectionHeightLabel(
+                            _draft.sectionHeight.toStringAsFixed(0),
+                          ),
+                          style: context.theme.typography.body.sm,
+                        ),
+                        FSlider(
+                          control: FSliderControl.managedDiscrete(
+                            initial: FSliderValue(
+                              max: ((_draft.sectionHeight - 48) / 44).clamp(
+                                0.0,
+                                1.0,
+                              ),
+                            ),
+                            onChange: !_draft.timetableAutoFitSectionHeight
+                                ? (sv) => _updateDraft(
+                                    _draft.copyWith(
+                                      sectionHeight: 48 + sv.max * 44,
+                                    ),
+                                    debounce: true,
+                                  )
+                                : null,
+                          ),
+                          enabled: !_draft.timetableAutoFitSectionHeight,
+                          marks: [
+                            for (var i = 0; i <= 11; i++)
+                              FSliderMark(value: i / 11),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.layoutCompactFontSizeLabel(
+                            _draft.compactFontSize.toStringAsFixed(1),
+                          ),
+                          style: context.theme.typography.body.sm,
+                        ),
+                        FSlider(
+                          control: FSliderControl.managedDiscrete(
+                            initial: FSliderValue(
+                              max: ((_draft.compactFontSize - 7) / 5).clamp(
+                                0.0,
+                                1.0,
+                              ),
+                            ),
+                            onChange: (sv) => _updateDraft(
+                              _draft.copyWith(compactFontSize: 7 + sv.max * 5),
+                              debounce: true,
+                            ),
+                          ),
+                          marks: [
+                            for (var i = 0; i <= 10; i++)
+                              FSliderMark(value: i / 10),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          l10n.layoutCourseCardFontSizeLabel(
+                            _draft.courseCardFontSize.toStringAsFixed(1),
+                          ),
+                          style: context.theme.typography.body.sm,
+                        ),
+                        FSlider(
+                          control: FSliderControl.managedDiscrete(
+                            initial: FSliderValue(
+                              max: ((_draft.courseCardFontSize - 7) / 5).clamp(
+                                0.0,
+                                1.0,
+                              ),
+                            ),
+                            onChange: (sv) => _updateDraft(
+                              _draft.copyWith(
+                                courseCardFontSize: 7 + sv.max * 5,
+                              ),
+                              debounce: true,
+                            ),
+                          ),
+                          marks: [
+                            for (var i = 0; i <= 10; i++)
+                              FSliderMark(value: i / 10),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-
-                  const SizedBox(height: 16),
-                  FCard.raw(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      l10n.textColorTitle,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                    Text(
-                                      l10n.textColorSubtitle,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // 共用开关：独立设置详情颜色
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(l10n.textColorIndependentDetail),
-                              ),
-                              FSwitch(
-                                value: !_draft.linkCourseCardColors,
-                                onChange: (value) {
-                                  if (!value) {
-                                    _updateDraft(
-                                      _draft.copyWith(
-                                        linkCourseCardColors: true,
-                                        courseCardDetailColorLight:
-                                            _draft.courseCardTitleColorLight,
-                                        courseCardDetailColorDark:
-                                            _draft.courseCardTitleColorDark,
-                                      ),
-                                    );
-                                  } else {
-                                    _updateDraft(
-                                      _draft.copyWith(
-                                        linkCourseCardColors: false,
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // 浅色模式颜色设置
-                          _buildModeColorSettings(
-                            context,
-                            l10n: l10n,
-                            modeLabel: l10n.themeModeLight,
-                            containerColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerLow,
-                            titleColor: _draft.courseCardTitleColorLight,
-                            detailColor: _draft.courseCardDetailColorLight,
-                            weekdayColor: _draft.weekdayBarFontColorLight,
-                            timeAxisColor: _draft.timeAxisFontColorLight,
-                            accentColor: _draft.weekdayBarAccentColorLight,
-                            onTitleColorChanged: (color) {
-                              if (_draft.linkCourseCardColors) {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardTitleColorLight: color,
-                                    courseCardDetailColorLight: color,
-                                  ),
-                                );
-                              } else {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardTitleColorLight: color,
-                                  ),
-                                );
-                              }
-                            },
-                            onDetailColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(
-                                courseCardDetailColorLight: color,
-                              ),
-                            ),
-                            onWeekdayColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(weekdayBarFontColorLight: color),
-                            ),
-                            onTimeAxisColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(timeAxisFontColorLight: color),
-                            ),
-                            onAccentColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(
-                                weekdayBarAccentColorLight: color,
-                              ),
-                            ),
-                            defaultTitleColor:
-                                TimetableSettings.defaultCourseCardTitleColor,
-                            defaultDetailColor:
-                                TimetableSettings.defaultCourseCardDetailColor,
-                            defaultWeekdayColor: TimetableSettings
-                                .defaultWeekdayBarFontColorLight,
-                            defaultTimeAxisColor:
-                                TimetableSettings.defaultTimeAxisFontColorLight,
-                            defaultAccentColor: TimetableSettings
-                                .defaultWeekdayBarAccentColorLight,
-                          ),
-                          const SizedBox(height: 16),
-                          // 深色模式颜色设置
-                          _buildModeColorSettings(
-                            context,
-                            l10n: l10n,
-                            modeLabel: l10n.themeModeDark,
-                            containerColor: Theme.of(
-                              context,
-                            ).colorScheme.surfaceContainerHigh,
-                            titleColor: _draft.courseCardTitleColorDark,
-                            detailColor: _draft.courseCardDetailColorDark,
-                            weekdayColor: _draft.weekdayBarFontColorDark,
-                            timeAxisColor: _draft.timeAxisFontColorDark,
-                            accentColor: _draft.weekdayBarAccentColorDark,
-                            onTitleColorChanged: (color) {
-                              if (_draft.linkCourseCardColors) {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardTitleColorDark: color,
-                                    courseCardDetailColorDark: color,
-                                  ),
-                                );
-                              } else {
-                                _updateDraft(
-                                  _draft.copyWith(
-                                    courseCardTitleColorDark: color,
-                                  ),
-                                );
-                              }
-                            },
-                            onDetailColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(courseCardDetailColorDark: color),
-                            ),
-                            onWeekdayColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(weekdayBarFontColorDark: color),
-                            ),
-                            onTimeAxisColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(timeAxisFontColorDark: color),
-                            ),
-                            onAccentColorChanged: (color) => _updateDraft(
-                              _draft.copyWith(weekdayBarAccentColorDark: color),
-                            ),
-                            defaultTitleColor:
-                                TimetableSettings.defaultCourseCardTitleColor,
-                            defaultDetailColor:
-                                TimetableSettings.defaultCourseCardDetailColor,
-                            defaultWeekdayColor: TimetableSettings
-                                .defaultWeekdayBarFontColorDark,
-                            defaultTimeAxisColor:
-                                TimetableSettings.defaultTimeAxisFontColorDark,
-                            defaultAccentColor: TimetableSettings
-                                .defaultWeekdayBarAccentColorDark,
-                          ),
-                        ],
+                  const SizedBox(height: 12),
+                  FTileGroup(
+                    label: Text(l10n.layoutCourseCardDisplayTitle),
+                    description: Text(l10n.layoutCourseCardDisplaySubtitle),
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: [
+                      SettingSwitchTile(
+                        title: Text(l10n.showCourseNameTitle),
+                        value: _draft.courseCardShowName,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowName: value),
+                          );
+                        },
                       ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowTeacherTitle),
+                        value: _draft.courseCardShowTeacher,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowTeacher: value),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowClassroomTitle),
+                        value: _draft.courseCardShowLocation,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowLocation: value),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowTimeTitle),
+                        value: _draft.courseCardShowTime,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowTime: value),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowTimeLabelsTitle),
+                        value: _draft.courseCardShowTimeLabels,
+                        onChanged: _draft.courseCardShowTime
+                            ? (value) {
+                                _updateDraft(
+                                  _draft.copyWith(
+                                    courseCardShowTimeLabels: value,
+                                  ),
+                                );
+                              }
+                            : null,
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowWeeksTitle),
+                        value: _draft.courseCardShowWeeks,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowWeeks: value),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowDescriptionTitle),
+                        value: _draft.courseCardShowDescription,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(courseCardShowDescription: value),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowOtherWeeksTitle),
+                        value: _draft.timetableShowNonCurrentWeekCourses,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(
+                              timetableShowNonCurrentWeekCourses: value,
+                            ),
+                          );
+                        },
+                      ),
+                      SettingSwitchTile(
+                        title: Text(l10n.layoutShowConflictBadgeTitle),
+                        value: _draft.showConflictBadgeOnTimetable,
+                        onChanged: (value) {
+                          _updateDraft(
+                            _draft.copyWith(
+                              showConflictBadgeOnTimetable: value,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SettingsSectionCard(
+                    title: l10n.layoutVerticalAlignLabel,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FSelect<CourseCardVerticalAlign>(
+                          hint: l10n.layoutVerticalAlignLabel,
+                          items: {
+                            for (final v in CourseCardVerticalAlign.values)
+                              v.label: v,
+                          },
+                          control: FSelectControl.lifted(
+                            value: _draft.courseCardVerticalAlign,
+                            onChange: (value) {
+                              if (value == null) return;
+                              _updateDraft(
+                                _draft.copyWith(courseCardVerticalAlign: value),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        FSelect<CourseCardHorizontalAlign>(
+                          hint: l10n.layoutHorizontalAlignLabel,
+                          items: {
+                            for (final v in CourseCardHorizontalAlign.values)
+                              v.label: v,
+                          },
+                          control: FSelectControl.lifted(
+                            value: _draft.courseCardHorizontalAlign,
+                            onChange: (value) {
+                              if (value == null) return;
+                              _updateDraft(
+                                _draft.copyWith(
+                                  courseCardHorizontalAlign: value,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SettingsSectionCard(
+                    title: l10n.layoutConflictOpacityLabel(
+                      (_draft.timetableConflictCourseOpacity * 100).round(),
+                    ),
+                    subtitle: l10n.layoutConflictOpacitySubtitle,
+                    child: FSlider(
+                      control: FSliderControl.managedDiscrete(
+                        initial: FSliderValue(
+                          max:
+                              ((_draft.timetableConflictCourseOpacity - 0.2) /
+                                      0.8)
+                                  .clamp(0.0, 1.0),
+                        ),
+                        onChange: (sv) => _updateDraft(
+                          _draft.copyWith(
+                            timetableConflictCourseOpacity: 0.2 + sv.max * 0.8,
+                          ),
+                          debounce: true,
+                        ),
+                      ),
+                      marks: [
+                        for (var i = 0; i <= 16; i++)
+                          FSliderMark(value: i / 16),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SettingsSectionCard(
+                    title: l10n.textColorTitle,
+                    subtitle: l10n.textColorSubtitle,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SettingSwitchTile(
+                          title: Text(l10n.textColorIndependentDetail),
+                          value: !_draft.linkCourseCardColors,
+                          onChanged: (value) {
+                            if (!value) {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  linkCourseCardColors: true,
+                                  courseCardDetailColorLight:
+                                      _draft.courseCardTitleColorLight,
+                                  courseCardDetailColorDark:
+                                      _draft.courseCardTitleColorDark,
+                                ),
+                              );
+                            } else {
+                              _updateDraft(
+                                _draft.copyWith(linkCourseCardColors: false),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // 浅色模式颜色设置
+                        _buildModeColorSettings(
+                          context,
+                          l10n: l10n,
+                          modeLabel: l10n.themeModeLight,
+                          containerColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerLow,
+                          titleColor: _draft.courseCardTitleColorLight,
+                          detailColor: _draft.courseCardDetailColorLight,
+                          weekdayColor: _draft.weekdayBarFontColorLight,
+                          timeAxisColor: _draft.timeAxisFontColorLight,
+                          accentColor: _draft.weekdayBarAccentColorLight,
+                          onTitleColorChanged: (color) {
+                            if (_draft.linkCourseCardColors) {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  courseCardTitleColorLight: color,
+                                  courseCardDetailColorLight: color,
+                                ),
+                              );
+                            } else {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  courseCardTitleColorLight: color,
+                                ),
+                              );
+                            }
+                          },
+                          onDetailColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(courseCardDetailColorLight: color),
+                          ),
+                          onWeekdayColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(weekdayBarFontColorLight: color),
+                          ),
+                          onTimeAxisColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(timeAxisFontColorLight: color),
+                          ),
+                          onAccentColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(weekdayBarAccentColorLight: color),
+                          ),
+                          defaultTitleColor:
+                              TimetableSettings.defaultCourseCardTitleColor,
+                          defaultDetailColor:
+                              TimetableSettings.defaultCourseCardDetailColor,
+                          defaultWeekdayColor:
+                              TimetableSettings.defaultWeekdayBarFontColorLight,
+                          defaultTimeAxisColor:
+                              TimetableSettings.defaultTimeAxisFontColorLight,
+                          defaultAccentColor: TimetableSettings
+                              .defaultWeekdayBarAccentColorLight,
+                        ),
+                        const SizedBox(height: 12),
+                        // 深色模式颜色设置
+                        _buildModeColorSettings(
+                          context,
+                          l10n: l10n,
+                          modeLabel: l10n.themeModeDark,
+                          containerColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHigh,
+                          titleColor: _draft.courseCardTitleColorDark,
+                          detailColor: _draft.courseCardDetailColorDark,
+                          weekdayColor: _draft.weekdayBarFontColorDark,
+                          timeAxisColor: _draft.timeAxisFontColorDark,
+                          accentColor: _draft.weekdayBarAccentColorDark,
+                          onTitleColorChanged: (color) {
+                            if (_draft.linkCourseCardColors) {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  courseCardTitleColorDark: color,
+                                  courseCardDetailColorDark: color,
+                                ),
+                              );
+                            } else {
+                              _updateDraft(
+                                _draft.copyWith(
+                                  courseCardTitleColorDark: color,
+                                ),
+                              );
+                            }
+                          },
+                          onDetailColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(courseCardDetailColorDark: color),
+                          ),
+                          onWeekdayColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(weekdayBarFontColorDark: color),
+                          ),
+                          onTimeAxisColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(timeAxisFontColorDark: color),
+                          ),
+                          onAccentColorChanged: (color) => _updateDraft(
+                            _draft.copyWith(weekdayBarAccentColorDark: color),
+                          ),
+                          defaultTitleColor:
+                              TimetableSettings.defaultCourseCardTitleColor,
+                          defaultDetailColor:
+                              TimetableSettings.defaultCourseCardDetailColor,
+                          defaultWeekdayColor:
+                              TimetableSettings.defaultWeekdayBarFontColorDark,
+                          defaultTimeAxisColor:
+                              TimetableSettings.defaultTimeAxisFontColorDark,
+                          defaultAccentColor: TimetableSettings
+                              .defaultWeekdayBarAccentColorDark,
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -3812,309 +3650,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildLayoutPreviewCard(TimetableProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final preview = _buildLayoutPreviewData(provider);
-    final colorScheme = Theme.of(context).colorScheme;
-    final sections = provider.settings.sections
-        .skip(preview.baseSection - 1)
-        .take(4)
-        .toList();
-    final timeColumnWidth =
-        _draft.timetableTimeColumnWidthMode ==
-            TimetableTimeColumnWidthMode.narrow
-        ? 34.0
-        : 40.0;
-    final cardInset = _draft.timetableCourseCardGap.clamp(0.0, 3.0);
-    final sectionHeight = _draft.sectionHeight;
-    final gridHeight = sections.length * sectionHeight;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final dayWidth =
-              (constraints.maxWidth - timeColumnWidth) /
-              preview.dayTitles.length;
-          final showsFloatingButton =
-              _draft.timetableBackToCurrentWeekButtonStyle ==
-              BackToCurrentWeekButtonStyle.floating;
-          return Stack(
-            children: [
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    height: 50,
-                    padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: colorScheme.outlineVariant),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: timeColumnWidth,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                l10n.currentWeekCompact(provider.currentWeek),
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w800,
-                                  color: colorScheme.onSurface,
-                                ),
-                              ),
-                              if (!showsFloatingButton)
-                                Text(
-                                  l10n.backToCurrentWeekAction,
-                                  style: TextStyle(
-                                    fontSize: 8,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        for (
-                          var dayIndex = 0;
-                          dayIndex < preview.dayTitles.length;
-                          dayIndex++
-                        )
-                          SizedBox(
-                            width: dayWidth,
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  preview.dayTitles[dayIndex],
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                            DateTime.now().weekday
-                                        ? FontWeight.w800
-                                        : FontWeight.w600,
-                                    color:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                            DateTime.now().weekday
-                                        ? _colorFromHex(
-                                            Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? _draft
-                                                      .weekdayBarAccentColorDark
-                                                : _draft
-                                                      .weekdayBarAccentColorLight,
-                                            colorScheme.primary,
-                                          )
-                                        : _colorFromHex(
-                                            Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? _draft.weekdayBarFontColorDark
-                                                : _draft
-                                                      .weekdayBarFontColorLight,
-                                            colorScheme.onSurface,
-                                          ),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _formatPreviewDate(
-                                    _previewDateForWeekDay(
-                                      _draft,
-                                      provider.currentWeek,
-                                      preview.visibleDayNumbers[dayIndex],
-                                    ),
-                                  ),
-                                  style: TextStyle(
-                                    fontSize: 8.5,
-                                    color:
-                                        preview.visibleDayNumbers[dayIndex] ==
-                                            DateTime.now().weekday
-                                        ? _colorFromHex(
-                                            Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? _draft
-                                                      .weekdayBarAccentColorDark
-                                                : _draft
-                                                      .weekdayBarAccentColorLight,
-                                            colorScheme.primary,
-                                          ).withValues(alpha: 0.78)
-                                        : _colorFromHex(
-                                            Theme.of(context).brightness ==
-                                                    Brightness.dark
-                                                ? _draft.weekdayBarFontColorDark
-                                                : _draft
-                                                      .weekdayBarFontColorLight,
-                                            colorScheme.onSurfaceVariant,
-                                          ).withValues(alpha: 0.7),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(
-                    height: gridHeight,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: timeColumnWidth,
-                          child: Column(
-                            children: [
-                              for (var i = 0; i < sections.length; i++)
-                                Container(
-                                  height: sectionHeight,
-                                  alignment: Alignment.center,
-                                  child: _buildPreviewSectionTimeCell(
-                                    preview.baseSection + i,
-                                    sections[i],
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        for (
-                          var dayIndex = 0;
-                          dayIndex < preview.dayTitles.length;
-                          dayIndex++
-                        )
-                          SizedBox(
-                            width: dayWidth,
-                            child: Container(
-                              height: gridHeight,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerLowest
-                                    .withValues(alpha: 0.45),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Stack(
-                                clipBehavior: Clip.antiAlias,
-                                children: [
-                                  for (final placement
-                                      in preview.placements.where(
-                                        (item) => item.dayIndex == dayIndex,
-                                      ))
-                                    Positioned(
-                                      top:
-                                          (placement.startSlot - 1) *
-                                          sectionHeight,
-                                      left: 0,
-                                      right: 0,
-                                      height:
-                                          placement.slotSpan * sectionHeight,
-                                      child: CourseCard(
-                                        course: placement.course,
-                                        isCompact: true,
-                                        showName: _draft.courseCardShowName,
-                                        showTeacher:
-                                            _draft.courseCardShowTeacher,
-                                        showLocation:
-                                            _draft.courseCardShowLocation,
-                                        showTime: _draft.courseCardShowTime,
-                                        showTimeLabels:
-                                            _draft.courseCardShowTimeLabels,
-                                        showWeeks: _draft.courseCardShowWeeks,
-                                        showDescription:
-                                            _draft.courseCardShowDescription,
-                                        verticalAlign:
-                                            _draft.courseCardVerticalAlign,
-                                        horizontalAlign:
-                                            _draft.courseCardHorizontalAlign,
-                                        compactTitleFontSize:
-                                            _draft.courseCardFontSize,
-                                        compactSubtitleFontSize:
-                                            (_draft.courseCardFontSize - 1)
-                                                .clamp(7.0, 14.0),
-                                        compactVerticalPadding: 4,
-                                        compactOuterInset: cardInset,
-                                        titleColorHex:
-                                            Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? _draft.courseCardTitleColorDark
-                                            : _draft.courseCardTitleColorLight,
-                                        detailColorHex:
-                                            Theme.of(context).brightness ==
-                                                Brightness.dark
-                                            ? _draft.courseCardDetailColorDark
-                                            : _draft.courseCardDetailColorLight,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (showsFloatingButton)
-                Positioned(
-                  right: 16,
-                  bottom: 18,
-                  child: IgnorePointer(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHigh.withValues(
-                          alpha: _draft
-                              .timetableFloatingBackToCurrentWeekButtonOpacity,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.7,
-                          ),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.my_location_rounded,
-                            size: 13,
-                            color: colorScheme.primary,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            l10n.backToCurrentWeekAction,
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: colorScheme.onSurface,
-                              height: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          );
-        },
       ),
     );
   }
@@ -4129,198 +3664,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       BackToCurrentWeekButtonStyle.floating =>
         l10n.layoutBackToCurrentWeekButtonStyleFloating,
     };
-  }
-
-  _LayoutPreviewData _buildLayoutPreviewData(TimetableProvider provider) {
-    final l10n = AppLocalizations.of(context)!;
-    final weekDays = [
-      l10n.weekdayMon,
-      l10n.weekdayTue,
-      l10n.weekdayWed,
-      l10n.weekdayThu,
-      l10n.weekdayFri,
-      l10n.weekdaySat,
-      l10n.weekdaySun,
-    ];
-    final currentWeek = provider.currentWeek;
-    final visibleDays = _draft.timetableHideWeekends
-        ? const [1, 2, 3, 4, 5]
-        : const [1, 2, 3, 4, 5, 6, 7];
-    final currentWeekCourses =
-        provider.courses
-            .where(
-              (course) =>
-                  course.isInWeek(currentWeek) &&
-                  visibleDays.contains(course.dayOfWeek),
-            )
-            .toList()
-          ..sort((left, right) {
-            final dayCompare = left.dayOfWeek.compareTo(right.dayOfWeek);
-            if (dayCompare != 0) {
-              return dayCompare;
-            }
-            final sectionCompare = left.startSection.compareTo(
-              right.startSection,
-            );
-            if (sectionCompare != 0) {
-              return sectionCompare;
-            }
-            return left.id.compareTo(right.id);
-          });
-
-    final dayTitles = visibleDays
-        .map((dayOfWeek) => weekDays[dayOfWeek - 1])
-        .toList(growable: false);
-
-    if (currentWeekCourses.isNotEmpty) {
-      final baseSection = currentWeekCourses
-          .map((course) => course.startSection)
-          .reduce((left, right) => left < right ? left : right)
-          .clamp(1, (provider.settings.sectionCount - 3).clamp(1, 999));
-      final endSection = baseSection + 3;
-      final placements = <_PreviewPlacement>[];
-      for (final course in currentWeekCourses) {
-        if (course.endSection < baseSection ||
-            course.startSection > endSection) {
-          continue;
-        }
-        final visibleStartSection = course.startSection < baseSection
-            ? baseSection
-            : course.startSection;
-        final visibleEndSection = course.endSection > endSection
-            ? endSection
-            : course.endSection;
-        final relativeStart = visibleStartSection - baseSection + 1;
-        final relativeEnd = visibleEndSection - baseSection + 1;
-        placements.add(
-          _PreviewPlacement(
-            dayIndex: visibleDays.indexOf(course.dayOfWeek),
-            startSlot: relativeStart,
-            slotSpan: relativeEnd - relativeStart + 1,
-            course: course.copyWith(
-              startSection: relativeStart,
-              endSection: relativeEnd,
-            ),
-          ),
-        );
-      }
-      return _LayoutPreviewData(
-        usesRealCourses: true,
-        baseSection: baseSection,
-        visibleDayNumbers: visibleDays,
-        dayTitles: dayTitles,
-        placements: placements,
-      );
-    }
-
-    final samples = [
-      Course(
-        id: 'layout-preview-1',
-        name: l10n.sampleCourseAdvancedMath,
-        shortName: l10n.sampleCourseAdvancedMath,
-        teacher: l10n.sampleTeacherZhang,
-        location: 'A101',
-        dayOfWeek: 1,
-        startSection: 1,
-        endSection: 2,
-        startTime: '08:00',
-        endTime: '09:40',
-        color: '#2563EB',
-      ),
-      Course(
-        id: 'layout-preview-2',
-        name: l10n.sampleCourseEnglish,
-        shortName: l10n.sampleCourseEnglish,
-        teacher: l10n.sampleTeacherLi,
-        location: 'B203',
-        dayOfWeek: 2,
-        startSection: 2,
-        endSection: 3,
-        startTime: '08:55',
-        endTime: '10:45',
-        color: '#10B981',
-      ),
-    ];
-
-    return _LayoutPreviewData(
-      usesRealCourses: false,
-      baseSection: 1,
-      visibleDayNumbers: visibleDays,
-      dayTitles: dayTitles,
-      placements: [
-        _PreviewPlacement(
-          dayIndex: 0,
-          startSlot: 1,
-          slotSpan: 2,
-          course: samples[0],
-        ),
-        _PreviewPlacement(
-          dayIndex: 1,
-          startSlot: 2,
-          slotSpan: 2,
-          course: samples[1],
-        ),
-      ],
-    );
-  }
-
-  DateTime? _previewDateForWeekDay(
-    TimetableSettings settings,
-    int week,
-    int dayOfWeek,
-  ) {
-    final semesterStart = settings.semesterStartDate;
-    if (semesterStart == null) {
-      return null;
-    }
-
-    final normalizedStart = DateTime(
-      semesterStart.year,
-      semesterStart.month,
-      semesterStart.day,
-    ).subtract(Duration(days: semesterStart.weekday - 1));
-
-    return normalizedStart.add(Duration(days: (week - 1) * 7 + dayOfWeek - 1));
-  }
-
-  String _formatPreviewDate(DateTime? date) {
-    if (date == null) {
-      return '';
-    }
-    return '${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildPreviewSectionTimeCell(int sectionNumber, SectionTime section) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final timeAxisColor = isDark
-        ? _draft.timeAxisFontColorDark
-        : _draft.timeAxisFontColorLight;
-    final compactTextStyle = TextStyle(
-      fontSize: (_draft.compactFontSize - 2).clamp(6.0, 10.0),
-      color: _colorFromHex(timeAxisColor, Colors.grey.shade600),
-      height: 1.05,
-    );
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          '$sectionNumber',
-          style: TextStyle(
-            fontSize: _draft.compactFontSize.clamp(8.0, 11.0),
-            fontWeight: FontWeight.bold,
-            color: _colorFromHex(timeAxisColor, Colors.grey.shade800),
-          ),
-        ),
-        if (_draft.timetableSectionTimeDisplayMode !=
-            SectionTimeDisplayMode.hidden)
-          Text(section.startTime, style: compactTextStyle),
-        if (_draft.timetableSectionTimeDisplayMode ==
-            SectionTimeDisplayMode.startAndEnd)
-          Text(section.endTime, style: compactTextStyle),
-      ],
-    );
   }
 
   void _updateDraft(TimetableSettings next, {bool debounce = false}) {
@@ -4643,131 +3986,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
   }
 }
 
-class _SettingsEntryTile extends StatelessWidget with FTileMixin {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _SettingsEntryTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return FTile(
-      prefix: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      suffix: trailing ?? const Icon(Icons.chevron_right_rounded),
-      onPress: onTap,
-    );
-  }
-}
-
-class _LayoutPreviewData {
-  final bool usesRealCourses;
-  final int baseSection;
-  final List<int> visibleDayNumbers;
-  final List<String> dayTitles;
-  final List<_PreviewPlacement> placements;
-
-  const _LayoutPreviewData({
-    required this.usesRealCourses,
-    required this.baseSection,
-    required this.visibleDayNumbers,
-    required this.dayTitles,
-    required this.placements,
-  });
-}
-
-class _PreviewPlacement {
-  final int dayIndex;
-  final int startSlot;
-  final int slotSpan;
-  final Course course;
-
-  const _PreviewPlacement({
-    required this.dayIndex,
-    required this.startSlot,
-    required this.slotSpan,
-    required this.course,
-  });
-}
-
-class _SettingsSectionCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  const _SettingsSectionCard({
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final typo = context.theme.typography.body;
-    final header = Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
-          if (subtitle != null) ...[
-            const SizedBox(height: 2),
-            Text(subtitle!, style: typo.xs2),
-          ],
-        ],
-      ),
-    );
-    return FCard.raw(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [header, child],
-        ),
-      ),
-    );
-  }
-}
-
-class _SettingSwitchTile extends StatelessWidget {
-  final Widget title;
-  final Widget? subtitle;
-  final bool value;
-  final ValueChanged<bool>? onChanged;
-
-  const _SettingSwitchTile({
-    required this.title,
-    required this.value,
-    required this.onChanged,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onChanged != null;
-    return FTile(
-      title: title,
-      subtitle: subtitle,
-      suffix: FSwitch(value: value, enabled: enabled, onChange: onChanged),
-      onPress: enabled
-          ? () {
-              onChanged!(!value);
-            }
-          : null,
-    );
-  }
-}
-
 class _SelectableColorChip extends StatelessWidget {
   final String colorHex;
   final bool selected;
@@ -4945,14 +4163,14 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       FTextField(
                         control: FTextFieldControl.managed(
                           controller: nameController,
                         ),
                         label: Text(l10n.customHolidayNameLabel),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       InkWell(
                         onTap: () async {
                           FocusManager.instance.primaryFocus?.unfocus();
@@ -4990,7 +4208,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
                       Text(
                         l10n.customHolidayType,
                         style: const TextStyle(fontSize: 13),
@@ -5230,7 +4448,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
             FCard.raw(
               child: Column(
                 children: [
-                  _SettingSwitchTile(
+                  SettingSwitchTile(
                     title: Text(l10n.holidayEnableTitle),
                     subtitle: Text(l10n.holidayEnableSubtitle),
                     value: _draft.enableHolidayMarking,

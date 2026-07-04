@@ -65,8 +65,9 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('home screen can quick switch profiles from title trigger',
-      (tester) async {
+  testWidgets('home screen can quick switch profiles from title trigger', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -80,7 +81,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -106,8 +110,9 @@ void main() {
     expect(find.text('秋季课表'), findsNothing);
   });
 
-  testWidgets('brand title style shows active profile name on home',
-      (tester) async {
+  testWidgets('brand title style shows active profile name on home', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -121,19 +126,25 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
     await _pumpTimetableFrame(tester);
 
     expect(
-        find.byKey(const ValueKey('profile_switcher_trigger')), findsOneWidget);
+      find.byKey(const ValueKey('profile_switcher_trigger')),
+      findsOneWidget,
+    );
     expect(find.text('默认课表'), findsOneWidget);
   });
 
-  testWidgets('home screen keeps timetable management in overflow menu',
-      (tester) async {
+  testWidgets('home overflow menu omits timetable management entry', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -144,21 +155,25 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
     await _pumpTimetableFrame(tester);
 
-    await tester.tap(find.byTooltip('更多'));
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
     await _pumpTimetableFrame(tester);
 
-    expect(find.text('课表管理'), findsOneWidget);
+    expect(find.text('课表管理'), findsNothing);
     expect(find.text('课程总览'), findsOneWidget);
   });
 
-  testWidgets('profile switch sheet can open timetable management screen',
-      (tester) async {
+  testWidgets('profile switch sheet can open timetable management screen', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -169,7 +184,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -185,8 +203,9 @@ void main() {
     expect(find.byType(TimetableProfilesScreen), findsOneWidget);
   });
 
-  testWidgets('switching profiles restores each profile timetable view state',
-      (tester) async {
+  testWidgets('switching profiles restores each profile timetable view state', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -216,14 +235,19 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
     await _pumpTimetableFrame(tester);
 
     expect(
-        find.byKey(const ValueKey('timetable-day-view-2-3')), findsOneWidget);
+      find.byKey(const ValueKey('timetable-day-view-2-3')),
+      findsOneWidget,
+    );
 
     await provider.switchProfile(weekProfileId);
     await _pumpTimetableFrame(tester);
@@ -234,6 +258,8 @@ void main() {
     await _pumpTimetableFrame(tester);
 
     expect(
-        find.byKey(const ValueKey('timetable-day-view-2-3')), findsOneWidget);
+      find.byKey(const ValueKey('timetable-day-view-2-3')),
+      findsOneWidget,
+    );
   });
 }

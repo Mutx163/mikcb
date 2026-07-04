@@ -158,26 +158,17 @@ void main() {
     await tester.pumpAndSettle();
 
     // We should now be on LiveReminderTimingScreen.
-    // Verify the before-class minutes dropdown includes 30–60 minute options.
-    // Find the DropdownButtonFormField whose label is '上课前弹出时间'.
-    final formFieldFinder = find.byWidgetPredicate((w) {
-      if (w is! DropdownButtonFormField<int>) return false;
-      return w.decoration.labelText == '上课前弹出时间';
-    });
+    // Verify the before-class minutes select includes 30–60 minute options.
     await tester.scrollUntilVisible(
-      formFieldFinder,
+      find.text('时间阈值'),
       200,
       scrollable: find.byType(Scrollable).last,
     );
     await tester.pumpAndSettle();
-    final dropdownFinder = find.descendant(
-      of: formFieldFinder,
-      matching: find.byType(DropdownButton<int>),
-    );
-    final dropdown = tester.widget<DropdownButton<int>>(dropdownFinder);
-    final optionValues = dropdown.items!
-        .map((item) => item.value)
-        .toList();
-    expect(optionValues, containsAll([30, 40, 50, 60]));
+    await tester.tap(find.text('20 分钟').first);
+    await tester.pumpAndSettle();
+    for (final minutes in [30, 40, 50, 60]) {
+      expect(find.text('$minutes 分钟'), findsWidgets);
+    }
   });
 }

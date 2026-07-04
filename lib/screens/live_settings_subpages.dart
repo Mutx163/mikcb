@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +12,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/hex_color.dart';
+import '../widgets/settings_section_widgets.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
 const String _labelLogoDir = 'miui_label_logos';
@@ -61,41 +63,6 @@ String _buildLiveClassReminderLeadSummary(
     settings.liveClassReminderStartMinutes,
     settings.liveEndSecondsCountdownThreshold,
   );
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-  final Widget child;
-
-  const _SectionCard({
-    required this.title,
-    required this.child,
-    this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-            if (subtitle != null) ...[
-              const SizedBox(height: 8),
-              Text(subtitle!, style: Theme.of(context).textTheme.bodySmall),
-            ],
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class LiveReminderTimingScreen extends StatefulWidget {
@@ -150,18 +117,23 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
       l10n,
       _draft.liveTimeCorrectionSeconds,
     );
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.liveReminderTimingTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _SectionCard(
-            title: l10n.liveReminderSwitchesTitle,
-            subtitle: l10n.liveReminderSwitchesSubtitle,
-            child: Column(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.liveReminderTimingTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            FTileGroup(
+              label: Text(l10n.liveReminderSwitchesTitle),
+              description: Text(l10n.liveReminderSwitchesSubtitle),
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                SettingSwitchTile(
                   title: Text(l10n.beforeClassReminderTitle),
                   subtitle: Text(
                     l10n.beforeClassReminderSubtitle(
@@ -173,11 +145,11 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     _draft.copyWith(liveEnableBeforeClass: value),
                   ),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                SettingSwitchTile(
                   title: Text(l10n.duringClassReminderTitle),
                   subtitle: Text(l10n.duringClassReminderSubtitle),
-                  value: _draft.liveEnableDuringClass ||
+                  value:
+                      _draft.liveEnableDuringClass ||
                       _draft.liveEnableBeforeEnd,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(
@@ -186,108 +158,56 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     ),
                   ),
                 ),
-                if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.liveClassReminderLeadTitle,
-                          style:
-                              Theme.of(context).textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _buildLiveClassReminderLeadSummary(l10n, _draft),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int>(
-                          isExpanded: true,
-                          initialValue: _draft.liveClassReminderStartMinutes,
-                          decoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                            labelText: l10n.liveClassReminderLeadTitle,
-                          ),
-                          items: [
-                            DropdownMenuItem(
-                              value: 0,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionImmediate,
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 5,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionMinutes(5),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 10,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionMinutes(10),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 15,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionMinutes(15),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 20,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionMinutes(20),
-                              ),
-                            ),
-                            DropdownMenuItem(
-                              value: 30,
-                              child: Text(
-                                l10n.liveClassReminderLeadOptionMinutes(30),
-                              ),
-                            ),
-                          ],
-                          onChanged: (value) {
-                            if (value == null) return;
-                            _updateDraft(
-                              _draft.copyWith(
-                                liveClassReminderStartMinutes: value,
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: l10n.liveDisplayModeTitle,
-            subtitle: l10n.liveDisplayModeSubtitle,
-            child: Column(
+            if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd) ...[
+              const SizedBox(height: 12),
+              SettingsSectionCard(
+                title: l10n.liveClassReminderLeadTitle,
+                subtitle: _buildLiveClassReminderLeadSummary(l10n, _draft),
+                child: FSelect<int>(
+                  hint: l10n.liveClassReminderLeadTitle,
+                  items: {
+                    l10n.liveClassReminderLeadOptionImmediate: 0,
+                    l10n.liveClassReminderLeadOptionMinutes(5): 5,
+                    l10n.liveClassReminderLeadOptionMinutes(10): 10,
+                    l10n.liveClassReminderLeadOptionMinutes(15): 15,
+                    l10n.liveClassReminderLeadOptionMinutes(20): 20,
+                    l10n.liveClassReminderLeadOptionMinutes(30): 30,
+                  },
+                  control: FSelectControl.lifted(
+                    value: _draft.liveClassReminderStartMinutes,
+                    onChange: (value) {
+                      if (value == null) return;
+                      _updateDraft(
+                        _draft.copyWith(liveClassReminderStartMinutes: value),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 12),
+            FTileGroup(
+              label: Text(l10n.liveDisplayModeTitle),
+              description: Text(l10n.liveDisplayModeSubtitle),
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                SettingSwitchTile(
                   title: Text(l10n.duringClassStatusNotificationTitle),
                   subtitle: Text(
                     _draft.liveClassReminderStartMinutes == 0
                         ? l10n.duringClassStatusNotificationImmediate
                         : _draft.livePromoteDuringClass
-                            ? l10n.duringClassStatusNotificationBeforeEnd
-                            : l10n.duringClassStatusNotificationPersistent,
+                        ? l10n.duringClassStatusNotificationBeforeEnd
+                        : l10n.duringClassStatusNotificationPersistent,
                   ),
                   value: _draft.liveShowDuringClassNotification,
                   onChanged: (value) => _updateDraft(
                     _draft.copyWith(liveShowDuringClassNotification: value),
                   ),
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                SettingSwitchTile(
                   title: Text(l10n.enableIslandDisplayTitle),
                   subtitle: Text(l10n.enableIslandDisplaySubtitle),
                   value: _draft.livePromoteDuringClass,
@@ -297,106 +217,109 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _SectionCard(
-            title: l10n.liveTimeThresholdTitle,
-            subtitle: l10n.liveTimeThresholdSubtitle,
-            child: Column(
-              children: [
-                DropdownButtonFormField<int>(
-                  initialValue: _draft.liveShowBeforeClassMinutes,
-                  decoration: InputDecoration(
-                    labelText: l10n.beforeClassPopupLabel,
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _beforeClassMinutesOptions
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(l10n.beforeClassMinutesOption(value)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateDraft(
-                      _draft.copyWith(liveShowBeforeClassMinutes: value),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<int>(
-                  initialValue: _draft.liveEndSecondsCountdownThreshold,
-                  decoration: InputDecoration(
-                    labelText: l10n.beforeEndSecondsLabel,
-                    border: OutlineInputBorder(),
-                  ),
-                  items: _endSecondsOptions
-                      .map(
-                        (value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(l10n.beforeEndSecondsOption(value)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateDraft(
-                      _draft.copyWith(
-                        liveEndSecondsCountdownThreshold: value,
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.timeCorrectionLabel(timeCorrectionText),
-                ),
-                Slider(
-                  value: _draft.liveTimeCorrectionSeconds
-                      .toDouble()
-                      .clamp(_timeCorrectionMin, _timeCorrectionMax),
-                  min: _timeCorrectionMin,
-                  max: _timeCorrectionMax,
-                  divisions: (_timeCorrectionMax - _timeCorrectionMin).toInt(),
-                  label: timeCorrectionText,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(
-                      liveTimeCorrectionSeconds: value.round(),
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.liveTimeThresholdTitle,
+              subtitle: l10n.liveTimeThresholdSubtitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FSelect<int>(
+                    hint: l10n.beforeClassPopupLabel,
+                    items: {
+                      for (final value in _beforeClassMinutesOptions)
+                        l10n.beforeClassMinutesOption(value): value,
+                    },
+                    control: FSelectControl.lifted(
+                      value: _draft.liveShowBeforeClassMinutes,
+                      onChange: (value) {
+                        if (value == null) return;
+                        _updateDraft(
+                          _draft.copyWith(liveShowBeforeClassMinutes: value),
+                        );
+                      },
                     ),
-                    debounce: true,
                   ),
-                ),
-                Text(
-                  l10n.timeCorrectionHelp,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<LiveDuringClassTimeDisplayMode>(
-                  initialValue: _draft.liveDuringEndTimeDisplayMode,
-                  decoration: InputDecoration(
-                    labelText: l10n.duringEndTimeDisplayLabel,
-                    helperText: l10n.duringEndTimeDisplayHelp,
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 12),
+                  FSelect<int>(
+                    hint: l10n.beforeEndSecondsLabel,
+                    items: {
+                      for (final value in _endSecondsOptions)
+                        l10n.beforeEndSecondsOption(value): value,
+                    },
+                    control: FSelectControl.lifted(
+                      value: _draft.liveEndSecondsCountdownThreshold,
+                      onChange: (value) {
+                        if (value == null) return;
+                        _updateDraft(
+                          _draft.copyWith(
+                            liveEndSecondsCountdownThreshold: value,
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                  items: LiveDuringClassTimeDisplayMode.values
-                      .map((value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.label),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    if (value == null) return;
-                    _updateDraft(
-                      _draft.copyWith(liveDuringEndTimeDisplayMode: value),
-                    );
-                  },
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.timeCorrectionLabel(timeCorrectionText),
+                    style: context.theme.typography.body.sm,
+                  ),
+                  FSlider(
+                    control: FSliderControl.managedDiscrete(
+                      initial: FSliderValue(
+                        max:
+                            ((_draft.liveTimeCorrectionSeconds -
+                                        _timeCorrectionMin) /
+                                    (_timeCorrectionMax - _timeCorrectionMin))
+                                .clamp(0.0, 1.0),
+                      ),
+                      onChange: (sv) => _updateDraft(
+                        _draft.copyWith(
+                          liveTimeCorrectionSeconds:
+                              (_timeCorrectionMin +
+                                      sv.max *
+                                          (_timeCorrectionMax -
+                                              _timeCorrectionMin))
+                                  .round(),
+                        ),
+                        debounce: true,
+                      ),
+                    ),
+                    marks: [
+                      for (var i = 0; i <= 60; i++) FSliderMark(value: i / 60),
+                    ],
+                  ),
+                  Text(
+                    l10n.timeCorrectionHelp,
+                    style: context.theme.typography.body.xs2,
+                  ),
+                  const SizedBox(height: 12),
+                  FSelect<LiveDuringClassTimeDisplayMode>(
+                    hint: l10n.duringEndTimeDisplayLabel,
+                    items: {
+                      for (final value in LiveDuringClassTimeDisplayMode.values)
+                        value.label: value,
+                    },
+                    control: FSelectControl.lifted(
+                      value: _draft.liveDuringEndTimeDisplayMode,
+                      onChange: (value) {
+                        if (value == null) return;
+                        _updateDraft(
+                          _draft.copyWith(liveDuringEndTimeDisplayMode: value),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.duringEndTimeDisplayHelp,
+                    style: context.theme.typography.body.xs2,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -423,8 +346,9 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() => _draft = provider.settings);
     }
   }
@@ -456,8 +380,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     _draft = context.read<TimetableProvider>().settings;
     unawaited(
       context.read<TimetableProvider>().refreshLiveActivityNow(
-            forceSnapshotSync: true,
-          ),
+        forceSnapshotSync: true,
+      ),
     );
   }
 
@@ -484,194 +408,182 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final display = _display;
     final sectionCards = [
-      _SectionCard(
+      SettingsSectionCard(
         title: l10n.liveDisplayContentTitle,
         subtitle: l10n.liveDisplayContentSubtitle,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showCourseNameTitle),
-              value: display.showCourseName,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(showCourseName: value)),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.preferShortNameTitle),
-              subtitle: Text(l10n.preferShortNameSubtitle),
-              value: display.useShortName,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(useShortName: value)),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showLocationTitle),
-              value: display.showLocation,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(showLocation: value)),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showCountdownTitle),
-              value: display.showCountdown,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(showCountdown: value)),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SettingSwitchTile(
+                  title: Text(l10n.showCourseNameTitle),
+                  value: display.showCourseName,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(showCourseName: value)),
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.preferShortNameTitle),
+                  subtitle: Text(l10n.preferShortNameSubtitle),
+                  value: display.useShortName,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(useShortName: value)),
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.showLocationTitle),
+                  value: display.showLocation,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(showLocation: value)),
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.showCountdownTitle),
+                  value: display.showCountdown,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(showCountdown: value)),
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.showStageTextTitle),
+                  subtitle: Text(l10n.showStageTextSubtitle),
+                  value: display.showStageText,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(showStageText: value)),
+                ),
+                SettingSwitchTile(
+                  title: Text(l10n.hidePrefixTextTitle),
+                  subtitle: Text(l10n.hidePrefixTextSubtitle),
+                  value: display.hidePrefixText,
+                  onChanged: (value) =>
+                      _updateDisplay(display.copyWith(hidePrefixText: value)),
+                ),
+              ],
             ),
             if (display.showCountdown) ...[
               const SizedBox(height: 12),
-              DropdownButtonFormField<LiveCountdownTextStyle>(
-                initialValue: display.countdownTextStyle,
-                decoration: InputDecoration(
-                  labelText: l10n.countdownFormatLabel,
-                  helperText: l10n.countdownFormatHelp,
-                  border: OutlineInputBorder(),
-                ),
-                items: LiveCountdownTextStyle.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  _updateDisplay(
-                    display.copyWith(countdownTextStyle: value),
-                  );
+              FSelect<LiveCountdownTextStyle>(
+                hint: l10n.countdownFormatLabel,
+                items: {
+                  for (final value in LiveCountdownTextStyle.values)
+                    value.label: value,
                 },
+                control: FSelectControl.lifted(
+                  value: display.countdownTextStyle,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDisplay(display.copyWith(countdownTextStyle: value));
+                  },
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                l10n.countdownFormatHelp,
+                style: context.theme.typography.body.xs2,
               ),
             ],
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.showStageTextTitle),
-              subtitle: Text(l10n.showStageTextSubtitle),
-              value: display.showStageText,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(showStageText: value)),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.hidePrefixTextTitle),
-              subtitle: Text(l10n.hidePrefixTextSubtitle),
-              value: display.hidePrefixText,
-              onChanged: (value) =>
-                  _updateDisplay(display.copyWith(hidePrefixText: value)),
-            ),
           ],
         ),
       ),
       if (!widget.forDuringEnd) ...[
-        const SizedBox(height: 16),
-        _SectionCard(
+        const SizedBox(height: 12),
+        SettingsSectionCard(
           title: l10n.beforeClassQuickActionTitle,
           subtitle: l10n.beforeClassQuickActionSubtitle,
-          child: DropdownButtonFormField<LiveBeforeClassQuickAction>(
-            initialValue: _draft.liveBeforeClassQuickAction,
-            decoration: InputDecoration(
-              labelText: l10n.beforeClassQuickActionTitle,
-              border: OutlineInputBorder(),
-            ),
-            items: LiveBeforeClassQuickAction.values
-                .map(
-                  (value) => DropdownMenuItem(
-                    value: value,
-                    child: Text(value.label),
-                  ),
-                )
-                .toList(),
-            onChanged: (value) {
-              if (value == null) return;
-              _updateDraft(
-                _draft.copyWith(liveBeforeClassQuickAction: value),
-              );
+          child: FSelect<LiveBeforeClassQuickAction>(
+            hint: l10n.beforeClassQuickActionTitle,
+            items: {
+              for (final value in LiveBeforeClassQuickAction.values)
+                value.label: value,
             },
+            control: FSelectControl.lifted(
+              value: _draft.liveBeforeClassQuickAction,
+              onChange: (value) {
+                if (value == null) return;
+                _updateDraft(
+                  _draft.copyWith(liveBeforeClassQuickAction: value),
+                );
+              },
+            ),
           ),
         ),
       ],
-      const SizedBox(height: 16),
-      _SectionCard(
+      const SizedBox(height: 12),
+      SettingsSectionCard(
         title: l10n.liveIslandVisualTitle,
         subtitle: l10n.liveIslandVisualSubtitle,
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text(l10n.liveMiuiLabelImageTitle),
-              subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
-              value: display.enableMiuiIslandLabelImage,
-              onChanged: (value) => _updateDisplay(
-                display.copyWith(enableMiuiIslandLabelImage: value),
-              ),
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SettingSwitchTile(
+                  title: Text(l10n.liveMiuiLabelImageTitle),
+                  subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
+                  value: display.enableMiuiIslandLabelImage,
+                  onChanged: (value) => _updateDisplay(
+                    display.copyWith(enableMiuiIslandLabelImage: value),
+                  ),
+                ),
+              ],
             ),
             if (display.enableMiuiIslandLabelImage) ...[
               const SizedBox(height: 12),
-              DropdownButtonFormField<MiuiIslandLabelContent>(
-                initialValue: display.miuiIslandLabelContent,
-                decoration: InputDecoration(
-                  labelText: l10n.liveMiuiLabelContentLabel,
-                  border: OutlineInputBorder(),
-                ),
-                items: MiuiIslandLabelContent.values
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  _updateDisplay(
-                    display.copyWith(miuiIslandLabelContent: value),
-                  );
+              FSelect<MiuiIslandLabelContent>(
+                hint: l10n.liveMiuiLabelContentLabel,
+                items: {
+                  for (final value in MiuiIslandLabelContent.values)
+                    value.label: value,
                 },
+                control: FSelectControl.lifted(
+                  value: display.miuiIslandLabelContent,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDisplay(
+                      display.copyWith(miuiIslandLabelContent: value),
+                    );
+                  },
+                ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<MiuiIslandLabelStyle>(
-                initialValue: display.miuiIslandLabelStyle,
-                decoration: InputDecoration(
-                  labelText: l10n.liveMiuiLabelStyleLabel,
-                  border: OutlineInputBorder(),
-                ),
-                items: MiuiIslandLabelStyle.values
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  _updateDisplay(
-                    display.copyWith(miuiIslandLabelStyle: value),
-                  );
+              FSelect<MiuiIslandLabelStyle>(
+                hint: l10n.liveMiuiLabelStyleLabel,
+                items: {
+                  for (final value in MiuiIslandLabelStyle.values)
+                    value.label: value,
                 },
+                control: FSelectControl.lifted(
+                  value: display.miuiIslandLabelStyle,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDisplay(
+                      display.copyWith(miuiIslandLabelStyle: value),
+                    );
+                  },
+                ),
               ),
               if (display.miuiIslandLabelStyle ==
                   MiuiIslandLabelStyle.iconAndText) ...[
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.liveMiuiLabelLogoTitle,
-                    style: Theme.of(context).textTheme.titleSmall,
+                Text(
+                  l10n.liveMiuiLabelLogoTitle,
+                  style: context.theme.typography.body.sm.copyWith(
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    l10n.liveMiuiLabelLogoSubtitle,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
+                Text(
+                  l10n.liveMiuiLabelLogoSubtitle,
+                  style: context.theme.typography.body.xs2,
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: () => _pickLabelLogoImage(display),
-                        icon: const Icon(Icons.image_outlined),
-                        label: Text(
+                      child: FButton(
+                        variant: FButtonVariant.secondary,
+                        onPress: () => _pickLabelLogoImage(display),
+                        prefix: const Icon(Icons.image_outlined),
+                        child: Text(
                           display.miuiIslandLabelLogoPath == null
                               ? l10n.selectImageAction
                               : l10n.replaceImageAction,
@@ -680,8 +592,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     ),
                     if (display.miuiIslandLabelLogoPath != null) ...[
                       const SizedBox(width: 12),
-                      IconButton.outlined(
-                        onPressed: () async {
+                      FButton(
+                        variant: FButtonVariant.outline,
+                        onPress: () async {
                           await _deleteManagedImageArtifacts(
                             directoryName: _labelLogoDir,
                             filePrefix: widget.forDuringEnd
@@ -695,7 +608,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                             clearLabelLogoPath: true,
                           );
                         },
-                        icon: const Icon(Icons.delete_outline),
+                        prefix: const Icon(Icons.delete_outline),
                       ),
                     ],
                   ],
@@ -709,26 +622,33 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   const SizedBox(height: 12),
                   Text(
                     l10n.liveMiuiLabelLogoCornerRadiusLabel(
-                      display.miuiIslandLabelLogoCornerRadius
-                          .toStringAsFixed(0),
-                    ),
-                  ),
-                  Slider(
-                    value: display.miuiIslandLabelLogoCornerRadius.clamp(
-                      0.0,
-                      12.0,
-                    ),
-                    min: 0,
-                    max: 12,
-                    divisions: 12,
-                    label: display.miuiIslandLabelLogoCornerRadius
-                        .toStringAsFixed(0),
-                    onChanged: (value) => _updateDisplay(
-                      display.copyWith(
-                        miuiIslandLabelLogoCornerRadius: value,
+                      display.miuiIslandLabelLogoCornerRadius.toStringAsFixed(
+                        0,
                       ),
-                      debounce: true,
                     ),
+                    style: context.theme.typography.body.sm,
+                  ),
+                  FSlider(
+                    control: FSliderControl.managedDiscrete(
+                      initial: FSliderValue(
+                        max:
+                            (display.miuiIslandLabelLogoCornerRadius.clamp(
+                                      0.0,
+                                      12.0,
+                                    ) /
+                                    12)
+                                .clamp(0.0, 1.0),
+                      ),
+                      onChange: (sv) => _updateDisplay(
+                        display.copyWith(
+                          miuiIslandLabelLogoCornerRadius: sv.max * 12,
+                        ),
+                        debounce: true,
+                      ),
+                    ),
+                    marks: [
+                      for (var i = 0; i <= 12; i++) FSliderMark(value: i / 12),
+                    ],
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -738,93 +658,106 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 l10n.liveMiuiLabelFontSizeLabel(
                   display.miuiIslandLabelFontSize.toStringAsFixed(0),
                 ),
+                style: context.theme.typography.body.sm,
               ),
-              Slider(
-                value: display.miuiIslandLabelFontSize,
-                min: 1,
-                max: 32,
-                divisions: 31,
-                label: display.miuiIslandLabelFontSize.toStringAsFixed(0),
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelFontSize: value),
-                  debounce: true,
+              FSlider(
+                control: FSliderControl.managedDiscrete(
+                  initial: FSliderValue(
+                    max: ((display.miuiIslandLabelFontSize - 1) / 31).clamp(
+                      0.0,
+                      1.0,
+                    ),
+                  ),
+                  onChange: (sv) => _updateDisplay(
+                    display.copyWith(miuiIslandLabelFontSize: 1 + sv.max * 31),
+                    debounce: true,
+                  ),
                 ),
+                marks: [
+                  for (var i = 0; i <= 31; i++) FSliderMark(value: i / 31),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
                 l10n.liveMiuiLabelOffsetXLabel(
                   display.miuiIslandLabelOffsetX.toStringAsFixed(1),
                 ),
+                style: context.theme.typography.body.sm,
               ),
-              Slider(
-                value: display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0),
-                min: -2,
-                max: 2,
-                divisions: 40,
-                label: display.miuiIslandLabelOffsetX.toStringAsFixed(1),
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelOffsetX: value),
-                  debounce: true,
+              FSlider(
+                control: FSliderControl.managedDiscrete(
+                  initial: FSliderValue(
+                    max:
+                        ((display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0) + 2) /
+                                4)
+                            .clamp(0.0, 1.0),
+                  ),
+                  onChange: (sv) => _updateDisplay(
+                    display.copyWith(miuiIslandLabelOffsetX: -2 + sv.max * 4),
+                    debounce: true,
+                  ),
                 ),
+                marks: [
+                  for (var i = 0; i <= 40; i++) FSliderMark(value: i / 40),
+                ],
               ),
               const SizedBox(height: 12),
               Text(
                 l10n.liveMiuiLabelOffsetYLabel(
                   display.miuiIslandLabelOffsetY.toStringAsFixed(1),
                 ),
+                style: context.theme.typography.body.sm,
               ),
-              Slider(
-                value: display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0),
-                min: -2,
-                max: 2,
-                divisions: 40,
-                label: display.miuiIslandLabelOffsetY.toStringAsFixed(1),
-                onChanged: (value) => _updateDisplay(
-                  display.copyWith(miuiIslandLabelOffsetY: value),
-                  debounce: true,
+              FSlider(
+                control: FSliderControl.managedDiscrete(
+                  initial: FSliderValue(
+                    max:
+                        ((display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0) + 2) /
+                                4)
+                            .clamp(0.0, 1.0),
+                  ),
+                  onChange: (sv) => _updateDisplay(
+                    display.copyWith(miuiIslandLabelOffsetY: -2 + sv.max * 4),
+                    debounce: true,
+                  ),
+                ),
+                marks: [
+                  for (var i = 0; i <= 40; i++) FSliderMark(value: i / 40),
+                ],
+              ),
+              const SizedBox(height: 12),
+              FSelect<MiuiIslandLabelFontWeight>(
+                hint: l10n.liveMiuiLabelFontWeightLabel,
+                items: {
+                  for (final value in MiuiIslandLabelFontWeight.values)
+                    value.label: value,
+                },
+                control: FSelectControl.lifted(
+                  value: display.miuiIslandLabelFontWeight,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDisplay(
+                      display.copyWith(miuiIslandLabelFontWeight: value),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 12),
-              DropdownButtonFormField<MiuiIslandLabelFontWeight>(
-                initialValue: display.miuiIslandLabelFontWeight,
-                decoration: InputDecoration(
-                  labelText: l10n.liveMiuiLabelFontWeightLabel,
-                  border: OutlineInputBorder(),
-                ),
-                items: MiuiIslandLabelFontWeight.values
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  _updateDisplay(
-                    display.copyWith(miuiIslandLabelFontWeight: value),
-                  );
+              FSelect<MiuiIslandLabelRenderQuality>(
+                hint: l10n.liveMiuiLabelRenderQualityLabel,
+                items: {
+                  for (final value in MiuiIslandLabelRenderQuality.values)
+                    value.label: value,
                 },
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<MiuiIslandLabelRenderQuality>(
-                initialValue: display.miuiIslandLabelRenderQuality,
-                decoration: InputDecoration(
-                  labelText: l10n.liveMiuiLabelRenderQualityLabel,
-                  border: OutlineInputBorder(),
+                control: FSelectControl.lifted(
+                  value: display.miuiIslandLabelRenderQuality,
+                  onChange: (value) {
+                    if (value == null) return;
+                    _updateDisplay(
+                      display.copyWith(miuiIslandLabelRenderQuality: value),
+                    );
+                  },
                 ),
-                items: MiuiIslandLabelRenderQuality.values
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value == null) return;
-                  _updateDisplay(
-                    display.copyWith(
-                      miuiIslandLabelRenderQuality: value,
-                    ),
-                  );
-                },
               ),
               const SizedBox(height: 12),
               Wrap(
@@ -836,9 +769,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                         colorHex: color,
                         selected: display.miuiIslandLabelFontColor == color,
                         onTap: () => _updateDisplay(
-                          display.copyWith(
-                            miuiIslandLabelFontColor: color,
-                          ),
+                          display.copyWith(miuiIslandLabelFontColor: color),
                         ),
                       ),
                     )
@@ -846,40 +777,37 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               ),
               const SizedBox(height: 12),
             ],
-            DropdownButtonFormField<MiuiIslandExpandedIconMode>(
-              initialValue: display.miuiIslandExpandedIconMode,
-              decoration: InputDecoration(
-                labelText: l10n.liveMiuiExpandedIconLabel,
-                border: OutlineInputBorder(),
-              ),
-              items: MiuiIslandExpandedIconMode.values
-                  .map((value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.label),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) return;
-                () async {
-                  if (value != MiuiIslandExpandedIconMode.customImage) {
-                    await _deleteManagedImageArtifacts(
-                      directoryName: _expandedIconDir,
-                      filePrefix: widget.forDuringEnd
-                          ? 'during_end_expanded_icon'
-                          : 'before_class_expanded_icon',
-                    );
-                  }
-                  _updateDisplay(
-                    display.copyWith(
-                      miuiIslandExpandedIconMode: value,
-                      clearMiuiIslandExpandedIconPath:
-                          value != MiuiIslandExpandedIconMode.customImage,
-                    ),
-                    clearExpandedIconPath:
-                        value != MiuiIslandExpandedIconMode.customImage,
-                  );
-                }();
+            FSelect<MiuiIslandExpandedIconMode>(
+              hint: l10n.liveMiuiExpandedIconLabel,
+              items: {
+                for (final value in MiuiIslandExpandedIconMode.values)
+                  value.label: value,
               },
+              control: FSelectControl.lifted(
+                value: display.miuiIslandExpandedIconMode,
+                onChange: (value) {
+                  if (value == null) return;
+                  () async {
+                    if (value != MiuiIslandExpandedIconMode.customImage) {
+                      await _deleteManagedImageArtifacts(
+                        directoryName: _expandedIconDir,
+                        filePrefix: widget.forDuringEnd
+                            ? 'during_end_expanded_icon'
+                            : 'before_class_expanded_icon',
+                      );
+                    }
+                    _updateDisplay(
+                      display.copyWith(
+                        miuiIslandExpandedIconMode: value,
+                        clearMiuiIslandExpandedIconPath:
+                            value != MiuiIslandExpandedIconMode.customImage,
+                      ),
+                      clearExpandedIconPath:
+                          value != MiuiIslandExpandedIconMode.customImage,
+                    );
+                  }();
+                },
+              ),
             ),
             if (display.miuiIslandExpandedIconMode ==
                 MiuiIslandExpandedIconMode.customImage) ...[
@@ -887,10 +815,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton.tonalIcon(
-                      onPressed: () => _pickExpandedIconImage(display),
-                      icon: const Icon(Icons.image_outlined),
-                      label: Text(
+                    child: FButton(
+                      variant: FButtonVariant.secondary,
+                      onPress: () => _pickExpandedIconImage(display),
+                      prefix: const Icon(Icons.image_outlined),
+                      child: Text(
                         display.miuiIslandExpandedIconPath == null
                             ? l10n.selectImageAction
                             : l10n.replaceImageAction,
@@ -899,8 +828,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   ),
                   if (display.miuiIslandExpandedIconPath != null) ...[
                     const SizedBox(width: 12),
-                    IconButton.outlined(
-                      onPressed: () async {
+                    FButton(
+                      variant: FButtonVariant.outline,
+                      onPress: () async {
                         await _deleteManagedImageArtifacts(
                           directoryName: _expandedIconDir,
                           filePrefix: widget.forDuringEnd
@@ -914,7 +844,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                           clearExpandedIconPath: true,
                         );
                       },
-                      icon: const Icon(Icons.delete_outline),
+                      prefix: const Icon(Icons.delete_outline),
                     ),
                   ],
                 ],
@@ -928,35 +858,46 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         ),
       ),
     ];
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          if (widget.forDuringEnd) ...[
-            _SectionCard(
-              title: l10n.liveDisplayConfigModeTitle,
-              subtitle: l10n.liveDisplayConfigModeSubtitle,
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.followBeforeClassDisplayTitle),
-                value: _draft.liveDuringEndFollowBeforeClass,
-                onChanged: (value) => _updateDraft(
-                  _draft.copyWith(liveDuringEndFollowBeforeClass: value),
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(widget.title),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            if (widget.forDuringEnd) ...[
+              SettingsSectionCard(
+                title: l10n.liveDisplayConfigModeTitle,
+                subtitle: l10n.liveDisplayConfigModeSubtitle,
+                child: FTileGroup(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    SettingSwitchTile(
+                      title: Text(l10n.followBeforeClassDisplayTitle),
+                      value: _draft.liveDuringEndFollowBeforeClass,
+                      onChanged: (value) => _updateDraft(
+                        _draft.copyWith(liveDuringEndFollowBeforeClass: value),
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 12),
+            ],
+            IgnorePointer(
+              ignoring: _followBeforeClass,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                opacity: _followBeforeClass ? 0.5 : 1,
+                child: Column(children: sectionCards),
+              ),
             ),
-            const SizedBox(height: 16),
           ],
-          IgnorePointer(
-            ignoring: _followBeforeClass,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: _followBeforeClass ? 0.5 : 1,
-              child: Column(children: sectionCards),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -1003,8 +944,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
       setState(() => _draft = provider.settings);
     }
   }
@@ -1033,11 +975,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           : 'before_class_label_logo',
     );
     if (!mounted || targetPath == null) return;
-    _updateDisplay(
-      display.copyWith(
-        miuiIslandLabelLogoPath: targetPath,
-      ),
-    );
+    _updateDisplay(display.copyWith(miuiIslandLabelLogoPath: targetPath));
   }
 
   Future<String?> _pickAndStoreImage({
@@ -1050,7 +988,8 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     );
     if (!mounted || result == null || result.files.isEmpty) return null;
     final file = result.files.single;
-    final bytes = file.bytes ??
+    final bytes =
+        file.bytes ??
         (file.path == null ? null : await File(file.path!).readAsBytes());
     if (bytes == null || bytes.isEmpty) return null;
     final ext = (file.extension?.isNotEmpty ?? false)
@@ -1086,14 +1025,16 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     if (!await targetDir.exists()) {
       return;
     }
-    final preservedAbsolutePath =
-        preservePath == null ? null : File(preservePath).absolute.path;
+    final preservedAbsolutePath = preservePath == null
+        ? null
+        : File(preservePath).absolute.path;
     await for (final entity in targetDir.list()) {
       if (entity is! File) {
         continue;
       }
-      final fileName =
-          entity.uri.pathSegments.isEmpty ? '' : entity.uri.pathSegments.last;
+      final fileName = entity.uri.pathSegments.isEmpty
+          ? ''
+          : entity.uri.pathSegments.last;
       if (!fileName.startsWith('$filePrefix.')) {
         continue;
       }
@@ -1119,7 +1060,8 @@ class LiveKeepAliveSettingsScreen extends StatefulWidget {
 }
 
 class _LiveKeepAliveSettingsScreenState
-    extends State<LiveKeepAliveSettingsScreen> with WidgetsBindingObserver {
+    extends State<LiveKeepAliveSettingsScreen>
+    with WidgetsBindingObserver {
   final MiuiLiveActivitiesService _liveService = MiuiLiveActivitiesService();
   late TimetableSettings _draft;
   bool _enabled = false;
@@ -1148,19 +1090,23 @@ class _LiveKeepAliveSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.liveKeepAliveTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _SectionCard(
-            title: l10n.liveKeepAliveOptionsTitle,
-            subtitle: l10n.liveKeepAliveOptionsSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.liveKeepAliveTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            FTileGroup(
+              label: Text(l10n.liveKeepAliveOptionsTitle),
+              description: Text(l10n.liveKeepAliveOptionsSubtitle),
+              physics: const NeverScrollableScrollPhysics(),
               children: [
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
+                SettingSwitchTile(
                   title: Text(l10n.hideFromRecentsTitle),
                   subtitle: Text(l10n.hideFromRecentsSubtitle),
                   value: _draft.liveHideFromRecents,
@@ -1177,31 +1123,40 @@ class _LiveKeepAliveSettingsScreenState
                     setState(() => _draft = provider.settings);
                   },
                 ),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Icon(
-                    _enabled
-                        ? Icons.check_circle_rounded
-                        : Icons.accessibility_new_rounded,
-                    color: _enabled
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  title: Text(l10n.keepAliveServiceTitle),
-                  subtitle: Text(
-                    _enabled
-                        ? l10n.keepAliveServiceEnabledSubtitle
-                        : l10n.keepAliveServiceDisabledSubtitle,
-                  ),
-                  trailing: FilledButton.tonal(
-                    onPressed: () => _openSettings(),
-                    child: Text(l10n.goEnableAction),
-                  ),
-                ),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              child: FTileGroup(
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  FTile(
+                    prefix: Icon(
+                      _enabled
+                          ? Icons.check_circle_rounded
+                          : Icons.accessibility_new_rounded,
+                      color: _enabled
+                          ? context.theme.colors.primary
+                          : context.theme.colors.mutedForeground,
+                    ),
+                    title: Text(l10n.keepAliveServiceTitle),
+                    subtitle: Text(
+                      _enabled
+                          ? l10n.keepAliveServiceEnabledSubtitle
+                          : l10n.keepAliveServiceDisabledSubtitle,
+                    ),
+                    suffix: FButton(
+                      variant: FButtonVariant.secondary,
+                      onPress: _openSettings,
+                      child: Text(l10n.goEnableAction),
+                    ),
+                    onPress: _openSettings,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1267,10 +1222,7 @@ class _ImagePreview extends StatelessWidget {
   final String path;
   final double imageCornerRadius;
 
-  const _ImagePreview({
-    required this.path,
-    this.imageCornerRadius = 12,
-  });
+  const _ImagePreview({required this.path, this.imageCornerRadius = 12});
 
   @override
   Widget build(BuildContext context) {
@@ -1286,12 +1238,29 @@ class _ImagePreview extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(imageCornerRadius),
             child: file.existsSync()
-                ? Image.file(file, width: 56, height: 56, fit: BoxFit.cover)
+                ? Image.file(
+                    file,
+                    width: 56,
+                    height: 56,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 56,
+                        height: 56,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image_outlined),
+                      );
+                    },
+                  )
                 : Container(
                     width: 56,
                     height: 56,
-                    color:
-                        Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     alignment: Alignment.center,
                     child: const Icon(Icons.broken_image_outlined),
                   ),
@@ -1302,7 +1271,7 @@ class _ImagePreview extends StatelessWidget {
               path,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall,
+              style: context.theme.typography.body.xs2,
             ),
           ),
         ],

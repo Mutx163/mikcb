@@ -22,6 +22,9 @@ import '../services/app_update_service.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/home_top_menu.dart';
+import '../services/bundled_assets.dart';
+import '../widgets/bundled_asset_image.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -159,12 +162,19 @@ class _TimetableScreenState extends State<TimetableScreen>
         _scheduleUpdateCheckIfNeeded(provider);
         _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
         final colorScheme = Theme.of(context).colorScheme;
+        final foruiTheme = context.theme;
         final backgroundColor = Theme.of(context).brightness == Brightness.dark
             ? colorScheme.surface
             : _colorFromHex(
                 provider.settings.timetablePageBackgroundColor,
                 colorScheme.surface,
               );
+        final headerTitleStyle = foruiTheme.typography.display.xl.copyWith(
+          fontWeight: FontWeight.w600,
+          height: 1.1,
+          color: foruiTheme.colors.foreground,
+        );
+        const headerContentInset = 14.0;
         return FScaffold(
           resizeToAvoidBottomInset: false,
           scaffoldStyle: FScaffoldStyleDelta.delta(
@@ -173,6 +183,15 @@ class _TimetableScreenState extends State<TimetableScreen>
           header: FHeader(
             style: FHeaderStyleDelta.delta(
               decoration: DecorationDelta.boxDelta(color: backgroundColor),
+              titleTextStyle: TextStyleDelta.value(headerTitleStyle),
+              padding: EdgeInsetsGeometryDelta.value(
+                const EdgeInsets.fromLTRB(
+                  headerContentInset,
+                  headerContentInset,
+                  12,
+                  headerContentInset,
+                ),
+              ),
             ),
             title: _buildProfileSwitcherTrigger(provider),
             suffixes: [
@@ -772,43 +791,40 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Widget _buildBrandProfileSwitcherTrigger(TimetableProvider provider) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final foruiTheme = context.theme;
     final activeProfileName = provider.activeProfile?.name.trim();
 
-    return InkWell(
+    return GestureDetector(
       key: const ValueKey('profile_switcher_trigger'),
-      borderRadius: BorderRadius.circular(18),
       onTap: _showProfileQuickSwitchSheet,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.timetableAppName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                height: 1.0,
-                letterSpacing: 0.2,
-              ),
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.timetableAppName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: foruiTheme.typography.display.lg.copyWith(
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+              letterSpacing: 0.1,
+              color: foruiTheme.colors.foreground,
             ),
-            Text(
-              (activeProfileName == null || activeProfileName.isEmpty)
-                  ? l10n.switchProfileHint
-                  : activeProfileName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-                fontWeight: FontWeight.w600,
-              ),
+          ),
+          Text(
+            (activeProfileName == null || activeProfileName.isEmpty)
+                ? l10n.switchProfileHint
+                : activeProfileName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: foruiTheme.typography.body.sm.copyWith(
+              color: foruiTheme.colors.mutedForeground,
+              fontWeight: FontWeight.w500,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -821,6 +837,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   ) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
+    final subtleBorder = context.theme.colors.border;
     final canReturnToCurrentWeek = _canReturnToCurrentWeek(settings, week);
     final showsInlineBackToCurrentWeek =
         canReturnToCurrentWeek &&
@@ -832,7 +849,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       height: 50,
       padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: colorScheme.outlineVariant)),
+        border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
       ),
       child: Row(
         children: [
@@ -3703,6 +3720,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final foruiColors = context.theme.colors;
     final buttonOpacity =
         provider.settings.timetableFloatingBackToCurrentWeekButtonOpacity;
     final borderRadius = BorderRadius.circular(18);
@@ -3717,15 +3735,13 @@ class _TimetableScreenState extends State<TimetableScreen>
             color: colorScheme.surfaceContainerHigh.withValues(
               alpha: buttonOpacity,
             ),
-            elevation: 3,
+            elevation: 2,
             shadowColor: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.1,
+              alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: borderRadius,
-              side: BorderSide(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.65),
-              ),
+              side: BorderSide(color: foruiColors.border, width: 1),
             ),
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -4905,15 +4921,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                             color: colorScheme.primary.withValues(alpha: 0.12),
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: Image.asset(
-                            'assets/branding/launcher_icon.png',
+                          child: BundledAssetImage(
+                            assetPath: BundledAssets.launcherIcon,
+                            width: 44,
+                            height: 44,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Icon(
-                                Icons.view_week_rounded,
-                                color: colorScheme.primary,
-                              );
-                            },
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -5022,111 +5034,57 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showTopActionsSheet() async {
-    final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
-    final actionTitles = [
-      l10n.homeMenuUpdateTitle,
-      l10n.homeMenuProfilesTitle,
-      l10n.homeMenuOverviewTitle,
-      l10n.homeMenuStatisticsTitle,
-      l10n.homeMenuAddCourseTitle,
-      l10n.homeMenuImportTitle,
-      l10n.homeMenuSettingsTitle,
-      l10n.homeMenuCoffeeTitle,
-    ];
-    final reserveTwoLineTitleSpace = actionTitles.any(
-      (title) => _homeActionNeedsTwoLines(context, title),
-    );
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.system_update_alt_rounded,
-                  title: l10n.homeMenuUpdateTitle,
-                  badgeText: _hasAvailableUpdate ? l10n.updateLabel : null,
-                  accentColor: _hasAvailableUpdate ? colorScheme.primary : null,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const _TopMenuUpdatePage(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.view_week_rounded,
-                  title: l10n.homeMenuProfilesTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const TimetableProfilesScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.dashboard_customize_rounded,
-                  title: l10n.homeMenuOverviewTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const CourseOverviewScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.bar_chart_rounded,
-                  title: l10n.homeMenuStatisticsTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const CourseStatisticsScreen(),
-                ),
-                _HomeActionButton(
-                  icon: Icons.add_circle_outline_rounded,
-                  title: l10n.homeMenuAddCourseTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  onTap: () => Navigator.of(sheetContext).pop('add'),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.school_outlined,
-                  title: l10n.examListTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const ExamListScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.file_upload_outlined,
-                  title: l10n.homeMenuImportTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const CourseImportScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.tune_rounded,
-                  title: l10n.homeMenuSettingsTitle,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const TimetableSettingsScreen(),
-                ),
-                _HomeActionPageButton(
-                  sheetRoute: ModalRoute.of(sheetContext),
-                  icon: Icons.favorite_border_rounded,
-                  title: l10n.homeMenuCoffeeTitle,
-                  accentColor: colorScheme.secondary,
-                  reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
-                  pageBuilder: (_) => const SupportCreatorScreen(),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    final selected = await showHomeTopMenuSheet(
+      context,
+      hasAvailableUpdate: _hasAvailableUpdate,
     );
 
     if (!mounted || selected == null) {
       return;
     }
-    if (selected == 'add') {
-      _navigateToAddCourse(context);
+
+    // Let the sheet route finish closing before pushing the next page.
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) {
+      return;
     }
+
+    switch (selected) {
+      case HomeTopMenuAction.update:
+        await _openTopMenuUpdatePage();
+      case HomeTopMenuAction.overview:
+        await _openTopMenuPage(const CourseOverviewScreen());
+      case HomeTopMenuAction.statistics:
+        await _openTopMenuPage(const CourseStatisticsScreen());
+      case HomeTopMenuAction.addCourse:
+        await _navigateToAddCourse(context);
+      case HomeTopMenuAction.exams:
+        await _openTopMenuPage(const ExamListScreen());
+      case HomeTopMenuAction.importCourses:
+        await _openTopMenuPage(const CourseImportScreen());
+      case HomeTopMenuAction.settings:
+        await _openTopMenuPage(const TimetableSettingsScreen());
+      case HomeTopMenuAction.support:
+        await _openTopMenuPage(const SupportCreatorScreen());
+    }
+  }
+
+  Future<void> _openTopMenuPage(Widget page) {
+    return Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute<void>(builder: (_) => page));
+  }
+
+  Future<void> _openTopMenuUpdatePage() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) {
+      return;
+    }
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => AboutUpdateScreen(packageInfo: packageInfo),
+      ),
+    );
   }
 
   void _scheduleUpdateCheckIfNeeded(TimetableProvider provider) {
@@ -5194,24 +5152,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     } finally {
       _isCheckingForUpdate = false;
     }
-  }
-
-  bool _homeActionNeedsTwoLines(BuildContext context, String title) {
-    final theme = Theme.of(context);
-    final style = theme.textTheme.bodySmall?.copyWith(
-      fontWeight: FontWeight.w700,
-      height: 1.25,
-    );
-    final width = ((MediaQuery.of(context).size.width - 32 - 36) / 4).clamp(
-      72.0,
-      112.0,
-    );
-    final textPainter = TextPainter(
-      text: TextSpan(text: title, style: style),
-      maxLines: 2,
-      textDirection: Directionality.of(context),
-    )..layout(maxWidth: width - 16);
-    return textPainter.computeLineMetrics().length > 1;
   }
 }
 
@@ -5521,33 +5461,6 @@ class _HomeActionButtonBody extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _TopMenuUpdatePage extends StatefulWidget {
-  const _TopMenuUpdatePage();
-
-  @override
-  State<_TopMenuUpdatePage> createState() => _TopMenuUpdatePageState();
-}
-
-class _TopMenuUpdatePageState extends State<_TopMenuUpdatePage> {
-  late final Future<PackageInfo> _packageInfoFuture =
-      PackageInfo.fromPlatform();
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<PackageInfo>(
-      future: _packageInfoFuture,
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        return AboutUpdateScreen(packageInfo: snapshot.data);
-      },
     );
   }
 }
