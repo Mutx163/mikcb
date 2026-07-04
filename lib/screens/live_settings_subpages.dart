@@ -408,58 +408,58 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final l10n = AppLocalizations.of(context)!;
     final display = _display;
     final sectionCards = [
-      SettingsSectionCard(
-        title: l10n.liveDisplayContentTitle,
-        subtitle: l10n.liveDisplayContentSubtitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FTileGroup(
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SettingSwitchTile(
-                  title: Text(l10n.showCourseNameTitle),
-                  value: display.showCourseName,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(showCourseName: value)),
-                ),
-                SettingSwitchTile(
-                  title: Text(l10n.preferShortNameTitle),
-                  subtitle: Text(l10n.preferShortNameSubtitle),
-                  value: display.useShortName,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(useShortName: value)),
-                ),
-                SettingSwitchTile(
-                  title: Text(l10n.showLocationTitle),
-                  value: display.showLocation,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(showLocation: value)),
-                ),
-                SettingSwitchTile(
-                  title: Text(l10n.showCountdownTitle),
-                  value: display.showCountdown,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(showCountdown: value)),
-                ),
-                SettingSwitchTile(
-                  title: Text(l10n.showStageTextTitle),
-                  subtitle: Text(l10n.showStageTextSubtitle),
-                  value: display.showStageText,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(showStageText: value)),
-                ),
-                SettingSwitchTile(
-                  title: Text(l10n.hidePrefixTextTitle),
-                  subtitle: Text(l10n.hidePrefixTextSubtitle),
-                  value: display.hidePrefixText,
-                  onChanged: (value) =>
-                      _updateDisplay(display.copyWith(hidePrefixText: value)),
-                ),
-              ],
-            ),
-            if (display.showCountdown) ...[
-              const SizedBox(height: 12),
+      FTileGroup(
+        label: Text(l10n.liveDisplayContentTitle),
+        description: Text(l10n.liveDisplayContentSubtitle),
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          SettingSwitchTile(
+            title: Text(l10n.showCourseNameTitle),
+            value: display.showCourseName,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(showCourseName: value)),
+          ),
+          SettingSwitchTile(
+            title: Text(l10n.preferShortNameTitle),
+            subtitle: Text(l10n.preferShortNameSubtitle),
+            value: display.useShortName,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(useShortName: value)),
+          ),
+          SettingSwitchTile(
+            title: Text(l10n.showLocationTitle),
+            value: display.showLocation,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(showLocation: value)),
+          ),
+          SettingSwitchTile(
+            title: Text(l10n.showCountdownTitle),
+            value: display.showCountdown,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(showCountdown: value)),
+          ),
+          SettingSwitchTile(
+            title: Text(l10n.showStageTextTitle),
+            subtitle: Text(l10n.showStageTextSubtitle),
+            value: display.showStageText,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(showStageText: value)),
+          ),
+          SettingSwitchTile(
+            title: Text(l10n.hidePrefixTextTitle),
+            subtitle: Text(l10n.hidePrefixTextSubtitle),
+            value: display.hidePrefixText,
+            onChanged: (value) =>
+                _updateDisplay(display.copyWith(hidePrefixText: value)),
+          ),
+        ],
+      ),
+      if (display.showCountdown) ...[
+        const SizedBox(height: 12),
+        SettingsSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               FSelect<LiveCountdownTextStyle>(
                 hint: l10n.countdownFormatLabel,
                 items: {
@@ -480,9 +480,9 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 style: context.theme.typography.body.xs2,
               ),
             ],
-          ],
+          ),
         ),
-      ),
+      ],
       if (!widget.forDuringEnd) ...[
         const SizedBox(height: 12),
         SettingsSectionCard(
@@ -507,27 +507,27 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         ),
       ],
       const SizedBox(height: 12),
-      SettingsSectionCard(
-        title: l10n.liveIslandVisualTitle,
-        subtitle: l10n.liveIslandVisualSubtitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FTileGroup(
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SettingSwitchTile(
-                  title: Text(l10n.liveMiuiLabelImageTitle),
-                  subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
-                  value: display.enableMiuiIslandLabelImage,
-                  onChanged: (value) => _updateDisplay(
-                    display.copyWith(enableMiuiIslandLabelImage: value),
-                  ),
-                ),
-              ],
+      FTileGroup(
+        label: Text(l10n.liveIslandVisualTitle),
+        description: Text(l10n.liveIslandVisualSubtitle),
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          SettingSwitchTile(
+            title: Text(l10n.liveMiuiLabelImageTitle),
+            subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
+            value: display.enableMiuiIslandLabelImage,
+            onChanged: (value) => _updateDisplay(
+              display.copyWith(enableMiuiIslandLabelImage: value),
             ),
-            if (display.enableMiuiIslandLabelImage) ...[
-              const SizedBox(height: 12),
+          ),
+        ],
+      ),
+      if (display.enableMiuiIslandLabelImage) ...[
+        const SizedBox(height: 12),
+        SettingsSectionCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               FSelect<MiuiIslandLabelContent>(
                 hint: l10n.liveMiuiLabelContentLabel,
                 items: {
@@ -775,8 +775,15 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     )
                     .toList(),
               ),
-              const SizedBox(height: 12),
             ],
+          ),
+        ),
+      ],
+      const SizedBox(height: 12),
+      SettingsSectionCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             FSelect<MiuiIslandExpandedIconMode>(
               hint: l10n.liveMiuiExpandedIconLabel,
               items: {
@@ -870,21 +877,19 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             if (widget.forDuringEnd) ...[
-              SettingsSectionCard(
-                title: l10n.liveDisplayConfigModeTitle,
-                subtitle: l10n.liveDisplayConfigModeSubtitle,
-                child: FTileGroup(
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    SettingSwitchTile(
-                      title: Text(l10n.followBeforeClassDisplayTitle),
-                      value: _draft.liveDuringEndFollowBeforeClass,
-                      onChanged: (value) => _updateDraft(
-                        _draft.copyWith(liveDuringEndFollowBeforeClass: value),
-                      ),
+              FTileGroup(
+                label: Text(l10n.liveDisplayConfigModeTitle),
+                description: Text(l10n.liveDisplayConfigModeSubtitle),
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  SettingSwitchTile(
+                    title: Text(l10n.followBeforeClassDisplayTitle),
+                    value: _draft.liveDuringEndFollowBeforeClass,
+                    onChanged: (value) => _updateDraft(
+                      _draft.copyWith(liveDuringEndFollowBeforeClass: value),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
             ],
@@ -1123,37 +1128,29 @@ class _LiveKeepAliveSettingsScreenState
                     setState(() => _draft = provider.settings);
                   },
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SettingsSectionCard(
-              child: FTileGroup(
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  FTile(
-                    prefix: Icon(
-                      _enabled
-                          ? Icons.check_circle_rounded
-                          : Icons.accessibility_new_rounded,
-                      color: _enabled
-                          ? context.theme.colors.primary
-                          : context.theme.colors.mutedForeground,
-                    ),
-                    title: Text(l10n.keepAliveServiceTitle),
-                    subtitle: Text(
-                      _enabled
-                          ? l10n.keepAliveServiceEnabledSubtitle
-                          : l10n.keepAliveServiceDisabledSubtitle,
-                    ),
-                    suffix: FButton(
-                      variant: FButtonVariant.secondary,
-                      onPress: _openSettings,
-                      child: Text(l10n.goEnableAction),
-                    ),
-                    onPress: _openSettings,
+                FTile(
+                  prefix: Icon(
+                    _enabled
+                        ? Icons.check_circle_rounded
+                        : Icons.accessibility_new_rounded,
+                    color: _enabled
+                        ? context.theme.colors.primary
+                        : context.theme.colors.mutedForeground,
                   ),
-                ],
-              ),
+                  title: Text(l10n.keepAliveServiceTitle),
+                  subtitle: Text(
+                    _enabled
+                        ? l10n.keepAliveServiceEnabledSubtitle
+                        : l10n.keepAliveServiceDisabledSubtitle,
+                  ),
+                  suffix: FButton(
+                    variant: FButtonVariant.secondary,
+                    onPress: _openSettings,
+                    child: Text(l10n.goEnableAction),
+                  ),
+                  onPress: _openSettings,
+                ),
+              ],
             ),
           ],
         ),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
@@ -15,15 +17,16 @@ class TimetableWeekPreview extends StatelessWidget {
     required this.provider,
     required this.settings,
     required this.week,
-    this.height = 360,
   });
 
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
-  final double height;
 
   static const double _headerHeight = 50;
+  static const double _homeHeaderHeightEstimate = 56;
+  static const double _homeSurfaceBottomPadding = 8;
+  static const int _previewMorningSectionCount = 4;
 
   @override
   Widget build(BuildContext context) {
@@ -39,11 +42,9 @@ class TimetableWeekPreview extends StatelessWidget {
     final showsFloatingButton =
         settings.timetableBackToCurrentWeekButtonStyle ==
         BackToCurrentWeekButtonStyle.floating;
-    final bodyHeight = (height - _headerHeight).clamp(0.0, double.infinity);
-    final sectionHeight =
-        settings.timetableAutoFitSectionHeight && settings.sectionCount > 0
-        ? bodyHeight / settings.sectionCount
-        : settings.sectionHeight;
+    final sectionHeight = _resolveHomeSectionHeight(context);
+    final visibleSectionCount = _resolveVisibleSectionCount();
+    final bodyHeight = sectionHeight * visibleSectionCount;
 
     return ColoredBox(
       color: backgroundColor,
@@ -56,15 +57,13 @@ class TimetableWeekPreview extends StatelessWidget {
               availableWidth: constraints.maxWidth,
               week: week,
               sectionHeight: sectionHeight,
+              visibleSectionCount: visibleSectionCount,
             );
-            final gridBody = settings.timetableAutoFitSectionHeight
-                ? grid
-                : SingleChildScrollView(child: grid);
 
             return SizedBox(
-              height: height,
+              height: _headerHeight + bodyHeight,
               child: Stack(
-                clipBehavior: Clip.none,
+                clipBehavior: Clip.hardEdge,
                 children: [
                   Column(
                     children: [
@@ -75,58 +74,60 @@ class TimetableWeekPreview extends StatelessWidget {
                       ),
                       SizedBox(
                         height: bodyHeight,
-                        child: IgnorePointer(child: gridBody),
+                        child: IgnorePointer(child: grid),
                       ),
                     ],
                   ),
-                  if (showsFloatingButton)
+                  if (showsFloatingButton &&
+                      _canReturnToCurrentWeek(settings, week))
                     Positioned(
-                      right: 8,
+                      right: 20,
                       bottom: 12,
                       child: IgnorePointer(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
+                        child: Material(
+                          color: colorScheme.surfaceContainerHigh.withValues(
+                            alpha: settings
+                                .timetableFloatingBackToCurrentWeekButtonOpacity,
                           ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHigh.withValues(
-                              alpha: settings
-                                  .timetableFloatingBackToCurrentWeekButtonOpacity,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: colorScheme.outlineVariant.withValues(
-                                alpha: 0.7,
-                              ),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.08),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                          elevation: 2,
+                          shadowColor: Colors.black.withValues(
+                            alpha: theme.brightness == Brightness.dark
+                                ? 0.12
+                                : 0.06,
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.my_location_rounded,
-                                size: 13,
-                                color: colorScheme.primary,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                l10n.backToCurrentWeekAction,
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: colorScheme.onSurface,
-                                  height: 1,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(18),
+                            side: BorderSide(
+                              color: context.theme.colors.border,
+                              width: 1,
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.my_location_rounded,
+                                  size: 15,
+                                  color: colorScheme.primary,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  l10n.backToCurrentWeekAction,
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface,
+                                    height: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -138,6 +139,34 @@ class TimetableWeekPreview extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _resolveHomeTimetableSurfaceHeight(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    return mediaQuery.size.height -
+        mediaQuery.padding.top -
+        _homeHeaderHeightEstimate -
+        mediaQuery.padding.bottom -
+        _homeSurfaceBottomPadding;
+  }
+
+  double _resolveHomeSectionHeight(BuildContext context) {
+    final bodyAvailableHeight =
+        (_resolveHomeTimetableSurfaceHeight(context) - _headerHeight).clamp(
+          0.0,
+          double.infinity,
+        );
+    if (settings.timetableAutoFitSectionHeight && settings.sectionCount > 0) {
+      return bodyAvailableHeight / settings.sectionCount;
+    }
+    return settings.sectionHeight;
+  }
+
+  int _resolveVisibleSectionCount() {
+    if (settings.sectionCount <= 0) {
+      return 0;
+    }
+    return math.min(_previewMorningSectionCount, settings.sectionCount);
   }
 
   Widget _buildWeekDayHeader({
@@ -272,6 +301,7 @@ class TimetableWeekPreview extends StatelessWidget {
     required double availableWidth,
     required int week,
     required double sectionHeight,
+    required int visibleSectionCount,
   }) {
     final visibleDays = _visibleDayNumbers(settings);
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
@@ -279,16 +309,18 @@ class TimetableWeekPreview extends StatelessWidget {
     final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
     final conflictMap = provider.courseConflictMapForWeek(week);
     final courses = _effectiveCourses(context);
+    final sectionRows = math.min(visibleSectionCount, settings.sectionCount);
 
     return SizedBox(
       width: availableWidth,
+      height: sectionHeight * sectionRows,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: timeColumnWidth,
             child: Column(
-              children: List.generate(settings.sectionCount, (index) {
+              children: List.generate(sectionRows, (index) {
                 final section = settings.sections[index];
                 return SizedBox(
                   height: sectionHeight,
@@ -322,6 +354,7 @@ class TimetableWeekPreview extends StatelessWidget {
                   displayItems: displayItems,
                   sectionHeight: sectionHeight,
                   cardInset: cardInset,
+                  visibleSectionCount: sectionRows,
                 ),
               );
             }).toList(),
@@ -338,6 +371,7 @@ class TimetableWeekPreview extends StatelessWidget {
     required List<_DayCourseDisplayItem> displayItems,
     required double sectionHeight,
     required double cardInset,
+    required int visibleSectionCount,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final columnBackground = colorScheme.surfaceContainerLowest.withValues(
@@ -349,7 +383,7 @@ class TimetableWeekPreview extends StatelessWidget {
 
     for (
       var sectionIndex = 0;
-      sectionIndex < settings.sectionCount;
+      sectionIndex < visibleSectionCount;
       sectionIndex++
     ) {
       final section = sectionIndex + 1;
@@ -402,12 +436,12 @@ class TimetableWeekPreview extends StatelessWidget {
     }
 
     return Container(
-      height: settings.sectionCount * sectionHeight,
+      height: visibleSectionCount * sectionHeight,
       decoration: BoxDecoration(
         color: columnBackground,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Stack(clipBehavior: Clip.antiAlias, children: courseCards),
+      child: Stack(clipBehavior: Clip.hardEdge, children: courseCards),
     );
   }
 

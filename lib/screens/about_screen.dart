@@ -25,6 +25,7 @@ import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
+import '../widgets/settings_section_widgets.dart';
 import '../services/warehouse_repository_service.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
 
@@ -620,24 +621,27 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return provider.settings;
     });
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(l10n.aboutUpdateScreenTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.aboutAdvancedOptionsTitle,
-            onPressed: () => _openAdvancedOptions(theme, settings),
+        suffixes: [
+          FHeaderAction(
             icon: const Icon(Icons.tune_rounded),
+            semanticsLabel: l10n.aboutAdvancedOptionsTitle,
+            onPress: () => _openAdvancedOptions(theme, settings),
           ),
         ],
       ),
-      bottomNavigationBar: _isDownloading
-          ? _buildDownloadProgressBar(theme)
-          : null,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-        child: Column(
-          children: [Expanded(child: _buildUpdateCard(theme, settings))],
+      childPad: false,
+      footer: _isDownloading ? _buildDownloadProgressBar(theme) : null,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Column(
+            children: [Expanded(child: _buildUpdateCard(theme, settings))],
+          ),
         ),
       ),
     );
@@ -652,30 +656,29 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       builder: (context, snapshot) {
         if (widget.packageInfo == null ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return Card(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _UpdateCheckAnimation(colorScheme: colorScheme),
-                    const SizedBox(height: 24),
-                    Text(
-                      l10n.aboutCheckingLatestVersion,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _UpdateCheckAnimation(colorScheme: colorScheme),
+                  const SizedBox(height: 24),
+                  Text(
+                    l10n.aboutCheckingLatestVersion,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '正在连接更新服务器...',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '正在连接更新服务器...',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                     ),
-                  ],
-                ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
             ),
           );
@@ -683,7 +686,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
         final result = snapshot.data;
         if (result == null) {
-          return Card(
+          return FCard.raw(
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Column(
@@ -774,7 +777,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         ? Icons.system_update_rounded
         : Icons.check_circle;
 
-    return Card(
+    return FCard.raw(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
         child: Column(
@@ -861,18 +864,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             // 主要操作按钮
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: result.hasRelease
+              child: FButton(
+                variant: FButtonVariant.primary,
+                onPress: result.hasRelease
                     ? () {
                         if (primaryAction ==
                             AboutUpdatePrimaryAction.openReleasePage) {
                           _openUrl(release?.releaseUrl);
                         } else if (downloadChannel ==
                             AppUpdateDownloadChannel.pgyer) {
-                          // 蒲公英渠道：用浏览器打开下载页面
                           _openUrl(effectiveDownloadUrl);
                         } else if (effectiveDownloadUrl != null) {
-                          // GitHub 渠道：应用内下载或系统管理器
                           if (_useSystemDownloader) {
                             _enqueueSystemDownload(
                               url: effectiveDownloadUrl,
@@ -884,38 +886,26 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                         }
                       }
                     : null,
-                icon: Icon(
+                prefix: Icon(
                   _isDownloading ? Icons.cancel_rounded : primaryButtonIcon,
                 ),
-                label: Text(
+                child: Text(
                   _isDownloading
                       ? l10n.aboutDownloadCancelling
                       : primaryButtonLabel,
                 ),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
               ),
             ),
-            // 次要操作按钮
             if (primaryAction != AboutUpdatePrimaryAction.openReleasePage &&
                 result.hasRelease) ...[
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _openUrl(release?.releaseUrl),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  label: Text(l10n.aboutViewReleaseAction),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                child: FButton(
+                  variant: FButtonVariant.outline,
+                  onPress: () => _openUrl(release?.releaseUrl),
+                  prefix: const Icon(Icons.open_in_new_rounded, size: 18),
+                  child: Text(l10n.aboutViewReleaseAction),
                 ),
               ),
             ],
@@ -928,7 +918,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Widget _buildNotesCard(ThemeData theme, AppUpdateCheckResult result) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
-    return Card(
+    return FCard.raw(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -1574,12 +1564,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     final controller = TextEditingController(
       text: provider.settings.appUpdateMirrorUrlPrefix,
     );
-    final result = await showDialog<String>(
+    final result = await showFDialog<String>(
       context: context,
-      builder: (dialogContext) {
-        return AlertDialog(
+      builder: (dialogContext, style, animation) {
+        return FDialog(
           title: Text(l10n.aboutSetMirrorSourceTitle),
-          content: TextField(
+          body: TextField(
             controller: controller,
             decoration: InputDecoration(
               labelText: l10n.aboutMirrorPrefixLabel,
@@ -1588,12 +1578,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             autofocus: true,
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
+            FButton(
+              variant: FButtonVariant.ghost,
+              onPress: () => Navigator.of(dialogContext).pop(),
               child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
             ),
-            FilledButton(
-              onPressed: () {
+            FButton(
+              variant: FButtonVariant.primary,
+              onPress: () {
                 Navigator.of(dialogContext).pop(controller.text.trim());
               },
               child: Text(AppLocalizations.of(dialogContext)!.saveAction),
@@ -1832,10 +1824,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: _isCancellingDownload ? null : _cancelDownload,
-                icon: const Icon(Icons.close_rounded),
-                label: Text(
+              child: FButton(
+                variant: FButtonVariant.ghost,
+                onPress: _isCancellingDownload ? null : _cancelDownload,
+                prefix: const Icon(Icons.close_rounded, size: 18),
+                child: Text(
                   _isCancellingDownload
                       ? l10n.aboutDownloadCancelling
                       : l10n.aboutCancelDownloadAction,
@@ -2105,7 +2098,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final settings = context.select<TimetableProvider, TimetableSettings>(
       (p) => p.settings,
     );
-    final colorScheme = theme.colorScheme;
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
     );
@@ -2122,116 +2114,57 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       probeResultByPreset,
     );
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.aboutAdvancedOptionsTitle)),
-      body: FutureBuilder<AppUpdateCheckResult>(
-        future: widget.updateFuture,
-        builder: (context, snapshot) {
-          final result = snapshot.data;
-          final release = result?.latestRelease;
-          final originalDownloadUrl = release?.downloadUrl;
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.aboutAdvancedOptionsTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: FutureBuilder<AppUpdateCheckResult>(
+          future: widget.updateFuture,
+          builder: (context, snapshot) {
+            final result = snapshot.data;
+            final release = result?.latestRelease;
+            final originalDownloadUrl = release?.downloadUrl;
 
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              // 下载设置卡片
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 下载渠道切换
-                      Text(
-                        '下载渠道',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '蒲公英国内高速下载，GitHub 支持镜像加速',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDownloadChannelTab(theme, settings),
-                      const SizedBox(height: 16),
-                      // 下载方式切换
-                      Text(
-                        '下载安装包方式',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '选择应用内直接下载或系统下载管理器',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      _buildDownloadMethodTab(theme),
-                      // 检测测试版本
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    l10n.aboutCheckPrereleaseTitle,
-                                    style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    l10n.aboutCheckPrereleaseSubtitle,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            _buildToggle(
-                              theme,
-                              value: settings.appUpdateIncludePrerelease,
-                              onChanged: widget.packageInfo == null
-                                  ? null
-                                  : (value) =>
-                                        _updatePrereleasePreference(value),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                SettingsSectionCard(
+                  title: '下载渠道',
+                  subtitle: '蒲公英国内高速下载，GitHub 支持镜像加速',
+                  child: _buildDownloadChannelTab(theme, settings),
                 ),
-              ),
-              const SizedBox(height: 16),
-              // 镜像设置卡片（仅 GitHub 渠道）
-              if (downloadChannel == AppUpdateDownloadChannel.github &&
-                  downloadSource == AppUpdateDownloadSource.mirror)
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                const SizedBox(height: 12),
+                SettingsSectionCard(
+                  title: '下载安装包方式',
+                  subtitle: '选择应用内直接下载或系统下载管理器',
+                  child: _buildDownloadMethodTab(theme),
+                ),
+                const SizedBox(height: 12),
+                FTileGroup(
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    SettingSwitchTile(
+                      title: Text(l10n.aboutCheckPrereleaseTitle),
+                      subtitle: Text(l10n.aboutCheckPrereleaseSubtitle),
+                      value: settings.appUpdateIncludePrerelease,
+                      onChanged: widget.packageInfo == null
+                          ? null
+                          : _updatePrereleasePreference,
+                    ),
+                  ],
+                ),
+                if (downloadChannel == AppUpdateDownloadChannel.github &&
+                    downloadSource == AppUpdateDownloadSource.mirror) ...[
+                  const SizedBox(height: 12),
+                  SettingsSectionCard(
+                    title: l10n.aboutMirrorSectionTitle,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          l10n.aboutMirrorSectionTitle,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
                         ...AppUpdateMirrorPreset.values.map(
                           (preset) => _buildMirrorRadioTile(
                             theme,
@@ -2246,8 +2179,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: FilledButton.tonalIcon(
-                                onPressed:
+                              child: FButton(
+                                variant: FButtonVariant.secondary,
+                                onPress:
                                     originalDownloadUrl == null ||
                                         _isProbingMirrors
                                     ? null
@@ -2256,44 +2190,32 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                                         customMirrorUrlPrefix:
                                             settings.appUpdateMirrorUrlPrefix,
                                       ),
-                                icon: Icon(
+                                prefix: Icon(
                                   _isProbingMirrors
                                       ? Icons.hourglass_top_rounded
                                       : Icons.speed_rounded,
                                   size: 18,
                                 ),
-                                label: Text(
+                                child: Text(
                                   _isProbingMirrors
                                       ? l10n.aboutProbingMirrors
                                       : l10n.aboutProbeMirrorsAction,
-                                ),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: FilledButton.tonalIcon(
-                                onPressed: _editMirrorUrlPrefix,
-                                icon: const Icon(Icons.edit_outlined, size: 18),
-                                label: Text(
+                              child: FButton(
+                                variant: FButtonVariant.secondary,
+                                onPress: _editMirrorUrlPrefix,
+                                prefix: const Icon(
+                                  Icons.edit_outlined,
+                                  size: 18,
+                                ),
+                                child: Text(
                                   mirrorPreset.usesCustomUrl
                                       ? l10n.aboutEditCustomMirrorAction
                                       : l10n.aboutSetCustomMirrorAction,
-                                ),
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 12,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
                                 ),
                               ),
                             ),
@@ -2302,15 +2224,13 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                       ],
                     ),
                   ),
-                ),
-              if (downloadChannel == AppUpdateDownloadChannel.github &&
-                  downloadSource == AppUpdateDownloadSource.mirror)
-                const SizedBox(height: 16),
-              // 诊断设置卡片
-              _buildDiagnosticsCard(theme, settings),
-            ],
-          );
-        },
+                ],
+                const SizedBox(height: 12),
+                _buildDiagnosticsCard(theme, settings),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -2595,49 +2515,32 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
   Widget _buildDiagnosticsCard(ThemeData theme, TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.aboutDiagnosticsTitle,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            Text(
-              l10n.aboutDiagnosticsSubtitle,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                FilledButton.tonalIcon(
-                  onPressed: widget.onExportLiveDiagnostics,
-                  icon: const Icon(Icons.ios_share_rounded),
-                  label: Text(l10n.aboutExportDiagnosticsAction),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: widget.onOpenLiveDiagnosticsViewer,
-                  icon: const Icon(Icons.article_outlined),
-                  label: Text(l10n.aboutViewPhoneLogsAction),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: widget.onClearLiveDiagnostics,
-                  icon: const Icon(Icons.restart_alt_rounded),
-                  label: Text(l10n.aboutClearAndRecollectAction),
-                ),
-              ],
-            ),
-          ],
-        ),
+    return SettingsSectionCard(
+      title: l10n.aboutDiagnosticsTitle,
+      subtitle: l10n.aboutDiagnosticsSubtitle,
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 12,
+        children: [
+          FButton(
+            variant: FButtonVariant.secondary,
+            onPress: widget.onExportLiveDiagnostics,
+            prefix: const Icon(Icons.ios_share_rounded, size: 18),
+            child: Text(l10n.aboutExportDiagnosticsAction),
+          ),
+          FButton(
+            variant: FButtonVariant.secondary,
+            onPress: widget.onOpenLiveDiagnosticsViewer,
+            prefix: const Icon(Icons.article_outlined, size: 18),
+            child: Text(l10n.aboutViewPhoneLogsAction),
+          ),
+          FButton(
+            variant: FButtonVariant.secondary,
+            onPress: widget.onClearLiveDiagnostics,
+            prefix: const Icon(Icons.restart_alt_rounded, size: 18),
+            child: Text(l10n.aboutClearAndRecollectAction),
+          ),
+        ],
       ),
     );
   }
@@ -2768,29 +2671,33 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final controller = TextEditingController(
       text: settings.appUpdateMirrorUrlPrefix,
     );
-    final result = await showDialog<String>(
+    final result = await showFDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.aboutSetMirrorSourceTitle),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: l10n.aboutMirrorPrefixLabel,
-            hintText: 'https://ghfast.top/',
+      builder: (dialogContext, style, animation) {
+        return FDialog(
+          title: Text(l10n.aboutSetMirrorSourceTitle),
+          body: TextField(
+            controller: controller,
+            decoration: InputDecoration(
+              labelText: l10n.aboutMirrorPrefixLabel,
+              hintText: 'https://ghfast.top/',
+            ),
+            autofocus: true,
           ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, controller.text),
-            child: Text(AppLocalizations.of(context)!.saveAction),
-          ),
-        ],
-      ),
+          actions: [
+            FButton(
+              variant: FButtonVariant.ghost,
+              onPress: () => Navigator.pop(dialogContext),
+              child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
+            ),
+            FButton(
+              variant: FButtonVariant.primary,
+              onPress: () => Navigator.pop(dialogContext, controller.text),
+              child: Text(AppLocalizations.of(dialogContext)!.saveAction),
+            ),
+          ],
+        );
+      },
     );
     if (result == null || !mounted) return;
     final provider = context.read<TimetableProvider>();

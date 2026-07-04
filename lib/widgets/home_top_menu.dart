@@ -191,10 +191,25 @@ class _HomeMenuActionTile extends StatelessWidget {
                     ),
                     if ((badgeText ?? '').isNotEmpty)
                       Positioned(
-                        right: -10,
-                        top: -6,
+                        right: -6,
+                        top: -4,
                         child: FBadge(
                           variant: FBadgeVariant.primary,
+                          style: FBadgeStyleDelta.delta(
+                            contentStyle: FBadgeContentStyleDelta.delta(
+                              padding: EdgeInsetsGeometryDelta.value(
+                                const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                              ),
+                              labelTextStyle: TextStyleDelta.delta(
+                                fontSize: typo.body.xs3.fontSize,
+                                fontWeight: FontWeight.w500,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
                           child: Text(badgeText!),
                         ),
                       ),
@@ -207,7 +222,6 @@ class _HomeMenuActionTile extends StatelessWidget {
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
                   style: typo.body.sm.copyWith(
-                    fontWeight: FontWeight.w500,
                     height: 1.25,
                     color: colors.foreground,
                   ),

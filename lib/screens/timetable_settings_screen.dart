@@ -1995,32 +1995,37 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           padding: const EdgeInsets.all(16),
           children: [
             if (!kReleaseMode) ...[
-              SettingsSectionCard(
-                title: l10n.liveTestingHolidayOverride,
-                subtitle: l10n.liveTestingHolidayOverrideSubtitle,
-                child: SettingSwitchTile(
-                  value: _holidayOverrideEnabled,
-                  onChanged: (value) {
-                    setState(() {
-                      _holidayOverrideEnabled = value;
-                    });
-                    final provider = context.read<TimetableProvider>();
-                    provider.updateTimetableSettings(
-                      provider.settings.copyWith(holidayOverrideEnabled: value),
-                    );
-                    provider.refreshLiveActivityNow(forceSnapshotSync: true);
-                  },
-                  title: Text(
-                    _holidayOverrideEnabled
-                        ? l10n.liveTestingHolidayModeEnabled
-                        : l10n.liveTestingHolidayModeDisabled,
+              FTileGroup(
+                label: Text(l10n.liveTestingHolidayOverride),
+                description: Text(l10n.liveTestingHolidayOverrideSubtitle),
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  SettingSwitchTile(
+                    value: _holidayOverrideEnabled,
+                    onChanged: (value) {
+                      setState(() {
+                        _holidayOverrideEnabled = value;
+                      });
+                      final provider = context.read<TimetableProvider>();
+                      provider.updateTimetableSettings(
+                        provider.settings.copyWith(
+                          holidayOverrideEnabled: value,
+                        ),
+                      );
+                      provider.refreshLiveActivityNow(forceSnapshotSync: true);
+                    },
+                    title: Text(
+                      _holidayOverrideEnabled
+                          ? l10n.liveTestingHolidayModeEnabled
+                          : l10n.liveTestingHolidayModeDisabled,
+                    ),
+                    subtitle: Text(
+                      _holidayOverrideEnabled
+                          ? l10n.liveTestingHolidayModeEnabledDesc
+                          : l10n.liveTestingHolidayModeDisabledDesc,
+                    ),
                   ),
-                  subtitle: Text(
-                    _holidayOverrideEnabled
-                        ? l10n.liveTestingHolidayModeEnabledDesc
-                        : l10n.liveTestingHolidayModeDisabledDesc,
-                  ),
-                ),
+                ],
               ),
               const SizedBox(height: 12),
             ],
@@ -3077,13 +3082,10 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         type: MaterialType.transparency,
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: TimetableWeekPreview(
-                provider: provider,
-                settings: _draft,
-                week: provider.currentWeek,
-              ),
+            TimetableWeekPreview(
+              provider: provider,
+              settings: _draft,
+              week: provider.currentWeek,
             ),
             Expanded(
               child: ListView(
