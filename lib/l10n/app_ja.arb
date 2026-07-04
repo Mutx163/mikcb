@@ -2823,5 +2823,29 @@
     }
   },
   "themeRename": "名前を変更",
-  "themeDuplicate": "複製"
+  "themeDuplicate": "複製",
+  "courseNatureRequired": "必修",
+  "courseNatureElective": "選択",
+  "homeMenuStatisticsTitle": "授業統計",
+  "statisticsTitle": "授業統計",
+  "statisticsOverview": "今週の概要",
+  "statisticsCourseCount": "科目数",
+  "statisticsSectionCount": "今週の授業時間",
+  "statisticsWeeklyCourses": "今週の授業",
+  "statisticsDailyDistribution": "日別授業分布",
+  "statisticsNatureRatio": "必修 / 選択",
+  "statisticsCourseList": "授業リスト",
+  "statisticsSectionsUnit": "コマ",
+  "statisticsSectionUnit": "コマ",
+  "statisticsNoData": "授業データがありません",
+  "statisticsCourseCountRatio": "科目数の割合",
+  "statisticsSectionCountRatio": "授業時間の割合",
+  "statisticsWeekSelector": "第 {week} 週",
+  "@statisticsWeekSelector": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  }
 }

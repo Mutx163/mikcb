@@ -2823,5 +2823,29 @@
     }
   },
   "themeRename": "重新命名",
-  "themeDuplicate": "複製"
+  "themeDuplicate": "複製",
+  "courseNatureRequired": "必修",
+  "courseNatureElective": "選修",
+  "homeMenuStatisticsTitle": "課程統計",
+  "statisticsTitle": "課程統計",
+  "statisticsOverview": "本週概覽",
+  "statisticsCourseCount": "課程門數",
+  "statisticsSectionCount": "本週課時",
+  "statisticsWeeklyCourses": "本週課程",
+  "statisticsDailyDistribution": "每日課時分佈",
+  "statisticsNatureRatio": "必修 / 選修",
+  "statisticsCourseList": "課程列表",
+  "statisticsSectionsUnit": "節",
+  "statisticsSectionUnit": "節",
+  "statisticsNoData": "暫無課程數據",
+  "statisticsCourseCountRatio": "門數比例",
+  "statisticsSectionCountRatio": "課時比例",
+  "statisticsWeekSelector": "第 {week} 週",
+  "@statisticsWeekSelector": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  }
 }

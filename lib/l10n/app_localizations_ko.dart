@@ -4840,55 +4840,55 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeDuplicate => '복사';
 
   @override
-  String get courseNatureRequired => '必修';
+  String get courseNatureRequired => '필수';
 
   @override
-  String get courseNatureElective => '选修';
+  String get courseNatureElective => '선택';
 
   @override
-  String get homeMenuStatisticsTitle => '课程统计';
+  String get homeMenuStatisticsTitle => '수업 통계';
 
   @override
-  String get statisticsTitle => '课程统计';
+  String get statisticsTitle => '수업 통계';
 
   @override
-  String get statisticsOverview => '本周概览';
+  String get statisticsOverview => '이번 주 개요';
 
   @override
-  String get statisticsCourseCount => '课程门数';
+  String get statisticsCourseCount => '수업 수';
 
   @override
-  String get statisticsSectionCount => '本周课时';
+  String get statisticsSectionCount => '이번 주 수업 시간';
 
   @override
-  String get statisticsWeeklyCourses => '本周课程';
+  String get statisticsWeeklyCourses => '이번 주 수업';
 
   @override
-  String get statisticsDailyDistribution => '每日课时分布';
+  String get statisticsDailyDistribution => '요일별 수업 분포';
 
   @override
-  String get statisticsNatureRatio => '必修 / 选修';
+  String get statisticsNatureRatio => '필수 / 선택';
 
   @override
-  String get statisticsCourseList => '课程列表';
+  String get statisticsCourseList => '수업 목록';
 
   @override
-  String get statisticsSectionsUnit => '节';
+  String get statisticsSectionsUnit => '교시';
 
   @override
-  String get statisticsSectionUnit => '节';
+  String get statisticsSectionUnit => '교시';
 
   @override
-  String get statisticsNoData => '暂无课程数据';
+  String get statisticsNoData => '수업 데이터 없음';
 
   @override
-  String get statisticsCourseCountRatio => '门数比例';
+  String get statisticsCourseCountRatio => '수업 수 비율';
 
   @override
-  String get statisticsSectionCountRatio => '课时比例';
+  String get statisticsSectionCountRatio => '수업 시간 비율';
 
   @override
   String statisticsWeekSelector(int week) {
-    return '第 $week 周';
+    return '$week주차';
   }
 }

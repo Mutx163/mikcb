@@ -2823,5 +2823,29 @@
     }
   },
   "themeRename": "이름 변경",
-  "themeDuplicate": "복사"
+  "themeDuplicate": "복사",
+  "courseNatureRequired": "필수",
+  "courseNatureElective": "선택",
+  "homeMenuStatisticsTitle": "수업 통계",
+  "statisticsTitle": "수업 통계",
+  "statisticsOverview": "이번 주 개요",
+  "statisticsCourseCount": "수업 수",
+  "statisticsSectionCount": "이번 주 수업 시간",
+  "statisticsWeeklyCourses": "이번 주 수업",
+  "statisticsDailyDistribution": "요일별 수업 분포",
+  "statisticsNatureRatio": "필수 / 선택",
+  "statisticsCourseList": "수업 목록",
+  "statisticsSectionsUnit": "교시",
+  "statisticsSectionUnit": "교시",
+  "statisticsNoData": "수업 데이터 없음",
+  "statisticsCourseCountRatio": "수업 수 비율",
+  "statisticsSectionCountRatio": "수업 시간 비율",
+  "statisticsWeekSelector": "{week}주차",
+  "@statisticsWeekSelector": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  }
 }

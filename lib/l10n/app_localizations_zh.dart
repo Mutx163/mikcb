@@ -9522,6 +9522,59 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeDuplicate => '複製';
+
+  @override
+  String get courseNatureRequired => '必修';
+
+  @override
+  String get courseNatureElective => '選修';
+
+  @override
+  String get homeMenuStatisticsTitle => '課程統計';
+
+  @override
+  String get statisticsTitle => '課程統計';
+
+  @override
+  String get statisticsOverview => '本週概覽';
+
+  @override
+  String get statisticsCourseCount => '課程門數';
+
+  @override
+  String get statisticsSectionCount => '本週課時';
+
+  @override
+  String get statisticsWeeklyCourses => '本週課程';
+
+  @override
+  String get statisticsDailyDistribution => '每日課時分佈';
+
+  @override
+  String get statisticsNatureRatio => '必修 / 選修';
+
+  @override
+  String get statisticsCourseList => '課程列表';
+
+  @override
+  String get statisticsSectionsUnit => '節';
+
+  @override
+  String get statisticsSectionUnit => '節';
+
+  @override
+  String get statisticsNoData => '暫無課程數據';
+
+  @override
+  String get statisticsCourseCountRatio => '門數比例';
+
+  @override
+  String get statisticsSectionCountRatio => '課時比例';
+
+  @override
+  String statisticsWeekSelector(int week) {
+    return '第 $week 週';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -14256,4 +14309,57 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeDuplicate => '複製';
+
+  @override
+  String get courseNatureRequired => '必修';
+
+  @override
+  String get courseNatureElective => '選修';
+
+  @override
+  String get homeMenuStatisticsTitle => '課程統計';
+
+  @override
+  String get statisticsTitle => '課程統計';
+
+  @override
+  String get statisticsOverview => '本週概覽';
+
+  @override
+  String get statisticsCourseCount => '課程門數';
+
+  @override
+  String get statisticsSectionCount => '本週課時';
+
+  @override
+  String get statisticsWeeklyCourses => '本週課程';
+
+  @override
+  String get statisticsDailyDistribution => '每日課時分佈';
+
+  @override
+  String get statisticsNatureRatio => '必修 / 選修';
+
+  @override
+  String get statisticsCourseList => '課程列表';
+
+  @override
+  String get statisticsSectionsUnit => '節';
+
+  @override
+  String get statisticsSectionUnit => '節';
+
+  @override
+  String get statisticsNoData => '暫無課程數據';
+
+  @override
+  String get statisticsCourseCountRatio => '門數比例';
+
+  @override
+  String get statisticsSectionCountRatio => '課時比例';
+
+  @override
+  String statisticsWeekSelector(int week) {
+    return '第 $week 週';
+  }
 }
