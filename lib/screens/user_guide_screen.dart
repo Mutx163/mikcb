@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,11 +11,7 @@ import '../services/miui_live_activities_service.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
-enum GuideAction {
-  startUsing,
-  importCourses,
-  restoreBackup,
-}
+enum GuideAction { startUsing, importCourses, restoreBackup }
 
 class UserGuideScreen extends StatefulWidget {
   final bool requirePrivacyConsent;
@@ -157,40 +154,46 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
     return PopScope(
       canPop: !widget.requirePrivacyConsent,
-      child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: !widget.requirePrivacyConsent,
+      child: FScaffold(
+        header: FHeader.nested(
+          prefixes: widget.requirePrivacyConsent
+              ? const []
+              : [FHeaderAction.back(onPress: () => Navigator.pop(context))],
           title: Text(
             widget.requirePrivacyConsent
                 ? l10n.firstUseGuideTitle
                 : l10n.guideAndPermissionsTitle,
           ),
-          actions: [
-            IconButton(
-              tooltip: l10n.refreshStatusTooltip,
-              onPressed: _refreshStatus,
+          suffixes: [
+            FHeaderAction(
               icon: const Icon(Icons.refresh),
+              semanticsLabel: l10n.refreshStatusTooltip,
+              onPress: () => _refreshStatus(),
             ),
           ],
         ),
-        body: Column(
-          children: [
-            _buildProgressBar(theme, l10n, colorScheme),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const ClampingScrollPhysics(),
-                onPageChanged: _onPageChanged,
-                children: [
-                  _buildWelcomePage(theme, l10n, colorScheme),
-                  _buildPrivacyPage(theme, l10n),
-                  _buildPermissionsPage(theme, l10n, colorScheme),
-                  _buildTipsPage(theme, l10n, colorScheme),
-                ],
+        childPad: false,
+        child: Material(
+          type: MaterialType.transparency,
+          child: Column(
+            children: [
+              _buildProgressBar(theme, l10n, colorScheme),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const ClampingScrollPhysics(),
+                  onPageChanged: _onPageChanged,
+                  children: [
+                    _buildWelcomePage(theme, l10n, colorScheme),
+                    _buildPrivacyPage(theme, l10n),
+                    _buildPermissionsPage(theme, l10n, colorScheme),
+                    _buildTipsPage(theme, l10n, colorScheme),
+                  ],
+                ),
               ),
-            ),
-            _buildBottomBar(theme, l10n, colorScheme),
-          ],
+              _buildBottomBar(theme, l10n, colorScheme),
+            ],
+          ),
         ),
       ),
     );
@@ -249,7 +252,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return l10n.guideTipsPageTitle;
   }
 
- // ── Language selector ────────────────────────────────────────
+  // ── Language selector ────────────────────────────────────────
 
   List<DropdownMenuItem<String>> buildLocaleDropdownItems(
     BuildContext context,
@@ -257,10 +260,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final map = buildLocaleMenuMap(context);
     return map.entries
         .map(
-          (e) => DropdownMenuItem<String>(
-            value: e.value,
-            child: Text(e.key),
-          ),
+          (e) => DropdownMenuItem<String>(value: e.value, child: Text(e.key)),
         )
         .toList();
   }
@@ -272,8 +272,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   ) {
     final provider = context.read<TimetableProvider?>();
     if (provider == null) return const SizedBox.shrink();
-    final currentTag =
-        normalizeLocaleTagForDropdown(provider.settings.appLocaleTag);
+    final currentTag = normalizeLocaleTagForDropdown(
+      provider.settings.appLocaleTag,
+    );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -313,8 +314,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               items: buildLocaleDropdownItems(context),
               onChanged: (value) {
                 if (value == null) return;
-                final next =
-                    provider.settings.copyWith(appLocaleTag: value);
+                final next = provider.settings.copyWith(appLocaleTag: value);
                 provider.updateTimetableSettings(next);
               },
               borderRadius: BorderRadius.circular(12),
@@ -1091,9 +1091,9 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   void _finishGuide() {
     if (widget.requirePrivacyConsent && !_privacyChecked) return;
-    Navigator.of(context).pop(
-      widget.requirePrivacyConsent ? GuideAction.startUsing : null,
-    );
+    Navigator.of(
+      context,
+    ).pop(widget.requirePrivacyConsent ? GuideAction.startUsing : null);
   }
 
   Future<void> _exitWithoutConsent() async {
@@ -1152,15 +1152,15 @@ class _WelcomeActionTile extends StatelessWidget {
                     Text(
                       title,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
