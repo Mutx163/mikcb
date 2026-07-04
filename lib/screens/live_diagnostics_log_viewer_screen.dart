@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
-enum DiagnosticsLogViewMode {
-  structured,
-  raw,
-}
+enum DiagnosticsLogViewMode { structured, raw }
 
-enum DiagnosticsLogLevel {
-  all,
-  error,
-  warn,
-  info,
-  debug,
-  verbose,
-}
+enum DiagnosticsLogLevel { all, error, warn, info, debug, verbose }
 
 class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
   final String title;
@@ -56,10 +47,7 @@ class _LiveDiagnosticsLogViewerScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final parsed = _parseDiagnosticsLog(
-      _rawLog,
-      fallbackTitle: widget.title,
-    );
+    final parsed = _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
     final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
     final filteredRawText = _buildFilteredRawText(
       parsed,
@@ -67,20 +55,17 @@ class _LiveDiagnosticsLogViewerScreenState
       _selectedLevel,
     );
 
-    return Scaffold(
-      appBar: AppBar(
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
         title: Text(widget.title),
-        actions: [
-          IconButton(
-            tooltip: l10n.appLogsCopyAction,
-            onPressed: () => _copyLogs(filteredRawText),
+        suffixes: [
+          FHeaderAction(
             icon: const Icon(Icons.copy_all_rounded),
+            semanticsLabel: l10n.appLogsCopyAction,
+            onPress: () => _copyLogs(filteredRawText),
           ),
-          IconButton(
-            tooltip: l10n.appLogsExportAction,
-            onPressed: widget.onExport == null || _exporting
-                ? null
-                : () => _exportLogs(filteredRawText),
+          FHeaderAction(
             icon: _exporting
                 ? const SizedBox(
                     width: 18,
@@ -88,10 +73,12 @@ class _LiveDiagnosticsLogViewerScreenState
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.ios_share_rounded),
+            semanticsLabel: l10n.appLogsExportAction,
+            onPress: widget.onExport == null || _exporting
+                ? null
+                : () => _exportLogs(filteredRawText),
           ),
-          IconButton(
-            tooltip: l10n.appLogsClearAction,
-            onPressed: widget.onClear == null || _clearing ? null : _clearLogs,
+          FHeaderAction(
             icon: _clearing
                 ? const SizedBox(
                     width: 18,
@@ -99,125 +86,131 @@ class _LiveDiagnosticsLogViewerScreenState
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.delete_outline_rounded),
+            semanticsLabel: l10n.appLogsClearAction,
+            onPress: widget.onClear == null || _clearing ? null : _clearLogs,
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Text(
-              l10n.diagnosticsLogIntro,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text(
+                l10n.diagnosticsLogIntro,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (widget.isRecordingEnabled != null)
-                  _RecordingToggleChip(
-                    isRecording: widget.isRecordingEnabled!,
-                    l10n: l10n,
-                    onToggle: widget.onRecordingChanged == null
-                        ? null
-                        : () => widget.onRecordingChanged!(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (widget.isRecordingEnabled != null)
+                    _RecordingToggleChip(
+                      isRecording: widget.isRecordingEnabled!,
+                      l10n: l10n,
+                      onToggle: widget.onRecordingChanged == null
+                          ? null
+                          : () => widget.onRecordingChanged!(
                               !widget.isRecordingEnabled!,
                             ),
+                    ),
+                  SegmentedButton<DiagnosticsLogViewMode>(
+                    segments: <ButtonSegment<DiagnosticsLogViewMode>>[
+                      ButtonSegment<DiagnosticsLogViewMode>(
+                        value: DiagnosticsLogViewMode.structured,
+                        icon: const Icon(Icons.view_agenda_outlined),
+                        label: Text(l10n.diagnosticsStructuredTab),
+                      ),
+                      ButtonSegment<DiagnosticsLogViewMode>(
+                        value: DiagnosticsLogViewMode.raw,
+                        icon: const Icon(Icons.code_rounded),
+                        label: Text(l10n.diagnosticsRawTab),
+                      ),
+                    ],
+                    selected: <DiagnosticsLogViewMode>{_viewMode},
+                    onSelectionChanged: (selection) {
+                      setState(() {
+                        _viewMode = selection.first;
+                      });
+                    },
                   ),
-                SegmentedButton<DiagnosticsLogViewMode>(
-                  segments: <ButtonSegment<DiagnosticsLogViewMode>>[
-                    ButtonSegment<DiagnosticsLogViewMode>(
-                      value: DiagnosticsLogViewMode.structured,
-                      icon: const Icon(Icons.view_agenda_outlined),
-                      label: Text(l10n.diagnosticsStructuredTab),
-                    ),
-                    ButtonSegment<DiagnosticsLogViewMode>(
-                      value: DiagnosticsLogViewMode.raw,
-                      icon: const Icon(Icons.code_rounded),
-                      label: Text(l10n.diagnosticsRawTab),
-                    ),
-                  ],
-                  selected: <DiagnosticsLogViewMode>{_viewMode},
-                  onSelectionChanged: (selection) {
-                    setState(() {
-                      _viewMode = selection.first;
-                    });
-                  },
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final level in DiagnosticsLogLevel.values) ...[
+                      _LevelFilterChip(
+                        label:
+                            '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
+                        selected: _selectedLevel == level,
+                        color: _levelColor(context, level),
+                        onSelected: () {
+                          setState(() {
+                            _selectedLevel = level;
+                          });
+                        },
+                      ),
+                      if (level != DiagnosticsLogLevel.values.last)
+                        const SizedBox(width: 8),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final level in DiagnosticsLogLevel.values) ...[
-                    _LevelFilterChip(
-                      label:
-                          '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
-                      selected: _selectedLevel == level,
-                      color: _levelColor(context, level),
-                      onSelected: () {
-                        setState(() {
-                          _selectedLevel = level;
-                        });
-                      },
+                  Text(
+                    l10n.diagnosticsShowingCount(
+                      filteredEntries.length,
+                      parsed.entries.length,
                     ),
-                    if (level != DiagnosticsLogLevel.values.last)
-                      const SizedBox(width: 8),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  if (_viewMode == DiagnosticsLogViewMode.raw &&
+                      _selectedLevel != DiagnosticsLogLevel.all) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.diagnosticsRawFilteredHint,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ],
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.diagnosticsShowingCount(
-                    filteredEntries.length,
-                    parsed.entries.length,
-                  ),
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                if (_viewMode == DiagnosticsLogViewMode.raw &&
-                    _selectedLevel != DiagnosticsLogLevel.all) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.diagnosticsRawFilteredHint,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ],
+            const Divider(height: 1),
+            Expanded(
+              child: parsed.entries.isEmpty
+                  ? _buildEmptyState(context, l10n)
+                  : _viewMode == DiagnosticsLogViewMode.raw
+                  ? _buildRawView(context, l10n, parsed, filteredEntries)
+                  : _buildStructuredView(
+                      context,
+                      l10n,
+                      parsed,
+                      filteredEntries,
+                    ),
             ),
-          ),
-          const Divider(height: 1),
-          Expanded(
-            child: parsed.entries.isEmpty
-                ? _buildEmptyState(context, l10n)
-                : _viewMode == DiagnosticsLogViewMode.raw
-                    ? _buildRawView(context, l10n, parsed, filteredEntries)
-                    : _buildStructuredView(
-                        context,
-                        l10n,
-                        parsed,
-                        filteredEntries,
-                      ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -259,17 +252,17 @@ class _LiveDiagnosticsLogViewerScreenState
             const SizedBox(height: 12),
             Text(
               l10n.diagnosticsEmptyTitle,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
               l10n.diagnosticsEmptySubtitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -298,17 +291,17 @@ class _LiveDiagnosticsLogViewerScreenState
               const SizedBox(height: 12),
               Text(
                 l10n.diagnosticsNoMatchingTitle,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 l10n.diagnosticsNoMatchingSubtitle,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -340,16 +333,18 @@ class _LiveDiagnosticsLogViewerScreenState
       return _buildStructuredView(context, l10n, parsed, filteredEntries);
     }
 
-    final rawText =
-        _buildFilteredRawText(parsed, filteredEntries, _selectedLevel);
+    final rawText = _buildFilteredRawText(
+      parsed,
+      filteredEntries,
+      _selectedLevel,
+    );
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
       child: SelectableText(
         rawText,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              height: 1.45,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', height: 1.45),
       ),
     );
   }
@@ -422,7 +417,9 @@ class _RecordingToggleChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isRecording ? Colors.green : Theme.of(context).colorScheme.outline;
+    final color = isRecording
+        ? Colors.green
+        : Theme.of(context).colorScheme.outline;
     return GestureDetector(
       onTap: onToggle,
       child: Container(
@@ -430,9 +427,7 @@ class _RecordingToggleChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: color.withValues(alpha: 0.35),
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.35)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -450,9 +445,9 @@ class _RecordingToggleChip extends StatelessWidget {
                   ? l10n.appLogsRecordingEnabled
                   : l10n.appLogsRecordingDisabled,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
@@ -483,9 +478,9 @@ class _LevelFilterChip extends StatelessWidget {
       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-            color: selected ? color : Theme.of(context).colorScheme.onSurface,
-            fontWeight: FontWeight.w700,
-          ),
+        color: selected ? color : Theme.of(context).colorScheme.onSurface,
+        fontWeight: FontWeight.w700,
+      ),
       side: BorderSide(
         color: selected
             ? color.withValues(alpha: 0.35)
@@ -501,10 +496,7 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
   final _DiagnosticsParsedLog parsed;
   final AppLocalizations l10n;
 
-  const _DiagnosticsHeaderCard({
-    required this.parsed,
-    required this.l10n,
-  });
+  const _DiagnosticsHeaderCard({required this.parsed, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -512,8 +504,9 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color:
-            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
@@ -587,10 +580,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
   final _DiagnosticsLogEntry entry;
   final AppLocalizations l10n;
 
-  const _DiagnosticsLogEntryCard({
-    required this.entry,
-    required this.l10n,
-  });
+  const _DiagnosticsLogEntryCard({required this.entry, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -626,11 +616,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    _levelIcon(entry.level),
-                    color: color,
-                    size: 18,
-                  ),
+                  child: Icon(_levelIcon(entry.level), color: color, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -748,10 +734,7 @@ class _DiagnosticsDetailRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _DiagnosticsDetailRow({
-    required this.label,
-    required this.value,
-  });
+  const _DiagnosticsDetailRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -760,8 +743,9 @@ class _DiagnosticsDetailRow extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:
-            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.25,
+        ),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -824,14 +808,14 @@ class _DiagnosticsLogEntry {
   String? get formattedTime => _formatMillis(fields['time']);
 
   Iterable<MapEntry<String, String>> get detailEntries => fields.entries.where(
-        (entry) => !const {
-          'time',
-          'category',
-          'message',
-          'level',
-          'severity',
-        }.contains(entry.key),
-      );
+    (entry) => !const {
+      'time',
+      'category',
+      'message',
+      'level',
+      'severity',
+    }.contains(entry.key),
+  );
 }
 
 _DiagnosticsParsedLog _parseDiagnosticsLog(
@@ -912,11 +896,8 @@ _DiagnosticsLogEntry? _parseDiagnosticsLogEntry(List<String> lines) {
   final explicitLevel = _parseDiagnosticsLogLevel(
     normalizedFields['level'] ?? normalizedFields['severity'],
   );
-  final level = explicitLevel ??
-      _inferDiagnosticsLogLevel(
-        normalizedFields,
-        rawBlock,
-      );
+  final level =
+      explicitLevel ?? _inferDiagnosticsLogLevel(normalizedFields, rawBlock);
 
   return _DiagnosticsLogEntry(
     rawBlock: rawBlock,
@@ -1003,19 +984,22 @@ DiagnosticsLogLevel _inferDiagnosticsLogLevel(
 
   if (fields.containsKey('throwable') ||
       fields.containsKey('stackTrace') ||
-      RegExp(r'\b(error|exception|crash|fatal|failed|failure)\b')
-          .hasMatch(haystack)) {
+      RegExp(
+        r'\b(error|exception|crash|fatal|failed|failure)\b',
+      ).hasMatch(haystack)) {
     return DiagnosticsLogLevel.error;
   }
-  if (RegExp(r'\b(warn|warning|denied|blocked|invalid|missing)\b')
-      .hasMatch(haystack)) {
+  if (RegExp(
+    r'\b(warn|warning|denied|blocked|invalid|missing)\b',
+  ).hasMatch(haystack)) {
     return DiagnosticsLogLevel.warn;
   }
   if (RegExp(r'\b(verbose|trace)\b').hasMatch(haystack)) {
     return DiagnosticsLogLevel.verbose;
   }
-  if (RegExp(r'\b(debug|diagnostic|snapshot|payload|test)\b')
-      .hasMatch(haystack)) {
+  if (RegExp(
+    r'\b(debug|diagnostic|snapshot|payload|test)\b',
+  ).hasMatch(haystack)) {
     return DiagnosticsLogLevel.debug;
   }
   return DiagnosticsLogLevel.info;
@@ -1030,8 +1014,9 @@ String _buildFilteredRawText(
     return parsed.fullText;
   }
 
-  final blocks =
-      filteredEntries.map((entry) => entry.rawBlock.trim()).join('\n\n');
+  final blocks = filteredEntries
+      .map((entry) => entry.rawBlock.trim())
+      .join('\n\n');
   if (parsed.rawHeader.isEmpty) {
     return blocks;
   }
@@ -1116,4 +1101,3 @@ String? _formatMillis(String? raw) {
   String two(int value) => value.toString().padLeft(2, '0');
   return '${dateTime.year}-${two(dateTime.month)}-${two(dateTime.day)} ${two(dateTime.hour)}:${two(dateTime.minute)}:${two(dateTime.second)}';
 }
-
