@@ -64,11 +64,11 @@ extras=
     expect(find.textContaining('Render failed'), findsOneWidget);
     expect(find.textContaining('Snapshot payload captured'), findsNothing);
 
-    await tester.tap(find.byTooltip('导出日志'));
+    await tester.tap(find.bySemanticsLabel('导出日志'));
     await tester.pumpAndSettle();
     expect(exported, 1);
 
-    await tester.tap(find.byTooltip('清空日志'));
+    await tester.tap(find.bySemanticsLabel('清空日志'));
     await tester.pumpAndSettle();
     expect(cleared, 1);
     expect(find.text('已清空应用日志'), findsOneWidget);

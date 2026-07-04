@@ -17,6 +17,15 @@ class TestApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      builder: (context, child) {
+        return ScaffoldMessenger(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            resizeToAvoidBottomInset: false,
+            body: child ?? const SizedBox.shrink(),
+          ),
+        );
+      },
       home: home,
     );
   }

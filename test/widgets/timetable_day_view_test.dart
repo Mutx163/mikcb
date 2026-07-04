@@ -1880,12 +1880,14 @@ void main() {
 
     expect(find.byKey(ValueKey('timetable-day-view-1-$targetDay')), findsOne);
 
-    await tester.tap(find.byTooltip('更多'));
-    await _pumpTimetableFrame(tester);
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await _pumpFiniteFrames(tester, count: 4);
     await tester.tap(find.text('添加课程'));
-    await _pumpTimetableFrame(tester);
-    // Sub-sheet: tap "添加课程" again to navigate to AddCourseScreen.
-    await tester.tap(find.text('添加课程'));
+    await _pumpFiniteFrames(tester, count: 4);
+
+    expect(find.text('添加内容'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.view_week_rounded));
     await tester.pump();
     await _pumpFiniteFrames(tester, count: 12);
 

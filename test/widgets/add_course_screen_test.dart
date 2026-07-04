@@ -99,7 +99,7 @@ void main() {
     );
     await _pumpScreen(tester);
 
-    expect(find.byTooltip('删除课程'), findsOneWidget);
+    expect(find.bySemanticsLabel('删除课程'), findsOneWidget);
   });
 
   testWidgets('editing course with invalid color still renders', (tester) async {

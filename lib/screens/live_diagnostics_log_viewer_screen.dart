@@ -702,24 +702,27 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
               const SizedBox(height: 10),
               Theme(
                 data: theme.copyWith(dividerColor: Colors.transparent),
-                child: ExpansionTile(
-                  tilePadding: EdgeInsets.zero,
-                  childrenPadding: const EdgeInsets.only(top: 4),
-                  title: Text(
-                    l10n.diagnosticsContentTitle,
-                    style: theme.textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  children: [
-                    for (var i = 0; i < details.length; i++) ...[
-                      _DiagnosticsDetailRow(
-                        label: _prettyKey(details[i].key, l10n),
-                        value: _inlineValue(details[i].value),
+                child: Material(
+                  color: Colors.transparent,
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(top: 4),
+                    title: Text(
+                      l10n.diagnosticsContentTitle,
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      if (i != details.length - 1) const SizedBox(height: 10),
+                    ),
+                    children: [
+                      for (var i = 0; i < details.length; i++) ...[
+                        _DiagnosticsDetailRow(
+                          label: _prettyKey(details[i].key, l10n),
+                          value: _inlineValue(details[i].value),
+                        ),
+                        if (i != details.length - 1) const SizedBox(height: 10),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ),
             ],
