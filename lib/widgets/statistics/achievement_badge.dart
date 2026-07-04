@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
 
@@ -10,8 +11,10 @@ class AchievementBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final name = _achievementName(l10n, achievement.id);
 
     return Container(
       decoration: BoxDecoration(
@@ -41,7 +44,7 @@ class AchievementBadge extends StatelessWidget {
           const SizedBox(height: 4),
           // 名称
           Text(
-            achievement.name,
+            name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelMedium?.copyWith(
@@ -63,6 +66,20 @@ class AchievementBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+String _achievementName(AppLocalizations l10n, String id) {
+  return switch (id) {
+    'early_bird' => l10n.statisticsAchievementEarlyBirdName,
+    'perfect_attendance' => l10n.statisticsAchievementPerfectAttendanceName,
+    'weekend_warrior' => l10n.statisticsAchievementWeekendWarriorName,
+    'class_king' => l10n.statisticsAchievementClassKingName,
+    'scholar' => l10n.statisticsAchievementScholarName,
+    'balanced' => l10n.statisticsAchievementBalancedName,
+    'night_owl' => l10n.statisticsAchievementNightOwlName,
+    'explorer' => l10n.statisticsAchievementExplorerName,
+    _ => id,
+  };
 }
 
 /// 成就徽章网格

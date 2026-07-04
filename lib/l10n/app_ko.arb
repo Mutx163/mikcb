@@ -2847,5 +2847,89 @@
         "type": "int"
       }
     }
+  },
+  "statisticsStoryBusiestDayTitle": "가장 바쁜 날",
+  "statisticsStoryBusiestDayContent": "{week}주차까지 가장 바쁜 날은 **{day}**, 평균 **{avg}** 교시",
+  "@statisticsStoryBusiestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryLightestDayTitle": "가장 여유로운 날",
+  "statisticsStoryLightestDayContent": "{week}주차까지 가장 여유로운 날은 **{day}**, 단 **{avg}** 교시",
+  "@statisticsStoryLightestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryFavoriteRoomTitle": "자주 가는 강의실",
+  "statisticsStoryFavoriteRoomContent": "{week}주차까지 가장 자주 간 강의실은 **{room}**, **{count}**회",
+  "@statisticsStoryFavoriteRoomContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "room": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryBuildingCountTitle": "캠퍼스 탐험",
+  "statisticsStoryBuildingCountContent": "{week}주차까지 수업이 **{count}**개 건물에 분포",
+  "@statisticsStoryBuildingCountContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryTimeRangeTitle": "시간 범위",
+  "statisticsStoryTimeRangeContent": "가장 이른 수업 **{earliest}**, 가장 늦은 수업 **{latest}**",
+  "@statisticsStoryTimeRangeContent": {
+    "placeholders": {
+      "earliest": { "type": "String" },
+      "latest": { "type": "String" }
+    }
+  },
+  "statisticsSemesterLabelCourses": "과목",
+  "statisticsSemesterLabelSections": "교시",
+  "statisticsSemesterLabelWeeks": "주",
+  "statisticsSemesterLabelDayStreak": "일 연속",
+  "statisticsAchievementsTitle": "업적 배지",
+  "statisticsStoriesTitle": "데이터 스토리",
+  "statisticsRankingTitle": "과목 순위",
+  "statisticsNoDataHint": "수업을 추가하면 통계를 볼 수 있습니다",
+  "statisticsShareLabel": "통계 공유",
+  "statisticsShareTitle": "내 학기 통계",
+  "statisticsRankingSlotDetail": "{day} {startSection}-{endSection}교시",
+  "@statisticsRankingSlotDetail": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "startSection": { "type": "int" },
+      "endSection": { "type": "int" }
+    }
+  },
+  "statisticsAchievementEarlyBirdName": "얼리버드",
+  "statisticsAchievementEarlyBirdDescription": "8:00 수업 있음",
+  "statisticsAchievementPerfectAttendanceName": "개근상",
+  "statisticsAchievementPerfectAttendanceDescription": "매주 빠짐없이 듣는 과목",
+  "statisticsAchievementWeekendWarriorName": "주말 전사",
+  "statisticsAchievementWeekendWarriorDescription": "주말 수업 있음",
+  "statisticsAchievementClassKingName": "수업왕",
+  "statisticsAchievementClassKingDescription": "하루 6교시 이상",
+  "statisticsAchievementScholarName": "학습왕",
+  "statisticsAchievementScholarDescription": "총 100교시 이상",
+  "statisticsAchievementBalancedName": "균형 마스터",
+  "statisticsAchievementBalancedDescription": "요일별 차이 2교시 이내",
+  "statisticsAchievementNightOwlName": "올빼미",
+  "statisticsAchievementNightOwlDescription": "18:00 이후 수업 있음",
+  "statisticsAchievementExplorerName": "교실 탐험가",
+  "statisticsAchievementExplorerDescription": "5개 이상 교실 이용",
+  "statisticsNatureLegendDetail": "{count} 과목 · {sections} 교시",
+  "@statisticsNatureLegendDetail": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "sections": { "type": "int" }
+    }
   }
 }

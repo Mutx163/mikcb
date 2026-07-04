@@ -281,7 +281,11 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '$dayLabel 第${slot.startSection}-${slot.endSection}节',
+                      l10n.statisticsRankingSlotDetail(
+                        dayLabel,
+                        slot.startSection,
+                        slot.endSection,
+                      ),
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
@@ -333,7 +337,7 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
       5 => l10n.weekdayFri,
       6 => l10n.weekdaySat,
       7 => l10n.weekdaySun,
-      _ => '周$dayOfWeek',
+      _ => dayOfWeek.toString(),
     };
   }
 }

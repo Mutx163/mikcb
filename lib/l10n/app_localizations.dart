@@ -8721,6 +8721,238 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'第 {week} 周'**
   String statisticsWeekSelector(int week);
+
+  /// No description provided for @statisticsStoryBusiestDayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最忙的一天'**
+  String get statisticsStoryBusiestDayTitle;
+
+  /// No description provided for @statisticsStoryBusiestDayContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'截至第{week}周，这学期你最忙的一天是 **{day}**，平均 **{avg}** 节课'**
+  String statisticsStoryBusiestDayContent(int week, String day, String avg);
+
+  /// No description provided for @statisticsStoryLightestDayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最轻松的一天'**
+  String get statisticsStoryLightestDayTitle;
+
+  /// No description provided for @statisticsStoryLightestDayContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'截至第{week}周，你最轻松的一天是 **{day}**，只有 **{avg}** 节课'**
+  String statisticsStoryLightestDayContent(int week, String day, String avg);
+
+  /// No description provided for @statisticsStoryFavoriteRoomTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最常去的教室'**
+  String get statisticsStoryFavoriteRoomTitle;
+
+  /// No description provided for @statisticsStoryFavoriteRoomContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'截至第{week}周，你最常去的教室是 **{room}**，共去了 **{count}** 次'**
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count);
+
+  /// No description provided for @statisticsStoryBuildingCountTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'教学楼探险'**
+  String get statisticsStoryBuildingCountTitle;
+
+  /// No description provided for @statisticsStoryBuildingCountContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'截至第{week}周，你的课程分布在 **{count}** 栋不同的教学楼'**
+  String statisticsStoryBuildingCountContent(int week, int count);
+
+  /// No description provided for @statisticsStoryTimeRangeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间跨度'**
+  String get statisticsStoryTimeRangeTitle;
+
+  /// No description provided for @statisticsStoryTimeRangeContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'你最早的课是 **{earliest}**，最晚的课是 **{latest}**'**
+  String statisticsStoryTimeRangeContent(String earliest, String latest);
+
+  /// No description provided for @statisticsSemesterLabelCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'门课程'**
+  String get statisticsSemesterLabelCourses;
+
+  /// No description provided for @statisticsSemesterLabelSections.
+  ///
+  /// In zh, this message translates to:
+  /// **'节课'**
+  String get statisticsSemesterLabelSections;
+
+  /// No description provided for @statisticsSemesterLabelWeeks.
+  ///
+  /// In zh, this message translates to:
+  /// **'周'**
+  String get statisticsSemesterLabelWeeks;
+
+  /// No description provided for @statisticsSemesterLabelDayStreak.
+  ///
+  /// In zh, this message translates to:
+  /// **'天连续'**
+  String get statisticsSemesterLabelDayStreak;
+
+  /// No description provided for @statisticsAchievementsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'成就徽章'**
+  String get statisticsAchievementsTitle;
+
+  /// No description provided for @statisticsStoriesTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'数据故事'**
+  String get statisticsStoriesTitle;
+
+  /// No description provided for @statisticsRankingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程排行'**
+  String get statisticsRankingTitle;
+
+  /// No description provided for @statisticsNoDataHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'添加课程后即可查看统计'**
+  String get statisticsNoDataHint;
+
+  /// No description provided for @statisticsShareLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享统计'**
+  String get statisticsShareLabel;
+
+  /// No description provided for @statisticsShareTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'我的学期统计'**
+  String get statisticsShareTitle;
+
+  /// No description provided for @statisticsRankingSlotDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'{day} 第{startSection}-{endSection}节'**
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  );
+
+  /// No description provided for @statisticsAchievementEarlyBirdName.
+  ///
+  /// In zh, this message translates to:
+  /// **'早八战士'**
+  String get statisticsAchievementEarlyBirdName;
+
+  /// No description provided for @statisticsAchievementEarlyBirdDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'有 8:00 的课，真棒！'**
+  String get statisticsAchievementEarlyBirdDescription;
+
+  /// No description provided for @statisticsAchievementPerfectAttendanceName.
+  ///
+  /// In zh, this message translates to:
+  /// **'全勤达人'**
+  String get statisticsAchievementPerfectAttendanceName;
+
+  /// No description provided for @statisticsAchievementPerfectAttendanceDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'某门课每周都有'**
+  String get statisticsAchievementPerfectAttendanceDescription;
+
+  /// No description provided for @statisticsAchievementWeekendWarriorName.
+  ///
+  /// In zh, this message translates to:
+  /// **'周末战士'**
+  String get statisticsAchievementWeekendWarriorName;
+
+  /// No description provided for @statisticsAchievementWeekendWarriorDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'周末有课'**
+  String get statisticsAchievementWeekendWarriorDescription;
+
+  /// No description provided for @statisticsAchievementClassKingName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课王'**
+  String get statisticsAchievementClassKingName;
+
+  /// No description provided for @statisticsAchievementClassKingDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'某天 ≥ 6 节课'**
+  String get statisticsAchievementClassKingDescription;
+
+  /// No description provided for @statisticsAchievementScholarName.
+  ///
+  /// In zh, this message translates to:
+  /// **'学霸'**
+  String get statisticsAchievementScholarName;
+
+  /// No description provided for @statisticsAchievementScholarDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'总课时 ≥ 100'**
+  String get statisticsAchievementScholarDescription;
+
+  /// No description provided for @statisticsAchievementBalancedName.
+  ///
+  /// In zh, this message translates to:
+  /// **'均衡大师'**
+  String get statisticsAchievementBalancedName;
+
+  /// No description provided for @statisticsAchievementBalancedDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'每天课时差距 ≤ 2'**
+  String get statisticsAchievementBalancedDescription;
+
+  /// No description provided for @statisticsAchievementNightOwlName.
+  ///
+  /// In zh, this message translates to:
+  /// **'夜猫子'**
+  String get statisticsAchievementNightOwlName;
+
+  /// No description provided for @statisticsAchievementNightOwlDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'有 18:00 以后的课'**
+  String get statisticsAchievementNightOwlDescription;
+
+  /// No description provided for @statisticsAchievementExplorerName.
+  ///
+  /// In zh, this message translates to:
+  /// **'教室探索家'**
+  String get statisticsAchievementExplorerName;
+
+  /// No description provided for @statisticsAchievementExplorerDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用过 ≥ 5 个不同教室'**
+  String get statisticsAchievementExplorerDescription;
+
+  /// No description provided for @statisticsNatureLegendDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 门 · {sections} 节'**
+  String statisticsNatureLegendDetail(int count, int sections);
 }
 
 class _AppLocalizationsDelegate

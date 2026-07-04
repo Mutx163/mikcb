@@ -66,11 +66,11 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                 ? [
                     FHeaderAction(
                       icon: const Icon(Icons.share_rounded),
-                      semanticsLabel: '分享统计',
+                      semanticsLabel: l10n.statisticsShareLabel,
                       onPress: () => StatisticsShareService.shareWidgetAsImage(
                         context: context,
                         repaintBoundaryKey: _shareKey,
-                        title: '我的学期统计',
+                        title: l10n.statisticsShareTitle,
                       ),
                     ),
                   ]
@@ -115,14 +115,14 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             const SizedBox(height: 24),
 
             // 2. 成就徽章
-            _buildSectionTitle('成就徽章', colorScheme),
+            _buildSectionTitle(l10n.statisticsAchievementsTitle, colorScheme),
             const SizedBox(height: 12),
             AchievementGrid(achievements: achievements),
             const SizedBox(height: 24),
 
             // 3. 数据故事
             if (stories.isNotEmpty) ...[
-              _buildSectionTitle('数据故事', colorScheme),
+              _buildSectionTitle(l10n.statisticsStoriesTitle, colorScheme),
               const SizedBox(height: 12),
               DataStoryList(stories: stories),
               const SizedBox(height: 24),
@@ -141,7 +141,7 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             const SizedBox(height: 24),
 
             // 6. 课程排行
-            _buildSectionTitle('课程排行', colorScheme),
+            _buildSectionTitle(l10n.statisticsRankingTitle, colorScheme),
             const SizedBox(height: 12),
             CourseRanking(courseRanking: semesterStats.courseRanking),
           ],
@@ -177,7 +177,7 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              '添加课程后即可查看统计',
+              l10n.statisticsNoDataHint,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
               ),

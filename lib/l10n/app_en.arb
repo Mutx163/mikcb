@@ -2848,5 +2848,89 @@
         "type": "int"
       }
     }
+  },
+  "statisticsStoryBusiestDayTitle": "Busiest Day",
+  "statisticsStoryBusiestDayContent": "Through week {week}, your busiest day is **{day}**, averaging **{avg}** sections",
+  "@statisticsStoryBusiestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryLightestDayTitle": "Lightest Day",
+  "statisticsStoryLightestDayContent": "Through week {week}, your lightest day is **{day}**, with only **{avg}** sections",
+  "@statisticsStoryLightestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryFavoriteRoomTitle": "Favorite Room",
+  "statisticsStoryFavoriteRoomContent": "Through week {week}, your most visited room is **{room}**, **{count}** visits",
+  "@statisticsStoryFavoriteRoomContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "room": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryBuildingCountTitle": "Campus Explorer",
+  "statisticsStoryBuildingCountContent": "Through week {week}, your classes span **{count}** buildings",
+  "@statisticsStoryBuildingCountContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryTimeRangeTitle": "Time Range",
+  "statisticsStoryTimeRangeContent": "Your earliest class is **{earliest}**, latest is **{latest}**",
+  "@statisticsStoryTimeRangeContent": {
+    "placeholders": {
+      "earliest": { "type": "String" },
+      "latest": { "type": "String" }
+    }
+  },
+  "statisticsSemesterLabelCourses": "courses",
+  "statisticsSemesterLabelSections": "sections",
+  "statisticsSemesterLabelWeeks": "weeks",
+  "statisticsSemesterLabelDayStreak": "day streak",
+  "statisticsAchievementsTitle": "Achievements",
+  "statisticsStoriesTitle": "Data Stories",
+  "statisticsRankingTitle": "Course Ranking",
+  "statisticsNoDataHint": "Add courses to view statistics",
+  "statisticsShareLabel": "Share statistics",
+  "statisticsShareTitle": "My Semester Stats",
+  "statisticsRankingSlotDetail": "{day} Periods {startSection}-{endSection}",
+  "@statisticsRankingSlotDetail": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "startSection": { "type": "int" },
+      "endSection": { "type": "int" }
+    }
+  },
+  "statisticsAchievementEarlyBirdName": "Early Bird",
+  "statisticsAchievementEarlyBirdDescription": "Has a class at 8:00 AM",
+  "statisticsAchievementPerfectAttendanceName": "Perfect Attendance",
+  "statisticsAchievementPerfectAttendanceDescription": "Every scheduled week for a course",
+  "statisticsAchievementWeekendWarriorName": "Weekend Warrior",
+  "statisticsAchievementWeekendWarriorDescription": "Has weekend classes",
+  "statisticsAchievementClassKingName": "Class King",
+  "statisticsAchievementClassKingDescription": "6+ classes in one day",
+  "statisticsAchievementScholarName": "Scholar",
+  "statisticsAchievementScholarDescription": "100+ total sections",
+  "statisticsAchievementBalancedName": "Balance Master",
+  "statisticsAchievementBalancedDescription": "Daily section gap ≤ 2",
+  "statisticsAchievementNightOwlName": "Night Owl",
+  "statisticsAchievementNightOwlDescription": "Has classes after 18:00",
+  "statisticsAchievementExplorerName": "Explorer",
+  "statisticsAchievementExplorerDescription": "Used 5+ different rooms",
+  "statisticsNatureLegendDetail": "{count} courses · {sections} sections",
+  "@statisticsNatureLegendDetail": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "sections": { "type": "int" }
+    }
   }
 }

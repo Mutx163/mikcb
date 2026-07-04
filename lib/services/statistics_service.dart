@@ -13,8 +13,9 @@ class StatisticsService {
     required int week,
   }) {
     // 过滤当前周有效课程
-    final activeCourses =
-        allCourses.where((c) => c.isActiveInWeek(week)).toList();
+    final activeCourses = allCourses
+        .where((c) => c.isActiveInWeek(week))
+        .toList();
 
     // 按课程名称分组
     final grouped = _groupByCourseName(activeCourses);
@@ -29,8 +30,10 @@ class StatisticsService {
     final courseStats = _calculateCourseStats(grouped, week);
 
     // 总课时
-    final totalSections =
-        activeCourses.fold<int>(0, (sum, c) => sum + c.sectionCount);
+    final totalSections = activeCourses.fold<int>(
+      0,
+      (sum, c) => sum + c.sectionCount,
+    );
 
     return WeeklyStats(
       weekNumber: week,
@@ -75,8 +78,7 @@ class StatisticsService {
     }
 
     // 计算每日平均课时
-    final dailyAverages =
-        _calculateDailyAverages(allCourses, currentWeek);
+    final dailyAverages = _calculateDailyAverages(allCourses, currentWeek);
 
     // 计算最长连续上课天数
     final longestStreak = _calculateLongestStreak(allCourses, currentWeek);
@@ -85,8 +87,7 @@ class StatisticsService {
     final natureStats = _calculateSemesterNatureStats(allCourses, currentWeek);
 
     // 计算课程排行（按整个学期课时排序）
-    final courseRanking =
-        _calculateCourseRanking(allCourses, currentWeek);
+    final courseRanking = _calculateCourseRanking(allCourses, currentWeek);
 
     return SemesterStats(
       totalCourses: grouped.length,
@@ -126,70 +127,45 @@ class StatisticsService {
     final allEndTimes = allCourses.map((c) => c.endTime).toList();
 
     return [
-      // 早八战士
       Achievement(
         id: 'early_bird',
-        name: '早八战士',
-        description: '有 8:00 的课，真棒！',
         icon: Icons.wb_sunny_rounded,
         isUnlocked: allStartTimes.any((t) => t.compareTo('08:00') <= 0),
       ),
-      // 全勤达人
       Achievement(
         id: 'perfect_attendance',
-        name: '全勤达人',
-        description: '某门课每周都有',
         icon: Icons.star_rounded,
-        isUnlocked: allCourses.any((c) {
-          final weeks = _countActiveWeeks(c, currentWeek);
-          return weeks == currentWeek;
-        }),
+        isUnlocked: allCourses.any(
+          (c) => _hasPerfectAttendance(c, currentWeek),
+        ),
       ),
-      // 周末战士
       Achievement(
         id: 'weekend_warrior',
-        name: '周末战士',
-        description: '周末有课',
         icon: Icons.emoji_events_rounded,
         isUnlocked: allCourses.any((c) => c.dayOfWeek >= 6),
       ),
-      // 课王
       Achievement(
         id: 'class_king',
-        name: '课王',
-        description: '某天 ≥ 6 节课',
         icon: Icons.workspace_premium_rounded,
         isUnlocked: dailyMaxSections >= 6,
       ),
-      // 学霸
       Achievement(
         id: 'scholar',
-        name: '学霸',
-        description: '总课时 ≥ 100',
         icon: Icons.auto_stories_rounded,
         isUnlocked: totalSections >= 100,
       ),
-      // 均衡大师
       Achievement(
         id: 'balanced',
-        name: '均衡大师',
-        description: '每天课时差距 ≤ 2',
         icon: Icons.balance_rounded,
         isUnlocked: _isBalanced(allCourses),
       ),
-      // 夜猫子
       Achievement(
         id: 'night_owl',
-        name: '夜猫子',
-        description: '有 18:00 以后的课',
         icon: Icons.nights_stay_rounded,
         isUnlocked: allEndTimes.any((t) => t.compareTo('18:00') > 0),
       ),
-      // 教室探索家
       Achievement(
         id: 'explorer',
-        name: '教室探索家',
-        description: '使用过 ≥ 5 个不同教室',
         icon: Icons.explore_rounded,
         isUnlocked: allRooms.length >= 5,
       ),
@@ -215,92 +191,94 @@ class StatisticsService {
       // 最忙的一天
       final maxSections = activeDays.reduce((a, b) => a > b ? a : b);
       final busiestDayIndex = dailySections.indexOf(maxSections);
-      final busiestDayName = _weekdayName(busiestDayIndex + 1);
-      final busiestAvg =
-          maxSections.toDouble() / currentWeek;
+      final busiestAvg = maxSections.toDouble() / currentWeek;
 
-      stories.add(DataStory(
-        title: '最忙的一天',
-        content: '截至第${currentWeek}周，这学期你最忙的一天是 $busiestDayName，'
-            '平均 ${busiestAvg.toStringAsFixed(1)} 节课',
-        icon: Icons.calendar_today_rounded,
-        type: StoryType.busiestDay,
-      ));
+      stories.add(
+        DataStory(
+          type: StoryType.busiestDay,
+          icon: Icons.calendar_today_rounded,
+          dayOfWeek: busiestDayIndex + 1,
+          weekNumber: currentWeek,
+          averageSections: busiestAvg,
+        ),
+      );
 
       // 最轻松的一天（排除无课天）
       final minSections = activeDays.reduce((a, b) => a < b ? a : b);
       final lightestDayIndex = dailySections.indexOf(minSections);
       if (lightestDayIndex != busiestDayIndex) {
-        final lightestDayName = _weekdayName(lightestDayIndex + 1);
-        final lightestAvg =
-            minSections.toDouble() / currentWeek;
+        final lightestAvg = minSections.toDouble() / currentWeek;
 
-        stories.add(DataStory(
-          title: '最轻松的一天',
-          content: '截至第${currentWeek}周，你最轻松的一天是 $lightestDayName，'
-              '只有 ${lightestAvg.toStringAsFixed(1)} 节课',
-          icon: Icons.sentiment_satisfied_rounded,
-          type: StoryType.lightestDay,
-        ));
+        stories.add(
+          DataStory(
+            type: StoryType.lightestDay,
+            icon: Icons.sentiment_satisfied_rounded,
+            dayOfWeek: lightestDayIndex + 1,
+            weekNumber: currentWeek,
+            averageSections: lightestAvg,
+          ),
+        );
       }
     }
 
-    // 最常去的教室
+    // 最常去的教室（口径：排课条目数 × 各条目 activeWeeks 之和）
     final roomCounts = <String, int>{};
     for (final course in allCourses) {
       if (course.location.isNotEmpty) {
         roomCounts[course.location] =
             (roomCounts[course.location] ?? 0) +
-                _countActiveWeeks(course, currentWeek);
+            _countActiveWeeks(course, currentWeek);
       }
     }
     if (roomCounts.isNotEmpty) {
       final sortedRooms = roomCounts.entries.toList()
         ..sort((a, b) => b.value.compareTo(a.value));
       final favorite = sortedRooms.first;
-      stories.add(DataStory(
-        title: '最常去的教室',
-        content: '截至第${currentWeek}周，你最常去的教室是 ${favorite.key}，'
-            '共去了 ${favorite.value} 次',
-        icon: Icons.location_on_rounded,
-        type: StoryType.favoriteRoom,
-      ));
+      stories.add(
+        DataStory(
+          type: StoryType.favoriteRoom,
+          icon: Icons.location_on_rounded,
+          room: favorite.key,
+          visitCount: favorite.value,
+          weekNumber: currentWeek,
+        ),
+      );
 
       // 教学楼数量
       final buildings = roomCounts.keys
           .map((r) => RegExp(r'^[A-Za-z]+').stringMatch(r) ?? r)
           .toSet();
       if (buildings.length > 1) {
-        stories.add(DataStory(
-          title: '教学楼探险',
-          content: '截至第${currentWeek}周，你的课程分布在 ${buildings.length} 栋不同的教学楼',
-          icon: Icons.domain_rounded,
-          type: StoryType.buildingCount,
-        ));
+        stories.add(
+          DataStory(
+            type: StoryType.buildingCount,
+            icon: Icons.domain_rounded,
+            buildingCount: buildings.length,
+            weekNumber: currentWeek,
+          ),
+        );
       }
     }
 
     // 时间跨度
-    final allStartTimes =
-        allCourses.map((c) => c.startTime).toList()..sort();
+    final allStartTimes = allCourses.map((c) => c.startTime).toList()..sort();
     final allEndTimes = allCourses.map((c) => c.endTime).toList()..sort();
     if (allStartTimes.isNotEmpty && allEndTimes.isNotEmpty) {
-      stories.add(DataStory(
-        title: '时间跨度',
-        content: '你最早的课是 ${allStartTimes.first}，'
-            '最晚的课是 ${allEndTimes.last}',
-        icon: Icons.access_time_rounded,
-        type: StoryType.timeRange,
-      ));
+      stories.add(
+        DataStory(
+          type: StoryType.timeRange,
+          icon: Icons.access_time_rounded,
+          earliestTime: allStartTimes.first,
+          latestTime: allEndTimes.last,
+        ),
+      );
     }
 
     return stories;
   }
 
   /// 按课程名称分组
-  static Map<String, List<Course>> _groupByCourseName(
-    List<Course> courses,
-  ) {
+  static Map<String, List<Course>> _groupByCourseName(List<Course> courses) {
     final map = <String, List<Course>>{};
     for (final course in courses) {
       map.putIfAbsent(course.name, () => []).add(course);
@@ -373,22 +351,24 @@ class StatisticsService {
       final courses = entry.value;
       final first = courses.first;
 
-      final slots = courses.map((c) {
-        return CourseSlot(
-          dayOfWeek: c.dayOfWeek,
-          startSection: c.startSection,
-          endSection: c.endSection,
-          location: c.location,
-        );
-      }).toList()
-        ..sort((a, b) {
-          final dayCmp = a.dayOfWeek.compareTo(b.dayOfWeek);
-          if (dayCmp != 0) return dayCmp;
-          return a.startSection.compareTo(b.startSection);
-        });
+      final slots =
+          courses.map((c) {
+            return CourseSlot(
+              dayOfWeek: c.dayOfWeek,
+              startSection: c.startSection,
+              endSection: c.endSection,
+              location: c.location,
+            );
+          }).toList()..sort((a, b) {
+            final dayCmp = a.dayOfWeek.compareTo(b.dayOfWeek);
+            if (dayCmp != 0) return dayCmp;
+            return a.startSection.compareTo(b.startSection);
+          });
 
-      final weeklySections =
-          courses.fold<int>(0, (sum, c) => sum + c.sectionCount);
+      final weeklySections = courses.fold<int>(
+        0,
+        (sum, c) => sum + c.sectionCount,
+      );
 
       return CourseStat(
         name: name,
@@ -397,8 +377,7 @@ class StatisticsService {
         weeklySections: weeklySections,
         slots: slots,
       );
-    }).toList()
-      ..sort((a, b) => b.weeklySections.compareTo(a.weeklySections));
+    }).toList()..sort((a, b) => b.weeklySections.compareTo(a.weeklySections));
 
     return stats;
   }
@@ -442,8 +421,9 @@ class StatisticsService {
         }
       }
 
-      final averageSections =
-          currentWeek > 0 ? totalSections / currentWeek : 0.0;
+      final averageSections = currentWeek > 0
+          ? totalSections / currentWeek
+          : 0.0;
 
       return DailyAverageStats(
         dayOfWeek: day,
@@ -473,8 +453,7 @@ class StatisticsService {
     final dailySections = <int, int>{};
     for (final course in allCourses) {
       final day = course.dayOfWeek;
-      dailySections[day] =
-          (dailySections[day] ?? 0) + course.sectionCount;
+      dailySections[day] = (dailySections[day] ?? 0) + course.sectionCount;
     }
     if (dailySections.isEmpty) return 0;
     return dailySections.values.reduce((a, b) => a > b ? a : b);
@@ -485,8 +464,7 @@ class StatisticsService {
     final dailySections = <int, int>{};
     for (final course in allCourses) {
       final day = course.dayOfWeek;
-      dailySections[day] =
-          (dailySections[day] ?? 0) + course.sectionCount;
+      dailySections[day] = (dailySections[day] ?? 0) + course.sectionCount;
     }
     if (dailySections.isEmpty) return true;
     final values = dailySections.values.toList();
@@ -496,10 +474,7 @@ class StatisticsService {
   }
 
   /// 计算最长连续上课天数
-  static int _calculateLongestStreak(
-    List<Course> allCourses,
-    int currentWeek,
-  ) {
+  static int _calculateLongestStreak(List<Course> allCourses, int currentWeek) {
     if (allCourses.isEmpty) return 0;
 
     // 计算每天在整个学期是否有课
@@ -510,47 +485,36 @@ class StatisticsService {
       }
     }
 
-    // 计算最长连续天数（考虑周循环）
+    // 展开两轮（14 天）单趟扫描，跨周边界自然处理，上限 7 天
+    final expanded = [...hasClassDay, ...hasClassDay];
     int maxStreak = 0;
     int currentStreak = 0;
-
-    // 先检查是否形成跨越周日-周一的连续
-    // 从周一开始检查
-    for (int i = 0; i < 7; i++) {
-      if (hasClassDay[i]) {
+    for (final has in expanded) {
+      if (has) {
         currentStreak++;
-        maxStreak = maxStreak > currentStreak ? maxStreak : currentStreak;
+        if (currentStreak > maxStreak) maxStreak = currentStreak;
       } else {
         currentStreak = 0;
       }
     }
+    return maxStreak.clamp(0, 7);
+  }
 
-    // 检查是否周日和周一是连续的
-    if (hasClassDay[6] && hasClassDay[0]) {
-      // 计算从周日向前的连续天数
-      int sundayStreak = 0;
-      for (int i = 6; i >= 0; i--) {
-        if (hasClassDay[i]) {
-          sundayStreak++;
-        } else {
-          break;
-        }
-      }
-      // 计算从周一向后的连续天数
-      int mondayStreak = 0;
-      for (int i = 0; i < 7; i++) {
-        if (hasClassDay[i]) {
-          mondayStreak++;
-        } else {
-          break;
-        }
-      }
-      final crossWeekStreak = sundayStreak + mondayStreak;
-      maxStreak =
-          maxStreak > crossWeekStreak ? maxStreak : crossWeekStreak;
+  /// 课程完整开课周期内的计划周数（含单双周/自定义周次，不含停课）
+  static int _countScheduledWeeks(Course course) {
+    int count = 0;
+    for (int week = course.startWeek; week <= course.endWeek; week++) {
+      if (course.isInWeek(week)) count++;
     }
+    return count;
+  }
 
-    return maxStreak;
+  /// 全勤：有效周数 == 完整开课周期的计划周数
+  static bool _hasPerfectAttendance(Course course, int currentWeek) {
+    final scheduled = _countScheduledWeeks(course);
+    if (scheduled == 0) return false;
+    final active = _countActiveWeeks(course, currentWeek);
+    return active == scheduled;
   }
 
   /// 计算整个学期的必修/选修比例
@@ -610,19 +574,19 @@ class StatisticsService {
         totalSections += course.sectionCount * activeWeeks;
       }
 
-      final slots = courses.map((c) {
-        return CourseSlot(
-          dayOfWeek: c.dayOfWeek,
-          startSection: c.startSection,
-          endSection: c.endSection,
-          location: c.location,
-        );
-      }).toList()
-        ..sort((a, b) {
-          final dayCmp = a.dayOfWeek.compareTo(b.dayOfWeek);
-          if (dayCmp != 0) return dayCmp;
-          return a.startSection.compareTo(b.startSection);
-        });
+      final slots =
+          courses.map((c) {
+            return CourseSlot(
+              dayOfWeek: c.dayOfWeek,
+              startSection: c.startSection,
+              endSection: c.endSection,
+              location: c.location,
+            );
+          }).toList()..sort((a, b) {
+            final dayCmp = a.dayOfWeek.compareTo(b.dayOfWeek);
+            if (dayCmp != 0) return dayCmp;
+            return a.startSection.compareTo(b.startSection);
+          });
 
       return CourseSemesterStat(
         name: name,
@@ -631,23 +595,8 @@ class StatisticsService {
         totalSections: totalSections,
         slots: slots,
       );
-    }).toList()
-      ..sort((a, b) => b.totalSections.compareTo(a.totalSections));
+    }).toList()..sort((a, b) => b.totalSections.compareTo(a.totalSections));
 
     return stats;
-  }
-
-  /// 获取星期几的中文名
-  static String _weekdayName(int dayOfWeek) {
-    return switch (dayOfWeek) {
-      1 => '周一',
-      2 => '周二',
-      3 => '周三',
-      4 => '周四',
-      5 => '周五',
-      6 => '周六',
-      7 => '周日',
-      _ => '周$dayOfWeek',
-    };
   }
 }

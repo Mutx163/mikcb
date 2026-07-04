@@ -13,10 +13,7 @@ void main() {
           _course('3', '英语', 2, 1, 2, CourseNature.elective),
         ];
 
-        final stats = StatisticsService.calculate(
-          allCourses: courses,
-          week: 1,
-        );
+        final stats = StatisticsService.calculate(allCourses: courses, week: 1);
 
         expect(stats.weekNumber, 1);
         expect(stats.totalCourses, 2); // 数学 + 英语
@@ -61,10 +58,7 @@ void main() {
       });
 
       test('should handle empty courses', () {
-        final stats = StatisticsService.calculate(
-          allCourses: [],
-          week: 1,
-        );
+        final stats = StatisticsService.calculate(allCourses: [], week: 1);
 
         expect(stats.totalCourses, 0);
         expect(stats.totalSections, 0);
@@ -190,6 +184,27 @@ void main() {
         expect(stats.longestStreak, 5);
       });
 
+      test('should cap longest streak at 7 for full week', () {
+        final courses = List.generate(
+          7,
+          (i) => _course(
+            '${i + 1}',
+            '课程${i + 1}',
+            i + 1,
+            1,
+            2,
+            CourseNature.required,
+          ),
+        );
+
+        final stats = StatisticsService.calculateSemester(
+          allCourses: courses,
+          currentWeek: 16,
+        );
+
+        expect(stats.longestStreak, 7);
+      });
+
       test('should calculate cross-week streak correctly', () {
         // 周六、周日、周一都有课
         final courses = [
@@ -230,16 +245,12 @@ void main() {
           currentWeek: 16,
         );
 
-        final earlyBird = achievements.firstWhere(
-          (a) => a.id == 'early_bird',
-        );
+        final earlyBird = achievements.firstWhere((a) => a.id == 'early_bird');
         expect(earlyBird.isUnlocked, true);
       });
 
       test('should unlock weekend warrior for weekend class', () {
-        final courses = [
-          _course('1', '周末课', 6, 1, 2, CourseNature.required),
-        ];
+        final courses = [_course('1', '周末课', 6, 1, 2, CourseNature.required)];
 
         final achievements = StatisticsService.calculateAchievements(
           allCourses: courses,
@@ -256,14 +267,8 @@ void main() {
         // 10门课，每门2节，16周 = 320节
         final courses = List.generate(
           10,
-          (i) => _course(
-            '$i',
-            '课程$i',
-            (i % 7) + 1,
-            1,
-            2,
-            CourseNature.required,
-          ),
+          (i) =>
+              _course('$i', '课程$i', (i % 7) + 1, 1, 2, CourseNature.required),
         );
 
         final achievements = StatisticsService.calculateAchievements(
@@ -271,9 +276,7 @@ void main() {
           currentWeek: 16,
         );
 
-        final scholar = achievements.firstWhere(
-          (a) => a.id == 'scholar',
-        );
+        final scholar = achievements.firstWhere((a) => a.id == 'scholar');
         expect(scholar.isUnlocked, true);
       });
 
@@ -284,6 +287,35 @@ void main() {
         );
 
         expect(achievements, isEmpty);
+      });
+
+      test('should not unlock perfect attendance mid-semester', () {
+        final courses = [
+          Course(
+            id: '1',
+            name: '数学',
+            teacher: '张三',
+            location: 'A101',
+            dayOfWeek: 1,
+            startSection: 1,
+            endSection: 2,
+            startTime: '08:00',
+            endTime: '09:40',
+            startWeek: 3,
+            endWeek: 16,
+            courseNature: CourseNature.required,
+          ),
+        ];
+
+        final achievements = StatisticsService.calculateAchievements(
+          allCourses: courses,
+          currentWeek: 5,
+        );
+
+        final perfect = achievements.firstWhere(
+          (a) => a.id == 'perfect_attendance',
+        );
+        expect(perfect.isUnlocked, false);
       });
     });
 
@@ -311,6 +343,45 @@ void main() {
         );
 
         expect(stories, isEmpty);
+      });
+
+      test('should count room visits as entries times active weeks', () {
+        final courses = [
+          Course(
+            id: '1',
+            name: '数学',
+            teacher: '张三',
+            location: 'A301',
+            dayOfWeek: 1,
+            startSection: 1,
+            endSection: 2,
+            startTime: '08:00',
+            endTime: '09:40',
+            courseNature: CourseNature.required,
+          ),
+          Course(
+            id: '2',
+            name: '数学',
+            teacher: '张三',
+            location: 'A301',
+            dayOfWeek: 3,
+            startSection: 3,
+            endSection: 4,
+            startTime: '10:00',
+            endTime: '11:40',
+            courseNature: CourseNature.required,
+          ),
+        ];
+
+        final stories = StatisticsService.generateDataStories(
+          allCourses: courses,
+          currentWeek: 12,
+        );
+
+        final roomStory = stories.firstWhere(
+          (s) => s.type == StoryType.favoriteRoom,
+        );
+        expect(roomStory.visitCount, 24);
       });
     });
 

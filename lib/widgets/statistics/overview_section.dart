@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
 
@@ -10,6 +11,7 @@ class OverviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -39,7 +41,7 @@ class OverviewSection extends StatelessWidget {
                 child: _BigNumber(
                   icon: Icons.menu_book_rounded,
                   value: '${stats.totalCourses}',
-                  label: '门课程',
+                  label: l10n.statisticsSemesterLabelCourses,
                   colorScheme: colorScheme,
                 ),
               ),
@@ -52,7 +54,7 @@ class OverviewSection extends StatelessWidget {
                 child: _BigNumber(
                   icon: Icons.schedule_rounded,
                   value: '${stats.totalSections}',
-                  label: '节课',
+                  label: l10n.statisticsSemesterLabelSections,
                   colorScheme: colorScheme,
                 ),
               ),
@@ -66,7 +68,7 @@ class OverviewSection extends StatelessWidget {
                 child: _BigNumber(
                   icon: Icons.calendar_today_rounded,
                   value: '${stats.totalWeeks}',
-                  label: '周',
+                  label: l10n.statisticsSemesterLabelWeeks,
                   colorScheme: colorScheme,
                 ),
               ),
@@ -79,7 +81,7 @@ class OverviewSection extends StatelessWidget {
                 child: _BigNumber(
                   icon: Icons.local_fire_department_rounded,
                   value: '${stats.longestStreak}',
-                  label: '天连续',
+                  label: l10n.statisticsSemesterLabelDayStreak,
                   colorScheme: colorScheme,
                 ),
               ),

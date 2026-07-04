@@ -5060,4 +5060,143 @@ class AppLocalizationsEn extends AppLocalizations {
   String statisticsWeekSelector(int week) {
     return 'Week $week';
   }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => 'Busiest Day';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return 'Through week $week, your busiest day is **$day**, averaging **$avg** sections';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => 'Lightest Day';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return 'Through week $week, your lightest day is **$day**, with only **$avg** sections';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => 'Favorite Room';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return 'Through week $week, your most visited room is **$room**, **$count** visits';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => 'Campus Explorer';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return 'Through week $week, your classes span **$count** buildings';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => 'Time Range';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return 'Your earliest class is **$earliest**, latest is **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => 'courses';
+
+  @override
+  String get statisticsSemesterLabelSections => 'sections';
+
+  @override
+  String get statisticsSemesterLabelWeeks => 'weeks';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => 'day streak';
+
+  @override
+  String get statisticsAchievementsTitle => 'Achievements';
+
+  @override
+  String get statisticsStoriesTitle => 'Data Stories';
+
+  @override
+  String get statisticsRankingTitle => 'Course Ranking';
+
+  @override
+  String get statisticsNoDataHint => 'Add courses to view statistics';
+
+  @override
+  String get statisticsShareLabel => 'Share statistics';
+
+  @override
+  String get statisticsShareTitle => 'My Semester Stats';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day Periods $startSection-$endSection';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => 'Early Bird';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription =>
+      'Has a class at 8:00 AM';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => 'Perfect Attendance';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription =>
+      'Every scheduled week for a course';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => 'Weekend Warrior';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription =>
+      'Has weekend classes';
+
+  @override
+  String get statisticsAchievementClassKingName => 'Class King';
+
+  @override
+  String get statisticsAchievementClassKingDescription =>
+      '6+ classes in one day';
+
+  @override
+  String get statisticsAchievementScholarName => 'Scholar';
+
+  @override
+  String get statisticsAchievementScholarDescription => '100+ total sections';
+
+  @override
+  String get statisticsAchievementBalancedName => 'Balance Master';
+
+  @override
+  String get statisticsAchievementBalancedDescription =>
+      'Daily section gap ≤ 2';
+
+  @override
+  String get statisticsAchievementNightOwlName => 'Night Owl';
+
+  @override
+  String get statisticsAchievementNightOwlDescription =>
+      'Has classes after 18:00';
+
+  @override
+  String get statisticsAchievementExplorerName => 'Explorer';
+
+  @override
+  String get statisticsAchievementExplorerDescription =>
+      'Used 5+ different rooms';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count courses · $sections sections';
+  }
 }

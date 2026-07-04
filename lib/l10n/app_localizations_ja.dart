@@ -4860,4 +4860,136 @@ class AppLocalizationsJa extends AppLocalizations {
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
   }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => '最忙しい日';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return '第$week週まで、最も忙しい日は **$day** で、平均 **$avg** コマ';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => '最も楽な日';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return '第$week週まで、最も楽な日は **$day** で、わずか **$avg** コマ';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => 'よく行く教室';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return '第$week週まで、最もよく行く教室は **$room** で、**$count** 回';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => 'キャンパス探検';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return '第$week週まで、授業は **$count** 棟の建物に分散';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => '時間帯';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return '最も早い授業は **$earliest**、最も遅い授業は **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => '科目';
+
+  @override
+  String get statisticsSemesterLabelSections => 'コマ';
+
+  @override
+  String get statisticsSemesterLabelWeeks => '週';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => '日連続';
+
+  @override
+  String get statisticsAchievementsTitle => '実績バッジ';
+
+  @override
+  String get statisticsStoriesTitle => 'データストーリー';
+
+  @override
+  String get statisticsRankingTitle => '科目ランキング';
+
+  @override
+  String get statisticsNoDataHint => '授業を追加すると統計を表示できます';
+
+  @override
+  String get statisticsShareLabel => '統計を共有';
+
+  @override
+  String get statisticsShareTitle => '学期の統計';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day $startSection-$endSection限';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => '早八戦士';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription => '8:00の授業あり';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => '皆勤賞';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription => '毎週欠席なしの科目';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => '週末戦士';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription => '週末に授業あり';
+
+  @override
+  String get statisticsAchievementClassKingName => '授業王';
+
+  @override
+  String get statisticsAchievementClassKingDescription => '1日6コマ以上';
+
+  @override
+  String get statisticsAchievementScholarName => '勉強家';
+
+  @override
+  String get statisticsAchievementScholarDescription => '総コマ数100以上';
+
+  @override
+  String get statisticsAchievementBalancedName => 'バランスマスター';
+
+  @override
+  String get statisticsAchievementBalancedDescription => '曜日間の差が2コマ以内';
+
+  @override
+  String get statisticsAchievementNightOwlName => '夜型';
+
+  @override
+  String get statisticsAchievementNightOwlDescription => '18:00以降の授業あり';
+
+  @override
+  String get statisticsAchievementExplorerName => '教室探検家';
+
+  @override
+  String get statisticsAchievementExplorerDescription => '5つ以上の教室を使用';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count 科目 · $sections コマ';
+  }
 }

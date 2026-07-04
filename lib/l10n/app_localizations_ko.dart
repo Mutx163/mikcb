@@ -4891,4 +4891,137 @@ class AppLocalizationsKo extends AppLocalizations {
   String statisticsWeekSelector(int week) {
     return '$week주차';
   }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => '가장 바쁜 날';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return '$week주차까지 가장 바쁜 날은 **$day**, 평균 **$avg** 교시';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => '가장 여유로운 날';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return '$week주차까지 가장 여유로운 날은 **$day**, 단 **$avg** 교시';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => '자주 가는 강의실';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return '$week주차까지 가장 자주 간 강의실은 **$room**, **$count**회';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => '캠퍼스 탐험';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return '$week주차까지 수업이 **$count**개 건물에 분포';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => '시간 범위';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return '가장 이른 수업 **$earliest**, 가장 늦은 수업 **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => '과목';
+
+  @override
+  String get statisticsSemesterLabelSections => '교시';
+
+  @override
+  String get statisticsSemesterLabelWeeks => '주';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => '일 연속';
+
+  @override
+  String get statisticsAchievementsTitle => '업적 배지';
+
+  @override
+  String get statisticsStoriesTitle => '데이터 스토리';
+
+  @override
+  String get statisticsRankingTitle => '과목 순위';
+
+  @override
+  String get statisticsNoDataHint => '수업을 추가하면 통계를 볼 수 있습니다';
+
+  @override
+  String get statisticsShareLabel => '통계 공유';
+
+  @override
+  String get statisticsShareTitle => '내 학기 통계';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day $startSection-$endSection교시';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => '얼리버드';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription => '8:00 수업 있음';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => '개근상';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription =>
+      '매주 빠짐없이 듣는 과목';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => '주말 전사';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription => '주말 수업 있음';
+
+  @override
+  String get statisticsAchievementClassKingName => '수업왕';
+
+  @override
+  String get statisticsAchievementClassKingDescription => '하루 6교시 이상';
+
+  @override
+  String get statisticsAchievementScholarName => '학습왕';
+
+  @override
+  String get statisticsAchievementScholarDescription => '총 100교시 이상';
+
+  @override
+  String get statisticsAchievementBalancedName => '균형 마스터';
+
+  @override
+  String get statisticsAchievementBalancedDescription => '요일별 차이 2교시 이내';
+
+  @override
+  String get statisticsAchievementNightOwlName => '올빼미';
+
+  @override
+  String get statisticsAchievementNightOwlDescription => '18:00 이후 수업 있음';
+
+  @override
+  String get statisticsAchievementExplorerName => '교실 탐험가';
+
+  @override
+  String get statisticsAchievementExplorerDescription => '5개 이상 교실 이용';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count 과목 · $sections 교시';
+  }
 }

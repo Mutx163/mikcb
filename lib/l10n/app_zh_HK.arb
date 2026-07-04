@@ -2847,5 +2847,89 @@
         "type": "int"
       }
     }
+  },
+  "statisticsStoryBusiestDayTitle": "最忙的一天",
+  "statisticsStoryBusiestDayContent": "截至第{week}週，這學期你最忙的一天是 **{day}**，平均 **{avg}** 節課",
+  "@statisticsStoryBusiestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryLightestDayTitle": "最輕鬆的一天",
+  "statisticsStoryLightestDayContent": "截至第{week}週，你最輕鬆的一天是 **{day}**，只有 **{avg}** 節課",
+  "@statisticsStoryLightestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryFavoriteRoomTitle": "最常去的教室",
+  "statisticsStoryFavoriteRoomContent": "截至第{week}週，你最常去的教室是 **{room}**，共去了 **{count}** 次",
+  "@statisticsStoryFavoriteRoomContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "room": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryBuildingCountTitle": "教學樓探險",
+  "statisticsStoryBuildingCountContent": "截至第{week}週，你的課程分佈在 **{count}** 棟不同的教學樓",
+  "@statisticsStoryBuildingCountContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryTimeRangeTitle": "時間跨度",
+  "statisticsStoryTimeRangeContent": "你最早的課是 **{earliest}**，最晚的課是 **{latest}**",
+  "@statisticsStoryTimeRangeContent": {
+    "placeholders": {
+      "earliest": { "type": "String" },
+      "latest": { "type": "String" }
+    }
+  },
+  "statisticsSemesterLabelCourses": "門課程",
+  "statisticsSemesterLabelSections": "節課",
+  "statisticsSemesterLabelWeeks": "週",
+  "statisticsSemesterLabelDayStreak": "天連續",
+  "statisticsAchievementsTitle": "成就徽章",
+  "statisticsStoriesTitle": "數據故事",
+  "statisticsRankingTitle": "課程排行",
+  "statisticsNoDataHint": "添加課程後即可查看統計",
+  "statisticsShareLabel": "分享統計",
+  "statisticsShareTitle": "我的學期統計",
+  "statisticsRankingSlotDetail": "{day} 第{startSection}-{endSection}節",
+  "@statisticsRankingSlotDetail": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "startSection": { "type": "int" },
+      "endSection": { "type": "int" }
+    }
+  },
+  "statisticsAchievementEarlyBirdName": "早八戰士",
+  "statisticsAchievementEarlyBirdDescription": "有 8:00 的課，真棒！",
+  "statisticsAchievementPerfectAttendanceName": "全勤達人",
+  "statisticsAchievementPerfectAttendanceDescription": "某門課每週都有",
+  "statisticsAchievementWeekendWarriorName": "週末戰士",
+  "statisticsAchievementWeekendWarriorDescription": "週末有課",
+  "statisticsAchievementClassKingName": "課王",
+  "statisticsAchievementClassKingDescription": "某天 ≥ 6 節課",
+  "statisticsAchievementScholarName": "學霸",
+  "statisticsAchievementScholarDescription": "總課時 ≥ 100",
+  "statisticsAchievementBalancedName": "均衡大師",
+  "statisticsAchievementBalancedDescription": "每天課時差距 ≤ 2",
+  "statisticsAchievementNightOwlName": "夜貓子",
+  "statisticsAchievementNightOwlDescription": "有 18:00 以後的課",
+  "statisticsAchievementExplorerName": "教室探索家",
+  "statisticsAchievementExplorerDescription": "使用過 ≥ 5 個不同教室",
+  "statisticsNatureLegendDetail": "{count} 門 · {sections} 節",
+  "@statisticsNatureLegendDetail": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "sections": { "type": "int" }
+    }
   }
 }

@@ -38,35 +38,43 @@ class DailyAverageStats {
   });
 }
 
-/// 成就系统
+/// 成就系统（文案由 widget 层 l10n 按 [id] 组装）
 class Achievement {
   final String id;
-  final String name; // 成就名称
-  final String description; // 成就描述
-  final IconData icon; // 图标（Material Icons）
-  final bool isUnlocked; // 是否已解锁
+  final IconData icon;
+  final bool isUnlocked;
 
   const Achievement({
     required this.id,
-    required this.name,
-    required this.description,
     required this.icon,
     required this.isUnlocked,
   });
 }
 
-/// 数据故事
+/// 数据故事（结构化数据，文案由 widget 层 l10n 组装）
 class DataStory {
-  final String title; // 故事标题
-  final String content; // 故事内容
-  final IconData icon; // 图标（Material Icons）
-  final StoryType type; // 故事类型
+  final StoryType type;
+  final IconData icon;
+  final int? dayOfWeek; // 1-7, busiestDay / lightestDay
+  final int? weekNumber;
+  final double? averageSections; // busiestDay / lightestDay
+  final String? room; // favoriteRoom
+  final int? visitCount; // favoriteRoom
+  final int? buildingCount; // buildingCount
+  final String? earliestTime; // timeRange
+  final String? latestTime; // timeRange
 
   const DataStory({
-    required this.title,
-    required this.content,
-    required this.icon,
     required this.type,
+    required this.icon,
+    this.dayOfWeek,
+    this.weekNumber,
+    this.averageSections,
+    this.room,
+    this.visitCount,
+    this.buildingCount,
+    this.earliestTime,
+    this.latestTime,
   });
 }
 
@@ -178,15 +186,4 @@ class CourseSlot {
     required this.endSection,
     required this.location,
   });
-
-  String get weekdayName => switch (dayOfWeek) {
-        1 => '周一',
-        2 => '周二',
-        3 => '周三',
-        4 => '周四',
-        5 => '周五',
-        6 => '周六',
-        7 => '周日',
-        _ => '周$dayOfWeek',
-      };
 }

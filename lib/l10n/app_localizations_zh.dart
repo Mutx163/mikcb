@@ -4788,6 +4788,138 @@ class AppLocalizationsZh extends AppLocalizations {
   String statisticsWeekSelector(int week) {
     return '第 $week 周';
   }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => '最忙的一天';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return '截至第$week周，这学期你最忙的一天是 **$day**，平均 **$avg** 节课';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => '最轻松的一天';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return '截至第$week周，你最轻松的一天是 **$day**，只有 **$avg** 节课';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => '最常去的教室';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return '截至第$week周，你最常去的教室是 **$room**，共去了 **$count** 次';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => '教学楼探险';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return '截至第$week周，你的课程分布在 **$count** 栋不同的教学楼';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => '时间跨度';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return '你最早的课是 **$earliest**，最晚的课是 **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => '门课程';
+
+  @override
+  String get statisticsSemesterLabelSections => '节课';
+
+  @override
+  String get statisticsSemesterLabelWeeks => '周';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => '天连续';
+
+  @override
+  String get statisticsAchievementsTitle => '成就徽章';
+
+  @override
+  String get statisticsStoriesTitle => '数据故事';
+
+  @override
+  String get statisticsRankingTitle => '课程排行';
+
+  @override
+  String get statisticsNoDataHint => '添加课程后即可查看统计';
+
+  @override
+  String get statisticsShareLabel => '分享统计';
+
+  @override
+  String get statisticsShareTitle => '我的学期统计';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day 第$startSection-$endSection节';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => '早八战士';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription => '有 8:00 的课，真棒！';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => '全勤达人';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription => '某门课每周都有';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => '周末战士';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription => '周末有课';
+
+  @override
+  String get statisticsAchievementClassKingName => '课王';
+
+  @override
+  String get statisticsAchievementClassKingDescription => '某天 ≥ 6 节课';
+
+  @override
+  String get statisticsAchievementScholarName => '学霸';
+
+  @override
+  String get statisticsAchievementScholarDescription => '总课时 ≥ 100';
+
+  @override
+  String get statisticsAchievementBalancedName => '均衡大师';
+
+  @override
+  String get statisticsAchievementBalancedDescription => '每天课时差距 ≤ 2';
+
+  @override
+  String get statisticsAchievementNightOwlName => '夜猫子';
+
+  @override
+  String get statisticsAchievementNightOwlDescription => '有 18:00 以后的课';
+
+  @override
+  String get statisticsAchievementExplorerName => '教室探索家';
+
+  @override
+  String get statisticsAchievementExplorerDescription => '使用过 ≥ 5 个不同教室';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count 门 · $sections 节';
+  }
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -9575,6 +9707,138 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
   }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => '最忙的一天';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return '截至第$week週，這學期你最忙的一天是 **$day**，平均 **$avg** 節課';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => '最輕鬆的一天';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return '截至第$week週，你最輕鬆的一天是 **$day**，只有 **$avg** 節課';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => '最常去的教室';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return '截至第$week週，你最常去的教室是 **$room**，共去了 **$count** 次';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => '教學樓探險';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return '截至第$week週，你的課程分佈在 **$count** 棟不同的教學樓';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => '時間跨度';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return '你最早的課是 **$earliest**，最晚的課是 **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => '門課程';
+
+  @override
+  String get statisticsSemesterLabelSections => '節課';
+
+  @override
+  String get statisticsSemesterLabelWeeks => '週';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => '天連續';
+
+  @override
+  String get statisticsAchievementsTitle => '成就徽章';
+
+  @override
+  String get statisticsStoriesTitle => '數據故事';
+
+  @override
+  String get statisticsRankingTitle => '課程排行';
+
+  @override
+  String get statisticsNoDataHint => '添加課程後即可查看統計';
+
+  @override
+  String get statisticsShareLabel => '分享統計';
+
+  @override
+  String get statisticsShareTitle => '我的學期統計';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day 第$startSection-$endSection節';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => '早八戰士';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription => '有 8:00 的課，真棒！';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => '全勤達人';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription => '某門課每週都有';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => '週末戰士';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription => '週末有課';
+
+  @override
+  String get statisticsAchievementClassKingName => '課王';
+
+  @override
+  String get statisticsAchievementClassKingDescription => '某天 ≥ 6 節課';
+
+  @override
+  String get statisticsAchievementScholarName => '學霸';
+
+  @override
+  String get statisticsAchievementScholarDescription => '總課時 ≥ 100';
+
+  @override
+  String get statisticsAchievementBalancedName => '均衡大師';
+
+  @override
+  String get statisticsAchievementBalancedDescription => '每天課時差距 ≤ 2';
+
+  @override
+  String get statisticsAchievementNightOwlName => '夜貓子';
+
+  @override
+  String get statisticsAchievementNightOwlDescription => '有 18:00 以後的課';
+
+  @override
+  String get statisticsAchievementExplorerName => '教室探索家';
+
+  @override
+  String get statisticsAchievementExplorerDescription => '使用過 ≥ 5 個不同教室';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count 門 · $sections 節';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -14361,5 +14625,137 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String statisticsWeekSelector(int week) {
     return '第 $week 週';
+  }
+
+  @override
+  String get statisticsStoryBusiestDayTitle => '最忙的一天';
+
+  @override
+  String statisticsStoryBusiestDayContent(int week, String day, String avg) {
+    return '截至第$week週，這學期你最忙的一天是 **$day**，平均 **$avg** 節課';
+  }
+
+  @override
+  String get statisticsStoryLightestDayTitle => '最輕鬆的一天';
+
+  @override
+  String statisticsStoryLightestDayContent(int week, String day, String avg) {
+    return '截至第$week週，你最輕鬆的一天是 **$day**，只有 **$avg** 節課';
+  }
+
+  @override
+  String get statisticsStoryFavoriteRoomTitle => '最常去的教室';
+
+  @override
+  String statisticsStoryFavoriteRoomContent(int week, String room, int count) {
+    return '截至第$week週，你最常去的教室是 **$room**，共去了 **$count** 次';
+  }
+
+  @override
+  String get statisticsStoryBuildingCountTitle => '教學樓探險';
+
+  @override
+  String statisticsStoryBuildingCountContent(int week, int count) {
+    return '截至第$week週，你的課程分佈在 **$count** 棟不同的教學樓';
+  }
+
+  @override
+  String get statisticsStoryTimeRangeTitle => '時間跨度';
+
+  @override
+  String statisticsStoryTimeRangeContent(String earliest, String latest) {
+    return '你最早的課是 **$earliest**，最晚的課是 **$latest**';
+  }
+
+  @override
+  String get statisticsSemesterLabelCourses => '門課程';
+
+  @override
+  String get statisticsSemesterLabelSections => '節課';
+
+  @override
+  String get statisticsSemesterLabelWeeks => '週';
+
+  @override
+  String get statisticsSemesterLabelDayStreak => '天連續';
+
+  @override
+  String get statisticsAchievementsTitle => '成就徽章';
+
+  @override
+  String get statisticsStoriesTitle => '數據故事';
+
+  @override
+  String get statisticsRankingTitle => '課程排行';
+
+  @override
+  String get statisticsNoDataHint => '添加課程後即可查看統計';
+
+  @override
+  String get statisticsShareLabel => '分享統計';
+
+  @override
+  String get statisticsShareTitle => '我的學期統計';
+
+  @override
+  String statisticsRankingSlotDetail(
+    String day,
+    int startSection,
+    int endSection,
+  ) {
+    return '$day 第$startSection-$endSection節';
+  }
+
+  @override
+  String get statisticsAchievementEarlyBirdName => '早八戰士';
+
+  @override
+  String get statisticsAchievementEarlyBirdDescription => '有 8:00 的課，真棒！';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceName => '全勤達人';
+
+  @override
+  String get statisticsAchievementPerfectAttendanceDescription => '某門課每週都有';
+
+  @override
+  String get statisticsAchievementWeekendWarriorName => '週末戰士';
+
+  @override
+  String get statisticsAchievementWeekendWarriorDescription => '週末有課';
+
+  @override
+  String get statisticsAchievementClassKingName => '課王';
+
+  @override
+  String get statisticsAchievementClassKingDescription => '某天 ≥ 6 節課';
+
+  @override
+  String get statisticsAchievementScholarName => '學霸';
+
+  @override
+  String get statisticsAchievementScholarDescription => '總課時 ≥ 100';
+
+  @override
+  String get statisticsAchievementBalancedName => '均衡大師';
+
+  @override
+  String get statisticsAchievementBalancedDescription => '每天課時差距 ≤ 2';
+
+  @override
+  String get statisticsAchievementNightOwlName => '夜貓子';
+
+  @override
+  String get statisticsAchievementNightOwlDescription => '有 18:00 以後的課';
+
+  @override
+  String get statisticsAchievementExplorerName => '教室探索家';
+
+  @override
+  String get statisticsAchievementExplorerDescription => '使用過 ≥ 5 個不同教室';
+
+  @override
+  String statisticsNatureLegendDetail(int count, int sections) {
+    return '$count 門 · $sections 節';
   }
 }

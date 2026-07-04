@@ -2847,5 +2847,89 @@
         "type": "int"
       }
     }
+  },
+  "statisticsStoryBusiestDayTitle": "最忙しい日",
+  "statisticsStoryBusiestDayContent": "第{week}週まで、最も忙しい日は **{day}** で、平均 **{avg}** コマ",
+  "@statisticsStoryBusiestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryLightestDayTitle": "最も楽な日",
+  "statisticsStoryLightestDayContent": "第{week}週まで、最も楽な日は **{day}** で、わずか **{avg}** コマ",
+  "@statisticsStoryLightestDayContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "day": { "type": "String" },
+      "avg": { "type": "String" }
+    }
+  },
+  "statisticsStoryFavoriteRoomTitle": "よく行く教室",
+  "statisticsStoryFavoriteRoomContent": "第{week}週まで、最もよく行く教室は **{room}** で、**{count}** 回",
+  "@statisticsStoryFavoriteRoomContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "room": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryBuildingCountTitle": "キャンパス探検",
+  "statisticsStoryBuildingCountContent": "第{week}週まで、授業は **{count}** 棟の建物に分散",
+  "@statisticsStoryBuildingCountContent": {
+    "placeholders": {
+      "week": { "type": "int" },
+      "count": { "type": "int" }
+    }
+  },
+  "statisticsStoryTimeRangeTitle": "時間帯",
+  "statisticsStoryTimeRangeContent": "最も早い授業は **{earliest}**、最も遅い授業は **{latest}**",
+  "@statisticsStoryTimeRangeContent": {
+    "placeholders": {
+      "earliest": { "type": "String" },
+      "latest": { "type": "String" }
+    }
+  },
+  "statisticsSemesterLabelCourses": "科目",
+  "statisticsSemesterLabelSections": "コマ",
+  "statisticsSemesterLabelWeeks": "週",
+  "statisticsSemesterLabelDayStreak": "日連続",
+  "statisticsAchievementsTitle": "実績バッジ",
+  "statisticsStoriesTitle": "データストーリー",
+  "statisticsRankingTitle": "科目ランキング",
+  "statisticsNoDataHint": "授業を追加すると統計を表示できます",
+  "statisticsShareLabel": "統計を共有",
+  "statisticsShareTitle": "学期の統計",
+  "statisticsRankingSlotDetail": "{day} {startSection}-{endSection}限",
+  "@statisticsRankingSlotDetail": {
+    "placeholders": {
+      "day": { "type": "String" },
+      "startSection": { "type": "int" },
+      "endSection": { "type": "int" }
+    }
+  },
+  "statisticsAchievementEarlyBirdName": "早八戦士",
+  "statisticsAchievementEarlyBirdDescription": "8:00の授業あり",
+  "statisticsAchievementPerfectAttendanceName": "皆勤賞",
+  "statisticsAchievementPerfectAttendanceDescription": "毎週欠席なしの科目",
+  "statisticsAchievementWeekendWarriorName": "週末戦士",
+  "statisticsAchievementWeekendWarriorDescription": "週末に授業あり",
+  "statisticsAchievementClassKingName": "授業王",
+  "statisticsAchievementClassKingDescription": "1日6コマ以上",
+  "statisticsAchievementScholarName": "勉強家",
+  "statisticsAchievementScholarDescription": "総コマ数100以上",
+  "statisticsAchievementBalancedName": "バランスマスター",
+  "statisticsAchievementBalancedDescription": "曜日間の差が2コマ以内",
+  "statisticsAchievementNightOwlName": "夜型",
+  "statisticsAchievementNightOwlDescription": "18:00以降の授業あり",
+  "statisticsAchievementExplorerName": "教室探検家",
+  "statisticsAchievementExplorerDescription": "5つ以上の教室を使用",
+  "statisticsNatureLegendDetail": "{count} 科目 · {sections} コマ",
+  "@statisticsNatureLegendDetail": {
+    "placeholders": {
+      "count": { "type": "int" },
+      "sections": { "type": "int" }
+    }
   }
 }
