@@ -24,6 +24,7 @@ import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_card.dart';
 import '../widgets/home_top_menu.dart';
 import '../widgets/profile_quick_switch_sheet.dart';
+import '../widgets/week_selector_picker_sheet.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -3282,108 +3283,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showWeekSelector() async {
-    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final availableWeeks = provider.settings.availableWeeks;
     final currentSemesterWeek = _resolveCurrentSemesterWeek(provider.settings);
-    final selectedWeek = await showFSheet<int>(
-      context: context,
-      side: FLayout.btt,
-      useSafeArea: true,
-      draggable: true,
-      mainAxisMaxRatio: null,
-      builder: (sheetContext) {
-        final mediaQuery = MediaQuery.of(sheetContext);
-        final maxSheetHeight =
-            (mediaQuery.size.height -
-                    mediaQuery.padding.top -
-                    mediaQuery.padding.bottom -
-                    40)
-                .clamp(260.0, 520.0);
-        final maxSheetBodyHeight = (maxSheetHeight - 88).clamp(200.0, 360.0);
-        return SafeArea(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxSheetHeight),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.selectWeekTitle,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      if (currentSemesterWeek != null &&
-                          _visibleWeek != currentSemesterWeek)
-                        FButton(
-                          variant: FButtonVariant.secondary,
-                          onPress: () => Navigator.of(
-                            sheetContext,
-                          ).pop(currentSemesterWeek),
-                          prefix: const Icon(
-                            Icons.my_location_rounded,
-                            size: 18,
-                          ),
-                          child: Text(l10n.backToCurrentWeekAction),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.availableWeeksCount(availableWeeks.length),
-                    style: Theme.of(sheetContext).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 16),
-                  Flexible(
-                    child: SizedBox(
-                      height: maxSheetBodyHeight,
-                      child: GridView.builder(
-                        itemCount: availableWeeks.length,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              mainAxisSpacing: 10,
-                              crossAxisSpacing: 10,
-                              childAspectRatio: 2.1,
-                            ),
-                        itemBuilder: (gridContext, index) {
-                          final week = availableWeeks[index];
-                          final isCurrentSemesterWeek =
-                              week == currentSemesterWeek;
-                          return FButton(
-                            variant: isCurrentSemesterWeek
-                                ? FButtonVariant.secondary
-                                : FButtonVariant.outline,
-                            onPress: () => Navigator.of(sheetContext).pop(week),
-                            child: Text(
-                              l10n.goToWeekLabel(week),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontWeight: isCurrentSemesterWeek
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    final selectedWeek = await showWeekSelectorPickerSheet(
+      context,
+      availableWeeks: availableWeeks,
+      visibleWeek: _visibleWeek,
+      currentSemesterWeek: currentSemesterWeek,
     );
 
     if (!mounted || selectedWeek == null) {
