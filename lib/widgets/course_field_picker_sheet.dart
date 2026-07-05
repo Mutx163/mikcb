@@ -68,88 +68,98 @@ Future<void> showCourseFieldPickerSheet(
           final filtered = controller.text.isEmpty
               ? suggestions
               : suggestions.where((s) => s.contains(controller.text)).toList();
+          final viewInsets = MediaQuery.viewInsetsOf(sheetContext);
+          final maxHeight =
+              MediaQuery.sizeOf(sheetContext).height * 0.88 - viewInsets.top;
           return Padding(
             padding: EdgeInsets.only(
               left: 16,
               right: 16,
               top: 8,
-              bottom: MediaQuery.viewInsetsOf(sheetContext).bottom + 16,
+              bottom: viewInsets.bottom + 16,
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: context.theme.typography.body.lg.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FTextField(
-                  control: FTextFieldControl.managed(controller: controller),
-                  hint: l10n.manualInputLabel,
-                  prefixBuilder: (context, style, variants) =>
-                      const Icon(Icons.search),
-                  suffixBuilder: controller.text.isNotEmpty
-                      ? (context, style, variants) => IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: controller.clear,
-                        )
-                      : null,
-                  onSubmit: (_) {
-                    confirmed = true;
-                    onConfirmed?.call();
-                    Navigator.pop(sheetContext);
-                  },
-                ),
-                if (filtered.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.historyRecordsLabel,
-                    style: context.theme.typography.body.xs2.copyWith(
-                      color: context.theme.colors.mutedForeground,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxHeight),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: context.theme.typography.body.lg.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: filtered.map((s) {
-                      return ActionChip(
-                        label: Text(s),
-                        onPressed: () {
-                          controller.text = s;
+                    const SizedBox(height: 12),
+                    FTextField(
+                      control: FTextFieldControl.managed(
+                        controller: controller,
+                      ),
+                      hint: l10n.manualInputLabel,
+                      prefixBuilder: (context, style, variants) =>
+                          const Icon(Icons.search),
+                      suffixBuilder: controller.text.isNotEmpty
+                          ? (context, style, variants) => IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: controller.clear,
+                            )
+                          : null,
+                      onSubmit: (_) {
+                        confirmed = true;
+                        onConfirmed?.call();
+                        Navigator.pop(sheetContext);
+                      },
+                    ),
+                    if (filtered.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.historyRecordsLabel,
+                        style: context.theme.typography.body.xs2.copyWith(
+                          color: context.theme.colors.mutedForeground,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: filtered.map((s) {
+                          return ActionChip(
+                            label: Text(s),
+                            onPressed: () {
+                              controller.text = s;
+                              confirmed = true;
+                              onConfirmed?.call();
+                              Navigator.pop(sheetContext);
+                            },
+                          );
+                        }).toList(),
+                      ),
+                    ] else if (suggestions.isNotEmpty &&
+                        controller.text.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.noHistoryRecords,
+                        style: context.theme.typography.body.xs2.copyWith(
+                          color: context.theme.colors.mutedForeground,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FButton(
+                        onPress: () {
                           confirmed = true;
                           onConfirmed?.call();
                           Navigator.pop(sheetContext);
                         },
-                      );
-                    }).toList(),
-                  ),
-                ] else if (suggestions.isNotEmpty &&
-                    controller.text.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.noHistoryRecords,
-                    style: context.theme.typography.body.xs2.copyWith(
-                      color: context.theme.colors.mutedForeground,
+                        child: Text(l10n.saveAction),
+                      ),
                     ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: FButton(
-                    onPress: () {
-                      confirmed = true;
-                      onConfirmed?.call();
-                      Navigator.pop(sheetContext);
-                    },
-                    child: Text(l10n.saveAction),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           );
         },
