@@ -80,6 +80,9 @@ coverage/
 # Pi 工具目录
 .pi/
 
+# Firecrawl scrape/cache artifacts
+.firecrawl/
+
 # MCP 工具指南
 tool/chrome-devtools-mcp-guide.md
 *.heapsnapshot
