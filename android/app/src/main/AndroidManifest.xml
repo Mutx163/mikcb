@@ -50,24 +50,89 @@
                 <data android:scheme="${umengScheme}" />
             </intent-filter>
 
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/calendar" />
-            </intent-filter>
+            <!-- Supported import types: .ics, .mikcb, .json, .csv, .xlsx -->
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="file" android:pathPattern=".*\\.ics" />
-                <data android:scheme="content" android:pathPattern=".*\\.ics" />
+                <data android:mimeType="text/calendar" />
             </intent-filter>
 
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/calendar" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/csv" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/comma-separated-values" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/comma-separated-values" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+            </intent-filter>
+
+            <!-- Mi Share and file managers often label unknown extensions as octet-stream -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/octet-stream" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.ics" android:pathSuffix=".ics" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.ics" android:pathSuffix=".ics" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.mikcb" android:pathSuffix=".mikcb" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.mikcb" android:pathSuffix=".mikcb" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.json" android:pathSuffix=".json" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.json" android:pathSuffix=".json" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.csv" android:pathSuffix=".csv" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.csv" android:pathSuffix=".csv" />
+                <data android:scheme="content" android:mimeType="*/*" android:pathPattern=".*\\.xlsx" android:pathSuffix=".xlsx" />
+                <data android:scheme="file" android:mimeType="*/*" android:pathPattern=".*\\.xlsx" android:pathSuffix=".xlsx" />
             </intent-filter>
         </activity>
 

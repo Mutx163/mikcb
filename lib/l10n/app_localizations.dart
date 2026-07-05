@@ -326,6 +326,348 @@ abstract class AppLocalizations {
   /// **'导出完整课表文件，给别人直接导入使用'**
   String get dataTransferEntrySubtitle;
 
+  /// No description provided for @cloudSyncEntryTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步（WEBDAV）'**
+  String get cloudSyncEntryTitle;
+
+  /// No description provided for @cloudSyncEntrySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过坚果云等多设备同步课表与导入数据'**
+  String get cloudSyncEntrySubtitle;
+
+  /// No description provided for @cloudSyncTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步'**
+  String get cloudSyncTitle;
+
+  /// No description provided for @cloudSyncIntroTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'多设备同步'**
+  String get cloudSyncIntroTitle;
+
+  /// No description provided for @cloudSyncIntroSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置。'**
+  String get cloudSyncIntroSubtitle;
+
+  /// No description provided for @cloudSyncSettingsSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步设置'**
+  String get cloudSyncSettingsSectionTitle;
+
+  /// No description provided for @cloudSyncSettingsSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'可切换手动或自动同步。'**
+  String get cloudSyncSettingsSectionSubtitle;
+
+  /// No description provided for @cloudSyncEnabledTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'启用云同步'**
+  String get cloudSyncEnabledTitle;
+
+  /// No description provided for @cloudSyncEnabledSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭后不会上传或下载云端快照'**
+  String get cloudSyncEnabledSubtitle;
+
+  /// No description provided for @cloudSyncProviderTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务提供商'**
+  String get cloudSyncProviderTitle;
+
+  /// No description provided for @cloudSyncProviderJianguoyun.
+  ///
+  /// In zh, this message translates to:
+  /// **'坚果云'**
+  String get cloudSyncProviderJianguoyun;
+
+  /// No description provided for @cloudSyncProviderCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义 WEBDAV'**
+  String get cloudSyncProviderCustom;
+
+  /// No description provided for @cloudSyncModeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步方式'**
+  String get cloudSyncModeTitle;
+
+  /// No description provided for @cloudSyncModeAuto.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动同步'**
+  String get cloudSyncModeAuto;
+
+  /// No description provided for @cloudSyncModeManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动同步'**
+  String get cloudSyncModeManual;
+
+  /// No description provided for @cloudSyncAccountTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号配置'**
+  String get cloudSyncAccountTitle;
+
+  /// No description provided for @cloudSyncAccountSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'请使用坚果云应用专用密码，而不是登录密码。快照会包含仓库记住的学校账号。'**
+  String get cloudSyncAccountSubtitle;
+
+  /// No description provided for @cloudSyncUsernameLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'邮箱 / 用户名'**
+  String get cloudSyncUsernameLabel;
+
+  /// No description provided for @cloudSyncUsernameHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'坚果云注册邮箱'**
+  String get cloudSyncUsernameHint;
+
+  /// No description provided for @cloudSyncPasswordLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用专用密码'**
+  String get cloudSyncPasswordLabel;
+
+  /// No description provided for @cloudSyncPasswordHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在坚果云账户安全选项中生成'**
+  String get cloudSyncPasswordHint;
+
+  /// No description provided for @cloudSyncPasswordStoredHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'已保存密码；留空表示继续使用已保存的密码。'**
+  String get cloudSyncPasswordStoredHint;
+
+  /// No description provided for @cloudSyncAdvancedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'高级设置'**
+  String get cloudSyncAdvancedTitle;
+
+  /// No description provided for @cloudSyncBaseUrlLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'WEBDAV 地址'**
+  String get cloudSyncBaseUrlLabel;
+
+  /// No description provided for @cloudSyncRemoteFolderLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'远程目录'**
+  String get cloudSyncRemoteFolderLabel;
+
+  /// No description provided for @cloudSyncStatusTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步状态'**
+  String get cloudSyncStatusTitle;
+
+  /// No description provided for @cloudSyncLastSyncedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次同步'**
+  String get cloudSyncLastSyncedLabel;
+
+  /// No description provided for @cloudSyncLastErrorLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近错误'**
+  String get cloudSyncLastErrorLabel;
+
+  /// No description provided for @cloudSyncLastSyncedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次同步：{time}'**
+  String cloudSyncLastSyncedAt(String time);
+
+  /// No description provided for @cloudSyncSyncing.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在同步…'**
+  String get cloudSyncSyncing;
+
+  /// No description provided for @cloudSyncLastError.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近错误：{message}'**
+  String cloudSyncLastError(String message);
+
+  /// No description provided for @cloudSyncHelpTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'如何获取坚果云应用密码'**
+  String get cloudSyncHelpTitle;
+
+  /// No description provided for @cloudSyncHelpBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。'**
+  String get cloudSyncHelpBody;
+
+  /// No description provided for @cloudSyncTestConnection.
+  ///
+  /// In zh, this message translates to:
+  /// **'测试连接'**
+  String get cloudSyncTestConnection;
+
+  /// No description provided for @cloudSyncSyncNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即同步'**
+  String get cloudSyncSyncNow;
+
+  /// No description provided for @cloudSyncTestSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'WEBDAV 连接成功'**
+  String get cloudSyncTestSuccess;
+
+  /// No description provided for @cloudSyncTestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'WEBDAV 连接失败，请检查账号、应用密码和网络'**
+  String get cloudSyncTestFailed;
+
+  /// No description provided for @cloudSyncResultUploaded.
+  ///
+  /// In zh, this message translates to:
+  /// **'已上传到云端'**
+  String get cloudSyncResultUploaded;
+
+  /// No description provided for @cloudSyncResultDownloaded.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从云端恢复'**
+  String get cloudSyncResultDownloaded;
+
+  /// No description provided for @cloudSyncResultUpToDate.
+  ///
+  /// In zh, this message translates to:
+  /// **'本地与云端已一致'**
+  String get cloudSyncResultUpToDate;
+
+  /// No description provided for @cloudSyncResultCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'已取消同步'**
+  String get cloudSyncResultCancelled;
+
+  /// No description provided for @cloudSyncResultFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步失败：{message}'**
+  String cloudSyncResultFailed(String message);
+
+  /// No description provided for @cloudSyncConflictTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'检测到同步冲突'**
+  String get cloudSyncConflictTitle;
+
+  /// No description provided for @cloudSyncConflictBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机和云端都有新的修改。请选择保留哪一边的数据。'**
+  String get cloudSyncConflictBody;
+
+  /// No description provided for @cloudSyncUseRemoteAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用云端'**
+  String get cloudSyncUseRemoteAction;
+
+  /// No description provided for @cloudSyncKeepLocalAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'保留本机'**
+  String get cloudSyncKeepLocalAction;
+
+  /// No description provided for @cloudSyncAccountSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'云账号'**
+  String get cloudSyncAccountSectionTitle;
+
+  /// No description provided for @cloudSyncNotConnectedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接坚果云后，可在多设备间同步课表与导入数据。'**
+  String get cloudSyncNotConnectedHint;
+
+  /// No description provided for @cloudSyncConnectAccount.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接坚果云'**
+  String get cloudSyncConnectAccount;
+
+  /// No description provided for @cloudSyncConnectedAs.
+  ///
+  /// In zh, this message translates to:
+  /// **'已连接：{email}'**
+  String cloudSyncConnectedAs(String email);
+
+  /// No description provided for @cloudSyncDisconnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'断开连接'**
+  String get cloudSyncDisconnect;
+
+  /// No description provided for @cloudSyncDisconnectTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'断开云同步账号'**
+  String get cloudSyncDisconnectTitle;
+
+  /// No description provided for @cloudSyncDisconnectBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机。是否继续？'**
+  String get cloudSyncDisconnectBody;
+
+  /// No description provided for @cloudSyncLoginSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接坚果云'**
+  String get cloudSyncLoginSheetTitle;
+
+  /// No description provided for @cloudSyncLoginSheetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'请使用应用专用密码，不要使用坚果云登录密码。'**
+  String get cloudSyncLoginSheetSubtitle;
+
+  /// No description provided for @cloudSyncConfirmConnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认连接'**
+  String get cloudSyncConfirmConnect;
+
+  /// No description provided for @cloudSyncConnectSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号连接成功'**
+  String get cloudSyncConnectSuccess;
+
   /// No description provided for @lanEditEntryTitle.
   ///
   /// In zh, this message translates to:

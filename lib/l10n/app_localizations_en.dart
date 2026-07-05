@@ -130,6 +130,198 @@ class AppLocalizationsEn extends AppLocalizations {
       'Export a complete timetable file for others to import directly';
 
   @override
+  String get cloudSyncEntryTitle => 'Cloud Sync (WEBDAV)';
+
+  @override
+  String get cloudSyncEntrySubtitle =>
+      'Sync timetables and import data across devices via Jianguoyun';
+
+  @override
+  String get cloudSyncTitle => 'Cloud Sync';
+
+  @override
+  String get cloudSyncIntroTitle => 'Multi-device sync';
+
+  @override
+  String get cloudSyncIntroSubtitle =>
+      'Configure Jianguoyun WEBDAV to sync timetables, warehouse accounts, and related settings across devices.';
+
+  @override
+  String get cloudSyncSettingsSectionTitle => 'Sync settings';
+
+  @override
+  String get cloudSyncSettingsSectionSubtitle =>
+      'Switch between manual and automatic sync.';
+
+  @override
+  String get cloudSyncEnabledTitle => 'Enable cloud sync';
+
+  @override
+  String get cloudSyncEnabledSubtitle =>
+      'When off, no snapshot is uploaded or downloaded';
+
+  @override
+  String get cloudSyncProviderTitle => 'Provider';
+
+  @override
+  String get cloudSyncProviderJianguoyun => 'Jianguoyun';
+
+  @override
+  String get cloudSyncProviderCustom => 'Custom WEBDAV';
+
+  @override
+  String get cloudSyncModeTitle => 'Sync mode';
+
+  @override
+  String get cloudSyncModeAuto => 'Automatic';
+
+  @override
+  String get cloudSyncModeManual => 'Manual';
+
+  @override
+  String get cloudSyncAccountTitle => 'Account';
+
+  @override
+  String get cloudSyncAccountSubtitle =>
+      'Use a Jianguoyun app-specific password, not your login password. Snapshots include remembered school accounts.';
+
+  @override
+  String get cloudSyncUsernameLabel => 'Email / username';
+
+  @override
+  String get cloudSyncUsernameHint => 'Jianguoyun account email';
+
+  @override
+  String get cloudSyncPasswordLabel => 'App-specific password';
+
+  @override
+  String get cloudSyncPasswordHint =>
+      'Generate it in Jianguoyun security settings';
+
+  @override
+  String get cloudSyncPasswordStoredHint =>
+      'Password saved; leave blank to keep the stored password.';
+
+  @override
+  String get cloudSyncAdvancedTitle => 'Advanced';
+
+  @override
+  String get cloudSyncBaseUrlLabel => 'WEBDAV URL';
+
+  @override
+  String get cloudSyncRemoteFolderLabel => 'Remote folder';
+
+  @override
+  String get cloudSyncStatusTitle => 'Status';
+
+  @override
+  String get cloudSyncLastSyncedLabel => 'Last synced';
+
+  @override
+  String get cloudSyncLastErrorLabel => 'Latest error';
+
+  @override
+  String cloudSyncLastSyncedAt(String time) {
+    return 'Last synced: $time';
+  }
+
+  @override
+  String get cloudSyncSyncing => 'Syncing…';
+
+  @override
+  String cloudSyncLastError(String message) {
+    return 'Latest error: $message';
+  }
+
+  @override
+  String get cloudSyncHelpTitle => 'How to get a Jianguoyun app password';
+
+  @override
+  String get cloudSyncHelpBody =>
+      'Open Jianguoyun → Account → Security → Add app password. Default WEBDAV URL: https://dav.jianguoyun.com/dav/';
+
+  @override
+  String get cloudSyncTestConnection => 'Test connection';
+
+  @override
+  String get cloudSyncSyncNow => 'Sync now';
+
+  @override
+  String get cloudSyncTestSuccess => 'WEBDAV connection succeeded';
+
+  @override
+  String get cloudSyncTestFailed =>
+      'WEBDAV connection failed. Check account, app password, and network.';
+
+  @override
+  String get cloudSyncResultUploaded => 'Uploaded to cloud';
+
+  @override
+  String get cloudSyncResultDownloaded => 'Restored from cloud';
+
+  @override
+  String get cloudSyncResultUpToDate => 'Already up to date';
+
+  @override
+  String get cloudSyncResultCancelled => 'Sync cancelled';
+
+  @override
+  String cloudSyncResultFailed(String message) {
+    return 'Sync failed: $message';
+  }
+
+  @override
+  String get cloudSyncConflictTitle => 'Sync conflict detected';
+
+  @override
+  String get cloudSyncConflictBody =>
+      'Both this device and the cloud have newer changes. Choose which copy to keep.';
+
+  @override
+  String get cloudSyncUseRemoteAction => 'Use cloud';
+
+  @override
+  String get cloudSyncKeepLocalAction => 'Keep local';
+
+  @override
+  String get cloudSyncAccountSectionTitle => 'Cloud account';
+
+  @override
+  String get cloudSyncNotConnectedHint =>
+      'Connect Jianguoyun to sync timetables and import data across devices.';
+
+  @override
+  String get cloudSyncConnectAccount => 'Connect Jianguoyun';
+
+  @override
+  String cloudSyncConnectedAs(String email) {
+    return 'Connected: $email';
+  }
+
+  @override
+  String get cloudSyncDisconnect => 'Disconnect';
+
+  @override
+  String get cloudSyncDisconnectTitle => 'Disconnect cloud account';
+
+  @override
+  String get cloudSyncDisconnectBody =>
+      'This removes saved WEBDAV credentials from this device. Local timetables are kept. Continue?';
+
+  @override
+  String get cloudSyncLoginSheetTitle => 'Connect Jianguoyun';
+
+  @override
+  String get cloudSyncLoginSheetSubtitle =>
+      'Use an app-specific password, not your Jianguoyun login password.';
+
+  @override
+  String get cloudSyncConfirmConnect => 'Connect';
+
+  @override
+  String get cloudSyncConnectSuccess => 'Account connected';
+
+  @override
   String get lanEditEntryTitle => 'LAN editing';
 
   @override

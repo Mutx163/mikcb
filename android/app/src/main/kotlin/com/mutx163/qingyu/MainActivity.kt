@@ -12,9 +12,11 @@ import android.app.Service
 import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
+import android.provider.OpenableColumns
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -74,21 +76,28 @@ class MainActivity : FlutterActivity() {
 
     private var notificationManager: NotificationManager? = null
     private var permissionResult: MethodChannel.Result? = null
-    private var pendingIcsContent: String? = null
+    private data class PendingExternalImport(
+        val kind: String,
+        val fileName: String,
+        val textContent: String? = null,
+        val filePath: String? = null,
+    )
+
+    private var pendingExternalImport: PendingExternalImport? = null
     private var pendingOpenLanEdit = false
     private var flutterChannel: MethodChannel? = null
     private var lanEditChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleIcsIntent(intent)
+        handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
     }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleIcsIntent(intent)
+        handleExternalImportIntent(intent)
         handleLanEditIntent(intent)
     }
 
@@ -186,10 +195,19 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
 
-                    "getInitialIcsIntent" -> {
-                        val content = pendingIcsContent
-                        pendingIcsContent = null
-                        result.success(content)
+                    "getPendingExternalImport" -> {
+                        val pending = pendingExternalImport
+                        pendingExternalImport = null
+                        result.success(
+                            pending?.let {
+                                mapOf(
+                                    "kind" to it.kind,
+                                    "fileName" to it.fileName,
+                                    "textContent" to it.textContent,
+                                    "filePath" to it.filePath,
+                                )
+                            },
+                        )
                     }
 
                     else -> result.notImplemented()
@@ -435,39 +453,174 @@ class MainActivity : FlutterActivity() {
             }
     }
 
-    private fun handleIcsIntent(intent: Intent) {
+    private fun handleExternalImportIntent(intent: Intent) {
         val action = intent.action ?: return
         if (action != Intent.ACTION_VIEW && action != Intent.ACTION_SEND) return
-        val uri: Uri? = when (action) {
-            Intent.ACTION_SEND -> {
-                val type = intent.type ?: ""
-                if (type.startsWith("text/calendar") || type == "application/octet-stream") {
-                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                } else null
+
+        val uri = resolveImportUri(intent) ?: return
+        val mimeType = intent.type?.takeIf { it.isNotBlank() }
+            ?: contentResolver.getType(uri)
+        val fileName = resolveImportDisplayName(uri)
+        val bytes = readImportBytes(uri) ?: return
+        val kind = detectImportKind(fileName, mimeType, bytes) ?: return
+
+        val pending = when (kind) {
+            "ics", "backup" -> {
+                val text = bytes.toString(Charsets.UTF_8)
+                if (kind == "ics" && !text.contains("VCALENDAR", ignoreCase = true)) {
+                    return
+                }
+                if (kind == "backup" && !text.contains("\"mikcb\"")) {
+                    return
+                }
+                PendingExternalImport(kind = kind, fileName = fileName, textContent = text)
             }
-            else -> intent.data
+            "spreadsheet" -> {
+                val cachedFile = copyBytesToImportCache(bytes, fileName) ?: return
+                PendingExternalImport(
+                    kind = kind,
+                    fileName = fileName,
+                    filePath = cachedFile.absolutePath,
+                )
+            }
+            else -> return
         }
-        uri?.let {
-            readIcsFromUri(it)
-            if (pendingIcsContent != null) {
-                try {
-                    flutterChannel?.invokeMethod("onIcsIntentReceived", null)
-                } catch (_: Exception) {}
-            }
+
+        pendingExternalImport = pending
+        Log.d(
+            "MainActivity",
+            "External import queued kind=$kind file=$fileName bytes=${bytes.size}",
+        )
+        notifyExternalImportReceived()
+    }
+
+    private fun resolveImportUri(intent: Intent): Uri? {
+        return when (intent.action) {
+            Intent.ACTION_SEND -> extractSendStreamUri(intent)
+            else -> intent.data
         }
     }
 
-    private fun readIcsFromUri(uri: Uri) {
-        try {
-            val content = contentResolver.openInputStream(uri)?.use { stream ->
-                stream.bufferedReader().readText()
+    private fun extractSendStreamUri(intent: Intent): Uri? {
+        // Plain-text shares use EXTRA_TEXT and have no stream URI. File shares (CSV, ICS,
+        // JSON, XLSX, etc.) always attach EXTRA_STREAM regardless of MIME type.
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(Intent.EXTRA_STREAM)
+        }
+    }
+
+    private fun resolveImportDisplayName(uri: Uri): String {
+        if (uri.scheme == ContentResolver.SCHEME_CONTENT) {
+            try {
+                contentResolver.query(
+                    uri,
+                    arrayOf(OpenableColumns.DISPLAY_NAME),
+                    null,
+                    null,
+                    null,
+                )?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) {
+                            val name = cursor.getString(index)?.trim().orEmpty()
+                            if (name.isNotEmpty()) {
+                                return name
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("MainActivity", "Failed to resolve import display name for $uri", e)
             }
-            if (content != null && content.contains("VCALENDAR", ignoreCase = true)) {
-                pendingIcsContent = content
-                Log.d("MainActivity", "ICS content loaded from intent, length=${content.length}")
-            }
+        }
+        return uri.lastPathSegment?.substringAfterLast('/').orEmpty().ifBlank { "import" }
+    }
+
+    private fun readImportBytes(uri: Uri): ByteArray? {
+        return try {
+            contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to read ICS from URI: $uri", e)
+            Log.e("MainActivity", "Failed to read import bytes from URI: $uri", e)
+            null
+        }
+    }
+
+    private fun detectImportKind(
+        fileName: String,
+        mimeType: String?,
+        bytes: ByteArray,
+    ): String? {
+        val extension = fileName.substringAfterLast('.', "").lowercase(Locale.US)
+        val normalizedMime = mimeType?.lowercase(Locale.US)
+        val textPreview = if (bytes.size <= 65536) {
+            bytes.toString(Charsets.UTF_8)
+        } else {
+            bytes.copyOf(65536).toString(Charsets.UTF_8)
+        }
+
+        when {
+            extension == "ics" || normalizedMime?.startsWith("text/calendar") == true -> {
+                return "ics"
+            }
+            extension == "mikcb" -> return "backup"
+            extension == "json" || normalizedMime == "application/json" -> return "backup"
+            extension == "csv" ||
+                normalizedMime == "text/csv" ||
+                normalizedMime == "text/comma-separated-values" -> {
+                return "spreadsheet"
+            }
+            extension == "xlsx" ||
+                normalizedMime ==
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> {
+                return "spreadsheet"
+            }
+        }
+
+        if (normalizedMime == "application/octet-stream" || normalizedMime == "*/*") {
+            when (extension) {
+                "ics" -> return "ics"
+                "mikcb", "json" -> return "backup"
+                "csv", "xlsx" -> return "spreadsheet"
+            }
+        }
+
+        if (textPreview.contains("VCALENDAR", ignoreCase = true)) {
+            return "ics"
+        }
+        if (textPreview.trimStart().startsWith("{") && textPreview.contains("\"mikcb\"")) {
+            return "backup"
+        }
+        if (bytes.size >= 4 &&
+            bytes[0] == 0x50.toByte() &&
+            bytes[1] == 0x4B.toByte() &&
+            (extension == "xlsx" || extension.isEmpty())
+        ) {
+            return "spreadsheet"
+        }
+
+        return null
+    }
+
+    private fun copyBytesToImportCache(bytes: ByteArray, fileName: String): File? {
+        return try {
+            val safeName = fileName.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val cacheRoot = File(cacheDir, "external_imports").apply { mkdirs() }
+            val target = File(cacheRoot, "${System.currentTimeMillis()}_$safeName")
+            target.outputStream().use { output -> output.write(bytes) }
+            target
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to cache external import file", e)
+            null
+        }
+    }
+
+    private fun notifyExternalImportReceived() {
+        try {
+            flutterChannel?.invokeMethod("onExternalImportReceived", null)
+        } catch (_: Exception) {
         }
     }
 

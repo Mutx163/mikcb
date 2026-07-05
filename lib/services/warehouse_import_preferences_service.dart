@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_data_sync_hooks.dart';
+
 class WarehouseRememberedLogin {
   final String username;
   final String password;
@@ -87,9 +89,13 @@ abstract class WarehouseSecureStorage {
 
   Future<String?> read({required String key});
 
+  Future<Map<String, String>> readAll();
+
   Future<void> write({required String key, required String value});
 
   Future<void> delete({required String key});
+
+  Future<void> deleteAll();
 }
 
 class FlutterWarehouseSecureStorage extends WarehouseSecureStorage {
@@ -107,11 +113,99 @@ class FlutterWarehouseSecureStorage extends WarehouseSecureStorage {
   Future<String?> read({required String key}) => _storage.read(key: key);
 
   @override
+  Future<Map<String, String>> readAll() => _storage.readAll();
+
+  @override
   Future<void> write({required String key, required String value}) =>
       _storage.write(key: key, value: value);
 
   @override
   Future<void> delete({required String key}) => _storage.delete(key: key);
+
+  @override
+  Future<void> deleteAll() => _storage.deleteAll();
+}
+
+class WarehouseRememberedLoginEntry {
+  final String adapterId;
+  final WarehouseRememberedLogin login;
+
+  const WarehouseRememberedLoginEntry({
+    required this.adapterId,
+    required this.login,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'adapterId': adapterId,
+    'username': login.username,
+    'password': login.password,
+  };
+
+  factory WarehouseRememberedLoginEntry.fromJson(Map<String, dynamic> json) {
+    return WarehouseRememberedLoginEntry(
+      adapterId: json['adapterId'] as String? ?? '',
+      login: WarehouseRememberedLogin.fromJson(json),
+    );
+  }
+}
+
+class WarehouseSyncBundle {
+  final List<WarehouseRememberedLoginEntry> rememberedLogins;
+  final Map<String, String> customImportUrls;
+  final List<String> recentSchoolIds;
+  final List<WarehouseCustomDebugRecord> customDebugRecords;
+
+  const WarehouseSyncBundle({
+    this.rememberedLogins = const [],
+    this.customImportUrls = const {},
+    this.recentSchoolIds = const [],
+    this.customDebugRecords = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+    'rememberedLogins': rememberedLogins.map((item) => item.toJson()).toList(),
+    'customImportUrls': customImportUrls,
+    'recentSchoolIds': recentSchoolIds,
+    'customDebugRecords': customDebugRecords
+        .map((item) => item.toJson())
+        .toList(),
+  };
+
+  factory WarehouseSyncBundle.fromJson(Map<String, dynamic> json) {
+    final rawUrls = json['customImportUrls'];
+    final customImportUrls = rawUrls is Map
+        ? rawUrls.map(
+            (key, value) => MapEntry(key.toString(), value.toString()),
+          )
+        : const <String, String>{};
+
+    return WarehouseSyncBundle(
+      rememberedLogins: (json['rememberedLogins'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map(
+            (item) => WarehouseRememberedLoginEntry.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          )
+          .where((item) => item.adapterId.isNotEmpty)
+          .toList(),
+      customImportUrls: customImportUrls,
+      recentSchoolIds: (json['recentSchoolIds'] as List<dynamic>? ?? const [])
+          .map((item) => item.toString())
+          .where((item) => item.isNotEmpty)
+          .toList(),
+      customDebugRecords:
+          (json['customDebugRecords'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map(
+                (item) => WarehouseCustomDebugRecord.fromJson(
+                  Map<String, dynamic>.from(item),
+                ),
+              )
+              .where((item) => item.id.isNotEmpty)
+              .toList(),
+    );
+  }
 }
 
 class WarehouseImportPreferencesService {
@@ -140,6 +234,7 @@ class WarehouseImportPreferencesService {
   Future<void> setCustomImportUrl(String adapterId, String url) async {
     final prefs = await _prefs;
     await prefs.setString('$_customImportUrlPrefix$adapterId', url.trim());
+    notifyUserDataChangedForSync();
   }
 
   Future<void> clearCustomImportUrl(String adapterId) async {
@@ -184,6 +279,7 @@ class WarehouseImportPreferencesService {
       value: jsonEncode(login.toJson()),
     );
     await prefs.remove('$_rememberedLoginPrefix$adapterId');
+    notifyUserDataChangedForSync();
   }
 
   Future<void> clearRememberedLogin(String adapterId) async {
@@ -260,6 +356,7 @@ class WarehouseImportPreferencesService {
       _customDebugRecordsKey,
       jsonEncode(next.map((item) => item.toJson()).toList()),
     );
+    notifyUserDataChangedForSync();
   }
 
   Future<void> deleteCustomDebugRecord(String recordId) async {
@@ -270,6 +367,110 @@ class WarehouseImportPreferencesService {
       _customDebugRecordsKey,
       jsonEncode(next.map((item) => item.toJson()).toList()),
     );
+  }
+
+  Future<WarehouseSyncBundle> exportSyncBundle() async {
+    final prefs = await _prefs;
+    final secureEntries = await _secureStorage.readAll();
+    final rememberedLogins = <WarehouseRememberedLoginEntry>[];
+
+    for (final entry in secureEntries.entries) {
+      if (!entry.key.startsWith(_secureRememberedLoginPrefix)) {
+        continue;
+      }
+      final adapterId = entry.key.substring(
+        _secureRememberedLoginPrefix.length,
+      );
+      if (adapterId.isEmpty) {
+        continue;
+      }
+      final login = _decodeRememberedLogin(entry.value);
+      if (login == null) {
+        continue;
+      }
+      rememberedLogins.add(
+        WarehouseRememberedLoginEntry(adapterId: adapterId, login: login),
+      );
+    }
+
+    for (final legacyKey in prefs.getKeys()) {
+      if (!legacyKey.startsWith(_rememberedLoginPrefix)) {
+        continue;
+      }
+      final adapterId = legacyKey.substring(_rememberedLoginPrefix.length);
+      if (adapterId.isEmpty ||
+          rememberedLogins.any((item) => item.adapterId == adapterId)) {
+        continue;
+      }
+      final login = _decodeRememberedLogin(prefs.getString(legacyKey));
+      if (login == null) {
+        continue;
+      }
+      rememberedLogins.add(
+        WarehouseRememberedLoginEntry(adapterId: adapterId, login: login),
+      );
+    }
+
+    final customImportUrls = <String, String>{};
+    for (final key in prefs.getKeys()) {
+      if (!key.startsWith(_customImportUrlPrefix)) {
+        continue;
+      }
+      final adapterId = key.substring(_customImportUrlPrefix.length);
+      final value = prefs.getString(key)?.trim();
+      if (adapterId.isEmpty || value == null || value.isEmpty) {
+        continue;
+      }
+      customImportUrls[adapterId] = value;
+    }
+
+    return WarehouseSyncBundle(
+      rememberedLogins: rememberedLogins,
+      customImportUrls: customImportUrls,
+      recentSchoolIds: await getRecentSchoolIds(),
+      customDebugRecords: await getCustomDebugRecords(),
+    );
+  }
+
+  Future<void> importSyncBundle(WarehouseSyncBundle bundle) async {
+    final prefs = await _prefs;
+
+    for (final key in prefs.getKeys()) {
+      if (key.startsWith(_customImportUrlPrefix) ||
+          key.startsWith(_rememberedLoginPrefix)) {
+        await prefs.remove(key);
+      }
+    }
+    await prefs.remove(_recentSchoolIdsKey);
+    await prefs.remove(_customDebugRecordsKey);
+
+    final secureEntries = await _secureStorage.readAll();
+    for (final key in secureEntries.keys) {
+      if (key.startsWith(_secureRememberedLoginPrefix)) {
+        await _secureStorage.delete(key: key);
+      }
+    }
+
+    for (final entry in bundle.rememberedLogins) {
+      if (entry.adapterId.isEmpty) {
+        continue;
+      }
+      await setRememberedLogin(entry.adapterId, entry.login);
+    }
+    for (final entry in bundle.customImportUrls.entries) {
+      await setCustomImportUrl(entry.key, entry.value);
+    }
+    if (bundle.recentSchoolIds.isNotEmpty) {
+      await prefs.setStringList(_recentSchoolIdsKey, bundle.recentSchoolIds);
+    }
+    if (bundle.customDebugRecords.isNotEmpty) {
+      await prefs.setString(
+        _customDebugRecordsKey,
+        jsonEncode(
+          bundle.customDebugRecords.map((item) => item.toJson()).toList(),
+        ),
+      );
+    }
   }
 }
 

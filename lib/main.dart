@@ -24,6 +24,8 @@ import 'services/bundled_assets.dart';
 import 'services/lan_edit_foreground_service.dart';
 import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
+import 'services/user_data_sync_hooks.dart';
+import 'services/webdav_sync_coordinator.dart';
 import 'services/umeng_analytics_service.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
@@ -250,16 +252,34 @@ class AppEntryScreen extends StatefulWidget {
   State<AppEntryScreen> createState() => _AppEntryScreenState();
 }
 
-class _AppEntryScreenState extends State<AppEntryScreen> {
+class _AppEntryScreenState extends State<AppEntryScreen>
+    with WidgetsBindingObserver {
   final StorageService _storageService = StorageService();
   final AppMigrationService _migrationService = AppMigrationService();
+  final WebdavSyncCoordinator _cloudSyncCoordinator =
+      WebdavSyncCoordinator.instance();
   bool _startupHandled = false;
   bool _isBootstrapping = true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    scheduleCloudSyncUpload = _cloudSyncCoordinator.scheduleUpload;
     unawaited(_handleStartupFlows());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_cloudSyncCoordinator.maybePullRemote());
+    }
   }
 
   Future<void> _handleStartupFlows() async {
@@ -302,6 +322,8 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
 
       // 并行执行 provider 初始化和旧包检测
       await Future.wait([provider.initialize(), legacyPackageFuture]);
+      _cloudSyncCoordinator.bindProvider(provider);
+      unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
       final shouldShowMigrationGuide =
           !hasHandledPackageMigration && isDataEmpty && legacyPackage != null;
@@ -339,7 +361,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         // 非关键初始化：后台执行，不阻塞首帧
         unawaited(AppLogService.instance.updatePrivacyAccepted(true));
         unawaited(UmengAnalyticsService.initializeIfNeeded());
-        unawaited(_checkPendingIcsIntent());
+        unawaited(_checkPendingExternalImport());
         unawaited(_installLanEditNotificationHandler());
         unawaited(
           AppLogService.instance.info(
@@ -378,7 +400,7 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
         return;
       }
 
-      unawaited(_checkPendingIcsIntent());
+      unawaited(_checkPendingExternalImport());
       unawaited(_installLanEditNotificationHandler());
       unawaited(
         AppLogService.instance.info(
@@ -449,7 +471,10 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     return true;
   }
 
-  Future<bool> _runBackupImportFlow({_BackupImportMode? forcedMode}) async {
+  Future<bool> _runBackupImportFlow({
+    _BackupImportMode? forcedMode,
+    String? initialContent,
+  }) async {
     if (!mounted) {
       return false;
     }
@@ -489,17 +514,22 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     }
 
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        withData: true,
-        allowedExtensions: const ['json', 'mikcb'],
-      );
-      final file = result?.files.single;
-      if (file == null) {
-        return false;
+      late final String content;
+      if (initialContent != null) {
+        content = initialContent;
+      } else {
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.custom,
+          withData: true,
+          allowedExtensions: const ['json', 'mikcb'],
+        );
+        final file = result?.files.single;
+        if (file == null) {
+          return false;
+        }
+        final bytes = file.bytes;
+        content = bytes == null ? '' : utf8.decode(bytes);
       }
-      final bytes = file.bytes;
-      final content = bytes == null ? '' : utf8.decode(bytes);
       if (content.isEmpty) {
         throw FormatException(l10n.importFileReadFailed);
       }
@@ -551,26 +581,58 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     return imported == true;
   }
 
-  Future<void> _checkPendingIcsIntent() async {
+  Future<void> _checkPendingExternalImport() async {
     try {
       const channel = MethodChannel('com.mutx163.qingyu/miui_live');
       channel.setMethodCallHandler((call) async {
-        if (call.method == 'onIcsIntentReceived') {
+        if (call.method == 'onExternalImportReceived') {
           await Future.delayed(const Duration(milliseconds: 300));
-          _checkPendingIcsIntent();
+          await _checkPendingExternalImport();
         }
       });
-      final icsContent = await channel.invokeMethod<String?>(
-        'getInitialIcsIntent',
+      final payload = await channel.invokeMethod<Map<Object?, Object?>>(
+        'getPendingExternalImport',
       );
-      if (icsContent != null && icsContent.isNotEmpty && mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            settings: const RouteSettings(name: '/courses/import/ics-external'),
-            builder: (_) =>
-                IcsCourseImportScreen(initialIcsContent: icsContent),
-          ),
-        );
+      if (payload == null || !mounted) {
+        return;
+      }
+
+      final kind = payload['kind'] as String?;
+      switch (kind) {
+        case 'ics':
+          final icsContent = payload['textContent'] as String?;
+          if (icsContent != null && icsContent.isNotEmpty) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: '/courses/import/ics-external',
+                ),
+                builder: (_) =>
+                    IcsCourseImportScreen(initialIcsContent: icsContent),
+              ),
+            );
+          }
+        case 'backup':
+          final backupContent = payload['textContent'] as String?;
+          if (backupContent != null && backupContent.isNotEmpty) {
+            await _runBackupImportFlow(initialContent: backupContent);
+          }
+        case 'spreadsheet':
+          final filePath = payload['filePath'] as String?;
+          final fileName = payload['fileName'] as String?;
+          if (filePath != null && filePath.isNotEmpty) {
+            await Navigator.of(context).push(
+              MaterialPageRoute(
+                settings: const RouteSettings(
+                  name: '/courses/import/spreadsheet-external',
+                ),
+                builder: (_) => SpreadsheetCourseImportScreen(
+                  initialFilePath: filePath,
+                  initialFileName: fileName,
+                ),
+              ),
+            );
+          }
       }
     } catch (e) {
       // Silently ignore - this is a non-critical feature

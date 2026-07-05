@@ -19,6 +19,7 @@ import '../services/holiday_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/home_widget_snapshot_service.dart';
 import '../services/storage_service.dart';
+import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
 import 'timetable/time_scheme_logic.dart';
@@ -281,6 +282,7 @@ class TimetableProvider with ChangeNotifier {
     _teacherRecords.add(teacher);
     _teacherRecords.sort();
     await _storageService.saveTeacherRecords(_teacherRecords);
+    notifyUserDataChangedForSync();
   }
 
   /// Record a location name persistently (if not already recorded).
@@ -290,6 +292,7 @@ class TimetableProvider with ChangeNotifier {
     _locationRecords.add(location);
     _locationRecords.sort();
     await _storageService.saveLocationRecords(_locationRecords);
+    notifyUserDataChangedForSync();
   }
 
   int get currentDayOfWeek => _currentDayOfWeek;
@@ -643,10 +646,12 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _storageService.setActiveProfileId(_activeProfileId!);
     }
+    notifyUserDataChangedForSync();
   }
 
   Future<void> _persistTimeSchemes() async {
     await _storageService.saveTimeSchemes(_timeSchemes);
+    notifyUserDataChangedForSync();
   }
 
   String _sectionSignature(List<SectionTime> sections) {
@@ -909,6 +914,7 @@ class TimetableProvider with ChangeNotifier {
 
     _profiles[index] = _profiles[index].copyWith(name: name.trim());
     await _storageService.saveProfiles(_profiles);
+    notifyUserDataChangedForSync();
     notifyListeners();
   }
 
@@ -935,6 +941,7 @@ class TimetableProvider with ChangeNotifier {
     if (_activeProfileId != null) {
       await _storageService.setActiveProfileId(_activeProfileId!);
     }
+    notifyUserDataChangedForSync();
     notifyListeners();
     await _updateLiveActivity();
     return true;

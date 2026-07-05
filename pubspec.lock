@@ -114,7 +114,7 @@ packages:
     source: hosted
     version: "0.3.5+4"
   crypto:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: crypto
       sha256: c8ea0233063ba03258fbcf2ca4d6dadfefe14f02fab57702265467a19f27fadf
@@ -906,6 +906,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  webdav_plus:
+    dependency: "direct main"
+    description:
+      name: webdav_plus
+      sha256: "9ba5382b6498eac8927864ccc11c9e45a92fa2e3e5f3f3fc0f6d38cb433ab188"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.2"
   webview_flutter:
     dependency: "direct main"
     description:

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/warehouse_macro_models.dart';
+import 'user_data_sync_hooks.dart';
 
 /// 录制回放持久化服务
 class WarehouseMacroService {
@@ -17,6 +18,7 @@ class WarehouseMacroService {
     );
     await prefs.setString(key, jsonEncode(record.toJson()));
     await _addToIndex(prefs, record.schoolId, record.adapterId);
+    notifyUserDataChangedForSync();
   }
 
   /// 加载指定学校+适配器的宏录制记录
@@ -59,7 +61,6 @@ class WarehouseMacroService {
     return prefs.containsKey(key);
   }
 
-  /// 获取所有宏录制记录的索引列表
   Future<List<WarehouseMacroIndexEntry>> getAllMacroEntries() async {
     final prefs = await _prefs;
     final raw = prefs.getString(WarehouseMacroRecord.indexKey);
@@ -139,6 +140,34 @@ class WarehouseMacroService {
           .toList();
     } catch (_) {
       return const [];
+    }
+  }
+
+  Future<List<WarehouseMacroRecord>> exportAllMacros() async {
+    final entries = await getAllMacroEntries();
+    final records = <WarehouseMacroRecord>[];
+    for (final entry in entries) {
+      final record = await getMacro(entry.schoolId, entry.adapterId);
+      if (record != null) {
+        records.add(record);
+      }
+    }
+    return records;
+  }
+
+  Future<void> importAllMacros(List<WarehouseMacroRecord> records) async {
+    final prefs = await _prefs;
+    final existingKeys = prefs
+        .getKeys()
+        .where((key) => key.startsWith('warehouse_macro_record_'))
+        .toList();
+    for (final key in existingKeys) {
+      await prefs.remove(key);
+    }
+    await prefs.remove(WarehouseMacroRecord.indexKey);
+
+    for (final record in records) {
+      await saveMacro(record);
     }
   }
 }

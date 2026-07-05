@@ -416,7 +416,14 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
 }
 
 class SpreadsheetCourseImportScreen extends StatefulWidget {
-  const SpreadsheetCourseImportScreen({super.key});
+  final String? initialFilePath;
+  final String? initialFileName;
+
+  const SpreadsheetCourseImportScreen({
+    super.key,
+    this.initialFilePath,
+    this.initialFileName,
+  });
 
   @override
   State<SpreadsheetCourseImportScreen> createState() =>
@@ -430,6 +437,17 @@ class _SpreadsheetCourseImportScreenState
 
   bool _isImporting = false;
   bool _isSharingTemplate = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final filePath = widget.initialFilePath;
+    if (filePath != null && filePath.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _importFromExternalFile(filePath, widget.initialFileName ?? 'import');
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -523,6 +541,33 @@ class _SpreadsheetCourseImportScreenState
       if (mounted) {
         setState(() {
           _isSharingTemplate = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _importFromExternalFile(String filePath, String fileName) async {
+    setState(() {
+      _isImporting = true;
+    });
+    try {
+      final bytes = await File(filePath).readAsBytes();
+      if (!mounted) {
+        return;
+      }
+      await _executeSpreadsheetImport(bytes, fileName);
+    } catch (_) {
+      if (mounted) {
+        showAppToast(
+          context,
+          message: AppLocalizations.of(context)!.importFileReadFailed,
+          kind: AppToastKind.error,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isImporting = false;
         });
       }
     }

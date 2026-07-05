@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/holiday_entry.dart';
+import 'user_data_sync_hooks.dart';
 
 /// A single log entry from the holiday update process.
 class HolidayLogEntry {
@@ -29,8 +30,10 @@ class HolidayLogEntry {
 class HolidayService {
   static const _cacheKeyPrefix = 'holiday_data_';
   static const _customHolidaysKey = 'custom_holidays';
-  static const _remoteHolidayBaseUrl = 'https://publicapi.xiaoai.me/holiday/year';
-  static const _fallbackHolidayBaseUrl = 'https://holiday.ailcc.com/api/holiday/year';
+  static const _remoteHolidayBaseUrl =
+      'https://publicapi.xiaoai.me/holiday/year';
+  static const _fallbackHolidayBaseUrl =
+      'https://holiday.ailcc.com/api/holiday/year';
 
   final http.Client _client;
   final bool _ownsClient;
@@ -41,8 +44,8 @@ class HolidayService {
   SharedPreferences? _prefs;
 
   HolidayService({http.Client? client})
-      : _client = client ?? http.Client(),
-        _ownsClient = client == null;
+    : _client = client ?? http.Client(),
+      _ownsClient = client == null;
 
   /// 释放 HTTP 客户端资源
   void dispose() {
@@ -104,15 +107,17 @@ class HolidayService {
 
   /// 后台拉取远程数据并覆盖本地缓存
   void _backgroundRefresh(int year) {
-    unawaited(_fetchRemoteUpdate(year).then((remote) {
-      if (remote != null && remote.entries.isNotEmpty) {
-        _memoryCache[year] = remote;
-        unawaited(_saveToLocalCache(year, remote));
-        _log('$year年：后台更新成功（${remote.entries.length} 条），已覆盖缓存');
-      } else {
-        _log('$year年：后台更新未获取到新数据');
-      }
-    }));
+    unawaited(
+      _fetchRemoteUpdate(year).then((remote) {
+        if (remote != null && remote.entries.isNotEmpty) {
+          _memoryCache[year] = remote;
+          unawaited(_saveToLocalCache(year, remote));
+          _log('$year年：后台更新成功（${remote.entries.length} 条），已覆盖缓存');
+        } else {
+          _log('$year年：后台更新未获取到新数据');
+        }
+      }),
+    );
   }
 
   Future<HolidayData?> _loadFromLocalCache(int year) async {
@@ -120,9 +125,7 @@ class HolidayService {
       final prefs = await _ensurePrefs();
       final raw = prefs.getString('$_cacheKeyPrefix$year');
       if (raw == null) return null;
-      return HolidayData.fromJson(
-        jsonDecode(raw) as Map<String, dynamic>,
-      );
+      return HolidayData.fromJson(jsonDecode(raw) as Map<String, dynamic>);
     } catch (_) {
       return null;
     }
@@ -140,9 +143,7 @@ class HolidayService {
   Future<HolidayData> _loadBuiltin(int year) async {
     try {
       final json = await rootBundle.loadString('assets/holidays/$year.json');
-      return HolidayData.fromJson(
-        jsonDecode(json) as Map<String, dynamic>,
-      );
+      return HolidayData.fromJson(jsonDecode(json) as Map<String, dynamic>);
     } catch (_) {
       // If the asset file doesn't exist for this year, return empty data
       return HolidayData(year: year, version: 1, entries: const []);
@@ -271,12 +272,14 @@ class HolidayService {
       final groupId = 'holiday-$year-$i';
       groupIds.add(groupId);
       for (final date in group) {
-        entries.add(HolidayEntry(
-          date: date,
-          name: name,
-          type: HolidayType.vacation,
-          groupId: groupId,
-        ));
+        entries.add(
+          HolidayEntry(
+            date: date,
+            name: name,
+            type: HolidayType.vacation,
+            groupId: groupId,
+          ),
+        );
       }
     }
     for (final date in makeupDates) {
@@ -293,12 +296,14 @@ class HolidayService {
           nearestGroupId = groupIds[i];
         }
       }
-      entries.add(HolidayEntry(
-        date: date,
-        name: '调休上班',
-        type: HolidayType.adjustedWorkday,
-        groupId: nearestGroupId,
-      ));
+      entries.add(
+        HolidayEntry(
+          date: date,
+          name: '调休上班',
+          type: HolidayType.adjustedWorkday,
+          groupId: nearestGroupId,
+        ),
+      );
     }
 
     return entries;
@@ -348,12 +353,14 @@ class HolidayService {
       final groupId = 'holiday-$year-$i';
       groupIds.add(groupId);
       for (final date in group) {
-        entries.add(HolidayEntry(
-          date: date,
-          name: name,
-          type: HolidayType.vacation,
-          groupId: groupId,
-        ));
+        entries.add(
+          HolidayEntry(
+            date: date,
+            name: name,
+            type: HolidayType.vacation,
+            groupId: groupId,
+          ),
+        );
       }
     }
     for (final date in makeupDates) {
@@ -369,12 +376,14 @@ class HolidayService {
           nearestGroupId = groupIds[i];
         }
       }
-      entries.add(HolidayEntry(
-        date: date,
-        name: '调休上班',
-        type: HolidayType.adjustedWorkday,
-        groupId: nearestGroupId,
-      ));
+      entries.add(
+        HolidayEntry(
+          date: date,
+          name: '调休上班',
+          type: HolidayType.adjustedWorkday,
+          groupId: nearestGroupId,
+        ),
+      );
     }
 
     return entries;
@@ -386,11 +395,9 @@ class HolidayService {
     return _convertApiEntries(list, year);
   }
 
-  bool _isConsecutive(DateTime a, DateTime b) =>
-      b.difference(a).inDays == 1;
+  bool _isConsecutive(DateTime a, DateTime b) => b.difference(a).inDays == 1;
 
-  int _absDays(DateTime a, DateTime b) =>
-      a.difference(b).inDays.abs();
+  int _absDays(DateTime a, DateTime b) => a.difference(b).inDays.abs();
 
   String _nameForGroup(List<DateTime> group) {
     final first = group.first;
@@ -439,7 +446,9 @@ class HolidayService {
       if (raw == null) return <HolidayEntry>[];
       final list = jsonDecode(raw) as List<dynamic>;
       return list
-          .map((e) => HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)))
+          .map(
+            (e) => HolidayEntry.fromJson(Map<String, dynamic>.from(e as Map)),
+          )
           .toList();
     } catch (_) {
       return <HolidayEntry>[];
@@ -452,6 +461,7 @@ class HolidayService {
       final prefs = await _ensurePrefs();
       final json = jsonEncode(entries.map((e) => e.toJson()).toList());
       await prefs.setString(_customHolidaysKey, json);
+      notifyUserDataChangedForSync();
     } catch (_) {}
   }
 
@@ -470,7 +480,10 @@ class HolidayService {
   }
 
   /// 按 groupId 更新自定义假期（替换同组所有 entries）
-  Future<void> updateCustomHoliday(String groupId, List<HolidayEntry> newEntries) async {
+  Future<void> updateCustomHoliday(
+    String groupId,
+    List<HolidayEntry> newEntries,
+  ) async {
     final existing = await loadCustomHolidays();
     existing.removeWhere((e) => e.groupId == groupId);
     existing.addAll(newEntries);

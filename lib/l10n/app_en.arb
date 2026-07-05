@@ -44,6 +44,91 @@
   },
   "dataTransferEntryTitle": "Backup & Migration",
   "dataTransferEntrySubtitle": "Export a complete timetable file for others to import directly",
+  "cloudSyncEntryTitle": "Cloud Sync (WEBDAV)",
+  "cloudSyncEntrySubtitle": "Sync timetables and import data across devices via Jianguoyun",
+  "cloudSyncTitle": "Cloud Sync",
+  "cloudSyncIntroTitle": "Multi-device sync",
+  "cloudSyncIntroSubtitle": "Configure Jianguoyun WEBDAV to sync timetables, warehouse accounts, and related settings across devices.",
+  "cloudSyncSettingsSectionTitle": "Sync settings",
+  "cloudSyncSettingsSectionSubtitle": "Switch between manual and automatic sync.",
+  "cloudSyncEnabledTitle": "Enable cloud sync",
+  "cloudSyncEnabledSubtitle": "When off, no snapshot is uploaded or downloaded",
+  "cloudSyncProviderTitle": "Provider",
+  "cloudSyncProviderJianguoyun": "Jianguoyun",
+  "cloudSyncProviderCustom": "Custom WEBDAV",
+  "cloudSyncModeTitle": "Sync mode",
+  "cloudSyncModeAuto": "Automatic",
+  "cloudSyncModeManual": "Manual",
+  "cloudSyncAccountTitle": "Account",
+  "cloudSyncAccountSubtitle": "Use a Jianguoyun app-specific password, not your login password. Snapshots include remembered school accounts.",
+  "cloudSyncUsernameLabel": "Email / username",
+  "cloudSyncUsernameHint": "Jianguoyun account email",
+  "cloudSyncPasswordLabel": "App-specific password",
+  "cloudSyncPasswordHint": "Generate it in Jianguoyun security settings",
+  "cloudSyncPasswordStoredHint": "Password saved; leave blank to keep the stored password.",
+  "cloudSyncAdvancedTitle": "Advanced",
+  "cloudSyncBaseUrlLabel": "WEBDAV URL",
+  "cloudSyncRemoteFolderLabel": "Remote folder",
+  "cloudSyncStatusTitle": "Status",
+  "cloudSyncLastSyncedLabel": "Last synced",
+  "cloudSyncLastErrorLabel": "Latest error",
+  "cloudSyncLastSyncedAt": "Last synced: {time}",
+  "@cloudSyncLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncSyncing": "Syncing…",
+  "cloudSyncLastError": "Latest error: {message}",
+  "@cloudSyncLastError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncHelpTitle": "How to get a Jianguoyun app password",
+  "cloudSyncHelpBody": "Open Jianguoyun → Account → Security → Add app password. Default WEBDAV URL: https://dav.jianguoyun.com/dav/",
+  "cloudSyncTestConnection": "Test connection",
+  "cloudSyncSyncNow": "Sync now",
+  "cloudSyncTestSuccess": "WEBDAV connection succeeded",
+  "cloudSyncTestFailed": "WEBDAV connection failed. Check account, app password, and network.",
+  "cloudSyncResultUploaded": "Uploaded to cloud",
+  "cloudSyncResultDownloaded": "Restored from cloud",
+  "cloudSyncResultUpToDate": "Already up to date",
+  "cloudSyncResultCancelled": "Sync cancelled",
+  "cloudSyncResultFailed": "Sync failed: {message}",
+  "@cloudSyncResultFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncConflictTitle": "Sync conflict detected",
+  "cloudSyncConflictBody": "Both this device and the cloud have newer changes. Choose which copy to keep.",
+  "cloudSyncUseRemoteAction": "Use cloud",
+  "cloudSyncKeepLocalAction": "Keep local",
+  "cloudSyncAccountSectionTitle": "Cloud account",
+  "cloudSyncNotConnectedHint": "Connect Jianguoyun to sync timetables and import data across devices.",
+  "cloudSyncConnectAccount": "Connect Jianguoyun",
+  "cloudSyncConnectedAs": "Connected: {email}",
+  "@cloudSyncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncDisconnect": "Disconnect",
+  "cloudSyncDisconnectTitle": "Disconnect cloud account",
+  "cloudSyncDisconnectBody": "This removes saved WEBDAV credentials from this device. Local timetables are kept. Continue?",
+  "cloudSyncLoginSheetTitle": "Connect Jianguoyun",
+  "cloudSyncLoginSheetSubtitle": "Use an app-specific password, not your Jianguoyun login password.",
+  "cloudSyncConfirmConnect": "Connect",
+  "cloudSyncConnectSuccess": "Account connected",
   "lanEditEntryTitle": "LAN editing",
   "lanEditEntrySubtitle": "Edit the current timetable from a desktop browser",
   "lanEditTitle": "LAN editing",

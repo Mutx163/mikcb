@@ -30,6 +30,7 @@ import '../widgets/bundled_asset_image.dart';
 import 'about_screen.dart';
 import 'course_overview_screen.dart';
 import 'data_transfer_screen.dart';
+import 'cloud_sync_screen.dart';
 import 'lan_edit_screen.dart';
 import 'feedback_screen.dart';
 import 'live_settings_subpages.dart';
@@ -103,6 +104,16 @@ class TimetableSettingsScreen extends StatelessWidget {
             MaterialPageRoute(
               settings: const RouteSettings(name: '/settings/data-transfer'),
               builder: (_) => const DataTransferScreen(),
+            ),
+          );
+        }
+
+        void openCloudSync() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/settings/cloud-sync'),
+              builder: (_) => const CloudSyncScreen(),
             ),
           );
         }
@@ -320,6 +331,11 @@ class TimetableSettingsScreen extends StatelessWidget {
                       icon: Icons.swap_horiz_rounded,
                       title: l10n.dataTransferEntryTitle,
                       onTap: openDataTransfer,
+                    ),
+                    SettingsEntryTile(
+                      icon: Icons.cloud_sync_rounded,
+                      title: l10n.cloudSyncEntryTitle,
+                      onTap: openCloudSync,
                     ),
                     SettingsEntryTile(
                       icon: Icons.lan_rounded,

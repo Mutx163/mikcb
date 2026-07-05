@@ -123,6 +123,188 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dataTransferEntrySubtitle => '시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다';
 
   @override
+  String get cloudSyncEntryTitle => '云同步（WEBDAV）';
+
+  @override
+  String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
+
+  @override
+  String get cloudSyncTitle => '云同步';
+
+  @override
+  String get cloudSyncIntroTitle => '多设备同步';
+
+  @override
+  String get cloudSyncIntroSubtitle =>
+      '配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置。';
+
+  @override
+  String get cloudSyncSettingsSectionTitle => '同步设置';
+
+  @override
+  String get cloudSyncSettingsSectionSubtitle => '可切换手动或自动同步。';
+
+  @override
+  String get cloudSyncEnabledTitle => '启用云同步';
+
+  @override
+  String get cloudSyncEnabledSubtitle => '关闭后不会上传或下载云端快照';
+
+  @override
+  String get cloudSyncProviderTitle => '服务提供商';
+
+  @override
+  String get cloudSyncProviderJianguoyun => '坚果云';
+
+  @override
+  String get cloudSyncProviderCustom => '自定义 WEBDAV';
+
+  @override
+  String get cloudSyncModeTitle => '同步方式';
+
+  @override
+  String get cloudSyncModeAuto => '自动同步';
+
+  @override
+  String get cloudSyncModeManual => '手动同步';
+
+  @override
+  String get cloudSyncAccountTitle => '账号配置';
+
+  @override
+  String get cloudSyncAccountSubtitle => '请使用坚果云应用专用密码，而不是登录密码。快照会包含仓库记住的学校账号。';
+
+  @override
+  String get cloudSyncUsernameLabel => '邮箱 / 用户名';
+
+  @override
+  String get cloudSyncUsernameHint => '坚果云注册邮箱';
+
+  @override
+  String get cloudSyncPasswordLabel => '应用专用密码';
+
+  @override
+  String get cloudSyncPasswordHint => '在坚果云账户安全选项中生成';
+
+  @override
+  String get cloudSyncPasswordStoredHint => '已保存密码；留空表示继续使用已保存的密码。';
+
+  @override
+  String get cloudSyncAdvancedTitle => '高级设置';
+
+  @override
+  String get cloudSyncBaseUrlLabel => 'WEBDAV 地址';
+
+  @override
+  String get cloudSyncRemoteFolderLabel => '远程目录';
+
+  @override
+  String get cloudSyncStatusTitle => '同步状态';
+
+  @override
+  String get cloudSyncLastSyncedLabel => '上次同步';
+
+  @override
+  String get cloudSyncLastErrorLabel => '最近错误';
+
+  @override
+  String cloudSyncLastSyncedAt(String time) {
+    return '上次同步：$time';
+  }
+
+  @override
+  String get cloudSyncSyncing => '正在同步…';
+
+  @override
+  String cloudSyncLastError(String message) {
+    return '最近错误：$message';
+  }
+
+  @override
+  String get cloudSyncHelpTitle => '如何获取坚果云应用密码';
+
+  @override
+  String get cloudSyncHelpBody =>
+      '打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。';
+
+  @override
+  String get cloudSyncTestConnection => '测试连接';
+
+  @override
+  String get cloudSyncSyncNow => '立即同步';
+
+  @override
+  String get cloudSyncTestSuccess => 'WEBDAV 连接成功';
+
+  @override
+  String get cloudSyncTestFailed => 'WEBDAV 连接失败，请检查账号、应用密码和网络';
+
+  @override
+  String get cloudSyncResultUploaded => '已上传到云端';
+
+  @override
+  String get cloudSyncResultDownloaded => '已从云端恢复';
+
+  @override
+  String get cloudSyncResultUpToDate => '本地与云端已一致';
+
+  @override
+  String get cloudSyncResultCancelled => '已取消同步';
+
+  @override
+  String cloudSyncResultFailed(String message) {
+    return '同步失败：$message';
+  }
+
+  @override
+  String get cloudSyncConflictTitle => '检测到同步冲突';
+
+  @override
+  String get cloudSyncConflictBody => '本机和云端都有新的修改。请选择保留哪一边的数据。';
+
+  @override
+  String get cloudSyncUseRemoteAction => '使用云端';
+
+  @override
+  String get cloudSyncKeepLocalAction => '保留本机';
+
+  @override
+  String get cloudSyncAccountSectionTitle => '云账号';
+
+  @override
+  String get cloudSyncNotConnectedHint => '连接坚果云后，可在多设备间同步课表与导入数据。';
+
+  @override
+  String get cloudSyncConnectAccount => '连接坚果云';
+
+  @override
+  String cloudSyncConnectedAs(String email) {
+    return '已连接：$email';
+  }
+
+  @override
+  String get cloudSyncDisconnect => '断开连接';
+
+  @override
+  String get cloudSyncDisconnectTitle => '断开云同步账号';
+
+  @override
+  String get cloudSyncDisconnectBody =>
+      '断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机。是否继续？';
+
+  @override
+  String get cloudSyncLoginSheetTitle => '连接坚果云';
+
+  @override
+  String get cloudSyncLoginSheetSubtitle => '请使用应用专用密码，不要使用坚果云登录密码。';
+
+  @override
+  String get cloudSyncConfirmConnect => '确认连接';
+
+  @override
+  String get cloudSyncConnectSuccess => '账号连接成功';
+
+  @override
   String get lanEditEntryTitle => 'LAN 편집';
 
   @override

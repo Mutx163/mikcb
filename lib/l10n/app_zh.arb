@@ -44,6 +44,91 @@
   },
   "dataTransferEntryTitle": "数据备份与迁移",
   "dataTransferEntrySubtitle": "导出完整课表文件，给别人直接导入使用",
+  "cloudSyncEntryTitle": "云同步（WEBDAV）",
+  "cloudSyncEntrySubtitle": "通过坚果云等多设备同步课表与导入数据",
+  "cloudSyncTitle": "云同步",
+  "cloudSyncIntroTitle": "多设备同步",
+  "cloudSyncIntroSubtitle": "配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置。",
+  "cloudSyncSettingsSectionTitle": "同步设置",
+  "cloudSyncSettingsSectionSubtitle": "可切换手动或自动同步。",
+  "cloudSyncEnabledTitle": "启用云同步",
+  "cloudSyncEnabledSubtitle": "关闭后不会上传或下载云端快照",
+  "cloudSyncProviderTitle": "服务提供商",
+  "cloudSyncProviderJianguoyun": "坚果云",
+  "cloudSyncProviderCustom": "自定义 WEBDAV",
+  "cloudSyncModeTitle": "同步方式",
+  "cloudSyncModeAuto": "自动同步",
+  "cloudSyncModeManual": "手动同步",
+  "cloudSyncAccountTitle": "账号配置",
+  "cloudSyncAccountSubtitle": "请使用坚果云应用专用密码，而不是登录密码。快照会包含仓库记住的学校账号。",
+  "cloudSyncUsernameLabel": "邮箱 / 用户名",
+  "cloudSyncUsernameHint": "坚果云注册邮箱",
+  "cloudSyncPasswordLabel": "应用专用密码",
+  "cloudSyncPasswordHint": "在坚果云账户安全选项中生成",
+  "cloudSyncPasswordStoredHint": "已保存密码；留空表示继续使用已保存的密码。",
+  "cloudSyncAdvancedTitle": "高级设置",
+  "cloudSyncBaseUrlLabel": "WEBDAV 地址",
+  "cloudSyncRemoteFolderLabel": "远程目录",
+  "cloudSyncStatusTitle": "同步状态",
+  "cloudSyncLastSyncedLabel": "上次同步",
+  "cloudSyncLastErrorLabel": "最近错误",
+  "cloudSyncLastSyncedAt": "上次同步：{time}",
+  "@cloudSyncLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncSyncing": "正在同步…",
+  "cloudSyncLastError": "最近错误：{message}",
+  "@cloudSyncLastError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncHelpTitle": "如何获取坚果云应用密码",
+  "cloudSyncHelpBody": "打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。",
+  "cloudSyncTestConnection": "测试连接",
+  "cloudSyncSyncNow": "立即同步",
+  "cloudSyncTestSuccess": "WEBDAV 连接成功",
+  "cloudSyncTestFailed": "WEBDAV 连接失败，请检查账号、应用密码和网络",
+  "cloudSyncResultUploaded": "已上传到云端",
+  "cloudSyncResultDownloaded": "已从云端恢复",
+  "cloudSyncResultUpToDate": "本地与云端已一致",
+  "cloudSyncResultCancelled": "已取消同步",
+  "cloudSyncResultFailed": "同步失败：{message}",
+  "@cloudSyncResultFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncConflictTitle": "检测到同步冲突",
+  "cloudSyncConflictBody": "本机和云端都有新的修改。请选择保留哪一边的数据。",
+  "cloudSyncUseRemoteAction": "使用云端",
+  "cloudSyncKeepLocalAction": "保留本机",
+  "cloudSyncAccountSectionTitle": "云账号",
+  "cloudSyncNotConnectedHint": "连接坚果云后，可在多设备间同步课表与导入数据。",
+  "cloudSyncConnectAccount": "连接坚果云",
+  "cloudSyncConnectedAs": "已连接：{email}",
+  "@cloudSyncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncDisconnect": "断开连接",
+  "cloudSyncDisconnectTitle": "断开云同步账号",
+  "cloudSyncDisconnectBody": "断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机。是否继续？",
+  "cloudSyncLoginSheetTitle": "连接坚果云",
+  "cloudSyncLoginSheetSubtitle": "请使用应用专用密码，不要使用坚果云登录密码。",
+  "cloudSyncConfirmConnect": "确认连接",
+  "cloudSyncConnectSuccess": "账号连接成功",
   "lanEditEntryTitle": "局域网编辑",
   "lanEditEntrySubtitle": "在电脑浏览器中编辑当前课表",
   "lanEditTitle": "局域网编辑",
