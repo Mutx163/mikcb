@@ -17,6 +17,7 @@ import '../models/schedule_item.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
@@ -1681,6 +1682,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
+    final foruiTheme = context.theme;
     final colorScheme = theme.colorScheme;
     final isToday = _isSelectedDayToday(
       provider: provider,
@@ -1711,9 +1713,6 @@ class _TimetableScreenState extends State<TimetableScreen>
             localeName: localeName,
           )
         : _weekdayLabel(context, dayOfWeek);
-    final cardColor = theme.brightness == Brightness.dark
-        ? colorScheme.surface
-        : Colors.white;
     final countBadgeColor = hasAgenda
         ? colorScheme.primary.withValues(alpha: 0.10)
         : colorScheme.surfaceContainerHigh;
@@ -1743,60 +1742,27 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? Icons.arrow_forward_rounded
         : Icons.arrow_back_rounded;
 
-    return DecoratedBox(
+    return FCard.raw(
       key: key,
-      decoration: BoxDecoration(
-        color: cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.45),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.12 : 0.05,
-            ),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-        child: Column(
+        padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (isToday)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            l10n.todayTimetableTitle,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        )
+                        _buildDayViewTodayBadge(l10n.todayTimetableTitle)
                       else
-                        TextButton.icon(
+                        FButton(
                           key: const ValueKey('back-to-today-button'),
-                          onPressed: () async {
+                          variant: FButtonVariant.outline,
+                          onPress: () async {
                             final now = DateTime.now();
                             final visibleDays = _visibleDayNumbers(settings);
                             final currentSemesterWeek =
@@ -1812,185 +1778,168 @@ class _TimetableScreenState extends State<TimetableScreen>
                               now.weekday,
                             );
                           },
-                          style: TextButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
-                            ),
-                            backgroundColor: colorScheme.primary.withValues(
-                              alpha: 0.08,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                              side: BorderSide(
-                                color: colorScheme.primary.withValues(
-                                  alpha: 0.12,
-                                ),
-                              ),
-                            ),
-                          ),
-                          icon: Icon(
+                          prefix: Icon(
                             backToTodayIcon,
-                            size: 14,
+                            size: 18,
                             color: colorScheme.primary,
                           ),
-                          label: Text(
-                            l10n.backToTodayAction,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          child: Text(l10n.backToTodayAction),
                         ),
+                      const SizedBox(width: 10),
                       Text(
                         l10n.weekLabel(week),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 11.5,
+                        style: foruiTheme.typography.body.sm.copyWith(
+                          color: foruiTheme.colors.mutedForeground,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
                   ),
-                ),
-                IconButton(
-                  key: const ValueKey('back-to-week-view-button'),
-                  onPressed: () => _closeDayView(settings),
-                  icon: const Icon(Icons.close_rounded, size: 18),
-                  tooltip: l10n.backToWeekViewAction,
-                  style: IconButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    padding: const EdgeInsets.all(4),
-                    minimumSize: const Size(28, 28),
-                    foregroundColor: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              dateLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.1,
-                color: colorScheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 5,
-              runSpacing: 6,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: countBadgeColor,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(
-                    hasAgenda
-                        ? (courseCount > 0
-                              ? l10n.courseCountSummary(courseCount)
-                              : l10n.scheduleCountSummary(scheduleCount))
-                        : l10n.courseCountSummary(0),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: countBadgeTextColor,
-                      fontWeight: FontWeight.w700,
+                  const SizedBox(height: 10),
+                  Text(
+                    dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: foruiTheme.typography.display.lg.copyWith(
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.1,
+                      height: 1.15,
+                      color: foruiTheme.colors.foreground,
                     ),
                   ),
-                ),
-                if (scheduleCount > 0 && courseCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                    child: Text(
-                      l10n.scheduleCountSummary(scheduleCount),
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w700,
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: countBadgeColor,
+                          borderRadius: BorderRadius.circular(7),
+                        ),
+                        child: Text(
+                          hasAgenda
+                              ? (courseCount > 0
+                                    ? l10n.courseCountSummary(courseCount)
+                                    : l10n.scheduleCountSummary(scheduleCount))
+                              : l10n.courseCountSummary(0),
+                          style: foruiTheme.typography.body.xs2.copyWith(
+                            color: countBadgeTextColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
-                    ),
+                      if (scheduleCount > 0 && courseCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: colorScheme.surfaceContainerHigh,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Text(
+                            l10n.scheduleCountSummary(scheduleCount),
+                            style: foruiTheme.typography.body.xs2.copyWith(
+                              color: foruiTheme.colors.mutedForeground,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      if (firstAgenda != null)
+                        Text(
+                          '${l10n.classStartsAtLabel(firstAgenda.startTime)} · ${l10n.classEndsAtLabel(lastAgenda!.endTime)}',
+                          style: foruiTheme.typography.body.xs2.copyWith(
+                            color: foruiTheme.colors.mutedForeground,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
                   ),
-                if (firstAgenda != null) ...[
-                  Text(
-                    l10n.classStartsAtLabel(firstAgenda.startTime),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11.5,
+                  if (currentCourse != null ||
+                      conflictCount > 0 ||
+                      nonCurrentWeekCourseCount > 0 ||
+                      dayExams.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        if (currentCourse != null)
+                          _buildDayViewSummaryChip(
+                            icon: Icons.bolt_rounded,
+                            text:
+                                '${l10n.ongoingCourseBadge} · ${currentCourse.name}',
+                            accentColor: colorScheme.primary,
+                          ),
+                        if (conflictCount > 0)
+                          _buildDayViewSummaryChip(
+                            icon: Icons.warning_amber_rounded,
+                            text: l10n.conflictCountLabel(conflictCount),
+                            accentColor: colorScheme.error,
+                          ),
+                        if (nonCurrentWeekCourseCount > 0)
+                          _buildDayViewSummaryChip(
+                            icon: Icons.visibility_rounded,
+                            text:
+                                '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
+                          ),
+                        ...dayExams.map(
+                          (exam) => _buildDayViewSummaryChip(
+                            icon: Icons.school_outlined,
+                            text:
+                                '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
+                            accentColor: colorScheme.error,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  Text(
-                    '|',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.outline,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                  Text(
-                    l10n.classEndsAtLabel(lastAgenda!.endTime),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11.5,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            if (currentCourse != null ||
-                conflictCount > 0 ||
-                nonCurrentWeekCourseCount > 0 ||
-                dayExams.isNotEmpty) ...[
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  if (currentCourse != null)
-                    _buildDayViewSummaryChip(
-                      icon: Icons.bolt_rounded,
-                      text:
-                          '${l10n.ongoingCourseBadge} · ${currentCourse.name}',
-                      accentColor: colorScheme.primary,
-                    ),
-                  if (conflictCount > 0)
-                    _buildDayViewSummaryChip(
-                      icon: Icons.warning_amber_rounded,
-                      text: l10n.conflictCountLabel(conflictCount),
-                      accentColor: colorScheme.error,
-                    ),
-                  if (nonCurrentWeekCourseCount > 0)
-                    _buildDayViewSummaryChip(
-                      icon: Icons.visibility_rounded,
-                      text:
-                          '${l10n.nonCurrentWeekLabel} ${l10n.courseCountSummary(nonCurrentWeekCourseCount)}',
-                    ),
-                  ...dayExams.map(
-                    (exam) => _buildDayViewSummaryChip(
-                      icon: Icons.school_outlined,
-                      text:
-                          '${exam.name} · ${exam.daysUntil == 0 ? l10n.examCountdownToday : l10n.examCountdownDays(exam.daysUntil)}',
-                      accentColor: colorScheme.error,
-                    ),
-                  ),
+                  ],
                 ],
               ),
-            ],
+            ),
+            IconButton(
+              key: const ValueKey('back-to-week-view-button'),
+              onPressed: () => _closeDayView(settings),
+              icon: const Icon(Icons.close_rounded, size: 18),
+              tooltip: l10n.backToWeekViewAction,
+              style: IconButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                padding: const EdgeInsets.all(6),
+                minimumSize: const Size(32, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: foruiTheme.colors.mutedForeground,
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDayViewTodayBadge(String label) {
+    final foruiTheme = context.theme;
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: foruiTheme.colors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        child: Text(
+          label,
+          style: foruiTheme.typography.body.sm.copyWith(
+            fontWeight: FontWeight.w600,
+            color: foruiTheme.colors.foreground,
+          ),
         ),
       ),
     );
@@ -2001,11 +1950,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     required String text,
     Color? accentColor,
   }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final resolvedAccent = accentColor ?? colorScheme.onSurfaceVariant;
+    final foruiTheme = context.theme;
+    final resolvedAccent = accentColor ?? foruiTheme.colors.mutedForeground;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: resolvedAccent.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(999),
@@ -2013,15 +1961,15 @@ class _TimetableScreenState extends State<TimetableScreen>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: resolvedAccent),
-          const SizedBox(width: 6),
+          Icon(icon, size: 15, color: resolvedAccent),
+          const SizedBox(width: 5),
           Text(
             text,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelMedium?.copyWith(
+            style: foruiTheme.typography.body.xs.copyWith(
               color: resolvedAccent,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -3788,12 +3736,10 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _jumpToCurrentWeek(TimetableProvider provider) async {
     if (provider.settings.semesterStartDate == null) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.pleaseSetSemesterStartDate,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.pleaseSetSemesterStartDate,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -4090,29 +4036,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _showCourseActions(Course course, int week) async {
     final conflicts = _conflictsForCourseInWeek(course, week);
     final previewCourses = <Course>[course, ...conflicts];
-    final selected = await showCourseActionSheet(
+    await showCourseActionSheet(
       context,
       previewCourses: previewCourses,
       week: week,
       hasConflicts: conflicts.isNotEmpty,
+      onEdit: _editCourse,
+      onReschedule: (target) => _showRescheduleSheet(target, sourceWeek: week),
+      onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
     );
-
-    if (!mounted || selected == null) {
-      return;
-    }
-
-    switch (selected.action) {
-      case CourseActionType.edit:
-        _editCourse(selected.course);
-        break;
-      case CourseActionType.reschedule:
-        await _showRescheduleSheet(selected.course, sourceWeek: week);
-        break;
-      case CourseActionType.delete:
-        await _showDeleteCourseOptions(selected.course, week);
-        break;
-    }
   }
 
   List<Course> _conflictsForCourseInWeek(Course course, int week) {
@@ -4212,12 +4145,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.deletedCourseMessage(course.name),
-        ),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.deletedCourseMessage(course.name),
+      kind: AppToastKind.success,
     );
   }
 
@@ -4250,26 +4181,23 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            changed
-                ? l10n.occurrenceDeletedMessage(sourceWeek)
-                : l10n.noChangesDetected,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: changed
+            ? l10n.occurrenceDeletedMessage(sourceWeek)
+            : l10n.noChangesDetected,
+        kind: changed ? AppToastKind.success : AppToastKind.info,
       );
     } on ArgumentError catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showAppToast(
+        context,
+        message:
             error.message?.toString() ??
-                AppLocalizations.of(context)!.deleteFailed,
-          ),
-        ),
+            AppLocalizations.of(context)!.deleteFailed,
+        kind: AppToastKind.error,
       );
     }
   }
@@ -4312,31 +4240,28 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            changed
-                ? l10n.rescheduledToMessage(
-                    draft.targetWeek,
-                    _weekdayLabel(context, draft.targetDayOfWeek),
-                    draft.targetStartSection,
-                    draft.targetEndSection,
-                  )
-                : l10n.noChangesDetected,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: changed
+            ? l10n.rescheduledToMessage(
+                draft.targetWeek,
+                _weekdayLabel(context, draft.targetDayOfWeek),
+                draft.targetStartSection,
+                draft.targetEndSection,
+              )
+            : l10n.noChangesDetected,
+        kind: changed ? AppToastKind.success : AppToastKind.info,
       );
     } on ArgumentError catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showAppToast(
+        context,
+        message:
             error.message?.toString() ??
-                AppLocalizations.of(context)!.rescheduleFailed,
-          ),
-        ),
+            AppLocalizations.of(context)!.rescheduleFailed,
+        kind: AppToastKind.error,
       );
     }
   }

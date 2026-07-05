@@ -7,6 +7,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
+import '../utils/app_toast.dart';
 import '../widgets/bundled_asset_image.dart';
 
 enum _SupportMethod { wechat, alipay }
@@ -394,8 +395,10 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               child: FButton(
                 variant: FButtonVariant.ghost,
                 onPress: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.supportCompleteThanks)),
+                  showAppToast(
+                    context,
+                    message: l10n.supportCompleteThanks,
+                    kind: AppToastKind.success,
                   );
                 },
                 prefix: const Icon(Icons.favorite_border_rounded, size: 16),
@@ -604,7 +607,6 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     required String fileName,
   }) async {
     final l10n = AppLocalizations.of(context)!;
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final saved = await _service.saveAssetImageToGallery(
         assetPath: assetPath,
@@ -613,17 +615,19 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       if (!mounted) {
         return;
       }
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(saved ? l10n.savedToGallery : l10n.saveToGalleryFailed),
-        ),
+      showAppToast(
+        context,
+        message: saved ? l10n.savedToGallery : l10n.saveToGalleryFailed,
+        kind: saved ? AppToastKind.success : AppToastKind.error,
       );
     } catch (error) {
       if (!mounted) {
         return;
       }
-      messenger.showSnackBar(
-        SnackBar(content: Text(l10n.saveFailedWithError('$error'))),
+      showAppToast(
+        context,
+        message: l10n.saveFailedWithError('$error'),
+        kind: AppToastKind.error,
       );
     }
   }

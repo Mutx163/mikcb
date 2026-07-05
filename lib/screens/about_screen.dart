@@ -26,6 +26,7 @@ import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/about_info_sheet.dart';
 import '../widgets/bundled_asset_image.dart';
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 import '../services/warehouse_repository_service.dart';
 import 'live_diagnostics_log_viewer_screen.dart';
@@ -476,19 +477,15 @@ class _AboutScreenState extends State<AboutScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          value
-              ? l10n.aboutLiveDiagnosticsEnabled
-              : l10n.aboutLiveDiagnosticsDisabled,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: value
+          ? l10n.aboutLiveDiagnosticsEnabled
+          : l10n.aboutLiveDiagnosticsDisabled,
+      kind: AppToastKind.success,
     );
   }
 
@@ -532,10 +529,10 @@ class _AboutScreenState extends State<AboutScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.copiedRepositoryAddress),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.copiedRepositoryAddress,
+      kind: AppToastKind.success,
     );
   }
 
@@ -1002,9 +999,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
     _analytics.logEventLater(
@@ -1023,19 +1018,15 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          value
-              ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
-              : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: value
+          ? AppLocalizations.of(context)!.aboutLiveDiagnosticsEnabled
+          : AppLocalizations.of(context)!.aboutLiveDiagnosticsDisabled,
+      kind: AppToastKind.success,
     );
   }
 
@@ -1079,12 +1070,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (path == null || path.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.aboutNoDiagnosticsExportYet,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -1104,14 +1093,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (!mounted) {
       return cleared;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          cleared
-              ? AppLocalizations.of(context)!.liveDiagnosticsCleared
-              : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: cleared
+          ? AppLocalizations.of(context)!.liveDiagnosticsCleared
+          : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
+      kind: cleared ? AppToastKind.success : AppToastKind.error,
     );
     return cleared;
   }
@@ -1125,9 +1112,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
     } else {
       _analytics.logEventLater(
         name: 'update_source_changed',
@@ -1145,9 +1130,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
     } else {
       _analytics.logEventLater(
         name: 'update_channel_changed',
@@ -1165,9 +1148,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
     _analytics.logEventLater(
@@ -1303,9 +1284,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       for (final item in nextStates) item.preset: item.result,
     });
     if (recommendedPreset == null) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.aboutProbeNoMirrorFound)));
+        message: l10n.aboutProbeNoMirrorFound,
+        kind: AppToastKind.warning,
+      );
       return;
     }
 
@@ -1317,24 +1300,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       parameters: {'recommended': recommendedPreset.value},
     );
     if (recommendedPreset == currentPreset) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.aboutProbeCurrentFastest(currentPreset.label)),
-        ),
+      showAppToast(
+        context,
+        message: l10n.aboutProbeCurrentFastest(currentPreset.label),
+        kind: AppToastKind.success,
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.aboutProbeRecommendSwitch(recommendedPreset.label)),
-        action: SnackBarAction(
-          label: l10n.switchAction,
-          onPressed: () {
-            _updateMirrorPreset(recommendedPreset);
-          },
-        ),
-      ),
+    showAppToastWithAction(
+      context,
+      message: l10n.aboutProbeRecommendSwitch(recommendedPreset.label),
+      actionLabel: l10n.switchAction,
+      onAction: () => _updateMirrorPreset(recommendedPreset),
     );
   }
 
@@ -1346,16 +1324,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
 
     if (source == AppUpdateDownloadSource.original) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.aboutSwitchToMirrorAfterError(error)),
-          action: SnackBarAction(
-            label: l10n.switchAction,
-            onPressed: () {
-              _updateDownloadSource(AppUpdateDownloadSource.mirror);
-            },
-          ),
-        ),
+      showAppToastWithAction(
+        context,
+        message: l10n.aboutSwitchToMirrorAfterError(error),
+        actionLabel: l10n.switchAction,
+        onAction: () => _updateDownloadSource(AppUpdateDownloadSource.mirror),
+        kind: AppToastKind.error,
       );
       return;
     }
@@ -1378,23 +1352,17 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           );
 
     if (fallbackPreset != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label),
-          ),
-          action: SnackBarAction(
-            label: l10n.switchAction,
-            onPressed: () {
-              _updateMirrorPreset(fallbackPreset);
-            },
-          ),
-        ),
+      showAppToastWithAction(
+        context,
+        message: l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label),
+        actionLabel: l10n.switchAction,
+        onAction: () => _updateMirrorPreset(fallbackPreset),
+        kind: AppToastKind.error,
       );
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+    showAppToast(context, message: error, kind: AppToastKind.error);
   }
 
   Future<void> _editMirrorUrlPrefix() async {
@@ -1441,9 +1409,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     final normalizedPrefix = _normalizeMirrorUrlPrefix(result);
     if (normalizedPrefix == null) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.aboutMirrorPrefixInvalid)));
+        message: l10n.aboutMirrorPrefixInvalid,
+        kind: AppToastKind.error,
+      );
       return;
     }
 
@@ -1459,9 +1429,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     setState(() {
       _mirrorProbeStates = const [];
     });
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(message ?? l10n.aboutMirrorSaved)));
+      message: message ?? l10n.aboutMirrorSaved,
+      kind: AppToastKind.success,
+    );
     _analytics.logEventLater(name: 'update_mirror_saved');
   }
 
@@ -1502,9 +1474,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (error != null) {
       if (error == AppUpdateService.downloadCancelledMessage) {
         _analytics.logEventLater(name: 'update_download_cancelled');
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.aboutDownloadCancelled)));
+        showAppToast(context, message: l10n.aboutDownloadCancelled);
         return;
       }
       _analytics.logEventLater(name: 'update_download_failed');
@@ -1513,9 +1483,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     }
 
     _analytics.logEventLater(name: 'update_download_completed');
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.aboutInstallReady)));
+      message: l10n.aboutInstallReady,
+      kind: AppToastKind.success,
+    );
   }
 
   void _cancelDownload() {
@@ -1552,31 +1524,33 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         name: 'update_system_download_enqueued',
         parameters: {'has_download_id': downloadId != null},
       );
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.aboutSystemDownloaderQueued)));
+        message: l10n.aboutSystemDownloaderQueued,
+        kind: AppToastKind.success,
+      );
     } on PlatformException catch (error) {
       if (!mounted) {
         return;
       }
       _analytics.logEventLater(name: 'update_system_download_failed');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error.message?.trim().isNotEmpty == true
-                ? error.message!
-                : l10n.aboutSystemDownloaderFailed,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: error.message?.trim().isNotEmpty == true
+            ? error.message!
+            : l10n.aboutSystemDownloaderFailed,
+        kind: AppToastKind.error,
       );
     } catch (_) {
       if (!mounted) {
         return;
       }
       _analytics.logEventLater(name: 'update_system_download_failed');
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.aboutSystemDownloaderFailed)));
+        message: l10n.aboutSystemDownloaderFailed,
+        kind: AppToastKind.error,
+      );
     }
   }
 
@@ -2218,9 +2192,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
     }
   }
 
@@ -2231,9 +2203,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
     }
   }
 
@@ -2247,9 +2217,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
     }
   }
 
@@ -2683,12 +2651,10 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.copiedWarehouseRepositoryAddress,
+      kind: AppToastKind.success,
     );
   }
 }

@@ -3631,8 +3631,26 @@ abstract class AppLocalizations {
   /// No description provided for @sharedInfoHint.
   ///
   /// In zh, this message translates to:
-  /// **'课程名、简称、老师、课程简介、课程性质和颜色会同步到同名课程的其他排课。'**
+  /// **'查看共享字段说明'**
   String get sharedInfoHint;
+
+  /// No description provided for @sharedInfoSheetItemCourseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名称：课程唯一标识。名称相同的多条排课视为同一课程；更改名称将形成独立课程记录。'**
+  String get sharedInfoSheetItemCourseName;
+
+  /// No description provided for @sharedInfoSheetItemShortName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成。启用「优先显示课程简称」后生效；建议控制在 3 个汉字以内。'**
+  String get sharedInfoSheetItemShortName;
+
+  /// No description provided for @sharedInfoSheetItemSharedSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录。'**
+  String get sharedInfoSheetItemSharedSync;
 
   /// No description provided for @reuseExistingCourseLabel.
   ///
@@ -3667,7 +3685,7 @@ abstract class AppLocalizations {
   /// No description provided for @courseNameHelper.
   ///
   /// In zh, this message translates to:
-  /// **'超级岛建议 3 个字以内，显示效果最好'**
+  /// **'作为课程唯一标识；名称相同的多条排课将归为同一课程。请填写完整名称，请勿为界面显示而缩写。'**
   String get courseNameHelper;
 
   /// No description provided for @pleaseEnterCourseName.
@@ -3679,8 +3697,20 @@ abstract class AppLocalizations {
   /// No description provided for @courseShortNameOptional.
   ///
   /// In zh, this message translates to:
-  /// **'课程简称 (可选)'**
+  /// **'课程简称'**
   String get courseShortNameOptional;
+
+  /// No description provided for @courseShortNameHelper.
+  ///
+  /// In zh, this message translates to:
+  /// **'建议填写，用于超级岛等场景的简短展示。简称不会自动生成；启用「优先显示课程简称」后生效。建议控制在 3 个汉字以内。'**
+  String get courseShortNameHelper;
+
+  /// No description provided for @courseShortNameAutoFillAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'取前两字'**
+  String get courseShortNameAutoFillAction;
 
   /// No description provided for @teacherLabel.
   ///
@@ -8075,6 +8105,48 @@ abstract class AppLocalizations {
   /// **'恢复'**
   String get courseActionUnsuspend;
 
+  /// No description provided for @courseActionEditPrimary.
+  ///
+  /// In zh, this message translates to:
+  /// **'编辑课程'**
+  String get courseActionEditPrimary;
+
+  /// No description provided for @courseActionRescheduleSecondary.
+  ///
+  /// In zh, this message translates to:
+  /// **'调课'**
+  String get courseActionRescheduleSecondary;
+
+  /// No description provided for @courseActionSuspendSecondary.
+  ///
+  /// In zh, this message translates to:
+  /// **'停课'**
+  String get courseActionSuspendSecondary;
+
+  /// No description provided for @courseActionDeleteSecondary.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除'**
+  String get courseActionDeleteSecondary;
+
+  /// No description provided for @courseActionSheetNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'您正在查看第 {week} 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课。'**
+  String courseActionSheetNotice(int week);
+
+  /// No description provided for @courseActionOddWeekShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'单周'**
+  String get courseActionOddWeekShort;
+
+  /// No description provided for @courseActionEvenWeekShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'双周'**
+  String get courseActionEvenWeekShort;
+
   /// No description provided for @suspendSheetTitle.
   ///
   /// In zh, this message translates to:
@@ -8673,6 +8745,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'复制'**
   String get themeDuplicate;
+
+  /// No description provided for @themeDuplicateCopyName.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name} 副本'**
+  String themeDuplicateCopyName(String name);
+
+  /// No description provided for @themeMoreActions.
+  ///
+  /// In zh, this message translates to:
+  /// **'更多操作'**
+  String get themeMoreActions;
 
   /// No description provided for @courseNatureRequired.
   ///

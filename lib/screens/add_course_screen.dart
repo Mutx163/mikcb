@@ -6,10 +6,14 @@ import 'package:uuid/uuid.dart';
 import '../models/course.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
-import 'time_scheme_management_screen.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../widgets/about_info_sheet.dart';
+import '../widgets/course_color_picker_sheet.dart';
+import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/settings_section_widgets.dart';
+import '../widgets/time_scheme_picker_sheet.dart';
 
 enum _WeekSelectionMode { range, custom }
 
@@ -165,14 +169,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     return parseHexColorOrFallback(colorHex, fallback: const Color(0xFF2196F3));
   }
 
-  String _toHex(Color color) {
-    final red = (color.r * 255).round().clamp(0, 255);
-    final green = (color.g * 255).round().clamp(0, 255);
-    final blue = (color.b * 255).round().clamp(0, 255);
-    final value = (red << 16) | (green << 8) | blue;
-    return '#${value.toRadixString(16).padLeft(6, '0').toUpperCase()}';
-  }
-
   @override
   void initState() {
     super.initState();
@@ -319,9 +315,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     if (!mounted) {
       return;
     }
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.courseDeleted)),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.courseDeleted,
+      kind: AppToastKind.success,
     );
     Navigator.pop(context);
   }
@@ -344,365 +341,14 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   // ---------------------------------------------------------------------------
-  // Teacher / Location picker
+  // Teacher / Location picker — see [showCourseFieldPickerSheet]
   // ---------------------------------------------------------------------------
-
-  void _showPickerSheet({
-    required String title,
-    required List<String> suggestions,
-    required TextEditingController controller,
-    required VoidCallback? onEntrySync,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    // Save original text so we can restore on cancel (tap outside).
-    final originalText = controller.text;
-    var confirmed = false;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return ListenableBuilder(
-          listenable: controller,
-          builder: (context, _) {
-            final filtered = controller.text.isEmpty
-                ? suggestions
-                : suggestions
-                      .where((s) => s.contains(controller.text))
-                      .toList();
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  FTextField(
-                    control: FTextFieldControl.managed(controller: controller),
-                    hint: l10n.manualInputLabel,
-                    prefixBuilder: (context, style, variants) =>
-                        const Icon(Icons.search),
-                    suffixBuilder: controller.text.isNotEmpty
-                        ? (context, style, variants) => IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: controller.clear,
-                          )
-                        : null,
-                    onSubmit: (_) {
-                      confirmed = true;
-                      onEntrySync?.call();
-                      Navigator.pop(sheetContext);
-                    },
-                  ),
-                  if (filtered.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.historyRecordsLabel,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: filtered.map((s) {
-                        return ActionChip(
-                          label: Text(s),
-                          onPressed: () {
-                            controller.text = s;
-                            confirmed = true;
-                            onEntrySync?.call();
-                            Navigator.pop(sheetContext);
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ] else if (suggestions.isNotEmpty &&
-                      controller.text.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.noHistoryRecords,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FButton(
-                      onPress: () {
-                        confirmed = true;
-                        onEntrySync?.call();
-                        Navigator.pop(sheetContext);
-                      },
-                      child: Text(l10n.saveAction),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      // Restore original text if user dismissed without confirming.
-      if (!confirmed) {
-        controller.text = originalText;
-      }
-    });
-  }
 
   /// Shows a time scheme picker bottom sheet.
   ///
   /// [currentValue] is the currently selected time scheme override ID
   /// (null means "follow profile").
   /// [onSelected] is called when the user picks a scheme (null = follow profile).
-  void _showTimeSchemePickerSheet({
-    required String? currentValue,
-    required ValueChanged<String?> onSelected,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final provider = context.read<TimetableProvider>();
-    final followLabel =
-        provider.activeTimeScheme?.name ?? l10n.timetableAppName;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            final schemes = provider.timeSchemes;
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.selectTimeSchemeTitle,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      FButton(
-                        variant: FButtonVariant.ghost,
-                        onPress: () async {
-                          Navigator.pop(sheetContext);
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              settings: const RouteSettings(
-                                name: '/settings/time-schemes',
-                              ),
-                              builder: (_) =>
-                                  const TimeSchemeManagementScreen(),
-                            ),
-                          );
-                          if (mounted) setState(() {});
-                        },
-                        prefix: const Icon(Icons.settings_rounded, size: 18),
-                        child: Text(l10n.manageTimeSchemesAction),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(sheetContext).size.height * 0.5,
-                    ),
-                    child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // "Follow profile" option
-                          _buildSchemeTile(
-                            title: l10n.followCurrentTimetableWithName(
-                              followLabel,
-                            ),
-                            subtitle: null,
-                            isSelected: currentValue == null,
-                            onTap: () {
-                              onSelected(null);
-                              Navigator.pop(sheetContext);
-                            },
-                            trailing: null,
-                          ),
-                          if (schemes.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            const Divider(height: 1),
-                            const SizedBox(height: 8),
-                          ],
-                          // Existing schemes
-                          ...schemes.map((scheme) {
-                            final isSelected = currentValue == scheme.id;
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: _buildSchemeTile(
-                                title: scheme.name,
-                                subtitle: scheme.sections.isNotEmpty
-                                    ? '${scheme.sections.first.startTime}–${scheme.sections.last.endTime} · ${scheme.sectionCount}'
-                                    : null,
-                                isSelected: isSelected,
-                                onTap: () {
-                                  onSelected(scheme.id);
-                                  Navigator.pop(sheetContext);
-                                },
-                                trailing: IconButton(
-                                  icon: const Icon(
-                                    Icons.edit_rounded,
-                                    size: 20,
-                                  ),
-                                  tooltip: l10n.editTimeSchemeTitle,
-                                  onPressed: () async {
-                                    await Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        settings: const RouteSettings(
-                                          name: '/settings/time-schemes',
-                                        ),
-                                        builder: (_) =>
-                                            TimeSchemeManagementScreen(
-                                              initialEditSchemeId: scheme.id,
-                                            ),
-                                      ),
-                                    );
-                                    setSheetState(() {});
-                                    if (mounted) setState(() {});
-                                  },
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  // Create new scheme button
-                  SizedBox(
-                    width: double.infinity,
-                    child: FButton(
-                      variant: FButtonVariant.secondary,
-                      onPress: () async {
-                        Navigator.pop(sheetContext);
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            settings: const RouteSettings(
-                              name: '/settings/time-schemes',
-                            ),
-                            builder: (_) => const TimeSchemeManagementScreen(),
-                          ),
-                        );
-                        if (mounted) setState(() {});
-                      },
-                      prefix: const Icon(Icons.add_rounded),
-                      child: Text(l10n.createTimeSchemeTitle),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      if (mounted) setState(() {});
-    });
-  }
-
-  Widget _buildSchemeTile({
-    required String title,
-    required String? subtitle,
-    required bool isSelected,
-    required VoidCallback onTap,
-    required Widget? trailing,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: isSelected
-          ? colorScheme.primaryContainer.withValues(alpha: 0.4)
-          : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          child: Row(
-            children: [
-              Icon(
-                isSelected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                size: 20,
-                color: isSelected
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: isSelected
-                            ? FontWeight.w600
-                            : FontWeight.normal,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if (subtitle != null)
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (trailing != null) trailing,
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ---------------------------------------------------------------------------
   // Group editing UI
   // ---------------------------------------------------------------------------
@@ -756,8 +402,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       children: [
         _buildGroupSharedInfoSection(provider, l10n),
         const SizedBox(height: 12),
-        _buildGroupColorSection(l10n),
-        const SizedBox(height: 12),
         _buildScheduleEntriesSection(provider, settings, l10n),
         const SizedBox(height: 24),
       ],
@@ -768,40 +412,83 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableProvider provider,
     AppLocalizations l10n,
   ) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
     return SettingsSectionCard(
-      title: l10n.sharedInfoTitle,
-      subtitle: l10n.sharedInfoHint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: _withSpacing([
-          FTextFormField(
-            control: FTextFieldControl.managed(controller: _nameController),
-            label: Text(l10n.courseNameLabel),
-            description: Text(l10n.courseNameHelper),
-            textInputAction: TextInputAction.next,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return l10n.pleaseEnterCourseName;
-              }
-              return null;
-            },
-            suffixBuilder: widget.course == null
-                ? (context, style, variants) => IconButton(
-                    tooltip: l10n.reuseExistingCourseLabel,
-                    icon: const Icon(Icons.auto_awesome_motion_rounded),
-                    onPressed: () => _showCourseTemplateSheet(provider),
-                  )
-                : null,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l10n.sharedInfoTitle,
+                    style: typo.sm.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  tooltip: l10n.sharedInfoHint,
+                  onPressed: () => _showSharedInfoHintSheet(l10n),
+                  icon: Icon(
+                    Icons.info_outline_rounded,
+                    size: 18,
+                    color: colors.mutedForeground,
+                  ),
+                ),
+              ],
+            ),
           ),
-          _buildResponsiveFieldPair(
-            leading: FTextFormField(
+          ..._withSpacing([
+            FTextFormField(
+              control: FTextFieldControl.managed(controller: _nameController),
+              label: Text(l10n.courseNameLabel),
+              description: Text(l10n.courseNameHelper),
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return l10n.pleaseEnterCourseName;
+                }
+                return null;
+              },
+              suffixBuilder: widget.course == null
+                  ? (context, style, variants) => IconButton(
+                      tooltip: l10n.reuseExistingCourseLabel,
+                      icon: const Icon(Icons.auto_awesome_motion_rounded),
+                      onPressed: () => _showCourseTemplateSheet(provider),
+                    )
+                  : null,
+            ),
+            FTextFormField(
               control: FTextFieldControl.managed(
                 controller: _shortNameController,
               ),
               label: Text(l10n.courseShortNameOptional),
+              description: Text(l10n.courseShortNameHelper),
               textInputAction: TextInputAction.next,
+              suffixBuilder: (context, style, variants) => IconButton(
+                tooltip: l10n.courseShortNameAutoFillAction,
+                icon: const Icon(Icons.short_text_rounded),
+                onPressed: () {
+                  final name = _nameController.text.trim();
+                  if (name.isEmpty) {
+                    return;
+                  }
+                  setState(() {
+                    _shortNameController.text = name.characters.take(2).string;
+                  });
+                },
+              ),
             ),
-            trailing: FSelect<CourseNature>(
+            FSelect<CourseNature>(
+              label: Text(l10n.courseNatureLabel),
               hint: l10n.courseNatureLabel,
               items: {for (final item in CourseNature.values) item.label: item},
               control: FSelectControl.lifted(
@@ -812,85 +499,117 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 },
               ),
             ),
-          ),
-          FTextFormField.multiline(
-            control: FTextFieldControl.managed(
-              controller: _descriptionController,
+            FTextFormField.multiline(
+              control: FTextFieldControl.managed(
+                controller: _descriptionController,
+              ),
+              label: Text(l10n.courseDescriptionOptional),
+              minLines: 2,
+              maxLines: 4,
             ),
-            label: Text(l10n.courseDescriptionOptional),
-            minLines: 2,
-            maxLines: 4,
-          ),
-        ]),
+            Text(
+              l10n.courseColorTitle,
+              style: typo.xs2.copyWith(color: colors.mutedForeground),
+            ),
+            _buildCompactColorPalette(l10n),
+          ], spacing: 8),
+        ],
       ),
     );
   }
 
-  Widget _buildGroupColorSection(AppLocalizations l10n) {
-    return SettingsSectionCard(
-      title: l10n.courseColorTitle,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  void _showSharedInfoHintSheet(AppLocalizations l10n) {
+    showFSheet<void>(
+      context: context,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      builder: (_) => AboutInfoSheetBody(
+        title: l10n.sharedInfoTitle,
+        items: [
+          l10n.sharedInfoSheetItemCourseName,
+          l10n.sharedInfoSheetItemShortName,
+          l10n.sharedInfoSheetItemSharedSync,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCompactColorPalette(AppLocalizations l10n) {
+    const swatchSize = 32.0;
+    const swatchSpacing = 8.0;
+    final theme = context.theme;
+    final selectionBorder = theme.colors.foreground;
+    final isCustomSelected = !_colors.contains(_selectedColor);
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
         children: [
-          _buildColorPalette(),
-          const SizedBox(height: 12),
-          FButton(
-            variant: FButtonVariant.secondary,
-            onPress: _showCustomColorPicker,
-            prefix: const Icon(Icons.palette_outlined, size: 18),
-            child: Text(l10n.customPaletteAction),
+          for (final color in _colors) ...[
+            _buildColorSwatch(
+              colorHex: color,
+              size: swatchSize,
+              isSelected: _selectedColor == color,
+              selectionBorder: selectionBorder,
+              onTap: () => setState(() => _selectedColor = color),
+            ),
+            const SizedBox(width: swatchSpacing),
+          ],
+          _buildColorSwatch(
+            colorHex: isCustomSelected ? _selectedColor : null,
+            size: swatchSize,
+            isSelected: isCustomSelected,
+            selectionBorder: selectionBorder,
+            onTap: _showCustomColorPicker,
+            icon: isCustomSelected
+                ? const Icon(Icons.check, size: 16, color: Colors.white)
+                : Icon(
+                    Icons.palette_outlined,
+                    size: 16,
+                    color: theme.colors.mutedForeground,
+                  ),
+            tooltip: l10n.customPaletteAction,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildColorPalette() {
-    final selectionBorder = context.theme.colors.foreground;
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _colors.map((color) {
-        final isSelected = color == _selectedColor;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedColor = color),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _parseColor(color),
-              borderRadius: BorderRadius.circular(8),
-              border: isSelected
-                  ? Border.all(color: selectionBorder, width: 3)
-                  : null,
-            ),
-            child: isSelected
-                ? const Icon(Icons.check, color: Colors.white)
-                : null,
+  Widget _buildColorSwatch({
+    required double size,
+    required bool isSelected,
+    required Color selectionBorder,
+    required VoidCallback onTap,
+    String? colorHex,
+    Widget? icon,
+    String? tooltip,
+  }) {
+    final theme = context.theme;
+    final swatch = GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: colorHex == null
+              ? theme.colors.secondary
+              : _parseColor(colorHex),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected ? selectionBorder : theme.colors.border,
+            width: isSelected ? 2 : 1,
           ),
-        );
-      }).toList(),
+        ),
+        child: icon == null && isSelected
+            ? const Icon(Icons.check, size: 16, color: Colors.white)
+            : Center(child: icon),
+      ),
     );
-  }
-
-  ({String startTime, String endTime}) _resolveEntrySectionTimes(
-    TimetableProvider provider,
-    TimetableSettings settings,
-    _ScheduleEntryData entry,
-  ) {
-    final scheme = _resolveEntryTimeScheme(provider, entry);
-    if (scheme != null &&
-        entry.startSection >= 1 &&
-        entry.endSection <= scheme.sections.length) {
-      return (
-        startTime: scheme.sections[entry.startSection - 1].startTime,
-        endTime: scheme.sections[entry.endSection - 1].endTime,
-      );
+    if (tooltip == null) {
+      return swatch;
     }
-    return (
-      startTime: settings.sectionAt(entry.startSection).startTime,
-      endTime: settings.sectionAt(entry.endSection).endTime,
-    );
+    return Tooltip(message: tooltip, child: swatch);
   }
 
   Map<String, int> _sectionSelectItems(
@@ -918,11 +637,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < _scheduleEntries.length; i++) ...[
-            if (i > 0) ...[
-              const SizedBox(height: 8),
-              Divider(height: 1, color: context.theme.colors.border),
-              const SizedBox(height: 8),
-            ],
+            if (i > 0) const SizedBox(height: 10),
             _buildScheduleEntryFields(provider, settings, i, l10n),
           ],
           if (_scheduleEntries.isNotEmpty) const SizedBox(height: 8),
@@ -959,108 +674,131 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       entry.weekSelectionMode,
       l10n,
     );
-    final times = _resolveEntrySectionTimes(provider, settings, entry);
-    final weekday = weekDays[entry.dayOfWeek - 1];
-    final theme = context.theme;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _withSpacing([
-        if (hasMultipleEntries)
+    final entryFields = _withSpacing([
+      _buildScheduleTimeRow(
+        weekDays: weekDays,
+        sectionNumbers: sectionNumbers,
+        entry: entry,
+        l10n: l10n,
+      ),
+      _buildCompactWeekSummaryRow(
+        label: l10n.scheduleEntryWeeksSectionTitle,
+        summary: entryWeekSummary,
+        onTap: () => _showEntryWeekPickerDialog(entry, availableWeeks, l10n),
+      ),
+      _buildResponsiveFieldPair(
+        spacing: 8,
+        leading: _buildCompactPickerField(
+          label: l10n.teacherLabel,
+          value: teacherText.isEmpty ? l10n.manualInputLabel : teacherText,
+          isPlaceholder: teacherText.isEmpty,
+          onPress: () => showCourseFieldPickerSheet(
+            context,
+            title: l10n.selectTeacherTitle,
+            suggestions: provider.uniqueTeachers,
+            controller: _entryTeacherControllers[index],
+            onConfirmed: () =>
+                entry.teacher = _entryTeacherControllers[index].text,
+          ),
+        ),
+        trailing: _buildCompactPickerField(
+          label: l10n.locationLabel,
+          value: locationText.isEmpty ? l10n.manualInputLabel : locationText,
+          isPlaceholder: locationText.isEmpty,
+          onPress: () => showCourseFieldPickerSheet(
+            context,
+            title: l10n.selectLocationTitle,
+            suggestions: provider.uniqueLocations,
+            controller: _entryLocationControllers[index],
+            onConfirmed: () =>
+                entry.location = _entryLocationControllers[index].text,
+          ),
+        ),
+      ),
+      _buildEntryTimeSchemeField(provider, index, l10n, compact: true),
+      if (hasMultipleEntries)
+        _buildCompactDeleteEntryRow(
+          l10n: l10n,
+          onTap: () => _removeScheduleEntry(index),
+        ),
+    ], spacing: 8);
+
+    if (!hasMultipleEntries) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: entryFields,
+      );
+    }
+
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final courseColor = parseHexColorOrFallback(
+      _selectedColor,
+      fallback: colors.primary,
+    );
+    final weekdayLabel =
+        weekDays[entry.dayOfWeek.clamp(1, weekDays.length) - 1];
+    final timePreview =
+        '$weekdayLabel · ${l10n.sectionRangeLabel(entry.startSection, entry.endSection)}';
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: colors.muted.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: courseColor.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                alignment: Alignment.center,
                 child: Text(
-                  l10n.weekdaySectionTimeSummary(
-                    weekday,
-                    entry.startSection,
-                    entry.endSection,
-                    times.startTime,
-                    times.endTime,
+                  '${index + 1}',
+                  style: typo.sm.copyWith(
+                    color: courseColor,
+                    fontWeight: FontWeight.w700,
+                    height: 1,
                   ),
-                  style: theme.typography.body.sm.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                tooltip: l10n.deleteScheduleEntryAction,
-                onPressed: () => _removeScheduleEntry(index),
-                icon: Icon(
-                  Icons.delete_outline_rounded,
-                  size: 18,
-                  color: theme.colors.destructive,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l10n.scheduleEntryTitle(index + 1),
+                      style: typo.sm.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      timePreview,
+                      style: typo.xs2.copyWith(
+                        color: colors.mutedForeground,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        _buildScheduleTimeRow(
-          weekDays: weekDays,
-          sectionNumbers: sectionNumbers,
-          entry: entry,
-          l10n: l10n,
-        ),
-        _buildCompactWeekSummaryRow(
-          label: l10n.scheduleEntryWeeksSectionTitle,
-          summary: entryWeekSummary,
-          onTap: () => _showEntryWeekPickerDialog(entry, availableWeeks, l10n),
-        ),
-        _buildResponsiveFieldPair(
-          spacing: 8,
-          leading: _buildCompactPickerField(
-            label: l10n.teacherLabel,
-            value: teacherText.isEmpty ? l10n.manualInputLabel : teacherText,
-            isPlaceholder: teacherText.isEmpty,
-            onPress: () => _showPickerSheet(
-              title: l10n.selectTeacherTitle,
-              suggestions: provider.uniqueTeachers,
-              controller: _entryTeacherControllers[index],
-              onEntrySync: () =>
-                  entry.teacher = _entryTeacherControllers[index].text,
-            ),
-          ),
-          trailing: _buildCompactPickerField(
-            label: l10n.locationLabel,
-            value: locationText.isEmpty ? l10n.manualInputLabel : locationText,
-            isPlaceholder: locationText.isEmpty,
-            onPress: () => _showPickerSheet(
-              title: l10n.selectLocationTitle,
-              suggestions: provider.uniqueLocations,
-              controller: _entryLocationControllers[index],
-              onEntrySync: () =>
-                  entry.location = _entryLocationControllers[index].text,
-            ),
-          ),
-        ),
-        if (entry.timeSchemeIdOverride != null)
-          _buildEntryTimeSchemeField(provider, index, l10n, compact: true)
-        else
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FButton(
-              variant: FButtonVariant.ghost,
-              onPress: () => _showTimeSchemePickerSheet(
-                currentValue: entry.timeSchemeIdOverride,
-                onSelected: (value) {
-                  setState(() {
-                    entry.timeSchemeIdOverride = value;
-                  });
-                },
-              ),
-              child: Text(
-                l10n.scheduleEntryTimeSchemeSectionTitle,
-                style: theme.typography.body.xs2.copyWith(
-                  color: theme.colors.mutedForeground,
-                ),
-              ),
-            ),
-          ),
-      ], spacing: 8),
+          const SizedBox(height: 12),
+          ...entryFields,
+        ],
+      ),
     );
   }
 
@@ -1181,9 +919,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       TextSpan(
                         text: value,
                         style: TextStyle(
-                          fontWeight: isPlaceholder
-                              ? FontWeight.normal
-                              : FontWeight.w600,
                           color: isPlaceholder
                               ? theme.colors.mutedForeground
                               : null,
@@ -1199,6 +934,44 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 Icons.chevron_right_rounded,
                 size: 16,
                 color: theme.colors.mutedForeground,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompactDeleteEntryRow({
+    required AppLocalizations l10n,
+    required VoidCallback onTap,
+  }) {
+    final theme = context.theme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colors.border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.delete_outline_rounded,
+                size: 16,
+                color: theme.colors.destructive,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.deleteScheduleEntryAction,
+                style: theme.typography.body.sm.copyWith(
+                  color: theme.colors.destructive,
+                ),
               ),
             ],
           ),
@@ -1236,10 +1009,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         text: '$label · ',
                         style: TextStyle(color: theme.colors.mutedForeground),
                       ),
-                      TextSpan(
-                        text: summary,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
+                      TextSpan(text: summary),
                     ],
                   ),
                   maxLines: 1,
@@ -1274,14 +1044,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   .firstOrNull
                   ?.name ??
               l10n.followCurrentTimetableWithName(followLabel);
-    final onPress = () => _showTimeSchemePickerSheet(
-      currentValue: entry.timeSchemeIdOverride,
-      onSelected: (value) {
-        setState(() {
-          entry.timeSchemeIdOverride = value;
+    final onPress = () =>
+        showTimeSchemePickerSheet(
+          context,
+          currentValue: entry.timeSchemeIdOverride,
+          onSelected: (value) {
+            setState(() {
+              entry.timeSchemeIdOverride = value;
+            });
+          },
+        ).whenComplete(() {
+          if (mounted) setState(() {});
         });
-      },
-    );
     if (compact) {
       return _buildCompactPickerField(
         label: l10n.timeSchemeLabel,
@@ -1369,8 +1143,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
 
     await context.read<TimetableProvider>().deleteCourseGroup(name);
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(content: Text(l10n.courseDeleted)));
+    showAppToast(
+      context,
+      message: l10n.courseDeleted,
+      kind: AppToastKind.success,
+    );
     Navigator.pop(context);
   }
 
@@ -1418,7 +1195,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Center(
                       child: Text(
-                        l10n.courseNameHelper,
+                        l10n.noTemplateCoursesHint,
                         style: Theme.of(sheetContext).textTheme.bodySmall,
                       ),
                     ),
@@ -1503,118 +1280,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   Future<void> _showCustomColorPicker() async {
-    final l10n = AppLocalizations.of(context)!;
-    var selected = _parseColor(_selectedColor);
-    final hexController = TextEditingController(text: _selectedColor);
-
-    final result = await showFDialog<String>(
-      context: context,
-      builder: (context, style, animation) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            void updateFromColor(Color color) {
-              selected = color;
-              hexController.text = _toHex(color);
-            }
-
-            void updateFromHex(String value) {
-              final normalized = value.trim().toUpperCase();
-              final match = RegExp(r'^#?[0-9A-F]{6}$').firstMatch(normalized);
-              if (match == null) {
-                return;
-              }
-              final withHash = normalized.startsWith('#')
-                  ? normalized
-                  : '#$normalized';
-              updateFromColor(_parseColor(withHash));
-            }
-
-            final hsv = HSVColor.fromColor(selected);
-            return FDialog(
-              title: Text(l10n.colorPaletteTitle),
-              body: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: selected,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: hexController,
-                      decoration: InputDecoration(
-                        labelText: l10n.colorHexLabel,
-                        hintText: '#2563EB',
-                        border: const OutlineInputBorder(),
-                      ),
-                      onChanged: (value) {
-                        setDialogState(() {
-                          updateFromHex(value);
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Text(l10n.hueLabel(hsv.hue.round())),
-                    Slider(
-                      value: hsv.hue,
-                      min: 0,
-                      max: 360,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          updateFromColor(hsv.withHue(value).toColor());
-                        });
-                      },
-                    ),
-                    Text(l10n.saturationLabel((hsv.saturation * 100).round())),
-                    Slider(
-                      value: hsv.saturation,
-                      min: 0,
-                      max: 1,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          updateFromColor(hsv.withSaturation(value).toColor());
-                        });
-                      },
-                    ),
-                    Text(l10n.brightnessLabel((hsv.value * 100).round())),
-                    Slider(
-                      value: hsv.value,
-                      min: 0,
-                      max: 1,
-                      onChanged: (value) {
-                        setDialogState(() {
-                          updateFromColor(hsv.withValue(value).toColor());
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                FButton(
-                  variant: FButtonVariant.ghost,
-                  onPress: () => Navigator.pop(context),
-                  child: Text(l10n.cancelAction),
-                ),
-                FButton(
-                  variant: FButtonVariant.primary,
-                  onPress: () => Navigator.pop(context, _toHex(selected)),
-                  child: Text(l10n.useThisColor),
-                ),
-              ],
-            );
-          },
-        );
-      },
+    final result = await showCourseColorPickerSheet(
+      context,
+      initialColorHex: _selectedColor,
     );
-
-    hexController.dispose();
 
     if (result == null) {
       return;
@@ -1692,6 +1361,41 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   // ---------------------------------------------------------------------------
   // Week summary row (compact)
   // ---------------------------------------------------------------------------
+
+  Widget _buildWeekGridTile({
+    required int week,
+    required bool isSelected,
+    required VoidCallback onPress,
+  }) {
+    final theme = context.theme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: theme.style.borderRadius.md,
+        onTap: onPress,
+        child: Ink(
+          decoration: BoxDecoration(
+            color: isSelected ? theme.colors.primary : theme.colors.secondary,
+            borderRadius: theme.style.borderRadius.md,
+            border: Border.all(
+              color: isSelected ? theme.colors.primary : theme.colors.border,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              '$week',
+              style: theme.typography.body.sm.copyWith(
+                fontWeight: FontWeight.w600,
+                color: isSelected
+                    ? theme.colors.primaryForeground
+                    : theme.colors.secondaryForeground,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildWeekModeTileGroup({
     required _WeekSelectionMode tempMode,
@@ -1913,15 +1617,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                       : width < 420
                                       ? 5
                                       : 6;
-                                  final availableWidth =
-                                      width - (crossAxisCount - 1) * 8;
-                                  final tileWidth =
-                                      availableWidth / crossAxisCount;
-                                  final targetMinHeight = width < 340
-                                      ? 46.0
-                                      : 44.0;
-                                  final childAspectRatio =
-                                      tileWidth / targetMinHeight;
                                   return GridView.builder(
                                     shrinkWrap: true,
                                     physics:
@@ -1932,16 +1627,15 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                           crossAxisCount: crossAxisCount,
                                           mainAxisSpacing: 8,
                                           crossAxisSpacing: 8,
-                                          childAspectRatio: childAspectRatio,
+                                          mainAxisExtent: 44,
                                         ),
                                     itemBuilder: (context, i) {
                                       final week = availableWeeks[i];
                                       final isSelected = tempCustomWeeks
                                           .contains(week);
-                                      return FButton(
-                                        variant: isSelected
-                                            ? FButtonVariant.primary
-                                            : FButtonVariant.secondary,
+                                      return _buildWeekGridTile(
+                                        week: week,
+                                        isSelected: isSelected,
                                         onPress: () {
                                           setDialogState(() {
                                             if (isSelected) {
@@ -1953,17 +1647,6 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                             }
                                           });
                                         },
-                                        child: Text(
-                                          '$week',
-                                          style: context
-                                              .theme
-                                              .typography
-                                              .body
-                                              .sm
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
                                       );
                                     },
                                   );
@@ -2023,7 +1706,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                           children: [
                             Expanded(
                               child: FButton(
-                                variant: FButtonVariant.ghost,
+                                variant: FButtonVariant.secondary,
                                 onPress: () => Navigator.pop(context, false),
                                 child: Text(l10n.cancelAction),
                               ),
@@ -2101,24 +1784,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         endSection: entry.endSection,
       );
       if (validationMessage != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '${l10n.scheduleEntryTitle(i + 1)}: $validationMessage',
-            ),
-          ),
+        showAppToast(
+          context,
+          message: '${l10n.scheduleEntryTitle(i + 1)}: $validationMessage',
+          kind: AppToastKind.warning,
         );
         return;
       }
 
       if (entry.weekSelectionMode == _WeekSelectionMode.custom &&
           entry.selectedCustomWeeks.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        showAppToast(
+          context,
+          message:
               '${l10n.scheduleEntryTitle(i + 1)}: ${l10n.selectAtLeastOneWeek}',
-            ),
-          ),
+          kind: AppToastKind.warning,
         );
         return;
       }
@@ -2166,22 +1846,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       }
     } on ArgumentError catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message?.toString() ?? l10n.saveFailed)),
+      showAppToast(
+        context,
+        message: error.message?.toString() ?? l10n.saveFailed,
+        kind: AppToastKind.error,
       );
       return;
     }
 
     if (!mounted) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(
-          widget.courseGroup == null && widget.course == null
-              ? l10n.courseAddedSuccess
-              : l10n.courseUpdatedSuccess,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: widget.courseGroup == null && widget.course == null
+          ? l10n.courseAddedSuccess
+          : l10n.courseUpdatedSuccess,
+      kind: AppToastKind.success,
     );
     Navigator.pop(context);
   }

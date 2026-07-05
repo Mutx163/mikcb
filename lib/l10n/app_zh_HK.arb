@@ -1087,15 +1087,20 @@
   "singleLessonHint": "適合補課、臨時加課，課程只會落在一個周次。",
   "recurringLessonHint": "適合同一時間連續上很多周的常規課程。",
   "sharedInfoTitle": "共享資訊",
-  "sharedInfoHint": "課程名、簡稱、老師、課程簡介、課程性質和顏色會同步到同名課程的其他排課。",
+  "sharedInfoHint": "查看共享欄位說明",
+  "sharedInfoSheetItemCourseName": "課程名稱：課程唯一標識。名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄。",
+  "sharedInfoSheetItemShortName": "課程簡稱：用於超級島等場景的簡短展示，需手動填寫，系統不會自動生成。啟用「優先顯示課程簡稱」後生效；建議控制在 3 個漢字以內。",
+  "sharedInfoSheetItemSharedSync": "共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄。",
   "reuseExistingCourseLabel": "沿用已有課程",
   "reuseExistingCourseHelper": "選一個已有課程，自動帶入課程名、老師和其他共享資訊",
   "manualInputLabel": "手動填寫",
   "noTemplateCoursesHint": "目前課表裡還沒有有現成課程，先手動錄入一門，後面臨時加課就能直接選了。",
   "courseNameLabel": "課程名稱",
-  "courseNameHelper": "超級島建議 3 個字以內，顯示效果最好",
+  "courseNameHelper": "作為課程唯一標識；名稱相同的多條排課將歸為同一課程。請填寫完整名稱，請勿為介面顯示而縮寫。",
   "pleaseEnterCourseName": "請輸入課程名稱",
-  "courseShortNameOptional": "課程簡稱 (可選)",
+  "courseShortNameOptional": "課程簡稱",
+  "courseShortNameHelper": "建議填寫，用於超級島等場景的簡短展示。簡稱不會自動生成；啟用「優先顯示課程簡稱」後生效。建議控制在 3 個漢字以內。",
+  "courseShortNameAutoFillAction": "取前兩字",
   "teacherLabel": "授課教師",
   "courseNatureLabel": "課程性質",
   "courseDescriptionOptional": "課程簡介 (可選)",
@@ -2667,6 +2672,20 @@
   "suspendedStatusLabel": "停課",
   "courseActionSuspend": "停課",
   "courseActionUnsuspend": "恢復上課",
+  "courseActionEditPrimary": "編輯課程",
+  "courseActionRescheduleSecondary": "調課",
+  "courseActionSuspendSecondary": "停課",
+  "courseActionDeleteSecondary": "刪除",
+  "courseActionSheetNotice": "您正在查看第 {week} 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課。",
+  "@courseActionSheetNotice": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionOddWeekShort": "單周",
+  "courseActionEvenWeekShort": "雙周",
   "suspendSheetTitle": "停課",
   "suspendSheetSubtitle": "選擇停課範圍",
   "suspendThisWeek": "本週停課",
@@ -2840,6 +2859,15 @@
   },
   "themeRename": "重新命名",
   "themeDuplicate": "複製",
+  "themeDuplicateCopyName": "{name} 副本",
+  "@themeDuplicateCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeMoreActions": "更多操作",
   "courseNatureRequired": "必修",
   "courseNatureElective": "選修",
   "homeMenuStatisticsTitle": "課程統計",

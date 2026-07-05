@@ -1088,15 +1088,20 @@
   "singleLessonHint": "振替授業や臨時追加に最適。授業は1つの週次にのみ表示。",
   "recurringLessonHint": "同じ時間に毎週連続する通常授業に最適。",
   "sharedInfoTitle": "共有情報",
-  "sharedInfoHint": "授業名、略称、教師、授業概要、授業性質とカラーは同名授業の他の排課に同期。",
+  "sharedInfoHint": "共有フィールドの説明を表示",
+  "sharedInfoSheetItemCourseName": "授業名：授業の一意識別子。同名の複数排課は同一授業として扱われます。名称を変更すると別授業として記録されます。",
+  "sharedInfoSheetItemShortName": "授業略称：スーパーアイランド等での簡略表示に使用。手動入力が必要で、自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。",
+  "sharedInfoSheetItemSharedSync": "共有同期：略称、色、性質、概要等は同名授業の他排課へ同期されます。",
   "reuseExistingCourseLabel": "既存授業を流用",
   "reuseExistingCourseHelper": "既存授業を選択すると、授業名、教師とその他の共有情報が自動入力",
   "manualInputLabel": "手動入力",
   "noTemplateCoursesHint": "現在の時間割に授業がありません。まず1つ手動で登録すると、以降の臨時追加で直接選択可能。",
   "courseNameLabel": "授業名",
-  "courseNameHelper": "スーパーアイランドは3文字以内を推奨。表示が最も安定。",
+  "courseNameHelper": "授業の一意識別子。同名の複数排課は同一授業に統合されます。正式名称を入力し、表示目的での略称は避けてください。",
   "pleaseEnterCourseName": "授業名を入力してください",
-  "courseShortNameOptional": "授業略称（任意）",
+  "courseShortNameOptional": "授業略称",
+  "courseShortNameHelper": "スーパーアイランド等での簡略表示に推奨。略称は自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。",
+  "courseShortNameAutoFillAction": "先頭2文字",
   "teacherLabel": "担当教師",
   "courseNatureLabel": "授業性質",
   "courseDescriptionOptional": "授業概要（任意）",
@@ -2663,6 +2668,20 @@
   "suspendedStatusLabel": "授業停止",
   "courseActionSuspend": "授業停止",
   "courseActionUnsuspend": "復旧",
+  "courseActionEditPrimary": "授業を編集",
+  "courseActionRescheduleSecondary": "時間変更",
+  "courseActionSuspendSecondary": "休講",
+  "courseActionDeleteSecondary": "削除",
+  "courseActionSheetNotice": "第{week}週を表示中です。試験や重複が発生した場合は、下からすぐに変更または休講できます。",
+  "@courseActionSheetNotice": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionOddWeekShort": "奇数週",
+  "courseActionEvenWeekShort": "偶数週",
   "suspendSheetTitle": "授業停止",
   "suspendSheetSubtitle": "停止範囲を選択",
   "suspendThisWeek": "今週停止",
@@ -2840,6 +2859,15 @@
   },
   "themeRename": "名前を変更",
   "themeDuplicate": "複製",
+  "themeDuplicateCopyName": "{name} のコピー",
+  "@themeDuplicateCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeMoreActions": "その他の操作",
   "courseNatureRequired": "必修",
   "courseNatureElective": "選択",
   "homeMenuStatisticsTitle": "授業統計",

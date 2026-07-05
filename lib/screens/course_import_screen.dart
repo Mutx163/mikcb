@@ -30,6 +30,7 @@ import '../services/spreadsheet_import_service.dart';
 import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
+import '../utils/app_toast.dart';
 import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
 import '../widgets/warehouse_playback_overlay.dart';
@@ -296,9 +297,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       final bytes = result.files.single.bytes;
       if (bytes == null) {
         if (mounted) {
-          ScaffoldMessenger.of(
+          showAppToast(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+            message: l10n.importFileReadFailed,
+            kind: AppToastKind.error,
+          );
         }
         return;
       }
@@ -350,9 +353,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     final parsedResult = _icsImportService.parseWakeUpSchedule(icsContent);
     if (parsedResult.courses.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
+          message: l10n.importNoCoursesRecognized,
+          kind: AppToastKind.warning,
+        );
       }
       return;
     }
@@ -396,16 +401,14 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       source: 'ics',
     );
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          importedCount > 0
-              ? (replaceExisting
-                    ? l10n.importOverwriteCount(importedCount)
-                    : l10n.importUpdatedCount(importedCount))
-              : l10n.importNoCourseChanges,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: importedCount > 0
+          ? (replaceExisting
+                ? l10n.importOverwriteCount(importedCount)
+                : l10n.importUpdatedCount(importedCount))
+          : l10n.importNoCourseChanges,
+      kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
     );
     if (importedCount > 0) Navigator.of(context).pop(true);
   }
@@ -509,9 +512,11 @@ class _SpreadsheetCourseImportScreenState
       ], subject: l10n.downloadSpreadsheetTemplateAction);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+          message: l10n.importFileReadFailed,
+          kind: AppToastKind.error,
+        );
       }
     } finally {
       if (mounted) {
@@ -539,9 +544,11 @@ class _SpreadsheetCourseImportScreenState
       final bytes = file.bytes;
       if (bytes == null) {
         if (mounted) {
-          ScaffoldMessenger.of(
+          showAppToast(
             context,
-          ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+            message: l10n.importFileReadFailed,
+            kind: AppToastKind.error,
+          );
         }
         return;
       }
@@ -572,29 +579,31 @@ class _SpreadsheetCourseImportScreenState
       );
     } on FormatException catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            error.message.contains('未识别')
-                ? l10n.spreadsheetFormatUnrecognized
-                : error.message,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: error.message.contains('未识别')
+            ? l10n.spreadsheetFormatUnrecognized
+            : error.message,
+        kind: AppToastKind.error,
       );
       return;
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.importFileReadFailed)));
+        message: l10n.importFileReadFailed,
+        kind: AppToastKind.error,
+      );
       return;
     }
 
     if (parsedResult.courses.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importNoCoursesRecognized)));
+          message: l10n.importNoCoursesRecognized,
+          kind: AppToastKind.warning,
+        );
       }
       return;
     }
@@ -708,16 +717,14 @@ Future<void> _completeParsedCourseImport({
   final warningSuffix = warningCount == 0
       ? ''
       : l10n.aiWarningExtraSuffix(warningCount);
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        importedCount > 0
-            ? (replaceExisting
-                  ? l10n.importOverwriteCount(importedCount) + warningSuffix
-                  : l10n.importUpdatedCount(importedCount) + warningSuffix)
-            : l10n.importNoCourseChanges,
-      ),
-    ),
+  showAppToast(
+    context,
+    message: importedCount > 0
+        ? (replaceExisting
+              ? l10n.importOverwriteCount(importedCount) + warningSuffix
+              : l10n.importUpdatedCount(importedCount) + warningSuffix)
+        : l10n.importNoCourseChanges,
+    kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
   );
   if (importedCount > 0) {
     Navigator.of(context).pop(true);
@@ -1151,9 +1158,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.promptCopiedHint)));
+      message: l10n.promptCopiedHint,
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _pasteFromClipboard() async {
@@ -1164,9 +1173,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.clipboardNoText)));
+        message: l10n.clipboardNoText,
+        kind: AppToastKind.warning,
+      );
       return;
     }
     _aiController.text = text;
@@ -1325,9 +1336,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = message;
         });
         if (showError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          showAppToast(context, message: message);
         }
       }
       return null;
@@ -1352,9 +1361,11 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = error.message;
         });
         if (showError) {
-          ScaffoldMessenger.of(
+          showAppToast(
             context,
-          ).showSnackBar(SnackBar(content: Text(error.message)));
+            message: error.message,
+            kind: AppToastKind.error,
+          );
         }
       }
       return null;
@@ -1366,9 +1377,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           _aiParseError = message;
         });
         if (showError) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text(message)));
+          showAppToast(context, message: message);
         }
       }
       return null;
@@ -1445,16 +1454,14 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       final warningSuffix = result.warnings.isEmpty
           ? ''
           : l10n.aiWarningExtraSuffix(result.warnings.length);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            importedCount > 0
-                ? (replaceExisting
-                      ? l10n.importOverwriteCount(importedCount) + warningSuffix
-                      : l10n.importUpdatedCount(importedCount) + warningSuffix)
-                : l10n.importNoCourseChanges,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: importedCount > 0
+            ? (replaceExisting
+                  ? l10n.importOverwriteCount(importedCount) + warningSuffix
+                  : l10n.importUpdatedCount(importedCount) + warningSuffix)
+            : l10n.importNoCourseChanges,
+        kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
       );
       if (importedCount > 0) {
         Navigator.of(context).pop(true);
@@ -1636,11 +1643,7 @@ class _WarehouseCourseImportScreenState
   }
 
   void _showLightTip(BuildContext context, String message) {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.clearSnackBars();
-    messenger.showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
-    );
+    showAppLightTip(context, message: message);
   }
 
   Future<void> _openMissingSchoolFeedbackGuide() async {
@@ -3608,12 +3611,13 @@ class _WarehouseAdapterWebLoginScreenState
                   _clearRememberedLogin();
                   break;
                 case 'copy':
-                  final messenger = ScaffoldMessenger.of(context);
                   final url = _currentUrl ?? widget.initialUrl;
                   await Clipboard.setData(ClipboardData(text: url));
                   if (context.mounted) {
-                    messenger.showSnackBar(
-                      SnackBar(content: Text(l10n.copiedCurrentAddress)),
+                    showAppToast(
+                      context,
+                      message: l10n.copiedCurrentAddress,
+                      kind: AppToastKind.success,
                     );
                   }
                   break;
@@ -6284,9 +6288,7 @@ Future<bool> _ensureSectionCapacity(
   );
   if (ensureMessage != null) {
     if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(ensureMessage)));
+      showAppLightTip(context, message: ensureMessage);
     }
     return false;
   }
@@ -6382,57 +6384,5 @@ Future<String?> _promptWarehouseImportUrl(
 }
 
 void _showLightTip(BuildContext context, String message) {
-  if (message.trim().isEmpty) {
-    return;
-  }
-  final overlay = Overlay.of(context, rootOverlay: true);
-  final theme = Theme.of(context);
-  final colorScheme = theme.colorScheme;
-  late OverlayEntry entry;
-  entry = OverlayEntry(
-    builder: (context) => Positioned(
-      top: MediaQuery.of(context).padding.top + 16,
-      left: 16,
-      right: 16,
-      child: IgnorePointer(
-        child: Material(
-          color: Colors.transparent,
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.inverseSurface.withValues(alpha: 0.96),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onInverseSurface,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-  overlay.insert(entry);
-  Future<void>.delayed(const Duration(milliseconds: 1500)).then((_) {
-    entry.remove();
-  });
+  showAppLightTip(context, message: message);
 }

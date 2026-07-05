@@ -44,7 +44,7 @@ class CourseFieldPickerTile extends StatelessWidget {
   }
 }
 
-/// Picker sheet with search + history chips, matching add-course flow.
+/// Picker sheet with search + history chips, using Forui bottom sheet styling.
 Future<void> showCourseFieldPickerSheet(
   BuildContext context, {
   required String title,
@@ -52,122 +52,249 @@ Future<void> showCourseFieldPickerSheet(
   required TextEditingController controller,
   VoidCallback? onConfirmed,
 }) {
-  final l10n = AppLocalizations.of(context)!;
   final originalText = controller.text;
   var confirmed = false;
 
-  return showModalBottomSheet<void>(
+  void markConfirmed() {
+    confirmed = true;
+    onConfirmed?.call();
+  }
+
+  return showFSheet<void>(
     context: context,
-    isScrollControlled: true,
+    side: FLayout.btt,
     useSafeArea: true,
-    showDragHandle: true,
-    builder: (sheetContext) {
-      return ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) {
-          final filtered = controller.text.isEmpty
-              ? suggestions
-              : suggestions.where((s) => s.contains(controller.text)).toList();
-          final viewInsets = MediaQuery.viewInsetsOf(sheetContext);
-          final maxHeight =
-              MediaQuery.sizeOf(sheetContext).height * 0.88 - viewInsets.top;
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              top: 8,
-              bottom: viewInsets.bottom + 16,
-            ),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: context.theme.typography.body.lg.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    FTextField(
-                      control: FTextFieldControl.managed(
-                        controller: controller,
-                      ),
-                      hint: l10n.manualInputLabel,
-                      prefixBuilder: (context, style, variants) =>
-                          const Icon(Icons.search),
-                      suffixBuilder: controller.text.isNotEmpty
-                          ? (context, style, variants) => IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: controller.clear,
-                            )
-                          : null,
-                      onSubmit: (_) {
-                        confirmed = true;
-                        onConfirmed?.call();
-                        Navigator.pop(sheetContext);
-                      },
-                    ),
-                    if (filtered.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.historyRecordsLabel,
-                        style: context.theme.typography.body.xs2.copyWith(
-                          color: context.theme.colors.mutedForeground,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: filtered.map((s) {
-                          return ActionChip(
-                            label: Text(s),
-                            onPressed: () {
-                              controller.text = s;
-                              confirmed = true;
-                              onConfirmed?.call();
-                              Navigator.pop(sheetContext);
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ] else if (suggestions.isNotEmpty &&
-                        controller.text.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Text(
-                        l10n.noHistoryRecords,
-                        style: context.theme.typography.body.xs2.copyWith(
-                          color: context.theme.colors.mutedForeground,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FButton(
-                        onPress: () {
-                          confirmed = true;
-                          onConfirmed?.call();
-                          Navigator.pop(sheetContext);
-                        },
-                        child: Text(l10n.saveAction),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    },
+    draggable: true,
+    mainAxisMaxRatio: null,
+    builder: (sheetContext) => _CourseFieldPickerSheetBody(
+      title: title,
+      suggestions: suggestions,
+      controller: controller,
+      onConfirmed: markConfirmed,
+    ),
   ).whenComplete(() {
     if (!confirmed) {
       controller.text = originalText;
     }
   });
+}
+
+class _CourseFieldPickerSheetBody extends StatelessWidget {
+  const _CourseFieldPickerSheetBody({
+    required this.title,
+    required this.suggestions,
+    required this.controller,
+    required this.onConfirmed,
+  });
+
+  final String title;
+  final List<String> suggestions;
+  final TextEditingController controller;
+  final VoidCallback onConfirmed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) {
+        final query = controller.text.trim();
+        final filtered = query.isEmpty
+            ? suggestions
+            : suggestions.where((s) => s.contains(query)).toList();
+
+        return PickerSheetScaffold(
+          actions: Row(
+            children: [
+              Expanded(
+                child: FButton(
+                  variant: FButtonVariant.secondary,
+                  onPress: () => Navigator.of(context).pop(),
+                  child: Text(l10n.cancelAction),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: FButton(
+                  onPress: () {
+                    onConfirmed();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(l10n.saveAction),
+                ),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: context.theme.typography.body.lg.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+              FTextField(
+                control: FTextFieldControl.managed(controller: controller),
+                hint: l10n.manualInputLabel,
+                prefixBuilder: (context, style, variants) =>
+                    const Icon(Icons.search),
+                suffixBuilder: controller.text.isNotEmpty
+                    ? (context, style, variants) => IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: controller.clear,
+                      )
+                    : null,
+                onSubmit: (_) {
+                  onConfirmed();
+                  Navigator.of(context).pop();
+                },
+              ),
+              if (filtered.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  l10n.historyRecordsLabel,
+                  style: context.theme.typography.body.xs2.copyWith(
+                    color: context.theme.colors.mutedForeground,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final suggestion in filtered)
+                      _HistorySuggestionChip(
+                        label: suggestion,
+                        selected: query == suggestion,
+                        onSelected: () {
+                          controller.text = suggestion;
+                          onConfirmed();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                  ],
+                ),
+              ] else if (suggestions.isNotEmpty && query.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  l10n.noHistoryRecords,
+                  style: context.theme.typography.body.xs2.copyWith(
+                    color: context.theme.colors.mutedForeground,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HistorySuggestionChip extends StatelessWidget {
+  const _HistorySuggestionChip({
+    required this.label,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final colorScheme = Theme.of(context).colorScheme;
+    final highlight = selected ? colorScheme.primary : colors.foreground;
+
+    return Material(
+      type: MaterialType.transparency,
+      child: InkWell(
+        onTap: onSelected,
+        borderRadius: BorderRadius.circular(999),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected
+                ? highlight.withValues(alpha: 0.14)
+                : colors.muted.withValues(alpha: 0.45),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected
+                  ? highlight.withValues(alpha: 0.45)
+                  : colors.border,
+            ),
+          ),
+          child: Text(
+            label,
+            style: typo.xs2.copyWith(
+              color: highlight,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared bottom-sheet scaffold: scrollable body + pinned footer actions.
+class PickerSheetScaffold extends StatelessWidget {
+  const PickerSheetScaffold({
+    super.key,
+    required this.child,
+    required this.actions,
+  });
+
+  final Widget child;
+  final Widget actions;
+
+  static const _footerHeight = 48.0;
+  static const _footerGap = 12.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
+
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      decoration: BoxDecoration(
+        color: colors.background,
+        border: Border(top: BorderSide(color: colors.border)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+                child: Stack(
+                  children: [
+                    SingleChildScrollView(
+                      padding: const EdgeInsets.only(
+                        bottom: _footerHeight + _footerGap,
+                      ),
+                      child: child,
+                    ),
+                    Positioned(left: 0, right: 0, bottom: 0, child: actions),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
 }

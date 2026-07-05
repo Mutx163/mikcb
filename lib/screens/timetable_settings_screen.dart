@@ -19,8 +19,11 @@ import '../utils/locale_utils.dart';
 import '../services/home_widget_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/settings_section_widgets.dart';
+import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
@@ -353,9 +356,7 @@ class TimetableSettingsScreen extends StatelessWidget {
     if (!context.mounted || message == null) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppToast(context, message: message);
   }
 
   Future<void> _syncCurrentWeek(BuildContext context) async {
@@ -365,53 +366,19 @@ class TimetableSettingsScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.currentWeekBullet(provider.currentWeek))),
+    showAppToast(
+      context,
+      message: l10n.currentWeekBullet(provider.currentWeek),
+      kind: AppToastKind.success,
     );
   }
 
   Future<void> _pickSemesterWeekCount(BuildContext context) async {
     final provider = context.read<TimetableProvider>();
-    final l10n = AppLocalizations.of(context)!;
     final currentWeekCount = provider.settings.semesterWeekCount;
-    final selected = await showModalBottomSheet<int>(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.selectSemesterWeekCountTitle,
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    Text(l10n.selectSemesterWeekCountSubtitle),
-                  ],
-                ),
-              ),
-              ...List.generate(30, (index) {
-                final weekCount = index + 1;
-                return FTile(
-                  title: Text(l10n.semesterWeekCountAction(weekCount)),
-                  suffix: weekCount == currentWeekCount
-                      ? const Icon(Icons.check_rounded)
-                      : null,
-                  onPress: () => Navigator.pop(context, weekCount),
-                );
-              }),
-            ],
-          ),
-        );
-      },
+    final selected = await showSemesterWeekCountPickerSheet(
+      context,
+      currentValue: currentWeekCount,
     );
 
     if (selected == null || !context.mounted || selected == currentWeekCount) {
@@ -425,9 +392,7 @@ class TimetableSettingsScreen extends StatelessWidget {
       if (!context.mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
 
@@ -874,9 +839,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       setState(() {
         _draft = provider.settings;
       });
@@ -1023,49 +986,20 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
 
                 if (checkpointName == null) return const SizedBox.shrink();
 
-                return FCard.raw(
-                  child: ColoredBox(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Row(
-                        children: [
-                          Icon(
-                            hasModifications
-                                ? Icons.edit_note
-                                : Icons.check_circle_outline,
-                            color: hasModifications
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outline,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.themeCurrentTheme,
-                                  style: Theme.of(context).textTheme.labelSmall,
-                                ),
-                                Text(
-                                  hasModifications
-                                      ? l10n.themeBasedOnModified(
-                                          checkpointName,
-                                        )
-                                      : checkpointName,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ),
-                          if (hasModifications) ...[
+                return SettingsSectionCard(
+                  title: l10n.themeCurrentTheme,
+                  subtitle: hasModifications
+                      ? l10n.themeBasedOnModified(checkpointName)
+                      : checkpointName,
+                  plainTitle: true,
+                  child: hasModifications
+                      ? Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
                             FButton(
-                              variant: FButtonVariant.ghost,
+                              variant: FButtonVariant.secondary,
                               onPress: () {
-                                // 重置为检查点
                                 if (settings.themeCheckpointConfig != null) {
                                   _applyThemeWithUndo(
                                     context,
@@ -1074,77 +1008,46 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                                   );
                                 }
                               },
+                              prefix: const Icon(
+                                Icons.restart_alt_rounded,
+                                size: 18,
+                              ),
                               child: Text(l10n.themeResetToPreset),
                             ),
-                            const SizedBox(width: 8),
                             FButton(
                               variant: FButtonVariant.secondary,
                               onPress: () => _showSaveThemeDialog(context),
+                              prefix: const Icon(Icons.save_outlined, size: 18),
                               child: Text(l10n.themeSaveCurrent),
                             ),
                           ],
-                        ],
-                      ),
-                    ),
-                  ),
+                        )
+                      : const SizedBox.shrink(),
                 );
               },
             ),
             const SizedBox(height: 12),
             // 导入导出 + 保存
-            FCard.raw(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.themeManageTitle,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.themeManageSubtitle,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: FButton(
-                            variant: FButtonVariant.outline,
-                            onPress: () => _exportTheme(context),
-                            prefix: const Icon(Icons.upload_file),
-                            child: Text(l10n.themeExport),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FButton(
-                            variant: FButtonVariant.primary,
-                            onPress: () => _importTheme(context),
-                            prefix: const Icon(Icons.download),
-                            child: Text(l10n.themeImport),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FButton(
-                        variant: FButtonVariant.outline,
-                        onPress: () => _showSaveThemeDialog(context),
-                        prefix: const Icon(Icons.save),
-                        child: Text(l10n.themeSaveCurrent),
-                      ),
-                    ),
-                  ],
+            FTileGroup(
+              label: Text(l10n.themeManageSubtitle),
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                FTile(
+                  prefix: const Icon(Icons.ios_share_outlined),
+                  title: Text(l10n.themeExport),
+                  onPress: () => _exportTheme(context),
                 ),
-              ),
+                FTile(
+                  prefix: const Icon(Icons.download_outlined),
+                  title: Text(l10n.themeImport),
+                  onPress: () => _importTheme(context),
+                ),
+                FTile(
+                  prefix: const Icon(Icons.bookmark_add_outlined),
+                  title: Text(l10n.themeSaveCurrent),
+                  onPress: () => _showSaveThemeDialog(context),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             // 统一主题列表（预设 + 保存/导入的）
@@ -1164,8 +1067,9 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                             ? Icon(
                                 Icons.check_rounded,
                                 color: Theme.of(context).colorScheme.primary,
+                                size: 20,
                               )
-                            : const Icon(Icons.chevron_right_rounded),
+                            : null,
                         onPress: () => _applyForuiTheme(context, theme),
                       ),
                   ],
@@ -1177,84 +1081,57 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
               builder: (context, provider, child) {
                 final savedThemes = provider.settings.savedThemes;
                 if (savedThemes.isEmpty) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: FTileGroup(
-                    label: Text(l10n.themeSaved),
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: [
-                      for (final theme in savedThemes)
-                        FTile(
-                          prefix: const Icon(Icons.bookmark),
-                          title: Text(theme.name),
-                          subtitle: _ThemePreviewDots(
-                            colors: theme.config.previewColors,
+                final settings = provider.settings;
+                final colorScheme = Theme.of(context).colorScheme;
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 12),
+                    FTileGroup(
+                      label: Text(l10n.themeSaved),
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: [
+                        for (final theme in savedThemes)
+                          FTile(
+                            prefix: _ColorDot(
+                              color: _colorFromHex(savedThemeSeedHex(theme)),
+                            ),
+                            title: Text(theme.name),
+                            subtitle: ThemePreviewDots(
+                              colors: theme.config.previewColors,
+                            ),
+                            suffix: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (isSavedThemeSelected(settings, theme))
+                                  Icon(
+                                    Icons.check_rounded,
+                                    color: colorScheme.primary,
+                                    size: 20,
+                                  ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  icon: Icon(
+                                    Icons.more_horiz_rounded,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  tooltip: l10n.themeMoreActions,
+                                  onPressed: () =>
+                                      _showSavedThemeActions(context, theme),
+                                ),
+                              ],
+                            ),
+                            onPress: () =>
+                                _showSavedThemePreview(context, theme),
                           ),
-                          suffix: PopupMenuButton<String>(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'rename',
-                                child: Text(l10n.themeRename),
-                              ),
-                              PopupMenuItem(
-                                value: 'duplicate',
-                                child: Text(l10n.themeDuplicate),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Text(l10n.themeDelete),
-                              ),
-                            ],
-                            onSelected: (action) {
-                              switch (action) {
-                                case 'rename':
-                                  _showRenameDialog(context, theme);
-                                  break;
-                                case 'duplicate':
-                                  _duplicateTheme(context, theme);
-                                  break;
-                                case 'delete':
-                                  showFDialog<bool>(
-                                    context: context,
-                                    builder: (ctx, style, animation) => FDialog(
-                                      title: Text(l10n.confirmDeleteTitle),
-                                      body: Text(
-                                        l10n.themeDeleteConfirmMessage(
-                                          theme.name,
-                                        ),
-                                      ),
-                                      actions: [
-                                        FButton(
-                                          variant: FButtonVariant.ghost,
-                                          onPress: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: Text(l10n.cancelAction),
-                                        ),
-                                        FButton(
-                                          variant: FButtonVariant.ghost,
-                                          onPress: () =>
-                                              Navigator.pop(ctx, true),
-                                          child: Text(l10n.confirmAction),
-                                        ),
-                                      ],
-                                    ),
-                                  ).then((confirmed) {
-                                    if (confirmed == true) {
-                                      provider.deleteTheme(theme.id);
-                                    }
-                                  });
-                                  break;
-                              }
-                            },
-                          ),
-                          onPress: () => _showThemePreviewDialog(
-                            context,
-                            theme.name,
-                            theme.config,
-                          ),
-                        ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 );
               },
             ),
@@ -1264,103 +1141,46 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     );
   }
 
-  void _showThemePreviewDialog(
-    BuildContext context,
-    String name,
-    ThemeConfig config,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-
-    showFDialog(
-      context: context,
-      builder: (context, style, animation) => FDialog(
-        title: Text(name),
-        body: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 色块预览
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: config.previewColors.map((hex) {
-                final color = _colorFromHex(hex);
-                return Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 12),
-            // 主题信息
-            if (config.themeMode != null)
-              Text('${l10n.appearanceEntryTitle}: ${config.themeMode}'),
-            if (config.seedColor != null) Text('Seed: ${config.seedColor}'),
-          ],
-        ),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(context),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () {
-              final provider = Provider.of<TimetableProvider>(
-                context,
-                listen: false,
-              );
-              final hasModifications = provider.settings.hasThemeModifications;
-
-              if (hasModifications) {
-                // 有未保存的修改，弹窗确认
-                showFDialog<bool>(
-                  context: context,
-                  builder: (ctx, style, animation) => FDialog(
-                    image: const Icon(Icons.save_outlined),
-                    title: Text(l10n.themeUnsavedChangesTitle),
-                    body: Text(l10n.themeUnsavedChangesMessage),
-                    actions: [
-                      FButton(
-                        variant: FButtonVariant.ghost,
-                        onPress: () {
-                          Navigator.pop(ctx, false);
-                          _showSaveThemeDialog(context);
-                        },
-                        child: Text(l10n.themeSaveCurrent),
-                      ),
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: () => Navigator.pop(ctx, true),
-                        child: Text(l10n.themeDiscardAndApply),
-                      ),
-                    ],
-                  ),
-                ).then((confirmed) {
-                  if (!context.mounted) return;
-                  if (confirmed == true) {
-                    _applyThemeWithUndo(context, config, themeName: name);
-                    Navigator.pop(context);
-                  }
-                });
-              } else {
-                _applyThemeWithUndo(context, config, themeName: name);
-                Navigator.pop(context);
-              }
-            },
-            child: Text(l10n.themeApply),
-          ),
-        ],
-      ),
+  Future<void> _showSavedThemePreview(BuildContext context, SavedTheme theme) {
+    return showSavedThemePreviewSheet(
+      context,
+      name: theme.name,
+      config: theme.config,
+      onApply: () => _applySavedTheme(context, theme),
     );
+  }
+
+  Future<void> _showSavedThemeActions(BuildContext context, SavedTheme theme) {
+    return showSavedThemeActionSheet(
+      context,
+      theme: theme,
+      onRename: () => _showRenameDialog(context, theme),
+      onDuplicate: () => _duplicateTheme(context, theme),
+      onDelete: () => _deleteSavedTheme(context, theme),
+    );
+  }
+
+  Future<bool> _applySavedTheme(BuildContext context, SavedTheme theme) async {
+    final canApply = await confirmApplyThemeWithUnsavedCheck(
+      context,
+      onSaveRequested: () => _showSaveThemeDialog(context),
+    );
+    if (!canApply || !context.mounted) {
+      return false;
+    }
+    _applyThemeWithUndo(context, theme.config, themeName: theme.name);
+    return true;
+  }
+
+  Future<void> _deleteSavedTheme(BuildContext context, SavedTheme theme) async {
+    final confirmed = await showThemeDeleteConfirmDialog(
+      context,
+      name: theme.name,
+    );
+    if (!confirmed || !context.mounted) {
+      return;
+    }
+    context.read<TimetableProvider>().deleteTheme(theme.id);
   }
 
   void _applyThemeWithUndo(
@@ -1371,7 +1191,6 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
 
-    // 使用 Provider 的撤销机制
     final newSettings = config.applyToSettings(provider.settings);
     provider.applyThemeWithUndo(
       newSettings.copyWith(
@@ -1381,28 +1200,17 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       themeName: themeName,
     );
 
-    // 使用 ScaffoldMessenger 显示撤销 SnackBar（app 级组件，不受路由 pop 影响）
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.themeChanged(themeName ?? l10n.themeManageTitle)),
-          action: SnackBarAction(
-            label: l10n.themeUndo,
-            onPressed: () {
-              provider.undoThemeChange();
-            },
-          ),
-          duration: const Duration(seconds: 8),
-        ),
-      );
+    showThemeFeedbackToast(
+      context,
+      message: l10n.themeChanged(themeName ?? l10n.themeManageTitle),
+      onUndo: provider.undoThemeChange,
+    );
   }
 
   void _applyForuiTheme(BuildContext context, ForuiTheme theme) {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final l10n = AppLocalizations.of(context)!;
     final name = _foruiThemeLabel(theme);
-    // forui 主题没有 ThemeConfig 快照，清除旧检查点
     provider.applyThemeWithUndo(
       provider.settings.copyWith(
         foruiTheme: theme,
@@ -1411,100 +1219,46 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
       ),
       themeName: name,
     );
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(l10n.themeChanged(name)),
-          action: SnackBarAction(
-            label: l10n.themeUndo,
-            onPressed: () => provider.undoThemeChange(),
-          ),
-          duration: const Duration(seconds: 8),
-        ),
-      );
+    showThemeFeedbackToast(
+      context,
+      message: l10n.themeChanged(name),
+      onUndo: provider.undoThemeChange,
+    );
   }
 
   void _showSaveThemeDialog(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
-
-    showFDialog(
-      context: context,
-      builder: (context, style, animation) => FDialog(
-        title: Text(l10n.themeSaveCurrent),
-        body: FTextField(
-          control: FTextFieldControl.managed(controller: controller),
-          hint: l10n.themeNameHint,
-          autofocus: true,
-        ),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(context),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () {
-              final name = controller.text.trim();
-              if (name.isEmpty) return;
-              final provider = Provider.of<TimetableProvider>(
-                context,
-                listen: false,
-              );
-              final themeConfig = ThemeConfig.fromSettings(provider.settings);
-              provider.saveTheme(name, themeConfig.toJson());
-              Navigator.pop(context);
-            },
-            child: Text(MaterialLocalizations.of(context).saveButtonLabel),
-          ),
-        ],
-      ),
+    showThemeNameDialog(
+      context,
+      title: l10n.themeSaveCurrent,
+      initialName: '',
+      onSubmit: (name) {
+        final provider = Provider.of<TimetableProvider>(context, listen: false);
+        final themeConfig = ThemeConfig.fromSettings(provider.settings);
+        provider.saveTheme(name, themeConfig.toJson());
+      },
     );
   }
 
   void _showRenameDialog(BuildContext context, SavedTheme theme) {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: theme.name);
-
-    showFDialog(
-      context: context,
-      builder: (context, style, animation) => FDialog(
-        title: Text(l10n.themeRename),
-        body: FTextField(
-          control: FTextFieldControl.managed(controller: controller),
-          hint: l10n.themeNameHint,
-          autofocus: true,
-        ),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(context),
-            child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () {
-              final newName = controller.text.trim();
-              if (newName.isEmpty) return;
-              final provider = Provider.of<TimetableProvider>(
-                context,
-                listen: false,
-              );
-              provider.renameTheme(theme.id, newName);
-              Navigator.pop(context);
-            },
-            child: Text(MaterialLocalizations.of(context).saveButtonLabel),
-          ),
-        ],
-      ),
+    showThemeNameDialog(
+      context,
+      title: l10n.themeRename,
+      initialName: theme.name,
+      onSubmit: (newName) {
+        context.read<TimetableProvider>().renameTheme(theme.id, newName);
+      },
     );
   }
 
   void _duplicateTheme(BuildContext context, SavedTheme theme) {
+    final l10n = AppLocalizations.of(context)!;
     final provider = Provider.of<TimetableProvider>(context, listen: false);
-    provider.saveTheme('${theme.name} (copy)', theme.themeData);
+    provider.saveTheme(
+      l10n.themeDuplicateCopyName(theme.name),
+      theme.themeData,
+    );
   }
 
   void _exportTheme(BuildContext context) {
@@ -1512,9 +1266,11 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     final provider = Provider.of<TimetableProvider>(context, listen: false);
     final themeConfig = ThemeConfig.fromSettings(provider.settings);
     Clipboard.setData(ClipboardData(text: jsonEncode(themeConfig.toJson())));
-    ScaffoldMessenger.of(
+    showThemeFeedbackToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.themeExportSuccess)));
+      message: l10n.themeExportSuccess,
+      kind: AppToastKind.success,
+    );
   }
 
   void _importTheme(BuildContext context) async {
@@ -1522,62 +1278,33 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
     final data = await Clipboard.getData('text/plain');
     if (!context.mounted) return;
     if (data?.text == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(l10n.themeImportFailed)));
-      }
+      showThemeFeedbackToast(
+        context,
+        message: l10n.themeImportFailed,
+        kind: AppToastKind.error,
+      );
       return;
     }
     try {
       final json = jsonDecode(data!.text!) as Map<String, dynamic>;
       final config = ThemeConfig.fromJson(json);
 
-      // 验证必填字段
       if (config.version == 2 &&
           (config.seedColor == null ||
               config.courseCardTitleColorLight == null)) {
         throw FormatException('missing required fields');
       }
 
-      // 使用撤销保护应用导入的主题
       _applyThemeWithUndo(context, config, themeName: l10n.themeImport);
     } catch (_) {
       if (context.mounted) {
-        ScaffoldMessenger.of(
+        showThemeFeedbackToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.themeImportFailed)));
+          message: l10n.themeImportFailed,
+          kind: AppToastKind.error,
+        );
       }
     }
-  }
-}
-
-class _ThemePreviewDots extends StatelessWidget {
-  final List<String> colors;
-
-  const _ThemePreviewDots({required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    if (colors.isEmpty) return const SizedBox.shrink();
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: colors.take(4).map((hex) {
-        return Container(
-          width: 14,
-          height: 14,
-          margin: const EdgeInsets.only(right: 4),
-          decoration: BoxDecoration(
-            color: _colorFromHex(hex),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-              width: 0.5,
-            ),
-          ),
-        );
-      }).toList(),
-    );
   }
 }
 
@@ -1873,8 +1600,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               if (!context.mounted) {
                 return;
               }
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.liveDiagnosticsUnavailable)),
+              showAppToast(
+                context,
+                message: l10n.liveDiagnosticsUnavailable,
+                kind: AppToastKind.warning,
               );
               Navigator.of(context).pop();
             },
@@ -1907,12 +1636,10 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       _exportingDiagnostics = false;
     });
     if (exportPath == null || exportPath.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.liveDiagnosticsNothingToExport,
-          ),
-        ),
+      showAppToast(
+        context,
+        message: AppLocalizations.of(context)!.liveDiagnosticsNothingToExport,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -1953,14 +1680,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
     setState(() {
       _clearingDiagnostics = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          cleared
-              ? AppLocalizations.of(context)!.liveDiagnosticsCleared
-              : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: cleared
+          ? AppLocalizations.of(context)!.liveDiagnosticsCleared
+          : AppLocalizations.of(context)!.liveDiagnosticsClearFailed,
+      kind: cleared ? AppToastKind.success : AppToastKind.error,
     );
   }
 
@@ -2461,8 +2186,10 @@ class _DebugValueRow extends StatelessWidget {
 
 Future<void> _triggerUmengTestCrash(BuildContext context) async {
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(AppLocalizations.of(context)!.liveTestingCrashSoon)),
+  showAppToast(
+    context,
+    message: AppLocalizations.of(context)!.liveTestingCrashSoon,
+    kind: AppToastKind.warning,
   );
   await Future<void>.delayed(const Duration(milliseconds: 300));
   await UmengAnalyticsService.triggerTestCrash();
@@ -2470,11 +2197,10 @@ Future<void> _triggerUmengTestCrash(BuildContext context) async {
 
 Future<void> _triggerUmengTestAnr(BuildContext context) async {
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(AppLocalizations.of(context)!.liveTestingAnrSoon),
-      duration: Duration(seconds: 4),
-    ),
+  showAppToast(
+    context,
+    message: AppLocalizations.of(context)!.liveTestingAnrSoon,
+    kind: AppToastKind.warning,
   );
   await Future<void>.delayed(const Duration(milliseconds: 300));
   await UmengAnalyticsService.triggerTestAnr();
@@ -2508,12 +2234,10 @@ Future<void> _showTestOptions(BuildContext context) async {
       extras: {'weekday': now.weekday},
     );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.liveTestingNoCourseAvailable,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.liveTestingNoCourseAvailable,
+      kind: AppToastKind.warning,
     );
     return;
   }
@@ -2645,12 +2369,10 @@ Future<void> _showTestOptions(BuildContext context) async {
       },
     );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.liveTestingNotificationSent,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.liveTestingNotificationSent,
+      kind: AppToastKind.success,
     );
   } catch (e, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
@@ -2661,10 +2383,10 @@ Future<void> _showTestOptions(BuildContext context) async {
       dedupeKey: 'live_update_test_failed',
     );
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.sendFailedWithError('$e')),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.sendFailedWithError('$e'),
+      kind: AppToastKind.error,
     );
   }
 }
@@ -2731,14 +2453,39 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                   : (_canRequestPinWidget
                         ? l10n.homeWidgetPinSupported
                         : l10n.homeWidgetPinUnsupported),
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 12,
+              child: Column(
                 children: [
-                  _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
-                  _buildPinWidgetButton(HomeWidgetPinTarget.miniList22),
-                  _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
-                  _buildPinWidgetButton(HomeWidgetPinTarget.large44),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.compact22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.miniList22,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.medium24,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPinWidgetButton(
+                          HomeWidgetPinTarget.large44,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -2866,6 +2613,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     style: context.theme.typography.body.sm,
                   ),
                   FSlider(
+                    tooltipControls: kSettingsSliderTooltipControls,
                     control: FSliderControl.managedDiscrete(
                       initial: FSliderValue(
                         max:
@@ -2894,6 +2642,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
                     style: context.theme.typography.body.sm,
                   ),
                   FSlider(
+                    tooltipControls: kSettingsSliderTooltipControls,
                     control: FSliderControl.managedDiscrete(
                       initial: FSliderValue(
                         max:
@@ -2990,9 +2739,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       setState(() {
         _draft = provider.settings;
       });
@@ -3013,17 +2760,25 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
 
   Widget _buildPinWidgetButton(HomeWidgetPinTarget target) {
     final isLoading = _pinningTargets.contains(target);
-    return FButton(
-      variant: FButtonVariant.outline,
-      onPress: isLoading ? null : () => _requestPinWidget(target),
-      prefix: isLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: FCircularProgress(size: FCircularProgressSizeVariant.xs),
-            )
-          : const Icon(Icons.add_box_outlined),
-      child: Text(_homeWidgetTargetLabel(context, target)),
+    return SizedBox(
+      width: double.infinity,
+      child: FButton(
+        variant: FButtonVariant.outline,
+        onPress: isLoading ? null : () => _requestPinWidget(target),
+        prefix: isLoading
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: FCircularProgress(size: FCircularProgressSizeVariant.xs),
+              )
+            : const Icon(Icons.add_box_outlined, size: 18),
+        child: Text(
+          _homeWidgetTargetLabel(context, target),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
     );
   }
 
@@ -3054,9 +2809,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         context,
       )!.homeWidgetPinFailedManual(_homeWidgetTargetLabel(context, target)),
     };
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showAppToast(context, message: message);
   }
 }
 
@@ -3214,6 +2967,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           ),
                           const SizedBox(height: 8),
                           FSlider(
+                            tooltipControls: kSettingsSliderTooltipControls,
                             control: FSliderControl.managedDiscrete(
                               initial: FSliderValue(
                                 max:
@@ -3244,6 +2998,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           style: context.theme.typography.body.sm,
                         ),
                         FSlider(
+                          tooltipControls: kSettingsSliderTooltipControls,
                           control: FSliderControl.managedDiscrete(
                             initial: FSliderValue(
                               max:
@@ -3274,6 +3029,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           style: context.theme.typography.body.sm,
                         ),
                         FSlider(
+                          tooltipControls: kSettingsSliderTooltipControls,
                           control: FSliderControl.managedDiscrete(
                             initial: FSliderValue(
                               max: ((_draft.sectionHeight - 48) / 44).clamp(
@@ -3304,6 +3060,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           style: context.theme.typography.body.sm,
                         ),
                         FSlider(
+                          tooltipControls: kSettingsSliderTooltipControls,
                           control: FSliderControl.managedDiscrete(
                             initial: FSliderValue(
                               max: ((_draft.compactFontSize - 7) / 5).clamp(
@@ -3329,6 +3086,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                           style: context.theme.typography.body.sm,
                         ),
                         FSlider(
+                          tooltipControls: kSettingsSliderTooltipControls,
                           control: FSliderControl.managedDiscrete(
                             initial: FSliderValue(
                               max: ((_draft.courseCardFontSize - 7) / 5).clamp(
@@ -3499,6 +3257,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                     ),
                     subtitle: l10n.layoutConflictOpacitySubtitle,
                     child: FSlider(
+                      tooltipControls: kSettingsSliderTooltipControls,
                       control: FSliderControl.managedDiscrete(
                         initial: FSliderValue(
                           max:
@@ -3708,9 +3467,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       setState(() {
         _draft = provider.settings;
       });
@@ -3990,9 +3747,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
 
     if (ratio < 3.0) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.textColorLowContrastWarning)));
+        message: l10n.textColorLowContrastWarning,
+        kind: AppToastKind.warning,
+      );
     }
   }
 }
@@ -4275,12 +4034,10 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                               variant: FButtonVariant.primary,
                               onPress: () {
                                 if (nameController.text.trim().isEmpty) {
-                                  ScaffoldMessenger.of(ctx).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        l10n.customHolidayNameRequired,
-                                      ),
-                                    ),
+                                  showAppToast(
+                                    ctx,
+                                    message: l10n.customHolidayNameRequired,
+                                    kind: AppToastKind.warning,
                                   );
                                   return;
                                 }
@@ -4443,8 +4200,10 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
             onPress: () async {
               await provider.refreshHolidayData();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(l10n.holidayCheckUpdate)),
+                showAppToast(
+                  context,
+                  message: l10n.holidayCheckUpdate,
+                  kind: AppToastKind.success,
                 );
               }
             },

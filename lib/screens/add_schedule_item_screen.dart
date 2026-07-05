@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 import '../widgets/settings_section_widgets.dart';
 
@@ -429,15 +430,19 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     }
     final sameDay = _isSameDate(_selectedStartDate, _selectedEndDate);
     if (sameDay && _asMinutes(_endTime) <= _asMinutes(_startTime)) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.scheduleTimeRangeInvalid)));
+        message: l10n.scheduleTimeRangeInvalid,
+        kind: AppToastKind.warning,
+      );
       return;
     }
     if (_selectedEndDate.isBefore(_selectedStartDate)) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.scheduleDateRangeInvalid)));
+        message: l10n.scheduleDateRangeInvalid,
+        kind: AppToastKind.warning,
+      );
       return;
     }
 
@@ -471,12 +476,12 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       return;
     }
     Navigator.of(context).pop(true);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          existing == null ? l10n.scheduleSavedHint : l10n.scheduleUpdatedHint,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: existing == null
+          ? l10n.scheduleSavedHint
+          : l10n.scheduleUpdatedHint,
+      kind: AppToastKind.success,
     );
   }
 
@@ -523,9 +528,11 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       return;
     }
     Navigator.of(context).pop(true);
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.scheduleDeletedHint)));
+      message: l10n.scheduleDeletedHint,
+      kind: AppToastKind.success,
+    );
   }
 
   TimeOfDay? _parseTime(String value) {

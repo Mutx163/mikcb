@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 
 Future<void> showTimeSchemeBottomSheet(
@@ -410,8 +411,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       case 'duplicate':
         await context.read<TimetableProvider>().duplicateTimeScheme(scheme.id);
         if (!mounted) return;
-        ScaffoldMessenger.of(this.context).showSnackBar(
-          SnackBar(content: Text(l10n.copiedTimeSchemeShortMessage)),
+        showAppToast(
+          this.context,
+          message: l10n.copiedTimeSchemeShortMessage,
+          kind: AppToastKind.success,
         );
         break;
       case 'delete':
@@ -454,14 +457,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     }
     final nextScheme = context.read<TimetableProvider>().activeTimeScheme;
     Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          l10n.appliedTimeSchemeMessage(
-            nextScheme?.name ?? l10n.unnamedTimeScheme,
-          ),
-        ),
+    showAppToast(
+      context,
+      message: l10n.appliedTimeSchemeMessage(
+        nextScheme?.name ?? l10n.unnamedTimeScheme,
       ),
+      kind: AppToastKind.success,
     );
   }
 
@@ -547,9 +548,11 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.renamedToMessage(name))));
+      message: l10n.renamedToMessage(name),
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _deleteScheme(TimeScheme scheme) async {
@@ -585,14 +588,12 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          deleted
-              ? l10n.deletedTimeSchemeMessage(scheme.name)
-              : l10n.timeSchemeInUseMessage,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: deleted
+          ? l10n.deletedTimeSchemeMessage(scheme.name)
+          : l10n.timeSchemeInUseMessage,
+      kind: deleted ? AppToastKind.success : AppToastKind.warning,
     );
   }
 
@@ -883,8 +884,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.timeRangeValidationNoCrossDay)),
+      showAppToast(
+        context,
+        message: l10n.timeRangeValidationNoCrossDay,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -893,9 +896,11 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     nextSections[index] = editedSection;
     final validationMessage = validateSectionTimes(nextSections);
     if (validationMessage != null) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(validationMessage)));
+        message: validationMessage,
+        kind: AppToastKind.warning,
+      );
       return;
     }
 
@@ -958,9 +963,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      showAppToast(context, message: error.message, kind: AppToastKind.error);
     }
   }
 
@@ -995,8 +998,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         ..selection = TextSelection.collapsed(offset: scheme.name.length)
         ..addListener(_scheduleAutoSave);
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.timeSchemeNameEmptyValidation)),
+      showAppToast(
+        context,
+        message: l10n.timeSchemeNameEmptyValidation,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -1021,9 +1026,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       setState(() {
         _sections = List<SectionTime>.from(scheme.sections);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
   }
@@ -1455,8 +1458,10 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
         eveningCount == null ||
         classDuration == null ||
         breakDuration == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.fillNumbersValidationMessage)),
+      showAppToast(
+        context,
+        message: l10n.fillNumbersValidationMessage,
+        kind: AppToastKind.warning,
       );
       return;
     }

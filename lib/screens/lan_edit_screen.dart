@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../services/lan_edit_network_utils.dart';
 import '../services/lan_edit_provider_host.dart';
 import '../services/lan_edit_server_service.dart';
@@ -103,12 +104,11 @@ class _LanEditScreenState extends State<LanEditScreen>
       _startStatusTimer();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
+        showAppToast(
+          context,
+          message:
               '${AppLocalizations.of(context)!.lanEditStartFailed}: $error',
-            ),
-          ),
+          kind: AppToastKind.error,
         );
       }
     } finally {
@@ -139,8 +139,10 @@ class _LanEditScreenState extends State<LanEditScreen>
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(AppLocalizations.of(context)!.lanEditCopied)),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.lanEditCopied,
+      kind: AppToastKind.success,
     );
   }
 

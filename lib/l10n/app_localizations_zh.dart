@@ -1939,7 +1939,19 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sharedInfoTitle => '共享信息';
 
   @override
-  String get sharedInfoHint => '课程名、简称、老师、课程简介、课程性质和颜色会同步到同名课程的其他排课。';
+  String get sharedInfoHint => '查看共享字段说明';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      '课程名称：课程唯一标识。名称相同的多条排课视为同一课程；更改名称将形成独立课程记录。';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      '课程简称：用于超级岛等场景的简短展示，需手动填写，系统不会自动生成。启用「优先显示课程简称」后生效；建议控制在 3 个汉字以内。';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      '共享同步：课程简称、颜色、性质、简介等字段将同步至同名课程的其他排课记录。';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有课程';
@@ -1957,13 +1969,21 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseNameLabel => '课程名称';
 
   @override
-  String get courseNameHelper => '超级岛建议 3 个字以内，显示效果最好';
+  String get courseNameHelper =>
+      '作为课程唯一标识；名称相同的多条排课将归为同一课程。请填写完整名称，请勿为界面显示而缩写。';
 
   @override
   String get pleaseEnterCourseName => '请输入课程名称';
 
   @override
-  String get courseShortNameOptional => '课程简称 (可选)';
+  String get courseShortNameOptional => '课程简称';
+
+  @override
+  String get courseShortNameHelper =>
+      '建议填写，用于超级岛等场景的简短展示。简称不会自动生成；启用「优先显示课程简称」后生效。建议控制在 3 个汉字以内。';
+
+  @override
+  String get courseShortNameAutoFillAction => '取前两字';
 
   @override
   String get teacherLabel => '授课教师';
@@ -4446,6 +4466,29 @@ class AppLocalizationsZh extends AppLocalizations {
   String get courseActionUnsuspend => '恢复';
 
   @override
+  String get courseActionEditPrimary => '编辑课程';
+
+  @override
+  String get courseActionRescheduleSecondary => '调课';
+
+  @override
+  String get courseActionSuspendSecondary => '停课';
+
+  @override
+  String get courseActionDeleteSecondary => '删除';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return '您正在查看第 $week 周，如该时段突发考试或冲突，可立即在下方执行快速调课或停课。';
+  }
+
+  @override
+  String get courseActionOddWeekShort => '单周';
+
+  @override
+  String get courseActionEvenWeekShort => '双周';
+
+  @override
   String get suspendSheetTitle => '停课';
 
   @override
@@ -4766,6 +4809,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeDuplicate => '复制';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name 副本';
+  }
+
+  @override
+  String get themeMoreActions => '更多操作';
 
   @override
   String get courseNatureRequired => '必修';
@@ -6888,7 +6939,19 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get sharedInfoTitle => '共享資訊';
 
   @override
-  String get sharedInfoHint => '課程名、簡稱、老師、課程簡介、課程性質和顏色會同步到同名課程的其他排課。';
+  String get sharedInfoHint => '查看共享欄位說明';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      '課程名稱：課程唯一標識。名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄。';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      '課程簡稱：用於超級島等場景的簡短展示，需手動填寫，系統不會自動生成。啟用「優先顯示課程簡稱」後生效；建議控制在 3 個漢字以內。';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      '共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄。';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有課程';
@@ -6906,13 +6969,21 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseNameLabel => '課程名稱';
 
   @override
-  String get courseNameHelper => '超級島建議 3 個字以內，顯示效果最好';
+  String get courseNameHelper =>
+      '作為課程唯一標識；名稱相同的多條排課將歸為同一課程。請填寫完整名稱，請勿為介面顯示而縮寫。';
 
   @override
   String get pleaseEnterCourseName => '請輸入課程名稱';
 
   @override
-  String get courseShortNameOptional => '課程簡稱 (可選)';
+  String get courseShortNameOptional => '課程簡稱';
+
+  @override
+  String get courseShortNameHelper =>
+      '建議填寫，用於超級島等場景的簡短展示。簡稱不會自動生成；啟用「優先顯示課程簡稱」後生效。建議控制在 3 個漢字以內。';
+
+  @override
+  String get courseShortNameAutoFillAction => '取前兩字';
 
   @override
   String get teacherLabel => '授課教師';
@@ -9396,6 +9467,29 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get courseActionUnsuspend => '恢復上課';
 
   @override
+  String get courseActionEditPrimary => '編輯課程';
+
+  @override
+  String get courseActionRescheduleSecondary => '調課';
+
+  @override
+  String get courseActionSuspendSecondary => '停課';
+
+  @override
+  String get courseActionDeleteSecondary => '刪除';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return '您正在查看第 $week 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課。';
+  }
+
+  @override
+  String get courseActionOddWeekShort => '單周';
+
+  @override
+  String get courseActionEvenWeekShort => '雙周';
+
+  @override
   String get suspendSheetTitle => '停課';
 
   @override
@@ -9716,6 +9810,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get themeDuplicate => '複製';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name 副本';
+  }
+
+  @override
+  String get themeMoreActions => '更多操作';
 
   @override
   String get courseNatureRequired => '必修';
@@ -11838,7 +11940,19 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sharedInfoTitle => '共享資訊';
 
   @override
-  String get sharedInfoHint => '課程名、簡稱、老師、課程簡介、課程性質和顏色會同步到同名課程的其他排課。';
+  String get sharedInfoHint => '查看共享欄位說明';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      '課程名稱：課程唯一標識。名稱相同的多條排課視為同一課程；更改名稱將形成獨立課程記錄。';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      '課程簡稱：用於超級島等場景的簡短展示，需手動填寫，系統不會自動生成。啟用「優先顯示課程簡稱」後生效；建議控制在 3 個漢字以內。';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      '共享同步：課程簡稱、顏色、性質、簡介等欄位將同步至同名課程的其他排課記錄。';
 
   @override
   String get reuseExistingCourseLabel => '沿用已有課程';
@@ -11856,13 +11970,21 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseNameLabel => '課程名稱';
 
   @override
-  String get courseNameHelper => '超級島建議 3 個字以內，顯示效果最好';
+  String get courseNameHelper =>
+      '作為課程唯一標識；名稱相同的多條排課將歸為同一課程。請填寫完整名稱，請勿為介面顯示而縮寫。';
 
   @override
   String get pleaseEnterCourseName => '請輸入課程名稱';
 
   @override
-  String get courseShortNameOptional => '課程簡稱 (可選)';
+  String get courseShortNameOptional => '課程簡稱';
+
+  @override
+  String get courseShortNameHelper =>
+      '建議填寫，用於超級島等場景的簡短展示。簡稱不會自動生成；啟用「優先顯示課程簡稱」後生效。建議控制在 3 個漢字以內。';
+
+  @override
+  String get courseShortNameAutoFillAction => '取前兩字';
 
   @override
   String get teacherLabel => '授課教師';
@@ -14346,6 +14468,29 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get courseActionUnsuspend => '恢復上課';
 
   @override
+  String get courseActionEditPrimary => '編輯課程';
+
+  @override
+  String get courseActionRescheduleSecondary => '調課';
+
+  @override
+  String get courseActionSuspendSecondary => '停課';
+
+  @override
+  String get courseActionDeleteSecondary => '刪除';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return '您正在查看第 $week 周，如該時段突發考試或衝突，可立即在下方執行快速調課或停課。';
+  }
+
+  @override
+  String get courseActionOddWeekShort => '單周';
+
+  @override
+  String get courseActionEvenWeekShort => '雙周';
+
+  @override
   String get suspendSheetTitle => '停課';
 
   @override
@@ -14666,6 +14811,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get themeDuplicate => '複製';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name 副本';
+  }
+
+  @override
+  String get themeMoreActions => '更多操作';
 
   @override
   String get courseNatureRequired => '必修';

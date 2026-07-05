@@ -4,6 +4,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 
 class TimetableProfilesScreen extends StatelessWidget {
   const TimetableProfilesScreen({super.key});
@@ -95,10 +96,10 @@ class TimetableProfilesScreen extends StatelessWidget {
                               await provider.switchProfile(profile.id);
                               await provider.duplicateActiveProfile();
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(l10n.copiedCurrentTimetable),
-                                  ),
+                                showAppToast(
+                                  context,
+                                  message: l10n.copiedCurrentTimetable,
+                                  kind: AppToastKind.success,
                                 );
                               }
                               break;
@@ -187,12 +188,10 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          AppLocalizations.of(context)!.switchedToProfile(profileName),
-        ),
-      ),
+    showAppToast(
+      context,
+      message: AppLocalizations.of(context)!.switchedToProfile(profileName),
+      kind: AppToastKind.success,
     );
   }
 
@@ -235,9 +234,11 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.createdProfile(name))));
+      message: l10n.createdProfile(name),
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _renameProfile(
@@ -283,9 +284,11 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.renamedProfile(name))));
+      message: l10n.renamedProfile(name),
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _clearActiveProfileCourses(
@@ -323,14 +326,12 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          cleared
-              ? l10n.clearedProfile(profileName)
-              : l10n.noCoursesInCurrentProfile,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: cleared
+          ? l10n.clearedProfile(profileName)
+          : l10n.noCoursesInCurrentProfile,
+      kind: cleared ? AppToastKind.success : AppToastKind.info,
     );
   }
 
@@ -370,12 +371,10 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success ? l10n.deletedProfile(name) : l10n.keepAtLeastOneProfile,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: success ? l10n.deletedProfile(name) : l10n.keepAtLeastOneProfile,
+      kind: success ? AppToastKind.success : AppToastKind.warning,
     );
   }
 }

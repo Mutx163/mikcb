@@ -36,6 +36,7 @@ Future<CourseDeleteMode?> showCourseDeleteModeSheet(
     side: FLayout.btt,
     useSafeArea: true,
     draggable: true,
+    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseDeleteModeSheetBody(
       canDeleteOccurrence: canDeleteOccurrence,
       week: week,
@@ -53,6 +54,7 @@ Future<CourseSuspendMode?> showCourseSuspendModeSheet(
     side: FLayout.btt,
     useSafeArea: true,
     draggable: true,
+    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseSuspendModeSheetBody(
       isSuspendedThisWeek: isSuspendedThisWeek,
       hasAnySuspended: hasAnySuspended,
@@ -91,25 +93,14 @@ Future<bool> showDeleteCourseConfirmDialog(
   required String title,
   required String message,
 }) {
-  final l10n = AppLocalizations.of(context)!;
-  return showFDialog<bool>(
+  return showFSheet<bool>(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(title),
-      body: Text(message),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.of(ctx).pop(false),
-          child: Text(l10n.cancelAction),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () => Navigator.of(ctx).pop(true),
-          child: Text(l10n.deleteAction),
-        ),
-      ],
-    ),
+    side: FLayout.btt,
+    useSafeArea: true,
+    draggable: true,
+    mainAxisMaxRatio: null,
+    builder: (ctx) =>
+        _DeleteCourseConfirmSheetBody(title: title, message: message),
   ).then((value) => value ?? false);
 }
 
@@ -134,34 +125,38 @@ class _CourseDeleteModeSheetBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
-    final destructive = colors.destructive;
 
     return _FollowupSheetContainer(
-      child: FTileGroup(
-        label: Text(l10n.deleteModeTitle),
-        description: Text(l10n.deleteModeSubtitle),
-        physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          FTile(
-            prefix: Icon(Icons.delete_sweep_rounded, color: destructive),
-            title: Text(l10n.deleteCourseAction),
-            onPress: () => Navigator.of(context).pop(CourseDeleteMode.course),
+          _FollowupSheetHeader(
+            icon: Icons.delete_outline_rounded,
+            iconColor: colors.destructive,
+            title: l10n.deleteModeTitle,
+            subtitle: l10n.deleteModeSubtitle,
           ),
-          FTile(
-            prefix: Icon(
-              Icons.remove_circle_outline_rounded,
-              color: canDeleteOccurrence ? destructive : colors.mutedForeground,
-            ),
-            title: Text(l10n.deleteOccurrenceAction),
-            subtitle: Text(
-              canDeleteOccurrence
-                  ? l10n.deleteModeHintCurrentWeek(week)
-                  : l10n.deleteModeHintUnavailable(week),
-            ),
-            onPress: canDeleteOccurrence
+          const SizedBox(height: 14),
+          _FollowupOptionTile(
+            icon: Icons.delete_sweep_outlined,
+            title: l10n.deleteCourseAction,
+            onTap: () => Navigator.of(context).pop(CourseDeleteMode.course),
+          ),
+          const SizedBox(height: 8),
+          _FollowupOptionTile(
+            icon: Icons.remove_circle_outline_rounded,
+            title: l10n.deleteOccurrenceAction,
+            subtitle: canDeleteOccurrence
+                ? l10n.deleteModeHintCurrentWeek(week)
+                : l10n.deleteModeHintUnavailable(week),
+            enabled: canDeleteOccurrence,
+            onTap: canDeleteOccurrence
                 ? () => Navigator.of(context).pop(CourseDeleteMode.occurrence)
                 : null,
           ),
+          const SizedBox(height: 14),
+          _FollowupCancelButton(onPress: () => Navigator.of(context).pop()),
         ],
       ),
     );
@@ -181,47 +176,111 @@ class _CourseSuspendModeSheetBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
-    final destructive = colors.destructive;
 
     return _FollowupSheetContainer(
-      child: FTileGroup(
-        label: Text(l10n.suspendSheetTitle),
-        description: Text(l10n.suspendSheetSubtitle),
-        physics: const NeverScrollableScrollPhysics(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          FTile(
-            prefix: Icon(
-              isSuspendedThisWeek
-                  ? Icons.play_circle_outline_rounded
-                  : Icons.pause_circle_outline_rounded,
-              color: isSuspendedThisWeek ? colors.primary : destructive,
-            ),
-            title: Text(
-              isSuspendedThisWeek
-                  ? l10n.courseActionUnsuspend
-                  : l10n.suspendThisWeek,
-            ),
-            subtitle: Text(l10n.suspendThisWeekDesc),
-            onPress: () =>
-                Navigator.of(context).pop(CourseSuspendMode.thisWeek),
+          _FollowupSheetHeader(
+            icon: isSuspendedThisWeek
+                ? Icons.play_circle_outline_rounded
+                : Icons.pause_circle_outline_rounded,
+            iconColor: colors.foreground,
+            title: l10n.suspendSheetTitle,
+            subtitle: l10n.suspendSheetSubtitle,
           ),
-          FTile(
-            prefix: Icon(
-              hasAnySuspended
-                  ? Icons.play_circle_filled_rounded
-                  : Icons.pause_circle_filled_rounded,
-              color: hasAnySuspended ? colors.primary : destructive,
+          const SizedBox(height: 14),
+          _FollowupOptionTile(
+            icon: isSuspendedThisWeek
+                ? Icons.play_circle_outline_rounded
+                : Icons.pause_circle_outline_rounded,
+            title: isSuspendedThisWeek
+                ? l10n.courseActionUnsuspend
+                : l10n.suspendThisWeek,
+            subtitle: l10n.suspendThisWeekDesc,
+            onTap: () => Navigator.of(context).pop(CourseSuspendMode.thisWeek),
+          ),
+          const SizedBox(height: 8),
+          _FollowupOptionTile(
+            icon: hasAnySuspended
+                ? Icons.play_circle_outline_rounded
+                : Icons.pause_circle_filled_outlined,
+            title: hasAnySuspended
+                ? l10n.unsuspendAllWeeks
+                : l10n.suspendAllWeeks,
+            subtitle: hasAnySuspended
+                ? l10n.unsuspendAllWeeksDesc
+                : l10n.suspendAllWeeksDesc,
+            onTap: () => Navigator.of(context).pop(CourseSuspendMode.allWeeks),
+          ),
+          const SizedBox(height: 14),
+          _FollowupCancelButton(onPress: () => Navigator.of(context).pop()),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeleteCourseConfirmSheetBody extends StatelessWidget {
+  const _DeleteCourseConfirmSheetBody({
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+
+    return _FollowupSheetContainer(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _FollowupSheetHeader(
+            icon: Icons.delete_outline_rounded,
+            iconColor: colors.destructive,
+            title: title,
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: colors.muted.withValues(alpha: 0.35),
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: Text(
-              hasAnySuspended ? l10n.unsuspendAllWeeks : l10n.suspendAllWeeks,
+            child: Text(
+              message,
+              style: typo.xs2.copyWith(
+                color: colors.mutedForeground,
+                height: 1.45,
+              ),
             ),
-            subtitle: Text(
-              hasAnySuspended
-                  ? l10n.unsuspendAllWeeksDesc
-                  : l10n.suspendAllWeeksDesc,
-            ),
-            onPress: () =>
-                Navigator.of(context).pop(CourseSuspendMode.allWeeks),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: FButton(
+                  variant: FButtonVariant.outline,
+                  onPress: () => Navigator.of(context).pop(false),
+                  child: Text(l10n.cancelAction),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FButton(
+                  onPress: () => Navigator.of(context).pop(true),
+                  child: Text(l10n.deleteAction),
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -741,9 +800,164 @@ class _FollowupSheetContainer extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
           child: child,
         ),
+      ),
+    );
+  }
+}
+
+class _FollowupSheetHeader extends StatelessWidget {
+  const _FollowupSheetHeader({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    this.subtitle,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, color: iconColor, size: 24),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: typo.sm.copyWith(fontWeight: FontWeight.w700)),
+              if (subtitle != null && subtitle!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  subtitle!,
+                  style: typo.xs2.copyWith(
+                    color: colors.mutedForeground,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FollowupOptionTile extends StatelessWidget {
+  const _FollowupOptionTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.subtitle,
+    this.enabled = true,
+  });
+
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final VoidCallback? onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final tileBg = colors.muted.withValues(alpha: 0.35);
+    final foreground = enabled ? colors.foreground : colors.mutedForeground;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: tileBg,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, size: 18, color: foreground),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: typo.sm.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: foreground,
+                          height: 1.25,
+                        ),
+                      ),
+                      if (subtitle != null && subtitle!.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          subtitle!,
+                          style: typo.xs2.copyWith(
+                            color: colors.mutedForeground,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 18,
+                  color: enabled
+                      ? colors.mutedForeground
+                      : colors.mutedForeground.withValues(alpha: 0.5),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FollowupCancelButton extends StatelessWidget {
+  const _FollowupCancelButton({required this.onPress});
+
+  final VoidCallback onPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return SizedBox(
+      width: double.infinity,
+      child: FButton(
+        variant: FButtonVariant.secondary,
+        onPress: onPress,
+        child: Text(l10n.cancelAction),
       ),
     );
   }

@@ -6,12 +6,18 @@ import 'package:provider/provider.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 
 class TimeSchemeManagementScreen extends StatefulWidget {
   final String? initialEditSchemeId;
+  final bool openCreateOnOpen;
 
-  const TimeSchemeManagementScreen({super.key, this.initialEditSchemeId});
+  const TimeSchemeManagementScreen({
+    super.key,
+    this.initialEditSchemeId,
+    this.openCreateOnOpen = false,
+  });
 
   @override
   State<TimeSchemeManagementScreen> createState() =>
@@ -20,20 +26,29 @@ class TimeSchemeManagementScreen extends StatefulWidget {
 
 class _TimeSchemeManagementScreenState
     extends State<TimeSchemeManagementScreen> {
-  bool _didOpenInitialEditor = false;
+  bool _didOpenInitialAction = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (_didOpenInitialEditor || widget.initialEditSchemeId == null) {
+    if (_didOpenInitialAction) {
       return;
     }
-    _didOpenInitialEditor = true;
+    final editId = widget.initialEditSchemeId;
+    final openCreate = widget.openCreateOnOpen;
+    if (editId == null && !openCreate) {
+      return;
+    }
+    _didOpenInitialAction = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) {
         return;
       }
-      _openEditor(widget.initialEditSchemeId!);
+      if (editId != null) {
+        _openEditor(editId);
+      } else {
+        _createScheme(context);
+      }
     });
   }
 
@@ -172,10 +187,10 @@ class _TimeSchemeManagementScreenState
                               .read<TimetableProvider>()
                               .duplicateTimeScheme(scheme.id);
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.copiedTimeSchemeMessage),
-                              ),
+                            showAppToast(
+                              context,
+                              message: l10n.copiedTimeSchemeMessage,
+                              kind: AppToastKind.success,
                             );
                           }
                           break;
@@ -354,9 +369,11 @@ class _TimeSchemeManagementScreenState
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.renamedToMessage(name))));
+      message: l10n.renamedToMessage(name),
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
@@ -391,14 +408,12 @@ class _TimeSchemeManagementScreenState
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          deleted
-              ? l10n.deletedTimeSchemeMessage(scheme.name)
-              : l10n.timeSchemeInUseMessage,
-        ),
-      ),
+    showAppToast(
+      context,
+      message: deleted
+          ? l10n.deletedTimeSchemeMessage(scheme.name)
+          : l10n.timeSchemeInUseMessage,
+      kind: deleted ? AppToastKind.success : AppToastKind.warning,
     );
   }
 
@@ -408,8 +423,10 @@ class _TimeSchemeManagementScreenState
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(l10n.appliedTimeSchemeMessage(scheme.name))),
+    showAppToast(
+      context,
+      message: l10n.appliedTimeSchemeMessage(scheme.name),
+      kind: AppToastKind.success,
     );
   }
 
@@ -865,8 +882,10 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.timeRangeValidationNoCrossDay)),
+      showAppToast(
+        context,
+        message: l10n.timeRangeValidationNoCrossDay,
+        kind: AppToastKind.warning,
       );
       return;
     }
@@ -875,9 +894,11 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     nextSections[index] = editedSection;
     final validationMessage = validateSectionTimes(nextSections);
     if (validationMessage != null) {
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(validationMessage)));
+        message: validationMessage,
+        kind: AppToastKind.warning,
+      );
       return;
     }
 
@@ -1002,9 +1023,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
+      showAppToast(context, message: error.message, kind: AppToastKind.error);
     }
   }
 
@@ -1018,9 +1037,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       return;
     }
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       return;
     }
     Navigator.pop(context);
@@ -1567,8 +1584,10 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
         eveningCount == null ||
         classDuration == null ||
         breakDuration == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.fillNumbersValidationMessage)),
+      showAppToast(
+        context,
+        message: l10n.fillNumbersValidationMessage,
+        kind: AppToastKind.warning,
       );
       return;
     }

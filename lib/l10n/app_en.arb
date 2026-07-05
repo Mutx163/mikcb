@@ -1057,15 +1057,20 @@
   "singleLessonHint": "Best for make-up classes or temporary one-off lessons.",
   "recurringLessonHint": "Best for regular classes that repeat over many weeks.",
   "sharedInfoTitle": "Shared Info",
-  "sharedInfoHint": "Name, short name, teacher, description, nature, and color will sync to other entries with the same course name.",
+  "sharedInfoHint": "View shared field descriptions",
+  "sharedInfoSheetItemCourseName": "Course name: Unique identifier. Schedule entries with the same name belong to one course; renaming creates a separate course record.",
+  "sharedInfoSheetItemShortName": "Course short name: Used for concise display in Super Island and similar surfaces. Must be entered manually; the system does not generate it automatically. Takes effect when Prefer course short name is enabled; limit to about 3 characters when possible.",
+  "sharedInfoSheetItemSharedSync": "Shared sync: Short name, color, nature, description, and related fields sync to other schedule entries under the same course name.",
   "reuseExistingCourseLabel": "Reuse Existing Course",
   "reuseExistingCourseHelper": "Pick an existing course to autofill name, teacher, and other shared info",
   "manualInputLabel": "Enter Manually",
   "noTemplateCoursesHint": "There are no existing courses yet. Add one manually first, then future temporary lessons can reuse it.",
   "courseNameLabel": "Course Name",
-  "courseNameHelper": "For island display, 3 Chinese characters or a short name works best.",
+  "courseNameHelper": "Serves as the unique course identifier. Entries with the same name are grouped as one course. Enter the full official name; do not abbreviate for display.",
   "pleaseEnterCourseName": "Please enter the course name",
-  "courseShortNameOptional": "Course Short Name (Optional)",
+  "courseShortNameOptional": "Course short name",
+  "courseShortNameHelper": "Recommended for concise display in Super Island and similar surfaces. Short names are not generated automatically; enable Prefer course short name to apply. Limit to about 3 characters when possible.",
+  "courseShortNameAutoFillAction": "First 2 chars",
   "teacherLabel": "Teacher",
   "courseNatureLabel": "Course Nature",
   "courseDescriptionOptional": "Course Description (Optional)",
@@ -2664,6 +2669,20 @@
   "suspendedStatusLabel": "Suspended",
   "courseActionSuspend": "Suspend",
   "courseActionUnsuspend": "Restore",
+  "courseActionEditPrimary": "Edit course",
+  "courseActionRescheduleSecondary": "Reschedule",
+  "courseActionSuspendSecondary": "Suspend",
+  "courseActionDeleteSecondary": "Delete",
+  "courseActionSheetNotice": "You are viewing Week {week}. If an exam or conflict comes up, you can quickly reschedule or suspend below.",
+  "@courseActionSheetNotice": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionOddWeekShort": "Odd week",
+  "courseActionEvenWeekShort": "Even week",
   "suspendSheetTitle": "Suspend",
   "suspendSheetSubtitle": "Choose suspension scope",
   "suspendThisWeek": "This week",
@@ -2841,6 +2860,15 @@
   },
   "themeRename": "Rename",
   "themeDuplicate": "Duplicate",
+  "themeDuplicateCopyName": "{name} (copy)",
+  "@themeDuplicateCopyName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "themeMoreActions": "More actions",
   "courseNatureRequired": "Required",
   "courseNatureElective": "Elective",
   "homeMenuStatisticsTitle": "Statistics",

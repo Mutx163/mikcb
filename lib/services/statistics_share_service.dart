@@ -6,6 +6,8 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../utils/app_toast.dart';
+
 /// 统计分享服务
 class StatisticsShareService {
   StatisticsShareService._();
@@ -18,8 +20,9 @@ class StatisticsShareService {
   }) async {
     try {
       // 1. 找到 RenderRepaintBoundary
-      final boundary = repaintBoundaryKey.currentContext?.findRenderObject()
-          as RenderRepaintBoundary?;
+      final boundary =
+          repaintBoundaryKey.currentContext?.findRenderObject()
+              as RenderRepaintBoundary?;
       if (boundary == null) {
         debugPrint('Share: RepaintBoundary not found');
         return;
@@ -47,9 +50,7 @@ class StatisticsShareService {
     } catch (e) {
       debugPrint('Share error: $e');
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('分享失败: $e')),
-        );
+        showAppToast(context, message: '分享失败: $e', kind: AppToastKind.error);
       }
     }
   }

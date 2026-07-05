@@ -112,3 +112,8 @@ class SettingSwitchTile extends StatelessWidget with FTileMixin {
     );
   }
 }
+
+/// Settings sliders already show the current value in adjacent text; disable
+/// the thumb tooltip so it does not cover previews or labels above the track.
+const FSliderTooltipControls kSettingsSliderTooltipControls =
+    FSliderTooltipControls.disabled();

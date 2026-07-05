@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 
 enum DiagnosticsLogViewMode { structured, raw }
@@ -496,9 +497,11 @@ class _LiveDiagnosticsLogViewerScreenState
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(
+    showAppToast(
       context,
-    ).showSnackBar(SnackBar(content: Text(l10n.appLogsCopied)));
+      message: l10n.appLogsCopied,
+      kind: AppToastKind.success,
+    );
   }
 
   Future<void> _exportLogs(String text) async {
@@ -538,10 +541,10 @@ class _LiveDiagnosticsLogViewerScreenState
         _refreshParsedCache();
       }
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(cleared ? l10n.appLogsCleared : l10n.appLogsClearFailed),
-      ),
+    showAppToast(
+      context,
+      message: cleared ? l10n.appLogsCleared : l10n.appLogsClearFailed,
+      kind: cleared ? AppToastKind.success : AppToastKind.error,
     );
   }
 }

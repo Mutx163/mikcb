@@ -12,6 +12,7 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/hex_color.dart';
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
@@ -265,6 +266,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                     style: context.theme.typography.body.sm,
                   ),
                   FSlider(
+                    tooltipControls: kSettingsSliderTooltipControls,
                     control: FSliderControl.managedDiscrete(
                       initial: FSliderValue(
                         max:
@@ -346,9 +348,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       setState(() => _draft = provider.settings);
     }
   }
@@ -629,6 +629,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     style: context.theme.typography.body.sm,
                   ),
                   FSlider(
+                    tooltipControls: kSettingsSliderTooltipControls,
                     control: FSliderControl.managedDiscrete(
                       initial: FSliderValue(
                         max:
@@ -661,6 +662,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 style: context.theme.typography.body.sm,
               ),
               FSlider(
+                tooltipControls: kSettingsSliderTooltipControls,
                 control: FSliderControl.managedDiscrete(
                   initial: FSliderValue(
                     max: ((display.miuiIslandLabelFontSize - 1) / 31).clamp(
@@ -685,6 +687,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 style: context.theme.typography.body.sm,
               ),
               FSlider(
+                tooltipControls: kSettingsSliderTooltipControls,
                 control: FSliderControl.managedDiscrete(
                   initial: FSliderValue(
                     max:
@@ -709,6 +712,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 style: context.theme.typography.body.sm,
               ),
               FSlider(
+                tooltipControls: kSettingsSliderTooltipControls,
                 control: FSliderControl.managedDiscrete(
                   initial: FSliderValue(
                     max:
@@ -949,9 +953,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final message = await provider.updateTimetableSettings(next);
     if (!mounted) return;
     if (message != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      showAppToast(context, message: message);
       setState(() => _draft = provider.settings);
     }
   }
@@ -1116,14 +1118,13 @@ class _LiveKeepAliveSettingsScreenState
                   subtitle: Text(l10n.hideFromRecentsSubtitle),
                   value: _draft.liveHideFromRecents,
                   onChanged: (value) async {
-                    final messenger = ScaffoldMessenger.of(context);
                     final provider = context.read<TimetableProvider>();
                     final message = await provider.updateTimetableSettings(
                       _draft.copyWith(liveHideFromRecents: value),
                     );
                     if (!mounted) return;
                     if (message != null) {
-                      messenger.showSnackBar(SnackBar(content: Text(message)));
+                      showAppToast(context, message: message);
                     }
                     setState(() => _draft = provider.settings);
                   },

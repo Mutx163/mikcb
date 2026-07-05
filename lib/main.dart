@@ -18,6 +18,7 @@ import 'screens/startup_flow_screens.dart';
 import 'screens/user_guide_screen.dart';
 import 'screens/timetable_screen.dart';
 import 'screens/lan_edit_screen.dart';
+import 'utils/app_toast.dart';
 import 'services/app_log_service.dart';
 import 'services/bundled_assets.dart';
 import 'services/lan_edit_foreground_service.dart';
@@ -513,28 +514,27 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
       if (!mounted) {
         return false;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showAppToast(
+        context,
+        message:
             message ??
-                (importMode == _BackupImportMode.importAsNew
-                    ? l10n.createdNewTimetableAfterImport
-                    : l10n.backupRestoredSuccess),
-          ),
-        ),
+            (importMode == _BackupImportMode.importAsNew
+                ? l10n.createdNewTimetableAfterImport
+                : l10n.backupRestoredSuccess),
+        kind: AppToastKind.success,
       );
       return true;
     } on FormatException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.message)));
+        showAppToast(context, message: e.message, kind: AppToastKind.error);
       }
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppToast(
           context,
-        ).showSnackBar(SnackBar(content: Text(l10n.importFailedInvalidFile)));
+          message: l10n.importFailedInvalidFile,
+          kind: AppToastKind.error,
+        );
       }
     }
     return false;

@@ -2067,8 +2067,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sharedInfoTitle => 'Shared Info';
 
   @override
-  String get sharedInfoHint =>
-      'Name, short name, teacher, description, nature, and color will sync to other entries with the same course name.';
+  String get sharedInfoHint => 'View shared field descriptions';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      'Course name: Unique identifier. Schedule entries with the same name belong to one course; renaming creates a separate course record.';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      'Course short name: Used for concise display in Super Island and similar surfaces. Must be entered manually; the system does not generate it automatically. Takes effect when Prefer course short name is enabled; limit to about 3 characters when possible.';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      'Shared sync: Short name, color, nature, description, and related fields sync to other schedule entries under the same course name.';
 
   @override
   String get reuseExistingCourseLabel => 'Reuse Existing Course';
@@ -2089,13 +2100,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseNameHelper =>
-      'For island display, 3 Chinese characters or a short name works best.';
+      'Serves as the unique course identifier. Entries with the same name are grouped as one course. Enter the full official name; do not abbreviate for display.';
 
   @override
   String get pleaseEnterCourseName => 'Please enter the course name';
 
   @override
-  String get courseShortNameOptional => 'Course Short Name (Optional)';
+  String get courseShortNameOptional => 'Course short name';
+
+  @override
+  String get courseShortNameHelper =>
+      'Recommended for concise display in Super Island and similar surfaces. Short names are not generated automatically; enable Prefer course short name to apply. Limit to about 3 characters when possible.';
+
+  @override
+  String get courseShortNameAutoFillAction => 'First 2 chars';
 
   @override
   String get teacherLabel => 'Teacher';
@@ -4713,6 +4731,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get courseActionUnsuspend => 'Restore';
 
   @override
+  String get courseActionEditPrimary => 'Edit course';
+
+  @override
+  String get courseActionRescheduleSecondary => 'Reschedule';
+
+  @override
+  String get courseActionSuspendSecondary => 'Suspend';
+
+  @override
+  String get courseActionDeleteSecondary => 'Delete';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return 'You are viewing Week $week. If an exam or conflict comes up, you can quickly reschedule or suspend below.';
+  }
+
+  @override
+  String get courseActionOddWeekShort => 'Odd week';
+
+  @override
+  String get courseActionEvenWeekShort => 'Even week';
+
+  @override
   String get suspendSheetTitle => 'Suspend';
 
   @override
@@ -5039,6 +5080,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDuplicate => 'Duplicate';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name (copy)';
+  }
+
+  @override
+  String get themeMoreActions => 'More actions';
 
   @override
   String get courseNatureRequired => 'Required';

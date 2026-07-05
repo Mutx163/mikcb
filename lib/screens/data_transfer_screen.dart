@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
+import '../utils/app_toast.dart';
 import '../widgets/settings_section_widgets.dart';
 
 class DataTransferScreen extends StatefulWidget {
@@ -272,30 +273,29 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      showAppToast(
+        context,
+        message:
             message ??
-                (importMode == _BackupImportMode.importAsNew
-                    ? l10n.createdNewTimetableAfterImport
-                    : l10n.backupRestoredSuccess),
-          ),
-        ),
+            (importMode == _BackupImportMode.importAsNew
+                ? l10n.createdNewTimetableAfterImport
+                : l10n.backupRestoredSuccess),
+        kind: AppToastKind.success,
       );
     } on FormatException catch (e) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      showAppToast(context, message: e.message, kind: AppToastKind.error);
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.importFailedInvalidFile)));
+        message: l10n.importFailedInvalidFile,
+        kind: AppToastKind.error,
+      );
     } finally {
       if (mounted) {
         setState(() {

@@ -9,6 +9,7 @@ import '../models/exam.dart';
 import '../models/timetable_settings.dart';
 import 'package:intl/intl.dart';
 import '../providers/timetable_provider.dart';
+import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
 
 class AddExamScreen extends StatefulWidget {
@@ -1032,9 +1033,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     if (!_hasSelectedDate) {
       final l10n = AppLocalizations.of(context)!;
-      ScaffoldMessenger.of(
+      showAppToast(
         context,
-      ).showSnackBar(SnackBar(content: Text(l10n.examDateRequired)));
+        message: l10n.examDateRequired,
+        kind: AppToastKind.warning,
+      );
       return;
     }
 

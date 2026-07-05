@@ -1986,8 +1986,19 @@ class AppLocalizationsKo extends AppLocalizations {
   String get sharedInfoTitle => '공유 정보';
 
   @override
-  String get sharedInfoHint =>
-      '수업명, 약칭, 교사, 수업 개요, 수업 성격과 색상은 동일 수업의 다른 배치에 동기화됩니다.';
+  String get sharedInfoHint => '공유 필드 설명 보기';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      '수업명: 수업 고유 식별자. 동일한 이름의 여러 배치는 하나의 수업으로 처리됩니다. 이름을 변경하면 별도 수업 기록이 생성됩니다.';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      '수업 약칭: 슈퍼아일랜드 등 간략 표시에 사용. 수동 입력 필요, 자동 생성되지 않음. 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장.';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      '공유 동기화: 약칭, 색상, 성격, 개요 등은 동일 수업명의 다른 배치에 동기화됩니다.';
 
   @override
   String get reuseExistingCourseLabel => '기존 수업 활용';
@@ -2007,13 +2018,21 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseNameLabel => '수업명';
 
   @override
-  String get courseNameHelper => '슈퍼아일랜드는 3자 이내를 권장합니다. 표시가 가장 안정적입니다.';
+  String get courseNameHelper =>
+      '수업 고유 식별자입니다. 동일한 이름의 배치는 하나의 수업으로 통합됩니다. 공식 전체 명칭을 입력하고, 표시 목적의 약칭은 사용하지 마세요.';
 
   @override
   String get pleaseEnterCourseName => '수업명을 입력하세요';
 
   @override
-  String get courseShortNameOptional => '수업 약칭 (선택)';
+  String get courseShortNameOptional => '수업 약칭';
+
+  @override
+  String get courseShortNameHelper =>
+      '슈퍼아일랜드 등 간략 표시에 권장. 약칭은 자동 생성되지 않으며 「수업 약칭 우선 표시」 활성화 시 적용. 3자 이내 권장.';
+
+  @override
+  String get courseShortNameAutoFillAction => '앞 2자';
 
   @override
   String get teacherLabel => '담당 교사';
@@ -4549,6 +4568,29 @@ class AppLocalizationsKo extends AppLocalizations {
   String get courseActionUnsuspend => '복구';
 
   @override
+  String get courseActionEditPrimary => '수업 편집';
+
+  @override
+  String get courseActionRescheduleSecondary => '시간 변경';
+
+  @override
+  String get courseActionSuspendSecondary => '휴강';
+
+  @override
+  String get courseActionDeleteSecondary => '삭제';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return '현재 제$week주를 보고 있습니다. 시험이나 충돌이 생기면 아래에서 바로 변경하거나 휴강할 수 있습니다.';
+  }
+
+  @override
+  String get courseActionOddWeekShort => '홀수 주';
+
+  @override
+  String get courseActionEvenWeekShort => '짝수 주';
+
+  @override
   String get suspendSheetTitle => '수업 중단';
 
   @override
@@ -4870,6 +4912,14 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get themeDuplicate => '복사';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name 복사본';
+  }
+
+  @override
+  String get themeMoreActions => '더 보기';
 
   @override
   String get courseNatureRequired => '필수';

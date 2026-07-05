@@ -200,8 +200,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('应用语言'), findsOneWidget);
-    expect(find.byIcon(Icons.language_rounded), findsOneWidget);
-    expect(find.byType(DropdownButton<String>), findsOneWidget);
+    expect(find.text('语言选择'), findsOneWidget);
   });
 
   testWidgets('welcome page shows import and restore when callbacks provided',

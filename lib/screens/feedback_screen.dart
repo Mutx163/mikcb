@@ -4,7 +4,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../widgets/settings_section_widgets.dart';
+import '../utils/app_toast.dart';
 
 class FeedbackScreen extends StatelessWidget {
   const FeedbackScreen({super.key});
@@ -17,6 +17,9 @@ class FeedbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return FScaffold(
       header: FHeader.nested(
@@ -29,11 +32,48 @@ class FeedbackScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            SettingsSectionCard(
-              subtitle: l10n.feedbackIntro,
-              child: Text(
-                l10n.feedbackIssueHint,
-                style: context.theme.typography.body.xs2,
+            FCard.raw(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: colorScheme.primary.withValues(alpha: 0.12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        Icons.support_agent_outlined,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.feedbackIntro,
+                            style: typo.sm.copyWith(height: 1.45),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            l10n.feedbackIssueHint,
+                            style: typo.xs2.copyWith(
+                              color: colors.mutedForeground,
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -139,8 +179,6 @@ class FeedbackScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(successMessage)));
+    showAppToast(context, message: successMessage, kind: AppToastKind.success);
   }
 }

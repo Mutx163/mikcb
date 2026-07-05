@@ -1971,7 +1971,19 @@ class AppLocalizationsJa extends AppLocalizations {
   String get sharedInfoTitle => '共有情報';
 
   @override
-  String get sharedInfoHint => '授業名、略称、教師、授業概要、授業性質とカラーは同名授業の他の排課に同期。';
+  String get sharedInfoHint => '共有フィールドの説明を表示';
+
+  @override
+  String get sharedInfoSheetItemCourseName =>
+      '授業名：授業の一意識別子。同名の複数排課は同一授業として扱われます。名称を変更すると別授業として記録されます。';
+
+  @override
+  String get sharedInfoSheetItemShortName =>
+      '授業略称：スーパーアイランド等での簡略表示に使用。手動入力が必要で、自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。';
+
+  @override
+  String get sharedInfoSheetItemSharedSync =>
+      '共有同期：略称、色、性質、概要等は同名授業の他排課へ同期されます。';
 
   @override
   String get reuseExistingCourseLabel => '既存授業を流用';
@@ -1990,13 +2002,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseNameLabel => '授業名';
 
   @override
-  String get courseNameHelper => 'スーパーアイランドは3文字以内を推奨。表示が最も安定。';
+  String get courseNameHelper =>
+      '授業の一意識別子。同名の複数排課は同一授業に統合されます。正式名称を入力し、表示目的での略称は避けてください。';
 
   @override
   String get pleaseEnterCourseName => '授業名を入力してください';
 
   @override
-  String get courseShortNameOptional => '授業略称（任意）';
+  String get courseShortNameOptional => '授業略称';
+
+  @override
+  String get courseShortNameHelper =>
+      'スーパーアイランド等での簡略表示に推奨。略称は自動生成されません。「授業略称を優先表示」を有効にした場合に反映。3 文字以内を推奨。';
+
+  @override
+  String get courseShortNameAutoFillAction => '先頭2文字';
 
   @override
   String get teacherLabel => '担当教師';
@@ -4517,6 +4537,29 @@ class AppLocalizationsJa extends AppLocalizations {
   String get courseActionUnsuspend => '復旧';
 
   @override
+  String get courseActionEditPrimary => '授業を編集';
+
+  @override
+  String get courseActionRescheduleSecondary => '時間変更';
+
+  @override
+  String get courseActionSuspendSecondary => '休講';
+
+  @override
+  String get courseActionDeleteSecondary => '削除';
+
+  @override
+  String courseActionSheetNotice(int week) {
+    return '第$week週を表示中です。試験や重複が発生した場合は、下からすぐに変更または休講できます。';
+  }
+
+  @override
+  String get courseActionOddWeekShort => '奇数週';
+
+  @override
+  String get courseActionEvenWeekShort => '偶数週';
+
+  @override
   String get suspendSheetTitle => '授業停止';
 
   @override
@@ -4838,6 +4881,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get themeDuplicate => '複製';
+
+  @override
+  String themeDuplicateCopyName(String name) {
+    return '$name のコピー';
+  }
+
+  @override
+  String get themeMoreActions => 'その他の操作';
 
   @override
   String get courseNatureRequired => '必修';

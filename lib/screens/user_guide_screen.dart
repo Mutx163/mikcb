@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../widgets/settings_section_widgets.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -45,6 +46,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   bool _isKeepAliveAccessibilityEnabled = false;
   bool _isAutoStartEnabled = false;
   late bool _privacyChecked;
+  Timer? _settingsPollTimer;
 
   int get _totalPages => 4;
 
@@ -58,6 +60,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   @override
   void dispose() {
+    _settingsPollTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pageController.dispose();
     super.dispose();
@@ -66,7 +69,52 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      unawaited(_refreshStatus(showLoading: false));
+      _settingsPollTimer?.cancel();
+      unawaited(_refreshStatusAfterExternalReturn());
+    }
+  }
+
+  String _permissionSnapshotKey() {
+    return [
+      _hasNotificationPermission,
+      _canPostPromoted,
+      _isAutoStartEnabled,
+      _isIgnoringBatteryOptimizations,
+      _isKeepAliveAccessibilityEnabled,
+    ].join(',');
+  }
+
+  void _startSettingsStatusPoll({required String baselineKey}) {
+    _settingsPollTimer?.cancel();
+    var ticks = 0;
+    _settingsPollTimer = Timer.periodic(const Duration(milliseconds: 450), (
+      timer,
+    ) async {
+      ticks++;
+      if (!mounted || ticks > 30) {
+        timer.cancel();
+        return;
+      }
+      await _refreshStatus(showLoading: false);
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_permissionSnapshotKey() != baselineKey) {
+        timer.cancel();
+      }
+    });
+  }
+
+  Future<void> _refreshStatusAfterExternalReturn() async {
+    for (var i = 0; i < 5; i++) {
+      if (i > 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+      if (!mounted) {
+        return;
+      }
+      await _refreshStatus(showLoading: false);
     }
   }
 
@@ -103,12 +151,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   Future<void> _runAction(Future<void> Function() action) async {
+    final baselineKey = _permissionSnapshotKey();
     await action();
-    await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!mounted) {
       return;
     }
-    await _refreshStatus(showLoading: false);
+    _startSettingsStatusPoll(baselineKey: baselineKey);
   }
 
   void _goNext() {
@@ -122,8 +170,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 
   void _onPageChanged(int page) {
-    // If consent is required and the user swiped past the privacy page
-    // without checking the checkbox, snap back.
     if (widget.requirePrivacyConsent && !_privacyChecked && page > 1) {
       setState(() => _currentPage = 1);
       _pageController.animateToPage(
@@ -149,8 +195,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return PopScope(
       canPop: !widget.requirePrivacyConsent,
@@ -177,21 +221,21 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           type: MaterialType.transparency,
           child: Column(
             children: [
-              _buildProgressBar(theme, l10n, colorScheme),
+              _buildProgressBar(l10n),
               Expanded(
                 child: PageView(
                   controller: _pageController,
                   physics: const ClampingScrollPhysics(),
                   onPageChanged: _onPageChanged,
                   children: [
-                    _buildWelcomePage(theme, l10n, colorScheme),
-                    _buildPrivacyPage(theme, l10n),
-                    _buildPermissionsPage(theme, l10n, colorScheme),
-                    _buildTipsPage(theme, l10n, colorScheme),
+                    _buildWelcomePage(l10n),
+                    _buildPrivacyPage(l10n),
+                    _buildPermissionsPage(l10n),
+                    _buildTipsPage(l10n),
                   ],
                 ),
               ),
-              _buildBottomBar(theme, l10n, colorScheme),
+              _buildBottomBar(l10n),
             ],
           ),
         ),
@@ -199,14 +243,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  // ── Progress bar ──────────────────────────────────────────────
-
-  Widget _buildProgressBar(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildProgressBar(AppLocalizations l10n) {
     if (_totalPages <= 1) return const SizedBox.shrink();
+
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Column(
@@ -216,30 +258,23 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             children: [
               Text(
                 '${_currentPage + 1} / $_totalPages',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: typo.xs2.copyWith(
+                  color: colors.mutedForeground,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 _buildPageTitle(l10n),
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.primary,
+                style: typo.xs2.copyWith(
+                  color: colors.primary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: (_currentPage + 1) / _totalPages,
-              minHeight: 4,
-              backgroundColor: colorScheme.surfaceContainerHighest,
-            ),
-          ),
+          const SizedBox(height: 8),
+          FDeterminateProgress(value: (_currentPage + 1) / _totalPages),
         ],
       ),
     );
@@ -252,153 +287,86 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return l10n.guideTipsPageTitle;
   }
 
-  // ── Language selector ────────────────────────────────────────
-
-  List<DropdownMenuItem<String>> buildLocaleDropdownItems(
-    BuildContext context,
-  ) {
-    final map = buildLocaleMenuMap(context);
-    return map.entries
-        .map(
-          (e) => DropdownMenuItem<String>(value: e.value, child: Text(e.key)),
-        )
-        .toList();
-  }
-
-  Widget _buildLanguageSelector(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildLanguageSelector(AppLocalizations l10n) {
     final provider = context.read<TimetableProvider?>();
     if (provider == null) return const SizedBox.shrink();
-    final currentTag = normalizeLocaleTagForDropdown(
-      provider.settings.appLocaleTag,
-    );
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
+    return SettingsSectionCard(
+      title: l10n.languageSectionTitle,
+      subtitle: l10n.languageSectionSubtitle,
+      child: FSelect<String>(
+        hint: l10n.languageModeLabel,
+        items: buildLocaleMenuMap(context),
+        control: FSelectControl.lifted(
+          value: normalizeLocaleTagForDropdown(provider.settings.appLocaleTag),
+          onChange: (value) {
+            if (value == null) return;
+            final next = provider.settings.copyWith(appLocaleTag: value);
+            provider.updateTimetableSettings(next);
+          },
+        ),
       ),
-      child: Row(
-        children: [
-          Icon(Icons.language_rounded, color: colorScheme.primary, size: 22),
-          const SizedBox(width: 12),
-          Expanded(
+    );
+  }
+
+  Widget _buildWelcomePage(AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      children: [
+        FCard.raw(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.languageSectionTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  l10n.welcomeAppName,
+                  style: typo.lg.copyWith(fontWeight: FontWeight.w800),
                 ),
+                const SizedBox(height: 8),
                 Text(
-                  l10n.languageSectionSubtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  l10n.welcomeSubtitle,
+                  style: typo.sm.copyWith(color: colors.mutedForeground),
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
-          Flexible(
-            child: DropdownButton<String>(
-              value: currentTag,
-              isExpanded: true,
-              items: buildLocaleDropdownItems(context),
-              onChanged: (value) {
-                if (value == null) return;
-                final next = provider.settings.copyWith(appLocaleTag: value);
-                provider.updateTimetableSettings(next);
-              },
-              borderRadius: BorderRadius.circular(12),
-              underline: const SizedBox.shrink(),
-              isDense: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Page 1: Welcome ─────────────────────────────────────────
-
-  Widget _buildWelcomePage(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      children: [
-        // App branding
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primaryContainer,
-                colorScheme.surfaceContainerHighest,
-              ],
-            ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.welcomeAppName,
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.welcomeSubtitle,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        // Language selector
-        _buildLanguageSelector(theme, l10n, colorScheme),
-        const SizedBox(height: 20),
-        // Action tiles
-        _WelcomeActionTile(
-          icon: Icons.rocket_launch_rounded,
-          title: l10n.startUsingTitle,
-          subtitle: l10n.startUsingSubtitle,
-          onTap: _goNext,
         ),
         const SizedBox(height: 12),
-        if (widget.onImportCourses != null) ...[
-          _WelcomeActionTile(
-            icon: Icons.file_upload_outlined,
-            title: l10n.importTimetableTitle,
-            subtitle: l10n.importTimetableSubtitle,
-            onTap: () => _runWelcomeAction(widget.onImportCourses!),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (widget.onRestoreBackup != null) ...[
-          _WelcomeActionTile(
-            icon: Icons.restore_page_rounded,
-            title: l10n.restoreBackupTitle,
-            subtitle: l10n.restoreBackupSubtitle,
-            onTap: () => _runWelcomeAction(widget.onRestoreBackup!),
-          ),
-        ],
+        _buildLanguageSelector(l10n),
+        const SizedBox(height: 12),
+        FTileGroup(
+          label: Text(l10n.welcomeTitle),
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            FTile(
+              prefix: _GuideIconBadge(icon: Icons.rocket_launch_rounded),
+              title: Text(l10n.startUsingTitle),
+              subtitle: Text(l10n.startUsingSubtitle),
+              suffix: const Icon(Icons.chevron_right_rounded),
+              onPress: _goNext,
+            ),
+            if (widget.onImportCourses != null)
+              FTile(
+                prefix: _GuideIconBadge(icon: Icons.file_upload_outlined),
+                title: Text(l10n.importTimetableTitle),
+                subtitle: Text(l10n.importTimetableSubtitle),
+                suffix: const Icon(Icons.chevron_right_rounded),
+                onPress: () => _runWelcomeAction(widget.onImportCourses!),
+              ),
+            if (widget.onRestoreBackup != null)
+              FTile(
+                prefix: _GuideIconBadge(icon: Icons.restore_page_rounded),
+                title: Text(l10n.restoreBackupTitle),
+                subtitle: Text(l10n.restoreBackupSubtitle),
+                suffix: const Icon(Icons.chevron_right_rounded),
+                onPress: () => _runWelcomeAction(widget.onRestoreBackup!),
+              ),
+          ],
+        ),
       ],
     );
   }
@@ -410,10 +378,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     }
   }
 
-  // ── Page 2: Privacy consent ──────────────────────────────────
-
-  Widget _buildPrivacyPage(ThemeData theme, AppLocalizations l10n) {
-    final colorScheme = theme.colorScheme;
+  Widget _buildPrivacyPage(AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
     final helperText = widget.requirePrivacyConsent
         ? l10n.guidePrivacyHelperRequireConsent
         : l10n.guidePrivacyHelperViewOnly;
@@ -421,322 +387,151 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        Row(
+        FTileGroup(
+          physics: const NeverScrollableScrollPhysics(),
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.school_rounded, color: colorScheme.onPrimary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
+            FTile(
+              prefix: _GuideIconBadge(icon: Icons.school_rounded, filled: true),
+              title: Text(
                 widget.requirePrivacyConsent
                     ? l10n.guidePrivacyReadBeforeUse
                     : l10n.guidePrivacyViewOnly,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
-        // Language selector
-        _buildLanguageSelector(theme, l10n, colorScheme),
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLowest,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
+        const SizedBox(height: 12),
+        _buildLanguageSelector(l10n),
+        const SizedBox(height: 12),
+        SettingsSectionCard(
+          title: l10n.guidePrivacySectionTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.guidePrivacySectionTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                l10n.guidePrivacyParagraph1,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(l10n.guidePrivacyParagraph1, style: typo.sm),
               const SizedBox(height: 8),
-              Text(
-                l10n.guidePrivacyParagraph2,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(l10n.guidePrivacyParagraph2, style: typo.sm),
               const SizedBox(height: 8),
-              Text(
-                l10n.guidePrivacyParagraph3,
-                style: theme.textTheme.bodyMedium,
-              ),
+              Text(l10n.guidePrivacyParagraph3, style: typo.sm),
               const SizedBox(height: 8),
-              Text(
-                l10n.guidePrivacyParagraph4,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.guideRiskTitle,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.guideRiskParagraph1,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.guideRiskParagraph2,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.guideRiskParagraph3,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colorScheme.outlineVariant),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      helperText,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      l10n.guideUmengPrivacyLink,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              Text(l10n.guidePrivacyParagraph4, style: typo.sm),
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        SettingsSectionCard(
+          title: l10n.guideRiskTitle,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(l10n.guideRiskParagraph1, style: typo.sm),
+              const SizedBox(height: 8),
+              Text(l10n.guideRiskParagraph2, style: typo.sm),
+              const SizedBox(height: 8),
+              Text(l10n.guideRiskParagraph3, style: typo.sm),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        SettingsSectionCard(
+          subtitle: helperText,
+          child: Text(
+            l10n.guideUmengPrivacyLink,
+            style: typo.xs2.copyWith(
+              color: context.theme.colors.mutedForeground,
+            ),
+          ),
+        ),
         if (widget.requirePrivacyConsent) ...[
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: () {
+          const SizedBox(height: 12),
+          FCheckbox(
+            leadingLabel: true,
+            label: Text(l10n.guidePrivacyConsentLabel),
+            semanticsLabel: l10n.guidePrivacyConsentLabel,
+            value: _privacyChecked,
+            onChange: (value) {
               setState(() {
-                _privacyChecked = !_privacyChecked;
+                _privacyChecked = value;
               });
             },
-            borderRadius: BorderRadius.circular(14),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: _privacyChecked,
-                    onChanged: (value) {
-                      setState(() {
-                        _privacyChecked = value ?? false;
-                      });
-                    },
-                  ),
-                  Expanded(
-                    child: Text(
-                      l10n.guidePrivacyConsentLabel,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                ],
-              ),
-            ),
           ),
         ],
       ],
     );
   }
 
-  // ── Page 2: Permissions ──────────────────────────────────────
-
-  Widget _buildPermissionsPage(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildPermissionsPage(AppLocalizations l10n) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: FCircularProgress());
     }
 
-    final items = _buildPermissionItems(l10n, colorScheme);
+    final items = _buildPermissionItems(l10n);
     final countableItems = items.where((item) => item.enabled != null).toList();
     final readyCount = countableItems
         .where((item) => item.enabled == true)
         .length;
+    final progress = countableItems.isEmpty
+        ? 0.0
+        : readyCount / countableItems.length;
 
-    return SingleChildScrollView(
+    return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(
-            l10n.guidePermissionsHeader,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.guidePermissionsSubtitle,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Progress bar
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$readyCount / ${countableItems.length} 已完成',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: countableItems.isEmpty
-                              ? 0.0
-                              : readyCount / countableItems.length,
-                          minHeight: 6,
-                          backgroundColor: colorScheme.surfaceContainerHighest,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                FilledButton.tonalIcon(
-                  onPressed: _refreshStatus,
-                  icon: const Icon(Icons.refresh, size: 18),
-                  label: Text(l10n.refreshStatusTooltip),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Permission list
-          Container(
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              children: items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                return Column(
+      children: [
+        FTileGroup(
+          label: Text(l10n.guidePermissionsHeader),
+          description: Text(l10n.guidePermissionsSubtitle),
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            FTile.raw(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (index > 0)
-                      Divider(
-                        height: 1,
-                        indent: 16,
-                        endIndent: 16,
-                        color: colorScheme.outlineVariant,
-                      ),
-                    _buildPermissionRow(item, colorScheme),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Tip
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.tertiaryContainer.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.lightbulb_outline_rounded,
-                  size: 18,
-                  color: colorScheme.tertiary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    l10n.guidePermissionsFooterHint,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onTertiaryContainer,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$readyCount / ${countableItems.length} 已完成',
+                            style: context.theme.typography.body.sm.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        FButton(
+                          variant: FButtonVariant.secondary,
+                          onPress: _refreshStatus,
+                          prefix: const Icon(Icons.refresh, size: 18),
+                          child: Text(l10n.refreshStatusTooltip),
+                        ),
+                      ],
                     ),
-                  ),
+                    const SizedBox(height: 10),
+                    FDeterminateProgress(value: progress),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        FTileGroup(
+          physics: const NeverScrollableScrollPhysics(),
+          children: [for (final item in items) _buildPermissionTile(item)],
+        ),
+        const SizedBox(height: 12),
+        FAlert(
+          icon: const Icon(Icons.lightbulb_outline_rounded, size: 18),
+          title: Text(l10n.guidePermissionsFooterHint),
+        ),
+      ],
     );
   }
 
-  List<_PermissionItem> _buildPermissionItems(
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
+  List<_PermissionItem> _buildPermissionItems(AppLocalizations l10n) {
     return [
       _PermissionItem(
         icon: Icons.notifications_active_outlined,
-        iconColor: Colors.blue,
         title: l10n.guideStatusNotificationPermission,
         enabled: _hasNotificationPermission,
         enabledLabel: l10n.guideStatusEnabled,
@@ -747,7 +542,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.auto_awesome,
-        iconColor: Colors.amber.shade700,
         title: l10n.guideStatusIslandSupport,
         enabled: _canPostPromoted,
         enabledLabel: l10n.guideStatusSystemAllowed,
@@ -758,7 +552,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.play_circle_outline_rounded,
-        iconColor: Colors.green.shade700,
         title: l10n.quickActionAutoStartTitle,
         enabled: _isAutoStartEnabled,
         enabledLabel: l10n.guideStatusEnabled,
@@ -767,7 +560,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.battery_saver_outlined,
-        iconColor: Colors.orange.shade700,
         title: l10n.guideStatusBatteryOptimization,
         enabled: _isIgnoringBatteryOptimizations,
         enabledLabel: l10n.guideStatusBatteryUnrestricted,
@@ -776,7 +568,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       ),
       _PermissionItem(
         icon: Icons.accessibility_new_rounded,
-        iconColor: Colors.purple,
         title: l10n.guideStatusKeepAlive,
         enabled: _isKeepAliveAccessibilityEnabled,
         enabledLabel: l10n.guideStatusEnabled,
@@ -786,195 +577,162 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     ];
   }
 
-  Widget _buildPermissionRow(_PermissionItem item, ColorScheme colorScheme) {
-    final statusColor = item.enabled == null
-        ? colorScheme.onSurfaceVariant
-        : item.enabled!
-        ? Colors.green.shade700
-        : Colors.orange.shade700;
-    return InkWell(
-      onTap: item.onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            Icon(item.icon, color: item.iconColor, size: 22),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                item.title,
-                style: const TextStyle(fontWeight: FontWeight.w600),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                item.enabled == true ? item.enabledLabel : item.disabledLabel,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            ),
-            if (item.onTap != null) ...[
-              const SizedBox(width: 8),
-              Icon(
-                item.enabled == true
-                    ? Icons.check_circle_rounded
-                    : Icons.chevron_right_rounded,
-                size: 20,
-                color: item.enabled == true
-                    ? Colors.green.shade700
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ],
-        ),
+  FTile _buildPermissionTile(_PermissionItem item) {
+    final colors = context.theme.colors;
+    final enabled = item.enabled == true;
+    final statusLabel = enabled ? item.enabledLabel : item.disabledLabel;
+
+    return FTile(
+      prefix: Icon(item.icon, color: colors.primary),
+      title: Text(item.title),
+      suffix: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FBadge(
+            variant: enabled ? FBadgeVariant.secondary : FBadgeVariant.outline,
+            child: Text(statusLabel),
+          ),
+          const SizedBox(width: 8),
+          Icon(
+            enabled ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
+            size: 20,
+            color: enabled ? colors.primary : colors.mutedForeground,
+          ),
+        ],
       ),
+      onPress: item.onTap,
     );
   }
 
-  // ── Page 3: Tips ────────────────────────────────────────────
+  Widget _buildTipsPage(AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
 
-  Widget _buildTipsPage(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        Text(
-          l10n.guideTipsHeader,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          l10n.guideTipsSubtitle,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Short name
-        _buildTipTile(
-          theme: theme,
-          colorScheme: colorScheme,
-          icon: Icons.edit_note_rounded,
-          title: l10n.guideShortNameAdviceTitle,
-          body: Column(
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 8),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(l10n.guideShortNameAdviceSubtitle),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      l10n.guideShortNameRecommended,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Expanded(child: Text(l10n.guideShortNameRecommendedExample)),
-                ],
+              Text(
+                l10n.guideTipsHeader,
+                style: typo.md.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 4),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 72,
-                    child: Text(
-                      l10n.guideShortNameNotRecommended,
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                  Expanded(
-                    child: Text(l10n.guideShortNameNotRecommendedExample),
-                  ),
-                ],
+              Text(
+                l10n.guideTipsSubtitle,
+                style: typo.sm.copyWith(color: colors.mutedForeground),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonalIcon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        settings: const RouteSettings(
-                          name: '/courses/overview',
-                        ),
-                        builder: (_) => const CourseOverviewScreen(),
+            ],
+          ),
+        ),
+        SettingsSectionCard(
+          child: FAccordion(
+            children: [
+              FAccordionItem(
+                title: Row(
+                  children: [
+                    Icon(Icons.edit_note_rounded, color: colors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.guideShortNameAdviceTitle,
+                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: Text(l10n.guideSetCourseShortNameAction),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.guideShortNameAdviceSubtitle, style: typo.sm),
+                    const SizedBox(height: 10),
+                    _buildShortNameExampleRow(
+                      l10n.guideShortNameRecommended,
+                      l10n.guideShortNameRecommendedExample,
+                    ),
+                    const SizedBox(height: 4),
+                    _buildShortNameExampleRow(
+                      l10n.guideShortNameNotRecommended,
+                      l10n.guideShortNameNotRecommendedExample,
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FButton(
+                        variant: FButtonVariant.secondary,
+                        onPress: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              settings: const RouteSettings(
+                                name: '/courses/overview',
+                              ),
+                              builder: (_) => const CourseOverviewScreen(),
+                            ),
+                          );
+                        },
+                        prefix: const Icon(Icons.edit_outlined, size: 18),
+                        child: Text(l10n.guideSetCourseShortNameAction),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Import guide
-        _buildTipTile(
-          theme: theme,
-          colorScheme: colorScheme,
-          icon: Icons.import_export_rounded,
-          title: l10n.guideImportMethodsTitle,
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.guideImportMethodsSubtitle),
-              const SizedBox(height: 10),
-              _buildNumberedLine('1', l10n.guideImportMethodStep1),
-              const SizedBox(height: 8),
-              _buildNumberedLine('2', l10n.guideImportMethodStep2),
-              const SizedBox(height: 8),
-              _buildNumberedLine('3', l10n.guideImportMethodStep3),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerLowest,
-                  borderRadius: BorderRadius.circular(12),
+              FAccordionItem(
+                title: Row(
+                  children: [
+                    Icon(Icons.import_export_rounded, color: colors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.guideImportMethodsTitle,
+                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  l10n.guideImportMethodExtra,
-                  style: theme.textTheme.bodySmall,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.guideImportMethodsSubtitle, style: typo.sm),
+                    const SizedBox(height: 10),
+                    _buildNumberedLine('1', l10n.guideImportMethodStep1),
+                    const SizedBox(height: 8),
+                    _buildNumberedLine('2', l10n.guideImportMethodStep2),
+                    const SizedBox(height: 8),
+                    _buildNumberedLine('3', l10n.guideImportMethodStep3),
+                    const SizedBox(height: 10),
+                    Text(l10n.guideImportMethodExtra, style: typo.xs2),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Final tips
-        _buildTipTile(
-          theme: theme,
-          colorScheme: colorScheme,
-          icon: Icons.tips_and_updates_rounded,
-          title: l10n.guideFinalTipsTitle,
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.guideFinalTip1),
-              const SizedBox(height: 8),
-              Text(l10n.guideFinalTip2),
-              const SizedBox(height: 8),
-              Text(l10n.guideFinalTip3),
+              FAccordionItem(
+                title: Row(
+                  children: [
+                    Icon(Icons.tips_and_updates_rounded, color: colors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.guideFinalTipsTitle,
+                        style: typo.sm.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(l10n.guideFinalTip1, style: typo.sm),
+                    const SizedBox(height: 8),
+                    Text(l10n.guideFinalTip2, style: typo.sm),
+                    const SizedBox(height: 8),
+                    Text(l10n.guideFinalTip3, style: typo.sm),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -982,57 +740,46 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     );
   }
 
-  Widget _buildTipTile({
-    required ThemeData theme,
-    required ColorScheme colorScheme,
-    required IconData icon,
-    required String title,
-    required Widget body,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: ExpansionTile(
-        leading: Icon(icon, color: colorScheme.primary),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        shape: const Border(),
-        collapsedShape: const Border(),
-        children: [body],
-      ),
+  Widget _buildShortNameExampleRow(String label, String example) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 72,
+          child: Text(
+            label,
+            style: context.theme.typography.body.sm.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(child: Text(example, style: context.theme.typography.body.sm)),
+      ],
     );
   }
 
   Widget _buildNumberedLine(String step, String text) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.theme.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: colorScheme.primaryContainer,
-          foregroundColor: colorScheme.onPrimaryContainer,
+          backgroundColor: colors.secondary,
+          foregroundColor: colors.secondaryForeground,
           child: Text(
             step,
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Text(text)),
+        Expanded(child: Text(text, style: context.theme.typography.body.sm)),
       ],
     );
   }
 
-  // ── Bottom navigation bar ────────────────────────────────────
-
-  Widget _buildBottomBar(
-    ThemeData theme,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildBottomBar(AppLocalizations l10n) {
+    final colors = context.theme.colors;
     final isFirstPage = _currentPage == 0;
     final isLastPage = _currentPage == _totalPages - 1;
     final showPrev = !isFirstPage;
@@ -1044,40 +791,38 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
         decoration: BoxDecoration(
-          color: colorScheme.surface,
-          border: Border(top: BorderSide(color: colorScheme.outlineVariant)),
+          color: colors.background,
+          border: Border(top: BorderSide(color: colors.border)),
         ),
         child: Row(
           children: [
-            // Left button
             if (isPrivacyPage)
-              TextButton(
-                onPressed: _exitWithoutConsent,
+              FButton(
+                variant: FButtonVariant.ghost,
+                onPress: _exitWithoutConsent,
                 child: Text(l10n.exitAppAction),
               )
             else if (showPrev)
-              TextButton.icon(
-                onPressed: _goPrev,
-                icon: const Icon(Icons.arrow_back_rounded, size: 18),
-                label: Text(l10n.guidePrevButton),
+              FButton(
+                variant: FButtonVariant.ghost,
+                onPress: _goPrev,
+                prefix: const Icon(Icons.arrow_back_rounded, size: 18),
+                child: Text(l10n.guidePrevButton),
               )
             else
               const Spacer(),
-
             const Spacer(),
-
-            // Right button
             if (!isLastPage)
-              FilledButton.icon(
-                onPressed: canGoNext ? _goNext : null,
-                icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                label: Text(l10n.guideNextButton),
+              FButton(
+                onPress: canGoNext ? _goNext : null,
+                suffix: const Icon(Icons.arrow_forward_rounded, size: 18),
+                child: Text(l10n.guideNextButton),
               )
             else
-              FilledButton.icon(
-                onPressed: _finishGuide,
-                icon: const Icon(Icons.check_rounded, size: 18),
-                label: Text(
+              FButton(
+                onPress: _finishGuide,
+                suffix: const Icon(Icons.check_rounded, size: 18),
+                child: Text(
                   widget.requirePrivacyConsent
                       ? l10n.agreeAndStartAction
                       : l10n.startUsingAction,
@@ -1109,69 +854,27 @@ class _UserGuideScreenState extends State<UserGuideScreen>
   }
 }
 
-class _WelcomeActionTile extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+class _GuideIconBadge extends StatelessWidget {
+  const _GuideIconBadge({required this.icon, this.filled = false});
 
-  const _WelcomeActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
+  final IconData icon;
+  final bool filled;
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(icon, color: colorScheme.primary),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
+    final colors = context.theme.colors;
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: filled ? colors.primary : colors.secondary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      alignment: Alignment.center,
+      child: Icon(
+        icon,
+        size: 20,
+        color: filled ? colors.primaryForeground : colors.primary,
       ),
     );
   }
@@ -1179,7 +882,6 @@ class _WelcomeActionTile extends StatelessWidget {
 
 class _PermissionItem {
   final IconData icon;
-  final Color iconColor;
   final String title;
   final bool? enabled;
   final String enabledLabel;
@@ -1188,7 +890,6 @@ class _PermissionItem {
 
   const _PermissionItem({
     required this.icon,
-    required this.iconColor,
     required this.title,
     required this.enabled,
     required this.enabledLabel,

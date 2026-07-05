@@ -188,8 +188,8 @@ void main() {
     await tester.tap(find.text('自定义周'));
     await _pumpScreen(tester);
 
-    final weekOne = find.widgetWithText(FButton, '1');
-    final weekFive = find.widgetWithText(FButton, '5');
+    final weekOne = find.text('1');
+    final weekFive = find.text('5');
 
     expect(weekOne, findsOneWidget);
     expect(weekFive, findsOneWidget);
@@ -197,7 +197,11 @@ void main() {
       tester.getTopLeft(weekFive).dy,
       greaterThan(tester.getTopLeft(weekOne).dy),
     );
-    expect(tester.getSize(weekOne).height, greaterThanOrEqualTo(44));
+    final weekOneTile = find.ancestor(
+      of: weekOne,
+      matching: find.byType(InkWell),
+    );
+    expect(tester.getSize(weekOneTile).height, greaterThanOrEqualTo(44));
   });
 
   testWidgets('range week filter uses compact parity chips', (tester) async {
