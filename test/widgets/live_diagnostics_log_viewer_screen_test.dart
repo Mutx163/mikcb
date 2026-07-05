@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/screens/live_diagnostics_log_viewer_screen.dart';
 
@@ -47,6 +48,11 @@ extras=
 
     expect(find.text('正在记录应用日志'), findsOneWidget);
     expect(find.text('Render failed'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Snapshot payload captured'),
+      48,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.text('Snapshot payload captured'), findsOneWidget);
     expect(find.text('显示 2 / 2 条日志'), findsOneWidget);
 

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:forui/forui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
@@ -92,9 +93,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: TestApp(
-          home: AddCourseScreen(course: course),
-        ),
+        child: TestApp(home: AddCourseScreen(course: course)),
       ),
     );
     await _pumpScreen(tester);
@@ -102,7 +101,9 @@ void main() {
     expect(find.bySemanticsLabel('删除课程'), findsOneWidget);
   });
 
-  testWidgets('editing course with invalid color still renders', (tester) async {
+  testWidgets('editing course with invalid color still renders', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -125,9 +126,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: TestApp(
-          home: AddCourseScreen(course: course),
-        ),
+        child: TestApp(home: AddCourseScreen(course: course)),
       ),
     );
     await _pumpScreen(tester);
@@ -136,8 +135,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('single lesson mode can default to today weekday',
-      (tester) async {
+  testWidgets('single lesson mode can default to today weekday', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -149,10 +149,7 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: TestApp(
-          home: AddCourseScreen(
-            initialWeek: 4,
-            initialDayOfWeek: todayWeekday,
-          ),
+          home: AddCourseScreen(initialWeek: 4, initialDayOfWeek: todayWeekday),
         ),
       ),
     );
@@ -163,8 +160,9 @@ void main() {
     expect(find.text(_weekdayLabelForTest(todayWeekday)), findsOneWidget);
   });
 
-  testWidgets('custom week grid wraps earlier on narrow screens',
-      (tester) async {
+  testWidgets('custom week grid wraps earlier on narrow screens', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -177,9 +175,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: AddCourseScreen(),
-        ),
+        child: const TestApp(home: AddCourseScreen()),
       ),
     );
     await _pumpScreen(tester);
@@ -187,18 +183,20 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -900));
     await _pumpScreen(tester);
     // Open week picker dialog
-    await tester.tap(find.text('周次设置'));
+    await tester.tap(find.textContaining('哪些周上'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('自定义周'));
     await _pumpScreen(tester);
 
-    final weekOne = find.widgetWithText(FilledButton, '1');
-    final weekFive = find.widgetWithText(FilledButton, '5');
+    final weekOne = find.widgetWithText(FButton, '1');
+    final weekFive = find.widgetWithText(FButton, '5');
 
     expect(weekOne, findsOneWidget);
     expect(weekFive, findsOneWidget);
-    expect(tester.getTopLeft(weekFive).dy,
-        greaterThan(tester.getTopLeft(weekOne).dy));
+    expect(
+      tester.getTopLeft(weekFive).dy,
+      greaterThan(tester.getTopLeft(weekOne).dy),
+    );
     expect(tester.getSize(weekOne).height, greaterThanOrEqualTo(44));
   });
 
@@ -212,9 +210,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: AddCourseScreen(),
-        ),
+        child: const TestApp(home: AddCourseScreen()),
       ),
     );
     await _pumpScreen(tester);
@@ -223,18 +219,22 @@ void main() {
     await _pumpScreen(tester);
 
     // Open week picker dialog
-    await tester.tap(find.text('周次设置'));
+    await tester.tap(find.textContaining('哪些周上'));
     await tester.pumpAndSettle();
 
     expect(find.text('全部'), findsOneWidget);
-    expect(find.byType(ChoiceChip), findsNWidgets(3));
+    expect(find.text('单周'), findsOneWidget);
+    expect(find.text('双周'), findsOneWidget);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '单周'));
+    await tester.tap(find.text('单周'));
     await _pumpScreen(tester);
 
-    final selectedChip = tester.widget<ChoiceChip>(
-      find.widgetWithText(ChoiceChip, '单周'),
+    expect(
+      find.descendant(
+        of: find.widgetWithText(FTile, '单周'),
+        matching: find.byIcon(Icons.check_rounded),
+      ),
+      findsOneWidget,
     );
-    expect(selectedChip.selected, isTrue);
   });
 }
