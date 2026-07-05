@@ -13,80 +13,65 @@ class OverviewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = context.theme;
 
     if (stats.totalCourses == 0) {
       return const SizedBox.shrink();
     }
 
     return FCard.raw(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primaryContainer,
-              colorScheme.tertiaryContainer,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // 第一行：总课程门数 + 总课时数
-            Row(
-              children: [
-                Expanded(
-                  child: _BigNumber(
-                    icon: Icons.menu_book_rounded,
-                    value: '${stats.totalCourses}',
-                    label: l10n.statisticsSemesterLabelCourses,
-                    colorScheme: colorScheme,
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _MetricCell(
+                      icon: Icons.menu_book_rounded,
+                      value: '${stats.totalCourses}',
+                      label: l10n.statisticsSemesterLabelCourses,
+                    ),
                   ),
-                ),
-                Container(
-                  width: 1,
-                  height: 48,
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
-                ),
-                Expanded(
-                  child: _BigNumber(
-                    icon: Icons.schedule_rounded,
-                    value: '${stats.totalSections}',
-                    label: l10n.statisticsSemesterLabelSections,
-                    colorScheme: colorScheme,
+                  const _VerticalDivider(),
+                  Expanded(
+                    child: _MetricCell(
+                      icon: Icons.schedule_rounded,
+                      value: '${stats.totalSections}',
+                      label: l10n.statisticsSemesterLabelSections,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 20),
-            // 第二行：上课周数 + 最长连续天数
-            Row(
-              children: [
-                Expanded(
-                  child: _BigNumber(
-                    icon: Icons.calendar_today_rounded,
-                    value: '${stats.totalWeeks}',
-                    label: l10n.statisticsSemesterLabelWeeks,
-                    colorScheme: colorScheme,
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Divider(
+                height: 1,
+                color: theme.colors.border.withValues(alpha: 0.6),
+              ),
+            ),
+            IntrinsicHeight(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _MetricCell(
+                      icon: Icons.calendar_today_rounded,
+                      value: '${stats.totalWeeks}',
+                      label: l10n.statisticsSemesterLabelWeeks,
+                    ),
                   ),
-                ),
-                Container(
-                  width: 1,
-                  height: 48,
-                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
-                ),
-                Expanded(
-                  child: _BigNumber(
-                    icon: Icons.local_fire_department_rounded,
-                    value: '${stats.longestStreak}',
-                    label: l10n.statisticsSemesterLabelDayStreak,
-                    colorScheme: colorScheme,
+                  const _VerticalDivider(),
+                  Expanded(
+                    child: _MetricCell(
+                      icon: Icons.local_fire_department_rounded,
+                      value: '${stats.longestStreak}',
+                      label: l10n.statisticsSemesterLabelDayStreak,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -95,48 +80,68 @@ class OverviewSection extends StatelessWidget {
   }
 }
 
-class _BigNumber extends StatelessWidget {
+class _MetricCell extends StatelessWidget {
   final IconData icon;
   final String value;
   final String label;
-  final ColorScheme colorScheme;
 
-  const _BigNumber({
+  const _MetricCell({
     required this.icon,
     required this.value,
     required this.label,
-    required this.colorScheme,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final theme = context.theme;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(
-          icon,
-          size: 24,
-          color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: theme.colors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 22, color: theme.colors.primary),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
           value,
-          style: theme.textTheme.displaySmall?.copyWith(
+          style: theme.typography.display.sm.copyWith(
             fontWeight: FontWeight.w900,
-            color: colorScheme.onPrimaryContainer,
+            color: theme.colors.foreground,
             height: 1,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           label,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: theme.typography.body.xs.copyWith(
+            color: theme.colors.mutedForeground,
           ),
         ),
       ],
+    );
+  }
+}
+
+class _VerticalDivider extends StatelessWidget {
+  const _VerticalDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.theme;
+
+    return Container(
+      width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      color: theme.colors.border.withValues(alpha: 0.6),
     );
   }
 }
