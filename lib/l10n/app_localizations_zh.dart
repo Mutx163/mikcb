@@ -3755,7 +3755,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String rescheduleCurrentOccurrenceSubtitle(int week) {
-    return '只调整第 $week 周这一节，原课程在这一周会自动移除，其他周保持不变。';
+    return '仅改第 $week 周本节，原课该周移除，其他周不变。';
   }
 
   @override
@@ -8705,7 +8705,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String rescheduleCurrentOccurrenceSubtitle(int week) {
-    return '只調整第 $week 周這一節，原課程在這一周会自動移除，其他周保持不变。';
+    return '僅改第 $week 週本節，原課該週移除，其他週不變。';
   }
 
   @override
@@ -13655,7 +13655,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String rescheduleCurrentOccurrenceSubtitle(int week) {
-    return '只調整第 $week 周這一節，原課程在這一周会自動移除，其他周保持不变。';
+    return '僅改第 $week 週本節，原課該週移除，其他週不變。';
   }
 
   @override

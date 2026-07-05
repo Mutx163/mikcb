@@ -2180,7 +2180,7 @@
   },
   "noChangesDetected": "未檢測到变更",
   "rescheduleCurrentOccurrenceTitle": "調本周這節課",
-  "rescheduleCurrentOccurrenceSubtitle": "只調整第 {week} 周這一節，原課程在這一周会自動移除，其他周保持不变。",
+  "rescheduleCurrentOccurrenceSubtitle": "僅改第 {week} 週本節，原課該週移除，其他週不變。",
   "@rescheduleCurrentOccurrenceSubtitle": {
     "placeholders": {
       "week": {

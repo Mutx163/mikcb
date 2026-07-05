@@ -6856,7 +6856,7 @@ abstract class AppLocalizations {
   /// No description provided for @rescheduleCurrentOccurrenceSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只调整第 {week} 周这一节，原课程在这一周会自动移除，其他周保持不变。'**
+  /// **'仅改第 {week} 周本节，原课该周移除，其他周不变。'**
   String rescheduleCurrentOccurrenceSubtitle(int week);
 
   /// No description provided for @rescheduleTargetWeekLabel.
