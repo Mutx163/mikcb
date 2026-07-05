@@ -154,7 +154,6 @@ class _HomeMenuActionTile extends StatelessWidget {
     final typo = context.theme.typography;
     final colorScheme = Theme.of(context).colorScheme;
     final highlightColor = accentColor ?? colorScheme.primary;
-    final labelFontSize = (typo.body.xs3.fontSize ?? 10) * 0.85;
 
     return FCard.raw(
       child: Material(
@@ -163,7 +162,7 @@ class _HomeMenuActionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -206,17 +205,16 @@ class _HomeMenuActionTile extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 7),
                 Text(
                   title,
                   maxLines: 2,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                  style: typo.body.xs3.copyWith(
-                    fontSize: labelFontSize,
+                  style: typo.body.xs2.copyWith(
                     fontWeight: FontWeight.w400,
-                    height: 1.1,
-                    color: colors.mutedForeground,
+                    height: 1.15,
+                    color: colors.foreground,
                   ),
                 ),
               ],

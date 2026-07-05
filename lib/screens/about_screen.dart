@@ -657,9 +657,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   const SizedBox(height: 24),
                   Text(
                     l10n.aboutCheckingLatestVersion,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -690,9 +688,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   const SizedBox(height: 12),
                   Text(
                     l10n.aboutReadVersionFailed,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: theme.textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -787,9 +783,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             // 状态标题
             Text(
               result.hasUpdate ? '有版本更新' : '已是最新版本',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-              ),
+              style: theme.textTheme.headlineSmall,
             ),
             const SizedBox(height: 4),
             // 更新时间
@@ -818,7 +812,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       result.currentVersion,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -844,7 +837,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                       release?.version ?? l10n.aboutUnreleasedLabel,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -925,9 +917,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                 const SizedBox(width: 8),
                 Text(
                   l10n.aboutReleaseNotesTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: theme.textTheme.titleMedium,
                 ),
               ],
             ),
@@ -942,132 +932,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               child: ReleaseNotesMarkdown(
                 data: result.latestRelease!.body.trim(),
                 onTapLink: _openUrl,
+                plainTypography: true,
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDownloadMethodTab(ThemeData theme) {
-    final colorScheme = theme.colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '应用内下载',
-              isSelected: !_useSystemDownloader,
-              onTap: () => setState(() => _useSystemDownloader = false),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '系统管理器',
-              isSelected: _useSystemDownloader,
-              onTap: () => setState(() => _useSystemDownloader = true),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDownloadChannelTab(ThemeData theme, TimetableSettings settings) {
-    final colorScheme = theme.colorScheme;
-    final downloadChannel = AppUpdateDownloadChannelX.fromValue(
-      settings.appUpdateDownloadChannel,
-    );
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '蒲公英下载',
-              isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _SegmentedTabButton(
-              label: 'GitHub 下载',
-              isSelected: downloadChannel == AppUpdateDownloadChannel.github,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.github),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggle(
-    ThemeData theme, {
-    required bool value,
-    required ValueChanged<bool>? onChanged,
-  }) {
-    final colorScheme = theme.colorScheme;
-    return GestureDetector(
-      onTap: onChanged == null ? null : () => onChanged(!value),
-      child: Container(
-        width: 52,
-        height: 30,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
-          color: value ? colorScheme.primary : colorScheme.surfaceContainerHigh,
-          border: Border.all(
-            color: value ? colorScheme.primary : colorScheme.outlineVariant,
-            width: 1.5,
-          ),
-        ),
-        child: Align(
-          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: value
-                    ? colorScheme.onPrimary
-                    : colorScheme.onSurfaceVariant,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );
@@ -1795,7 +1663,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               progressText,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.primary,
-                fontWeight: FontWeight.w700,
               ),
             ),
             if (progress == null && _downloadedBytes > 0) ...[
@@ -1985,56 +1852,6 @@ class _ArcPainter extends CustomPainter {
   }
 }
 
-class _SegmentedTabButton extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final Color selectedColor;
-  final Color selectedTextColor;
-  final Color unselectedTextColor;
-
-  const _SegmentedTabButton({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-    required this.selectedColor,
-    required this.selectedTextColor,
-    required this.unselectedTextColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: selectedColor.withValues(alpha: 0.3),
-                    blurRadius: 4,
-                    offset: const Offset(0, 1),
-                  ),
-                ]
-              : null,
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: isSelected ? selectedTextColor : unselectedTextColor,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AdvancedOptionsScreen extends StatefulWidget {
   final ThemeData theme;
   final TimetableSettings settings;
@@ -2123,17 +1940,9 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             return ListView(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               children: [
-                SettingsSectionCard(
-                  title: '下载渠道',
-                  subtitle: '蒲公英国内高速下载，GitHub 支持镜像加速',
-                  child: _buildDownloadChannelTab(theme, settings),
-                ),
+                _buildDownloadChannelGroup(theme, settings),
                 const SizedBox(height: 12),
-                SettingsSectionCard(
-                  title: '下载安装包方式',
-                  subtitle: '选择应用内直接下载或系统下载管理器',
-                  child: _buildDownloadMethodTab(theme),
-                ),
+                _buildDownloadMethodGroup(theme),
                 const SizedBox(height: 12),
                 FTileGroup(
                   physics: const NeverScrollableScrollPhysics(),
@@ -2151,66 +1960,50 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                 if (downloadChannel == AppUpdateDownloadChannel.github &&
                     downloadSource == AppUpdateDownloadSource.mirror) ...[
                   const SizedBox(height: 12),
+                  _buildMirrorPresetGroup(
+                    theme,
+                    settings: settings,
+                    mirrorPreset: mirrorPreset,
+                    recommendedPreset: recommendedMirrorPreset,
+                  ),
+                  const SizedBox(height: 12),
                   SettingsSectionCard(
-                    title: l10n.aboutMirrorSectionTitle,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    plainTitle: true,
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
                       children: [
-                        ...AppUpdateMirrorPreset.values.map(
-                          (preset) => _buildMirrorRadioTile(
-                            theme,
-                            preset: preset,
-                            currentPreset: mirrorPreset,
-                            recommendedPreset: recommendedMirrorPreset,
-                            onTap: () =>
-                                _handleMirrorPresetTap(preset, settings),
+                        FButton(
+                          variant: FButtonVariant.secondary,
+                          onPress:
+                              originalDownloadUrl == null || _isProbingMirrors
+                              ? null
+                              : () => _probeAndRecommendMirrors(
+                                  originalDownloadUrl,
+                                  customMirrorUrlPrefix:
+                                      settings.appUpdateMirrorUrlPrefix,
+                                ),
+                          prefix: Icon(
+                            _isProbingMirrors
+                                ? Icons.hourglass_top_rounded
+                                : Icons.speed_rounded,
+                            size: 18,
+                          ),
+                          child: Text(
+                            _isProbingMirrors
+                                ? l10n.aboutProbingMirrors
+                                : l10n.aboutProbeMirrorsAction,
                           ),
                         ),
-                        const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FButton(
-                                variant: FButtonVariant.secondary,
-                                onPress:
-                                    originalDownloadUrl == null ||
-                                        _isProbingMirrors
-                                    ? null
-                                    : () => _probeAndRecommendMirrors(
-                                        originalDownloadUrl,
-                                        customMirrorUrlPrefix:
-                                            settings.appUpdateMirrorUrlPrefix,
-                                      ),
-                                prefix: Icon(
-                                  _isProbingMirrors
-                                      ? Icons.hourglass_top_rounded
-                                      : Icons.speed_rounded,
-                                  size: 18,
-                                ),
-                                child: Text(
-                                  _isProbingMirrors
-                                      ? l10n.aboutProbingMirrors
-                                      : l10n.aboutProbeMirrorsAction,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: FButton(
-                                variant: FButtonVariant.secondary,
-                                onPress: _editMirrorUrlPrefix,
-                                prefix: const Icon(
-                                  Icons.edit_outlined,
-                                  size: 18,
-                                ),
-                                child: Text(
-                                  mirrorPreset.usesCustomUrl
-                                      ? l10n.aboutEditCustomMirrorAction
-                                      : l10n.aboutSetCustomMirrorAction,
-                                ),
-                              ),
-                            ),
-                          ],
+                        FButton(
+                          variant: FButtonVariant.secondary,
+                          onPress: _editMirrorUrlPrefix,
+                          prefix: const Icon(Icons.edit_outlined, size: 18),
+                          child: Text(
+                            mirrorPreset.usesCustomUrl
+                                ? l10n.aboutEditCustomMirrorAction
+                                : l10n.aboutSetCustomMirrorAction,
+                          ),
                         ),
                       ],
                     ),
@@ -2226,139 +2019,125 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
-  Widget _buildDownloadChannelTab(ThemeData theme, TimetableSettings settings) {
+  Widget _buildDownloadChannelGroup(
+    ThemeData theme,
+    TimetableSettings settings,
+  ) {
     final colorScheme = theme.colorScheme;
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
     );
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
+    return SettingsSectionCard(
+      title: '下载渠道',
+      subtitle: '蒲公英国内高速下载，GitHub 支持镜像加速',
+      plainTitle: true,
+      child: FTileGroup(
+        physics: const NeverScrollableScrollPhysics(),
         children: [
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '蒲公英下载',
-              isSelected: downloadChannel == AppUpdateDownloadChannel.pgyer,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
+          FTile(
+            title: const Text('蒲公英下载'),
+            suffix: downloadChannel == AppUpdateDownloadChannel.pgyer
+                ? Icon(
+                    Icons.check_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
+                  )
+                : null,
+            onPress: () =>
+                _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
           ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _SegmentedTabButton(
-              label: 'GitHub 下载',
-              isSelected: downloadChannel == AppUpdateDownloadChannel.github,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.github),
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
+          FTile(
+            title: const Text('GitHub 下载'),
+            suffix: downloadChannel == AppUpdateDownloadChannel.github
+                ? Icon(
+                    Icons.check_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
+                  )
+                : null,
+            onPress: () =>
+                _updateDownloadChannel(AppUpdateDownloadChannel.github),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDownloadMethodTab(ThemeData theme) {
+  Widget _buildDownloadMethodGroup(ThemeData theme) {
     final colorScheme = theme.colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
+    return SettingsSectionCard(
+      title: '下载安装包方式',
+      subtitle: '选择应用内直接下载或系统下载管理器',
+      plainTitle: true,
+      child: FTileGroup(
+        physics: const NeverScrollableScrollPhysics(),
         children: [
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '应用内下载',
-              isSelected: !_useSystemDownloader,
-              onTap: () {
-                setState(() => _useSystemDownloader = false);
-                widget.onUseSystemDownloaderChanged(false);
-              },
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
+          FTile(
+            title: const Text('应用内下载'),
+            suffix: !_useSystemDownloader
+                ? Icon(
+                    Icons.check_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
+                  )
+                : null,
+            onPress: () {
+              setState(() => _useSystemDownloader = false);
+              widget.onUseSystemDownloaderChanged(false);
+            },
           ),
-          const SizedBox(width: 4),
-          Expanded(
-            child: _SegmentedTabButton(
-              label: '系统管理器',
-              isSelected: _useSystemDownloader,
-              onTap: () {
-                setState(() => _useSystemDownloader = true);
-                widget.onUseSystemDownloaderChanged(true);
-              },
-              selectedColor: colorScheme.primary,
-              selectedTextColor: colorScheme.onPrimary,
-              unselectedTextColor: colorScheme.onSurfaceVariant,
-            ),
+          FTile(
+            title: const Text('系统管理器'),
+            suffix: _useSystemDownloader
+                ? Icon(
+                    Icons.check_rounded,
+                    color: colorScheme.primary,
+                    size: 20,
+                  )
+                : null,
+            onPress: () {
+              setState(() => _useSystemDownloader = true);
+              widget.onUseSystemDownloaderChanged(true);
+            },
           ),
         ],
       ),
     );
   }
 
-  Widget _buildToggle(
+  Widget _buildMirrorPresetGroup(
     ThemeData theme, {
-    required bool value,
-    required ValueChanged<bool>? onChanged,
+    required TimetableSettings settings,
+    required AppUpdateMirrorPreset mirrorPreset,
+    required AppUpdateMirrorPreset? recommendedPreset,
   }) {
-    final colorScheme = theme.colorScheme;
-    return GestureDetector(
-      onTap: onChanged == null ? null : () => onChanged(!value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 48,
-        height: 28,
-        decoration: BoxDecoration(
-          color: onChanged == null
-              ? colorScheme.surfaceContainerHighest
-              : value
-              ? colorScheme.primary
-              : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Stack(
-          children: [
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 200),
-              left: value ? 22 : 2,
-              top: 2,
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: onChanged == null
-                      ? colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
-                      : value
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurfaceVariant,
-                  shape: BoxShape.circle,
-                ),
-              ),
+    final l10n = AppLocalizations.of(context)!;
+    return SettingsSectionCard(
+      title: l10n.aboutMirrorSectionTitle,
+      plainTitle: true,
+      child: FTileGroup(
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          for (final preset in AppUpdateMirrorPreset.values)
+            _buildMirrorPresetTile(
+              theme,
+              preset: preset,
+              currentPreset: mirrorPreset,
+              recommendedPreset: recommendedPreset,
+              settings: settings,
+              onTap: () => _handleMirrorPresetTap(preset, settings),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildMirrorRadioTile(
+  FTile _buildMirrorPresetTile(
     ThemeData theme, {
     required AppUpdateMirrorPreset preset,
     required AppUpdateMirrorPreset currentPreset,
     required AppUpdateMirrorPreset? recommendedPreset,
+    required TimetableSettings settings,
     required VoidCallback onTap,
   }) {
     final l10n = AppLocalizations.of(context)!;
@@ -2369,7 +2148,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final isSelected = currentPreset == preset;
     final isRecommended =
         recommendedPreset == preset && probeState?.result.isSuccess == true;
-    final settings = context.read<TimetableProvider>().settings;
     final subtitleText =
         preset.usesCustomUrl && settings.appUpdateMirrorUrlPrefix.trim().isEmpty
         ? l10n.aboutFillCustomMirrorFirst
@@ -2380,92 +2158,34 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                 )
               : preset.description);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: isSelected
-            ? colorScheme.primaryContainer
-            : colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? colorScheme.primary
-                          : colorScheme.outline,
-                      width: 2,
-                    ),
-                  ),
-                  child: isSelected
-                      ? Center(
-                          child: Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        )
-                      : null,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              preset.label,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (isRecommended) ...[
-                            const SizedBox(width: 6),
-                            _MirrorBadge(
-                              label: l10n.aboutRecommended,
-                              backgroundColor: colorScheme.primaryContainer,
-                              foregroundColor: colorScheme.onPrimaryContainer,
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitleText,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                if (probeState != null) ...[
-                  const SizedBox(width: 8),
-                  _buildMirrorProbeStatusChip(theme, probeState.result),
-                ],
-              ],
-            ),
-          ),
-        ),
+    final suffixChildren = <Widget>[];
+    if (probeState != null) {
+      suffixChildren.add(_buildMirrorProbeStatusChip(theme, probeState.result));
+    }
+    if (isSelected) {
+      if (suffixChildren.isNotEmpty) {
+        suffixChildren.add(const SizedBox(width: 8));
+      }
+      suffixChildren.add(
+        Icon(Icons.check_rounded, color: colorScheme.primary, size: 20),
+      );
+    }
+
+    return FTile(
+      title: Text(
+        isRecommended
+            ? '${preset.label} · ${l10n.aboutRecommended}'
+            : preset.label,
       ),
+      subtitle: Text(
+        subtitleText,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      suffix: suffixChildren.isEmpty
+          ? null
+          : Row(mainAxisSize: MainAxisSize.min, children: suffixChildren),
+      onPress: onTap,
     );
   }
 
@@ -2497,7 +2217,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
         label,
         style: TextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w400,
           color: foreground,
         ),
       ),
@@ -2509,6 +2229,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     return SettingsSectionCard(
       title: l10n.aboutDiagnosticsTitle,
       subtitle: l10n.aboutDiagnosticsSubtitle,
+      plainTitle: true,
       child: Wrap(
         spacing: 12,
         runSpacing: 12,
@@ -2698,50 +2419,43 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   }
 }
 
-class _MirrorBadge extends StatelessWidget {
-  final String label;
-  final Color backgroundColor;
-  final Color foregroundColor;
+class ReleaseNotesMarkdown extends StatelessWidget {
+  final String data;
+  final ValueChanged<String?>? onTapLink;
+  final bool plainTypography;
 
-  const _MirrorBadge({
-    required this.label,
-    required this.backgroundColor,
-    required this.foregroundColor,
+  const ReleaseNotesMarkdown({
+    super.key,
+    required this.data,
+    this.onTapLink,
+    this.plainTypography = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: foregroundColor,
-        ),
-      ),
-    );
-  }
-}
-
-class ReleaseNotesMarkdown extends StatelessWidget {
-  final String data;
-  final ValueChanged<String?>? onTapLink;
-
-  const ReleaseNotesMarkdown({super.key, required this.data, this.onTapLink});
-
-  @override
-  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final baseSheet = MarkdownStyleSheet.fromTheme(theme);
+    final body = theme.textTheme.bodyMedium;
+    final styleSheet = plainTypography
+        ? baseSheet.copyWith(
+            p: body,
+            strong: body?.copyWith(fontWeight: FontWeight.w400),
+            h1: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w400,
+            ),
+            h2: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w400,
+            ),
+            h3: body?.copyWith(fontWeight: FontWeight.w400),
+            h4: body?.copyWith(fontWeight: FontWeight.w400),
+            h5: body?.copyWith(fontWeight: FontWeight.w400),
+            h6: body?.copyWith(fontWeight: FontWeight.w400),
+          )
+        : baseSheet;
     return MarkdownBody(
       data: data,
       selectable: true,
-      styleSheet: MarkdownStyleSheet.fromTheme(theme),
+      styleSheet: styleSheet,
       onTapLink: (text, href, title) => onTapLink?.call(href),
     );
   }

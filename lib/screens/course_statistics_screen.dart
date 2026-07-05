@@ -28,8 +28,6 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return Consumer<TimetableProvider>(
       builder: (context, provider, _) {
@@ -86,9 +84,8 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
                     achievements,
                     stories,
                     l10n,
-                    colorScheme,
                   )
-                : _buildEmptyState(context, l10n, colorScheme),
+                : _buildEmptyState(context, l10n),
           ),
         );
       },
@@ -101,47 +98,37 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     List<Achievement> achievements,
     List<DataStory> stories,
     AppLocalizations l10n,
-    ColorScheme colorScheme,
   ) {
+    final theme = context.theme;
+
     return RepaintBoundary(
       key: _shareKey,
       child: Container(
-        color: colorScheme.surface,
+        color: theme.colors.background,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
-            // 1. 学期总览（大数字）
             OverviewSection(stats: semesterStats),
             const SizedBox(height: 24),
-
-            // 2. 成就徽章
-            _buildSectionTitle(l10n.statisticsAchievementsTitle, colorScheme),
+            _buildSectionTitle(l10n.statisticsAchievementsTitle),
             const SizedBox(height: 12),
             AchievementGrid(achievements: achievements),
             const SizedBox(height: 24),
-
-            // 3. 数据故事
             if (stories.isNotEmpty) ...[
-              _buildSectionTitle(l10n.statisticsStoriesTitle, colorScheme),
+              _buildSectionTitle(l10n.statisticsStoriesTitle),
               const SizedBox(height: 12),
               DataStoryList(stories: stories),
               const SizedBox(height: 24),
             ],
-
-            // 4. 每日分布
-            _buildSectionTitle(l10n.statisticsDailyDistribution, colorScheme),
+            _buildSectionTitle(l10n.statisticsDailyDistribution),
             const SizedBox(height: 12),
             DailyChart(dailyAverages: semesterStats.dailyAverages),
             const SizedBox(height: 24),
-
-            // 5. 必修/选修比例
-            _buildSectionTitle(l10n.statisticsNatureRatio, colorScheme),
+            _buildSectionTitle(l10n.statisticsNatureRatio),
             const SizedBox(height: 12),
             NatureRatio(stats: semesterStats.natureStats),
             const SizedBox(height: 24),
-
-            // 6. 课程排行
-            _buildSectionTitle(l10n.statisticsRankingTitle, colorScheme),
+            _buildSectionTitle(l10n.statisticsRankingTitle),
             const SizedBox(height: 12),
             CourseRanking(courseRanking: semesterStats.courseRanking),
           ],
@@ -150,12 +137,8 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     );
   }
 
-  Widget _buildEmptyState(
-    BuildContext context,
-    AppLocalizations l10n,
-    ColorScheme colorScheme,
-  ) {
-    final theme = Theme.of(context);
+  Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    final theme = context.theme;
 
     return Center(
       child: Padding(
@@ -166,20 +149,20 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
             Icon(
               Icons.analytics_outlined,
               size: 64,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+              color: theme.colors.mutedForeground.withValues(alpha: 0.3),
             ),
             const SizedBox(height: 16),
             Text(
               l10n.statisticsNoData,
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              style: theme.typography.body.md.copyWith(
+                color: theme.colors.mutedForeground,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               l10n.statisticsNoDataHint,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+              style: theme.typography.body.sm.copyWith(
+                color: theme.colors.mutedForeground.withValues(alpha: 0.7),
               ),
             ),
           ],
@@ -188,15 +171,15 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, ColorScheme colorScheme) {
+  Widget _buildSectionTitle(String title) {
     return Builder(
       builder: (context) {
-        final theme = Theme.of(context);
+        final theme = context.theme;
         return Text(
           title,
-          style: theme.textTheme.titleSmall?.copyWith(
+          style: theme.typography.body.sm.copyWith(
             fontWeight: FontWeight.w700,
-            color: colorScheme.onSurfaceVariant,
+            color: theme.colors.mutedForeground,
           ),
         );
       },

@@ -35,10 +35,12 @@ class SettingsSectionCard extends StatelessWidget {
     required this.child,
     this.title,
     this.subtitle,
+    this.plainTitle = false,
   });
 
   final String? title;
   final String? subtitle;
+  final bool plainTitle;
   final Widget child;
 
   @override
@@ -54,7 +56,11 @@ class SettingsSectionCard extends StatelessWidget {
                 if (title != null && title!.isNotEmpty)
                   Text(
                     title!,
-                    style: typo.sm.copyWith(fontWeight: FontWeight.w600),
+                    style: typo.sm.copyWith(
+                      fontWeight: plainTitle
+                          ? FontWeight.w400
+                          : FontWeight.w600,
+                    ),
                   ),
                 if (subtitle != null) ...[
                   if (title != null && title!.isNotEmpty)

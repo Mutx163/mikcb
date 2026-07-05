@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
@@ -12,18 +13,11 @@ class DataStoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = context.theme;
     final title = _title(l10n);
     final content = _content(l10n);
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
+    return FCard.raw(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -32,15 +26,11 @@ class DataStoryCard extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: colorScheme.secondaryContainer,
+                color: theme.colors.primary.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Center(
-                child: Icon(
-                  story.icon,
-                  size: 22,
-                  color: colorScheme.onSecondaryContainer,
-                ),
+                child: Icon(story.icon, size: 22, color: theme.colors.primary),
               ),
             ),
             const SizedBox(width: 12),
@@ -50,12 +40,12 @@ class DataStoryCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    style: theme.typography.body.xs.copyWith(
+                      color: theme.colors.mutedForeground,
                     ),
                   ),
                   const SizedBox(height: 2),
-                  _buildRichContent(context, content, colorScheme),
+                  _buildRichContent(context, content),
                 ],
               ),
             ),
@@ -123,15 +113,11 @@ class DataStoryCard extends StatelessWidget {
   }
 
   /// 构建富文本内容（加粗 **text** 片段）
-  Widget _buildRichContent(
-    BuildContext context,
-    String content,
-    ColorScheme colorScheme,
-  ) {
-    final theme = Theme.of(context);
+  Widget _buildRichContent(BuildContext context, String content) {
+    final theme = context.theme;
     final spans = <TextSpan>[];
     final pattern = RegExp(r'\*\*(.*?)\*\*');
-    int lastEnd = 0;
+    var lastEnd = 0;
 
     for (final match in pattern.allMatches(content)) {
       if (match.start > lastEnd) {
@@ -152,8 +138,8 @@ class DataStoryCard extends StatelessWidget {
 
     return RichText(
       text: TextSpan(
-        style: theme.textTheme.bodyMedium?.copyWith(
-          color: colorScheme.onSurface,
+        style: theme.typography.body.sm.copyWith(
+          color: theme.colors.foreground,
         ),
         children: spans,
       ),

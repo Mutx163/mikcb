@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 
 /// 统计概览卡片
 class StatCard extends StatelessWidget {
@@ -17,17 +18,10 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final accentColor = color ?? colorScheme.primary;
+    final theme = context.theme;
+    final accentColor = color ?? theme.colors.primary;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
+    return FCard.raw(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Column(
@@ -45,15 +39,15 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               value,
-              style: theme.textTheme.headlineSmall?.copyWith(
+              style: theme.typography.body.lg.copyWith(
                 fontWeight: FontWeight.w900,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               title,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              style: theme.typography.body.xs.copyWith(
+                color: theme.colors.mutedForeground,
               ),
             ),
           ],

@@ -42,8 +42,7 @@ class TimetableProfilesScreen extends StatelessWidget {
                     final index = entry.key;
                     final profile = entry.value;
                     final isActive = profile.id == activeProfileId;
-                    final theme = Theme.of(context);
-                    final colorScheme = theme.colorScheme;
+                    final theme = context.theme;
                     return FTile(
                       prefix: Container(
                         width: 36,
@@ -51,18 +50,18 @@ class TimetableProfilesScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color:
                               (isActive
-                                      ? colorScheme.primary
-                                      : colorScheme.secondaryContainer)
+                                      ? theme.colors.primary
+                                      : theme.colors.muted)
                                   .withValues(alpha: 0.14),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         alignment: Alignment.center,
                         child: Text(
                           '${index + 1}',
-                          style: theme.textTheme.titleSmall?.copyWith(
+                          style: theme.typography.body.sm.copyWith(
                             color: isActive
-                                ? colorScheme.primary
-                                : colorScheme.onSecondaryContainer,
+                                ? theme.colors.primary
+                                : theme.colors.mutedForeground,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -140,7 +139,9 @@ class TimetableProfilesScreen extends StatelessWidget {
                               enabled: profile.courses.isNotEmpty,
                               child: Text(
                                 l10n.clearCoursesAction,
-                                style: TextStyle(color: colorScheme.error),
+                                style: TextStyle(
+                                  color: theme.colors.destructive,
+                                ),
                               ),
                             ),
                           PopupMenuItem(
@@ -150,8 +151,8 @@ class TimetableProfilesScreen extends StatelessWidget {
                               l10n.deleteAction,
                               style: TextStyle(
                                 color: profiles.length > 1
-                                    ? colorScheme.error
-                                    : colorScheme.onSurfaceVariant,
+                                    ? theme.colors.destructive
+                                    : theme.colors.mutedForeground,
                               ),
                             ),
                           ),
@@ -196,33 +197,35 @@ class TimetableProfilesScreen extends StatelessWidget {
   }
 
   Future<void> _createBlankProfile(BuildContext context) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await showFDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.createTimetableTitle),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.timetableNameLabel,
-              hintText: AppLocalizations.of(context)!.timetableNameHint,
-            ),
+      builder: (ctx, style, animation) => FDialog(
+        title: Text(l10n.createTimetableTitle),
+        body: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: l10n.timetableNameLabel,
+            hintText: l10n.timetableNameHint,
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context)!.cancelAction),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: Text(AppLocalizations.of(context)!.createAction),
-            ),
-          ],
-        );
-      },
+        ),
+        actions: [
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx),
+            child: Text(l10n.cancelAction),
+          ),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(l10n.createAction),
+          ),
+        ],
+      ),
     );
+    controller.dispose();
 
     if (!context.mounted || name == null || name.isEmpty) {
       return;
@@ -232,11 +235,9 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.createdProfile(name)),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.createdProfile(name))));
   }
 
   Future<void> _renameProfile(
@@ -244,32 +245,32 @@ class TimetableProfilesScreen extends StatelessWidget {
     String profileId,
     String currentName,
   ) async {
+    final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: currentName);
-    final name = await showDialog<String>(
+    final name = await showFDialog<String>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.renameTimetableTitle),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: InputDecoration(
-              labelText: AppLocalizations.of(context)!.timetableNameLabel,
-            ),
+      builder: (ctx, style, animation) => FDialog(
+        title: Text(l10n.renameTimetableTitle),
+        body: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l10n.timetableNameLabel),
+        ),
+        actions: [
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx),
+            child: Text(l10n.cancelAction),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(AppLocalizations.of(context)!.cancelAction),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, controller.text.trim()),
-              child: Text(AppLocalizations.of(context)!.saveAction),
-            ),
-          ],
-        );
-      },
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, controller.text.trim()),
+            child: Text(l10n.saveAction),
+          ),
+        ],
+      ),
     );
+    controller.dispose();
 
     if (!context.mounted ||
         name == null ||
@@ -282,39 +283,34 @@ class TimetableProfilesScreen extends StatelessWidget {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(AppLocalizations.of(context)!.renamedProfile(name)),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.renamedProfile(name))));
   }
 
   Future<void> _clearActiveProfileCourses(
     BuildContext context,
     String profileName,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showFDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.clearCurrentTimetableTitle),
-          content: Text(
-            AppLocalizations.of(
-              context,
-            )!.clearCurrentTimetableMessage(profileName),
+      builder: (ctx, style, animation) => FDialog(
+        title: Text(l10n.clearCurrentTimetableTitle),
+        body: Text(l10n.clearCurrentTimetableMessage(profileName)),
+        actions: [
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancelAction),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)!.cancelAction),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)!.clearAction),
-            ),
-          ],
-        );
-      },
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, true),
+            child: Text(l10n.clearAction),
+          ),
+        ],
+      ),
     );
 
     if (!context.mounted || confirmed != true) {
@@ -331,8 +327,8 @@ class TimetableProfilesScreen extends StatelessWidget {
       SnackBar(
         content: Text(
           cleared
-              ? AppLocalizations.of(context)!.clearedProfile(profileName)
-              : AppLocalizations.of(context)!.noCoursesInCurrentProfile,
+              ? l10n.clearedProfile(profileName)
+              : l10n.noCoursesInCurrentProfile,
         ),
       ),
     );
@@ -343,26 +339,25 @@ class TimetableProfilesScreen extends StatelessWidget {
     String profileId,
     String name,
   ) async {
-    final confirmed = await showDialog<bool>(
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showFDialog<bool>(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(AppLocalizations.of(context)!.deleteTimetableTitle),
-          content: Text(
-            AppLocalizations.of(context)!.deleteTimetableMessage(name),
+      builder: (ctx, style, animation) => FDialog(
+        title: Text(l10n.deleteTimetableTitle),
+        body: Text(l10n.deleteTimetableMessage(name)),
+        actions: [
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx, false),
+            child: Text(l10n.cancelAction),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)!.cancelAction),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)!.deleteAction),
-            ),
-          ],
-        );
-      },
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, true),
+            child: Text(l10n.deleteAction),
+          ),
+        ],
+      ),
     );
 
     if (!context.mounted || confirmed != true) {
@@ -378,9 +373,7 @@ class TimetableProfilesScreen extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          success
-              ? AppLocalizations.of(context)!.deletedProfile(name)
-              : AppLocalizations.of(context)!.keepAtLeastOneProfile,
+          success ? l10n.deletedProfile(name) : l10n.keepAtLeastOneProfile,
         ),
       ),
     );

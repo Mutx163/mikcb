@@ -116,8 +116,6 @@ class _AddExamScreenState extends State<AddExamScreen> {
               _buildReminderDropdown(l10n),
               const SizedBox(height: 16),
               _buildNoteField(l10n),
-              const SizedBox(height: 24),
-              FilledButton(onPressed: _saveExam, child: Text(l10n.saveExam)),
             ],
           ),
         ),
@@ -539,22 +537,20 @@ class _AddExamScreenState extends State<AddExamScreen> {
   }
 
   Widget _buildReminderDropdown(AppLocalizations l10n) {
-    return DropdownButtonFormField<ExamReminderPreset>(
-      initialValue: _reminderPreset,
-      decoration: InputDecoration(
-        labelText: l10n.examReminderLabel,
-        border: const OutlineInputBorder(),
-      ),
-      items: ExamReminderPreset.values.map((preset) {
-        return DropdownMenuItem(value: preset, child: Text(preset.label));
-      }).toList(),
-      onChanged: (value) {
-        if (value != null) {
+    return FSelect<ExamReminderPreset>(
+      hint: l10n.examReminderLabel,
+      items: {
+        for (final preset in ExamReminderPreset.values) preset.label: preset,
+      },
+      control: FSelectControl.lifted(
+        value: _reminderPreset,
+        onChange: (value) {
+          if (value == null) return;
           setState(() {
             _reminderPreset = value;
           });
-        }
-      },
+        },
+      ),
     );
   }
 
@@ -1006,18 +1002,20 @@ class _AddExamScreenState extends State<AddExamScreen> {
   }
 
   Future<void> _confirmDelete(AppLocalizations l10n) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.deleteExam),
-        content: Text(l10n.deleteExamConfirm(widget.exam!.name)),
+        body: Text(l10n.deleteExamConfirm(widget.exam!.name)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx, false),
             child: Text(l10n.cancelAction),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, true),
             child: Text(l10n.deleteAction),
           ),
         ],

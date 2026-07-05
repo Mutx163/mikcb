@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
@@ -12,46 +13,41 @@ class AchievementBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = context.theme;
     final name = _achievementName(l10n, achievement.id);
 
     return Container(
       decoration: BoxDecoration(
         color: achievement.isUnlocked
-            ? colorScheme.primaryContainer
-            : colorScheme.surfaceContainerHighest,
+            ? theme.colors.primary.withValues(alpha: 0.12)
+            : theme.colors.muted,
         borderRadius: BorderRadius.circular(16),
         border: achievement.isUnlocked
             ? null
-            : Border.all(
-                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-              ),
+            : Border.all(color: theme.colors.border.withValues(alpha: 0.5)),
       ),
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // 图标
           Icon(
             achievement.icon,
             size: 24,
             color: achievement.isUnlocked
-                ? colorScheme.onPrimaryContainer
-                : Colors.grey,
+                ? theme.colors.primary
+                : theme.colors.mutedForeground,
           ),
           const SizedBox(height: 4),
-          // 名称
           Text(
             name,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelMedium?.copyWith(
+            style: theme.typography.body.xs.copyWith(
               fontWeight: FontWeight.w700,
               color: achievement.isUnlocked
-                  ? colorScheme.onPrimaryContainer
-                  : colorScheme.onSurfaceVariant,
+                  ? theme.colors.foreground
+                  : theme.colors.mutedForeground,
             ),
           ),
           if (!achievement.isUnlocked) ...[
@@ -59,7 +55,7 @@ class AchievementBadge extends StatelessWidget {
             Icon(
               Icons.lock_outline_rounded,
               size: 12,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              color: theme.colors.mutedForeground.withValues(alpha: 0.5),
             ),
           ],
         ],

@@ -1,5 +1,6 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
@@ -13,57 +14,43 @@ class NatureRatio extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
+    final theme = context.theme;
+    final colorScheme = Theme.of(context).colorScheme;
     final hasData = stats.totalCount > 0;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
+    return FCard.raw(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: hasData
-            ? Column(
+            ? Row(
                 children: [
-                  // 环形图 + 图例
-                  Row(
-                    children: [
-                      // 环形图
-                      SizedBox(
-                        width: 100,
-                        height: 100,
-                        child: _buildDonutChart(context),
-                      ),
-                      const SizedBox(width: 20),
-                      // 图例和数据
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _LegendItem(
-                              color: colorScheme.primary,
-                              label: l10n.courseNatureRequired,
-                              count: stats.requiredCount,
-                              sections: stats.requiredSections,
-                              ratio: stats.requiredRatio,
-                            ),
-                            const SizedBox(height: 12),
-                            _LegendItem(
-                              color: colorScheme.tertiary,
-                              label: l10n.courseNatureElective,
-                              count: stats.electiveCount,
-                              sections: stats.electiveSections,
-                              ratio: stats.electiveRatio,
-                            ),
-                          ],
+                  SizedBox(
+                    width: 100,
+                    height: 100,
+                    child: _buildDonutChart(context),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _LegendItem(
+                          color: colorScheme.primary,
+                          label: l10n.courseNatureRequired,
+                          count: stats.requiredCount,
+                          sections: stats.requiredSections,
+                          ratio: stats.requiredRatio,
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 12),
+                        _LegendItem(
+                          color: colorScheme.tertiary,
+                          label: l10n.courseNatureElective,
+                          count: stats.electiveCount,
+                          sections: stats.electiveSections,
+                          ratio: stats.electiveRatio,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               )
@@ -72,8 +59,8 @@ class NatureRatio extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     l10n.statisticsNoData,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                    style: theme.typography.body.sm.copyWith(
+                      color: theme.colors.mutedForeground,
                     ),
                   ),
                 ),
@@ -126,8 +113,7 @@ class _LegendItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = context.theme;
 
     return Row(
       children: [
@@ -146,14 +132,14 @@ class _LegendItem extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: theme.textTheme.labelLarge?.copyWith(
+                style: theme.typography.body.sm.copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 l10n.statisticsNatureLegendDetail(count, sections),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: theme.typography.body.xs.copyWith(
+                  color: theme.colors.mutedForeground,
                 ),
               ),
             ],
@@ -161,7 +147,7 @@ class _LegendItem extends StatelessWidget {
         ),
         Text(
           '${(ratio * 100).round()}%',
-          style: theme.textTheme.titleMedium?.copyWith(
+          style: theme.typography.body.md.copyWith(
             fontWeight: FontWeight.w800,
             color: color,
           ),

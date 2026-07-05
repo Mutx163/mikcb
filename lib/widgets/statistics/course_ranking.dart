@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/course.dart';
@@ -13,24 +14,17 @@ class CourseRanking extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = context.theme;
 
     if (courseRanking.isEmpty) {
-      return Card(
-        elevation: 0,
-        color: colorScheme.surfaceContainerLowest,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: colorScheme.outlineVariant),
-        ),
+      return FCard.raw(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(
             child: Text(
               l10n.statisticsNoData,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              style: theme.typography.body.sm.copyWith(
+                color: theme.colors.mutedForeground,
               ),
             ),
           ),
@@ -38,14 +32,7 @@ class CourseRanking extends StatelessWidget {
       );
     }
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLowest,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      clipBehavior: Clip.antiAlias,
+    return FCard.raw(
       child: Column(
         children: List.generate(courseRanking.length, (index) {
           final stat = courseRanking[index];
@@ -153,7 +140,9 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
                             decoration: BoxDecoration(
                               color: isRequired
                                   ? colorScheme.primary.withValues(alpha: 0.12)
-                                  : colorScheme.tertiary.withValues(alpha: 0.12),
+                                  : colorScheme.tertiary.withValues(
+                                      alpha: 0.12,
+                                    ),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -185,8 +174,10 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
                         spacing: 4,
                         runSpacing: 4,
                         children: widget.stat.slots.map((slot) {
-                          final dayLabel =
-                              _weekdayShortLabel(l10n, slot.dayOfWeek);
+                          final dayLabel = _weekdayShortLabel(
+                            l10n,
+                            slot.dayOfWeek,
+                          );
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 6,

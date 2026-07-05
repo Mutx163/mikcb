@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../../models/statistics_models.dart';
@@ -12,82 +13,83 @@ class OverviewSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     if (stats.totalCourses == 0) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primaryContainer,
-            colorScheme.tertiaryContainer,
+    return FCard.raw(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primaryContainer,
+              colorScheme.tertiaryContainer,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+        child: Column(
+          children: [
+            // 第一行：总课程门数 + 总课时数
+            Row(
+              children: [
+                Expanded(
+                  child: _BigNumber(
+                    icon: Icons.menu_book_rounded,
+                    value: '${stats.totalCourses}',
+                    label: l10n.statisticsSemesterLabelCourses,
+                    colorScheme: colorScheme,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 48,
+                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
+                ),
+                Expanded(
+                  child: _BigNumber(
+                    icon: Icons.schedule_rounded,
+                    value: '${stats.totalSections}',
+                    label: l10n.statisticsSemesterLabelSections,
+                    colorScheme: colorScheme,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            // 第二行：上课周数 + 最长连续天数
+            Row(
+              children: [
+                Expanded(
+                  child: _BigNumber(
+                    icon: Icons.calendar_today_rounded,
+                    value: '${stats.totalWeeks}',
+                    label: l10n.statisticsSemesterLabelWeeks,
+                    colorScheme: colorScheme,
+                  ),
+                ),
+                Container(
+                  width: 1,
+                  height: 48,
+                  color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
+                ),
+                Expanded(
+                  child: _BigNumber(
+                    icon: Icons.local_fire_department_rounded,
+                    value: '${stats.longestStreak}',
+                    label: l10n.statisticsSemesterLabelDayStreak,
+                    colorScheme: colorScheme,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(24),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      child: Column(
-        children: [
-          // 第一行：总课程门数 + 总课时数
-          Row(
-            children: [
-              Expanded(
-                child: _BigNumber(
-                  icon: Icons.menu_book_rounded,
-                  value: '${stats.totalCourses}',
-                  label: l10n.statisticsSemesterLabelCourses,
-                  colorScheme: colorScheme,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 48,
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
-              ),
-              Expanded(
-                child: _BigNumber(
-                  icon: Icons.schedule_rounded,
-                  value: '${stats.totalSections}',
-                  label: l10n.statisticsSemesterLabelSections,
-                  colorScheme: colorScheme,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // 第二行：上课周数 + 最长连续天数
-          Row(
-            children: [
-              Expanded(
-                child: _BigNumber(
-                  icon: Icons.calendar_today_rounded,
-                  value: '${stats.totalWeeks}',
-                  label: l10n.statisticsSemesterLabelWeeks,
-                  colorScheme: colorScheme,
-                ),
-              ),
-              Container(
-                width: 1,
-                height: 48,
-                color: colorScheme.onPrimaryContainer.withValues(alpha: 0.15),
-              ),
-              Expanded(
-                child: _BigNumber(
-                  icon: Icons.local_fire_department_rounded,
-                  value: '${stats.longestStreak}',
-                  label: l10n.statisticsSemesterLabelDayStreak,
-                  colorScheme: colorScheme,
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
