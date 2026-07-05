@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
+import '../widgets/settings_section_widgets.dart';
 
 class AddScheduleItemScreen extends StatefulWidget {
   final ScheduleItem? scheduleItem;
@@ -127,119 +128,97 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSectionCard(
+              SettingsSectionCard(
                 title: l10n.scheduleInfoSectionTitle,
                 subtitle: l10n.scheduleInfoSectionSubtitle,
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    textInputAction: TextInputAction.next,
-                    decoration: _buildFieldDecoration(
-                      label: l10n.scheduleTitleLabel,
-                      hint: l10n.scheduleTitleHint,
-                      prefixIcon: const Icon(Icons.event_note_rounded),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    TextFormField(
+                      controller: _titleController,
+                      textInputAction: TextInputAction.next,
+                      decoration: _buildFieldDecoration(
+                        label: l10n.scheduleTitleLabel,
+                        hint: l10n.scheduleTitleHint,
+                        prefixIcon: const Icon(Icons.event_note_rounded),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.scheduleTitleRequired;
+                        }
+                        return null;
+                      },
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.scheduleTitleRequired;
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller: _locationController,
-                    textInputAction: TextInputAction.next,
-                    decoration: _buildFieldDecoration(
-                      label: l10n.scheduleLocationLabel,
-                      hint: l10n.scheduleLocationHint,
-                      prefixIcon: const Icon(Icons.location_on_outlined),
+                    TextFormField(
+                      controller: _locationController,
+                      textInputAction: TextInputAction.next,
+                      decoration: _buildFieldDecoration(
+                        label: l10n.scheduleLocationLabel,
+                        hint: l10n.scheduleLocationHint,
+                        prefixIcon: const Icon(Icons.location_on_outlined),
+                      ),
                     ),
-                  ),
-                  TextFormField(
-                    controller: _noteController,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: _buildFieldDecoration(
-                      label: l10n.scheduleNoteLabel,
-                      hint: l10n.scheduleNoteHint,
-                      alignLabelWithHint: true,
-                      prefixIcon: const Icon(Icons.notes_rounded),
+                    TextFormField(
+                      controller: _noteController,
+                      minLines: 2,
+                      maxLines: 4,
+                      decoration: _buildFieldDecoration(
+                        label: l10n.scheduleNoteLabel,
+                        hint: l10n.scheduleNoteHint,
+                        alignLabelWithHint: true,
+                        prefixIcon: const Icon(Icons.notes_rounded),
+                      ),
                     ),
-                  ),
-                ],
+                  ]),
+                ),
               ),
               const SizedBox(height: 16),
-              _buildSectionCard(
+              SettingsSectionCard(
                 title: l10n.scheduleTimeSectionTitle,
                 subtitle: l10n.scheduleTimeSectionSubtitle,
-                children: [
-                  _buildResponsiveFieldPair(
-                    leading: _buildPickerField(
-                      label: l10n.scheduleStartDateLabel,
-                      value: _formatDateLabel(context, _selectedStartDate),
-                      icon: Icons.calendar_today_outlined,
-                      onTap: () => _pickDate(isStart: true),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    _buildResponsiveFieldPair(
+                      leading: _buildPickerField(
+                        label: l10n.scheduleStartDateLabel,
+                        value: _formatDateLabel(context, _selectedStartDate),
+                        icon: Icons.calendar_today_outlined,
+                        onTap: () => _pickDate(isStart: true),
+                      ),
+                      trailing: _buildPickerField(
+                        label: l10n.scheduleStartTimeLabel,
+                        value: _formatTimeLabel(context, _startTime),
+                        icon: Icons.schedule_rounded,
+                        onTap: () => _pickTime(isStart: true),
+                      ),
                     ),
-                    trailing: _buildPickerField(
-                      label: l10n.scheduleStartTimeLabel,
-                      value: _formatTimeLabel(context, _startTime),
-                      icon: Icons.schedule_rounded,
-                      onTap: () => _pickTime(isStart: true),
+                    _buildResponsiveFieldPair(
+                      leading: _buildPickerField(
+                        label: l10n.scheduleEndDateLabel,
+                        value: _formatDateLabel(context, _selectedEndDate),
+                        icon: Icons.date_range_rounded,
+                        onTap: () => _pickDate(isStart: false),
+                      ),
+                      trailing: _buildPickerField(
+                        label: l10n.scheduleEndTimeLabel,
+                        value: _formatTimeLabel(context, _endTime),
+                        icon: Icons.schedule_outlined,
+                        onTap: () => _pickTime(isStart: false),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildResponsiveFieldPair(
-                    leading: _buildPickerField(
-                      label: l10n.scheduleEndDateLabel,
-                      value: _formatDateLabel(context, _selectedEndDate),
-                      icon: Icons.date_range_rounded,
-                      onTap: () => _pickDate(isStart: false),
-                    ),
-                    trailing: _buildPickerField(
-                      label: l10n.scheduleEndTimeLabel,
-                      value: _formatTimeLabel(context, _endTime),
-                      icon: Icons.schedule_outlined,
-                      onTap: () => _pickTime(isStart: false),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildScheduleRangeHint(),
-                ],
+                    _buildScheduleRangeHint(),
+                  ]),
+                ),
               ),
               const SizedBox(height: 16),
-              _buildSectionCard(
+              SettingsSectionCard(
                 title: l10n.scheduleAppearanceSectionTitle,
                 subtitle: l10n.scheduleAppearanceSectionSubtitle,
-                children: [_buildColorPalette()],
+                child: _buildColorPalette(),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required String subtitle,
-    required List<Widget> children,
-  }) {
-    final theme = Theme.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(subtitle, style: theme.textTheme.bodySmall),
-            const SizedBox(height: 16),
-            ..._withSpacing(children),
-          ],
         ),
       ),
     );
@@ -280,7 +259,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
-    final theme = Theme.of(context);
+    final theme = context.theme;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
@@ -296,7 +275,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           ),
           child: Text(
             value,
-            style: theme.textTheme.bodyLarge?.copyWith(
+            style: theme.typography.body.md.copyWith(
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -329,7 +308,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
   Widget _buildScheduleRangeHint() {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
+    final theme = context.theme;
     final isCrossDay = _selectedEndDate.isAfter(_selectedStartDate);
     final text = isCrossDay
         ? l10n.scheduleCrossDayHint
@@ -338,9 +317,9 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
+        color: theme.colors.muted,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
+        border: Border.all(color: theme.colors.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -348,14 +327,14 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
           Icon(
             isCrossDay ? Icons.nights_stay_rounded : Icons.today_rounded,
             size: 18,
-            color: theme.colorScheme.primary,
+            color: theme.colors.primary,
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: theme.typography.body.xs.copyWith(
+                color: theme.colors.mutedForeground,
                 fontWeight: FontWeight.w600,
                 height: 1.35,
               ),
@@ -515,18 +494,20 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.deleteScheduleTitle),
-        content: Text(l10n.deleteScheduleMessage(scheduleItem.title)),
+        body: Text(l10n.deleteScheduleMessage(scheduleItem.title)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.of(ctx).pop(false),
             child: Text(l10n.cancelAction),
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.of(ctx).pop(true),
             child: Text(l10n.deleteAction),
           ),
         ],
