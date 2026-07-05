@@ -37,7 +37,6 @@ class _HomeTopMenuSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
-    final typo = context.theme.typography;
     final colorScheme = Theme.of(context).colorScheme;
     final itemWidth = ((MediaQuery.sizeOf(context).width - 32 - 30) / 4).clamp(
       72.0,
@@ -76,15 +75,6 @@ class _HomeTopMenuSheet extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                l10n.moreTooltip,
-                style: typo.body.lg.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: colors.foreground,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 16),
               Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -164,6 +154,7 @@ class _HomeMenuActionTile extends StatelessWidget {
     final typo = context.theme.typography;
     final colorScheme = Theme.of(context).colorScheme;
     final highlightColor = accentColor ?? colorScheme.primary;
+    final labelFontSize = (typo.body.xs3.fontSize ?? 10) * 0.85;
 
     return FCard.raw(
       child: Material(
@@ -172,7 +163,7 @@ class _HomeMenuActionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -215,15 +206,17 @@ class _HomeMenuActionTile extends StatelessWidget {
                       ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 Text(
                   title,
                   maxLines: 2,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                  style: typo.body.sm.copyWith(
-                    height: 1.25,
-                    color: colors.foreground,
+                  style: typo.body.xs3.copyWith(
+                    fontSize: labelFontSize,
+                    fontWeight: FontWeight.w400,
+                    height: 1.1,
+                    color: colors.mutedForeground,
                   ),
                 ),
               ],

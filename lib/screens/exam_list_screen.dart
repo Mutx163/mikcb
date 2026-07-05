@@ -15,6 +15,7 @@ class ExamListScreen extends StatelessWidget {
     final provider = context.watch<TimetableProvider>();
     final exams = provider.exams;
     final l10n = AppLocalizations.of(context)!;
+    final theme = context.theme;
 
     final upcomingExams = exams.where((e) => !e.isExpired).toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
@@ -39,51 +40,51 @@ class ExamListScreen extends StatelessWidget {
         child: exams.isEmpty
             ? _buildEmptyState(context, l10n)
             : ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              children: [
-                if (upcomingExams.isNotEmpty) ...[
-                  _buildNextExamCountdown(context, upcomingExams.first, l10n),
-                  const SizedBox(height: 12),
-                  ...upcomingExams.map(
-                    (exam) => _buildExamCard(context, provider, exam, false),
-                  ),
-                ],
-                if (pastExams.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            l10n.examPassed,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .outline,
-                                ),
-                          ),
-                        ),
-                        const Expanded(child: Divider()),
-                      ],
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
+                children: [
+                  if (upcomingExams.isNotEmpty) ...[
+                    _buildNextExamCountdown(context, upcomingExams.first, l10n),
+                    const SizedBox(height: 12),
+                    ...upcomingExams.map(
+                      (exam) => _buildExamCard(context, provider, exam, false),
                     ),
-                  ),
-                  ...pastExams.map(
-                    (exam) => _buildExamCard(context, provider, exam, true),
-                  ),
+                  ],
+                  if (pastExams.isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: Row(
+                        children: [
+                          Expanded(child: Divider(color: theme.colors.border)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Text(
+                              l10n.examPassed,
+                              style: theme.typography.body.sm.copyWith(
+                                color: theme.colors.mutedForeground,
+                              ),
+                            ),
+                          ),
+                          Expanded(child: Divider(color: theme.colors.border)),
+                        ],
+                      ),
+                    ),
+                    ...pastExams.map(
+                      (exam) => _buildExamCard(context, provider, exam, true),
+                    ),
+                  ],
+                  const SizedBox(height: 80),
                 ],
-                const SizedBox(height: 80),
-              ],
-            ),
+              ),
       ),
     );
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    final theme = context.theme;
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -91,20 +92,20 @@ class ExamListScreen extends StatelessWidget {
           Icon(
             Icons.school_outlined,
             size: 64,
-            color: Theme.of(context).colorScheme.outline,
+            color: theme.colors.mutedForeground,
           ),
           const SizedBox(height: 16),
           Text(
             l10n.noExams,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.outline,
-                ),
+            style: theme.typography.body.md.copyWith(
+              color: theme.colors.mutedForeground,
+            ),
           ),
           const SizedBox(height: 24),
-          FilledButton.icon(
-            onPressed: () => _navigateToAddExam(context),
-            icon: const Icon(Icons.add),
-            label: Text(l10n.addExam),
+          FButton(
+            onPress: () => _navigateToAddExam(context),
+            prefix: const Icon(Icons.add),
+            child: Text(l10n.addExam),
           ),
         ],
       ),
@@ -116,37 +117,35 @@ class ExamListScreen extends StatelessWidget {
     Exam exam,
     AppLocalizations l10n,
   ) {
+    final theme = context.theme;
     final daysUntil = exam.daysUntil;
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
-    String countdownText;
-    if (daysUntil == 0) {
-      countdownText = l10n.examToday;
-    } else {
-      countdownText = l10n.daysUntilExam(daysUntil);
-    }
+    final countdownText = daysUntil == 0
+        ? l10n.examToday
+        : l10n.daysUntilExam(daysUntil);
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.timer_outlined, color: colorScheme.onPrimaryContainer),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              countdownText,
-              style: textTheme.titleMedium?.copyWith(
-                color: colorScheme.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
+    return FCard.raw(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.timer_outlined, color: theme.colors.primary),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                countdownText,
+                style: theme.typography.body.md.copyWith(
+                  color: theme.colors.primary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -157,10 +156,11 @@ class ExamListScreen extends StatelessWidget {
     Exam exam,
     bool isPast,
   ) {
+    final theme = context.theme;
     final course = provider.getCourseForExam(exam);
     final color = course != null
         ? _parseColor(course.color)
-        : Theme.of(context).colorScheme.primary;
+        : theme.colors.primary;
     final l10n = AppLocalizations.of(context)!;
 
     return Padding(
@@ -172,19 +172,19 @@ class ExamListScreen extends StatelessWidget {
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.error,
+            color: theme.colors.destructive,
             borderRadius: BorderRadius.circular(16),
           ),
           child: Icon(
             Icons.delete_outline,
-            color: Theme.of(context).colorScheme.onError,
+            color: theme.colors.destructiveForeground,
           ),
         ),
         confirmDismiss: (_) => _confirmDelete(context, exam, l10n),
         onDismissed: (_) => provider.deleteExam(exam.id),
-        child: Card(
+        child: FCard.raw(
           child: InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(12),
             onTap: () => _navigateToEditExam(context, exam),
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -204,109 +204,85 @@ class ExamListScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                        Text(
-                          exam.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                color: isPast
-                                    ? Theme.of(context)
-                                        .colorScheme
-                                        .outline
-                                    : null,
-                                decoration:
-                                    isPast ? TextDecoration.lineThrough : null,
+                          Text(
+                            exam.name,
+                            style: theme.typography.body.md.copyWith(
+                              color: isPast
+                                  ? theme.colors.mutedForeground
+                                  : null,
+                              decoration: isPast
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (course != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  course.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.typography.body.xs.copyWith(
+                                    color: color,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                        ),
-                        if (course != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 3,
-                              ),
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _formatExamDateTime(exam, provider, l10n),
+                            style: theme.typography.body.sm.copyWith(
+                              color: theme.colors.mutedForeground,
+                            ),
+                          ),
+                          if (exam.location?.isNotEmpty == true ||
+                              (exam.location == null &&
+                                  course?.location.isNotEmpty == true))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
                               child: Text(
-                                course.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color: color,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                exam.location ?? course!.location,
+                                style: theme.typography.body.xs.copyWith(
+                                  color: theme.colors.mutedForeground,
+                                ),
                               ),
                             ),
-                          ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _formatExamDateTime(exam, provider, l10n),
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                        if (exam.location?.isNotEmpty == true ||
-                            (exam.location == null &&
-                                course?.location.isNotEmpty == true))
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              exam.location ?? course!.location,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline,
-                                  ),
+                          if (exam.seatNumber?.isNotEmpty == true)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                '座位: ${exam.seatNumber}',
+                                style: theme.typography.body.xs.copyWith(
+                                  color: theme.colors.mutedForeground,
+                                ),
+                              ),
                             ),
-                          ),
-                        if (exam.seatNumber?.isNotEmpty == true)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              '座位: ${exam.seatNumber}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline,
-                                  ),
+                          if (course != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                '${course.teacher} · ${course.weekDescription}',
+                                style: theme.typography.body.xs.copyWith(
+                                  color: theme.colors.mutedForeground,
+                                ),
+                              ),
                             ),
-                          ),
-                        if (course != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              '${course.teacher} · ${course.weekDescription}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .outline,
-                                  ),
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -315,15 +291,26 @@ class ExamListScreen extends StatelessWidget {
     );
   }
 
-  String _formatExamDateTime(Exam exam, TimetableProvider provider, AppLocalizations l10n) {
+  String _formatExamDateTime(
+    Exam exam,
+    TimetableProvider provider,
+    AppLocalizations l10n,
+  ) {
     final date = exam.dateTime;
-    final weekdays = [l10n.weekdayMon, l10n.weekdayTue, l10n.weekdayWed, l10n.weekdayThu, l10n.weekdayFri, l10n.weekdaySat, l10n.weekdaySun];
+    final weekdays = [
+      l10n.weekdayMon,
+      l10n.weekdayTue,
+      l10n.weekdayWed,
+      l10n.weekdayThu,
+      l10n.weekdayFri,
+      l10n.weekdaySat,
+      l10n.weekdaySun,
+    ];
     final weekday = weekdays[date.weekday - 1];
     final month = date.month.toString().padLeft(2, '0');
     final day = date.day.toString().padLeft(2, '0');
-    
-    // 计算周次信息
-    String weekInfo = '';
+
+    var weekInfo = '';
     final semesterStart = provider.semesterStartDate;
     if (semesterStart != null) {
       final weekIndex = provider.getWeekIndex(date, semesterStart);
@@ -331,7 +318,7 @@ class ExamListScreen extends StatelessWidget {
         weekInfo = '${l10n.weekLabel(weekIndex)} ';
       }
     }
-    
+
     return '$weekInfo$month月$day日 $weekday ${exam.startTime}-${exam.endTime}';
   }
 
@@ -340,18 +327,20 @@ class ExamListScreen extends StatelessWidget {
     Exam exam,
     AppLocalizations l10n,
   ) {
-    return showDialog<bool>(
+    return showFDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.deleteExam),
-        content: Text(l10n.deleteExamConfirm(exam.name)),
+        body: Text(l10n.deleteExamConfirm(exam.name)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx, false),
             child: Text(l10n.cancelAction),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, true),
             child: Text(l10n.deleteAction),
           ),
         ],

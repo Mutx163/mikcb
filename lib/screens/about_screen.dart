@@ -146,7 +146,7 @@ class _AboutScreenState extends State<AboutScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
+            FCard.raw(
               child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -178,22 +178,22 @@ class _AboutScreenState extends State<AboutScreen> {
                     const SizedBox(height: 16),
                     Text(
                       l10n.timetableAppName,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
+                      style: context.theme.typography.body.lg.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       versionText,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
+                      style: context.theme.typography.body.sm.copyWith(
+                        color: context.theme.colors.mutedForeground,
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       l10n.aboutHeroSubtitle,
                       textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium,
+                      style: context.theme.typography.body.sm,
                     ),
                     const SizedBox(height: 16),
                     Wrap(
@@ -202,17 +202,17 @@ class _AboutScreenState extends State<AboutScreen> {
                       alignment: WrapAlignment.center,
                       children: [
                         _buildInfoChip(
-                          theme,
+                          context,
                           label: l10n.platformLabel,
                           value: 'Android',
                         ),
                         _buildInfoChip(
-                          theme,
+                          context,
                           label: l10n.focusLabel,
                           value: 'HyperOS',
                         ),
                         _buildInfoChip(
-                          theme,
+                          context,
                           label: l10n.updateLabel,
                           value: settings.appUpdateIncludePrerelease
                               ? l10n.prereleaseIncluded
@@ -224,7 +224,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             FTileGroup(
               physics: const NeverScrollableScrollPhysics(),
               children: [
@@ -512,34 +512,25 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Widget _buildInfoChip(
-    ThemeData theme, {
+    BuildContext context, {
     required String label,
     required String value,
   }) {
-    final colorScheme = theme.colorScheme;
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
+        color: colors.secondary,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
+          Text(label, style: typo.xs2.copyWith(color: colors.mutedForeground)),
           const SizedBox(height: 2),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(value, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -2915,82 +2906,49 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.aboutContributorsScreenTitle)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.aboutDevelopersTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _ContributorRow(
-                    name: 'Mutx163',
-                    subtitle: l10n.aboutDeveloperMaintainerSubtitle,
-                  ),
-                ],
+    final colors = context.theme.colors;
+    final typo = context.theme.typography.body;
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(l10n.aboutContributorsScreenTitle),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SettingsSectionCard(
+              title: l10n.aboutDevelopersTitle,
+              child: _ContributorRow(
+                name: 'Mutx163',
+                subtitle: l10n.aboutDeveloperMaintainerSubtitle,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.aboutWarehouseMaintainersTitle,
+              subtitle: l10n.aboutWarehouseMaintainersIntro,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          l10n.aboutWarehouseMaintainersTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      if (_isLoadingMaintainers)
-                        const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.aboutWarehouseMaintainersIntro,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                  if (_isLoadingMaintainers)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Center(child: FProgress()),
                     ),
-                  ),
-                  const SizedBox(height: 12),
                   if (_maintainersError != null && _maintainers.isEmpty)
                     Text(
                       l10n.aboutWarehouseMaintainersLoadFailed(
                         _maintainersError!,
                       ),
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.error,
-                      ),
+                      style: typo.sm.copyWith(color: colors.destructive),
                     )
-                  else if (_maintainers.isEmpty)
+                  else if (_maintainers.isEmpty && !_isLoadingMaintainers)
                     Text(
                       l10n.aboutWarehouseMaintainersEmpty,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      style: typo.sm.copyWith(color: colors.mutedForeground),
                     )
                   else
                     ..._maintainers.map(
@@ -3008,47 +2966,31 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 12),
+            SettingsSectionCard(
+              title: l10n.aboutParticipateWarehouseTitle,
+              subtitle: l10n.aboutParticipateWarehouseSubtitle,
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
                 children: [
-                  Text(
-                    l10n.aboutParticipateWarehouseTitle,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                  FButton(
+                    variant: FButtonVariant.primary,
+                    onPress: _openWarehouseRepository,
+                    prefix: const Icon(Icons.open_in_new_rounded),
+                    child: Text(l10n.aboutOpenWarehouseRepoAction),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.aboutParticipateWarehouseSubtitle,
-                    style: theme.textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: _openWarehouseRepository,
-                        icon: const Icon(Icons.open_in_new_rounded),
-                        label: Text(l10n.aboutOpenWarehouseRepoAction),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: _copyWarehouseRepositoryUrl,
-                        icon: const Icon(Icons.copy_all_rounded),
-                        label: Text(l10n.copyAddress),
-                      ),
-                    ],
+                  FButton(
+                    variant: FButtonVariant.outline,
+                    onPress: _copyWarehouseRepositoryUrl,
+                    prefix: const Icon(Icons.copy_all_rounded),
+                    child: Text(l10n.copyAddress),
                   ),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -3101,37 +3043,30 @@ class _ContributorRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
+        color: colors.secondary,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            name,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          Text(name, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 4),
           Text(
             subtitle,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-            ),
+            style: typo.xs2.copyWith(color: colors.mutedForeground),
           ),
           if (details.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...details.map(
               (detail) => Padding(
                 padding: const EdgeInsets.only(bottom: 4),
-                child: Text('• $detail', style: theme.textTheme.bodySmall),
+                child: Text('• $detail', style: typo.xs2),
               ),
             ),
           ],

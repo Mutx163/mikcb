@@ -4,6 +4,8 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../widgets/settings_section_widgets.dart';
+
 class FeedbackScreen extends StatelessWidget {
   const FeedbackScreen({super.key});
 
@@ -15,8 +17,6 @@ class FeedbackScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
 
     return FScaffold(
       header: FHeader.nested(
@@ -29,55 +29,46 @@ class FeedbackScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(l10n.feedbackIntro, style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.feedbackIssueHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+            SettingsSectionCard(
+              subtitle: l10n.feedbackIntro,
+              child: Text(
+                l10n.feedbackIssueHint,
+                style: context.theme.typography.body.xs2,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             FTileGroup(
               physics: const NeverScrollableScrollPhysics(),
               children: [
                 FTile(
-                  prefix: Icon(Icons.bug_report_outlined),
+                  prefix: const Icon(Icons.bug_report_outlined),
                   title: Text(l10n.githubIssueTitle),
                   subtitle: Text(l10n.githubIssueSubtitle),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    onPressed: () => _copyText(
+                  suffix: FButton(
+                    variant: FButtonVariant.ghost,
+                    onPress: () => _copyText(
                       context,
                       _issuesUrl,
                       successMessage: l10n.copiedIssueAddress,
                     ),
+                    prefix: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _openUrl(_issuesUrl),
                 ),
                 FTile(
-                  prefix: Icon(Icons.forum_outlined),
+                  prefix: const Icon(Icons.forum_outlined),
                   title: Text(l10n.feedbackXiaohongshuTitle),
                   subtitle: Text(
                     l10n.feedbackXiaohongshuSubtitle(_xiaohongshuId),
                   ),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    onPressed: () => _copyText(
+                  suffix: FButton(
+                    variant: FButtonVariant.ghost,
+                    onPress: () => _copyText(
                       context,
                       _xiaohongshuId,
                       successMessage: l10n.copiedXiaohongshuId,
                     ),
+                    prefix: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,
@@ -86,16 +77,17 @@ class FeedbackScreen extends StatelessWidget {
                   ),
                 ),
                 FTile(
-                  prefix: Icon(Icons.verified_user_outlined),
+                  prefix: const Icon(Icons.verified_user_outlined),
                   title: Text(l10n.feedbackCoolapkTitle),
                   subtitle: Text(l10n.feedbackCoolapkSubtitle(_coolapkId)),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    onPressed: () => _copyText(
+                  suffix: FButton(
+                    variant: FButtonVariant.ghost,
+                    onPress: () => _copyText(
                       context,
                       _coolapkId,
                       successMessage: l10n.copiedCoolapkId,
                     ),
+                    prefix: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,
@@ -104,16 +96,17 @@ class FeedbackScreen extends StatelessWidget {
                   ),
                 ),
                 FTile(
-                  prefix: Icon(Icons.groups_outlined),
+                  prefix: const Icon(Icons.groups_outlined),
                   title: Text(l10n.feedbackQqGroupTitle),
                   subtitle: Text(l10n.feedbackQqGroupSubtitle(_qqGroupId)),
-                  suffix: IconButton(
-                    icon: const Icon(Icons.copy_rounded),
-                    onPressed: () => _copyText(
+                  suffix: FButton(
+                    variant: FButtonVariant.ghost,
+                    onPress: () => _copyText(
                       context,
                       _qqGroupId,
                       successMessage: l10n.copiedQqGroupId,
                     ),
+                    prefix: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,

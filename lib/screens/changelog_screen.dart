@@ -129,9 +129,12 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       child: Material(
         type: MaterialType.transparency,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(child: FProgress())
             : ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 itemCount: _entries.length,
                 itemBuilder: (context, index) {
                   final entry = _entries[index];
@@ -164,57 +167,61 @@ class _ChangelogCardState extends State<_ChangelogCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: FCard.raw(
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      widget.entry.version,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onPrimaryContainer,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.primary.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          widget.entry.version,
+                          style: typo.sm.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colors.primary,
+                          ),
+                        ),
                       ),
+                      const Spacer(),
+                      Icon(
+                        _expanded ? Icons.expand_less : Icons.expand_more,
+                        color: colors.mutedForeground,
+                      ),
+                    ],
+                  ),
+                  if (_expanded) ...[
+                    const SizedBox(height: 12),
+                    ReleaseNotesMarkdown(
+                      data: widget.entry.content,
+                      onTapLink: (href) {
+                        if (href != null) {
+                          // 可以处理链接点击
+                        }
+                      },
                     ),
-                  ),
-                  const Spacer(),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+                  ],
                 ],
               ),
-              if (_expanded) ...[
-                const SizedBox(height: 12),
-                ReleaseNotesMarkdown(
-                  data: widget.entry.content,
-                  onTapLink: (href) {
-                    if (href != null) {
-                      // 可以处理链接点击
-                    }
-                  },
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
