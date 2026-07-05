@@ -88,7 +88,7 @@
             "name": "支持哪些学校的教务导入？",
             "acceptedAnswer": {
               "@type": "Answer",
-              "text": "目前已适配部分高校的教务系统，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、AI 识图导入或手动添加课程。"
+              "text": "目前已适配 100+ 所高校的教务系统，完整列表见官网「适配学校」区块，持续扩展中。如果你的学校暂未适配，可以使用 .ics 文件导入、AI 识图导入或手动添加课程。"
             }
           },
           {
@@ -156,6 +156,7 @@
         </button>
         <nav id="nav-menu" class="nav-links" aria-label="站点导航">
           <a href="#overview">概览</a>
+          <a href="./schools.html">适配学校</a>
           <a href="#experience">体验</a>
           <a href="#features">能力</a>
           <a href="#platform">平台</a>
@@ -196,6 +197,7 @@
             </button>
             <div class="inline-links hero-sub-links">
               <a class="hero-link-secondary" href="#overview">进一步了解</a>
+              <a class="hero-link-secondary" href="./schools.html">已适配学校</a>
               <a
                 class="hero-link-secondary"
                 href="https://github.com/Mutx163/mikcb"
@@ -206,7 +208,7 @@
               </a>
             </div>
           </div>
-          <div class="hero-proof-grid">
+          <div class="hero-proof-grid hero-proof-grid-quad">
             <article class="hero-proof-card">
               <strong>今天先看清</strong>
               <span>课表、当前周、下一节课在首屏就能确认。</span>
@@ -219,6 +221,10 @@
               <strong>系统级联动</strong>
               <span>桌面小组件、通知栏和超级岛一起工作。</span>
             </article>
+            <a class="hero-proof-card hero-proof-card-link" href="./schools.html">
+              <strong><span id="hero-school-count">100+</span> 所学校已适配</strong>
+              <span>网页登录导课 · 点击查看完整名单</span>
+            </a>
           </div>
           <div class="hero-trust-row">
             <span id="hero-stars">GitHub Star 读取中</span>
@@ -244,6 +250,7 @@
               <small>教务导入</small>
               <strong>支持学校教务课表导入</strong>
               <p>优先面向“不要手动录课”的真实需求，支持已适配学校的网页登录导入。</p>
+              <a class="hero-link-secondary" href="./schools.html">查看已适配学校</a>
             </article>
             <article class="import-focus-card">
               <small>.ics 导入</small>
@@ -420,13 +427,25 @@
             <details class="faq-item">
               <summary>支持哪些学校的教务导入？</summary>
               <div class="faq-answer">
-                <p>目前已适配部分高校的教务系统，持续扩展中。如果你的学校暂未适配，可以：</p>
+                <p>
+                  目前已适配 100+ 所高校，完整列表见
+                  <a href="./schools.html">已适配学校页面</a>，持续扩展中。如果你的学校暂未适配，可以：
+                </p>
                 <ul>
                   <li>使用 .ics 文件导入（从学校教务系统导出日历格式）</li>
-                  <li>使用 .ics 文件导入或 AI 识图导入</li>
+                  <li>使用 AI 识图导入</li>
                   <li>手动添加课程</li>
                 </ul>
-                <p>也欢迎在 GitHub 提交你学校的适配需求。</p>
+                <p>
+                  也欢迎在
+                  <a
+                    href="https://github.com/Mutx163/qingyu_warehouse/issues"
+                    target="_blank"
+                    rel="noreferrer"
+                    >qingyu_warehouse</a
+                  >
+                  提交你学校的适配需求。
+                </p>
               </div>
             </details>
             <details class="faq-item">
@@ -484,7 +503,7 @@
               <small>课表导入</small>
               <strong>先看能不能快速导课</strong>
               <ul class="detail-list">
-                <li>支持已适配学校的教务网页登录导入</li>
+                <li>支持已适配学校的教务网页登录导入 · <a href="./schools.html">查看学校列表</a></li>
                 <li>支持 .ics 导入、备份恢复与后续手动调整</li>
                 <li>如果学校暂未适配，也还能先用迁移方案顶上</li>
               </ul>
@@ -575,6 +594,7 @@
             <div class="footer-links">
               <a href="./privacy.html">隐私政策</a>
               <a href="./terms.html">用户协议</a>
+              <a href="./schools.html">适配学校</a>
             </div>
           </section>
           <section class="footer-meta-card">

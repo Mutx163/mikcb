@@ -1598,6 +1598,29 @@ releaseGithubDownload?.addEventListener("click", (event) => {
 
 bindGeneralAnalytics();
 
+async function initHeroSchoolCount() {
+  const countEl = document.getElementById("hero-school-count");
+  if (!countEl) {
+    return;
+  }
+
+  try {
+    const response = await fetch("./schools.json", { cache: "no-store" });
+    if (!response.ok) {
+      throw new Error("HTTP " + response.status);
+    }
+    const payload = await response.json();
+    const schoolCount = Number(payload?.counts?.schools);
+    if (Number.isFinite(schoolCount) && schoolCount > 0) {
+      countEl.textContent = String(schoolCount);
+    }
+  } catch (error) {
+    // Keep the fallback label in HTML.
+  }
+}
+
+initHeroSchoolCount();
+
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     closeReleaseModal("escape");
@@ -1624,3 +1647,201 @@ document.addEventListener("keydown", (event) => {
     firstElement.focus();
   }
 });
+
+function initSchoolsPage() {
+  const listEl = document.getElementById("schools-list");
+  if (!listEl) {
+    return;
+  }
+
+  const emptyEl = document.getElementById("schools-empty");
+  const updatedEl = document.getElementById("schools-updated");
+  const indexBarEl = document.getElementById("schools-index-bar");
+  const searchEl = document.getElementById("schools-search");
+  const genericToggleEl = document.getElementById("schools-show-generic");
+  const statCountEl = document.getElementById("schools-stat-count");
+  const statGenericEl = document.getElementById("schools-stat-generic");
+  const statTotalEl = document.getElementById("schools-stat-total");
+
+  let allSchools = [];
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+  }
+
+  function formatUpdatedAt(value) {
+    if (!value) {
+      return "";
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+    return date.toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZoneName: "short",
+    });
+  }
+
+  function filterSchools() {
+    const keyword = searchEl.value.trim().toLowerCase();
+    const showGeneric = genericToggleEl.checked;
+
+    return allSchools.filter((school) => {
+      if (!showGeneric && school.category === "generic") {
+        return false;
+      }
+      if (!keyword) {
+        return true;
+      }
+      return (
+        school.name.toLowerCase().includes(keyword) ||
+        school.id.toLowerCase().includes(keyword) ||
+        String(school.initial || "").toLowerCase() === keyword
+      );
+    });
+  }
+
+  function renderSchoolRow(school) {
+    const initial = escapeHtml(school.initial || "?");
+    const name = escapeHtml(school.name);
+    const subtitle =
+      school.category === "generic" ? "通用教务适配" : "网页登录导入";
+
+    return (
+      '<article class="feature-item compact">' +
+      "<small>" +
+      initial +
+      "</small>" +
+      "<strong>" +
+      name +
+      "</strong>" +
+      "<p>" +
+      subtitle +
+      "</p>" +
+      "</article>"
+    );
+  }
+
+  function renderGroup(title, schools, anchorId) {
+    if (!schools.length) {
+      return "";
+    }
+    const idAttr = anchorId
+      ? ' id="schools-group-' + escapeHtml(anchorId) + '"'
+      : "";
+    return (
+      '<section class="schools-group"' +
+      idAttr +
+      ">" +
+      '<p class="section-label">' +
+      escapeHtml(title) +
+      "</p>" +
+      '<div class="feature-stack">' +
+      schools.map(renderSchoolRow).join("") +
+      "</div>" +
+      "</section>"
+    );
+  }
+
+  function renderList() {
+    const filtered = filterSchools();
+    const isSearching = searchEl.value.trim().length > 0;
+    const generic = filtered.filter((item) => item.category === "generic");
+    const schools = filtered.filter((item) => item.category !== "generic");
+
+    if (!filtered.length) {
+      listEl.innerHTML = "";
+      emptyEl.hidden = false;
+      indexBarEl.hidden = true;
+      indexBarEl.innerHTML = "";
+      return;
+    }
+
+    emptyEl.hidden = true;
+
+    const groups = new Map();
+    schools.forEach((school) => {
+      const tag = school.initial || "#";
+      if (!groups.has(tag)) {
+        groups.set(tag, []);
+      }
+      groups.get(tag).push(school);
+    });
+
+    const sections = [];
+    if (generic.length) {
+      sections.push(renderGroup("通用教务", generic, "generic"));
+    }
+
+    [...groups.keys()]
+      .sort((left, right) => left.localeCompare(right, "zh-CN"))
+      .forEach((tag) => {
+        sections.push(renderGroup(tag, groups.get(tag), tag));
+      });
+
+    listEl.innerHTML = sections.join("");
+
+    if (isSearching || groups.size === 0) {
+      indexBarEl.hidden = true;
+      indexBarEl.innerHTML = "";
+      return;
+    }
+
+    const tags = [...groups.keys()].sort((left, right) =>
+      left.localeCompare(right, "zh-CN")
+    );
+    indexBarEl.hidden = false;
+    indexBarEl.innerHTML = tags
+      .map(
+        (tag) =>
+          '<a href="#schools-group-' +
+          encodeURIComponent(tag) +
+          '">' +
+          escapeHtml(tag) +
+          "</a>"
+      )
+      .join("");
+  }
+
+  function updateStats(counts) {
+    statCountEl.textContent = String(counts?.schools ?? "—");
+    statGenericEl.textContent = String(counts?.generic ?? "—");
+    statTotalEl.textContent = String(counts?.total ?? "—");
+  }
+
+  async function loadSchools() {
+    try {
+      const response = await fetch("./schools.json", { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error("HTTP " + response.status);
+      }
+      const payload = await response.json();
+      allSchools = Array.isArray(payload?.schools) ? payload.schools : [];
+      updateStats(payload?.counts);
+
+      const updatedLabel = formatUpdatedAt(payload?.updatedAt);
+      updatedEl.textContent = updatedLabel ? "列表更新于 " + updatedLabel : "";
+
+      renderList();
+    } catch (error) {
+      listEl.innerHTML =
+        '<p class="schools-status">无法加载学校列表，请稍后刷新页面。</p>';
+      updatedEl.textContent = "";
+    }
+  }
+
+  searchEl.addEventListener("input", renderList);
+  genericToggleEl.addEventListener("change", renderList);
+  loadSchools();
+}
+
+initSchoolsPage();

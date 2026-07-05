@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>轻屿课表 - 已适配学校</title>
+    <meta
+      name="description"
+      content="查看轻屿课表已支持教务网页登录导入的高校与通用教务适配列表，持续更新中。"
+    />
+    <meta name="robots" content="index,follow" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="轻屿课表" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:title" content="轻屿课表 - 已适配学校" />
+    <meta
+      property="og:description"
+      content="查看轻屿课表已支持教务网页登录导入的高校列表。"
+    />
+    <meta property="og:url" content="https://mutx.ccwu.cc/schools.html" />
+    <meta property="og:image" content="https://mutx.ccwu.cc/app-icon.png" />
+    <link rel="canonical" href="https://mutx.ccwu.cc/schools.html" />
+    <link rel="icon" href="./app-icon.png" type="image/png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="detail-page">
+      <section class="section-shell reveal">
+        <div class="inline-links">
+          <a href="./index.html">返回首页</a>
+        </div>
+        <p class="section-label">教务导入</p>
+        <h1>已适配学校</h1>
+        <div class="policy-content">
+          <p>
+            在 App 内选择「导入课程表 → 教务系统导入」，若你的学校出现在下方列表中，即可通过网页登录同步课表。列表每天自动与
+            <a
+              href="https://github.com/Mutx163/qingyu_warehouse"
+              target="_blank"
+              rel="noreferrer"
+              >qingyu_warehouse</a
+            >
+            同步更新。
+          </p>
+        </div>
+
+        <div class="hero-proof-grid schools-stats" aria-live="polite">
+          <article class="hero-proof-card">
+            <strong id="schools-stat-count">—</strong>
+            <span>所高校已适配</span>
+          </article>
+          <article class="hero-proof-card">
+            <strong id="schools-stat-generic">—</strong>
+            <span>套通用教务适配</span>
+          </article>
+          <article class="hero-proof-card">
+            <strong id="schools-stat-total">—</strong>
+            <span>条导入入口</span>
+          </article>
+        </div>
+
+        <article class="download-detail-card schools-list-card">
+          <small>学校列表</small>
+          <strong>搜索并查看已适配学校</strong>
+          <div class="schools-toolbar">
+            <label class="schools-search-field">
+              <span class="visually-hidden">搜索学校</span>
+              <input
+                id="schools-search"
+                type="search"
+                inputmode="search"
+                autocomplete="off"
+                placeholder="搜索学校名称…"
+              />
+            </label>
+            <label class="schools-toggle">
+              <input id="schools-show-generic" type="checkbox" />
+              <span>显示通用教务</span>
+            </label>
+          </div>
+
+          <div class="schools-layout">
+            <div class="schools-list-scroll">
+              <div id="schools-list" class="schools-list" aria-live="polite">
+                <p class="schools-status">正在加载学校列表…</p>
+              </div>
+            </div>
+            <nav
+              id="schools-index-bar"
+              class="schools-index-bar"
+              aria-label="字母索引"
+              hidden
+            ></nav>
+          </div>
+        </article>
+
+        <p id="schools-empty" class="schools-empty" hidden>
+          没有找到匹配的学校。你可以改用 .ics 导入，或到
+          <a
+            href="https://github.com/Mutx163/qingyu_warehouse/issues"
+            target="_blank"
+            rel="noreferrer"
+            >qingyu_warehouse</a
+          >
+          提交适配需求。
+        </p>
+
+        <p id="schools-updated" class="schools-updated"></p>
+
+        <div class="inline-links">
+          <a href="./index.html">返回首页</a>
+          <a
+            href="https://github.com/Mutx163/qingyu_warehouse/issues"
+            target="_blank"
+            rel="noreferrer"
+          >
+            缺少学校？去反馈
+          </a>
+        </div>
+      </section>
+    </main>
+    <script src="./script.js"></script>
+  </body>
+</html>

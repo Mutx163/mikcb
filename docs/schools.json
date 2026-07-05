@@ -1,0 +1,845 @@
+{
+  "updatedAt": "2026-07-05T13:42:35+00:00",
+  "source": "https://github.com/Mutx163/qingyu_warehouse",
+  "sourceRef": "main",
+  "counts": {
+    "total": 119,
+    "schools": 114,
+    "generic": 5
+  },
+  "schools": [
+    {
+      "id": "chaoxing_jiaowu",
+      "name": "超星教务系统-通用教务",
+      "initial": "C",
+      "resourceFolder": "chaoxing_jiaowu",
+      "category": "generic"
+    },
+    {
+      "id": "GLOBAL_TOOLS",
+      "name": "通用工具与服务",
+      "initial": "G",
+      "resourceFolder": "GLOBAL_TOOLS",
+      "category": "generic"
+    },
+    {
+      "id": "qingguo_jiaowu",
+      "name": "青果教务-通用教务",
+      "initial": "Q",
+      "resourceFolder": "qingguo_jiaowu",
+      "category": "generic"
+    },
+    {
+      "id": "urp_jiaowu",
+      "name": "URP教务-通用教务",
+      "initial": "U",
+      "resourceFolder": "urp_jiaowu",
+      "category": "generic"
+    },
+    {
+      "id": "zhengfang_jiaowu",
+      "name": "正方教务-通用教务",
+      "initial": "Z",
+      "resourceFolder": "zhengfang_jiaowu",
+      "category": "generic"
+    },
+    {
+      "id": "AHZYYGZ",
+      "name": "安徽中医药高等专科学校",
+      "initial": "A",
+      "resourceFolder": "AHZYYGZ",
+      "category": "school"
+    },
+    {
+      "id": "BUPT",
+      "name": "北京邮电大学",
+      "initial": "B",
+      "resourceFolder": "BUPT",
+      "category": "school"
+    },
+    {
+      "id": "NCUT",
+      "name": "北方工业大学",
+      "initial": "B",
+      "resourceFolder": "NCUT",
+      "category": "school"
+    },
+    {
+      "id": "CUIT",
+      "name": "成都信息工程大学",
+      "initial": "C",
+      "resourceFolder": "CUIT",
+      "category": "school"
+    },
+    {
+      "id": "CMC",
+      "name": "成都医学院",
+      "initial": "C",
+      "resourceFolder": "CMC",
+      "category": "school"
+    },
+    {
+      "id": "CAPU",
+      "name": "成都航空职业技术大学",
+      "initial": "C",
+      "resourceFolder": "CAPU",
+      "category": "school"
+    },
+    {
+      "id": "YXHMC",
+      "name": "成都银杏酒店管理学院",
+      "initial": "C",
+      "resourceFolder": "YXHMC",
+      "category": "school"
+    },
+    {
+      "id": "CQJTU",
+      "name": "重庆交通大学",
+      "initial": "C",
+      "resourceFolder": "CQJTU",
+      "category": "school"
+    },
+    {
+      "id": "CQRK",
+      "name": "重庆人文科技学院",
+      "initial": "C",
+      "resourceFolder": "CQRK",
+      "category": "school"
+    },
+    {
+      "id": "CQCIVC",
+      "name": "重庆化工职业学院",
+      "initial": "C",
+      "resourceFolder": "CQCIVC",
+      "category": "school"
+    },
+    {
+      "id": "CQCST",
+      "name": "重庆城市科技学院",
+      "initial": "C",
+      "resourceFolder": "CQCST",
+      "category": "school"
+    },
+    {
+      "id": "CQU",
+      "name": "重庆大学",
+      "initial": "C",
+      "resourceFolder": "CQU",
+      "category": "school"
+    },
+    {
+      "id": "CQUT",
+      "name": "重庆理工大学",
+      "initial": "C",
+      "resourceFolder": "CQUT",
+      "category": "school"
+    },
+    {
+      "id": "CQUET",
+      "name": "重庆电子科技职业大学",
+      "initial": "C",
+      "resourceFolder": "CQUET",
+      "category": "school"
+    },
+    {
+      "id": "CFEC",
+      "name": "重庆财经学院",
+      "initial": "C",
+      "resourceFolder": "CFEC",
+      "category": "school"
+    },
+    {
+      "id": "CCIT",
+      "name": "长春工程学院",
+      "initial": "C",
+      "resourceFolder": "CCIT",
+      "category": "school"
+    },
+    {
+      "id": "CUST",
+      "name": "长春理工大学",
+      "initial": "C",
+      "resourceFolder": "CUST",
+      "category": "school"
+    },
+    {
+      "id": "YANGTZEU",
+      "name": "长江大学",
+      "initial": "C",
+      "resourceFolder": "YANGTZEU",
+      "category": "school"
+    },
+    {
+      "id": "NEAU",
+      "name": "东北农业大学",
+      "initial": "D",
+      "resourceFolder": "NEAU",
+      "category": "school"
+    },
+    {
+      "id": "NEU",
+      "name": "东北大学",
+      "initial": "D",
+      "resourceFolder": "NEU",
+      "category": "school"
+    },
+    {
+      "id": "NEUQ",
+      "name": "东北大学秦皇岛分校",
+      "initial": "D",
+      "resourceFolder": "NEUQ",
+      "category": "school"
+    },
+    {
+      "id": "NENU",
+      "name": "东北师范大学",
+      "initial": "D",
+      "resourceFolder": "NENU",
+      "category": "school"
+    },
+    {
+      "id": "DLU",
+      "name": "大连大学",
+      "initial": "D",
+      "resourceFolder": "DLU",
+      "category": "school"
+    },
+    {
+      "id": "DLMU",
+      "name": "大连海事大学",
+      "initial": "D",
+      "resourceFolder": "DLMU",
+      "category": "school"
+    },
+    {
+      "id": "FOSU",
+      "name": "佛山大学",
+      "initial": "F",
+      "resourceFolder": "FOSU",
+      "category": "school"
+    },
+    {
+      "id": "FJCPC",
+      "name": "福建船政交通职业学院",
+      "initial": "F",
+      "resourceFolder": "FJCPC",
+      "category": "school"
+    },
+    {
+      "id": "GDUST",
+      "name": "广东科技学院",
+      "initial": "G",
+      "resourceFolder": "GDUST",
+      "category": "school"
+    },
+    {
+      "id": "GDPU",
+      "name": "广东药科大学",
+      "initial": "G",
+      "resourceFolder": "GDPU",
+      "category": "school"
+    },
+    {
+      "id": "GDIPU",
+      "name": "广东轻工职业技术大学",
+      "initial": "G",
+      "resourceFolder": "GDIPU",
+      "category": "school"
+    },
+    {
+      "id": "GZST",
+      "name": "广州松田职业学院",
+      "initial": "G",
+      "resourceFolder": "GZST",
+      "category": "school"
+    },
+    {
+      "id": "GXDLXY",
+      "name": "广西电力职业技术学院",
+      "initial": "G",
+      "resourceFolder": "GXDLXY",
+      "category": "school"
+    },
+    {
+      "id": "GUIT",
+      "name": "桂林信息科技学院",
+      "initial": "G",
+      "resourceFolder": "GUIT",
+      "category": "school"
+    },
+    {
+      "id": "GLMU",
+      "name": "桂林医科大学",
+      "initial": "G",
+      "resourceFolder": "GLMU",
+      "category": "school"
+    },
+    {
+      "id": "GSMC",
+      "name": "甘肃医学院",
+      "initial": "G",
+      "resourceFolder": "GSMC",
+      "category": "school"
+    },
+    {
+      "id": "GZU",
+      "name": "贵州大学",
+      "initial": "G",
+      "resourceFolder": "GZU",
+      "category": "school"
+    },
+    {
+      "id": "ECJTU",
+      "name": "华东交通大学",
+      "initial": "H",
+      "resourceFolder": "ECJTU",
+      "category": "school"
+    },
+    {
+      "id": "HQU",
+      "name": "华侨大学",
+      "initial": "H",
+      "resourceFolder": "HQU",
+      "category": "school"
+    },
+    {
+      "id": "SCUT",
+      "name": "华南理工大学",
+      "initial": "H",
+      "resourceFolder": "SCUT",
+      "category": "school"
+    },
+    {
+      "id": "HFNU",
+      "name": "合肥师范学院",
+      "initial": "H",
+      "resourceFolder": "HFNU",
+      "category": "school"
+    },
+    {
+      "id": "IMNC",
+      "name": "呼和浩特民族学院",
+      "initial": "H",
+      "resourceFolder": "IMNC",
+      "category": "school"
+    },
+    {
+      "id": "HBGUHX",
+      "name": "河北地质大学华信学院",
+      "initial": "H",
+      "resourceFolder": "HBGUHX",
+      "category": "school"
+    },
+    {
+      "id": "HIIT",
+      "name": "河南信息科技学院",
+      "initial": "H",
+      "resourceFolder": "HIIT",
+      "category": "school"
+    },
+    {
+      "id": "HAUT",
+      "name": "河南工业大学",
+      "initial": "H",
+      "resourceFolder": "HAUT",
+      "category": "school"
+    },
+    {
+      "id": "HNSF",
+      "name": "河南师范大学",
+      "initial": "H",
+      "resourceFolder": "HNSF",
+      "category": "school"
+    },
+    {
+      "id": "HNZY",
+      "name": "河南职业技术学院",
+      "initial": "H",
+      "resourceFolder": "HNZY",
+      "category": "school"
+    },
+    {
+      "id": "HUEL",
+      "name": "河南财经政法大学",
+      "initial": "H",
+      "resourceFolder": "HUEL",
+      "category": "school"
+    },
+    {
+      "id": "HBLGXY",
+      "name": "淮北理工学院",
+      "initial": "H",
+      "resourceFolder": "HBLGXY",
+      "category": "school"
+    },
+    {
+      "id": "HBMU",
+      "name": "湖北医药学院",
+      "initial": "H",
+      "resourceFolder": "HBMU",
+      "category": "school"
+    },
+    {
+      "id": "HUAT",
+      "name": "湖北汽车工业学院",
+      "initial": "H",
+      "resourceFolder": "HUAT",
+      "category": "school"
+    },
+    {
+      "id": "HNIU",
+      "name": "湖南信息职业技术学院",
+      "initial": "H",
+      "resourceFolder": "HNIU",
+      "category": "school"
+    },
+    {
+      "id": "HNVCC",
+      "name": "湖南商务职业技术学院",
+      "initial": "H",
+      "resourceFolder": "HNVCC",
+      "category": "school"
+    },
+    {
+      "id": "HNUST",
+      "name": "湖南科技大学",
+      "initial": "H",
+      "resourceFolder": "HNUST",
+      "category": "school"
+    },
+    {
+      "id": "HUSE",
+      "name": "湖南科技学院",
+      "initial": "H",
+      "resourceFolder": "HUSE",
+      "category": "school"
+    },
+    {
+      "id": "HYNU",
+      "name": "衡阳师范学院",
+      "initial": "H",
+      "resourceFolder": "HYNU",
+      "category": "school"
+    },
+    {
+      "id": "JNU",
+      "name": "暨南大学",
+      "initial": "J",
+      "resourceFolder": "JNU",
+      "category": "school"
+    },
+    {
+      "id": "UJS",
+      "name": "江苏大学",
+      "initial": "J",
+      "resourceFolder": "UJS",
+      "category": "school"
+    },
+    {
+      "id": "JSNU",
+      "name": "江苏师范大学",
+      "initial": "J",
+      "resourceFolder": "JSNU",
+      "category": "school"
+    },
+    {
+      "id": "JXNU",
+      "name": "江西师范大学",
+      "initial": "J",
+      "resourceFolder": "JXNU",
+      "category": "school"
+    },
+    {
+      "id": "JXUST",
+      "name": "江西理工大学",
+      "initial": "J",
+      "resourceFolder": "JXUST",
+      "category": "school"
+    },
+    {
+      "id": "JHZYEDU",
+      "name": "江西航空职业技术学院",
+      "initial": "J",
+      "resourceFolder": "JHZYEDU",
+      "category": "school"
+    },
+    {
+      "id": "JXFU",
+      "name": "江西飞行学院",
+      "initial": "J",
+      "resourceFolder": "JXFU",
+      "category": "school"
+    },
+    {
+      "id": "UJN",
+      "name": "济南大学",
+      "initial": "J",
+      "resourceFolder": "UJN",
+      "category": "school"
+    },
+    {
+      "id": "JYVTC",
+      "name": "济源职业技术学院",
+      "initial": "J",
+      "resourceFolder": "JYVTC",
+      "category": "school"
+    },
+    {
+      "id": "KSU",
+      "name": "喀什大学",
+      "initial": "K",
+      "resourceFolder": "KSU",
+      "category": "school"
+    },
+    {
+      "id": "MMPT",
+      "name": "茂名职业技术学院",
+      "initial": "M",
+      "resourceFolder": "MMPT",
+      "category": "school"
+    },
+    {
+      "id": "IMU",
+      "name": "内蒙古大学",
+      "initial": "N",
+      "resourceFolder": "IMU",
+      "category": "school"
+    },
+    {
+      "id": "IMUT",
+      "name": "内蒙古工业大学",
+      "initial": "N",
+      "resourceFolder": "IMUT",
+      "category": "school"
+    },
+    {
+      "id": "NJTECH",
+      "name": "南京工业大学",
+      "initial": "N",
+      "resourceFolder": "NJTECH",
+      "category": "school"
+    },
+    {
+      "id": "NJNU",
+      "name": "南京师范大学",
+      "initial": "N",
+      "resourceFolder": "NJNU",
+      "category": "school"
+    },
+    {
+      "id": "NJFU",
+      "name": "南京林业大学",
+      "initial": "N",
+      "resourceFolder": "NJFU",
+      "category": "school"
+    },
+    {
+      "id": "STCNCHU",
+      "name": "南昌航空大学科技学院",
+      "initial": "N",
+      "resourceFolder": "STCNCHU",
+      "category": "school"
+    },
+    {
+      "id": "NBUT",
+      "name": "宁波工程学院",
+      "initial": "N",
+      "resourceFolder": "NBUT",
+      "category": "school"
+    },
+    {
+      "id": "QAU",
+      "name": "青岛农业大学",
+      "initial": "Q",
+      "resourceFolder": "QAU",
+      "category": "school"
+    },
+    {
+      "id": "QQHRU",
+      "name": "齐齐哈尔大学",
+      "initial": "Q",
+      "resourceFolder": "QQHRU",
+      "category": "school"
+    },
+    {
+      "id": "QQHRIT",
+      "name": "齐齐哈尔工程学院",
+      "initial": "Q",
+      "resourceFolder": "QQHRIT",
+      "category": "school"
+    },
+    {
+      "id": "CTGU",
+      "name": "三峡大学",
+      "initial": "S",
+      "resourceFolder": "CTGU",
+      "category": "school"
+    },
+    {
+      "id": "SHZQ",
+      "name": "上海中侨职业技术大学",
+      "initial": "S",
+      "resourceFolder": "SHZQ",
+      "category": "school"
+    },
+    {
+      "id": "SICNU",
+      "name": "四川师范大学",
+      "initial": "S",
+      "resourceFolder": "SICNU",
+      "category": "school"
+    },
+    {
+      "id": "AHSZU",
+      "name": "宿州学院",
+      "initial": "S",
+      "resourceFolder": "AHSZU",
+      "category": "school"
+    },
+    {
+      "id": "HUAYU",
+      "name": "山东华宇工学院",
+      "initial": "S",
+      "resourceFolder": "HUAYU",
+      "category": "school"
+    },
+    {
+      "id": "SDNU",
+      "name": "山东师范大学",
+      "initial": "S",
+      "resourceFolder": "SDNU",
+      "category": "school"
+    },
+    {
+      "id": "SDIPCT",
+      "name": "山东石油化工学院",
+      "initial": "S",
+      "resourceFolder": "SDIPCT",
+      "category": "school"
+    },
+    {
+      "id": "SDDFVC",
+      "name": "山东药品食品职业学院",
+      "initial": "S",
+      "resourceFolder": "SDDFVC",
+      "category": "school"
+    },
+    {
+      "id": "SDLIVC",
+      "name": "山东轻工职业学院",
+      "initial": "S",
+      "resourceFolder": "SDLIVC",
+      "category": "school"
+    },
+    {
+      "id": "SXGCXY",
+      "name": "山西工程职业学院",
+      "initial": "S",
+      "resourceFolder": "SXGCXY",
+      "category": "school"
+    },
+    {
+      "id": "SUDA",
+      "name": "苏州大学",
+      "initial": "S",
+      "resourceFolder": "SUDA",
+      "category": "school"
+    },
+    {
+      "id": "TONGJI",
+      "name": "同济大学",
+      "initial": "T",
+      "resourceFolder": "TONGJI",
+      "category": "school"
+    },
+    {
+      "id": "TARU",
+      "name": "塔里木大学",
+      "initial": "T",
+      "resourceFolder": "TARU",
+      "category": "school"
+    },
+    {
+      "id": "TJAU",
+      "name": "天津农学院",
+      "initial": "T",
+      "resourceFolder": "TJAU",
+      "category": "school"
+    },
+    {
+      "id": "TCU",
+      "name": "天津城建大学",
+      "initial": "T",
+      "resourceFolder": "TCU",
+      "category": "school"
+    },
+    {
+      "id": "TSU",
+      "name": "泰山学院",
+      "initial": "T",
+      "resourceFolder": "TSU",
+      "category": "school"
+    },
+    {
+      "id": "GZTRC",
+      "name": "铜仁学院",
+      "initial": "T",
+      "resourceFolder": "GZTRC",
+      "category": "school"
+    },
+    {
+      "id": "WENHUA",
+      "name": "文华学院",
+      "initial": "W",
+      "resourceFolder": "WENHUA",
+      "category": "school"
+    },
+    {
+      "id": "WBU",
+      "name": "武汉商学院",
+      "initial": "W",
+      "resourceFolder": "WBU",
+      "category": "school"
+    },
+    {
+      "id": "WHCB",
+      "name": "武汉船舶职业技术学院",
+      "initial": "W",
+      "resourceFolder": "WHCB",
+      "category": "school"
+    },
+    {
+      "id": "XYAFU",
+      "name": "信阳农林学院",
+      "initial": "X",
+      "resourceFolder": "XYAFU",
+      "category": "school"
+    },
+    {
+      "id": "XMCU",
+      "name": "厦门城市职业学院",
+      "initial": "X",
+      "resourceFolder": "XMCU",
+      "category": "school"
+    },
+    {
+      "id": "XZIT",
+      "name": "徐州工程学院",
+      "initial": "X",
+      "resourceFolder": "XZIT",
+      "category": "school"
+    },
+    {
+      "id": "XJIE",
+      "name": "新疆工程学院",
+      "initial": "X",
+      "resourceFolder": "XJIE",
+      "category": "school"
+    },
+    {
+      "id": "NWPU",
+      "name": "西北工业大学",
+      "initial": "X",
+      "resourceFolder": "NWPU",
+      "category": "school"
+    },
+    {
+      "id": "XATU",
+      "name": "西安工业大学",
+      "initial": "X",
+      "resourceFolder": "XATU",
+      "category": "school"
+    },
+    {
+      "id": "XAWL",
+      "name": "西安文理学院",
+      "initial": "X",
+      "resourceFolder": "XAWL",
+      "category": "school"
+    },
+    {
+      "id": "XAUT",
+      "name": "西安理工大学",
+      "initial": "X",
+      "resourceFolder": "XAUT",
+      "category": "school"
+    },
+    {
+      "id": "YNUFE",
+      "name": "云南财经大学",
+      "initial": "Y",
+      "resourceFolder": "YNUFE",
+      "category": "school"
+    },
+    {
+      "id": "YIBINU",
+      "name": "宜宾学院",
+      "initial": "Y",
+      "resourceFolder": "YIBINU",
+      "category": "school"
+    },
+    {
+      "id": "SCUEC",
+      "name": "中南民族大学",
+      "initial": "Z",
+      "resourceFolder": "SCUEC",
+      "category": "school"
+    },
+    {
+      "id": "CAUC",
+      "name": "中国民航大学",
+      "initial": "Z",
+      "resourceFolder": "CAUC",
+      "category": "school"
+    },
+    {
+      "id": "CUP",
+      "name": "中国石油大学(北京)",
+      "initial": "Z",
+      "resourceFolder": "CUP",
+      "category": "school"
+    },
+    {
+      "id": "UPC",
+      "name": "中国石油大学(华东)",
+      "initial": "Z",
+      "resourceFolder": "UPC",
+      "category": "school"
+    },
+    {
+      "id": "CUPK",
+      "name": "中国石油大学（北京）克拉玛依校区",
+      "initial": "Z",
+      "resourceFolder": "CUPK",
+      "category": "school"
+    },
+    {
+      "id": "ZHKU",
+      "name": "仲恺农业工程学院",
+      "initial": "Z",
+      "resourceFolder": "ZHKU",
+      "category": "school"
+    },
+    {
+      "id": "UZZ",
+      "name": "枣庄学院",
+      "initial": "Z",
+      "resourceFolder": "UZZ",
+      "category": "school"
+    },
+    {
+      "id": "ZCMU",
+      "name": "浙江中医药大学",
+      "initial": "Z",
+      "resourceFolder": "ZCMU",
+      "category": "school"
+    },
+    {
+      "id": "ZJUT",
+      "name": "浙江工业大学",
+      "initial": "Z",
+      "resourceFolder": "ZJUT",
+      "category": "school"
+    }
+  ]
+}

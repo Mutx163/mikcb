@@ -321,6 +321,11 @@ main {
   margin-top: 34px;
 }
 
+.hero-proof-grid-quad {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+}
+
 .hero-proof-card {
   padding: 18px 18px 16px;
   border: 1px solid rgba(0, 102, 204, 0.08);
@@ -437,6 +442,20 @@ main {
   margin: 10px 0 0;
   color: var(--text-soft);
   line-height: 1.6;
+}
+
+.import-focus-card .hero-link-secondary {
+  display: inline-block;
+  margin-top: 14px;
+}
+
+.hero-proof-card-link {
+  color: inherit;
+  transition: transform 180ms ease;
+}
+
+.hero-proof-card-link:hover {
+  transform: translateY(-1px);
 }
 
 .detail-list {
@@ -1095,8 +1114,18 @@ main {
     order: initial;
   }
 
+  .hero-proof-grid.hero-proof-grid-quad {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .template-card-primary {
     grid-column: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-proof-grid.hero-proof-grid-quad {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1617,5 +1646,154 @@ main {
 @media (prefers-color-scheme: dark) {
   .faq-item summary::after {
     color: var(--text-soft);
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.schools-stats {
+  margin-top: 28px;
+}
+
+.schools-list-card {
+  margin-top: 28px;
+}
+
+.schools-list-card > strong {
+  margin-bottom: 4px;
+}
+
+.schools-list-scroll {
+  max-height: min(62vh, 680px);
+  overflow-y: auto;
+  margin-top: 16px;
+  padding-right: 4px;
+}
+
+.schools-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 18px;
+  margin-top: 14px;
+}
+
+.schools-search-field {
+  flex: 1 1 260px;
+}
+
+.schools-search-field input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font: inherit;
+}
+
+.schools-search-field input:focus-visible {
+  outline: 3px solid rgba(0, 102, 204, 0.28);
+  outline-offset: 2px;
+}
+
+.schools-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-soft);
+  font-size: 0.92rem;
+  user-select: none;
+}
+
+.schools-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--blue);
+}
+
+.schools-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+}
+
+.schools-list {
+  min-width: 0;
+}
+
+.schools-status,
+.schools-empty,
+.schools-updated {
+  color: var(--text-soft);
+  line-height: 1.7;
+}
+
+.schools-empty {
+  margin-top: 18px;
+}
+
+.schools-empty a {
+  color: var(--blue);
+}
+
+.schools-updated {
+  margin: 18px 0 0;
+  font-size: 0.84rem;
+}
+
+.schools-group + .schools-group {
+  margin-top: 20px;
+}
+
+.schools-group .section-label {
+  margin-bottom: 10px;
+}
+
+.schools-index-bar {
+  position: sticky;
+  top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-self: start;
+  padding: 8px 4px;
+}
+
+.schools-index-bar a {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 24px;
+  border-radius: 8px;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.schools-index-bar a:hover,
+.schools-index-bar a:focus-visible {
+  color: var(--blue);
+  background: rgba(0, 102, 204, 0.1);
+}
+
+@media (max-width: 760px) {
+  .schools-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .schools-index-bar {
+    display: none !important;
   }
 }
