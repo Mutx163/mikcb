@@ -256,3 +256,22 @@ jobs:
               "${RELEASE_NOTES_OPTION[@]}" \
               --target "${GITHUB_SHA}"
           fi
+
+  sync-releases-json:
+    name: Sync releases JSON to docs
+    needs: publish
+    if: success()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Trigger Update Docs Releases JSON workflow
+        uses: actions/github-script@60a0d83039c77a4adae0c329dae91e3310907041 # v7.0.1
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'update-docs-releases.yml',
+              ref: 'main',
+            });

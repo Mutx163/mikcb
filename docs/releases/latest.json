@@ -1,16 +1,16 @@
 {
-  "releaseCount": 7,
+  "releaseCount": 8,
   "stable": {
     "channelLabel": "正式版",
-    "version": "1.2.1.15",
-    "title": "v1.2.1.15",
-    "publishedAt": "2026-06-27T07:31:50Z",
-    "body": "# v1.2.1.15\r\n\r\n- 优化超级岛在课程最后一周结束后，不再于下一周同一时刻误弹\r\n- 优化应用启动时自动同步并结束已过期的超级岛提醒",
-    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.2.1.15",
-    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.2.1.15/mikcb-1.2.1.15-arm64-v8a.apk",
-    "assetName": "mikcb-1.2.1.15-arm64-v8a.apk",
+    "version": "1.3.2",
+    "title": "v1.3.2",
+    "publishedAt": "2026-07-05T11:40:59Z",
+    "body": "# v1.3.2\n\n## 优化\n\n- 优化课表选周弹窗：统一 Forui 底部 Sheet 风格，与学期周数、课表切换等选择界面视觉一致\n",
+    "releaseUrl": "https://github.com/Mutx163/mikcb/releases/tag/v1.3.2",
+    "downloadUrl": "https://github.com/Mutx163/mikcb/releases/download/v1.3.2/mikcb-1.3.2-arm64-v8a.apk",
+    "assetName": "mikcb-1.3.2-arm64-v8a.apk",
     "assetCount": 1,
-    "assetDownloadCount": 1
+    "assetDownloadCount": 0
   },
   "prerelease": {
     "channelLabel": "预发布",
