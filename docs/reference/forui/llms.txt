@@ -1,0 +1,117 @@
+# Forui
+
+> Beautiful, minimalistic, and platform-agnostic UI library for Flutter.
+
+- [About Forui](https://forui.dev/docs.md): Beautiful, minimalistic, and platform-agnostic UI library for Flutter.
+- [Getting Started](https://forui.dev/docs/getting-started.md): Get started with Forui in your Flutter project.
+
+## Concepts
+
+- [Themes](https://forui.dev/docs/concepts/themes.md): Define consistent visual styles across your Flutter application with Forui's theming system.
+- [Controls](https://forui.dev/docs/concepts/controls.md): Abstractions over controllers that define where widget state lives.
+- [Localization](https://forui.dev/docs/concepts/localization.md): Enable localization for Forui widgets across 115 languages.
+- [Responsive](https://forui.dev/docs/concepts/responsive.md): Platform variants and responsive breakpoints for adaptive layouts.
+
+## Guides
+
+- [Adding Theme Properties](https://forui.dev/docs/guides/adding-theme-properties.md): Extend Forui themes with application-specific properties using Flutter's ThemeExtension system.
+- [Customizing Themes](https://forui.dev/docs/guides/customizing-themes.md): Generate and customize themes and widget styles using the CLI.
+- [Customizing Widget Styles](https://forui.dev/docs/guides/customizing-widget-styles.md): Customize individual widget styles using deltas and the CLI.
+- [Customizing Icons](https://forui.dev/docs/guides/customizing-icons.md): Swap the icons used by Forui widgets with your own icons.
+- [Creating Custom Deltas](https://forui.dev/docs/guides/creating-custom-deltas.md): Create custom delta classes for transformations not provided out of the box.
+- [Creating Custom Controllers](https://forui.dev/docs/guides/creating-custom-controllers.md): Extend Forui controllers with custom logic and pass them to widgets.
+- [Using Forui À La Shadcn/ui](https://forui.dev/docs/guides/using-forui-a-la-shadcn-ui.md): Take full ownership of Forui's behavior and layout by editing widget source directly.
+
+## Reference
+
+- [CLI](https://forui.dev/docs/reference/cli.md): Generate themes and styles in your project with Forui's CLI.
+- [Icons](https://forui.dev/docs/reference/icon-library.md): High-quality Lucide icons bundled with Forui.
+- [Hooks](https://forui.dev/docs/reference/hooks.md): First-class Flutter Hooks integration with Forui controllers.
+- [LLMs](https://forui.dev/docs/reference/llms.md): Machine-readable documentation for LLMs and AI-powered tools.
+
+## Widgets
+
+### Layout
+
+- [Divider](https://forui.dev/docs/widgets/layout/divider.md): Visually or semantically separates content.
+- [Resizable](https://forui.dev/docs/widgets/layout/resizable.md): A box which children can be resized along either the horizontal or vertical axis.
+- [Scaffold](https://forui.dev/docs/widgets/layout/scaffold.md): Creates a visual scaffold for Forui widgets.
+
+### Form
+
+- [Autocomplete](https://forui.dev/docs/widgets/form/autocomplete.md): An autocomplete provides a list of suggestions based on the user's input and shows typeahead text for the first match. It is a form-field and can therefore be used in a form.
+- [Button](https://forui.dev/docs/widgets/form/button.md): A button.
+- [Checkbox](https://forui.dev/docs/widgets/form/checkbox.md): A control that allows the user to toggle between checked and not checked.
+- [Date Field](https://forui.dev/docs/widgets/form/date-field.md): A date field allows a date to be selected from a calendar or input field.
+- [Date Time Picker](https://forui.dev/docs/widgets/form/date-time-picker.md): A date and time picker that allows a date and time to be selected. The picker supports arrow key navigation. Recommended for touch devices.
+- [Label](https://forui.dev/docs/widgets/form/label.md): Describes a form field with a label, description, and error message (if any). This widget is usually used for custom form fields. All form fields in Forui come with this widget wrapped.
+- [Multi Select](https://forui.dev/docs/widgets/form/multi-select.md): A multi select displays a list of drop-down options for the user to pick from. It is a form-field and can therefore be used in a form.
+- [OTP Field](https://forui.dev/docs/widgets/form/otp-field.md): A one-time password input field for verification codes.
+- [Picker](https://forui.dev/docs/widgets/form/picker.md): A generic picker that allows an item to be selected. It is composed of one or more wheels, optionally with separators between those wheels. The picker supports arrow key navigation. Recommended for touch devices.
+- [Radio](https://forui.dev/docs/widgets/form/radio.md): A radio button that typically allows the user to choose only one of a predefined set of options.
+- [Select Group](https://forui.dev/docs/widgets/form/select-group.md): A group of items that allow users to make a selection from a set of options.
+- [Select](https://forui.dev/docs/widgets/form/select.md): A select displays a list of drop-down options for the user to pick from. It is a form-field and can therefore be used in a form.
+- [Slider](https://forui.dev/docs/widgets/form/slider.md): A sliding input component that allows users to select a value within a specified range by dragging a handle or tapping on the track.
+- [Switch](https://forui.dev/docs/widgets/form/switch.md): A toggle switch component that allows users to enable or disable a setting with a sliding motion.
+- [Text Field](https://forui.dev/docs/widgets/form/text-field.md): A text field lets the user enter text, either with a hardware keyboard or with an onscreen keyboard.
+- [Text Form Field](https://forui.dev/docs/widgets/form/text-form-field.md): A text field that can be used in forms, allowing the user to enter text, either with a hardware keyboard or with an onscreen keyboard.
+- [Time Field](https://forui.dev/docs/widgets/form/time-field.md): A time field allows a time to be selected from a picker or input field.
+- [Time Picker](https://forui.dev/docs/widgets/form/time-picker.md): A time picker that allows a time to be selected. The picker supports arrow key navigation. Recommended for touch devices.
+
+### Data Presentation
+
+- [Accordion](https://forui.dev/docs/widgets/data/accordion.md): A vertically stacked set of interactive headings that reveal associated content sections when clicked. Each section can be expanded or collapsed independently.
+- [Avatar](https://forui.dev/docs/widgets/data/avatar.md): A circular image component that displays user profile pictures with a fallback option. The Avatar component provides a consistent way to represent users in your application, displaying profile images with fallbacks to initials or icons when images are unavailable.
+- [Badge](https://forui.dev/docs/widgets/data/badge.md): A badge draws attention to specific information, such as labels and counts. Use badges to display status, notifications, or small pieces of information that need to stand out.
+- [Calendar](https://forui.dev/docs/widgets/data/calendar.md): A calendar component for selecting and editing dates.
+- [Card](https://forui.dev/docs/widgets/data/card.md): A flexible container component that displays content with an optional title, subtitle, and child widget. Cards are commonly used to group related information and actions.
+- [Item Group](https://forui.dev/docs/widgets/data/item-group.md): An item group that typically groups related information together.
+- [Item](https://forui.dev/docs/widgets/data/item.md): An item is typically used to group related information together.
+- [Line Calendar](https://forui.dev/docs/widgets/data/line-calendar.md): A compact calendar component that displays dates in a horizontally scrollable line, ideal for date selection in limited space.
+
+### Tile
+
+- [Select Menu Tile](https://forui.dev/docs/widgets/tile/select-menu-tile.md): A tile that, when triggered, displays a list of options for the user to pick from.
+- [Select Tile Group](https://forui.dev/docs/widgets/tile/select-tile-group.md): A group of tiles that allow users to make a selection from a set of options.
+- [Tile Group](https://forui.dev/docs/widgets/tile/tile-group.md): A tile group that typically groups related information together.
+- [Tile](https://forui.dev/docs/widgets/tile/tile.md): A specialized Item for touch devices, typically used to group related information together.
+
+### Navigation
+
+- [Bottom Navigation Bar](https://forui.dev/docs/widgets/navigation/bottom-navigation-bar.md): A bottom navigation bar is usually present at the bottom of root pages. It is used to navigate between a small number of views, typically between three and five.
+- [Breadcrumb](https://forui.dev/docs/widgets/navigation/breadcrumb.md): Displays a list of links that help visualize a page's location within a site's hierarchical structure. It allows navigation up to any of the ancestors.
+- [Header](https://forui.dev/docs/widgets/navigation/header.md): A header contains the page's title and navigation actions. It is typically used on pages at the root of the navigation stack.
+- [Pagination](https://forui.dev/docs/widgets/navigation/pagination.md): Display the current active page and enable navigation between multiple pages.
+- [Sidebar](https://forui.dev/docs/widgets/navigation/sidebar.md): A sidebar widget that provides an opinionated layout for navigation on the side of the screen.
+- [Tabs](https://forui.dev/docs/widgets/navigation/tabs.md): A set of layered sections of content—known as tab entries—that are displayed one at a time.
+
+### Feedback
+
+- [Alert](https://forui.dev/docs/widgets/feedback/alert.md): Displays a callout for user attention.
+- [Circular Progress](https://forui.dev/docs/widgets/feedback/circular-progress.md): Displays an indeterminate circular indicator showing the completion progress of a task.
+- [Determinate Progress](https://forui.dev/docs/widgets/feedback/determinate-progress.md): Displays a determinate linear indicator showing the completion progress of a task.
+- [Progress](https://forui.dev/docs/widgets/feedback/progress.md): Displays an indeterminate linear indicator showing the completion progress of a task.
+
+### Overlay
+
+- [Context Menu](https://forui.dev/docs/widgets/overlay/context-menu.md): A context menu displays a menu at the user's pointer.
+- [Dialog](https://forui.dev/docs/widgets/overlay/dialog.md): A modal dialog interrupts the user with important content and expects a response.
+- [Persistent Sheet](https://forui.dev/docs/widgets/overlay/persistent-sheet.md): A persistent sheet is displayed above another widget while still allowing users to interact with the widget below.
+- [Popover Menu](https://forui.dev/docs/widgets/overlay/popover-menu.md): A popover menu displays a menu in a portal aligned to a child.
+- [Popover](https://forui.dev/docs/widgets/overlay/popover.md): A popover displays rich content in a portal that is aligned to a child.
+- [Sheet](https://forui.dev/docs/widgets/overlay/sheet.md): A modal sheet is an alternative to a menu or a dialog and prevents the user from interacting with the rest of the app.
+- [Toast](https://forui.dev/docs/widgets/overlay/toast.md): An opinionated toast that temporarily displays a succinct message.
+- [Tooltip](https://forui.dev/docs/widgets/overlay/tooltip.md): A tooltip displays information related to a widget when focused, hovered over, or long pressed.
+
+### Foundation
+
+- [Collapsible](https://forui.dev/docs/widgets/foundation/collapsible.md): A collapsible widget that animates between visible and hidden states.
+- [Focused Outline](https://forui.dev/docs/widgets/foundation/focused-outline.md): An outline around a focused widget that does not affect its layout.
+- [Overlay](https://forui.dev/docs/widgets/foundation/overlay.md): A low-level overlay primitive that composites content relative to a child widget.
+- [Point Portal](https://forui.dev/docs/widgets/foundation/point-portal.md): A "floating" portal anchored at a specific point within a child widget's coordinate space.
+- [Portal](https://forui.dev/docs/widgets/foundation/portal.md): A "floating" portal anchored relative to a child widget's edge.
+- [Tappable](https://forui.dev/docs/widgets/foundation/tappable.md): An area that responds to touch.
+
+## Full Documentation
+
+- [Full documentation](https://forui.dev/docs/llms-full.txt)
