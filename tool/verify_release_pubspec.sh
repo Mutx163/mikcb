@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Pre-commit guard for release cuts: UTF-8 without BOM, parseable version line.
+# Pre-commit guard for release cuts: UTF-8 without BOM, parseable version line,
+# optional release-mode alignment (prerelease requires '-' in version).
 set -euo pipefail
 
 PUBSPEC="${1:-pubspec.yaml}"
+RELEASE_MODE="${2:-}"
 
 if [[ ! -f "${PUBSPEC}" ]]; then
   echo "ERROR: ${PUBSPEC} not found" >&2
@@ -44,3 +46,16 @@ if not description:
 
 print(f"OK: version={version}, description length={len(description)}")
 PY
+
+if [[ "${RELEASE_MODE}" == "prerelease" ]]; then
+  if ! grep -E '^version: [0-9]+\.[0-9]+\.[0-9]+-[0-9]+\+[0-9]+$' "${PUBSPEC}" >/dev/null; then
+    echo "ERROR: prerelease cut requires pubspec version with '-' segment (e.g. 1.3.2-0+109 or 1.1.10-7+37)" >&2
+    echo "       commit message 'prerelease' does NOT affect CI; android-build reads pubspec only." >&2
+    exit 1
+  fi
+elif [[ "${RELEASE_MODE}" == "release" ]]; then
+  if grep -E '^version: [0-9]+\.[0-9]+\.[0-9]+-[0-9]+\+[0-9]+$' "${PUBSPEC}" >/dev/null; then
+    echo "ERROR: formal release cut must not use '-' segment in pubspec (e.g. 1.1.11+37, not 1.1.11-0+37)" >&2
+    exit 1
+  fi
+fi
