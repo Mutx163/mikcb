@@ -81,11 +81,14 @@
 
 ## 一、当前发布机制
 
-当前仓库有三条 GitHub Actions 线：
+当前仓库有四条 GitHub Actions 线：
 
 - [.github/workflows/ci.yml](../.github/workflows/ci.yml)：`push` / `pull_request` 时执行依赖安装、静态分析和测试。
 - [.github/workflows/android-build.yml](../.github/workflows/android-build.yml)：推送 `v*` tag 时先执行检查，再签名构建 `arm64-v8a` APK 并创建 / 更新 GitHub Release。
 - [.github/workflows/update-docs-releases.yml](../.github/workflows/update-docs-releases.yml)：GitHub Release 发布、编辑、撤销等事件后自动更新 `docs/releases/latest.json`，供应用内更新检查读取。
+- [.github/workflows/update-docs-schools.yml](../.github/workflows/update-docs-schools.yml)：每天定时（及手动）从 `qingyu_warehouse` 拉取 `root_index.yaml`，生成 `docs/schools.json`，供官网已适配学校列表读取。
+
+上游教务适配的自动同步在 [`qingyu_warehouse` 仓库](https://github.com/Mutx163/qingyu_warehouse) 的 `.github/workflows/sync-upstream.yml` 中执行（每天 09:00 北京时间）；mikcb 侧仅通过上述 schools JSON 任务跟进索引变化。
 
 也就是说：
 
