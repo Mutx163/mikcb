@@ -1417,8 +1417,9 @@ void main() {
     await tester.tap(find.byKey(ValueKey('weekday-header-1-${today.weekday}')));
     await _pumpTimetableFrame(tester);
 
-    await tester.drag(
-      find.byKey(const ValueKey('day-view-swipe-area')),
+    final swipeArea = tester.getRect(find.byKey(const ValueKey('day-view-swipe-area')));
+    await tester.dragFrom(
+      swipeArea.topCenter + const Offset(0, 48),
       swipesToNextDay ? const Offset(-420, 0) : const Offset(420, 0),
     );
     await _pumpFiniteFrames(tester, count: 10);
