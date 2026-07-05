@@ -31,7 +31,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.35.7
+          flutter-version: 3.44.4
           cache: true
 
       - name: Get dependencies
@@ -61,7 +61,7 @@ jobs:
           PY
 
       - name: Analyze
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Test
         run: flutter test

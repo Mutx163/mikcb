@@ -380,7 +380,6 @@ void main() {
 
       // First call - fetches from remote
       await service.getDataForYear(2026);
-      final firstRequestCount = client.requestCount;
 
       // Second call - should use memory cache
       await service.getDataForYear(2026);
@@ -556,7 +555,6 @@ void main() {
 
       // 第一次调用
       await service.getDataForYear(2026);
-      final firstRequestCount = client.requestCount;
 
       // 第二次调用应该用缓存（触发后台刷新）
       await service.getDataForYear(2026);
@@ -1000,9 +998,6 @@ void main() {
     });
 
     test('injected client is not closed on dispose', () {
-      final client = _FakeClient({});
-      final service = HolidayService(client: client);
-
       // Inject a client (not owned)
       final externalClient = _FakeClient({});
       final service2 = HolidayService(client: externalClient);

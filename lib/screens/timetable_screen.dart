@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:animations/animations.dart';
 import 'package:flutter/foundation.dart';
@@ -21,7 +20,6 @@ import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/hex_color.dart';
 import '../widgets/course_card.dart';
-import '../widgets/glass_container.dart';
 import '../widgets/home_top_menu.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
@@ -5182,7 +5180,6 @@ class _HomeActionButton extends StatelessWidget {
   final VoidCallback onTap;
   final Color? accentColor;
   final bool enabled;
-  final bool reserveTwoLineTitleSpace;
 
   const _HomeActionButton({
     super.key,
@@ -5191,7 +5188,6 @@ class _HomeActionButton extends StatelessWidget {
     required this.onTap,
     this.accentColor,
     this.enabled = true,
-    this.reserveTwoLineTitleSpace = false,
   });
 
   @override
@@ -5201,7 +5197,6 @@ class _HomeActionButton extends StatelessWidget {
       title: title,
       accentColor: accentColor,
       enabled: enabled,
-      reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
       onTap: onTap,
     );
   }
@@ -5308,18 +5303,12 @@ class _HomeActionPageButton extends StatelessWidget {
   final String title;
   final WidgetBuilder pageBuilder;
   final Route<dynamic>? sheetRoute;
-  final String? badgeText;
-  final Color? accentColor;
-  final bool reserveTwoLineTitleSpace;
 
   const _HomeActionPageButton({
     required this.icon,
     required this.title,
     required this.pageBuilder,
     required this.sheetRoute,
-    this.badgeText,
-    this.accentColor,
-    this.reserveTwoLineTitleSpace = false,
   });
 
   @override
@@ -5329,10 +5318,7 @@ class _HomeActionPageButton extends StatelessWidget {
         return _HomeActionButtonBody(
           icon: icon,
           title: title,
-          badgeText: badgeText,
-          accentColor: accentColor,
           enabled: true,
-          reserveTwoLineTitleSpace: reserveTwoLineTitleSpace,
           onTap: () => _openPopupActionPage(
             buttonContext,
             pageBuilder: pageBuilder,
@@ -5348,19 +5334,15 @@ class _HomeActionButtonBody extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final String? badgeText;
   final Color? accentColor;
   final bool enabled;
-  final bool reserveTwoLineTitleSpace;
 
   const _HomeActionButtonBody({
     required this.icon,
     required this.title,
     required this.onTap,
-    this.badgeText,
     this.accentColor,
     this.enabled = true,
-    this.reserveTwoLineTitleSpace = false,
   });
 
   @override
@@ -5389,73 +5371,27 @@ class _HomeActionButtonBody extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: highlightColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(icon, color: highlightColor),
-                    ),
-                    if ((badgeText ?? '').isNotEmpty)
-                      Positioned(
-                        right: -8,
-                        top: -6,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: highlightColor,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            badgeText!,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: highlightColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, color: highlightColor),
                 ),
                 const SizedBox(height: 10),
-                if (reserveTwoLineTitleSpace)
-                  SizedBox(
-                    height: 34,
-                    child: Center(
-                      child: Text(
-                        title,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          height: 1.25,
-                          color: enabled ? null : colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  )
-                else
-                  Text(
-                    title,
-                    maxLines: 2,
-                    textAlign: TextAlign.center,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.25,
-                      color: enabled ? null : colorScheme.onSurfaceVariant,
-                    ),
+                Text(
+                  title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                    color: enabled ? null : colorScheme.onSurfaceVariant,
                   ),
+                ),
               ],
             ),
           ),
