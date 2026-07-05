@@ -15,11 +15,12 @@ Future<void> showTimeSchemeBottomSheet(
   BuildContext context, {
   String? initialEditSchemeId,
 }) async {
-  await showModalBottomSheet<void>(
+  await showFSheet<void>(
     context: context,
-    useRootNavigator: true,
-    showDragHandle: true,
-    isScrollControlled: true,
+    side: FLayout.btt,
+    useSafeArea: true,
+    draggable: true,
+    mainAxisMaxRatio: 0.88,
     builder: (_) =>
         _TimeSchemeBottomSheet(initialEditSchemeId: initialEditSchemeId),
   );

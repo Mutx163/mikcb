@@ -4278,6 +4278,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get scheduleDateLabel => '日付';
 
   @override
+  String get scheduleStartGroupLabel => '開始';
+
+  @override
+  String get scheduleEndGroupLabel => '終了';
+
+  @override
   String get scheduleStartDateLabel => '開始日';
 
   @override

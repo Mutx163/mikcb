@@ -136,9 +136,10 @@ class _PackageMigrationGuideScreenState
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _isOpeningOldApp ? null : _openLegacyApp,
-                        icon: _isOpeningOldApp
+                      child: FButton(
+                        variant: FButtonVariant.primary,
+                        onPress: _isOpeningOldApp ? null : _openLegacyApp,
+                        prefix: _isOpeningOldApp
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
@@ -147,7 +148,7 @@ class _PackageMigrationGuideScreenState
                                 ),
                               )
                             : const Icon(Icons.open_in_new_rounded),
-                        label: Text(
+                        child: Text(
                           _isOpeningOldApp
                               ? l10n.openingOldApp
                               : l10n.openOldAppForBackup,
@@ -157,20 +158,22 @@ class _PackageMigrationGuideScreenState
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.tonalIcon(
-                        onPressed: () => Navigator.pop(
+                      child: FButton(
+                        variant: FButtonVariant.secondary,
+                        onPress: () => Navigator.pop(
                           context,
                           MigrationFlowAction.restoreBackup,
                         ),
-                        icon: const Icon(Icons.download_rounded),
-                        label: Text(l10n.backupDoneGoImport),
+                        prefix: const Icon(Icons.download_rounded),
+                        child: Text(l10n.backupDoneGoImport),
                       ),
                     ),
                     const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.center,
-                      child: TextButton(
-                        onPressed: () =>
+                      child: FButton(
+                        variant: FButtonVariant.ghost,
+                        onPress: () =>
                             Navigator.pop(context, MigrationFlowAction.skip),
                         child: Text(l10n.startFreshWithoutMigration),
                       ),

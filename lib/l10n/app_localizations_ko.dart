@@ -4308,6 +4308,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get scheduleDateLabel => '날짜';
 
   @override
+  String get scheduleStartGroupLabel => '시작';
+
+  @override
+  String get scheduleEndGroupLabel => '종료';
+
+  @override
   String get scheduleStartDateLabel => '시작일';
 
   @override

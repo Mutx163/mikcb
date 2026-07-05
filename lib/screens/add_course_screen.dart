@@ -12,6 +12,7 @@ import '../utils/hex_color.dart';
 import '../widgets/about_info_sheet.dart';
 import '../widgets/course_color_picker_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
+import '../widgets/course_template_picker_sheet.dart';
 import '../widgets/settings_section_widgets.dart';
 import '../widgets/time_scheme_picker_sheet.dart';
 
@@ -466,27 +467,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     )
                   : null,
             ),
-            FTextFormField(
-              control: FTextFieldControl.managed(
-                controller: _shortNameController,
-              ),
-              label: Text(l10n.courseShortNameOptional),
-              description: Text(l10n.courseShortNameHelper),
-              textInputAction: TextInputAction.next,
-              suffixBuilder: (context, style, variants) => IconButton(
-                tooltip: l10n.courseShortNameAutoFillAction,
-                icon: const Icon(Icons.short_text_rounded),
-                onPressed: () {
-                  final name = _nameController.text.trim();
-                  if (name.isEmpty) {
-                    return;
-                  }
-                  setState(() {
-                    _shortNameController.text = name.characters.take(2).string;
-                  });
-                },
-              ),
-            ),
+            _buildShortNameField(l10n),
             FSelect<CourseNature>(
               label: Text(l10n.courseNatureLabel),
               hint: l10n.courseNatureLabel,
@@ -620,6 +601,57 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       for (final section in sectionNumbers)
         l10n.scheduleSectionNumberLabel(section): section,
     };
+  }
+
+  void _autofillShortNameFromCourseName() {
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      return;
+    }
+    setState(() {
+      _shortNameController.text = name.characters.take(2).string;
+    });
+  }
+
+  Widget _buildShortNameField(AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.courseShortNameOptional,
+          style: typo.sm.copyWith(fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: FTextFormField(
+                control: FTextFieldControl.managed(
+                  controller: _shortNameController,
+                ),
+                textInputAction: TextInputAction.next,
+              ),
+            ),
+            const SizedBox(width: 8),
+            FButton(
+              variant: FButtonVariant.outline,
+              size: FButtonSizeVariant.sm,
+              onPress: _autofillShortNameFromCourseName,
+              child: Text(l10n.courseShortNameAutoFillAction),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          l10n.courseShortNameHelper,
+          style: typo.xs2.copyWith(color: colors.mutedForeground, height: 1.35),
+        ),
+      ],
+    );
   }
 
   Widget _buildScheduleEntriesSection(
@@ -1167,87 +1199,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
   }
 
-  void _showCourseTemplateSheet(TimetableProvider provider) {
+  Future<void> _showCourseTemplateSheet(TimetableProvider provider) async {
     final l10n = AppLocalizations.of(context)!;
-    final courseGroups = provider.courseGroups;
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.reuseExistingCourseHelper,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (courseGroups.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Center(
-                      child: Text(
-                        l10n.noTemplateCoursesHint,
-                        style: Theme.of(sheetContext).textTheme.bodySmall,
-                      ),
-                    ),
-                  )
-                else
-                  Flexible(
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: courseGroups.length,
-                      itemBuilder: (context, index) {
-                        final group = courseGroups[index];
-                        final representative = group.courses.first;
-                        return FTile(
-                          prefix: Container(
-                            width: 12,
-                            height: 12,
-                            decoration: BoxDecoration(
-                              color: parseHexColorOrFallback(
-                                representative.color,
-                                fallback: const Color(0xFF2196F3),
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          title: Text(
-                            group.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          details: representative.teacher.isNotEmpty
-                              ? Text(
-                                  representative.teacher,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                )
-                              : null,
-                          onPress: () {
-                            setState(
-                              () => _applyCourseTemplate(representative),
-                            );
-                            Navigator.pop(sheetContext);
-                          },
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        );
-      },
+    if (provider.courseGroups.isEmpty) {
+      showAppLightTip(context, message: l10n.noTemplateCoursesHint);
+      return;
+    }
+    final course = await showCourseTemplatePickerSheet(
+      context,
+      title: l10n.reuseExistingCourseHelper,
+      courseGroups: provider.courseGroups,
     );
+    if (course != null && mounted) {
+      setState(() => _applyCourseTemplate(course));
+    }
   }
 
   Widget _buildResponsiveFieldPair({

@@ -355,9 +355,11 @@ class _AboutScreenState extends State<AboutScreen> {
 
   void _showRepositorySheet(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    showFSheet<void>(
       context: context,
-      showDragHandle: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
       builder: (context) {
         final typo = context.theme.typography.body;
         final colors = context.theme.colors;

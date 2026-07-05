@@ -4207,6 +4207,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get scheduleDateLabel => '日期';
 
   @override
+  String get scheduleStartGroupLabel => '开始';
+
+  @override
+  String get scheduleEndGroupLabel => '结束';
+
+  @override
   String get scheduleStartDateLabel => '开始日期';
 
   @override
@@ -9208,6 +9214,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get scheduleDateLabel => '日期';
 
   @override
+  String get scheduleStartGroupLabel => '開始';
+
+  @override
+  String get scheduleEndGroupLabel => '結束';
+
+  @override
   String get scheduleStartDateLabel => '開始日期';
 
   @override
@@ -14207,6 +14219,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get scheduleDateLabel => '日期';
+
+  @override
+  String get scheduleStartGroupLabel => '開始';
+
+  @override
+  String get scheduleEndGroupLabel => '結束';
 
   @override
   String get scheduleStartDateLabel => '開始日期';

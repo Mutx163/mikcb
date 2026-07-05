@@ -21,6 +21,10 @@ class AddScheduleItemScreen extends StatefulWidget {
 }
 
 class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
+  static const double _pagePadding = 12;
+  static const double _sectionSpacing = 10;
+  static const double _fieldSpacing = 8;
+
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _locationController = TextEditingController();
@@ -127,22 +131,21 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(_pagePadding),
             children: [
               SettingsSectionCard(
                 title: l10n.scheduleInfoSectionTitle,
-                subtitle: l10n.scheduleInfoSectionSubtitle,
+                plainTitle: true,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _withSpacing([
-                    TextFormField(
-                      controller: _titleController,
-                      textInputAction: TextInputAction.next,
-                      decoration: _buildFieldDecoration(
-                        label: l10n.scheduleTitleLabel,
-                        hint: l10n.scheduleTitleHint,
-                        prefixIcon: const Icon(Icons.event_note_rounded),
+                    FTextFormField(
+                      control: FTextFieldControl.managed(
+                        controller: _titleController,
                       ),
+                      label: Text(l10n.scheduleTitleLabel),
+                      hint: l10n.scheduleTitleHint,
+                      textInputAction: TextInputAction.next,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return l10n.scheduleTitleRequired;
@@ -150,73 +153,38 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
                         return null;
                       },
                     ),
-                    TextFormField(
-                      controller: _locationController,
+                    FTextFormField(
+                      control: FTextFieldControl.managed(
+                        controller: _locationController,
+                      ),
+                      label: Text(l10n.scheduleLocationLabel),
+                      hint: l10n.scheduleLocationHint,
                       textInputAction: TextInputAction.next,
-                      decoration: _buildFieldDecoration(
-                        label: l10n.scheduleLocationLabel,
-                        hint: l10n.scheduleLocationHint,
-                        prefixIcon: const Icon(Icons.location_on_outlined),
-                      ),
                     ),
-                    TextFormField(
-                      controller: _noteController,
-                      minLines: 2,
-                      maxLines: 4,
-                      decoration: _buildFieldDecoration(
-                        label: l10n.scheduleNoteLabel,
-                        hint: l10n.scheduleNoteHint,
-                        alignLabelWithHint: true,
-                        prefixIcon: const Icon(Icons.notes_rounded),
+                    FTextFormField.multiline(
+                      control: FTextFieldControl.managed(
+                        controller: _noteController,
                       ),
+                      label: Text(l10n.scheduleNoteLabel),
+                      hint: l10n.scheduleNoteHint,
+                      minLines: 1,
+                      maxLines: 3,
                     ),
                   ]),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: _sectionSpacing),
               SettingsSectionCard(
                 title: l10n.scheduleTimeSectionTitle,
-                subtitle: l10n.scheduleTimeSectionSubtitle,
+                plainTitle: true,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: _withSpacing([
-                    _buildResponsiveFieldPair(
-                      leading: _buildPickerField(
-                        label: l10n.scheduleStartDateLabel,
-                        value: _formatDateLabel(context, _selectedStartDate),
-                        icon: Icons.calendar_today_outlined,
-                        onTap: () => _pickDate(isStart: true),
-                      ),
-                      trailing: _buildPickerField(
-                        label: l10n.scheduleStartTimeLabel,
-                        value: _formatTimeLabel(context, _startTime),
-                        icon: Icons.schedule_rounded,
-                        onTap: () => _pickTime(isStart: true),
-                      ),
-                    ),
-                    _buildResponsiveFieldPair(
-                      leading: _buildPickerField(
-                        label: l10n.scheduleEndDateLabel,
-                        value: _formatDateLabel(context, _selectedEndDate),
-                        icon: Icons.date_range_rounded,
-                        onTap: () => _pickDate(isStart: false),
-                      ),
-                      trailing: _buildPickerField(
-                        label: l10n.scheduleEndTimeLabel,
-                        value: _formatTimeLabel(context, _endTime),
-                        icon: Icons.schedule_outlined,
-                        onTap: () => _pickTime(isStart: false),
-                      ),
-                    ),
+                    _buildStartEndTimeLayout(l10n),
                     _buildScheduleRangeHint(),
+                    _buildColorSection(l10n),
                   ]),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SettingsSectionCard(
-                title: l10n.scheduleAppearanceSectionTitle,
-                subtitle: l10n.scheduleAppearanceSectionSubtitle,
-                child: _buildColorPalette(),
               ),
             ],
           ),
@@ -229,81 +197,99 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     final spaced = <Widget>[];
     for (var index = 0; index < children.length; index++) {
       if (index > 0) {
-        spaced.add(const SizedBox(height: 16));
+        spaced.add(const SizedBox(height: _fieldSpacing));
       }
       spaced.add(children[index]);
     }
     return spaced;
   }
 
-  InputDecoration _buildFieldDecoration({
-    required String label,
-    String? hint,
-    Widget? prefixIcon,
-    Widget? suffixIcon,
-    bool alignLabelWithHint = false,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      hintText: hint,
-      alignLabelWithHint: alignLabelWithHint,
-      border: const OutlineInputBorder(),
-      prefixIcon: prefixIcon,
-      suffixIcon: suffixIcon,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-    );
-  }
-
-  Widget _buildPickerField({
-    required String label,
-    required String value,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final theme = context.theme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Ink(
-        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
-        child: InputDecorator(
-          isFocused: false,
-          isHovering: false,
-          decoration: _buildFieldDecoration(
-            label: label,
-            prefixIcon: Icon(icon),
-            suffixIcon: const Icon(Icons.arrow_drop_down_rounded),
-          ),
-          child: Text(
-            value,
-            style: theme.typography.body.md.copyWith(
-              fontWeight: FontWeight.w600,
+  Widget _buildStartEndTimeLayout(AppLocalizations l10n) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: _buildEndpointColumn(
+              groupLabel: l10n.scheduleStartGroupLabel,
+              dateValue: _formatCompactDateLabel(context, _selectedStartDate),
+              timeValue: _formatTimeLabel(context, _startTime),
+              dateIcon: Icons.calendar_today_outlined,
+              timeIcon: Icons.schedule_rounded,
+              onDatePress: () => _pickDate(isStart: true),
+              onTimePress: () => _pickTime(isStart: true),
             ),
           ),
-        ),
+          const SizedBox(width: _fieldSpacing),
+          Expanded(
+            child: _buildEndpointColumn(
+              groupLabel: l10n.scheduleEndGroupLabel,
+              dateValue: _formatCompactDateLabel(context, _selectedEndDate),
+              timeValue: _formatTimeLabel(context, _endTime),
+              dateIcon: Icons.date_range_rounded,
+              timeIcon: Icons.schedule_outlined,
+              onDatePress: () => _pickDate(isStart: false),
+              onTimePress: () => _pickTime(isStart: false),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildResponsiveFieldPair({
-    required Widget leading,
-    required Widget trailing,
+  Widget _buildEndpointColumn({
+    required String groupLabel,
+    required String dateValue,
+    required String timeValue,
+    required IconData dateIcon,
+    required IconData timeIcon,
+    required VoidCallback onDatePress,
+    required VoidCallback onTimePress,
   }) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth < 420) {
-          return Column(
-            children: [leading, const SizedBox(height: 16), trailing],
-          );
-        }
-        return Row(
-          children: [
-            Expanded(child: leading),
-            const SizedBox(width: 16),
-            Expanded(child: trailing),
-          ],
-        );
-      },
+    final theme = context.theme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          groupLabel,
+          style: theme.typography.body.sm.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 6),
+        _buildCompactPickerTile(
+          value: dateValue,
+          icon: dateIcon,
+          onPress: onDatePress,
+        ),
+        const SizedBox(height: _fieldSpacing),
+        _buildCompactPickerTile(
+          value: timeValue,
+          icon: timeIcon,
+          onPress: onTimePress,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactPickerTile({
+    required String value,
+    required IconData icon,
+    required VoidCallback onPress,
+  }) {
+    final theme = context.theme;
+    return FTile(
+      prefix: Icon(icon, size: 18),
+      title: Text(
+        value,
+        style: theme.typography.body.sm.copyWith(fontWeight: FontWeight.w600),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      suffix: Icon(
+        Icons.chevron_right_rounded,
+        size: 18,
+        color: theme.colors.mutedForeground,
+      ),
+      onPress: onPress,
     );
   }
 
@@ -316,7 +302,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
         : l10n.scheduleSingleDayHint;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: theme.colors.muted,
         borderRadius: BorderRadius.circular(12),
@@ -346,35 +332,64 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     );
   }
 
-  Widget _buildColorPalette() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _colors.map((colorHex) {
-        final isSelected = colorHex == _selectedColor;
-        return GestureDetector(
-          onTap: () => setState(() => _selectedColor = colorHex),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: _colorFromHex(colorHex),
-              borderRadius: BorderRadius.circular(8),
-              border: isSelected
-                  ? Border.all(color: Colors.black, width: 3)
-                  : null,
-            ),
-            child: isSelected
-                ? const Icon(Icons.check, color: Colors.white)
-                : null,
+  Widget _buildColorSection(AppLocalizations l10n) {
+    final theme = context.theme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.scheduleAppearanceSectionTitle,
+          style: theme.typography.body.xs.copyWith(
+            color: theme.colors.mutedForeground,
+            fontWeight: FontWeight.w600,
           ),
-        );
-      }).toList(),
+        ),
+        const SizedBox(height: 6),
+        _buildColorPalette(),
+      ],
     );
   }
 
-  String _formatDateLabel(BuildContext context, DateTime value) {
-    return MaterialLocalizations.of(context).formatMediumDate(value);
+  Widget _buildColorPalette() {
+    final theme = context.theme;
+    const swatchSize = 32.0;
+    const swatchSpacing = 8.0;
+    final selectionBorder = theme.colors.foreground;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          for (final colorHex in _colors) ...[
+            GestureDetector(
+              onTap: () => setState(() => _selectedColor = colorHex),
+              child: Container(
+                width: swatchSize,
+                height: swatchSize,
+                decoration: BoxDecoration(
+                  color: _colorFromHex(colorHex),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _selectedColor == colorHex
+                        ? selectionBorder
+                        : theme.colors.border,
+                    width: _selectedColor == colorHex ? 2 : 1,
+                  ),
+                ),
+                child: _selectedColor == colorHex
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+            ),
+            const SizedBox(width: swatchSpacing),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _formatCompactDateLabel(BuildContext context, DateTime value) {
+    return MaterialLocalizations.of(context).formatShortDate(value);
   }
 
   String _formatTimeLabel(BuildContext context, TimeOfDay time) {

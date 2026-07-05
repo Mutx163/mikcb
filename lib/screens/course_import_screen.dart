@@ -31,6 +31,7 @@ import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
+import '../widgets/app_dialogs.dart';
 import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
 import '../widgets/warehouse_playback_overlay.dart';
@@ -644,42 +645,29 @@ Future<bool?> _showSpreadsheetWarnings(
   required List<String> warnings,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showDialog<bool>(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: Text(l10n.spreadsheetImportWarningsTitle),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(l10n.spreadsheetImportWarningsMessage),
-                const SizedBox(height: 12),
-                ...warnings.map(
-                  (warning) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Text('• $warning'),
-                  ),
-                ),
-              ],
+  return showAppConfirmDialogWithBody(
+    context,
+    title: l10n.spreadsheetImportWarningsTitle,
+    confirmLabel: l10n.spreadsheetImportWarningsContinue,
+    body: SizedBox(
+      width: double.maxFinite,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(l10n.spreadsheetImportWarningsMessage),
+            const SizedBox(height: 12),
+            ...warnings.map(
+              (warning) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('• $warning'),
+              ),
             ),
-          ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.spreadsheetImportWarningsContinue),
-          ),
-        ],
-      );
-    },
+      ),
+    ),
   );
 }
 
@@ -1200,9 +1188,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 
   void _showPromptSheet() {
     final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    showFSheet<void>(
       context: context,
-      isScrollControlled: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      mainAxisMaxRatio: 0.88,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final colorScheme = theme.colorScheme;
@@ -1257,9 +1248,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
 
   void _showPreviewSheet(AiCourseImportParseResult result) {
     final l10n = AppLocalizations.of(context)!;
-    showModalBottomSheet<void>(
+    showFSheet<void>(
       context: context,
-      isScrollControlled: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      mainAxisMaxRatio: 0.88,
       builder: (sheetContext) {
         return SafeArea(
           child: FractionallySizedBox(
@@ -1284,9 +1278,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   }
 
   void _showMessageSheet({required String title, required String content}) {
-    showModalBottomSheet<void>(
+    showFSheet<void>(
       context: context,
-      isScrollControlled: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      mainAxisMaxRatio: 0.5,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         return SafeArea(
@@ -1566,22 +1563,32 @@ class _WarehouseCourseImportScreenState
       return;
     }
     // 多个宏录制，弹窗选择
-    final chosen = await showDialog<WarehouseMacroRecord>(
+    final l10n = AppLocalizations.of(context)!;
+    final chosen = await showFDialog<WarehouseMacroRecord>(
       context: context,
-      builder: (ctx) => SimpleDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: const Text('选择快捷导入'),
-        children: records.map((r) {
-          return SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, r),
-            child: ListTile(
-              title: Text(r.schoolName),
-              subtitle: Text('${r.adapterName} · ${r.steps.length} 步'),
-              trailing: const Icon(Icons.flash_on_rounded),
-              contentPadding: EdgeInsets.zero,
-              visualDensity: VisualDensity.compact,
-            ),
-          );
-        }).toList(),
+        body: FTileGroup(
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            for (final record in records)
+              FTile(
+                title: Text(record.schoolName),
+                subtitle: Text(
+                  '${record.adapterName} · ${record.steps.length} 步',
+                ),
+                suffix: const Icon(Icons.flash_on_rounded, size: 20),
+                onPress: () => Navigator.pop(ctx, record),
+              ),
+          ],
+        ),
+        actions: [
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx),
+            child: Text(l10n.cancelAction),
+          ),
+        ],
       ),
     );
     if (chosen != null && mounted) {
@@ -1648,9 +1655,11 @@ class _WarehouseCourseImportScreenState
 
   Future<void> _openMissingSchoolFeedbackGuide() async {
     final l10n = AppLocalizations.of(context)!;
-    final shouldOpen = await showModalBottomSheet<bool>(
+    final shouldOpen = await showFSheet<bool>(
       context: context,
-      showDragHandle: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final colorScheme = theme.colorScheme;
@@ -2083,22 +2092,11 @@ class _WarehouseCustomDebugRecordsScreenState
 
   Future<void> _deleteRecord(WarehouseCustomDebugRecord record) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteDebugRecordTitle),
-        content: Text(l10n.deleteDebugRecordMessage(record.name)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: l10n.deleteDebugRecordTitle,
+      message: l10n.deleteDebugRecordMessage(record.name),
+      confirmLabel: l10n.deleteAction,
     );
     if (confirmed != true) {
       return;
@@ -4281,32 +4279,15 @@ class _WarehouseAdapterWebLoginScreenState
       await _resolveJavaScriptRequest(requestId, recorded == true);
       return;
     }
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          (message['title'] as String?)?.trim().isNotEmpty == true
-              ? (message['title'] as String)
-              : AppLocalizations.of(context)!.confirmImportAction,
-        ),
-        content: Text(
-          (message['message'] as String?) ??
-              AppLocalizations.of(context)!.defaultContinuePrompt,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              (message['confirmText'] as String?) ??
-                  AppLocalizations.of(context)!.confirmImportAction,
-            ),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final confirmed = await showAppConfirmDialog(
+      context,
+      title: (message['title'] as String?)?.trim().isNotEmpty == true
+          ? (message['title'] as String)
+          : l10n.confirmImportAction,
+      message: (message['message'] as String?) ?? l10n.defaultContinuePrompt,
+      confirmLabel:
+          (message['confirmText'] as String?) ?? l10n.confirmImportAction,
     );
     // 录制模式：记住用户的选择
     if (_macroRecordingState == MacroRecordingState.recording) {
@@ -4333,45 +4314,30 @@ class _WarehouseAdapterWebLoginScreenState
     final controller = TextEditingController(
       text: (message['defaultValue'] as String?) ?? '',
     );
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          (message['title'] as String?) ??
-              AppLocalizations.of(context)!.inputRequiredTitle,
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text((message['message'] as String?) ?? ''),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              autofocus: true,
-              keyboardType: TextInputType.number,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () {
-              final text = controller.text.trim();
-              if (validatorName == 'validateYearInput' &&
-                  !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
-                _showLightTip(
-                  context,
-                  AppLocalizations.of(context)!.pleaseEnterFourDigitYear,
-                );
-                return;
-              }
-              Navigator.pop(context, text);
-            },
-            child: Text(AppLocalizations.of(context)!.saveAction),
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showAppTextInputDialog(
+      context,
+      title: (message['title'] as String?) ?? l10n.inputRequiredTitle,
+      confirmLabel: l10n.saveAction,
+      readValue: () => controller.text,
+      validate: (text) {
+        if (validatorName == 'validateYearInput' &&
+            !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
+          _showLightTip(context, l10n.pleaseEnterFourDigitYear);
+          return false;
+        }
+        return true;
+      },
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text((message['message'] as String?) ?? ''),
+          const SizedBox(height: 12),
+          FTextField(
+            control: FTextFieldControl.managed(controller: controller),
+            autofocus: true,
+            keyboardType: TextInputType.number,
           ),
         ],
       ),
@@ -4412,44 +4378,13 @@ class _WarehouseAdapterWebLoginScreenState
       0,
       options.isEmpty ? 0 : options.length - 1,
     );
-    final result = await showDialog<int>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          (message['title'] as String?) ??
-              AppLocalizations.of(context)!.pleaseChooseTitle,
-        ),
-        content: StatefulBuilder(
-          builder: (context, setState) => RadioGroup<int>(
-            groupValue: currentSelection,
-            onChanged: (value) {
-              if (value == null) return;
-              setState(() {
-                currentSelection = value;
-              });
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(options.length, (index) {
-                return RadioListTile<int>(
-                  value: index,
-                  title: Text(options[index]),
-                );
-              }),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(AppLocalizations.of(context)!.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, currentSelection),
-            child: Text(AppLocalizations.of(context)!.saveAction),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final result = await showAppSingleChoiceDialog(
+      context,
+      title: (message['title'] as String?) ?? l10n.pleaseChooseTitle,
+      options: options,
+      initialIndex: currentSelection,
+      confirmLabel: l10n.saveAction,
     );
     // 录制模式：记住用户的选择
     if (_macroRecordingState == MacroRecordingState.recording &&
@@ -4824,26 +4759,13 @@ class _WarehouseAdapterWebLoginScreenState
         return;
       }
       _isPromptShowing = true;
-      final shouldAutofill = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context)!.autofillLoginTitle),
-          content: Text(
-            AppLocalizations.of(
-              context,
-            )!.autofillLoginMessage(_rememberedLogin!.username),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)!.notNowAction),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)!.autofillAction),
-            ),
-          ],
-        ),
+      final l10n = AppLocalizations.of(context)!;
+      final shouldAutofill = await showAppConfirmDialog(
+        context,
+        title: l10n.autofillLoginTitle,
+        message: l10n.autofillLoginMessage(_rememberedLogin!.username),
+        cancelLabel: l10n.notNowAction,
+        confirmLabel: l10n.autofillAction,
       );
       _isPromptShowing = false;
       if (shouldAutofill == true) {
@@ -4869,28 +4791,13 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     _isPromptShowing = true;
-    final shouldSave = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(AppLocalizations.of(context)!.rememberPasswordTitle),
-        content: Text(
-          AppLocalizations.of(
-            context,
-          )!.rememberPasswordMessage(candidate.username),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(AppLocalizations.of(context)!.dontRememberAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(
-              AppLocalizations.of(context)!.rememberAndAutofillAction,
-            ),
-          ),
-        ],
-      ),
+    final l10n = AppLocalizations.of(context)!;
+    final shouldSave = await showAppConfirmDialog(
+      context,
+      title: l10n.rememberPasswordTitle,
+      message: l10n.rememberPasswordMessage(candidate.username),
+      cancelLabel: l10n.dontRememberAction,
+      confirmLabel: l10n.rememberAndAutofillAction,
     );
     _isPromptShowing = false;
     if (shouldSave == true) {
@@ -5144,22 +5051,11 @@ class _WarehouseAdapterWebLoginScreenState
     }
 
     // 询问用户是否要保存
-    final shouldSave = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('保存录制'),
-        content: Text('录制了 ${steps.length} 个操作步骤。是否保存为快捷导入？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(l10n.saveAction),
-          ),
-        ],
-      ),
+    final shouldSave = await showAppConfirmDialog(
+      context,
+      title: '保存录制',
+      message: '录制了 ${steps.length} 个操作步骤。是否保存为快捷导入？',
+      confirmLabel: l10n.saveAction,
     );
 
     if (shouldSave != true || !mounted) {
@@ -5950,14 +5846,9 @@ class _CompactNoticeCard extends StatelessWidget {
           ),
           if (actionLabel != null && onAction != null) ...[
             const SizedBox(width: 8),
-            TextButton(
-              onPressed: onAction,
-              style: TextButton.styleFrom(
-                visualDensity: VisualDensity.compact,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                minimumSize: Size.zero,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-              ),
+            FButton(
+              variant: FButtonVariant.ghost,
+              onPress: onAction,
               child: Text(actionLabel!),
             ),
           ],
@@ -6063,9 +5954,11 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
   DateTime? inferredFirstCourseDate,
 }) {
   final alignmentService = const ImportWeekAlignmentService();
-  return showModalBottomSheet<_ImportSemesterConfig>(
+  return showFSheet<_ImportSemesterConfig>(
     context: context,
-    isScrollControlled: true,
+    side: FLayout.btt,
+    useSafeArea: true,
+    draggable: true,
     builder: (sheetContext) {
       final theme = Theme.of(sheetContext);
       final colorScheme = theme.colorScheme;
@@ -6223,28 +6116,13 @@ Future<bool?> _askReplaceExisting(
   required String title,
   required String content,
 }) {
-  return showDialog<bool>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text(title),
-        content: Text('$content\n\n建议日常更新课表时优先使用“更新课表（保留本地信息）”。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          FilledButton.tonal(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('更新课表（推荐）'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('覆盖导入'),
-          ),
-        ],
-      );
-    },
+  return showAppTripleActionDialog(
+    context,
+    title: title,
+    message: '$content\n\n建议日常更新课表时优先使用“更新课表（保留本地信息）”。',
+    cancelLabel: '取消',
+    secondaryLabel: '更新课表（推荐）',
+    primaryLabel: '覆盖导入',
   );
 }
 
@@ -6257,26 +6135,12 @@ Future<bool> _ensureSectionCapacity(
     return true;
   }
 
-  final shouldContinue = await showDialog<bool>(
-    context: context,
-    builder: (dialogContext) {
-      return AlertDialog(
-        title: const Text('时间模板节次不足'),
-        content: Text(
-          '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入数据需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('自动补齐并导入'),
-          ),
-        ],
-      );
-    },
+  final shouldContinue = await showAppConfirmDialog(
+    context,
+    title: '时间模板节次不足',
+    message:
+        '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入数据需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
+    confirmLabel: '自动补齐并导入',
   );
 
   if (shouldContinue != true || !context.mounted) {
@@ -6331,40 +6195,29 @@ Future<String?> _promptWarehouseImportUrl(
   String initialValue = '',
 }) async {
   final controller = TextEditingController(text: initialValue);
-  final result = await showDialog<String>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: const Text('输入教务网址'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。'),
-          const SizedBox(height: 12),
-          TextField(
-            controller: controller,
-            autofocus: true,
-            keyboardType: TextInputType.url,
-            decoration: const InputDecoration(
-              labelText: '教务网址',
-              hintText: 'http(s)://...',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '保存后下次会直接使用，也可以在适配器信息页里修改。',
-            style: Theme.of(dialogContext).textTheme.bodySmall,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('取消'),
+  final result = await showAppTextInputDialog(
+    context,
+    title: '输入教务网址',
+    cancelLabel: '取消',
+    confirmLabel: '保存并继续',
+    readValue: () => controller.text,
+    body: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。'),
+        const SizedBox(height: 12),
+        FTextField(
+          control: FTextFieldControl.managed(controller: controller),
+          hint: 'http(s)://...',
+          label: const Text('教务网址'),
+          autofocus: true,
+          keyboardType: TextInputType.url,
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(dialogContext, controller.text.trim()),
-          child: const Text('保存并继续'),
+        const SizedBox(height: 8),
+        Text(
+          '保存后下次会直接使用，也可以在适配器信息页里修改。',
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     ),

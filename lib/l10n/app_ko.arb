@@ -2538,6 +2538,8 @@
   "scheduleLocationLabel": "장소",
   "scheduleLocationHint": "선택사항",
   "scheduleDateLabel": "날짜",
+  "scheduleStartGroupLabel": "시작",
+  "scheduleEndGroupLabel": "종료",
   "scheduleStartDateLabel": "시작일",
   "scheduleEndDateLabel": "종료일",
   "scheduleStartTimeLabel": "시작 시간",

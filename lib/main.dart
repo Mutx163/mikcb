@@ -457,30 +457,31 @@ class _AppEntryScreenState extends State<AppEntryScreen> {
     final provider = context.read<TimetableProvider>();
     final importMode =
         forcedMode ??
-        await showDialog<_BackupImportMode>(
+        await showFDialog<_BackupImportMode>(
           context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text(l10n.selectImportModeTitle),
-              content: Text(l10n.selectImportModeMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l10n.cancelAction),
-                ),
-                FilledButton(
-                  onPressed: () =>
-                      Navigator.pop(context, _BackupImportMode.replaceCurrent),
-                  child: Text(l10n.replaceCurrentTimetable),
-                ),
-                FilledButton.tonal(
-                  onPressed: () =>
-                      Navigator.pop(context, _BackupImportMode.importAsNew),
-                  child: Text(l10n.importAsNewTimetable),
-                ),
-              ],
-            );
-          },
+          builder: (ctx, style, animation) => FDialog(
+            title: Text(l10n.selectImportModeTitle),
+            body: Text(l10n.selectImportModeMessage),
+            actions: [
+              FButton(
+                variant: FButtonVariant.ghost,
+                onPress: () => Navigator.pop(ctx),
+                child: Text(l10n.cancelAction),
+              ),
+              FButton(
+                variant: FButtonVariant.primary,
+                onPress: () =>
+                    Navigator.pop(ctx, _BackupImportMode.replaceCurrent),
+                child: Text(l10n.replaceCurrentTimetable),
+              ),
+              FButton(
+                variant: FButtonVariant.secondary,
+                onPress: () =>
+                    Navigator.pop(ctx, _BackupImportMode.importAsNew),
+                child: Text(l10n.importAsNewTimetable),
+              ),
+            ],
+          ),
         );
 
     if (importMode == null || !mounted) {

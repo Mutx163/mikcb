@@ -4,13 +4,14 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
-import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/timetable_settings.dart';
 import 'package:intl/intl.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../widgets/course_template_picker_sheet.dart';
+import '../widgets/settings_section_widgets.dart';
 
 class AddExamScreen extends StatefulWidget {
   final Exam? exam;
@@ -100,314 +101,203 @@ class _AddExamScreenState extends State<AddExamScreen> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 40),
+            padding: const EdgeInsets.all(16),
             children: [
-              _buildCourseDropdown(courseGroups, l10n, provider),
-              const SizedBox(height: 16),
-              _buildNameField(l10n),
-              const SizedBox(height: 16),
-              _buildDatePicker(l10n),
-              const SizedBox(height: 16),
-              _buildTimePickers(l10n),
-              const SizedBox(height: 16),
-              _buildLocationField(l10n, provider),
-              const SizedBox(height: 16),
-              _buildSeatField(l10n),
-              const SizedBox(height: 16),
-              _buildReminderDropdown(l10n),
-              const SizedBox(height: 16),
-              _buildNoteField(l10n),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCourseDropdown(
-    List<CourseGroup> courseGroups,
-    AppLocalizations l10n,
-    TimetableProvider provider,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final selected = _selectedCourseId != null
-        ? provider.getCourseById(_selectedCourseId!)
-        : null;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.linkCourse,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        _buildCourseTrigger(
-          selected,
-          courseGroups,
-          colorScheme,
-          l10n,
-          provider,
-        ),
-        if (_selectedCourseId == null)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              l10n.linkCourseRequired,
-              style: TextStyle(color: colorScheme.error, fontSize: 12),
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildCourseTrigger(
-    Course? selected,
-    List<CourseGroup> courseGroups,
-    ColorScheme colorScheme,
-    AppLocalizations l10n,
-    TimetableProvider provider,
-  ) {
-    final selectedColor = selected != null
-        ? parseHexColorOrFallback(selected.color, fallback: colorScheme.primary)
-        : colorScheme.primary;
-
-    return Material(
-      color: selected != null
-          ? selectedColor.withValues(alpha: 0.08)
-          : colorScheme.surfaceContainerLow,
-      borderRadius: BorderRadius.circular(14),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () =>
-            _showCourseSheet(courseGroups, colorScheme, l10n, provider),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          decoration: selected != null
-              ? BoxDecoration(
-                  border: Border.all(
-                    color: selectedColor.withValues(alpha: 0.35),
-                    width: 1.2,
-                  ),
-                  borderRadius: BorderRadius.circular(14),
-                )
-              : null,
-          child: Row(
-            children: [
-              if (selected != null) ...[
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: selectedColor,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '${selected.name}  ·  ${selected.teacher}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: selectedColor,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ] else ...[
-                Icon(
-                  Icons.link_rounded,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    courseGroups.isEmpty ? '暂无课程，请先添加课程' : l10n.linkCourse,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-              Icon(
-                Icons.unfold_more_rounded,
-                size: 20,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showCourseSheet(
-    List<CourseGroup> courseGroups,
-    ColorScheme colorScheme,
-    AppLocalizations l10n,
-    TimetableProvider provider,
-  ) {
-    if (courseGroups.isEmpty) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 36,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
+              SettingsSectionCard(
+                plainTitle: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       l10n.linkCourse,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                      style: context.theme.typography.body.sm.copyWith(
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(ctx).size.height * 0.55,
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  itemCount: courseGroups.length,
-                  itemBuilder: (_, i) {
-                    final group = courseGroups[i];
-                    final isSelected = group.courses.any(
-                      (c) => c.id == _selectedCourseId,
-                    );
-                    final courseColor = parseHexColorOrFallback(
-                      group.color,
-                      fallback: colorScheme.primary,
-                    );
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Material(
-                        color: isSelected
-                            ? courseColor.withValues(alpha: 0.10)
-                            : colorScheme.surfaceContainerLow,
-                        borderRadius: BorderRadius.circular(14),
-                        clipBehavior: Clip.antiAlias,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
-                          onTap: () {
-                            setState(() {
-                              _selectedCourseId = group.courses.first.id;
-                              if (_nameController.text.isEmpty) {
-                                _nameController.text = l10n.examDefaultName;
-                              }
-                            });
-                            Navigator.pop(ctx);
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 12,
-                            ),
-                            decoration: isSelected
-                                ? BoxDecoration(
-                                    border: Border.all(
-                                      color: courseColor.withValues(alpha: 0.4),
-                                      width: 1.5,
-                                    ),
-                                    borderRadius: BorderRadius.circular(14),
-                                  )
-                                : null,
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: BoxDecoration(
-                                    color: courseColor,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        group.name,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                          color: isSelected
-                                              ? courseColor
-                                              : colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      if (group.teacher.isNotEmpty)
-                                        Text(
-                                          group.teacher,
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                if (isSelected)
-                                  Icon(
-                                    Icons.check_circle_rounded,
-                                    size: 20,
-                                    color: courseColor,
-                                  ),
-                              ],
-                            ),
+                    const SizedBox(height: 8),
+                    _buildCourseLinkTile(courseGroups, l10n, provider),
+                    if (_selectedCourseId == null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6, left: 4),
+                        child: Text(
+                          l10n.linkCourseRequired,
+                          style: context.theme.typography.body.xs.copyWith(
+                            color: Theme.of(context).colorScheme.error,
                           ),
                         ),
                       ),
-                    );
-                  },
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              SettingsSectionCard(
+                plainTitle: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    _buildNameField(l10n),
+                    _buildDatePicker(l10n),
+                    _buildTimePickers(l10n),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SettingsSectionCard(
+                plainTitle: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    _buildLocationField(l10n, provider),
+                    _buildSeatField(l10n),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SettingsSectionCard(
+                plainTitle: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    _buildReminderDropdown(l10n),
+                    _buildNoteField(l10n),
+                  ]),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  Widget _buildNameField(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _nameController,
-      decoration: InputDecoration(
-        labelText: l10n.examNameLabel,
-        border: const OutlineInputBorder(),
+  List<Widget> _withSpacing(List<Widget> children) {
+    final spaced = <Widget>[];
+    for (var index = 0; index < children.length; index++) {
+      if (index > 0) {
+        spaced.add(const SizedBox(height: 12));
+      }
+      spaced.add(children[index]);
+    }
+    return spaced;
+  }
+
+  Widget _buildPickerTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onPress,
+    bool isPlaceholder = false,
+  }) {
+    final theme = context.theme;
+    return FTile(
+      prefix: Icon(icon),
+      title: Text(label),
+      details: Text(
+        value,
+        style: theme.typography.body.sm.copyWith(
+          fontWeight: isPlaceholder ? FontWeight.normal : FontWeight.w600,
+          color: isPlaceholder ? theme.colors.mutedForeground : null,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
       ),
+      suffix: Icon(
+        Icons.chevron_right_rounded,
+        color: theme.colors.mutedForeground,
+      ),
+      onPress: onPress,
+    );
+  }
+
+  Widget _buildCourseLinkTile(
+    List<CourseGroup> courseGroups,
+    AppLocalizations l10n,
+    TimetableProvider provider,
+  ) {
+    final selected = _selectedCourseId != null
+        ? provider.getCourseById(_selectedCourseId!)
+        : null;
+    final courseColor = selected != null
+        ? parseHexColorOrFallback(
+            selected.color,
+            fallback: Theme.of(context).colorScheme.primary,
+          )
+        : null;
+
+    return FTile(
+      prefix: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: (courseColor ?? context.theme.colors.muted).withValues(
+            alpha: courseColor == null ? 1 : 0.14,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        alignment: Alignment.center,
+        child: courseColor != null
+            ? Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: courseColor,
+                  shape: BoxShape.circle,
+                ),
+              )
+            : Icon(
+                Icons.link_rounded,
+                size: 18,
+                color: context.theme.colors.mutedForeground,
+              ),
+      ),
+      title: Text(l10n.linkCourse),
+      details: Text(
+        selected != null
+            ? '${selected.name} · ${selected.teacher}'
+            : (courseGroups.isEmpty ? '暂无课程，请先添加课程' : l10n.linkCourse),
+        style: context.theme.typography.body.sm.copyWith(
+          fontWeight: selected != null ? FontWeight.w600 : FontWeight.normal,
+          color: selected != null
+              ? courseColor
+              : context.theme.colors.mutedForeground,
+        ),
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
+      suffix: Icon(
+        Icons.chevron_right_rounded,
+        color: context.theme.colors.mutedForeground,
+      ),
+      onPress: courseGroups.isEmpty
+          ? null
+          : () => _showCourseSheet(courseGroups, l10n),
+    );
+  }
+
+  Future<void> _showCourseSheet(
+    List<CourseGroup> courseGroups,
+    AppLocalizations l10n,
+  ) async {
+    final course = await showCourseTemplatePickerSheet(
+      context,
+      title: l10n.linkCourse,
+      courseGroups: courseGroups,
+      selectedCourseId: _selectedCourseId,
+    );
+    if (course != null && mounted) {
+      setState(() {
+        _selectedCourseId = course.id;
+        if (_nameController.text.isEmpty) {
+          _nameController.text = l10n.examDefaultName;
+        }
+      });
+    }
+  }
+
+  Widget _buildNameField(AppLocalizations l10n) {
+    return FTextFormField(
+      control: FTextFieldControl.managed(controller: _nameController),
+      label: Text(l10n.examNameLabel),
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return l10n.examNameRequired;
@@ -445,64 +335,47 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     final displayText = _hasSelectedDate
         ? '${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}$weekInfo'
-        : '';
+        : l10n.examDateHint;
 
-    return InkWell(
-      onTap: () => _pickDate(context),
-      borderRadius: BorderRadius.circular(4),
-      child: InputDecorator(
-        isEmpty: !_hasSelectedDate,
-        decoration: InputDecoration(
-          labelText: l10n.examDateLabel,
-          hintText: _hasSelectedDate ? null : l10n.examDateHint,
-          border: const OutlineInputBorder(),
-          suffixIcon: semesterStart != null
-              ? const Icon(Icons.view_week_rounded)
-              : const Icon(Icons.calendar_today),
-        ),
-        child: Text(
-          displayText,
-          style: displayText.isEmpty
-              ? Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                )
-              : null,
-        ),
-      ),
+    return _buildPickerTile(
+      label: l10n.examDateLabel,
+      value: displayText,
+      icon: semesterStart != null
+          ? Icons.view_week_rounded
+          : Icons.calendar_today_outlined,
+      isPlaceholder: !_hasSelectedDate,
+      onPress: () => _pickDate(context),
     );
   }
 
   Widget _buildTimePickers(AppLocalizations l10n) {
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: () => _pickTime(isStart: true),
-            borderRadius: BorderRadius.circular(4),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: l10n.examStartTimeLabel,
-                border: const OutlineInputBorder(),
-              ),
-              child: Text(_formatTimeOfDay(_startTime)),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: InkWell(
-            onTap: () => _pickTime(isStart: false),
-            borderRadius: BorderRadius.circular(4),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: l10n.examEndTimeLabel,
-                border: const OutlineInputBorder(),
-              ),
-              child: Text(_formatTimeOfDay(_endTime)),
-            ),
-          ),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final startTile = _buildPickerTile(
+          label: l10n.examStartTimeLabel,
+          value: _formatTimeOfDay(_startTime),
+          icon: Icons.schedule_rounded,
+          onPress: () => _pickTime(isStart: true),
+        );
+        final endTile = _buildPickerTile(
+          label: l10n.examEndTimeLabel,
+          value: _formatTimeOfDay(_endTime),
+          icon: Icons.schedule_outlined,
+          onPress: () => _pickTime(isStart: false),
+        );
+        if (constraints.maxWidth < 420) {
+          return Column(
+            children: [startTile, const SizedBox(height: 12), endTile],
+          );
+        }
+        return Row(
+          children: [
+            Expanded(child: startTile),
+            const SizedBox(width: 12),
+            Expanded(child: endTile),
+          ],
+        );
+      },
     );
   }
 
@@ -517,28 +390,23 @@ class _AddExamScreenState extends State<AddExamScreen> {
         hint = '${l10n.sameAsClassroom}: ${course.location}';
       }
     }
-    return TextFormField(
-      controller: _locationController,
-      decoration: InputDecoration(
-        labelText: l10n.examLocationLabel,
-        hintText: hint ?? l10n.examLocationHint,
-        border: const OutlineInputBorder(),
-      ),
+    return FTextFormField(
+      control: FTextFieldControl.managed(controller: _locationController),
+      label: Text(l10n.examLocationLabel),
+      hint: hint ?? l10n.examLocationHint,
     );
   }
 
   Widget _buildSeatField(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _seatController,
-      decoration: InputDecoration(
-        labelText: l10n.examSeatLabel,
-        border: const OutlineInputBorder(),
-      ),
+    return FTextFormField(
+      control: FTextFieldControl.managed(controller: _seatController),
+      label: Text(l10n.examSeatLabel),
     );
   }
 
   Widget _buildReminderDropdown(AppLocalizations l10n) {
     return FSelect<ExamReminderPreset>(
+      label: Text(l10n.examReminderLabel),
       hint: l10n.examReminderLabel,
       items: {
         for (final preset in ExamReminderPreset.values) preset.label: preset,
@@ -556,14 +424,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
   }
 
   Widget _buildNoteField(AppLocalizations l10n) {
-    return TextFormField(
-      controller: _noteController,
-      maxLines: 3,
-      decoration: InputDecoration(
-        labelText: l10n.examNoteLabel,
-        alignLabelWithHint: true,
-        border: const OutlineInputBorder(),
-      ),
+    return FTextFormField.multiline(
+      control: FTextFieldControl.managed(controller: _noteController),
+      label: Text(l10n.examNoteLabel),
+      minLines: 3,
+      maxLines: 5,
     );
   }
 
@@ -612,7 +477,6 @@ class _AddExamScreenState extends State<AddExamScreen> {
     required TimetableProvider provider,
     DateTime? currentDate,
   }) async {
-    final colorScheme = Theme.of(context).colorScheme;
     final totalWeeks = settings.semesterWeekCount;
     // 基于已选日期（或今天）计算初始周次
     final anchor = currentDate ?? DateTime.now();
@@ -651,16 +515,18 @@ class _AddExamScreenState extends State<AddExamScreen> {
       return alignedStart.add(Duration(days: (week - 1) * 7 + dayOffset));
     }
 
-    final result = await showModalBottomSheet<DateTime>(
+    final result = await showFSheet<DateTime>(
       context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setModalState) {
             final l10n = AppLocalizations.of(ctx)!;
+            final colors = ctx.theme.colors;
+            final typo = ctx.theme.typography;
+            final colorScheme = Theme.of(ctx).colorScheme;
             final dayNames = [
               l10n.weekdayMon,
               l10n.weekdayTue,
@@ -670,117 +536,121 @@ class _AddExamScreenState extends State<AddExamScreen> {
               l10n.weekdaySat,
               l10n.weekdaySun,
             ];
+            final selectedDateLabel = selectedDayOfWeek != null
+                ? DateFormat.Md().format(
+                    getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!),
+                  )
+                : l10n.weekLabel(selectedWeek);
 
-            return SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // 拖拽指示条
-                  const SizedBox(height: 12),
-                  Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: colorScheme.onSurfaceVariant.withValues(
-                        alpha: 0.3,
-                      ),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  // 标题
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.view_week_rounded, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          l10n.examDateWeekPickerTitle,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+            return Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: colors.background,
+                border: Border(top: BorderSide(color: colors.border)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              color: colorScheme.primary.withValues(
+                                alpha: 0.12,
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: Icon(
+                              Icons.view_week_rounded,
+                              color: colorScheme.primary,
+                              size: 22,
+                            ),
                           ),
-                        ),
-                        const Spacer(),
-                        // Close button
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 20),
-                          tooltip: MaterialLocalizations.of(
-                            ctx,
-                          ).closeButtonTooltip,
-                          onPressed: () => Navigator.pop(ctx),
-                        ),
-                        // 切换到标准日历选择器
-                        IconButton(
-                          icon: const Icon(Icons.calendar_today, size: 20),
-                          tooltip: l10n.weekPickerCalendarTooltip,
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: ctx,
-                              initialDate: getDateForWeekAndDay(
-                                selectedWeek,
-                                selectedDayOfWeek ?? DateTime.now().weekday,
-                              ),
-                              firstDate: DateTime.now().subtract(
-                                const Duration(days: 365),
-                              ),
-                              lastDate: DateTime.now().add(
-                                const Duration(days: 365 * 2),
-                              ),
-                            );
-                            if (picked != null && ctx.mounted) {
-                              Navigator.pop(ctx, picked);
-                            }
-                          },
-                        ),
-                        // 显示当前选中的实际日期
-                        Text(
-                          selectedDayOfWeek != null
-                              ? DateFormat.Md().format(
-                                  getDateForWeekAndDay(
-                                    selectedWeek,
-                                    selectedDayOfWeek!,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.examDateWeekPickerTitle,
+                                  style: typo.body.sm.copyWith(
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                )
-                              : l10n.weekLabel(selectedWeek),
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600,
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  selectedDateLabel,
+                                  style: typo.body.xs.copyWith(
+                                    color: colors.mutedForeground,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 20),
+                            tooltip: MaterialLocalizations.of(
+                              ctx,
+                            ).closeButtonTooltip,
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      FButton(
+                        variant: FButtonVariant.secondary,
+                        onPress: () async {
+                          final picked = await showDatePicker(
+                            context: ctx,
+                            initialDate: getDateForWeekAndDay(
+                              selectedWeek,
+                              selectedDayOfWeek ?? DateTime.now().weekday,
+                            ),
+                            firstDate: DateTime.now().subtract(
+                              const Duration(days: 365),
+                            ),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 365 * 2),
+                            ),
+                          );
+                          if (picked != null && ctx.mounted) {
+                            Navigator.pop(ctx, picked);
+                          }
+                        },
+                        prefix: const Icon(
+                          Icons.calendar_today_outlined,
+                          size: 18,
                         ),
-                      ],
-                    ),
-                  ),
-                  // 星期几选择
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: Row(
-                      children: List.generate(7, (index) {
-                        final dayOfWeek = index + 1; // 1=Mon, 7=Sun
-                        final isSelected = dayOfWeek == selectedDayOfWeek;
-                        final date = getDateForWeekAndDay(
-                          selectedWeek,
-                          dayOfWeek,
-                        );
-                        return Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Material(
-                              color: isSelected
-                                  ? colorScheme.primaryContainer
-                                  : Colors.transparent,
-                              borderRadius: BorderRadius.circular(10),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(10),
-                                onTap: () {
-                                  setModalState(() {
-                                    selectedDayOfWeek = dayOfWeek;
-                                  });
-                                  // 选完星期后自动确定
+                        child: Text(l10n.weekPickerCalendarTooltip),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: List.generate(7, (index) {
+                          final dayOfWeek = index + 1;
+                          final isSelected = dayOfWeek == selectedDayOfWeek;
+                          final date = getDateForWeekAndDay(
+                            selectedWeek,
+                            dayOfWeek,
+                          );
+                          return Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.only(
+                                left: index == 0 ? 0 : 4,
+                              ),
+                              child: FButton(
+                                variant: isSelected
+                                    ? FButtonVariant.secondary
+                                    : FButtonVariant.outline,
+                                onPress: () {
                                   Navigator.pop(
                                     ctx,
                                     getDateForWeekAndDay(
@@ -789,184 +659,114 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                     ),
                                   );
                                 },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 10,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        dayNames[index],
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          color: isSelected
-                                              ? colorScheme.onPrimaryContainer
-                                              : colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        DateFormat.Md().format(date),
-                                        style: TextStyle(
-                                          fontSize: 11,
-                                          color: isSelected
-                                              ? colorScheme.onPrimaryContainer
-                                              : colorScheme.onSurfaceVariant
-                                                    .withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  // 周次列表
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(ctx).size.height * 0.45,
-                    ),
-                    child: ListView.builder(
-                      controller: scrollController,
-                      shrinkWrap: true,
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                      itemCount: totalWeeks,
-                      itemBuilder: (_, index) {
-                        final week = index + 1;
-                        final isSelected = week == selectedWeek;
-                        final date = getDateForWeekAndDay(
-                          week,
-                          selectedDayOfWeek ?? 1,
-                        );
-                        final isCurrentWeek = _isCurrentWeek(
-                          week,
-                          semesterStart,
-                          provider,
-                        );
-
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Material(
-                            color: isSelected
-                                ? colorScheme.primaryContainer
-                                : isCurrentWeek
-                                ? colorScheme.secondaryContainer.withValues(
-                                    alpha: 0.3,
-                                  )
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                if (selectedDayOfWeek != null) {
-                                  Navigator.pop(
-                                    ctx,
-                                    getDateForWeekAndDay(
-                                      week,
-                                      selectedDayOfWeek!,
-                                    ),
-                                  );
-                                } else {
-                                  setModalState(() {
-                                    selectedWeek = week;
-                                  });
-                                }
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 12,
-                                ),
-                                child: Row(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // 周次标签
-                                    Container(
-                                      width: 52,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? colorScheme.primary
-                                            : isCurrentWeek
-                                            ? colorScheme.secondary.withValues(
-                                                alpha: 0.2,
-                                              )
-                                            : colorScheme
-                                                  .surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(6),
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          l10n.weekLabel(week),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            color: isSelected
-                                                ? colorScheme.onPrimary
-                                                : isCurrentWeek
-                                                ? colorScheme.secondary
-                                                : colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                      ),
+                                    Text(
+                                      dayNames[index],
+                                      style: const TextStyle(fontSize: 11),
                                     ),
-                                    const SizedBox(width: 12),
-                                    // 日期信息
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            selectedDayOfWeek != null
-                                                ? '${DateFormat.Md().format(date)} ${dayNames[selectedDayOfWeek! - 1]}'
-                                                : l10n.weekLabel(week),
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: isSelected
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
-                                              color: isSelected
-                                                  ? colorScheme
-                                                        .onPrimaryContainer
-                                                  : colorScheme.onSurface,
-                                            ),
-                                          ),
-                                          if (isCurrentWeek)
-                                            Text(
-                                              l10n.thisWeekLabel,
-                                              style: TextStyle(
-                                                fontSize: 11,
-                                                color: colorScheme.secondary,
-                                              ),
-                                            ),
-                                        ],
-                                      ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      DateFormat.Md().format(date),
+                                      style: const TextStyle(fontSize: 10),
                                     ),
-                                    if (isSelected)
-                                      Icon(
-                                        Icons.check_circle_rounded,
-                                        size: 20,
-                                        color: colorScheme.primary,
-                                      ),
                                   ],
                                 ),
                               ),
                             ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 12),
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxHeight: MediaQuery.sizeOf(ctx).height * 0.42,
+                        ),
+                        child: SingleChildScrollView(
+                          controller: scrollController,
+                          child: FTileGroup(
+                            physics: const NeverScrollableScrollPhysics(),
+                            children: [
+                              for (var week = 1; week <= totalWeeks; week++)
+                                FTile(
+                                  prefix: Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (week == selectedWeek
+                                                  ? colorScheme.primary
+                                                  : _isCurrentWeek(
+                                                      week,
+                                                      semesterStart,
+                                                      provider,
+                                                    )
+                                                  ? colorScheme.secondary
+                                                  : colorScheme
+                                                        .surfaceContainerHighest)
+                                              .withValues(
+                                                alpha: week == selectedWeek
+                                                    ? 1
+                                                    : 0.18,
+                                              ),
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$week',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: week == selectedWeek
+                                            ? colorScheme.onPrimary
+                                            : colorScheme.onSurface,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                  title: Text(
+                                    selectedDayOfWeek != null
+                                        ? '${DateFormat.Md().format(getDateForWeekAndDay(week, selectedDayOfWeek!))} ${dayNames[selectedDayOfWeek! - 1]}'
+                                        : l10n.weekLabel(week),
+                                  ),
+                                  details:
+                                      _isCurrentWeek(
+                                        week,
+                                        semesterStart,
+                                        provider,
+                                      )
+                                      ? Text(l10n.thisWeekLabel)
+                                      : Text(l10n.weekLabel(week)),
+                                  suffix: week == selectedWeek
+                                      ? Icon(
+                                          Icons.check_rounded,
+                                          color: colorScheme.primary,
+                                          size: 20,
+                                        )
+                                      : null,
+                                  onPress: () {
+                                    if (selectedDayOfWeek != null) {
+                                      Navigator.pop(
+                                        ctx,
+                                        getDateForWeekAndDay(
+                                          week,
+                                          selectedDayOfWeek!,
+                                        ),
+                                      );
+                                    } else {
+                                      setModalState(() {
+                                        selectedWeek = week;
+                                      });
+                                    }
+                                  },
+                                ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             );
           },

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:forui/forui.dart';
 
 import 'warehouse_macro_replayer.dart';
 
@@ -178,17 +179,19 @@ class PlaybackOverlay extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          OutlinedButton(
-                            onPressed: onCancel,
+                          FButton(
+                            variant: FButtonVariant.outline,
+                            onPress: onCancel,
                             child: const Text('取消导入'),
                           ),
-                          FilledButton.icon(
-                            onPressed: onContinueAfterPause,
-                            icon: const Icon(
+                          FButton(
+                            variant: FButtonVariant.primary,
+                            onPress: onContinueAfterPause,
+                            prefix: const Icon(
                               Icons.play_arrow_rounded,
                               size: 18,
                             ),
-                            label: const Text('继续'),
+                            child: const Text('继续'),
                           ),
                         ],
                       ),
@@ -296,10 +299,11 @@ class PlaybackOverlay extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    FilledButton.icon(
-                      onPressed: onDismiss,
-                      icon: const Icon(Icons.check_rounded, size: 18),
-                      label: const Text('完成'),
+                    FButton(
+                      variant: FButtonVariant.primary,
+                      onPress: onDismiss,
+                      prefix: const Icon(Icons.check_rounded, size: 18),
+                      child: const Text('完成'),
                     ),
                   ],
                 ),
@@ -364,15 +368,17 @@ class PlaybackOverlay extends StatelessWidget {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        OutlinedButton(
-                          onPressed: onDismiss,
+                        FButton(
+                          variant: FButtonVariant.outline,
+                          onPress: onDismiss,
                           child: const Text('关闭'),
                         ),
                         if (onRetry != null)
-                          FilledButton.icon(
-                            onPressed: onRetry,
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: const Text('重试'),
+                          FButton(
+                            variant: FButtonVariant.primary,
+                            onPress: onRetry,
+                            prefix: const Icon(Icons.refresh_rounded, size: 18),
+                            child: const Text('重试'),
                           ),
                       ],
                     ),
@@ -398,14 +404,11 @@ class MacroIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (!hasMacro) {
-      return OutlinedButton.icon(
-        onPressed: null, // 由外部处理
-        icon: const Icon(Icons.radio_button_unchecked_rounded, size: 16),
-        label: const Text('录制'),
-        style: OutlinedButton.styleFrom(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+      return FButton(
+        variant: FButtonVariant.outline,
+        onPress: null,
+        prefix: const Icon(Icons.radio_button_unchecked_rounded, size: 16),
+        child: const Text('录制'),
       );
     }
 

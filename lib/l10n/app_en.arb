@@ -2538,6 +2538,8 @@
   "scheduleLocationLabel": "Location",
   "scheduleLocationHint": "Optional",
   "scheduleDateLabel": "Date",
+  "scheduleStartGroupLabel": "Start",
+  "scheduleEndGroupLabel": "End",
   "scheduleStartDateLabel": "Start Date",
   "scheduleEndDateLabel": "End Date",
   "scheduleStartTimeLabel": "Start Time",

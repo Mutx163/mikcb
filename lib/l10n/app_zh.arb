@@ -2538,6 +2538,8 @@
   "scheduleLocationLabel": "地点",
   "scheduleLocationHint": "选填",
   "scheduleDateLabel": "日期",
+  "scheduleStartGroupLabel": "开始",
+  "scheduleEndGroupLabel": "结束",
   "scheduleStartDateLabel": "开始日期",
   "scheduleEndDateLabel": "结束日期",
   "scheduleStartTimeLabel": "开始时间",

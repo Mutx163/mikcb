@@ -149,25 +149,9 @@ class _WeekCountChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return FilledButton.tonal(
-      style: FilledButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-        backgroundColor: isSelected
-            ? colorScheme.primary.withValues(alpha: 0.14)
-            : colorScheme.surfaceContainerLowest,
-        foregroundColor: isSelected
-            ? colorScheme.primary
-            : colorScheme.onSurface,
-        side: BorderSide(
-          color: isSelected
-              ? colorScheme.primary.withValues(alpha: 0.45)
-              : colorScheme.outlineVariant,
-        ),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      onPressed: onPress,
+    return FButton(
+      variant: isSelected ? FButtonVariant.secondary : FButtonVariant.outline,
+      onPress: onPress,
       child: Text(
         label,
         maxLines: 1,

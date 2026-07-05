@@ -3904,10 +3904,11 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     DateTime? endDate = initialEnd ?? existing?.date;
     HolidayType selectedType = existing?.type ?? HolidayType.vacation;
 
-    final result = await showModalBottomSheet<bool>(
+    final result = await showFSheet<bool>(
       context: context,
-      showDragHandle: true,
+      side: FLayout.btt,
       useSafeArea: true,
+      draggable: true,
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {

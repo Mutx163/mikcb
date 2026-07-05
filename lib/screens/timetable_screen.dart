@@ -55,6 +55,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   static const int _minWeek = 1;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
+  static const double _dayViewCardRadius = 20;
 
   late final PageController _weekPageController;
   late final AnimationController _dayViewExpandController;
@@ -1742,8 +1743,13 @@ class _TimetableScreenState extends State<TimetableScreen>
         ? Icons.arrow_forward_rounded
         : Icons.arrow_back_rounded;
 
-    return FCard.raw(
+    return DecoratedBox(
       key: key,
+      decoration: BoxDecoration(
+        color: foruiTheme.colors.background,
+        borderRadius: BorderRadius.circular(_dayViewCardRadius),
+        border: Border.all(color: foruiTheme.colors.border),
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
         child: Row(
@@ -1757,35 +1763,77 @@ class _TimetableScreenState extends State<TimetableScreen>
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       if (isToday)
-                        _buildDayViewTodayBadge(l10n.todayTimetableTitle)
-                      else
-                        FButton(
-                          key: const ValueKey('back-to-today-button'),
-                          variant: FButtonVariant.outline,
-                          onPress: () async {
-                            final now = DateTime.now();
-                            final visibleDays = _visibleDayNumbers(settings);
-                            final currentSemesterWeek =
-                                _resolveCurrentSemesterWeek(settings);
-                            if (!visibleDays.contains(now.weekday) ||
-                                currentSemesterWeek == null) {
-                              return;
-                            }
-                            await _animateDayViewToWeek(
-                              provider,
-                              settings,
-                              currentSemesterWeek,
-                              now.weekday,
-                            );
-                          },
-                          prefix: Icon(
-                            backToTodayIcon,
-                            size: 18,
-                            color: colorScheme.primary,
+                        Text(
+                          l10n.todayTimetableTitle,
+                          style: foruiTheme.typography.body.sm.copyWith(
+                            color: foruiTheme.colors.mutedForeground,
+                            fontWeight: FontWeight.w500,
                           ),
-                          child: Text(l10n.backToTodayAction),
+                        )
+                      else
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            key: const ValueKey('back-to-today-button'),
+                            onTap: () async {
+                              final now = DateTime.now();
+                              final visibleDays = _visibleDayNumbers(settings);
+                              final currentSemesterWeek =
+                                  _resolveCurrentSemesterWeek(settings);
+                              if (!visibleDays.contains(now.weekday) ||
+                                  currentSemesterWeek == null) {
+                                return;
+                              }
+                              await _animateDayViewToWeek(
+                                provider,
+                                settings,
+                                currentSemesterWeek,
+                                now.weekday,
+                              );
+                            },
+                            borderRadius: BorderRadius.circular(999),
+                            child: Ink(
+                              decoration: BoxDecoration(
+                                color: colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(8, 4, 10, 4),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      backToTodayIcon,
+                                      size: 14,
+                                      color: colorScheme.onPrimaryContainer,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      l10n.backToTodayAction,
+                                      style: foruiTheme.typography.body.xs
+                                          .copyWith(
+                                            color:
+                                                colorScheme.onPrimaryContainer,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1.1,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                      const SizedBox(width: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          '·',
+                          style: foruiTheme.typography.body.sm.copyWith(
+                            color: foruiTheme.colors.mutedForeground,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
                       Text(
                         l10n.weekLabel(week),
                         style: foruiTheme.typography.body.sm.copyWith(
@@ -1918,28 +1966,6 @@ class _TimetableScreenState extends State<TimetableScreen>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDayViewTodayBadge(String label) {
-    final foruiTheme = context.theme;
-    final colorScheme = Theme.of(context).colorScheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: foruiTheme.colors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        child: Text(
-          label,
-          style: foruiTheme.typography.body.sm.copyWith(
-            fontWeight: FontWeight.w600,
-            color: foruiTheme.colors.foreground,
-          ),
         ),
       ),
     );
@@ -2149,7 +2175,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     ];
     final cardDecoration = BoxDecoration(
       color: palette.baseColor,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(_dayViewCardRadius),
       border: courseItem.isConflicting
           ? Border.all(
               color: colorScheme.error.withValues(alpha: 0.30),
@@ -2197,7 +2223,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         closedElevation: 0,
         openElevation: 0,
         closedShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(_dayViewCardRadius),
         ),
         openShape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(28),
@@ -2679,7 +2705,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       closedElevation: 0,
       openElevation: 0,
       closedShape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(_dayViewCardRadius),
       ),
       openShape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(28),
@@ -3252,10 +3278,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final provider = context.read<TimetableProvider>();
     final availableWeeks = provider.settings.availableWeeks;
     final currentSemesterWeek = _resolveCurrentSemesterWeek(provider.settings);
-    final selectedWeek = await showModalBottomSheet<int>(
+    final selectedWeek = await showFSheet<int>(
       context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      mainAxisMaxRatio: null,
       builder: (sheetContext) {
         final mediaQuery = MediaQuery.of(sheetContext);
         final maxSheetHeight =
@@ -3265,7 +3293,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                     40)
                 .clamp(260.0, 520.0);
         final maxSheetBodyHeight = (maxSheetHeight - 88).clamp(200.0, 360.0);
-        final colorScheme = Theme.of(sheetContext).colorScheme;
         return SafeArea(
           child: ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxSheetHeight),
@@ -3288,42 +3315,16 @@ class _TimetableScreenState extends State<TimetableScreen>
                       ),
                       if (currentSemesterWeek != null &&
                           _visibleWeek != currentSemesterWeek)
-                        FilledButton.tonal(
-                          style: FilledButton.styleFrom(
-                            visualDensity: VisualDensity.compact,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                            shape: const StadiumBorder(),
-                            backgroundColor: colorScheme.primary.withValues(
-                              alpha: 0.12,
-                            ),
-                            foregroundColor: colorScheme.primary,
-                            minimumSize: const Size(0, 36),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            side: BorderSide(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.18,
-                              ),
-                            ),
-                          ),
-                          onPressed: () => Navigator.of(
+                        FButton(
+                          variant: FButtonVariant.secondary,
+                          onPress: () => Navigator.of(
                             sheetContext,
                           ).pop(currentSemesterWeek),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.my_location_rounded, size: 18),
-                              const SizedBox(width: 6),
-                              Text(
-                                l10n.backToCurrentWeekAction,
-                                maxLines: 1,
-                                softWrap: false,
-                                overflow: TextOverflow.fade,
-                              ),
-                            ],
+                          prefix: const Icon(
+                            Icons.my_location_rounded,
+                            size: 18,
                           ),
+                          child: Text(l10n.backToCurrentWeekAction),
                         ),
                     ],
                   ),
@@ -3349,30 +3350,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                           final week = availableWeeks[index];
                           final isCurrentSemesterWeek =
                               week == currentSemesterWeek;
-                          final colorScheme = Theme.of(gridContext).colorScheme;
-                          return FilledButton.tonal(
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              backgroundColor: isCurrentSemesterWeek
-                                  ? colorScheme.primary.withValues(alpha: 0.12)
-                                  : colorScheme.surfaceContainerLowest,
-                              foregroundColor: isCurrentSemesterWeek
-                                  ? colorScheme.primary
-                                  : colorScheme.onSurface,
-                              side: isCurrentSemesterWeek
-                                  ? BorderSide(
-                                      color: colorScheme.primary.withValues(
-                                        alpha: 0.45,
-                                      ),
-                                    )
-                                  : BorderSide(
-                                      color: colorScheme.outlineVariant,
-                                    ),
-                            ),
-                            onPressed: () =>
-                                Navigator.of(sheetContext).pop(week),
+                          return FButton(
+                            variant: isCurrentSemesterWeek
+                                ? FButtonVariant.secondary
+                                : FButtonVariant.outline,
+                            onPress: () => Navigator.of(sheetContext).pop(week),
                             child: Text(
                               l10n.goToWeekLabel(week),
                               maxLines: 1,
@@ -3971,61 +3953,95 @@ class _TimetableScreenState extends State<TimetableScreen>
     final initialDayOfWeek = _isDayView && _selectedDayOfWeek != null
         ? _selectedDayOfWeek!
         : DateTime.now().weekday;
-    await showModalBottomSheet<void>(
+    await showFSheet<void>(
       context: context,
-      showDragHandle: true,
+      side: FLayout.btt,
       useSafeArea: true,
+      draggable: true,
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.addCourseSheetTitle,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.addCourseSheetSubtitle,
-                  style: Theme.of(sheetContext).textTheme.bodySmall,
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+        final colors = sheetContext.theme.colors;
+        final typo = sheetContext.theme.typography;
+        final sheetBackground = Theme.of(sheetContext).colorScheme.surface;
+        final itemWidth =
+            ((MediaQuery.sizeOf(sheetContext).width - 32 - 24) / 3).clamp(
+              96.0,
+              120.0,
+            );
+
+        return Material(
+          color: sheetBackground,
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: sheetBackground,
+              border: Border(top: BorderSide(color: colors.border)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _HomeActionPageButton(
-                      sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.view_week_rounded,
-                      title: l10n.addCourseTitle,
-                      pageBuilder: (_) => AddCourseScreen(
-                        initialWeek: _visibleWeek,
-                        initialDayOfWeek: initialDayOfWeek,
+                    FTileGroup(
+                      label: Text(l10n.addCourseSheetTitle),
+                      description: Text(
+                        l10n.addCourseSheetSubtitle,
+                        maxLines: null,
+                        overflow: TextOverflow.clip,
+                        style: typo.body.xs.copyWith(
+                          color: colors.mutedForeground,
+                          height: 1.45,
+                        ),
                       ),
+                      physics: const NeverScrollableScrollPhysics(),
+                      children: const [],
                     ),
-                    _HomeActionPageButton(
-                      sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.event_note_rounded,
-                      title: l10n.addScheduleAction,
-                      pageBuilder: (_) => AddScheduleItemScreen(
-                        initialDate: _resolveAddScheduleInitialDate(provider),
-                      ),
-                    ),
-                    _HomeActionPageButton(
-                      sheetRoute: ModalRoute.of(sheetContext),
-                      icon: Icons.school_outlined,
-                      title: l10n.addExam,
-                      pageBuilder: (_) => const AddExamScreen(),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        SizedBox(
+                          width: itemWidth,
+                          child: _HomeActionPageButton(
+                            sheetRoute: ModalRoute.of(sheetContext),
+                            icon: Icons.view_week_rounded,
+                            title: l10n.addCourseTitle,
+                            pageBuilder: (_) => AddCourseScreen(
+                              initialWeek: _visibleWeek,
+                              initialDayOfWeek: initialDayOfWeek,
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _HomeActionPageButton(
+                            sheetRoute: ModalRoute.of(sheetContext),
+                            icon: Icons.event_note_rounded,
+                            title: l10n.addScheduleAction,
+                            pageBuilder: (_) => AddScheduleItemScreen(
+                              initialDate: _resolveAddScheduleInitialDate(
+                                provider,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(
+                          width: itemWidth,
+                          child: _HomeActionPageButton(
+                            sheetRoute: ModalRoute.of(sheetContext),
+                            icon: Icons.school_outlined,
+                            title: l10n.addExam,
+                            pageBuilder: (_) => const AddExamScreen(),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
         );
@@ -4624,20 +4640,16 @@ class _HomeActionButtonBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final colors = context.theme.colors;
     final highlightColor = enabled
         ? accentColor ?? colorScheme.primary
         : colorScheme.onSurfaceVariant;
-    final width = ((MediaQuery.of(context).size.width - 32 - 36) / 4).clamp(
-      72.0,
-      112.0,
-    );
-    return SizedBox(
-      width: width,
+
+    return FCard.raw(
       child: Material(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(22),
+        type: MaterialType.transparency,
         child: InkWell(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(12),
           overlayColor: const WidgetStatePropertyAll(Colors.transparent),
           splashFactory: NoSplash.splashFactory,
           onTap: enabled ? onTap : null,
@@ -4664,7 +4676,7 @@ class _HomeActionButtonBody extends StatelessWidget {
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.w700,
                     height: 1.25,
-                    color: enabled ? null : colorScheme.onSurfaceVariant,
+                    color: enabled ? null : colors.mutedForeground,
                   ),
                 ),
               ],

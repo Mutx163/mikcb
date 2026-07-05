@@ -7619,6 +7619,18 @@ abstract class AppLocalizations {
   /// **'日期'**
   String get scheduleDateLabel;
 
+  /// No description provided for @scheduleStartGroupLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始'**
+  String get scheduleStartGroupLabel;
+
+  /// No description provided for @scheduleEndGroupLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束'**
+  String get scheduleEndGroupLabel;
+
   /// No description provided for @scheduleStartDateLabel.
   ///
   /// In zh, this message translates to:

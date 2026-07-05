@@ -19,7 +19,6 @@ class FeedbackScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return FScaffold(
       header: FHeader.nested(
@@ -32,51 +31,26 @@ class FeedbackScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            FCard.raw(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: colorScheme.primary.withValues(alpha: 0.12),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.support_agent_outlined,
-                        color: colorScheme.primary,
-                        size: 20,
-                      ),
+            Padding(
+              padding: const EdgeInsets.only(left: 4, bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.feedbackIntro,
+                    style: typo.sm.copyWith(height: 1.45),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.feedbackIssueHint,
+                    style: typo.xs2.copyWith(
+                      color: colors.mutedForeground,
+                      height: 1.4,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.feedbackIntro,
-                            style: typo.sm.copyWith(height: 1.45),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.feedbackIssueHint,
-                            style: typo.xs2.copyWith(
-                              color: colors.mutedForeground,
-                              height: 1.4,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
             FTileGroup(
               physics: const NeverScrollableScrollPhysics(),
               children: [

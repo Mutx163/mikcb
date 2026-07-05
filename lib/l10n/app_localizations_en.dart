@@ -4465,6 +4465,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get scheduleDateLabel => 'Date';
 
   @override
+  String get scheduleStartGroupLabel => 'Start';
+
+  @override
+  String get scheduleEndGroupLabel => 'End';
+
+  @override
   String get scheduleStartDateLabel => 'Start Date';
 
   @override
