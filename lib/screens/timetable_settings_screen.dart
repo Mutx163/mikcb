@@ -28,6 +28,7 @@ import '../widgets/timetable_week_preview.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
 import 'about_screen.dart';
+import 'course_overview_screen.dart';
 import 'data_transfer_screen.dart';
 import 'lan_edit_screen.dart';
 import 'feedback_screen.dart';
@@ -152,6 +153,16 @@ class TimetableSettingsScreen extends StatelessWidget {
             MaterialPageRoute(
               settings: const RouteSettings(name: '/profiles'),
               builder: (_) => const TimetableProfilesScreen(),
+            ),
+          );
+        }
+
+        void openCourseOverview() {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              settings: const RouteSettings(name: '/course-overview'),
+              builder: (_) => const CourseOverviewScreen(),
             ),
           );
         }
@@ -291,6 +302,11 @@ class TimetableSettingsScreen extends StatelessWidget {
                       icon: Icons.layers_outlined,
                       title: l10n.timetableManagement,
                       onTap: openProfiles,
+                    ),
+                    SettingsEntryTile(
+                      icon: Icons.dashboard_customize_rounded,
+                      title: l10n.courseOverviewTitle,
+                      onTap: openCourseOverview,
                     ),
                     SettingsEntryTile(
                       icon: Icons.schedule_rounded,
