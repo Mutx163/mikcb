@@ -90,10 +90,8 @@ class _TimeSchemeManagementScreenState
     required bool isActive,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    final theme = context.theme;
+    return FCard.raw(
       child: InkWell(
         onTap: isActive ? null : () => _applyScheme(context, scheme),
         child: Padding(
@@ -109,9 +107,7 @@ class _TimeSchemeManagementScreenState
                     height: 36,
                     decoration: BoxDecoration(
                       color:
-                          (isActive
-                                  ? colorScheme.primary
-                                  : colorScheme.secondaryContainer)
+                          (isActive ? theme.colors.primary : theme.colors.muted)
                               .withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -120,8 +116,8 @@ class _TimeSchemeManagementScreenState
                           ? Icons.schedule_rounded
                           : Icons.access_time_rounded,
                       color: isActive
-                          ? colorScheme.primary
-                          : colorScheme.onSecondaryContainer,
+                          ? theme.colors.primary
+                          : theme.colors.mutedForeground,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -133,7 +129,7 @@ class _TimeSchemeManagementScreenState
                           scheme.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleMedium?.copyWith(
+                          style: theme.typography.body.md.copyWith(
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -147,8 +143,8 @@ class _TimeSchemeManagementScreenState
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
+                          style: theme.typography.body.xs.copyWith(
+                            color: theme.colors.mutedForeground,
                           ),
                         ),
                       ],
@@ -217,8 +213,8 @@ class _TimeSchemeManagementScreenState
                           l10n.deleteAction,
                           style: TextStyle(
                             color: usage.isUnused
-                                ? colorScheme.error
-                                : colorScheme.onSurfaceVariant,
+                                ? theme.colors.destructive
+                                : theme.colors.mutedForeground,
                           ),
                         ),
                       ),
@@ -231,25 +227,18 @@ class _TimeSchemeManagementScreenState
                 scheme.sectionCount > 1
                     ? l10n.timeSchemeStartsAt(scheme.sections.first.displayText)
                     : scheme.sections.first.displayText,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+                style: theme.typography.body.sm.copyWith(
+                  color: theme.colors.mutedForeground,
                 ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: FilledButton.tonal(
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(0, 36),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      onPressed: isActive
-                          ? null
+                    child: FButton(
+                      variant: FButtonVariant.secondary,
+                      onPress: isActive
+                          ? () {}
                           : () => _applyScheme(context, scheme),
                       child: Text(
                         isActive ? l10n.usingNow : l10n.applyToCurrentTimetable,
@@ -257,18 +246,11 @@ class _TimeSchemeManagementScreenState
                     ),
                   ),
                   const SizedBox(width: 8),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(0, 36),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 8,
-                      ),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => _openEditor(scheme.id),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: Text(l10n.editSectionsAction),
+                  FButton(
+                    variant: FButtonVariant.ghost,
+                    onPress: () => _openEditor(scheme.id),
+                    prefix: const Icon(Icons.edit_outlined),
+                    child: Text(l10n.editSectionsAction),
                   ),
                 ],
               ),
@@ -291,11 +273,11 @@ class _TimeSchemeManagementScreenState
   Future<void> _createScheme(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    final name = await showDialog<String>(
+    final name = await showFDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.createTimeSchemeTitle),
-        content: TextField(
+        body: TextField(
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(
@@ -304,17 +286,20 @@ class _TimeSchemeManagementScreenState
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx),
             child: Text(l10n.cancelAction),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, controller.text.trim()),
             child: Text(l10n.createAction),
           ),
         ],
       ),
     );
+    controller.dispose();
 
     if (!context.mounted || name == null || name.isEmpty) {
       return;
@@ -332,27 +317,30 @@ class _TimeSchemeManagementScreenState
   Future<void> _renameScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: scheme.name);
-    final name = await showDialog<String>(
+    final name = await showFDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.renameTimeSchemeTitle),
-        content: TextField(
+        body: TextField(
           controller: controller,
           autofocus: true,
           decoration: InputDecoration(labelText: l10n.timeSchemeNameLabel),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx),
             child: Text(l10n.cancelAction),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, controller.text.trim()),
             child: Text(l10n.saveAction),
           ),
         ],
       ),
     );
+    controller.dispose();
 
     if (!context.mounted ||
         name == null ||
@@ -372,18 +360,20 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showFDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (ctx, style, animation) => FDialog(
         title: Text(l10n.deleteTimeSchemeTitle),
-        content: Text(l10n.deleteTimeSchemeMessage(scheme.name)),
+        body: Text(l10n.deleteTimeSchemeMessage(scheme.name)),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
+          FButton(
+            variant: FButtonVariant.ghost,
+            onPress: () => Navigator.pop(ctx, false),
             child: Text(l10n.cancelAction),
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
+          FButton(
+            variant: FButtonVariant.primary,
+            onPress: () => Navigator.pop(ctx, true),
             child: Text(l10n.deleteAction),
           ),
         ],
