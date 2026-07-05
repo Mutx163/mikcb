@@ -53,6 +53,8 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen>
     with WidgetsBindingObserver, SingleTickerProviderStateMixin {
   static const int _minWeek = 1;
+  static const double _weekDayHeaderHeight = 40;
+  static const double _homeTitleHorizontalNudge = 4;
   static const Duration _weekSlideDuration = Duration(milliseconds: 280);
   static const Duration _dayExpandDuration = Duration(milliseconds: 360);
   static const double _dayViewCardRadius = 20;
@@ -174,7 +176,9 @@ class _TimetableScreenState extends State<TimetableScreen>
           height: 1.1,
           color: foruiTheme.colors.foreground,
         );
-        const headerContentInset = 14.0;
+        const headerHorizontalInset = 8.0;
+        const headerTopInset = 0.0;
+        const headerBottomInset = 2.0;
         return FScaffold(
           resizeToAvoidBottomInset: false,
           scaffoldStyle: FScaffoldStyleDelta.delta(
@@ -186,12 +190,13 @@ class _TimetableScreenState extends State<TimetableScreen>
               titleTextStyle: TextStyleDelta.value(headerTitleStyle),
               padding: EdgeInsetsGeometryDelta.value(
                 const EdgeInsets.fromLTRB(
-                  headerContentInset,
-                  headerContentInset,
-                  12,
-                  headerContentInset,
+                  headerHorizontalInset,
+                  headerTopInset,
+                  headerHorizontalInset,
+                  headerBottomInset,
                 ),
               ),
+              constraints: const BoxConstraints(minHeight: 44),
             ),
             title: _buildProfileSwitcherTrigger(provider),
             suffixes: [
@@ -238,7 +243,7 @@ class _TimetableScreenState extends State<TimetableScreen>
                           color: backgroundColor,
                           child: Padding(
                             key: _timetableSurfaceKey,
-                            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                            padding: const EdgeInsets.only(bottom: 8),
                             child: LayoutBuilder(
                               builder: (context, constraints) {
                                 return _buildWeekPager(
@@ -773,10 +778,13 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Widget _buildProfileSwitcherTrigger(TimetableProvider provider) {
-    return switch (provider.settings.homeTitleStyle) {
-      HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(provider),
-      HomeTitleStyle.brand => _buildBrandProfileSwitcherTrigger(provider),
-    };
+    return Padding(
+      padding: const EdgeInsets.only(left: _homeTitleHorizontalNudge),
+      child: switch (provider.settings.homeTitleStyle) {
+        HomeTitleStyle.classic => _buildClassicProfileSwitcherTrigger(provider),
+        HomeTitleStyle.brand => _buildBrandProfileSwitcherTrigger(provider),
+      },
+    );
   }
 
   Widget _buildClassicProfileSwitcherTrigger(TimetableProvider provider) {
@@ -846,8 +854,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     final visibleDays = _visibleDayNumbers(settings);
 
     return Container(
-      height: 50,
-      padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
+      height: _weekDayHeaderHeight,
+      padding: EdgeInsets.zero,
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
       ),
@@ -1257,7 +1265,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         ),
         if (_shouldShowDayViewOverlay && visibleDayViewWeek != null)
           Positioned.fill(
-            top: 50,
+            top: _weekDayHeaderHeight,
             child: _buildAnchoredDayViewOverlay(
               provider: provider,
               settings: settings,
@@ -1275,7 +1283,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     double availableHeight,
     int week,
   ) {
-    final bodyAvailableHeight = (availableHeight - 50).clamp(
+    final bodyAvailableHeight = (availableHeight - _weekDayHeaderHeight).clamp(
       0.0,
       double.infinity,
     );

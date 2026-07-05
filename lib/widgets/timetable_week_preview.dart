@@ -23,8 +23,8 @@ class TimetableWeekPreview extends StatelessWidget {
   final TimetableSettings settings;
   final int week;
 
-  static const double _headerHeight = 50;
-  static const double _homeHeaderHeightEstimate = 56;
+  static const double _headerHeight = 40;
+  static const double _homeHeaderHeightEstimate = 44;
   static const double _homeSurfaceBottomPadding = 8;
   static const int _previewMorningSectionCount = 4;
 
@@ -49,7 +49,7 @@ class TimetableWeekPreview extends StatelessWidget {
     return ColoredBox(
       color: backgroundColor,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+        padding: const EdgeInsets.only(bottom: 8),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final grid = _buildTimetableGrid(
@@ -186,7 +186,7 @@ class TimetableWeekPreview extends StatelessWidget {
 
     return Container(
       height: _headerHeight,
-      padding: const EdgeInsets.fromLTRB(0, 1, 0, 4),
+      padding: EdgeInsets.zero,
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
       ),
