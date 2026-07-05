@@ -176,6 +176,9 @@ void main() {
 
   testWidgets('tapping a conflicting course shows both course cards',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -222,19 +225,19 @@ void main() {
     await _pumpTimetableFrame(tester);
 
     expect(
-      find.byKey(const ValueKey('course-action-card-course-a')),
+      find.byKey(const ValueKey('course-action-content-course-a')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('course-action-card-course-b')),
+      find.byKey(const ValueKey('course-action-content-course-b')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('course-action-edit-course-a')),
+      find.byKey(const ValueKey('course-action-reschedule-course-a')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('course-action-edit-course-b')),
+      find.byKey(const ValueKey('course-action-reschedule-course-b')),
       findsOneWidget,
     );
   });

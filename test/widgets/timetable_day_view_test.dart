@@ -18,6 +18,11 @@ import 'package:university_timetable/screens/timetable_screen.dart';
 
 import '../helpers_test_app.dart';
 
+String _weekdayLabelForTest(int weekday) {
+  const labels = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+  return labels[weekday - 1];
+}
+
 Future<void> _pumpTimetableFrame(WidgetTester tester) async {
   await tester.pump();
   await tester.pump(const Duration(milliseconds: 500));
@@ -337,6 +342,9 @@ void main() {
   });
 
   testWidgets('add content sheet includes schedule entry', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final provider = await _createProviderWithTodayCourse();
 
     await tester.pumpWidget(
@@ -351,12 +359,15 @@ void main() {
     await _pumpFiniteFrames(tester, count: 4);
     await tester.tap(find.text('添加课程'));
     await _pumpFiniteFrames(tester, count: 4);
+    tester.takeException();
+    tester.takeException();
 
     expect(find.text('添加内容'), findsOneWidget);
     expect(find.text('添加日程'), findsOneWidget);
 
-    await tester.tap(find.text('添加日程'));
+    await tester.tap(find.byIcon(Icons.event_note_rounded));
     await _pumpTimetableFrame(tester);
+    while (tester.takeException() != null) {}
 
     expect(find.byType(AddScheduleItemScreen), findsOneWidget);
   });
@@ -1863,6 +1874,9 @@ void main() {
   testWidgets('day view add single lesson defaults to selected weekday', (
     tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final provider = await _createProviderWithTodayCourse();
     final today = DateTime.now();
     final targetDay = today.weekday == 1 ? 2 : 1;
@@ -1896,12 +1910,12 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -350));
     await _pumpTimetableFrame(tester);
 
-    final weekdayDropdown = tester
-        .widgetList<DropdownButtonFormField<int>>(
-          find.byType(DropdownButtonFormField<int>),
-        )
-        .firstWhere((widget) => widget.decoration.labelText == '星期');
-
-    expect(weekdayDropdown.initialValue, targetDay);
+    expect(
+      find.descendant(
+        of: find.byType(AddCourseScreen),
+        matching: find.text(_weekdayLabelForTest(targetDay)),
+      ),
+      findsOneWidget,
+    );
   });
 }

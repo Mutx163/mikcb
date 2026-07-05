@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:forui/forui.dart';
 import 'package:university_timetable/models/warehouse_macro_models.dart';
 import 'package:university_timetable/widgets/warehouse_macro_replayer.dart';
 import 'package:university_timetable/widgets/warehouse_playback_overlay.dart';
@@ -30,20 +31,25 @@ Future<void> _pumpOverlay(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      home: Scaffold(
-        body: PlaybackOverlay(
-          progress: progress ?? _progress(),
-          state: state,
-          schoolName: '测试学校',
-          adapterName: '测试教务',
-          onCancel: onCancel,
-          onContinueAfterPause: onContinueAfterPause,
-          onDismiss: onDismiss,
-          onRetry: onRetry,
+      home: FTheme(
+        data: FThemes.zinc.light.touch,
+        child: Scaffold(
+          body: PlaybackOverlay(
+            progress: progress ?? _progress(),
+            state: state,
+            schoolName: '测试学校',
+            adapterName: '测试教务',
+            onCancel: onCancel,
+            onContinueAfterPause: onContinueAfterPause,
+            onDismiss: onDismiss,
+            onRetry: onRetry,
+          ),
         ),
       ),
     ),
   );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
 }
 
 void main() {
@@ -72,6 +78,7 @@ void main() {
 
     expect(cancelled, isTrue);
     expect(continued, isTrue);
+    await tester.pump(const Duration(milliseconds: 300));
   });
 
   testWidgets('executing import state is distinct from finished', (
@@ -97,5 +104,6 @@ void main() {
     await tester.pump();
 
     expect(dismissed, isTrue);
+    await tester.pump(const Duration(milliseconds: 300));
   });
 }

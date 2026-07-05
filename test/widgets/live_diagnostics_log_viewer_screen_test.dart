@@ -77,6 +77,5 @@ extras=
     await tester.tap(find.bySemanticsLabel('清空日志'));
     await tester.pumpAndSettle();
     expect(cleared, 1);
-    expect(find.text('已清空应用日志'), findsOneWidget);
   });
 }

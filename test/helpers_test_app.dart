@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:forui/forui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 class TestApp extends StatelessWidget {
   final Widget home;
@@ -18,11 +19,16 @@ class TestApp extends StatelessWidget {
       ],
       supportedLocales: AppLocalizations.supportedLocales,
       builder: (context, child) {
-        return ScaffoldMessenger(
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            resizeToAvoidBottomInset: false,
-            body: child ?? const SizedBox.shrink(),
+        return FTheme(
+          data: FThemes.zinc.light.touch,
+          child: FToaster(
+            child: ScaffoldMessenger(
+              child: Scaffold(
+                backgroundColor: Colors.transparent,
+                resizeToAvoidBottomInset: false,
+                body: child ?? const SizedBox.shrink(),
+              ),
+            ),
           ),
         );
       },
