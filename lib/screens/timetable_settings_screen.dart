@@ -1789,6 +1789,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   bool _loadingDebugStatus = true;
   bool _exportingDiagnostics = false;
   bool _clearingDiagnostics = false;
+  bool _openingDiagnosticsViewer = false;
   Timer? _autoRefreshTimer;
   bool _refreshInFlight = false;
   bool _isAppResumed = true;
@@ -1855,26 +1856,34 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   }
 
   Future<void> _openLiveDiagnosticsViewer() async {
-    final rawLog = await _liveService.readLiveDiagnosticsText();
-    if (!mounted) return;
-    if (rawLog == null || rawLog.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            AppLocalizations.of(context)!.liveDiagnosticsUnavailable,
+    if (_openingDiagnosticsViewer) {
+      return;
+    }
+    _openingDiagnosticsViewer = true;
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => LiveDiagnosticsLogViewerScreen(
+            title: l10n.liveDiagnosticsViewerTitle,
+            loadRawLog: () async {
+              return await _liveService.readLiveDiagnosticsText() ?? '';
+            },
+            onLoadEmpty: () {
+              if (!context.mounted) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(l10n.liveDiagnosticsUnavailable)),
+              );
+              Navigator.of(context).pop();
+            },
           ),
         ),
       );
-      return;
+    } finally {
+      _openingDiagnosticsViewer = false;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: AppLocalizations.of(context)!.liveDiagnosticsViewerTitle,
-          rawLog: rawLog,
-        ),
-      ),
-    );
   }
 
   Future<void> _exportLiveDiagnostics() async {
@@ -4275,8 +4284,9 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                                   );
                                   return;
                                 }
-                                if (startDate == null || endDate == null)
+                                if (startDate == null || endDate == null) {
                                   return;
+                                }
                                 Navigator.pop(ctx, true);
                               },
                               child: Text(
@@ -4385,8 +4395,9 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
     if (holidayData != null) {
       final seenGroups = <String>{};
       for (final entry in holidayData.entries) {
-        if (entry.groupId != null && entry.groupId!.startsWith('custom-'))
+        if (entry.groupId != null && entry.groupId!.startsWith('custom-')) {
           continue;
+        }
         if (entry.groupId != null && seenGroups.add(entry.groupId!)) {
           final groupEntries = holidayData.entriesForGroup(entry.groupId!);
           final vacationEntries = groupEntries

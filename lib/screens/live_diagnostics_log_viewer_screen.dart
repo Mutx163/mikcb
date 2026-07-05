@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+
+import '../widgets/settings_section_widgets.dart';
 
 enum DiagnosticsLogViewMode { structured, raw }
 
@@ -10,6 +14,8 @@ enum DiagnosticsLogLevel { all, error, warn, info, debug, verbose }
 class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
   final String title;
   final String rawLog;
+  final Future<String> Function()? loadRawLog;
+  final VoidCallback? onLoadEmpty;
   final bool? isRecordingEnabled;
   final ValueChanged<bool>? onRecordingChanged;
   final Future<void> Function(String text)? onExport;
@@ -18,7 +24,9 @@ class LiveDiagnosticsLogViewerScreen extends StatefulWidget {
   const LiveDiagnosticsLogViewerScreen({
     super.key,
     required this.title,
-    required this.rawLog,
+    this.rawLog = '',
+    this.loadRawLog,
+    this.onLoadEmpty,
     this.isRecordingEnabled,
     this.onRecordingChanged,
     this.onExport,
@@ -35,19 +43,92 @@ class _LiveDiagnosticsLogViewerScreenState
   DiagnosticsLogViewMode _viewMode = DiagnosticsLogViewMode.structured;
   DiagnosticsLogLevel _selectedLevel = DiagnosticsLogLevel.all;
   late String _rawLog;
+  bool? _recordingEnabled;
+  bool _loading = false;
+  String? _loadError;
   bool _clearing = false;
   bool _exporting = false;
+  _DiagnosticsParsedLog? _parsedCache;
 
   @override
   void initState() {
     super.initState();
     _rawLog = widget.rawLog;
+    _recordingEnabled = widget.isRecordingEnabled;
+    if (widget.loadRawLog != null) {
+      unawaited(_loadLogs());
+    } else {
+      _refreshParsedCache();
+    }
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
+    try {
+      final loaded = await widget.loadRawLog!();
+      if (!mounted) {
+        return;
+      }
+      if (loaded.trim().isEmpty && widget.onLoadEmpty != null) {
+        widget.onLoadEmpty!();
+        return;
+      }
+      setState(() {
+        _rawLog = loaded;
+        _loading = false;
+      });
+      _refreshParsedCache();
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _loading = false;
+        _loadError = error.toString();
+      });
+    }
+  }
+
+  void _refreshParsedCache() {
+    _parsedCache = _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
+  }
+
+  _DiagnosticsParsedLog get _parsed {
+    return _parsedCache ??
+        _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final parsed = _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
+
+    return FScaffold(
+      header: FHeader.nested(
+        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
+        title: Text(widget.title),
+        suffixes: _buildHeaderActions(l10n),
+      ),
+      childPad: false,
+      child: Material(
+        type: MaterialType.transparency,
+        child: _loading
+            ? const Center(child: FProgress())
+            : _loadError != null
+            ? _buildLoadError(context, l10n)
+            : _buildBody(context, l10n),
+      ),
+    );
+  }
+
+  List<FHeaderAction> _buildHeaderActions(AppLocalizations l10n) {
+    if (_loading || _loadError != null) {
+      return const [];
+    }
+
+    final parsed = _parsed;
     final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
     final filteredRawText = _buildFilteredRawText(
       parsed,
@@ -55,162 +136,215 @@ class _LiveDiagnosticsLogViewerScreenState
       _selectedLevel,
     );
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(widget.title),
-        suffixes: [
-          FHeaderAction(
-            icon: const Icon(Icons.copy_all_rounded),
-            semanticsLabel: l10n.appLogsCopyAction,
-            onPress: () => _copyLogs(filteredRawText),
-          ),
-          FHeaderAction(
-            icon: _exporting
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.ios_share_rounded),
-            semanticsLabel: l10n.appLogsExportAction,
-            onPress: widget.onExport == null || _exporting
-                ? null
-                : () => _exportLogs(filteredRawText),
-          ),
-          FHeaderAction(
-            icon: _clearing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.delete_outline_rounded),
-            semanticsLabel: l10n.appLogsClearAction,
-            onPress: widget.onClear == null || _clearing ? null : _clearLogs,
-          ),
-        ],
+    return [
+      FHeaderAction(
+        icon: const Icon(Icons.copy_all_rounded),
+        semanticsLabel: l10n.appLogsCopyAction,
+        onPress: () => _copyLogs(filteredRawText),
       ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
+      FHeaderAction(
+        icon: _exporting
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.ios_share_rounded),
+        semanticsLabel: l10n.appLogsExportAction,
+        onPress: widget.onExport == null || _exporting
+            ? null
+            : () => _exportLogs(filteredRawText),
+      ),
+      FHeaderAction(
+        icon: _clearing
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.delete_outline_rounded),
+        semanticsLabel: l10n.appLogsClearAction,
+        onPress: widget.onClear == null || _clearing ? null : _clearLogs,
+      ),
+    ];
+  }
+
+  Widget _buildLoadError(BuildContext context, AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text(
-                l10n.diagnosticsLogIntro,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 40,
+              color: colors.destructive,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  if (widget.isRecordingEnabled != null)
-                    _RecordingToggleChip(
-                      isRecording: widget.isRecordingEnabled!,
-                      l10n: l10n,
-                      onToggle: widget.onRecordingChanged == null
-                          ? null
-                          : () => widget.onRecordingChanged!(
-                              !widget.isRecordingEnabled!,
-                            ),
-                    ),
-                  SegmentedButton<DiagnosticsLogViewMode>(
-                    segments: <ButtonSegment<DiagnosticsLogViewMode>>[
-                      ButtonSegment<DiagnosticsLogViewMode>(
-                        value: DiagnosticsLogViewMode.structured,
-                        icon: const Icon(Icons.view_agenda_outlined),
-                        label: Text(l10n.diagnosticsStructuredTab),
-                      ),
-                      ButtonSegment<DiagnosticsLogViewMode>(
-                        value: DiagnosticsLogViewMode.raw,
-                        icon: const Icon(Icons.code_rounded),
-                        label: Text(l10n.diagnosticsRawTab),
-                      ),
-                    ],
-                    selected: <DiagnosticsLogViewMode>{_viewMode},
-                    onSelectionChanged: (selection) {
-                      setState(() {
-                        _viewMode = selection.first;
-                      });
-                    },
-                  ),
-                ],
-              ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.diagnosticsEmptyTitle,
+              style: typo.lg.copyWith(fontWeight: FontWeight.w600),
+              textAlign: TextAlign.center,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    for (final level in DiagnosticsLogLevel.values) ...[
-                      _LevelFilterChip(
-                        label:
-                            '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
-                        selected: _selectedLevel == level,
-                        color: _levelColor(context, level),
-                        onSelected: () {
-                          setState(() {
-                            _selectedLevel = level;
-                          });
-                        },
-                      ),
-                      if (level != DiagnosticsLogLevel.values.last)
-                        const SizedBox(width: 8),
-                    ],
-                  ],
-                ),
-              ),
+            const SizedBox(height: 8),
+            Text(
+              _loadError!,
+              style: typo.sm.copyWith(color: colors.mutedForeground),
+              textAlign: TextAlign.center,
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.diagnosticsShowingCount(
-                      filteredEntries.length,
-                      parsed.entries.length,
-                    ),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (_viewMode == DiagnosticsLogViewMode.raw &&
-                      _selectedLevel != DiagnosticsLogLevel.all) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.diagnosticsRawFilteredHint,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: parsed.entries.isEmpty
-                  ? _buildEmptyState(context, l10n)
-                  : _viewMode == DiagnosticsLogViewMode.raw
-                  ? _buildRawView(context, l10n, parsed, filteredEntries)
-                  : _buildStructuredView(
-                      context,
-                      l10n,
-                      parsed,
-                      filteredEntries,
-                    ),
+            const SizedBox(height: 16),
+            FButton.icon(
+              onPress: _loadLogs,
+              child: const Icon(Icons.refresh_rounded),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context, AppLocalizations l10n) {
+    final parsed = _parsed;
+    final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: _buildControlsSection(context, l10n, parsed),
+        ),
+        const SizedBox(height: 8),
+        const Divider(height: 1),
+        Expanded(
+          child: parsed.entries.isEmpty
+              ? _buildEmptyState(context, l10n)
+              : _viewMode == DiagnosticsLogViewMode.raw
+              ? _buildRawView(context, l10n, parsed, filteredEntries)
+              : _buildStructuredView(context, l10n, parsed, filteredEntries),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildControlsSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    _DiagnosticsParsedLog parsed,
+  ) {
+    final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
+    final typo = context.theme.typography.body;
+
+    return SettingsSectionCard(
+      subtitle: l10n.diagnosticsLogIntro,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_recordingEnabled != null) ...[
+            FTileGroup(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SettingSwitchTile(
+                  title: Text(l10n.aboutRecordDiagnosticsTitle),
+                  subtitle: Text(
+                    _recordingEnabled!
+                        ? l10n.appLogsRecordingEnabled
+                        : l10n.appLogsRecordingDisabled,
+                  ),
+                  value: _recordingEnabled!,
+                  onChanged: widget.onRecordingChanged == null
+                      ? null
+                      : (value) {
+                          widget.onRecordingChanged!(value);
+                          setState(() {
+                            _recordingEnabled = value;
+                          });
+                        },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+          ],
+          Row(
+            children: [
+              Expanded(
+                child: FButton(
+                  variant: _viewMode == DiagnosticsLogViewMode.structured
+                      ? FButtonVariant.primary
+                      : FButtonVariant.outline,
+                  onPress: () {
+                    setState(() {
+                      _viewMode = DiagnosticsLogViewMode.structured;
+                    });
+                  },
+                  prefix: const Icon(Icons.view_agenda_outlined, size: 18),
+                  child: Text(l10n.diagnosticsStructuredTab),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FButton(
+                  variant: _viewMode == DiagnosticsLogViewMode.raw
+                      ? FButtonVariant.primary
+                      : FButtonVariant.outline,
+                  onPress: () {
+                    setState(() {
+                      _viewMode = DiagnosticsLogViewMode.raw;
+                    });
+                  },
+                  prefix: const Icon(Icons.code_rounded, size: 18),
+                  child: Text(l10n.diagnosticsRawTab),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (final level in DiagnosticsLogLevel.values) ...[
+                  _LevelFilterButton(
+                    label:
+                        '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
+                    selected: _selectedLevel == level,
+                    color: _levelColor(context, level),
+                    onPress: () {
+                      setState(() {
+                        _selectedLevel = level;
+                      });
+                    },
+                  ),
+                  if (level != DiagnosticsLogLevel.values.last)
+                    const SizedBox(width: 8),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            l10n.diagnosticsShowingCount(
+              filteredEntries.length,
+              parsed.entries.length,
+            ),
+            style: typo.xs2.copyWith(
+              color: context.theme.colors.mutedForeground,
+            ),
+          ),
+          if (_viewMode == DiagnosticsLogViewMode.raw &&
+              _selectedLevel != DiagnosticsLogLevel.all) ...[
+            const SizedBox(height: 4),
+            Text(
+              l10n.diagnosticsRawFilteredHint,
+              style: typo.xs2.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -238,6 +372,9 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -247,22 +384,18 @@ class _LiveDiagnosticsLogViewerScreenState
             Icon(
               Icons.receipt_long_outlined,
               size: 40,
-              color: Theme.of(context).colorScheme.outline,
+              color: colors.mutedForeground,
             ),
             const SizedBox(height: 12),
             Text(
               l10n.diagnosticsEmptyTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              style: typo.lg.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
               l10n.diagnosticsEmptySubtitle,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+              style: typo.sm.copyWith(color: colors.mutedForeground),
             ),
           ],
         ),
@@ -277,49 +410,52 @@ class _LiveDiagnosticsLogViewerScreenState
     List<_DiagnosticsLogEntry> filteredEntries,
   ) {
     if (filteredEntries.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.filter_alt_off_outlined,
-                size: 40,
-                color: Theme.of(context).colorScheme.outline,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.diagnosticsNoMatchingTitle,
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                l10n.diagnosticsNoMatchingSubtitle,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      return _buildNoMatchingState(context, l10n);
     }
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       children: [
         if (parsed.headerEntries.isNotEmpty)
           _DiagnosticsHeaderCard(parsed: parsed, l10n: l10n),
         if (parsed.headerEntries.isNotEmpty) const SizedBox(height: 12),
         for (var i = 0; i < filteredEntries.length; i++) ...[
           _DiagnosticsLogEntryCard(entry: filteredEntries[i], l10n: l10n),
-          if (i != filteredEntries.length - 1) const SizedBox(height: 12),
+          if (i != filteredEntries.length - 1) const SizedBox(height: 8),
         ],
       ],
+    );
+  }
+
+  Widget _buildNoMatchingState(BuildContext context, AppLocalizations l10n) {
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.filter_alt_off_outlined,
+              size: 40,
+              color: colors.mutedForeground,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              l10n.diagnosticsNoMatchingTitle,
+              style: typo.lg.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              l10n.diagnosticsNoMatchingSubtitle,
+              textAlign: TextAlign.center,
+              style: typo.sm.copyWith(color: colors.mutedForeground),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -330,7 +466,7 @@ class _LiveDiagnosticsLogViewerScreenState
     List<_DiagnosticsLogEntry> filteredEntries,
   ) {
     if (filteredEntries.isEmpty) {
-      return _buildStructuredView(context, l10n, parsed, filteredEntries);
+      return _buildNoMatchingState(context, l10n);
     }
 
     final rawText = _buildFilteredRawText(
@@ -338,13 +474,18 @@ class _LiveDiagnosticsLogViewerScreenState
       filteredEntries,
       _selectedLevel,
     );
+    final typo = context.theme.typography.body;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-      child: SelectableText(
-        rawText,
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(fontFamily: 'monospace', height: 1.45),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+      child: FCard.raw(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: SelectableText(
+            rawText,
+            style: typo.xs2.copyWith(fontFamily: 'monospace', height: 1.45),
+          ),
+        ),
       ),
     );
   }
@@ -394,6 +535,7 @@ class _LiveDiagnosticsLogViewerScreenState
       _clearing = false;
       if (cleared) {
         _rawLog = '';
+        _refreshParsedCache();
       }
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -404,90 +546,31 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 }
 
-class _RecordingToggleChip extends StatelessWidget {
-  final bool isRecording;
-  final AppLocalizations l10n;
-  final VoidCallback? onToggle;
-
-  const _RecordingToggleChip({
-    required this.isRecording,
-    required this.l10n,
-    required this.onToggle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = isRecording
-        ? Colors.green
-        : Theme.of(context).colorScheme.outline;
-    return GestureDetector(
-      onTap: onToggle,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.35)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isRecording
-                  ? Icons.fiber_manual_record_rounded
-                  : Icons.pause_circle_outline_rounded,
-              size: 16,
-              color: color,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              isRecording
-                  ? l10n.appLogsRecordingEnabled
-                  : l10n.appLogsRecordingDisabled,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LevelFilterChip extends StatelessWidget {
+class _LevelFilterButton extends StatelessWidget {
   final String label;
   final bool selected;
   final Color color;
-  final VoidCallback onSelected;
+  final VoidCallback onPress;
 
-  const _LevelFilterChip({
+  const _LevelFilterButton({
     required this.label,
     required this.selected,
     required this.color,
-    required this.onSelected,
+    required this.onPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onSelected(),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-      labelStyle: Theme.of(context).textTheme.labelMedium?.copyWith(
-        color: selected ? color : Theme.of(context).colorScheme.onSurface,
-        fontWeight: FontWeight.w700,
+    return FButton(
+      variant: selected ? FButtonVariant.secondary : FButtonVariant.outline,
+      onPress: onPress,
+      child: Text(
+        label,
+        style: TextStyle(
+          color: selected ? color : context.theme.colors.foreground,
+          fontWeight: FontWeight.w600,
+        ),
       ),
-      side: BorderSide(
-        color: selected
-            ? color.withValues(alpha: 0.35)
-            : Theme.of(context).colorScheme.outlineVariant,
-      ),
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      selectedColor: color.withValues(alpha: 0.12),
     );
   }
 }
@@ -500,31 +583,19 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.35,
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
+    return SettingsSectionCard(
+      title: parsed.title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            parsed.title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
             l10n.diagnosticsDeviceInfoTitle,
-            style: theme.textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurfaceVariant,
+            style: typo.sm.copyWith(
+              fontWeight: FontWeight.w600,
+              color: colors.mutedForeground,
             ),
           ),
           const SizedBox(height: 10),
@@ -540,11 +611,8 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: theme.colorScheme.outlineVariant,
-                      ),
+                      color: colors.secondary.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,17 +620,15 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
                       children: [
                         Text(
                           _prettyKey(item.key, l10n),
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w700,
+                          style: typo.xs2.copyWith(
+                            color: colors.mutedForeground,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 4),
                         SelectableText(
                           _inlineValue(item.value),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            height: 1.35,
-                          ),
+                          style: typo.xs2.copyWith(height: 1.35),
                         ),
                       ],
                     ),
@@ -584,25 +650,14 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final color = _levelColor(context, entry.level);
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+    final levelColor = _levelColor(context, entry.level);
     final details = entry.detailEntries.toList(growable: false);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+    return FCard.raw(
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -610,13 +665,17 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 34,
-                  height: 34,
+                  width: 32,
+                  height: 32,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    color: levelColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(_levelIcon(entry.level), color: color, size: 18),
+                  child: Icon(
+                    _levelIcon(entry.level),
+                    color: levelColor,
+                    size: 18,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -628,48 +687,21 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                         runSpacing: 8,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              _levelLabel(l10n, entry.level),
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: color,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                          FBadge(
+                            variant: FBadgeVariant.secondary,
+                            child: Text(_levelLabel(l10n, entry.level)),
                           ),
                           if (entry.isLevelInferred)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                l10n.diagnosticsLevelInferred,
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                            FBadge(
+                              variant: FBadgeVariant.outline,
+                              child: Text(l10n.diagnosticsLevelInferred),
                             ),
                           if (entry.category.isNotEmpty)
                             Text(
                               entry.category,
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontWeight: FontWeight.w700,
+                              style: typo.sm.copyWith(
+                                color: colors.mutedForeground,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                         ],
@@ -678,8 +710,8 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           entry.formattedTime!,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          style: typo.xs2.copyWith(
+                            color: colors.mutedForeground,
                           ),
                         ),
                       ],
@@ -692,7 +724,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
               const SizedBox(height: 12),
               SelectableText(
                 entry.message,
-                style: theme.textTheme.bodyMedium?.copyWith(
+                style: typo.sm.copyWith(
                   height: 1.45,
                   fontWeight: FontWeight.w600,
                 ),
@@ -701,7 +733,9 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
             if (details.isNotEmpty) ...[
               const SizedBox(height: 10),
               Theme(
-                data: theme.copyWith(dividerColor: Colors.transparent),
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: Colors.transparent),
                 child: Material(
                   color: Colors.transparent,
                   child: ExpansionTile(
@@ -709,9 +743,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                     childrenPadding: const EdgeInsets.only(top: 4),
                     title: Text(
                       l10n.diagnosticsContentTitle,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: typo.sm.copyWith(fontWeight: FontWeight.w600),
                     ),
                     children: [
                       for (var i = 0; i < details.length; i++) ...[
@@ -741,30 +773,30 @@ class _DiagnosticsDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final typo = context.theme.typography.body;
+    final colors = context.theme.colors;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(
-          alpha: 0.25,
-        ),
-        borderRadius: BorderRadius.circular(14),
+        color: colors.secondary.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
+            style: typo.xs2.copyWith(
+              color: colors.mutedForeground,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 6),
           SelectableText(
             value,
-            style: theme.textTheme.bodySmall?.copyWith(
+            style: typo.xs2.copyWith(
               fontFamily: value.contains('\n') ? 'monospace' : null,
               height: 1.45,
             ),
@@ -1049,14 +1081,14 @@ IconData _levelIcon(DiagnosticsLogLevel level) {
 }
 
 Color _levelColor(BuildContext context, DiagnosticsLogLevel level) {
-  final scheme = Theme.of(context).colorScheme;
+  final colors = context.theme.colors;
   return switch (level) {
-    DiagnosticsLogLevel.all => scheme.primary,
-    DiagnosticsLogLevel.error => scheme.error,
+    DiagnosticsLogLevel.all => colors.primary,
+    DiagnosticsLogLevel.error => colors.destructive,
     DiagnosticsLogLevel.warn => Colors.orange,
     DiagnosticsLogLevel.info => Colors.teal,
     DiagnosticsLogLevel.debug => Colors.indigo,
-    DiagnosticsLogLevel.verbose => scheme.secondary,
+    DiagnosticsLogLevel.verbose => colors.secondary,
   };
 }
 

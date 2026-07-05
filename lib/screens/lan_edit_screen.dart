@@ -230,10 +230,10 @@ class _LanEditScreenState extends State<LanEditScreen>
                       value: _lanAddress ?? l10n.lanEditAddressUnavailable,
                       trailing: _lanAddress == null
                           ? null
-                          : FButton(
+                          : FButton.icon(
                               variant: FButtonVariant.ghost,
                               onPress: _copyAddress,
-                              prefix: const Icon(Icons.copy_rounded, size: 18),
+                              child: const Icon(Icons.copy_rounded, size: 18),
                             ),
                     ),
                     _InfoRow(label: l10n.lanEditPinLabel, value: session.pin),

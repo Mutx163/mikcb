@@ -2630,6 +2630,22 @@
       }
     }
   },
+  "scheduleEntrySingleTitle": "上課安排",
+  "scheduleEntryCardSubtitle": "設定這門課在何時、哪些週、由誰在哪裡上課。",
+  "scheduleEntryTimeSectionTitle": "什麼時候上",
+  "scheduleEntryTimeSectionSubtitle": "選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同。",
+  "scheduleEntryWeeksSectionTitle": "哪些週上",
+  "scheduleEntryPeopleSectionTitle": "誰在哪裡上",
+  "scheduleEntryTimeSchemeSectionTitle": "特殊時間方案",
+  "scheduleEntryTimeSchemeSectionSubtitle": "預設跟隨目前課表；僅當本節課上下課時間與課表不同時才需要修改。",
+  "scheduleSectionNumberLabel": "{section}節",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  },
   "addScheduleEntryAction": "新增排課時段",
   "deleteScheduleEntryAction": "刪除排課",
   "holidaySettingsEntryTitle": "假日標記",

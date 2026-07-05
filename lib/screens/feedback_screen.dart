@@ -44,14 +44,14 @@ class FeedbackScreen extends StatelessWidget {
                   prefix: const Icon(Icons.bug_report_outlined),
                   title: Text(l10n.githubIssueTitle),
                   subtitle: Text(l10n.githubIssueSubtitle),
-                  suffix: FButton(
+                  suffix: FButton.icon(
                     variant: FButtonVariant.ghost,
                     onPress: () => _copyText(
                       context,
                       _issuesUrl,
                       successMessage: l10n.copiedIssueAddress,
                     ),
-                    prefix: const Icon(Icons.copy_rounded, size: 18),
+                    child: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _openUrl(_issuesUrl),
                 ),
@@ -61,14 +61,14 @@ class FeedbackScreen extends StatelessWidget {
                   subtitle: Text(
                     l10n.feedbackXiaohongshuSubtitle(_xiaohongshuId),
                   ),
-                  suffix: FButton(
+                  suffix: FButton.icon(
                     variant: FButtonVariant.ghost,
                     onPress: () => _copyText(
                       context,
                       _xiaohongshuId,
                       successMessage: l10n.copiedXiaohongshuId,
                     ),
-                    prefix: const Icon(Icons.copy_rounded, size: 18),
+                    child: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,
@@ -80,14 +80,14 @@ class FeedbackScreen extends StatelessWidget {
                   prefix: const Icon(Icons.verified_user_outlined),
                   title: Text(l10n.feedbackCoolapkTitle),
                   subtitle: Text(l10n.feedbackCoolapkSubtitle(_coolapkId)),
-                  suffix: FButton(
+                  suffix: FButton.icon(
                     variant: FButtonVariant.ghost,
                     onPress: () => _copyText(
                       context,
                       _coolapkId,
                       successMessage: l10n.copiedCoolapkId,
                     ),
-                    prefix: const Icon(Icons.copy_rounded, size: 18),
+                    child: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,
@@ -99,14 +99,14 @@ class FeedbackScreen extends StatelessWidget {
                   prefix: const Icon(Icons.groups_outlined),
                   title: Text(l10n.feedbackQqGroupTitle),
                   subtitle: Text(l10n.feedbackQqGroupSubtitle(_qqGroupId)),
-                  suffix: FButton(
+                  suffix: FButton.icon(
                     variant: FButtonVariant.ghost,
                     onPress: () => _copyText(
                       context,
                       _qqGroupId,
                       successMessage: l10n.copiedQqGroupId,
                     ),
-                    prefix: const Icon(Icons.copy_rounded, size: 18),
+                    child: const Icon(Icons.copy_rounded, size: 18),
                   ),
                   onPress: () => _copyText(
                     context,

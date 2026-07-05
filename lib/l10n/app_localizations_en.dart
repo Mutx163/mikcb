@@ -4616,6 +4616,38 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get scheduleEntrySingleTitle => 'Class schedule';
+
+  @override
+  String get scheduleEntryCardSubtitle =>
+      'Set when this course meets, which weeks it runs, and who teaches it where.';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => 'When';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      'Pick the weekday and section range. Use the same start/end section for a single period.';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => 'Which weeks';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => 'Teacher & location';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => 'Custom time scheme';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      'Follows the timetable by default. Change only if this slot uses different bell times.';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return 'P$section';
+  }
+
+  @override
   String get addScheduleEntryAction => 'Add schedule entry';
 
   @override

@@ -592,7 +592,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     ),
                     if (display.miuiIslandLabelLogoPath != null) ...[
                       const SizedBox(width: 12),
-                      FButton(
+                      FButton.icon(
                         variant: FButtonVariant.outline,
                         onPress: () async {
                           await _deleteManagedImageArtifacts(
@@ -608,7 +608,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                             clearLabelLogoPath: true,
                           );
                         },
-                        prefix: const Icon(Icons.delete_outline),
+                        child: const Icon(Icons.delete_outline),
                       ),
                     ],
                   ],
@@ -835,7 +835,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                   ),
                   if (display.miuiIslandExpandedIconPath != null) ...[
                     const SizedBox(width: 12),
-                    FButton(
+                    FButton.icon(
                       variant: FButtonVariant.outline,
                       onPress: () async {
                         await _deleteManagedImageArtifacts(
@@ -851,7 +851,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                           clearExpandedIconPath: true,
                         );
                       },
-                      prefix: const Icon(Icons.delete_outline),
+                      child: const Icon(Icons.delete_outline),
                     ),
                   ],
                 ],

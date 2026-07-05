@@ -7895,6 +7895,60 @@ abstract class AppLocalizations {
   /// **'排课记录 {index}'**
   String scheduleEntryTitle(int index);
 
+  /// No description provided for @scheduleEntrySingleTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课安排'**
+  String get scheduleEntrySingleTitle;
+
+  /// No description provided for @scheduleEntryCardSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置这门课在何时、哪些周、由谁在哪里上课。'**
+  String get scheduleEntryCardSubtitle;
+
+  /// No description provided for @scheduleEntryTimeSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'什么时候上'**
+  String get scheduleEntryTimeSectionTitle;
+
+  /// No description provided for @scheduleEntryTimeSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择星期几和第几节课；连堂请填写起止节次，单节课起止相同。'**
+  String get scheduleEntryTimeSectionSubtitle;
+
+  /// No description provided for @scheduleEntryWeeksSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'哪些周上'**
+  String get scheduleEntryWeeksSectionTitle;
+
+  /// No description provided for @scheduleEntryPeopleSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'谁在哪里上'**
+  String get scheduleEntryPeopleSectionTitle;
+
+  /// No description provided for @scheduleEntryTimeSchemeSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'特殊时间方案'**
+  String get scheduleEntryTimeSchemeSectionTitle;
+
+  /// No description provided for @scheduleEntryTimeSchemeSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改。'**
+  String get scheduleEntryTimeSchemeSectionSubtitle;
+
+  /// No description provided for @scheduleSectionNumberLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'{section}节'**
+  String scheduleSectionNumberLabel(int section);
+
   /// No description provided for @addScheduleEntryAction.
   ///
   /// In zh, this message translates to:

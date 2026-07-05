@@ -2627,6 +2627,22 @@
       }
     }
   },
+  "scheduleEntrySingleTitle": "Class schedule",
+  "scheduleEntryCardSubtitle": "Set when this course meets, which weeks it runs, and who teaches it where.",
+  "scheduleEntryTimeSectionTitle": "When",
+  "scheduleEntryTimeSectionSubtitle": "Pick the weekday and section range. Use the same start/end section for a single period.",
+  "scheduleEntryWeeksSectionTitle": "Which weeks",
+  "scheduleEntryPeopleSectionTitle": "Teacher & location",
+  "scheduleEntryTimeSchemeSectionTitle": "Custom time scheme",
+  "scheduleEntryTimeSchemeSectionSubtitle": "Follows the timetable by default. Change only if this slot uses different bell times.",
+  "scheduleSectionNumberLabel": "P{section}",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  },
   "addScheduleEntryAction": "Add schedule entry",
   "deleteScheduleEntryAction": "Delete entry",
   "holidaySettingsEntryTitle": "Holiday Marking",

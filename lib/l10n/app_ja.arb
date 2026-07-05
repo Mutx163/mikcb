@@ -2626,6 +2626,22 @@
       }
     }
   },
+  "scheduleEntrySingleTitle": "授業スケジュール",
+  "scheduleEntryCardSubtitle": "この授業の曜日・時限・週次・教員・教室を設定します。",
+  "scheduleEntryTimeSectionTitle": "いつ",
+  "scheduleEntryTimeSectionSubtitle": "曜日と時限を選びます。連続時限は開始と終了を、単時限は同じ番号にします。",
+  "scheduleEntryWeeksSectionTitle": "どの週",
+  "scheduleEntryPeopleSectionTitle": "教員と教室",
+  "scheduleEntryTimeSchemeSectionTitle": "特別な時間割",
+  "scheduleEntryTimeSchemeSectionSubtitle": "既定は時間割に従います。ベル時刻が異なる場合のみ変更してください。",
+  "scheduleSectionNumberLabel": "{section}時限",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  },
   "addScheduleEntryAction": "排課時間を追加",
   "deleteScheduleEntryAction": "排課を削除",
   "holidaySettingsEntryTitle": "休日マーク",

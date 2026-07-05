@@ -2180,7 +2180,7 @@
   },
   "noChangesDetected": "未檢測到变更",
   "rescheduleCurrentOccurrenceTitle": "調本周這節課",
-  "rescheduleCurrentOccurrenceSubtitle": "只調整第 {week} 周這一節，原課程在這一周会自動移除，其他周保持不变。",
+  "rescheduleCurrentOccurrenceSubtitle": "僅改第 {week} 週本節，原課該週移除，其他週不變。",
   "@rescheduleCurrentOccurrenceSubtitle": {
     "placeholders": {
       "week": {
@@ -2626,6 +2626,22 @@
   "@scheduleEntryTitle": {
     "placeholders": {
       "index": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleEntrySingleTitle": "上課安排",
+  "scheduleEntryCardSubtitle": "設定這門課在何時、哪些週、由誰在哪裡上課。",
+  "scheduleEntryTimeSectionTitle": "什麼時候上",
+  "scheduleEntryTimeSectionSubtitle": "選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同。",
+  "scheduleEntryWeeksSectionTitle": "哪些週上",
+  "scheduleEntryPeopleSectionTitle": "誰在哪裡上",
+  "scheduleEntryTimeSchemeSectionTitle": "特殊時間方案",
+  "scheduleEntryTimeSchemeSectionSubtitle": "預設跟隨當前課表；僅當本節課上下課時間與課表不同時才需要修改。",
+  "scheduleSectionNumberLabel": "{section}節",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
         "type": "int"
       }
     }

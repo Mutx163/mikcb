@@ -2184,7 +2184,7 @@
   },
   "noChangesDetected": "未检测到变更",
   "rescheduleCurrentOccurrenceTitle": "调本周这节课",
-  "rescheduleCurrentOccurrenceSubtitle": "只调整第 {week} 周这一节，原课程在这一周会自动移除，其他周保持不变。",
+  "rescheduleCurrentOccurrenceSubtitle": "仅改第 {week} 周本节，原课该周移除，其他周不变。",
   "@rescheduleCurrentOccurrenceSubtitle": {
     "placeholders": {
       "week": {
@@ -2623,6 +2623,22 @@
   "@scheduleEntryTitle": {
     "placeholders": {
       "index": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduleEntrySingleTitle": "上课安排",
+  "scheduleEntryCardSubtitle": "设置这门课在何时、哪些周、由谁在哪里上课。",
+  "scheduleEntryTimeSectionTitle": "什么时候上",
+  "scheduleEntryTimeSectionSubtitle": "选择星期几和第几节课；连堂请填写起止节次，单节课起止相同。",
+  "scheduleEntryWeeksSectionTitle": "哪些周上",
+  "scheduleEntryPeopleSectionTitle": "谁在哪里上",
+  "scheduleEntryTimeSchemeSectionTitle": "特殊时间方案",
+  "scheduleEntryTimeSchemeSectionSubtitle": "默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改。",
+  "scheduleSectionNumberLabel": "{section}节",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
         "type": "int"
       }
     }

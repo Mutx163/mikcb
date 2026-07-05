@@ -4454,6 +4454,38 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get scheduleEntrySingleTitle => '수업 일정';
+
+  @override
+  String get scheduleEntryCardSubtitle =>
+      '이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다.';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => '언제';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      '요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다.';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => '어떤 주';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => '교수와 강의실';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => '별도 시간표';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      '기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요.';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return '$section교시';
+  }
+
+  @override
   String get addScheduleEntryAction => '배치 시간 추가';
 
   @override

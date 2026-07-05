@@ -2626,6 +2626,22 @@
       }
     }
   },
+  "scheduleEntrySingleTitle": "수업 일정",
+  "scheduleEntryCardSubtitle": "이 수업이 언제, 어떤 주에, 누가 어디에서 진행되는지 설정합니다.",
+  "scheduleEntryTimeSectionTitle": "언제",
+  "scheduleEntryTimeSectionSubtitle": "요일과 교시를 선택하세요. 연강은 시작·종료 교시를, 단일 교시는 같은 번호로 맞춥니다.",
+  "scheduleEntryWeeksSectionTitle": "어떤 주",
+  "scheduleEntryPeopleSectionTitle": "교수와 강의실",
+  "scheduleEntryTimeSchemeSectionTitle": "별도 시간표",
+  "scheduleEntryTimeSchemeSectionSubtitle": "기본값은 현재 시간표를 따릅니다. 이 수업만 종 다른 시간이면 변경하세요.",
+  "scheduleSectionNumberLabel": "{section}교시",
+  "@scheduleSectionNumberLabel": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      }
+    }
+  },
   "addScheduleEntryAction": "배치 시간 추가",
   "deleteScheduleEntryAction": "배치 삭제",
   "holidaySettingsEntryTitle": "공휴일 표시",

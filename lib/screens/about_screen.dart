@@ -24,6 +24,7 @@ import '../services/app_update_service.dart';
 import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
+import '../widgets/about_info_sheet.dart';
 import '../widgets/bundled_asset_image.dart';
 import '../widgets/settings_section_widgets.dart';
 import '../services/warehouse_repository_service.dart';
@@ -102,6 +103,7 @@ class AboutScreen extends StatefulWidget {
 
 class _AboutScreenState extends State<AboutScreen> {
   PackageInfo? _packageInfo;
+  bool _openingAppLogs = false;
 
   @override
   void initState() {
@@ -178,9 +180,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     const SizedBox(height: 16),
                     Text(
                       l10n.timetableAppName,
-                      style: context.theme.typography.body.lg.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: context.theme.typography.body.lg,
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -266,11 +266,12 @@ class _AboutScreenState extends State<AboutScreen> {
                     _showInfoSheet(
                       context,
                       title: l10n.aboutPositioningTitle,
-                      children: [
-                        _AboutBullet(text: l10n.aboutPositioningBullet1),
-                        _AboutBullet(text: l10n.aboutPositioningBullet2),
-                        _AboutBullet(text: l10n.aboutPositioningBullet3),
-                        _AboutBullet(text: l10n.aboutPositioningBullet4),
+                      subtitle: l10n.aboutPositioningSubtitle,
+                      items: [
+                        l10n.aboutPositioningBullet1,
+                        l10n.aboutPositioningBullet2,
+                        l10n.aboutPositioningBullet3,
+                        l10n.aboutPositioningBullet4,
                       ],
                     );
                   },
@@ -284,11 +285,12 @@ class _AboutScreenState extends State<AboutScreen> {
                     _showInfoSheet(
                       context,
                       title: l10n.aboutImportMigrationTitle,
-                      children: [
-                        _AboutBullet(text: l10n.aboutImportMigrationBullet1),
-                        _AboutBullet(text: l10n.aboutImportMigrationBullet2),
-                        _AboutBullet(text: l10n.aboutImportMigrationBullet3),
-                        _AboutBullet(text: l10n.aboutImportMigrationBullet4),
+                      subtitle: l10n.aboutImportMigrationSubtitle,
+                      items: [
+                        l10n.aboutImportMigrationBullet1,
+                        l10n.aboutImportMigrationBullet2,
+                        l10n.aboutImportMigrationBullet3,
+                        l10n.aboutImportMigrationBullet4,
                       ],
                     );
                   },
@@ -316,7 +318,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   subtitle: Text(l10n.aboutRepositorySubtitle),
                   suffix: const Icon(Icons.chevron_right_rounded),
                   onPress: () {
-                    _showRepositorySheet(context, theme);
+                    _showRepositorySheet(context);
                   },
                 ),
                 FTile(
@@ -337,42 +339,27 @@ class _AboutScreenState extends State<AboutScreen> {
   void _showInfoSheet(
     BuildContext context, {
     required String title,
-    required List<Widget> children,
+    String? subtitle,
+    required List<String> items,
   }) {
-    showModalBottomSheet<void>(
+    showFSheet<void>(
       context: context,
-      showDragHandle: true,
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 16),
-                ...children,
-              ],
-            ),
-          ),
-        );
-      },
+      side: FLayout.btt,
+      useSafeArea: true,
+      draggable: true,
+      builder: (sheetContext) =>
+          AboutInfoSheetBody(title: title, subtitle: subtitle, items: items),
     );
   }
 
-  void _showRepositorySheet(BuildContext context, ThemeData theme) {
+  void _showRepositorySheet(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (context) {
-        final colorScheme = theme.colorScheme;
+        final typo = context.theme.typography.body;
+        final colors = context.theme.colors;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -380,59 +367,43 @@ class _AboutScreenState extends State<AboutScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  l10n.aboutRepositorySheetTitle,
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
+                Text(l10n.aboutRepositorySheetTitle, style: typo.lg),
                 const SizedBox(height: 12),
                 Text(
                   AppUpdateService.repositoryUrl,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                  style: typo.sm.copyWith(color: colors.mutedForeground),
                 ),
                 const SizedBox(height: 12),
-                Text(
-                  l10n.aboutRepositorySheetHint,
-                  style: theme.textTheme.bodyMedium,
-                ),
+                Text(l10n.aboutRepositorySheetHint, style: typo.sm),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: _openRepository,
-                        icon: const Icon(Icons.open_in_new_rounded),
-                        label: Text(l10n.aboutOpenGitHubAction),
-                      ),
-                    ),
-                  ],
+                SizedBox(
+                  width: double.infinity,
+                  child: FButton(
+                    variant: FButtonVariant.primary,
+                    onPress: _openRepository,
+                    prefix: const Icon(Icons.open_in_new_rounded),
+                    child: Text(l10n.aboutOpenGitHubAction),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: _openWarehouseRepository,
-                        icon: const Icon(Icons.hub_rounded),
-                        label: Text(l10n.aboutOpenWarehouseRepoAction),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: FButton(
+                    variant: FButtonVariant.secondary,
+                    onPress: _openWarehouseRepository,
+                    prefix: const Icon(Icons.hub_rounded),
+                    child: Text(l10n.aboutOpenWarehouseRepoAction),
+                  ),
                 ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.tonalIcon(
-                        onPressed: _copyRepositoryUrl,
-                        icon: const Icon(Icons.copy_all_rounded),
-                        label: Text(l10n.copyAddress),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: FButton(
+                    variant: FButtonVariant.outline,
+                    onPress: _copyRepositoryUrl,
+                    prefix: const Icon(Icons.copy_all_rounded),
+                    child: Text(l10n.copyAddress),
+                  ),
                 ),
               ],
             ),
@@ -443,46 +414,56 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _openAppLogsPage() async {
-    final settings = context.read<TimetableProvider>().settings;
-    final l10n = AppLocalizations.of(context)!;
-    final nativeRawLog = await MiuiLiveActivitiesService()
-        .readLiveDiagnosticsText();
-    final rawLog = await AppLogService.instance.readMergedLogsText(
-      nativeRawLog: nativeRawLog,
-    );
-    if (!mounted) {
+    if (_openingAppLogs) {
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: AppLocalizations.of(context)!.aboutAppLogsTitle,
-          rawLog: rawLog,
-          isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-          onRecordingChanged: (value) =>
-              _updateLiveDiagnosticsPreference(value),
-          onExport: (text) async {
-            final path = await AppLogService.instance.exportMergedLogsFile(
-              nativeRawLog: nativeRawLog,
-            );
-            if (path == null || path.isEmpty) {
-              return;
-            }
-            await Share.shareXFiles(
-              [XFile(path)],
-              text: l10n.appLogsShareText,
-              subject: l10n.appLogsShareSubject,
-            );
-          },
-          onClear: () async {
-            final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-            final clearedNativeLogs = await MiuiLiveActivitiesService()
-                .clearLiveDiagnostics();
-            return clearedAppLogs || clearedNativeLogs;
-          },
+    _openingAppLogs = true;
+    final settings = context.read<TimetableProvider>().settings;
+    final l10n = AppLocalizations.of(context)!;
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          settings: const RouteSettings(name: '/about/app-logs'),
+          builder: (_) => LiveDiagnosticsLogViewerScreen(
+            title: l10n.aboutAppLogsTitle,
+            loadRawLog: () async {
+              final nativeRawLog = await MiuiLiveActivitiesService()
+                  .readLiveDiagnosticsText();
+              return AppLogService.instance.readMergedLogsText(
+                nativeRawLog: nativeRawLog,
+              );
+            },
+            isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+            onRecordingChanged: (value) =>
+                _updateLiveDiagnosticsPreference(value),
+            onExport: (text) async {
+              final nativeRawLog = await MiuiLiveActivitiesService()
+                  .readLiveDiagnosticsText();
+              final path = await AppLogService.instance.exportMergedLogsFile(
+                nativeRawLog: nativeRawLog,
+              );
+              if (path == null || path.isEmpty) {
+                return;
+              }
+              await Share.shareXFiles(
+                [XFile(path)],
+                text: l10n.appLogsShareText,
+                subject: l10n.appLogsShareSubject,
+              );
+            },
+            onClear: () async {
+              final clearedAppLogs = await AppLogService.instance
+                  .clearAppLogs();
+              final clearedNativeLogs = await MiuiLiveActivitiesService()
+                  .clearLiveDiagnostics();
+              return clearedAppLogs || clearedNativeLogs;
+            },
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _openingAppLogs = false;
+    }
   }
 
   Future<void> _updateLiveDiagnosticsPreference(bool value) async {
@@ -530,7 +511,7 @@ class _AboutScreenState extends State<AboutScreen> {
         children: [
           Text(label, style: typo.xs2.copyWith(color: colors.mutedForeground)),
           const SizedBox(height: 2),
-          Text(value, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
+          Text(value, style: typo.sm),
         ],
       ),
     );
@@ -585,6 +566,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   bool _isCancellingDownload = false;
   bool _isProbingMirrors = false;
   bool _useSystemDownloader = false;
+  bool _openingDiagnosticsViewer = false;
   int _downloadedBytes = 0;
   int? _downloadTotalBytes;
   AppUpdateDownloadController? _downloadController;
@@ -629,7 +611,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       child: Material(
         type: MaterialType.transparency,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          padding: const EdgeInsets.all(16),
           child: Column(
             children: [Expanded(child: _buildUpdateCard(theme, settings))],
           ),
@@ -922,18 +904,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerLow,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ReleaseNotesMarkdown(
-                data: result.latestRelease!.body.trim(),
-                onTapLink: _openUrl,
-                plainTypography: true,
-              ),
+            ReleaseNotesMarkdown(
+              data: result.latestRelease!.body.trim(),
+              onTapLink: _openUrl,
+              plainTypography: true,
             ),
           ],
         ),
@@ -1066,27 +1040,33 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 
   Future<void> _openLiveDiagnosticsViewer() async {
-    final settings = context.read<TimetableProvider>().settings;
-    final nativeRawLog = await MiuiLiveActivitiesService()
-        .readLiveDiagnosticsText();
-    final rawLog = await AppLogService.instance.readMergedLogsText(
-      nativeRawLog: nativeRawLog,
-    );
-    if (!mounted) {
+    if (_openingDiagnosticsViewer) {
       return;
     }
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LiveDiagnosticsLogViewerScreen(
-          title: AppLocalizations.of(context)!.aboutAppLogsTitle,
-          rawLog: rawLog,
-          isRecordingEnabled: settings.liveEnableLocalDiagnostics,
-          onRecordingChanged: _updateLiveDiagnosticsPreference,
-          onExport: _exportLiveDiagnostics,
-          onClear: _clearLiveDiagnostics,
+    _openingDiagnosticsViewer = true;
+    final settings = context.read<TimetableProvider>().settings;
+    try {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => LiveDiagnosticsLogViewerScreen(
+            title: AppLocalizations.of(context)!.aboutAppLogsTitle,
+            loadRawLog: () async {
+              final nativeRawLog = await MiuiLiveActivitiesService()
+                  .readLiveDiagnosticsText();
+              return AppLogService.instance.readMergedLogsText(
+                nativeRawLog: nativeRawLog,
+              );
+            },
+            isRecordingEnabled: settings.liveEnableLocalDiagnostics,
+            onRecordingChanged: _updateLiveDiagnosticsPreference,
+            onExport: _exportLiveDiagnostics,
+            onClear: _clearLiveDiagnostics,
+          ),
         ),
-      ),
-    );
+      );
+    } finally {
+      _openingDiagnosticsViewer = false;
+    }
   }
 
   Future<void> _exportLiveDiagnostics([String? _]) async {
@@ -1938,7 +1918,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
             final originalDownloadUrl = release?.downloadUrl;
 
             return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              padding: const EdgeInsets.all(16),
               children: [
                 _buildDownloadChannelGroup(theme, settings),
                 const SizedBox(height: 12),
@@ -1968,7 +1948,6 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                   ),
                   const SizedBox(height: 12),
                   SettingsSectionCard(
-                    plainTitle: true,
                     child: Wrap(
                       spacing: 12,
                       runSpacing: 12,
@@ -2027,81 +2006,58 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
     );
-    return SettingsSectionCard(
-      title: '下载渠道',
-      subtitle: '蒲公英国内高速下载，GitHub 支持镜像加速',
-      plainTitle: true,
-      child: FTileGroup(
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          FTile(
-            title: const Text('蒲公英下载'),
-            suffix: downloadChannel == AppUpdateDownloadChannel.pgyer
-                ? Icon(
-                    Icons.check_rounded,
-                    color: colorScheme.primary,
-                    size: 20,
-                  )
-                : null,
-            onPress: () =>
-                _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
-          ),
-          FTile(
-            title: const Text('GitHub 下载'),
-            suffix: downloadChannel == AppUpdateDownloadChannel.github
-                ? Icon(
-                    Icons.check_rounded,
-                    color: colorScheme.primary,
-                    size: 20,
-                  )
-                : null,
-            onPress: () =>
-                _updateDownloadChannel(AppUpdateDownloadChannel.github),
-          ),
-        ],
-      ),
+    return FTileGroup(
+      label: const Text('下载渠道'),
+      description: const Text('蒲公英国内高速下载，GitHub 支持镜像加速'),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        FTile(
+          title: const Text('蒲公英下载'),
+          suffix: downloadChannel == AppUpdateDownloadChannel.pgyer
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () => _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
+        ),
+        FTile(
+          title: const Text('GitHub 下载'),
+          suffix: downloadChannel == AppUpdateDownloadChannel.github
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () =>
+              _updateDownloadChannel(AppUpdateDownloadChannel.github),
+        ),
+      ],
     );
   }
 
   Widget _buildDownloadMethodGroup(ThemeData theme) {
     final colorScheme = theme.colorScheme;
-    return SettingsSectionCard(
-      title: '下载安装包方式',
-      subtitle: '选择应用内直接下载或系统下载管理器',
-      plainTitle: true,
-      child: FTileGroup(
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          FTile(
-            title: const Text('应用内下载'),
-            suffix: !_useSystemDownloader
-                ? Icon(
-                    Icons.check_rounded,
-                    color: colorScheme.primary,
-                    size: 20,
-                  )
-                : null,
-            onPress: () {
-              setState(() => _useSystemDownloader = false);
-              widget.onUseSystemDownloaderChanged(false);
-            },
-          ),
-          FTile(
-            title: const Text('系统管理器'),
-            suffix: _useSystemDownloader
-                ? Icon(
-                    Icons.check_rounded,
-                    color: colorScheme.primary,
-                    size: 20,
-                  )
-                : null,
-            onPress: () {
-              setState(() => _useSystemDownloader = true);
-              widget.onUseSystemDownloaderChanged(true);
-            },
-          ),
-        ],
-      ),
+    return FTileGroup(
+      label: const Text('下载安装包方式'),
+      description: const Text('选择应用内直接下载或系统下载管理器'),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        FTile(
+          title: const Text('应用内下载'),
+          suffix: !_useSystemDownloader
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () {
+            setState(() => _useSystemDownloader = false);
+            widget.onUseSystemDownloaderChanged(false);
+          },
+        ),
+        FTile(
+          title: const Text('系统管理器'),
+          suffix: _useSystemDownloader
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () {
+            setState(() => _useSystemDownloader = true);
+            widget.onUseSystemDownloaderChanged(true);
+          },
+        ),
+      ],
     );
   }
 
@@ -2112,23 +2068,21 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     required AppUpdateMirrorPreset? recommendedPreset,
   }) {
     final l10n = AppLocalizations.of(context)!;
-    return SettingsSectionCard(
-      title: l10n.aboutMirrorSectionTitle,
-      plainTitle: true,
-      child: FTileGroup(
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          for (final preset in AppUpdateMirrorPreset.values)
-            _buildMirrorPresetTile(
-              theme,
-              preset: preset,
-              currentPreset: mirrorPreset,
-              recommendedPreset: recommendedPreset,
-              settings: settings,
-              onTap: () => _handleMirrorPresetTap(preset, settings),
-            ),
-        ],
-      ),
+    return FTileGroup(
+      label: Text(l10n.aboutMirrorSectionTitle),
+      description: Text(l10n.aboutMirrorSectionMirrorHint),
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        for (final preset in AppUpdateMirrorPreset.values)
+          _buildMirrorPresetTile(
+            theme,
+            preset: preset,
+            currentPreset: mirrorPreset,
+            recommendedPreset: recommendedPreset,
+            settings: settings,
+            onTap: () => _handleMirrorPresetTap(preset, settings),
+          ),
+      ],
     );
   }
 
@@ -2635,6 +2589,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
           children: [
             SettingsSectionCard(
               title: l10n.aboutDevelopersTitle,
+              plainTitle: true,
               child: _ContributorRow(
                 name: 'Mutx163',
                 subtitle: l10n.aboutDeveloperMaintainerSubtitle,
@@ -2644,6 +2599,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
             SettingsSectionCard(
               title: l10n.aboutWarehouseMaintainersTitle,
               subtitle: l10n.aboutWarehouseMaintainersIntro,
+              plainTitle: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -2665,18 +2621,20 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
                       style: typo.sm.copyWith(color: colors.mutedForeground),
                     )
                   else
-                    ..._maintainers.map(
-                      (group) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _ContributorRow(
+                    ..._maintainers.asMap().entries.expand((entry) {
+                      final index = entry.key;
+                      final group = entry.value;
+                      return [
+                        if (index > 0) const Divider(height: 24),
+                        _ContributorRow(
                           name: group.name,
                           subtitle: l10n.aboutWarehouseMaintainerCount(
                             group.adapterLabels.length,
                           ),
                           details: group.adapterLabels,
                         ),
-                      ),
-                    ),
+                      ];
+                    }),
                 ],
               ),
             ),
@@ -2684,6 +2642,7 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
             SettingsSectionCard(
               title: l10n.aboutParticipateWarehouseTitle,
               subtitle: l10n.aboutParticipateWarehouseSubtitle,
+              plainTitle: true,
               child: Wrap(
                 spacing: 10,
                 runSpacing: 10,
@@ -2759,65 +2718,22 @@ class _ContributorRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colors.secondary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(name, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: typo.xs2.copyWith(color: colors.mutedForeground),
-          ),
-          if (details.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            ...details.map(
-              (detail) => Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text('• $detail', style: typo.xs2),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _AboutBullet extends StatelessWidget {
-  final String text;
-
-  const _AboutBullet({required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(
-                color: colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(name, style: typo.sm),
+        const SizedBox(height: 4),
+        Text(subtitle, style: typo.xs2.copyWith(color: colors.mutedForeground)),
+        if (details.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          ...details.map(
+            (detail) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('• $detail', style: typo.xs2),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text)),
         ],
-      ),
+      ],
     );
   }
 }

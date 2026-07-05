@@ -362,8 +362,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
+        return ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) {
             final filtered = controller.text.isEmpty
                 ? suggestions
                 : suggestions
@@ -388,24 +389,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextField(
-                    controller: controller,
-                    decoration: InputDecoration(
-                      hintText: l10n.manualInputLabel,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.search),
-                      suffixIcon: controller.text.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                controller.clear();
-                                setSheetState(() {});
-                              },
-                            )
-                          : null,
-                    ),
-                    onChanged: (_) => setSheetState(() {}),
-                    onSubmitted: (_) {
+                  FTextField(
+                    control: FTextFieldControl.managed(controller: controller),
+                    hint: l10n.manualInputLabel,
+                    prefixBuilder: (context, style, variants) =>
+                        const Icon(Icons.search),
+                    suffixBuilder: controller.text.isNotEmpty
+                        ? (context, style, variants) => IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: controller.clear,
+                          )
+                        : null,
+                    onSubmit: (_) {
                       confirmed = true;
                       onEntrySync?.call();
                       Navigator.pop(sheetContext);
@@ -712,21 +707,59 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   // Group editing UI
   // ---------------------------------------------------------------------------
 
+  List<Widget> _withSpacing(List<Widget> children, {double spacing = 16}) {
+    final spaced = <Widget>[];
+    for (var index = 0; index < children.length; index++) {
+      if (index > 0) {
+        spaced.add(SizedBox(height: spacing));
+      }
+      spaced.add(children[index]);
+    }
+    return spaced;
+  }
+
+  Widget _buildPickerTile({
+    required String label,
+    required String value,
+    required IconData icon,
+    required VoidCallback onPress,
+    bool isPlaceholder = false,
+  }) {
+    final theme = context.theme;
+    return FTile(
+      prefix: Icon(icon),
+      title: Text(label),
+      details: Text(
+        value,
+        style: theme.typography.body.sm.copyWith(
+          fontWeight: isPlaceholder ? FontWeight.normal : FontWeight.w600,
+          color: isPlaceholder ? theme.colors.mutedForeground : null,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      suffix: Icon(
+        Icons.chevron_right_rounded,
+        color: theme.colors.mutedForeground,
+      ),
+      onPress: onPress,
+    );
+  }
+
   Widget _buildGroupEditingBody(
     TimetableProvider provider,
     TimetableSettings settings,
   ) {
     final l10n = AppLocalizations.of(context)!;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+      padding: const EdgeInsets.all(16),
       children: [
         _buildGroupSharedInfoSection(provider, l10n),
-        const SizedBox(height: 6),
-        for (var i = 0; i < _scheduleEntries.length; i++) ...[
-          _buildScheduleEntryCard(provider, settings, i, l10n),
-          if (i < _scheduleEntries.length - 1) const SizedBox(height: 4),
-        ],
-        _buildAddScheduleEntryButton(l10n),
+        const SizedBox(height: 12),
+        _buildGroupColorSection(l10n),
+        const SizedBox(height: 12),
+        _buildScheduleEntriesSection(provider, settings, l10n),
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -737,157 +770,169 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     return SettingsSectionCard(
       title: l10n.sharedInfoTitle,
+      subtitle: l10n.sharedInfoHint,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: _nameController,
-            style: const TextStyle(fontSize: 13),
-            decoration: InputDecoration(
-              labelText: l10n.courseNameLabel,
-              helperText: l10n.courseNameHelper,
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.book_outlined, size: 18),
-              suffixIcon: widget.course == null
-                  ? IconButton(
-                      tooltip: l10n.reuseExistingCourseLabel,
-                      icon: const Icon(Icons.auto_awesome_motion_rounded),
-                      onPressed: () => _showCourseTemplateSheet(provider),
-                    )
-                  : null,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              isDense: true,
-            ),
+        children: _withSpacing([
+          FTextFormField(
+            control: FTextFieldControl.managed(controller: _nameController),
+            label: Text(l10n.courseNameLabel),
+            description: Text(l10n.courseNameHelper),
+            textInputAction: TextInputAction.next,
             validator: (value) {
-              if (value == null || value.isEmpty) {
+              if (value == null || value.trim().isEmpty) {
                 return l10n.pleaseEnterCourseName;
               }
               return null;
             },
+            suffixBuilder: widget.course == null
+                ? (context, style, variants) => IconButton(
+                    tooltip: l10n.reuseExistingCourseLabel,
+                    icon: const Icon(Icons.auto_awesome_motion_rounded),
+                    onPressed: () => _showCourseTemplateSheet(provider),
+                  )
+                : null,
           ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _shortNameController,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: InputDecoration(
-                    labelText: l10n.courseShortNameOptional,
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.short_text_rounded, size: 18),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    isDense: true,
-                  ),
-                ),
+          _buildResponsiveFieldPair(
+            leading: FTextFormField(
+              control: FTextFieldControl.managed(
+                controller: _shortNameController,
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FSelect<CourseNature>(
-                  hint: l10n.courseNatureLabel,
-                  items: {
-                    for (final item in CourseNature.values) item.label: item,
-                  },
-                  control: FSelectControl.lifted(
-                    value: _courseNature,
-                    onChange: (value) {
-                      if (value == null) return;
-                      setState(() => _courseNature = value);
-                    },
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: _descriptionController,
-            style: const TextStyle(fontSize: 13),
-            decoration: InputDecoration(
-              labelText: l10n.courseDescriptionOptional,
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.notes_rounded, size: 18),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
-              isDense: true,
+              label: Text(l10n.courseShortNameOptional),
+              textInputAction: TextInputAction.next,
             ),
-            maxLines: null,
+            trailing: FSelect<CourseNature>(
+              hint: l10n.courseNatureLabel,
+              items: {for (final item in CourseNature.values) item.label: item},
+              control: FSelectControl.lifted(
+                value: _courseNature,
+                onChange: (value) {
+                  if (value == null) return;
+                  setState(() => _courseNature = value);
+                },
+              ),
+            ),
           ),
-          const SizedBox(height: 10),
-          _buildGroupColorPicker(l10n),
+          FTextFormField.multiline(
+            control: FTextFieldControl.managed(
+              controller: _descriptionController,
+            ),
+            label: Text(l10n.courseDescriptionOptional),
+            minLines: 2,
+            maxLines: 4,
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildGroupColorSection(AppLocalizations l10n) {
+    return SettingsSectionCard(
+      title: l10n.courseColorTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildColorPalette(),
+          const SizedBox(height: 12),
+          FButton(
+            variant: FButtonVariant.secondary,
+            onPress: _showCustomColorPicker,
+            prefix: const Icon(Icons.palette_outlined, size: 18),
+            child: Text(l10n.customPaletteAction),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildGroupColorPicker(AppLocalizations l10n) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.courseColorTitle,
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _colors.map((color) {
-            final isSelected = color == _selectedColor;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedColor = color),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: _parseColor(color),
-                  borderRadius: BorderRadius.circular(8),
-                  border: isSelected
-                      ? Border.all(color: Colors.black, width: 3)
-                      : null,
-                ),
-                child: isSelected
-                    ? const Icon(Icons.check, color: Colors.white, size: 20)
-                    : null,
-              ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 8),
-        FButton(
-          onPress: _showCustomColorPicker,
-          prefix: const Icon(Icons.palette_outlined, size: 18),
-          child: Text(l10n.customPaletteAction),
-        ),
-      ],
+  Widget _buildColorPalette() {
+    final selectionBorder = context.theme.colors.foreground;
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: _colors.map((color) {
+        final isSelected = color == _selectedColor;
+        return GestureDetector(
+          onTap: () => setState(() => _selectedColor = color),
+          child: Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: _parseColor(color),
+              borderRadius: BorderRadius.circular(8),
+              border: isSelected
+                  ? Border.all(color: selectionBorder, width: 3)
+                  : null,
+            ),
+            child: isSelected
+                ? const Icon(Icons.check, color: Colors.white)
+                : null,
+          ),
+        );
+      }).toList(),
     );
   }
 
-  // Shared compact input decoration for schedule entry fields.
-  InputDecoration _compactInputDecoration({
-    required String labelText,
-    IconData? prefixIcon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: labelText,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      isDense: true,
-      prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 18) : null,
-      suffixIcon: suffixIcon,
+  ({String startTime, String endTime}) _resolveEntrySectionTimes(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    _ScheduleEntryData entry,
+  ) {
+    final scheme = _resolveEntryTimeScheme(provider, entry);
+    if (scheme != null &&
+        entry.startSection >= 1 &&
+        entry.endSection <= scheme.sections.length) {
+      return (
+        startTime: scheme.sections[entry.startSection - 1].startTime,
+        endTime: scheme.sections[entry.endSection - 1].endTime,
+      );
+    }
+    return (
+      startTime: settings.sectionAt(entry.startSection).startTime,
+      endTime: settings.sectionAt(entry.endSection).endTime,
     );
   }
 
-  Widget _buildScheduleEntryCard(
+  Map<String, int> _sectionSelectItems(
+    Iterable<int> sectionNumbers,
+    AppLocalizations l10n,
+  ) {
+    return {
+      for (final section in sectionNumbers)
+        l10n.scheduleSectionNumberLabel(section): section,
+    };
+  }
+
+  Widget _buildScheduleEntriesSection(
+    TimetableProvider provider,
+    TimetableSettings settings,
+    AppLocalizations l10n,
+  ) {
+    final hasMultipleEntries = _scheduleEntries.length > 1;
+    return SettingsSectionCard(
+      title: hasMultipleEntries
+          ? l10n.scheduleEntryTitle(1).replaceFirst(RegExp(r'\s?1$'), '')
+          : l10n.scheduleEntrySingleTitle,
+      subtitle: l10n.scheduleEntryCardSubtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < _scheduleEntries.length; i++) ...[
+            if (i > 0) ...[
+              const SizedBox(height: 8),
+              Divider(height: 1, color: context.theme.colors.border),
+              const SizedBox(height: 8),
+            ],
+            _buildScheduleEntryFields(provider, settings, i, l10n),
+          ],
+          if (_scheduleEntries.isNotEmpty) const SizedBox(height: 8),
+          _buildAddScheduleEntryButton(l10n),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildScheduleEntryFields(
     TimetableProvider provider,
     TimetableSettings settings,
     int index,
@@ -897,193 +942,328 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final weekDays = _weekdayLabels(l10n);
     final sectionNumbers = List.generate(settings.sectionCount, (i) => i + 1);
     final availableWeeks = settings.availableWeeks;
+    final teacherText = _entryTeacherControllers[index].text;
+    final locationText = _entryLocationControllers[index].text;
+    final hasMultipleEntries = _scheduleEntries.length > 1;
+    final entrySelectedWeeks =
+        entry.weekSelectionMode == _WeekSelectionMode.range
+        ? _buildEntryWeeksFromRange(entry)
+        : (entry.selectedCustomWeeks.toList()..sort());
+    final entryWeekSummary = _selectedWeeksSummaryText(
+      entrySelectedWeeks,
+      availableWeeks,
+      entry.startWeek,
+      entry.endWeek,
+      entry.isOddWeek,
+      entry.isEvenWeek,
+      entry.weekSelectionMode,
+      l10n,
+    );
+    final times = _resolveEntrySectionTimes(provider, settings, entry);
+    final weekday = weekDays[entry.dayOfWeek - 1];
     final theme = context.theme;
 
-    return SettingsSectionCard(
-      title: l10n.scheduleEntryTitle(index + 1),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _withSpacing([
+        if (hasMultipleEntries)
           Row(
             children: [
+              Expanded(
+                child: Text(
+                  l10n.weekdaySectionTimeSummary(
+                    weekday,
+                    entry.startSection,
+                    entry.endSection,
+                    times.startTime,
+                    times.endTime,
+                  ),
+                  style: theme.typography.body.sm.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                tooltip: l10n.deleteScheduleEntryAction,
+                onPressed: () => _removeScheduleEntry(index),
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  size: 18,
+                  color: theme.colors.destructive,
+                ),
+              ),
+            ],
+          ),
+        _buildScheduleTimeRow(
+          weekDays: weekDays,
+          sectionNumbers: sectionNumbers,
+          entry: entry,
+          l10n: l10n,
+        ),
+        _buildCompactWeekSummaryRow(
+          label: l10n.scheduleEntryWeeksSectionTitle,
+          summary: entryWeekSummary,
+          onTap: () => _showEntryWeekPickerDialog(entry, availableWeeks, l10n),
+        ),
+        _buildResponsiveFieldPair(
+          spacing: 8,
+          leading: _buildCompactPickerField(
+            label: l10n.teacherLabel,
+            value: teacherText.isEmpty ? l10n.manualInputLabel : teacherText,
+            isPlaceholder: teacherText.isEmpty,
+            onPress: () => _showPickerSheet(
+              title: l10n.selectTeacherTitle,
+              suggestions: provider.uniqueTeachers,
+              controller: _entryTeacherControllers[index],
+              onEntrySync: () =>
+                  entry.teacher = _entryTeacherControllers[index].text,
+            ),
+          ),
+          trailing: _buildCompactPickerField(
+            label: l10n.locationLabel,
+            value: locationText.isEmpty ? l10n.manualInputLabel : locationText,
+            isPlaceholder: locationText.isEmpty,
+            onPress: () => _showPickerSheet(
+              title: l10n.selectLocationTitle,
+              suggestions: provider.uniqueLocations,
+              controller: _entryLocationControllers[index],
+              onEntrySync: () =>
+                  entry.location = _entryLocationControllers[index].text,
+            ),
+          ),
+        ),
+        if (entry.timeSchemeIdOverride != null)
+          _buildEntryTimeSchemeField(provider, index, l10n, compact: true)
+        else
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FButton(
+              variant: FButtonVariant.ghost,
+              onPress: () => _showTimeSchemePickerSheet(
+                currentValue: entry.timeSchemeIdOverride,
+                onSelected: (value) {
+                  setState(() {
+                    entry.timeSchemeIdOverride = value;
+                  });
+                },
+              ),
+              child: Text(
+                l10n.scheduleEntryTimeSchemeSectionTitle,
+                style: theme.typography.body.xs2.copyWith(
+                  color: theme.colors.mutedForeground,
+                ),
+              ),
+            ),
+          ),
+      ], spacing: 8),
+    );
+  }
+
+  Widget _buildScheduleTimeRow({
+    required List<String> weekDays,
+    required List<int> sectionNumbers,
+    required _ScheduleEntryData entry,
+    required AppLocalizations l10n,
+  }) {
+    final weekdaySelect = FSelect<int>(
+      label: Text(l10n.weekdayLabel),
+      hint: l10n.weekdayLabel,
+      size: FTextFieldSizeVariant.sm,
+      items: {for (var i = 0; i < weekDays.length; i++) weekDays[i]: i + 1},
+      control: FSelectControl.lifted(
+        value: entry.dayOfWeek,
+        onChange: (value) {
+          if (value == null) return;
+          setState(() => entry.dayOfWeek = value);
+        },
+      ),
+    );
+    final startSelect = FSelect<int>(
+      label: Text(l10n.startSectionLabel),
+      hint: l10n.startSectionLabel,
+      size: FTextFieldSizeVariant.sm,
+      items: _sectionSelectItems(sectionNumbers, l10n),
+      control: FSelectControl.lifted(
+        value: entry.startSection,
+        onChange: (value) {
+          if (value == null) return;
+          setState(() {
+            entry.startSection = value;
+            if (entry.endSection < entry.startSection) {
+              entry.endSection = entry.startSection;
+            }
+          });
+        },
+      ),
+    );
+    final endSelect = FSelect<int>(
+      label: Text(l10n.endSectionLabel),
+      hint: l10n.endSectionLabel,
+      size: FTextFieldSizeVariant.sm,
+      items: _sectionSelectItems(
+        sectionNumbers.where((s) => s >= entry.startSection),
+        l10n,
+      ),
+      control: FSelectControl.lifted(
+        value: entry.endSection,
+        onChange: (value) {
+          if (value == null) return;
+          setState(() => entry.endSection = value);
+        },
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 420) {
+          return Column(
+            children: [
+              weekdaySelect,
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(child: startSelect),
+                  const SizedBox(width: 8),
+                  Expanded(child: endSelect),
+                ],
+              ),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 4, child: weekdaySelect),
+            const SizedBox(width: 8),
+            Expanded(flex: 3, child: startSelect),
+            const SizedBox(width: 8),
+            Expanded(flex: 3, child: endSelect),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCompactPickerField({
+    required String label,
+    required String value,
+    required VoidCallback onPress,
+    bool isPlaceholder = false,
+  }) {
+    final theme = context.theme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onPress,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colors.border),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: theme.typography.body.sm,
+                    children: [
+                      TextSpan(
+                        text: '$label ',
+                        style: TextStyle(color: theme.colors.mutedForeground),
+                      ),
+                      TextSpan(
+                        text: value,
+                        style: TextStyle(
+                          fontWeight: isPlaceholder
+                              ? FontWeight.normal
+                              : FontWeight.w600,
+                          color: isPlaceholder
+                              ? theme.colors.mutedForeground
+                              : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
               Icon(
-                Icons.schedule_rounded,
+                Icons.chevron_right_rounded,
                 size: 16,
-                color: theme.colors.primary,
-              ),
-              const Spacer(),
-              if (_scheduleEntries.length > 1)
-                SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 16,
-                      color: theme.colors.destructive,
-                    ),
-                    tooltip: l10n.deleteScheduleEntryAction,
-                    padding: EdgeInsets.zero,
-                    onPressed: () => _removeScheduleEntry(index),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // ── Time scheme ──
-          _buildEntryTimeSchemeDropdown(provider, index, l10n),
-          const SizedBox(height: 8),
-          // ── Row: Weekday + Start section + End section ──
-          Row(
-            children: [
-              Expanded(
-                flex: 5,
-                child: FSelect<int>(
-                  hint: l10n.weekdayLabel,
-                  items: {
-                    for (var i = 0; i < weekDays.length; i++)
-                      weekDays[i]: i + 1,
-                  },
-                  control: FSelectControl.lifted(
-                    value: entry.dayOfWeek,
-                    onChange: (value) {
-                      if (value == null) return;
-                      setState(() => entry.dayOfWeek = value);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 4,
-                child: FSelect<int>(
-                  hint: l10n.startSectionLabel,
-                  items: {
-                    for (final section in sectionNumbers)
-                      l10n.sectionLabel(section): section,
-                  },
-                  control: FSelectControl.lifted(
-                    value: entry.startSection,
-                    onChange: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        entry.startSection = value;
-                        if (entry.endSection < entry.startSection) {
-                          entry.endSection = entry.startSection;
-                        }
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                flex: 4,
-                child: FSelect<int>(
-                  hint: l10n.endSectionLabel,
-                  items: {
-                    for (final section in sectionNumbers.where(
-                      (s) => s >= entry.startSection,
-                    ))
-                      l10n.sectionLabel(section): section,
-                  },
-                  control: FSelectControl.lifted(
-                    value: entry.endSection,
-                    onChange: (value) {
-                      if (value == null) return;
-                      setState(() => entry.endSection = value);
-                    },
-                  ),
-                ),
+                color: theme.colors.mutedForeground,
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          // ── Row: Teacher + Location ──
-          Row(
-            children: [
-              Expanded(
-                child: TextFormField(
-                  controller: _entryTeacherControllers[index],
-                  readOnly: true,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _compactInputDecoration(
-                    labelText: l10n.teacherLabel,
-                    suffixIcon: const Icon(
-                      Icons.arrow_drop_down_rounded,
-                      size: 20,
-                    ),
-                  ),
-                  onTap: () => _showPickerSheet(
-                    title: l10n.selectTeacherTitle,
-                    suggestions: provider.uniqueTeachers,
-                    controller: _entryTeacherControllers[index],
-                    onEntrySync: () =>
-                        entry.teacher = _entryTeacherControllers[index].text,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: TextFormField(
-                  controller: _entryLocationControllers[index],
-                  readOnly: true,
-                  style: const TextStyle(fontSize: 13),
-                  decoration: _compactInputDecoration(
-                    labelText: l10n.locationLabel,
-                    prefixIcon: Icons.location_on_outlined,
-                    suffixIcon: const Icon(
-                      Icons.arrow_drop_down_rounded,
-                      size: 20,
-                    ),
-                  ),
-                  onTap: () => _showPickerSheet(
-                    title: l10n.selectLocationTitle,
-                    suggestions: provider.uniqueLocations,
-                    controller: _entryLocationControllers[index],
-                    onEntrySync: () =>
-                        entry.location = _entryLocationControllers[index].text,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // ── Week selection summary ──
-          Builder(
-            builder: (context) {
-              final entrySelectedWeeks =
-                  entry.weekSelectionMode == _WeekSelectionMode.range
-                  ? _buildEntryWeeksFromRange(entry)
-                  : (entry.selectedCustomWeeks.toList()..sort());
-              final entrySummary = _selectedWeeksSummaryText(
-                entrySelectedWeeks,
-                availableWeeks,
-                entry.startWeek,
-                entry.endWeek,
-                entry.isOddWeek,
-                entry.isEvenWeek,
-                entry.weekSelectionMode,
-                l10n,
-              );
-              return _buildWeekSummaryRow(
-                title: l10n.weekSettingsTitle,
-                summary: entrySummary,
-                onTap: () =>
-                    _showEntryWeekPickerDialog(entry, availableWeeks, l10n),
-              );
-            },
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildEntryTimeSchemeDropdown(
+  Widget _buildCompactWeekSummaryRow({
+    required String label,
+    required String summary,
+    required VoidCallback onTap,
+  }) {
+    final theme = context.theme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colors.border),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: theme.typography.body.sm,
+                    children: [
+                      TextSpan(
+                        text: '$label · ',
+                        style: TextStyle(color: theme.colors.mutedForeground),
+                      ),
+                      TextSpan(
+                        text: summary,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: theme.colors.mutedForeground,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEntryTimeSchemeField(
     TimetableProvider provider,
     int index,
-    AppLocalizations l10n,
-  ) {
+    AppLocalizations l10n, {
+    bool compact = false,
+  }) {
     final entry = _scheduleEntries[index];
     final followLabel =
         provider.activeTimeScheme?.name ?? l10n.timetableAppName;
@@ -1094,37 +1274,38 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   .firstOrNull
                   ?.name ??
               l10n.followCurrentTimetableWithName(followLabel);
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: () => _showTimeSchemePickerSheet(
-        currentValue: entry.timeSchemeIdOverride,
-        onSelected: (value) {
-          setState(() {
-            entry.timeSchemeIdOverride = value;
-          });
-        },
-      ),
-      child: InputDecorator(
-        decoration: _compactInputDecoration(
-          labelText: l10n.timeSchemeLabel,
-          prefixIcon: Icons.schedule_rounded,
-          suffixIcon: const Icon(Icons.arrow_drop_down_rounded, size: 20),
-        ),
-        child: Text(
-          currentName,
-          style: const TextStyle(fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
+    final onPress = () => _showTimeSchemePickerSheet(
+      currentValue: entry.timeSchemeIdOverride,
+      onSelected: (value) {
+        setState(() {
+          entry.timeSchemeIdOverride = value;
+        });
+      },
+    );
+    if (compact) {
+      return _buildCompactPickerField(
+        label: l10n.timeSchemeLabel,
+        value: currentName,
+        onPress: onPress,
+      );
+    }
+    return _buildPickerTile(
+      label: l10n.timeSchemeLabel,
+      value: currentName,
+      icon: Icons.schedule_rounded,
+      onPress: onPress,
     );
   }
 
   Widget _buildAddScheduleEntryButton(AppLocalizations l10n) {
-    return FButton(
-      onPress: _addScheduleEntry,
-      prefix: const Icon(Icons.add_rounded),
-      child: Text(l10n.addScheduleEntryAction),
+    return SizedBox(
+      width: double.infinity,
+      child: FButton(
+        variant: FButtonVariant.secondary,
+        onPress: _addScheduleEntry,
+        prefix: const Icon(Icons.add_rounded),
+        child: Text(l10n.addScheduleEntryAction),
+      ),
     );
   }
 
@@ -1296,7 +1477,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required Widget leading,
     required Widget trailing,
     double spacing = 16,
-    double breakpoint = 360,
+    double breakpoint = 420,
   }) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1370,7 +1551,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                       decoration: InputDecoration(
                         labelText: l10n.colorHexLabel,
                         hintText: '#2563EB',
-                        border: OutlineInputBorder(),
+                        border: const OutlineInputBorder(),
                       ),
                       onChanged: (value) {
                         setDialogState(() {
@@ -1512,50 +1693,70 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   // Week summary row (compact)
   // ---------------------------------------------------------------------------
 
-  Widget _buildWeekSummaryRow({
-    required String title,
-    required String summary,
-    required VoidCallback onTap,
+  Widget _buildWeekModeTileGroup({
+    required _WeekSelectionMode tempMode,
+    required AppLocalizations l10n,
+    required ValueChanged<_WeekSelectionMode> onSelect,
   }) {
-    final colors = context.theme.colors;
-    final typography = context.theme.typography;
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: colors.border),
-          borderRadius: BorderRadius.circular(12),
+    final colorScheme = Theme.of(context).colorScheme;
+    return FTileGroup(
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        FTile(
+          prefix: const Icon(Icons.linear_scale_rounded),
+          title: Text(l10n.rangeWeeksLabel),
+          suffix: tempMode == _WeekSelectionMode.range
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () => onSelect(_WeekSelectionMode.range),
         ),
-        child: Row(
-          children: [
-            Icon(Icons.date_range_rounded, size: 20, color: colors.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: typography.body.sm.copyWith(
-                      color: colors.mutedForeground,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    summary,
-                    style: typography.body.md.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.edit_rounded, size: 18, color: colors.mutedForeground),
-          ],
+        FTile(
+          prefix: const Icon(Icons.apps_rounded),
+          title: Text(l10n.customWeeksLabel),
+          suffix: tempMode == _WeekSelectionMode.custom
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: () => onSelect(_WeekSelectionMode.custom),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildWeekParityTileGroup({
+    required AppLocalizations l10n,
+    required bool isAllWeeks,
+    required bool isOddWeek,
+    required bool isEvenWeek,
+    required VoidCallback onSelectAll,
+    required VoidCallback onSelectOdd,
+    required VoidCallback onSelectEven,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return FTileGroup(
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        FTile(
+          title: Text(l10n.allWeeksFilter),
+          suffix: isAllWeeks
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: onSelectAll,
+        ),
+        FTile(
+          title: Text(l10n.oddWeeksFilter),
+          suffix: isOddWeek
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: onSelectOdd,
+        ),
+        FTile(
+          title: Text(l10n.evenWeeksFilter),
+          suffix: isEvenWeek
+              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
+              : null,
+          onPress: onSelectEven,
+        ),
+      ],
     );
   }
 
@@ -1613,23 +1814,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         child: ListView(
                           padding: const EdgeInsets.all(16),
                           children: [
-                            SegmentedButton<_WeekSelectionMode>(
-                              segments: [
-                                ButtonSegment(
-                                  value: _WeekSelectionMode.range,
-                                  label: Text(l10n.rangeWeeksLabel),
-                                  icon: Icon(Icons.linear_scale_rounded),
-                                ),
-                                ButtonSegment(
-                                  value: _WeekSelectionMode.custom,
-                                  label: Text(l10n.customWeeksLabel),
-                                  icon: Icon(Icons.apps_rounded),
-                                ),
-                              ],
-                              selected: {tempMode},
-                              showSelectedIcon: false,
-                              onSelectionChanged: (selection) {
-                                final nextMode = selection.first;
+                            _buildWeekModeTileGroup(
+                              tempMode: tempMode,
+                              l10n: l10n,
+                              onSelect: (nextMode) {
                                 setDialogState(() {
                                   if (nextMode == _WeekSelectionMode.custom &&
                                       tempCustomWeeks.isEmpty) {
@@ -1652,7 +1840,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                 });
                               },
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             if (tempMode == _WeekSelectionMode.range) ...[
                               _buildResponsiveFieldPair(
                                 leading: FSelect<int>(
@@ -1692,50 +1880,29 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                 ),
                               ),
                               const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  ChoiceChip(
-                                    label: Text(l10n.allWeeksFilter),
-                                    selected: !tempIsOddWeek && !tempIsEvenWeek,
-                                    showCheckmark: false,
-                                    selectedColor:
-                                        context.theme.colors.secondary,
-                                    onSelected: (_) {
-                                      setDialogState(() {
-                                        tempIsOddWeek = false;
-                                        tempIsEvenWeek = false;
-                                      });
-                                    },
-                                  ),
-                                  ChoiceChip(
-                                    label: Text(l10n.oddWeeksFilter),
-                                    selected: tempIsOddWeek,
-                                    showCheckmark: false,
-                                    selectedColor:
-                                        context.theme.colors.secondary,
-                                    onSelected: (_) {
-                                      setDialogState(() {
-                                        tempIsOddWeek = true;
-                                        tempIsEvenWeek = false;
-                                      });
-                                    },
-                                  ),
-                                  ChoiceChip(
-                                    label: Text(l10n.evenWeeksFilter),
-                                    selected: tempIsEvenWeek,
-                                    showCheckmark: false,
-                                    selectedColor:
-                                        context.theme.colors.secondary,
-                                    onSelected: (_) {
-                                      setDialogState(() {
-                                        tempIsOddWeek = false;
-                                        tempIsEvenWeek = true;
-                                      });
-                                    },
-                                  ),
-                                ],
+                              _buildWeekParityTileGroup(
+                                l10n: l10n,
+                                isAllWeeks: !tempIsOddWeek && !tempIsEvenWeek,
+                                isOddWeek: tempIsOddWeek,
+                                isEvenWeek: tempIsEvenWeek,
+                                onSelectAll: () {
+                                  setDialogState(() {
+                                    tempIsOddWeek = false;
+                                    tempIsEvenWeek = false;
+                                  });
+                                },
+                                onSelectOdd: () {
+                                  setDialogState(() {
+                                    tempIsOddWeek = true;
+                                    tempIsEvenWeek = false;
+                                  });
+                                },
+                                onSelectEven: () {
+                                  setDialogState(() {
+                                    tempIsOddWeek = false;
+                                    tempIsEvenWeek = true;
+                                  });
+                                },
                               ),
                             ] else ...[
                               LayoutBuilder(

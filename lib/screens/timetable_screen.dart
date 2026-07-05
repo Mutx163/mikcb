@@ -14,15 +14,15 @@ import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/schedule_item.dart';
-import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/hex_color.dart';
+import '../widgets/course_action_sheet.dart';
+import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_card.dart';
 import '../widgets/home_top_menu.dart';
-import '../services/bundled_assets.dart';
-import '../widgets/bundled_asset_image.dart';
+import '../widgets/profile_quick_switch_sheet.dart';
 import 'add_course_screen.dart';
 import 'add_exam_screen.dart';
 import 'add_schedule_item_screen.dart';
@@ -4088,54 +4088,14 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showCourseActions(Course course, int week) async {
-    final l10n = AppLocalizations.of(context)!;
     final conflicts = _conflictsForCourseInWeek(course, week);
     final previewCourses = <Course>[course, ...conflicts];
-    final selected = await showModalBottomSheet<_CourseActionSelection>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var index = 0; index < previewCourses.length; index++) ...[
-                  _buildCourseActionPreviewCard(
-                    sheetContext,
-                    previewCourses[index],
-                    week: week,
-                    badgeText: conflicts.isEmpty ? null : l10n.conflictLabel,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    previewCourses[index].isInWeek(week)
-                        ? l10n.courseDialogCurrentWeekHint(week)
-                        : l10n.courseDialogNotThisWeekHint(week),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildCourseActionButtons(
-                    sheetContext,
-                    previewCourses[index],
-                    week,
-                  ),
-                  if (index != previewCourses.length - 1) ...[
-                    const SizedBox(height: 20),
-                  ],
-                ],
-              ],
-            ),
-          ),
-        );
-      },
+    final selected = await showCourseActionSheet(
+      context,
+      previewCourses: previewCourses,
+      week: week,
+      hasConflicts: conflicts.isNotEmpty,
+      onSuspend: (target) => _showSuspendSheet(target, week),
     );
 
     if (!mounted || selected == null) {
@@ -4143,13 +4103,13 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     switch (selected.action) {
-      case _CourseActionType.edit:
+      case CourseActionType.edit:
         _editCourse(selected.course);
         break;
-      case _CourseActionType.reschedule:
+      case CourseActionType.reschedule:
         await _showRescheduleSheet(selected.course, sourceWeek: week);
         break;
-      case _CourseActionType.delete:
+      case CourseActionType.delete:
         await _showDeleteCourseOptions(selected.course, week);
         break;
     }
@@ -4181,341 +4141,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     return conflicts;
   }
 
-  Widget _buildCourseActionPreviewCard(
-    BuildContext context,
-    Course course, {
-    required int week,
-    String? badgeText,
-  }) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final courseColor = _colorFromHex(course.color, colorScheme.primary);
-
-    return Container(
-      key: ValueKey('course-action-card-${course.id}'),
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: courseColor.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(Icons.menu_book_rounded, color: courseColor),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            course.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                        if (badgeText != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.errorContainer,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              badgeText,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onErrorContainer,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                    if (course.shortName?.trim().isNotEmpty == true)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          l10n.shortNamePrefix(course.shortName!.trim()),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            '${_weekdayLabel(context, course.dayOfWeek)} · 第${course.startSection}-${course.endSection}节 · ${course.startTime}-${course.endTime}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(course.weekDescription, style: theme.textTheme.bodySmall),
-          if (course.teacher.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              l10n.teacherPrefix(course.teacher.trim()),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-          if (course.location.trim().isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              l10n.locationPrefix(course.location.trim()),
-              style: theme.textTheme.bodySmall,
-            ),
-          ],
-          _buildStatusChips(context, course, week),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatusChips(BuildContext context, Course course, int week) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final provider = context.read<TimetableProvider>();
-    final date = _dateForWeekDay(provider.settings, week, course.dayOfWeek);
-    final isDayHoliday = date != null && provider.isHoliday(date);
-    final isSuspended = course.isSuspendedInWeek(week);
-    final isNonCurrentWeek = !course.isInWeek(week);
-
-    final chips = <_StatusChip>[];
-    if (isDayHoliday) {
-      chips.add(
-        _StatusChip(
-          label: l10n.holidayStatusLabel,
-          color: Colors.orange.shade700,
-          icon: Icons.beach_access_rounded,
-        ),
-      );
-    }
-    if (isSuspended) {
-      chips.add(
-        _StatusChip(
-          label: l10n.suspendedStatusLabel,
-          color: Colors.red.shade700,
-          icon: Icons.pause_circle_outline_rounded,
-        ),
-      );
-    }
-    if (isNonCurrentWeek) {
-      chips.add(
-        _StatusChip(
-          label: l10n.nonCurrentWeekLabel,
-          color: theme.colorScheme.outline,
-          icon: Icons.schedule_outlined,
-        ),
-      );
-    }
-    if (course.suspensionDescription != null) {
-      chips.add(
-        _StatusChip(
-          label: course.suspensionDescription!,
-          color: Colors.red.shade300,
-          icon: Icons.info_outline_rounded,
-        ),
-      );
-    }
-    if (chips.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 10),
-      child: Wrap(
-        spacing: 6,
-        runSpacing: 4,
-        children: [
-          for (final chip in chips)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: chip.color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: chip.color.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(chip.icon, size: 14, color: chip.color),
-                  const SizedBox(width: 4),
-                  Text(
-                    chip.label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: chip.color,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCourseActionButtons(
-    BuildContext context,
-    Course course,
-    int week,
-  ) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final canReschedule = course.isInWeek(week);
-    final isSuspended = course.isSuspendedInWeek(week);
-
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _HomeActionButton(
-          key: ValueKey('course-action-edit-${course.id}'),
-          icon: Icons.edit_rounded,
-          title: l10n.editActionShort,
-          onTap: () => Navigator.of(context).pop(
-            _CourseActionSelection(
-              course: course,
-              action: _CourseActionType.edit,
-            ),
-          ),
-        ),
-        _HomeActionButton(
-          key: ValueKey('course-action-reschedule-${course.id}'),
-          icon: Icons.swap_horiz_rounded,
-          title: l10n.rescheduleAction,
-          enabled: canReschedule,
-          onTap: () => Navigator.of(context).pop(
-            _CourseActionSelection(
-              course: course,
-              action: _CourseActionType.reschedule,
-            ),
-          ),
-        ),
-        _HomeActionButton(
-          key: ValueKey('course-action-suspend-${course.id}'),
-          icon: isSuspended
-              ? Icons.play_circle_outline_rounded
-              : Icons.pause_circle_outline_rounded,
-          title: isSuspended
-              ? l10n.courseActionUnsuspend
-              : l10n.courseActionSuspend,
-          accentColor: isSuspended ? null : theme.colorScheme.error,
-          onTap: () {
-            Navigator.of(context).pop();
-            _showSuspendSheet(course, week);
-          },
-        ),
-        _HomeActionButton(
-          key: ValueKey('course-action-delete-${course.id}'),
-          icon: Icons.delete_outline_rounded,
-          title: l10n.deleteActionShort,
-          accentColor: theme.colorScheme.error,
-          onTap: () => Navigator.of(context).pop(
-            _CourseActionSelection(
-              course: course,
-              action: _CourseActionType.delete,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> _showDeleteCourseOptions(Course course, int week) async {
-    final l10n = AppLocalizations.of(context)!;
     final canDeleteOccurrence = course.isInWeek(week);
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints.tightFor(width: double.infinity),
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.deleteModeTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.deleteModeSubtitle,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.start,
-                    children: [
-                      _HomeActionButton(
-                        icon: Icons.delete_sweep_rounded,
-                        title: l10n.deleteCourseAction,
-                        accentColor: theme.colorScheme.error,
-                        onTap: () => Navigator.of(sheetContext).pop('course'),
-                      ),
-                      _HomeActionButton(
-                        icon: Icons.remove_circle_outline_rounded,
-                        title: l10n.deleteOccurrenceAction,
-                        accentColor: theme.colorScheme.error,
-                        enabled: canDeleteOccurrence,
-                        onTap: () =>
-                            Navigator.of(sheetContext).pop('occurrence'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    canDeleteOccurrence
-                        ? l10n.deleteModeHintCurrentWeek(week)
-                        : l10n.deleteModeHintUnavailable(week),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    final selected = await showCourseDeleteModeSheet(
+      context,
+      canDeleteOccurrence: canDeleteOccurrence,
+      week: week,
     );
 
     if (!mounted || selected == null) {
@@ -4523,98 +4154,22 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     switch (selected) {
-      case 'course':
+      case CourseDeleteMode.course:
         await _confirmDeleteCourse(course);
-        break;
-      case 'occurrence':
+      case CourseDeleteMode.occurrence:
         await _confirmDeleteOccurrence(course, week);
-        break;
     }
   }
 
   Future<void> _showSuspendSheet(Course course, int week) async {
-    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
     final isSuspended = course.isSuspendedInWeek(week);
     final hasAnySuspended = course.suspendedWeeks?.isNotEmpty ?? false;
 
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      constraints: const BoxConstraints.tightFor(width: double.infinity),
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.suspendSheetTitle,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.suspendSheetSubtitle,
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    alignment: WrapAlignment.start,
-                    children: [
-                      _HomeActionButton(
-                        icon: isSuspended
-                            ? Icons.play_circle_outline_rounded
-                            : Icons.pause_circle_outline_rounded,
-                        title: isSuspended
-                            ? l10n.courseActionUnsuspend
-                            : l10n.suspendThisWeek,
-                        accentColor: isSuspended
-                            ? null
-                            : theme.colorScheme.error,
-                        onTap: () =>
-                            Navigator.of(sheetContext).pop('this_week'),
-                      ),
-                      _HomeActionButton(
-                        icon: hasAnySuspended
-                            ? Icons.play_circle_filled_rounded
-                            : Icons.pause_circle_filled_rounded,
-                        title: hasAnySuspended
-                            ? l10n.unsuspendAllWeeks
-                            : l10n.suspendAllWeeks,
-                        accentColor: hasAnySuspended
-                            ? null
-                            : theme.colorScheme.error,
-                        onTap: () =>
-                            Navigator.of(sheetContext).pop('all_weeks'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    hasAnySuspended
-                        ? l10n.unsuspendAllWeeksDesc
-                        : l10n.suspendAllWeeksDesc,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+    final selected = await showCourseSuspendModeSheet(
+      context,
+      isSuspendedThisWeek: isSuspended,
+      hasAnySuspended: hasAnySuspended,
     );
 
     if (!mounted || selected == null) {
@@ -4622,50 +4177,34 @@ class _TimetableScreenState extends State<TimetableScreen>
     }
 
     switch (selected) {
-      case 'this_week':
+      case CourseSuspendMode.thisWeek:
         await provider.toggleCourseSuspension(course.id, week);
-        break;
-      case 'all_weeks':
+      case CourseSuspendMode.allWeeks:
         if (hasAnySuspended) {
           await provider.unsuspendAllWeeks(course.id);
         } else {
           await provider.suspendAllWeeks(course.id);
         }
-        break;
     }
   }
 
   Future<void> _confirmDeleteCourse(Course course) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(AppLocalizations.of(dialogContext)!.deleteScheduleTitle),
-        content: Text(
-          l10n.deleteScheduleConfirmMessage(
-            course.name,
-            l10n.courseWeekdaySectionSummary(
-              course.weekDescription,
-              _weekdayLabel(context, course.dayOfWeek),
-              course.startSection,
-              course.endSection,
-            ),
-          ),
+    final confirmed = await showDeleteCourseConfirmDialog(
+      context,
+      title: l10n.deleteScheduleTitle,
+      message: l10n.deleteScheduleConfirmMessage(
+        course.name,
+        l10n.courseWeekdaySectionSummary(
+          course.weekDescription,
+          _weekdayLabel(context, course.dayOfWeek),
+          course.startSection,
+          course.endSection,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(AppLocalizations.of(dialogContext)!.deleteAction),
-          ),
-        ],
       ),
     );
 
-    if (confirmed != true || !mounted) {
+    if (!confirmed || !mounted) {
       return;
     }
 
@@ -4684,37 +4223,23 @@ class _TimetableScreenState extends State<TimetableScreen>
 
   Future<void> _confirmDeleteOccurrence(Course course, int sourceWeek) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(AppLocalizations.of(dialogContext)!.deleteLessonTitle),
-        content: Text(
-          l10n.deleteOccurrenceConfirmMessage(
-            course.name,
-            sourceWeek,
-            l10n.weekdaySectionTimeSummary(
-              _weekdayLabel(context, course.dayOfWeek),
-              course.startSection,
-              course.endSection,
-              course.startTime,
-              course.endTime,
-            ),
-          ),
+    final confirmed = await showDeleteOccurrenceConfirmDialog(
+      context,
+      title: l10n.deleteLessonTitle,
+      message: l10n.deleteOccurrenceConfirmMessage(
+        course.name,
+        sourceWeek,
+        l10n.weekdaySectionTimeSummary(
+          _weekdayLabel(context, course.dayOfWeek),
+          course.startSection,
+          course.endSection,
+          course.startTime,
+          course.endTime,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text(AppLocalizations.of(dialogContext)!.cancelAction),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(AppLocalizations.of(dialogContext)!.deleteAction),
-          ),
-        ],
       ),
     );
 
-    if (confirmed != true || !mounted) {
+    if (!confirmed || !mounted) {
       return;
     }
 
@@ -4757,18 +4282,17 @@ class _TimetableScreenState extends State<TimetableScreen>
     final provider = context.read<TimetableProvider>();
     final settings = provider.settings;
     final weekdayLabels = _weekdayLabels(context);
+    final scheme = provider.resolveCourseTimeScheme(course);
+    final sectionTimes = scheme?.sections ?? settings.sections;
 
-    final draft = await showModalBottomSheet<_CourseRescheduleDraft>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      useSafeArea: true,
-      builder: (sheetContext) => _CourseRescheduleSheet(
-        course: course,
-        sourceWeek: sourceWeek,
-        settings: settings,
-        weekDays: weekdayLabels,
-      ),
+    final draft = await showCourseRescheduleSheet(
+      context,
+      course: course,
+      sourceWeek: sourceWeek,
+      settings: settings,
+      weekDays: weekdayLabels,
+      sectionTimes: sectionTimes,
+      locationSuggestions: provider.uniqueLocations,
     );
 
     if (draft == null) {
@@ -4879,141 +4403,16 @@ class _TimetableScreenState extends State<TimetableScreen>
   }
 
   Future<void> _showProfileQuickSwitchSheet() async {
-    final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final selected = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
-      useSafeArea: true,
-      builder: (sheetContext) {
-        final sheetRoute = ModalRoute.of(sheetContext);
-        final theme = Theme.of(sheetContext);
-        final colorScheme = theme.colorScheme;
-        final activeProfile = provider.activeProfile;
-        final profiles = provider.profiles;
-
-        return SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: colorScheme.outlineVariant),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            color: colorScheme.primary.withValues(alpha: 0.12),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: BundledAssetImage(
-                            assetPath: BundledAssets.launcherIcon,
-                            width: 44,
-                            height: 44,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.switchTimetableTitle,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                activeProfile == null
-                                    ? l10n.switchTimetableSubtitleEmpty
-                                    : l10n.switchTimetableSubtitleCurrent(
-                                        activeProfile.name,
-                                      ),
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: colorScheme.outlineVariant),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        for (
-                          var index = 0;
-                          index < profiles.length;
-                          index++
-                        ) ...[
-                          _ProfileQuickSwitchTile(
-                            profile: profiles[index],
-                            isActive:
-                                profiles[index].id == provider.activeProfileId,
-                            onTap: () => Navigator.of(
-                              sheetContext,
-                            ).pop(profiles[index].id),
-                          ),
-                          if (index != profiles.length - 1)
-                            Divider(
-                              height: 1,
-                              indent: 16,
-                              endIndent: 16,
-                              color: colorScheme.outlineVariant,
-                            ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Builder(
-                      builder: (buttonContext) {
-                        return OutlinedButton.icon(
-                          onPressed: () => _openPopupActionPage(
-                            buttonContext,
-                            pageBuilder: (_) => const TimetableProfilesScreen(),
-                            sheetRoute: sheetRoute,
-                          ),
-                          icon: const Icon(Icons.view_week_rounded),
-                          label: Text(
-                            AppLocalizations.of(
-                              sheetContext,
-                            )!.timetableManagement,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final selected = await showProfileQuickSwitchSheet(
+      context,
+      profiles: provider.profiles,
+      activeProfileId: provider.activeProfileId,
+      onManageTimetables: (buttonContext) {
+        _openPopupActionPage(
+          buttonContext,
+          pageBuilder: (_) => const TimetableProfilesScreen(),
+          sheetRoute: ModalRoute.of(buttonContext),
         );
       },
     );
@@ -5150,55 +4549,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     } finally {
       _isCheckingForUpdate = false;
     }
-  }
-}
-
-enum _CourseActionType { edit, reschedule, delete }
-
-class _CourseActionSelection {
-  const _CourseActionSelection({required this.course, required this.action});
-
-  final Course course;
-  final _CourseActionType action;
-}
-
-class _StatusChip {
-  const _StatusChip({
-    required this.label,
-    required this.color,
-    required this.icon,
-  });
-
-  final String label;
-  final Color color;
-  final IconData icon;
-}
-
-class _HomeActionButton extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final VoidCallback onTap;
-  final Color? accentColor;
-  final bool enabled;
-
-  const _HomeActionButton({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.onTap,
-    this.accentColor,
-    this.enabled = true,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _HomeActionButtonBody(
-      icon: icon,
-      title: title,
-      accentColor: accentColor,
-      enabled: enabled,
-      onTap: onTap,
-    );
   }
 }
 
@@ -5401,119 +4751,6 @@ class _HomeActionButtonBody extends StatelessWidget {
   }
 }
 
-class _ProfileQuickSwitchTile extends StatelessWidget {
-  final TimetableProfile profile;
-  final bool isActive;
-  final VoidCallback onTap;
-
-  const _ProfileQuickSwitchTile({
-    required this.profile,
-    required this.isActive,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final accentColor = isActive
-        ? colorScheme.primary
-        : colorScheme.onSurfaceVariant;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: accentColor.withValues(alpha: isActive ? 0.14 : 0.10),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Icon(
-                  isActive ? Icons.check_circle_rounded : Icons.layers_rounded,
-                  color: accentColor,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      profile.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.courseCountSummary(profile.courses.length),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (isActive)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    l10n.currentBadge,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CourseRescheduleDraft {
-  final int targetWeek;
-  final int targetDayOfWeek;
-  final int targetStartSection;
-  final int targetEndSection;
-  final String targetLocation;
-
-  const _CourseRescheduleDraft({
-    required this.targetWeek,
-    required this.targetDayOfWeek,
-    required this.targetStartSection,
-    required this.targetEndSection,
-    required this.targetLocation,
-  });
-}
-
 class _DayViewPageTarget {
   final int week;
   final int dayOfWeek;
@@ -5629,232 +4866,4 @@ class _DayAgendaPalette {
     required this.fillColor,
     required this.foregroundColor,
   });
-}
-
-class _CourseRescheduleSheet extends StatefulWidget {
-  final Course course;
-  final int sourceWeek;
-  final TimetableSettings settings;
-  final List<String> weekDays;
-
-  const _CourseRescheduleSheet({
-    required this.course,
-    required this.sourceWeek,
-    required this.settings,
-    required this.weekDays,
-  });
-
-  @override
-  State<_CourseRescheduleSheet> createState() => _CourseRescheduleSheetState();
-}
-
-class _CourseRescheduleSheetState extends State<_CourseRescheduleSheet> {
-  late int _targetWeek;
-  late int _targetDayOfWeek;
-  late int _targetStartSection;
-  late int _targetEndSection;
-  late final TextEditingController _locationController;
-
-  @override
-  void initState() {
-    super.initState();
-    _targetWeek = widget.sourceWeek;
-    _targetDayOfWeek = widget.course.dayOfWeek;
-    _targetStartSection = widget.course.startSection;
-    _targetEndSection = widget.course.endSection;
-    _locationController = TextEditingController(text: widget.course.location);
-  }
-
-  @override
-  void dispose() {
-    _locationController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final sectionNumbers = List.generate(
-      widget.settings.sectionCount,
-      (index) => index + 1,
-    );
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 24 + bottomInset),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.rescheduleCurrentOccurrenceTitle,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.rescheduleCurrentOccurrenceSubtitle(widget.sourceWeek),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
-              initialValue: _targetWeek,
-              decoration: InputDecoration(
-                labelText: l10n.rescheduleTargetWeekLabel,
-                border: const OutlineInputBorder(),
-                prefixIcon: Icon(Icons.calendar_month_rounded),
-              ),
-              items: widget.settings.availableWeeks
-                  .map(
-                    (week) => DropdownMenuItem(
-                      value: week,
-                      child: Text(
-                        AppLocalizations.of(context)!.weekLabel(week),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                setState(() {
-                  _targetWeek = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<int>(
-              initialValue: _targetDayOfWeek,
-              decoration: InputDecoration(
-                labelText: l10n.weekdayFieldLabel,
-                border: const OutlineInputBorder(),
-                prefixIcon: Icon(Icons.event_available_rounded),
-              ),
-              items: List.generate(
-                widget.weekDays.length,
-                (index) => DropdownMenuItem(
-                  value: index + 1,
-                  child: Text(widget.weekDays[index]),
-                ),
-              ),
-              onChanged: (value) {
-                if (value == null) {
-                  return;
-                }
-                setState(() {
-                  _targetDayOfWeek = value;
-                });
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _targetStartSection,
-                    decoration: InputDecoration(
-                      labelText: l10n.startSectionFieldLabel,
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: sectionNumbers
-                        .map(
-                          (section) => DropdownMenuItem(
-                            value: section,
-                            child: Text(
-                              AppLocalizations.of(
-                                context,
-                              )!.sectionLabel(section),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _targetStartSection = value;
-                        if (_targetEndSection < _targetStartSection) {
-                          _targetEndSection = _targetStartSection;
-                        }
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    initialValue: _targetEndSection,
-                    decoration: InputDecoration(
-                      labelText: l10n.endSectionFieldLabel,
-                      border: const OutlineInputBorder(),
-                    ),
-                    items: sectionNumbers
-                        .where((section) => section >= _targetStartSection)
-                        .map(
-                          (section) => DropdownMenuItem(
-                            value: section,
-                            child: Text(
-                              AppLocalizations.of(
-                                context,
-                              )!.sectionLabel(section),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() {
-                        _targetEndSection = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _locationController,
-              decoration: InputDecoration(
-                labelText: l10n.courseLocationFieldLabel,
-                border: const OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on_outlined),
-              ),
-            ),
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(l10n.cancelAction),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pop(
-                        _CourseRescheduleDraft(
-                          targetWeek: _targetWeek,
-                          targetDayOfWeek: _targetDayOfWeek,
-                          targetStartSection: _targetStartSection,
-                          targetEndSection: _targetEndSection,
-                          targetLocation: _locationController.text,
-                        ),
-                      );
-                    },
-                    child: Text(l10n.confirmRescheduleAction),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }

@@ -4352,6 +4352,37 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get scheduleEntrySingleTitle => '上课安排';
+
+  @override
+  String get scheduleEntryCardSubtitle => '设置这门课在何时、哪些周、由谁在哪里上课。';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => '什么时候上';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      '选择星期几和第几节课；连堂请填写起止节次，单节课起止相同。';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => '哪些周上';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => '谁在哪里上';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊时间方案';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      '默认跟随当前课表；仅当本节课上下课时间与课表不同时才需要修改。';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return '$section节';
+  }
+
+  @override
   String get addScheduleEntryAction => '添加排课时间';
 
   @override
@@ -9271,6 +9302,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
+  String get scheduleEntrySingleTitle => '上課安排';
+
+  @override
+  String get scheduleEntryCardSubtitle => '設定這門課在何時、哪些週、由誰在哪裡上課。';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => '什麼時候上';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      '選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同。';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => '哪些週上';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間方案';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      '預設跟隨當前課表；僅當本節課上下課時間與課表不同時才需要修改。';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return '$section節';
+  }
+
+  @override
   String get addScheduleEntryAction => '新增排課時段';
 
   @override
@@ -14187,6 +14249,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String scheduleEntryTitle(int index) {
     return '排課紀錄 $index';
+  }
+
+  @override
+  String get scheduleEntrySingleTitle => '上課安排';
+
+  @override
+  String get scheduleEntryCardSubtitle => '設定這門課在何時、哪些週、由誰在哪裡上課。';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => '什麼時候上';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      '選擇星期幾和第幾節課；連堂請填寫起止節次，單節課起止相同。';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => '哪些週上';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => '誰在哪裡上';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => '特殊時間方案';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      '預設跟隨目前課表；僅當本節課上下課時間與課表不同時才需要修改。';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return '$section節';
   }
 
   @override

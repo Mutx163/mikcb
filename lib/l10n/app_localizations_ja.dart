@@ -4423,6 +4423,37 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get scheduleEntrySingleTitle => '授業スケジュール';
+
+  @override
+  String get scheduleEntryCardSubtitle => 'この授業の曜日・時限・週次・教員・教室を設定します。';
+
+  @override
+  String get scheduleEntryTimeSectionTitle => 'いつ';
+
+  @override
+  String get scheduleEntryTimeSectionSubtitle =>
+      '曜日と時限を選びます。連続時限は開始と終了を、単時限は同じ番号にします。';
+
+  @override
+  String get scheduleEntryWeeksSectionTitle => 'どの週';
+
+  @override
+  String get scheduleEntryPeopleSectionTitle => '教員と教室';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionTitle => '特別な時間割';
+
+  @override
+  String get scheduleEntryTimeSchemeSectionSubtitle =>
+      '既定は時間割に従います。ベル時刻が異なる場合のみ変更してください。';
+
+  @override
+  String scheduleSectionNumberLabel(int section) {
+    return '$section時限';
+  }
+
+  @override
   String get addScheduleEntryAction => '排課時間を追加';
 
   @override
