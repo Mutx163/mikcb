@@ -1532,6 +1532,102 @@ abstract class AppLocalizations {
   /// **'保存失败：{error}'**
   String saveFailedWithError(String error);
 
+  /// No description provided for @supportRunningBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'运行中'**
+  String get supportRunningBadge;
+
+  /// No description provided for @supportTapQrHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击放大扫码'**
+  String get supportTapQrHint;
+
+  /// No description provided for @supportSaveShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存'**
+  String get supportSaveShort;
+
+  /// No description provided for @supportConfirmedShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'已支持'**
+  String get supportConfirmedShort;
+
+  /// No description provided for @donorSearchHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜昵称/寄语...'**
+  String get donorSearchHint;
+
+  /// No description provided for @donorSortLargeFirst.
+  ///
+  /// In zh, this message translates to:
+  /// **'大额优先'**
+  String get donorSortLargeFirst;
+
+  /// No description provided for @donorSortSmallFirst.
+  ///
+  /// In zh, this message translates to:
+  /// **'小额优先'**
+  String get donorSortSmallFirst;
+
+  /// No description provided for @supportMonthlyGoalLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'本月服务器和证书续期进度'**
+  String get supportMonthlyGoalLabel;
+
+  /// No description provided for @supportGoalRaised.
+  ///
+  /// In zh, this message translates to:
+  /// **'已筹: {raised} / 目标 {goal}'**
+  String supportGoalRaised(String raised, String goal);
+
+  /// No description provided for @supportBackerCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'已有 {count} 人献出爱心'**
+  String supportBackerCount(int count);
+
+  /// No description provided for @supportDonorListFooter.
+  ///
+  /// In zh, this message translates to:
+  /// **'名单永久保留 💖'**
+  String get supportDonorListFooter;
+
+  /// No description provided for @supportMarqueeThanks.
+  ///
+  /// In zh, this message translates to:
+  /// **'🎉 感谢 {name} 赞助 {amount}'**
+  String supportMarqueeThanks(String name, String amount);
+
+  /// No description provided for @supportMarqueeTail.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心！'**
+  String get supportMarqueeTail;
+
+  /// No description provided for @scanQrWechatTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用微信扫描二维码'**
+  String get scanQrWechatTitle;
+
+  /// No description provided for @scanQrAlipayTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用支付宝扫描二维码'**
+  String get scanQrAlipayTitle;
+
+  /// No description provided for @scanQrSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'截图并导入扫一扫，感谢支持！'**
+  String get scanQrSubtitle;
+
   /// No description provided for @courseOverviewTitle.
   ///
   /// In zh, this message translates to:

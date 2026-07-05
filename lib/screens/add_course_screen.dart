@@ -1076,18 +1076,20 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                   .firstOrNull
                   ?.name ??
               l10n.followCurrentTimetableWithName(followLabel);
-    final onPress = () =>
-        showTimeSchemePickerSheet(
-          context,
-          currentValue: entry.timeSchemeIdOverride,
-          onSelected: (value) {
-            setState(() {
-              entry.timeSchemeIdOverride = value;
-            });
-          },
-        ).whenComplete(() {
-          if (mounted) setState(() {});
-        });
+    void onPress() {
+      showTimeSchemePickerSheet(
+        context,
+        currentValue: entry.timeSchemeIdOverride,
+        onSelected: (value) {
+          setState(() {
+            entry.timeSchemeIdOverride = value;
+          });
+        },
+      ).whenComplete(() {
+        if (mounted) setState(() {});
+      });
+    }
+
     if (compact) {
       return _buildCompactPickerField(
         label: l10n.timeSchemeLabel,

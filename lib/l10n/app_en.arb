@@ -409,6 +409,49 @@
       }
     }
   },
+  "supportRunningBadge": "Active",
+  "supportTapQrHint": "Tap to enlarge",
+  "supportSaveShort": "Save",
+  "supportConfirmedShort": "Supported",
+  "donorSearchHint": "Search name or message...",
+  "donorSortLargeFirst": "Largest first",
+  "donorSortSmallFirst": "Smallest first",
+  "supportMonthlyGoalLabel": "Monthly server & certificate renewal",
+  "supportGoalRaised": "Raised: {raised} / Goal {goal}",
+  "@supportGoalRaised": {
+    "placeholders": {
+      "raised": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "supportBackerCount": "{count} supporters so far",
+  "@supportBackerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "supportDonorListFooter": "Names are kept permanently 💖",
+  "supportMarqueeThanks": "🎉 Thanks to {name} for {amount}",
+  "@supportMarqueeThanks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "supportMarqueeTail": "Qingyu Timetable keeps running — thank you for your support!",
+  "scanQrWechatTitle": "Scan with WeChat",
+  "scanQrAlipayTitle": "Scan with Alipay",
+  "scanQrSubtitle": "Screenshot and scan, thank you for your support!",
   "courseOverviewTitle": "Course Overview & Edit",
   "addNewCourseTooltip": "Add New Course",
   "emptyCourseOverviewHint": "Long press the timetable or tap the top-right button to add a course",

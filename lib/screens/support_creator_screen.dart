@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
-import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
-import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
+import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
 import '../widgets/bundled_asset_image.dart';
 
@@ -20,31 +20,12 @@ class SupportCreatorScreen extends StatefulWidget {
 }
 
 class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
-  static const _sectionPadding = EdgeInsets.fromLTRB(12, 12, 12, 10);
-
-  /// Section titles — matches [_SettingsSectionCard] in timetable settings.
-  TextStyle _sectionTitleStyle(FTypography typo, FColors colors) {
-    return typo.body.sm.copyWith(
-      fontWeight: FontWeight.w600,
-      color: colors.foreground,
-    );
-  }
-
-  /// Primary list / label text.
-  TextStyle _bodyStyle(FTypography typo, FColors colors) {
-    return typo.body.sm.copyWith(color: colors.foreground, height: 1.45);
-  }
-
-  /// Secondary hints, dates, subtitles — same size as body, muted color only.
-  TextStyle _mutedStyle(FTypography typo, FColors colors) {
-    return typo.body.sm.copyWith(color: colors.mutedForeground, height: 1.45);
-  }
-
-  TextStyle _emphasisBodyStyle(FTypography typo, FColors colors) {
-    return _bodyStyle(typo, colors).copyWith(fontWeight: FontWeight.w600);
-  }
+  static const _sectionPadding = EdgeInsets.fromLTRB(14, 14, 14, 12);
+  static const _donorSectionPadding = EdgeInsets.fromLTRB(12, 12, 12, 10);
+  static const _paymentColumnGap = 10.0;
 
   final SupportCreatorService _service = SupportCreatorService();
+
   late Future<SupportDonorData> _donorFuture;
   _SupportMethod _selectedMethod = _SupportMethod.wechat;
 
@@ -52,6 +33,26 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   void initState() {
     super.initState();
     _donorFuture = _loadDonors();
+  }
+
+  TextStyle _sectionTitleStyle(FTypography typo, FColors colors) {
+    return typo.body.sm.copyWith(
+      fontWeight: FontWeight.w600,
+      color: colors.foreground,
+      height: 1.4,
+    );
+  }
+
+  TextStyle _bodyStyle(FTypography typo, FColors colors) {
+    return typo.body.sm.copyWith(color: colors.foreground, height: 1.4);
+  }
+
+  TextStyle _mutedStyle(FTypography typo, FColors colors) {
+    return typo.body.xs.copyWith(color: colors.mutedForeground, height: 1.4);
+  }
+
+  TextStyle _emphasisBodyStyle(FTypography typo, FColors colors) {
+    return _bodyStyle(typo, colors).copyWith(fontWeight: FontWeight.w600);
   }
 
   @override
@@ -68,244 +69,210 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final compact = constraints.maxHeight < 760;
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              children: [
-                _buildHeroSection(
-                  context,
-                  compact: compact,
-                  colors: colors,
-                  typo: typo,
-                ),
-                const SizedBox(height: 12),
-                _buildPaymentCard(
-                  context,
-                  compact: compact,
-                  colors: colors,
-                  typo: typo,
-                ),
-                const SizedBox(height: 12),
-                FutureBuilder<SupportDonorData>(
-                  future: _donorFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return _buildDonorShell(
-                        context,
-                        colors: colors,
-                        typo: typo,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.donorListTitle,
-                              style: _sectionTitleStyle(typo, colors),
-                            ),
-                            const SizedBox(height: 16),
-                            const Center(child: FProgress()),
-                          ],
-                        ),
-                      );
-                    }
-                    if (snapshot.hasError) {
-                      return _buildDonorShell(
-                        context,
-                        colors: colors,
-                        typo: typo,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              l10n.donorListTitle,
-                              style: _sectionTitleStyle(typo, colors),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              l10n.donorListLoadFailed,
-                              style: _mutedStyle(typo, colors),
-                            ),
-                            const SizedBox(height: 16),
-                            FButton(
-                              variant: FButtonVariant.secondary,
-                              onPress: _reloadDonors,
-                              prefix: const Icon(
-                                Icons.refresh_rounded,
-                                size: 18,
-                              ),
-                              child: Text(l10n.reloadAction),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    final data =
-                        snapshot.data ??
-                        const SupportDonorData(donors: <SupportDonorEntry>[]);
-                    return _buildDonorCard(
-                      context,
-                      data,
-                      colors: colors,
-                      typo: typo,
-                    );
-                  },
-                ),
-              ],
-            );
-          },
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          children: [
+            _buildCompactHero(context, colors: colors, typo: typo),
+            const SizedBox(height: 10),
+            _buildPaymentCard(context, colors: colors, typo: typo),
+            const SizedBox(height: 10),
+            FutureBuilder<SupportDonorData>(
+              future: _donorFuture,
+              builder: (context, snapshot) =>
+                  _buildDonorSection(context, snapshot, colors, typo),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildDonorShell(
+  Widget _buildPaymentMethodPicker(
     BuildContext context, {
+    required bool isWechat,
     required FColors colors,
     required FTypography typo,
-    required Widget child,
   }) {
-    return FCard.raw(
-      child: Padding(padding: _sectionPadding, child: child),
+    final l10n = AppLocalizations.of(context)!;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(l10n.supportMethodTitle, style: _emphasisBodyStyle(typo, colors)),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: FButton(
+                variant: isWechat
+                    ? FButtonVariant.primary
+                    : FButtonVariant.outline,
+                onPress: () =>
+                    setState(() => _selectedMethod = _SupportMethod.wechat),
+                prefix: Icon(
+                  Icons.chat_bubble_rounded,
+                  size: 18,
+                  color: isWechat ? null : const Color(0xFF10B981),
+                ),
+                child: Text(l10n.wechatLabel),
+              ),
+            ),
+            const SizedBox(width: _paymentColumnGap),
+            Expanded(
+              child: FButton(
+                variant: !isWechat
+                    ? FButtonVariant.primary
+                    : FButtonVariant.outline,
+                onPress: () =>
+                    setState(() => _selectedMethod = _SupportMethod.alipay),
+                prefix: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  size: 18,
+                  color: !isWechat ? null : const Color(0xFF0EA5E9),
+                ),
+                child: Text(l10n.alipayLabel),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  Widget _buildHeroSection(
+  Widget _buildCompactHero(
     BuildContext context, {
-    required bool compact,
     required FColors colors,
     required FTypography typo,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: Stack(
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colors.muted.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.border.withValues(alpha: 0.55)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary.withValues(alpha: 0.16),
-                  colorScheme.primaryContainer.withValues(alpha: 0.5),
-                  colors.background,
-                ],
-                stops: const [0.0, 0.55, 1.0],
-              ),
-            ),
-          ),
-          Positioned(
-            right: -28,
-            top: -28,
-            child: Container(
-              width: 112,
-              height: 112,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: colorScheme.primary.withValues(alpha: 0.08),
-              ),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(
-              12,
-              compact ? 14 : 16,
-              12,
-              compact ? 12 : 14,
-            ),
-            child: Column(
-              children: [
-                Center(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        width: compact ? 72 : 80,
-                        height: compact ? 72 : 80,
-                        decoration: BoxDecoration(
-                          color: colors.background,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: colors.border.withValues(alpha: 0.55),
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.14,
-                              ),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(22),
-                          child: BundledAssetImage(
-                            assetPath: BundledAssets.launcherIcon,
-                            fit: BoxFit.cover,
-                            cacheWidth: 160,
-                            cacheHeight: 160,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: BoxDecoration(
-                            color: colorScheme.primary,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: colors.background,
-                              width: 2,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Icon(
-                            Icons.local_cafe_rounded,
-                            size: 15,
-                            color: colorScheme.onPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colors.background,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colors.border.withValues(alpha: 0.6),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colors.foreground.withValues(alpha: 0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BundledAssetImage(
+                    assetPath: BundledAssets.launcherIcon,
+                    fit: BoxFit.cover,
+                    cacheWidth: 96,
+                    cacheHeight: 96,
                   ),
                 ),
-                SizedBox(height: compact ? 10 : 12),
+              ),
+              Positioned(
+                right: -2,
+                bottom: -2,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                    ),
+                    border: Border.all(color: colors.background, width: 1.5),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.favorite_rounded,
+                    size: 9,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Row(
                   children: [
                     Expanded(
-                      child: _SupportHighlight(
-                        icon: Icons.handyman_outlined,
-                        label: l10n.supportChipFixes,
-                        labelStyle: _emphasisBodyStyle(typo, colors),
-                        colors: colors,
+                      child: Text(
+                        l10n.supportHeroTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: _sectionTitleStyle(typo, colors),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _SupportHighlight(
-                        icon: Icons.sync_alt_rounded,
-                        label: l10n.supportChipAdapters,
-                        labelStyle: _emphasisBodyStyle(typo, colors),
-                        colors: colors,
+                    const SizedBox(width: 6),
+                    FBadge(
+                      variant: FBadgeVariant.secondary,
+                      child: Text(
+                        l10n.supportRunningBadge,
+                        style: _mutedStyle(typo, colors).copyWith(
+                          color: const Color(0xFF047857),
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _SupportHighlight(
-                        icon: Icons.auto_awesome_rounded,
-                        label: l10n.supportChipPolish,
-                        labelStyle: _emphasisBodyStyle(typo, colors),
-                        colors: colors,
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  l10n.supportHeroSubtitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: _mutedStyle(typo, colors),
+                ),
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 4,
+                  runSpacing: 4,
+                  children: [
+                    _FeatureCapsule(
+                      label: l10n.supportChipFixes,
+                      labelStyle: _mutedStyle(typo, colors).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF4338CA),
                       ),
+                      background: const Color(0xFFEEF2FF),
+                    ),
+                    _FeatureCapsule(
+                      label: l10n.supportChipAdapters,
+                      labelStyle: _mutedStyle(typo, colors).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF0369A1),
+                      ),
+                      background: const Color(0xFFE0F2FE),
+                    ),
+                    _FeatureCapsule(
+                      label: l10n.supportChipPolish,
+                      labelStyle: _mutedStyle(typo, colors).copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF047857),
+                      ),
+                      background: const Color(0xFFD1FAE5),
                     ),
                   ],
                 ),
@@ -319,13 +286,11 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
 
   Widget _buildPaymentCard(
     BuildContext context, {
-    required bool compact,
     required FColors colors,
     required FTypography typo,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final isWechat = _selectedMethod == _SupportMethod.wechat;
-    final title = isWechat ? l10n.wechatLabel : l10n.alipayLabel;
     final assetPath = isWechat
         ? BundledAssets.wechatPayQr
         : BundledAssets.alipayQr;
@@ -335,75 +300,162 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     final helperText = isWechat
         ? l10n.supportWeChatHint
         : l10n.supportAlipayHint;
+    final accent = isWechat ? const Color(0xFF10B981) : const Color(0xFF0EA5E9);
 
     return FCard.raw(
       child: Padding(
         padding: _sectionPadding,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              l10n.supportMethodTitle,
-              style: _sectionTitleStyle(typo, colors),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  child: FButton(
-                    variant: isWechat
-                        ? FButtonVariant.primary
-                        : FButtonVariant.outline,
-                    onPress: () =>
-                        setState(() => _selectedMethod = _SupportMethod.wechat),
-                    prefix: const Icon(
-                      Icons.chat_bubble_outline_rounded,
-                      size: 16,
-                    ),
-                    child: Text(l10n.wechatLabel),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FButton(
-                    variant: !isWechat
-                        ? FButtonVariant.primary
-                        : FButtonVariant.outline,
-                    onPress: () =>
-                        setState(() => _selectedMethod = _SupportMethod.alipay),
-                    prefix: const Icon(
-                      Icons.account_balance_wallet_outlined,
-                      size: 16,
-                    ),
-                    child: Text(l10n.alipayLabel),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            _buildQrCard(
+            _buildPaymentMethodPicker(
               context,
-              title: title,
-              assetPath: assetPath,
-              fileName: fileName,
-              helperText: helperText,
-              compact: compact,
+              isWechat: isWechat,
               colors: colors,
               typo: typo,
             ),
-            Center(
-              child: FButton(
-                variant: FButtonVariant.ghost,
-                onPress: () {
-                  showAppToast(
-                    context,
-                    message: l10n.supportCompleteThanks,
-                    kind: AppToastKind.success,
-                  );
-                },
-                prefix: const Icon(Icons.favorite_border_rounded, size: 16),
-                child: Text(l10n.supportConfirmed),
-              ),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    children: [
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _showQrPreview(
+                            context,
+                            assetPath: assetPath,
+                            fileName: fileName,
+                            isWechat: isWechat,
+                          ),
+                          child: Ink(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: colors.muted.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: colors.border.withValues(alpha: 0.55),
+                              ),
+                            ),
+                            child: AspectRatio(
+                              aspectRatio: 1,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: colors.border.withValues(
+                                          alpha: 0.45,
+                                        ),
+                                      ),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4),
+                                      child: BundledAssetImage(
+                                        assetPath: assetPath,
+                                        fit: BoxFit.contain,
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    child: Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: accent,
+                                        shape: BoxShape.circle,
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: accent.withValues(
+                                              alpha: 0.35,
+                                            ),
+                                            blurRadius: 6,
+                                          ),
+                                        ],
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Icon(
+                                        isWechat
+                                            ? Icons.chat_bubble_rounded
+                                            : Icons
+                                                  .account_balance_wallet_rounded,
+                                        size: 11,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.open_in_full_rounded,
+                            size: 14,
+                            color: colors.mutedForeground,
+                          ),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              l10n.supportTapQrHint,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: _mutedStyle(typo, colors),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: _paymentColumnGap),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      FButton(
+                        variant: FButtonVariant.secondary,
+                        onPress: () => _saveQrToGallery(
+                          assetPath: assetPath,
+                          fileName: fileName,
+                        ),
+                        prefix: const Icon(Icons.download_rounded, size: 16),
+                        child: Text(l10n.supportSaveShort),
+                      ),
+                      const SizedBox(height: 8),
+                      FButton(
+                        variant: FButtonVariant.outline,
+                        onPress: () {
+                          showAppToast(
+                            context,
+                            message: l10n.supportCompleteThanks,
+                            kind: AppToastKind.success,
+                          );
+                        },
+                        prefix: const Icon(
+                          Icons.favorite_border_rounded,
+                          size: 16,
+                          color: Color(0xFFE11D48),
+                        ),
+                        child: Text(l10n.supportConfirmedShort),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(helperText, style: _mutedStyle(typo, colors)),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -411,86 +463,66 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     );
   }
 
-  Widget _buildQrCard(
-    BuildContext context, {
-    required String title,
-    required String assetPath,
-    required String fileName,
-    required String helperText,
-    required bool compact,
-    required FColors colors,
-    required FTypography typo,
-  }) {
+  Widget _buildDonorSection(
+    BuildContext context,
+    AsyncSnapshot<SupportDonorData> snapshot,
+    FColors colors,
+    FTypography typo,
+  ) {
     final l10n = AppLocalizations.of(context)!;
-    final qrSize = compact ? 108.0 : 120.0;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () =>
-                  _showQrPreview(context, title: title, assetPath: assetPath),
-              child: Ink(
-                width: qrSize,
-                height: qrSize,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colors.foreground.withValues(alpha: 0.05),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(8),
-                child: BundledAssetImage(
-                  assetPath: assetPath,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          helperText,
-          textAlign: TextAlign.center,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: _mutedStyle(typo, colors),
-        ),
-        const SizedBox(height: 8),
-        Row(
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return _buildDonorShell(
+        context,
+        colors: colors,
+        typo: typo,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: FButton(
-                variant: FButtonVariant.secondary,
-                onPress: () =>
-                    _showQrPreview(context, title: title, assetPath: assetPath),
-                prefix: const Icon(Icons.fullscreen_rounded, size: 16),
-                child: Text(l10n.viewLargeImage),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: FButton(
-                variant: FButtonVariant.primary,
-                onPress: () =>
-                    _saveQrToGallery(assetPath: assetPath, fileName: fileName),
-                prefix: const Icon(Icons.download_rounded, size: 16),
-                child: Text(l10n.saveToGallery),
-              ),
+            Text(l10n.donorListTitle, style: _sectionTitleStyle(typo, colors)),
+            const SizedBox(height: 16),
+            const Center(child: FProgress()),
+          ],
+        ),
+      );
+    }
+
+    if (snapshot.hasError) {
+      return _buildDonorShell(
+        context,
+        colors: colors,
+        typo: typo,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.donorListTitle, style: _sectionTitleStyle(typo, colors)),
+            const SizedBox(height: 8),
+            Text(l10n.donorListLoadFailed, style: _mutedStyle(typo, colors)),
+            const SizedBox(height: 16),
+            FButton(
+              variant: FButtonVariant.secondary,
+              onPress: _reloadDonors,
+              prefix: const Icon(Icons.refresh_rounded, size: 18),
+              child: Text(l10n.reloadAction),
             ),
           ],
         ),
-      ],
+      );
+    }
+
+    final data =
+        snapshot.data ?? const SupportDonorData(donors: <SupportDonorEntry>[]);
+    return _buildDonorCard(context, data, colors: colors, typo: typo);
+  }
+
+  Widget _buildDonorShell(
+    BuildContext context, {
+    required FColors colors,
+    required FTypography typo,
+    required Widget child,
+  }) {
+    return FCard.raw(
+      child: Padding(padding: _donorSectionPadding, child: child),
     );
   }
 
@@ -589,7 +621,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
 
     return FCard.raw(
       child: Padding(
-        padding: _sectionPadding,
+        padding: _donorSectionPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -634,25 +666,69 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
 
   void _showQrPreview(
     BuildContext context, {
-    required String title,
     required String assetPath,
+    required String fileName,
+    required bool isWechat,
   }) {
+    final l10n = AppLocalizations.of(context)!;
+    final dialogTitle = isWechat
+        ? l10n.scanQrWechatTitle
+        : l10n.scanQrAlipayTitle;
+
     showFDialog<void>(
       context: context,
       builder: (dialogContext, style, animation) {
         final colors = dialogContext.theme.colors;
         return FDialog(
-          title: Text(title),
-          body: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colors.border),
-            ),
-            padding: const EdgeInsets.all(16),
-            child: BundledAssetImage(assetPath: assetPath, fit: BoxFit.contain),
+          title: Text(dialogTitle),
+          body: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: colors.muted.withValues(alpha: 0.25),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: colors.border),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: AspectRatio(
+                  aspectRatio: 1,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: BundledAssetImage(
+                        assetPath: assetPath,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.scanQrSubtitle,
+                textAlign: TextAlign.center,
+                style: dialogContext.theme.typography.body.xs.copyWith(
+                  color: colors.mutedForeground,
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
           actions: [
+            FButton(
+              variant: FButtonVariant.secondary,
+              onPress: () {
+                Navigator.pop(dialogContext);
+                _saveQrToGallery(assetPath: assetPath, fileName: fileName);
+              },
+              prefix: const Icon(Icons.download_rounded, size: 16),
+              child: Text(l10n.saveToGallery),
+            ),
             FButton(
               variant: FButtonVariant.primary,
               onPress: () => Navigator.pop(dialogContext),
@@ -682,42 +758,26 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
   }
 }
 
-class _SupportHighlight extends StatelessWidget {
-  const _SupportHighlight({
-    required this.icon,
+class _FeatureCapsule extends StatelessWidget {
+  const _FeatureCapsule({
     required this.label,
     required this.labelStyle,
-    required this.colors,
+    required this.background,
   });
 
-  final IconData icon;
   final String label;
   final TextStyle labelStyle;
-  final FColors colors;
+  final Color background;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: colors.background.withValues(alpha: 0.78),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border.withValues(alpha: 0.45)),
+        color: background,
+        borderRadius: BorderRadius.circular(6),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18, color: colors.primary),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: labelStyle,
-          ),
-        ],
-      ),
+      child: Text(label, style: labelStyle),
     );
   }
 }

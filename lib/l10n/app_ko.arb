@@ -409,6 +409,39 @@
       }
     }
   },
+  "supportRunningBadge": "운영 중",
+  "supportTapQrHint": "탭하여 확대",
+  "supportSaveShort": "저장",
+  "supportConfirmedShort": "후원함",
+  "donorSearchHint": "닉네임/메시지 검색...",
+  "donorSortLargeFirst": "금액 높은 순",
+  "donorSortSmallFirst": "금액 낮은 순",
+  "supportMonthlyGoalLabel": "이번 달 서버·인증서 갱신 진행률",
+  "supportGoalRaised": "모금: {raised} / 목표 {goal}",
+  "@supportGoalRaised": {
+    "placeholders": {
+      "raised": { "type": "String" },
+      "goal": { "type": "String" }
+    }
+  },
+  "supportBackerCount": "이미 {count}명이 후원",
+  "@supportBackerCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "supportDonorListFooter": "명단은 영구 보존됩니다 💖",
+  "supportMarqueeThanks": "🎉 {name}님 {amount} 감사합니다",
+  "@supportMarqueeThanks": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "supportMarqueeTail": "경屿 시간표가 안정적으로 운영 중 — 여러분의 후원을 기다립니다!",
+  "scanQrWechatTitle": "WeChat으로 QR 코드 스캔",
+  "scanQrAlipayTitle": "Alipay로 QR 코드 스캔",
+  "scanQrSubtitle": "스크린샷 후 스캔, 후원 감사합니다!",
   "courseOverviewTitle": "수업 전체보기 및 편집",
   "addNewCourseTooltip": "새 수업 추가",
   "emptyCourseOverviewHint": "시간표를 길게 누르거나 오른쪽 위에서 수업을 추가하세요",

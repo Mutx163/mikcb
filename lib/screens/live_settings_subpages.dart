@@ -1122,7 +1122,7 @@ class _LiveKeepAliveSettingsScreenState
                     final message = await provider.updateTimetableSettings(
                       _draft.copyWith(liveHideFromRecents: value),
                     );
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     if (message != null) {
                       showAppToast(context, message: message);
                     }

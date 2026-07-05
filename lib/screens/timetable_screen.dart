@@ -4625,14 +4625,12 @@ class _HomeActionButtonBody extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback onTap;
-  final Color? accentColor;
   final bool enabled;
 
   const _HomeActionButtonBody({
     required this.icon,
     required this.title,
     required this.onTap,
-    this.accentColor,
     this.enabled = true,
   });
 
@@ -4642,7 +4640,7 @@ class _HomeActionButtonBody extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final colors = context.theme.colors;
     final highlightColor = enabled
-        ? accentColor ?? colorScheme.primary
+        ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
 
     return FCard.raw(

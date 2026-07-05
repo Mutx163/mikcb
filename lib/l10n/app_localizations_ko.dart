@@ -805,6 +805,60 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get supportRunningBadge => '운영 중';
+
+  @override
+  String get supportTapQrHint => '탭하여 확대';
+
+  @override
+  String get supportSaveShort => '저장';
+
+  @override
+  String get supportConfirmedShort => '후원함';
+
+  @override
+  String get donorSearchHint => '닉네임/메시지 검색...';
+
+  @override
+  String get donorSortLargeFirst => '금액 높은 순';
+
+  @override
+  String get donorSortSmallFirst => '금액 낮은 순';
+
+  @override
+  String get supportMonthlyGoalLabel => '이번 달 서버·인증서 갱신 진행률';
+
+  @override
+  String supportGoalRaised(String raised, String goal) {
+    return '모금: $raised / 목표 $goal';
+  }
+
+  @override
+  String supportBackerCount(int count) {
+    return '이미 $count명이 후원';
+  }
+
+  @override
+  String get supportDonorListFooter => '명단은 영구 보존됩니다 💖';
+
+  @override
+  String supportMarqueeThanks(String name, String amount) {
+    return '🎉 $name님 $amount 감사합니다';
+  }
+
+  @override
+  String get supportMarqueeTail => '경屿 시간표가 안정적으로 운영 중 — 여러분의 후원을 기다립니다!';
+
+  @override
+  String get scanQrWechatTitle => 'WeChat으로 QR 코드 스캔';
+
+  @override
+  String get scanQrAlipayTitle => 'Alipay로 QR 코드 스캔';
+
+  @override
+  String get scanQrSubtitle => '스크린샷 후 스캔, 후원 감사합니다!';
+
+  @override
   String get courseOverviewTitle => '수업 전체보기 및 편집';
 
   @override

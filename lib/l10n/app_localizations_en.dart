@@ -839,6 +839,62 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get supportRunningBadge => 'Active';
+
+  @override
+  String get supportTapQrHint => 'Tap to enlarge';
+
+  @override
+  String get supportSaveShort => 'Save';
+
+  @override
+  String get supportConfirmedShort => 'Supported';
+
+  @override
+  String get donorSearchHint => 'Search name or message...';
+
+  @override
+  String get donorSortLargeFirst => 'Largest first';
+
+  @override
+  String get donorSortSmallFirst => 'Smallest first';
+
+  @override
+  String get supportMonthlyGoalLabel => 'Monthly server & certificate renewal';
+
+  @override
+  String supportGoalRaised(String raised, String goal) {
+    return 'Raised: $raised / Goal $goal';
+  }
+
+  @override
+  String supportBackerCount(int count) {
+    return '$count supporters so far';
+  }
+
+  @override
+  String get supportDonorListFooter => 'Names are kept permanently 💖';
+
+  @override
+  String supportMarqueeThanks(String name, String amount) {
+    return '🎉 Thanks to $name for $amount';
+  }
+
+  @override
+  String get supportMarqueeTail =>
+      'Qingyu Timetable keeps running — thank you for your support!';
+
+  @override
+  String get scanQrWechatTitle => 'Scan with WeChat';
+
+  @override
+  String get scanQrAlipayTitle => 'Scan with Alipay';
+
+  @override
+  String get scanQrSubtitle =>
+      'Screenshot and scan, thank you for your support!';
+
+  @override
   String get courseOverviewTitle => 'Course Overview & Edit';
 
   @override

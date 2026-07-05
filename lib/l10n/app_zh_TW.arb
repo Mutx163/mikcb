@@ -408,6 +408,39 @@
       }
     }
   },
+  "supportRunningBadge": "運行中",
+  "supportTapQrHint": "點擊放大掃碼",
+  "supportSaveShort": "保存",
+  "supportConfirmedShort": "已支持",
+  "donorSearchHint": "搜暱稱/寄語...",
+  "donorSortLargeFirst": "大額優先",
+  "donorSortSmallFirst": "小額優先",
+  "supportMonthlyGoalLabel": "本月伺服器和證書續期進度",
+  "supportGoalRaised": "已籌: {raised} / 目標 {goal}",
+  "@supportGoalRaised": {
+    "placeholders": {
+      "raised": { "type": "String" },
+      "goal": { "type": "String" }
+    }
+  },
+  "supportBackerCount": "已有 {count} 人獻出愛心",
+  "@supportBackerCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "supportDonorListFooter": "名單永久保留 💖",
+  "supportMarqueeThanks": "🎉 感謝 {name} 贊助 {amount}",
+  "@supportMarqueeThanks": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "supportMarqueeTail": "輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！",
+  "scanQrWechatTitle": "使用微信掃描二維碼",
+  "scanQrAlipayTitle": "使用支付寶掃描二維碼",
+  "scanQrSubtitle": "截圖並導入掃一掃，感謝支持！",
   "courseOverviewTitle": "課程總覽與編輯",
   "addNewCourseTooltip": "添加新課程",
   "emptyCourseOverviewHint": "長按課表或點擊右上角添加課程",

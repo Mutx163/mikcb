@@ -409,6 +409,49 @@
       }
     }
   },
+  "supportRunningBadge": "运行中",
+  "supportTapQrHint": "点击放大扫码",
+  "supportSaveShort": "保存",
+  "supportConfirmedShort": "已支持",
+  "donorSearchHint": "搜昵称/寄语...",
+  "donorSortLargeFirst": "大额优先",
+  "donorSortSmallFirst": "小额优先",
+  "supportMonthlyGoalLabel": "本月服务器和证书续期进度",
+  "supportGoalRaised": "已筹: {raised} / 目标 {goal}",
+  "@supportGoalRaised": {
+    "placeholders": {
+      "raised": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "String"
+      }
+    }
+  },
+  "supportBackerCount": "已有 {count} 人献出爱心",
+  "@supportBackerCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "supportDonorListFooter": "名单永久保留 💖",
+  "supportMarqueeThanks": "🎉 感谢 {name} 赞助 {amount}",
+  "@supportMarqueeThanks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "supportMarqueeTail": "轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心！",
+  "scanQrWechatTitle": "使用微信扫描二维码",
+  "scanQrAlipayTitle": "使用支付宝扫描二维码",
+  "scanQrSubtitle": "截图并导入扫一扫，感谢支持！",
   "courseOverviewTitle": "课程总览与编辑",
   "addNewCourseTooltip": "添加新课程",
   "emptyCourseOverviewHint": "长按课表或点击右上角添加课程",

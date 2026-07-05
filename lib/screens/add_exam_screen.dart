@@ -536,9 +536,10 @@ class _AddExamScreenState extends State<AddExamScreen> {
               l10n.weekdaySat,
               l10n.weekdaySun,
             ];
-            final selectedDateLabel = selectedDayOfWeek != null
+            final selectedDay = selectedDayOfWeek;
+            final selectedDateLabel = selectedDay != null
                 ? DateFormat.Md().format(
-                    getDateForWeekAndDay(selectedWeek, selectedDayOfWeek!),
+                    getDateForWeekAndDay(selectedWeek, selectedDay),
                   )
                 : l10n.weekLabel(selectedWeek);
 
@@ -726,7 +727,7 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                   ),
                                   title: Text(
                                     selectedDayOfWeek != null
-                                        ? '${DateFormat.Md().format(getDateForWeekAndDay(week, selectedDayOfWeek!))} ${dayNames[selectedDayOfWeek! - 1]}'
+                                        ? '${DateFormat.Md().format(getDateForWeekAndDay(week, selectedDayOfWeek))} ${dayNames[selectedDayOfWeek - 1]}'
                                         : l10n.weekLabel(week),
                                   ),
                                   details:
@@ -745,13 +746,11 @@ class _AddExamScreenState extends State<AddExamScreen> {
                                         )
                                       : null,
                                   onPress: () {
-                                    if (selectedDayOfWeek != null) {
+                                    final day = selectedDayOfWeek;
+                                    if (day != null) {
                                       Navigator.pop(
                                         ctx,
-                                        getDateForWeekAndDay(
-                                          week,
-                                          selectedDayOfWeek!,
-                                        ),
+                                        getDateForWeekAndDay(week, day),
                                       );
                                     } else {
                                       setModalState(() {

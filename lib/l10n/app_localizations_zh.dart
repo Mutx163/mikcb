@@ -785,6 +785,60 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get supportRunningBadge => '运行中';
+
+  @override
+  String get supportTapQrHint => '点击放大扫码';
+
+  @override
+  String get supportSaveShort => '保存';
+
+  @override
+  String get supportConfirmedShort => '已支持';
+
+  @override
+  String get donorSearchHint => '搜昵称/寄语...';
+
+  @override
+  String get donorSortLargeFirst => '大额优先';
+
+  @override
+  String get donorSortSmallFirst => '小额优先';
+
+  @override
+  String get supportMonthlyGoalLabel => '本月服务器和证书续期进度';
+
+  @override
+  String supportGoalRaised(String raised, String goal) {
+    return '已筹: $raised / 目标 $goal';
+  }
+
+  @override
+  String supportBackerCount(int count) {
+    return '已有 $count 人献出爱心';
+  }
+
+  @override
+  String get supportDonorListFooter => '名单永久保留 💖';
+
+  @override
+  String supportMarqueeThanks(String name, String amount) {
+    return '🎉 感谢 $name 赞助 $amount';
+  }
+
+  @override
+  String get supportMarqueeTail => '轻屿课表正在稳定运行中，期待你的每一次陪伴与爱心！';
+
+  @override
+  String get scanQrWechatTitle => '使用微信扫描二维码';
+
+  @override
+  String get scanQrAlipayTitle => '使用支付宝扫描二维码';
+
+  @override
+  String get scanQrSubtitle => '截图并导入扫一扫，感谢支持！';
+
+  @override
   String get courseOverviewTitle => '课程总览与编辑';
 
   @override
@@ -5789,6 +5843,60 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String saveFailedWithError(String error) {
     return '保存失敗：$error';
   }
+
+  @override
+  String get supportRunningBadge => '運行中';
+
+  @override
+  String get supportTapQrHint => '點擊放大掃碼';
+
+  @override
+  String get supportSaveShort => '保存';
+
+  @override
+  String get supportConfirmedShort => '已支持';
+
+  @override
+  String get donorSearchHint => '搜暱稱/寄語...';
+
+  @override
+  String get donorSortLargeFirst => '大額優先';
+
+  @override
+  String get donorSortSmallFirst => '小額優先';
+
+  @override
+  String get supportMonthlyGoalLabel => '本月伺服器和證書續期進度';
+
+  @override
+  String supportGoalRaised(String raised, String goal) {
+    return '已籌: $raised / 目標 $goal';
+  }
+
+  @override
+  String supportBackerCount(int count) {
+    return '已有 $count 人獻出愛心';
+  }
+
+  @override
+  String get supportDonorListFooter => '名單永久保留 💖';
+
+  @override
+  String supportMarqueeThanks(String name, String amount) {
+    return '🎉 感謝 $name 贊助 $amount';
+  }
+
+  @override
+  String get supportMarqueeTail => '輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！';
+
+  @override
+  String get scanQrWechatTitle => '使用微信掃描二維碼';
+
+  @override
+  String get scanQrAlipayTitle => '使用支付寶掃描二維碼';
+
+  @override
+  String get scanQrSubtitle => '截圖並導入掃一掃，感謝支持！';
 
   @override
   String get courseOverviewTitle => '課程總覽與編輯';
@@ -10796,6 +10904,60 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String saveFailedWithError(String error) {
     return '保存失敗：$error';
   }
+
+  @override
+  String get supportRunningBadge => '運行中';
+
+  @override
+  String get supportTapQrHint => '點擊放大掃碼';
+
+  @override
+  String get supportSaveShort => '保存';
+
+  @override
+  String get supportConfirmedShort => '已支持';
+
+  @override
+  String get donorSearchHint => '搜暱稱/寄語...';
+
+  @override
+  String get donorSortLargeFirst => '大額優先';
+
+  @override
+  String get donorSortSmallFirst => '小額優先';
+
+  @override
+  String get supportMonthlyGoalLabel => '本月伺服器和證書續期進度';
+
+  @override
+  String supportGoalRaised(String raised, String goal) {
+    return '已籌: $raised / 目標 $goal';
+  }
+
+  @override
+  String supportBackerCount(int count) {
+    return '已有 $count 人獻出愛心';
+  }
+
+  @override
+  String get supportDonorListFooter => '名單永久保留 💖';
+
+  @override
+  String supportMarqueeThanks(String name, String amount) {
+    return '🎉 感謝 $name 贊助 $amount';
+  }
+
+  @override
+  String get supportMarqueeTail => '輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！';
+
+  @override
+  String get scanQrWechatTitle => '使用微信掃描二維碼';
+
+  @override
+  String get scanQrAlipayTitle => '使用支付寶掃描二維碼';
+
+  @override
+  String get scanQrSubtitle => '截圖並導入掃一掃，感謝支持！';
 
   @override
   String get courseOverviewTitle => '課程總覽與編輯';

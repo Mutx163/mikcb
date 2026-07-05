@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
@@ -205,35 +206,33 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }
 
   Widget _buildStartEndTimeLayout(AppLocalizations l10n) {
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: _buildEndpointColumn(
-              groupLabel: l10n.scheduleStartGroupLabel,
-              dateValue: _formatCompactDateLabel(context, _selectedStartDate),
-              timeValue: _formatTimeLabel(context, _startTime),
-              dateIcon: Icons.calendar_today_outlined,
-              timeIcon: Icons.schedule_rounded,
-              onDatePress: () => _pickDate(isStart: true),
-              onTimePress: () => _pickTime(isStart: true),
-            ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: _buildEndpointColumn(
+            groupLabel: l10n.scheduleStartGroupLabel,
+            dateValue: _formatCompactDateLabel(context, _selectedStartDate),
+            timeValue: _formatTimeLabel(context, _startTime),
+            dateIcon: Icons.calendar_today_outlined,
+            timeIcon: Icons.schedule_rounded,
+            onDatePress: () => _pickDate(isStart: true),
+            onTimePress: () => _pickTime(isStart: true),
           ),
-          const SizedBox(width: _fieldSpacing),
-          Expanded(
-            child: _buildEndpointColumn(
-              groupLabel: l10n.scheduleEndGroupLabel,
-              dateValue: _formatCompactDateLabel(context, _selectedEndDate),
-              timeValue: _formatTimeLabel(context, _endTime),
-              dateIcon: Icons.date_range_rounded,
-              timeIcon: Icons.schedule_outlined,
-              onDatePress: () => _pickDate(isStart: false),
-              onTimePress: () => _pickTime(isStart: false),
-            ),
+        ),
+        const SizedBox(width: _fieldSpacing),
+        Expanded(
+          child: _buildEndpointColumn(
+            groupLabel: l10n.scheduleEndGroupLabel,
+            dateValue: _formatCompactDateLabel(context, _selectedEndDate),
+            timeValue: _formatTimeLabel(context, _endTime),
+            dateIcon: Icons.date_range_rounded,
+            timeIcon: Icons.schedule_outlined,
+            onDatePress: () => _pickDate(isStart: false),
+            onTimePress: () => _pickTime(isStart: false),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -248,6 +247,7 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }) {
     final theme = context.theme;
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
@@ -276,18 +276,15 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     required VoidCallback onPress,
   }) {
     final theme = context.theme;
+    final valueStyle = theme.typography.body.sm.copyWith(
+      fontWeight: FontWeight.w600,
+    );
     return FTile(
       prefix: Icon(icon, size: 18),
-      title: Text(
-        value,
-        style: theme.typography.body.sm.copyWith(fontWeight: FontWeight.w600),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      suffix: Icon(
-        Icons.chevron_right_rounded,
-        size: 18,
-        color: theme.colors.mutedForeground,
+      title: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(value, style: valueStyle, maxLines: 1, softWrap: false),
       ),
       onPress: onPress,
     );
@@ -389,7 +386,11 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   }
 
   String _formatCompactDateLabel(BuildContext context, DateTime value) {
-    return MaterialLocalizations.of(context).formatShortDate(value);
+    final locale = Localizations.localeOf(context).toString();
+    if (value.year == DateTime.now().year) {
+      return DateFormat.Md(locale).format(value);
+    }
+    return DateFormat.yMd(locale).format(value);
   }
 
   String _formatTimeLabel(BuildContext context, TimeOfDay time) {
