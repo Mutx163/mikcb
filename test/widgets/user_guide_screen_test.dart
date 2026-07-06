@@ -59,8 +59,9 @@ void main() {
     expect(find.text('2 / 4'), findsOneWidget);
   });
 
-  testWidgets('consent-required guide blocks forward on privacy page',
-      (tester) async {
+  testWidgets('consent-required guide blocks forward on privacy page', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const TestApp(home: UserGuideScreen(requirePrivacyConsent: true)),
     );
@@ -182,8 +183,9 @@ void main() {
     expect(find.text('3 / 4'), findsOneWidget);
   });
 
-  testWidgets('language selector on welcome page with provider',
-      (tester) async {
+  testWidgets('language selector on welcome page with provider', (
+    tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     final provider = TimetableProvider(
       autoInitialize: false,
@@ -203,8 +205,9 @@ void main() {
     expect(find.text('语言选择'), findsOneWidget);
   });
 
-  testWidgets('welcome page shows import and restore when callbacks provided',
-      (tester) async {
+  testWidgets('welcome page shows import and restore when callbacks provided', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       TestApp(
         home: UserGuideScreen(

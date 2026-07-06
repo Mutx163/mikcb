@@ -229,6 +229,14 @@ EdgeInsets _hyperosRowPadding(BuildContext context) {
   );
 }
 
+EdgeInsets _hyperosChevronRowPadding(BuildContext context) {
+  final scope = HyperosListTileScope.maybeOf(context);
+  return HyperosTokens.chevronRowPadding(
+    isFirst: scope?.isFirst ?? true,
+    isLast: scope?.isLast ?? true,
+  );
+}
+
 /// Fixed-height row shell shared by settings list tiles (56dp single-line default).
 Widget _hyperosListRowShell({
   required EdgeInsetsGeometry padding,
@@ -290,12 +298,16 @@ class HyperosSectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: HyperosTokens.sectionLabelInset,
-        bottom: 8,
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: HyperosTokens.sectionLabelInset,
+          right: HyperosTokens.sectionLabelInset,
+          bottom: 8,
+        ),
+        child: Text(text, style: HyperosTypography.sectionLabel(context)),
       ),
-      child: Text(text, style: HyperosTypography.sectionLabel(context)),
     );
   }
 }
@@ -310,12 +322,19 @@ class HyperosSectionDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(left: HyperosTokens.sectionLabelInset, top: 8),
-      child: Text(
-        text,
-        style: HyperosTypography.sectionDescription(context),
-        softWrap: true,
+    return SizedBox(
+      width: double.infinity,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: HyperosTokens.sectionLabelInset,
+          right: HyperosTokens.sectionLabelInset,
+          top: 8,
+        ),
+        child: Text(
+          text,
+          style: HyperosTypography.sectionDescription(context),
+          softWrap: true,
+        ),
       ),
     );
   }
@@ -653,7 +672,7 @@ class HyperosListTile extends StatelessWidget {
     final primaryText = HyperosColors.primaryText(context);
 
     final row = _hyperosListRowShell(
-      padding: _hyperosRowPadding(context),
+      padding: _hyperosChevronRowPadding(context),
       child: Row(
         children: [
           HyperosIconBadge(
@@ -765,12 +784,7 @@ class HyperosSwitchTile extends StatelessWidget {
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: subtitleStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(subtitle!, style: subtitleStyle, softWrap: true),
                 ],
               ],
             ),
@@ -945,17 +959,9 @@ class HyperosChoiceTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: (usePopupStyle || useDialogStyle)
-                      ? TextStyle(
-                          fontSize: HyperosMiuixTypography.body1,
-                          fontWeight: selected
-                              ? FontWeight.w500
-                              : FontWeight.w400,
-                          color: titleColor,
-                        )
-                      : HyperosTypography.listTitle(
-                          context,
-                        ).copyWith(color: titleColor),
+                  style: HyperosTypography.title(
+                    context,
+                  ).copyWith(color: titleColor),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
@@ -1169,7 +1175,7 @@ class HyperosNavTile extends StatelessWidget {
         : null;
 
     final row = _hyperosListRowShell(
-      padding: _hyperosRowPadding(context),
+      padding: _hyperosChevronRowPadding(context),
       minHeight: rowHeight,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -1188,12 +1194,7 @@ class HyperosNavTile extends StatelessWidget {
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: subtitleStyle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  Text(subtitle!, style: subtitleStyle, softWrap: true),
                 ],
               ],
             ),

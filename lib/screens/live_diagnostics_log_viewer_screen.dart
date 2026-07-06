@@ -235,101 +235,103 @@ class _LiveDiagnosticsLogViewerScreenState
 
     return HyperosControlCard(
       subtitle: l10n.diagnosticsLogIntro,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (_recordingEnabled != null) ...[
-            HyperosListGroup(
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_recordingEnabled != null) ...[
+              HyperosListGroup(
+                children: [
+                  HyperosSwitchTile(
+                    title: l10n.aboutRecordDiagnosticsTitle,
+                    subtitle: _recordingEnabled!
+                        ? l10n.appLogsRecordingEnabled
+                        : l10n.appLogsRecordingDisabled,
+                    value: _recordingEnabled!,
+                    onChanged: widget.onRecordingChanged == null
+                        ? null
+                        : (value) {
+                            widget.onRecordingChanged!(value);
+                            setState(() {
+                              _recordingEnabled = value;
+                            });
+                          },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+            Row(
               children: [
-                HyperosSwitchTile(
-                  title: l10n.aboutRecordDiagnosticsTitle,
-                  subtitle: _recordingEnabled!
-                      ? l10n.appLogsRecordingEnabled
-                      : l10n.appLogsRecordingDisabled,
-                  value: _recordingEnabled!,
-                  onChanged: widget.onRecordingChanged == null
-                      ? null
-                      : (value) {
-                          widget.onRecordingChanged!(value);
-                          setState(() {
-                            _recordingEnabled = value;
-                          });
-                        },
+                Expanded(
+                  child: HyperosButton(
+                    label: l10n.diagnosticsStructuredTab,
+                    variant: _viewMode == DiagnosticsLogViewMode.structured
+                        ? HyperosButtonVariant.primary
+                        : HyperosButtonVariant.secondary,
+                    onPressed: () {
+                      setState(() {
+                        _viewMode = DiagnosticsLogViewMode.structured;
+                      });
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: HyperosButton(
+                    label: l10n.diagnosticsRawTab,
+                    variant: _viewMode == DiagnosticsLogViewMode.raw
+                        ? HyperosButtonVariant.primary
+                        : HyperosButtonVariant.secondary,
+                    onPressed: () {
+                      setState(() {
+                        _viewMode = DiagnosticsLogViewMode.raw;
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-          ],
-          Row(
-            children: [
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.diagnosticsStructuredTab,
-                  variant: _viewMode == DiagnosticsLogViewMode.structured
-                      ? HyperosButtonVariant.primary
-                      : HyperosButtonVariant.secondary,
-                  onPressed: () {
-                    setState(() {
-                      _viewMode = DiagnosticsLogViewMode.structured;
-                    });
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: HyperosButton(
-                  label: l10n.diagnosticsRawTab,
-                  variant: _viewMode == DiagnosticsLogViewMode.raw
-                      ? HyperosButtonVariant.primary
-                      : HyperosButtonVariant.secondary,
-                  onPressed: () {
-                    setState(() {
-                      _viewMode = DiagnosticsLogViewMode.raw;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final level in DiagnosticsLogLevel.values) ...[
-                  _LevelFilterButton(
-                    label:
-                        '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
-                    selected: _selectedLevel == level,
-                    onPress: () {
-                      setState(() {
-                        _selectedLevel = level;
-                      });
-                    },
-                  ),
-                  if (level != DiagnosticsLogLevel.values.last)
-                    const SizedBox(width: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  for (final level in DiagnosticsLogLevel.values) ...[
+                    _LevelFilterButton(
+                      label:
+                          '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
+                      selected: _selectedLevel == level,
+                      onPress: () {
+                        setState(() {
+                          _selectedLevel = level;
+                        });
+                      },
+                    ),
+                    if (level != DiagnosticsLogLevel.values.last)
+                      const SizedBox(width: 8),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            l10n.diagnosticsShowingCount(
-              filteredEntries.length,
-              parsed.entries.length,
-            ),
-            style: HyperosTypography.listDetail(context),
-          ),
-          if (_viewMode == DiagnosticsLogViewMode.raw &&
-              _selectedLevel != DiagnosticsLogLevel.all) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
             Text(
-              l10n.diagnosticsRawFilteredHint,
+              l10n.diagnosticsShowingCount(
+                filteredEntries.length,
+                parsed.entries.length,
+              ),
               style: HyperosTypography.listDetail(context),
             ),
+            if (_viewMode == DiagnosticsLogViewMode.raw &&
+                _selectedLevel != DiagnosticsLogLevel.all) ...[
+              const SizedBox(height: 4),
+              Text(
+                l10n.diagnosticsRawFilteredHint,
+                style: HyperosTypography.listDetail(context),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -467,7 +469,7 @@ class _LiveDiagnosticsLogViewerScreenState
         clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: const EdgeInsets.all(12),
-          child: SelectableText(
+          child: Text(
             rawText,
             style: HyperosTypography.listDetail(
               context,
@@ -569,55 +571,57 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return HyperosControlCard(
       title: parsed.title,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.diagnosticsDeviceInfoTitle,
-            style: HyperosTypography.listTitle(
-              context,
-            ).copyWith(color: HyperosColors.secondaryText(context)),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: parsed.headerEntries.entries
-                .map(
-                  (item) => Container(
-                    constraints: const BoxConstraints(minWidth: 120),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 8,
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.diagnosticsDeviceInfoTitle,
+              style: HyperosTypography.listTitle(
+                context,
+              ).copyWith(color: HyperosColors.secondaryText(context)),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: parsed.headerEntries.entries
+                  .map(
+                    (item) => Container(
+                      constraints: const BoxConstraints(minWidth: 120),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: HyperosColors.rowHighlight(context),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _prettyKey(item.key, l10n),
+                            style: HyperosTypography.listDetail(
+                              context,
+                            ).copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _inlineValue(item.value),
+                            style: HyperosTypography.listDetail(
+                              context,
+                            ).copyWith(height: 1.35),
+                          ),
+                        ],
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: HyperosColors.rowHighlight(context),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          _prettyKey(item.key, l10n),
-                          style: HyperosTypography.listDetail(
-                            context,
-                          ).copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        SelectableText(
-                          _inlineValue(item.value),
-                          style: HyperosTypography.listDetail(
-                            context,
-                          ).copyWith(height: 1.35),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ],
+                  )
+                  .toList(growable: false),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -703,7 +707,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
             ),
             if (entry.message.isNotEmpty) ...[
               const SizedBox(height: 12),
-              SelectableText(
+              Text(
                 entry.message,
                 style: typo.sm.copyWith(
                   height: 1.45,
@@ -775,7 +779,7 @@ class _DiagnosticsDetailRow extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          SelectableText(
+          Text(
             value,
             style: typo.xs2.copyWith(
               fontFamily: value.contains('\n') ? 'monospace' : null,

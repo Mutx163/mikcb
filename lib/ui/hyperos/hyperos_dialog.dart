@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// Action button for [HyperosDialog] — text style, Miuix dialog pattern.
 class HyperosDialogAction {
@@ -32,8 +33,6 @@ class HyperosDialog extends StatelessWidget {
   final String? message;
   final List<HyperosDialogAction> actions;
 
-  static const _dialogRadius = 24.0;
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -43,22 +42,18 @@ class HyperosDialog extends StatelessWidget {
     final titleColor = isDark
         ? HyperosMiuixDarkColors.onSurface
         : HyperosMiuixLightColors.onSurface;
-    final summaryColor = isDark
-        ? HyperosMiuixDarkColors.onSurfaceVariantSummary
-        : HyperosMiuixLightColors.onSurfaceVariantSummary;
 
     final content =
         body ??
         (message != null
-            ? Text(
-                message!,
-                style: TextStyle(
-                  fontSize: HyperosMiuixTypography.body2,
-                  height: 1.45,
-                  color: summaryColor,
-                ),
-              )
+            ? Text(message!, style: HyperosTypography.listDetail(context))
             : null);
+
+    final viewSize = MediaQuery.sizeOf(context);
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+    final maxDialogHeight =
+        (viewSize.height - viewInsets.vertical) -
+        HyperosMiuixDialog.outsideMarginVertical * 2;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -67,44 +62,42 @@ class HyperosDialog extends StatelessWidget {
         vertical: HyperosMiuixDialog.outsideMarginVertical,
       ),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(
+        constraints: BoxConstraints(
           maxWidth: HyperosMiuixDialog.maxWidth,
+          maxHeight: maxDialogHeight,
         ),
         child: Material(
           color: background,
-          borderRadius: BorderRadius.circular(_dialogRadius),
+          shape: HyperosTheme.cardShape(),
           clipBehavior: Clip.antiAlias,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(
               HyperosMiuixDialog.insideMarginHorizontal,
               HyperosMiuixDialog.insideMarginVertical,
               HyperosMiuixDialog.insideMarginHorizontal,
-              16,
+              HyperosMiuixDialog.insideMarginVertical,
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (title != null) ...[
                   Text(
                     title!,
-                    style: TextStyle(
-                      fontSize: HyperosMiuixTypography.title3,
-                      fontWeight: FontWeight.w600,
-                      height: 1.25,
-                      color: titleColor,
-                    ),
+                    style: HyperosTypography.title(
+                      context,
+                    ).copyWith(color: titleColor),
                   ),
                   SizedBox(height: HyperosMiuixDialog.titleBottomPadding),
                 ],
                 if (content != null) ...[
-                  DefaultTextStyle(
-                    style: TextStyle(
-                      fontSize: HyperosMiuixTypography.body2,
-                      height: 1.45,
-                      color: summaryColor,
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: DefaultTextStyle(
+                        style: HyperosTypography.listDetail(context),
+                        child: content,
+                      ),
                     ),
-                    child: content,
                   ),
                   if (actions.isNotEmpty)
                     SizedBox(height: HyperosMiuixDialog.summaryBottomPadding),

@@ -55,25 +55,25 @@ class HyperosFrostedHeaderShell extends StatelessWidget {
   const HyperosFrostedHeaderShell({
     required this.child,
     this.blurEnabled = true,
+    this.tint,
     super.key,
   });
 
   final Widget child;
   final bool blurEnabled;
+  final Color? tint;
 
   @override
   Widget build(BuildContext context) {
-    final scopeBlur = HyperosBlurredHeaderScope.blurEnabledOf(context);
-    final useBlur =
-        blurEnabled &&
-        scopeBlur &&
-        HyperosBlurredHeader.backdropBlurEnabled(context);
-    final tint = HyperosBlurredHeader.tintColor(context, withBlur: useBlur);
+    final platformBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final useBlur = blurEnabled && platformBlur;
+    final resolvedTint =
+        tint ?? HyperosBlurredHeader.tintColor(context, withBlur: useBlur);
 
     return FrostedHeaderBackground(
       blurEnabled: useBlur,
       blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
-      tint: tint,
+      tint: resolvedTint,
       child: child,
     );
   }

@@ -111,29 +111,31 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           const SizedBox(height: 8),
           HyperosControlCard(
             title: 'HyperosAccordion',
-            child: HyperosAccordion(
-              items: [
-                HyperosAccordionItem(
-                  title: Text(
-                    '第一节',
-                    style: HyperosTypography.listTitle(context),
+            child: HyperosControlCardInset(
+              child: HyperosAccordion(
+                items: [
+                  HyperosAccordionItem(
+                    title: Text(
+                      '第一节',
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                    child: Text(
+                      '展开后显示的内容区域。',
+                      style: HyperosTypography.listDetail(context),
+                    ),
                   ),
-                  child: Text(
-                    '展开后显示的内容区域。',
-                    style: HyperosTypography.listDetail(context),
+                  HyperosAccordionItem(
+                    title: Text(
+                      '第二节',
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                    child: Text(
+                      '可折叠分组，替代 FAccordion。',
+                      style: HyperosTypography.listDetail(context),
+                    ),
                   ),
-                ),
-                HyperosAccordionItem(
-                  title: Text(
-                    '第二节',
-                    style: HyperosTypography.listTitle(context),
-                  ),
-                  child: Text(
-                    '可折叠分组，替代 FAccordion。',
-                    style: HyperosTypography.listDetail(context),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),

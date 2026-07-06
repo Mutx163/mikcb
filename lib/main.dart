@@ -300,7 +300,10 @@ class MyApp extends StatelessWidget {
                 themeMode: _themeModeFromSettings(settings.themeMode),
                 theme: _appThemeData(foruiLight, fontFamily: fontFamily),
                 darkTheme: _appThemeData(foruiDark, fontFamily: fontFamily),
-                navigatorObservers: <NavigatorObserver>[_AppRouteLogObserver()],
+                navigatorObservers: <NavigatorObserver>[
+                  _AppRouteLogObserver(),
+                  hyperosRouteObserver,
+                ],
                 builder: (context, child) {
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
@@ -346,6 +349,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       WebdavSyncCoordinator.instance();
   bool _startupHandled = false;
   bool _isBootstrapping = true;
+  bool _mainContentReady = false;
 
   @override
   void initState() {
@@ -456,9 +460,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
             AppLogMessages.startupFlowCompletedNoOnboarding,
           ),
         );
-        setState(() {
-          _isBootstrapping = false;
-        });
+        await _revealMainContent();
         return;
       }
 
@@ -495,9 +497,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           AppLogMessages.startupFlowCompletedAfterGuide,
         ),
       );
-      setState(() {
-        _isBootstrapping = false;
-      });
+      await _revealMainContent();
     } catch (e, stackTrace) {
       // 初始化失败时降级进入主界面，避免白屏 hang
       unawaited(
@@ -509,11 +509,24 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         ),
       );
       if (mounted) {
-        setState(() {
-          _isBootstrapping = false;
-        });
+        await _revealMainContent();
       }
     }
+  }
+
+  /// Mount [TimetableScreen] under the boot overlay, paint one frame, then fade.
+  Future<void> _revealMainContent() async {
+    if (!mounted) {
+      return;
+    }
+    if (!_mainContentReady) {
+      setState(() => _mainContentReady = true);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    if (!mounted || !_isBootstrapping) {
+      return;
+    }
+    setState(() => _isBootstrapping = false);
   }
 
   Future<bool> _openGuide({
@@ -761,10 +774,25 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   @override
   Widget build(BuildContext context) {
-    if (_isBootstrapping) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    return const TimetableScreen();
+    final overlayColor = HyperosColors.scaffoldBackground(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (_mainContentReady) const TimetableScreen(),
+        AnimatedOpacity(
+          opacity: _isBootstrapping ? 1 : 0,
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+          child: IgnorePointer(
+            ignoring: !_isBootstrapping,
+            child: ColoredBox(
+              color: overlayColor,
+              child: const Center(child: CircularProgressIndicator()),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

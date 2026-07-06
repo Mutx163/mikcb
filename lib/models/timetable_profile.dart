@@ -4,8 +4,9 @@ import 'schedule_item.dart';
 import 'timetable_settings.dart';
 
 int clampCurrentWeekToSettings(int week, TimetableSettings settings) {
-  final maxWeek =
-      settings.semesterWeekCount < 1 ? 1 : settings.semesterWeekCount;
+  final maxWeek = settings.semesterWeekCount < 1
+      ? 1
+      : settings.semesterWeekCount;
   if (week < 1) {
     return 1;
   }
@@ -63,24 +64,28 @@ class TimetableProfile {
       name: json['name'] as String? ?? '未命名课表',
       courses: (json['courses'] as List<dynamic>? ?? const [])
           .map(
-              (item) => Course.fromJson(Map<String, dynamic>.from(item as Map)))
+            (item) => Course.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
       scheduleItems: (json['scheduleItems'] as List<dynamic>? ?? const [])
-          .map((item) =>
-              ScheduleItem.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) =>
+                ScheduleItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
       exams: (json['exams'] as List<dynamic>? ?? const [])
-          .map((item) =>
-              Exam.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map((item) => Exam.fromJson(Map<String, dynamic>.from(item as Map)))
           .toList(),
       settings: settings,
       currentWeek: clampCurrentWeekToSettings(
         ((json['currentWeek'] as num?)?.toInt() ?? 1).clamp(1, 30),
         settings,
       ),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
-      lastUsedAt: DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
+      lastUsedAt:
+          DateTime.tryParse(json['lastUsedAt'] as String? ?? '') ??
           DateTime.now(),
     );
   }

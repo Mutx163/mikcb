@@ -32,6 +32,32 @@ void main() {
       expect(HyperosTheme.cardShape(), isA<RoundedSuperellipseBorder>());
     });
 
+    testWidgets('list title uses regular weight per HyperOS settings rows', (
+      tester,
+    ) async {
+      late TextStyle listStyle;
+      late TextStyle sheetStyle;
+      late TextStyle summaryStyle;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) {
+              listStyle = HyperosTypography.listTitle(context);
+              sheetStyle = HyperosTypography.sheetTitle(context);
+              summaryStyle = HyperosTypography.summaryTitle(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      for (final style in [listStyle, sheetStyle, summaryStyle]) {
+        expect(style.fontWeight, FontWeight.w400);
+        expect(style.fontSize, HyperosTokens.titleSize);
+      }
+    });
+
     testWidgets(
       'list group spans list width when child is intrinsically narrow',
       (tester) async {

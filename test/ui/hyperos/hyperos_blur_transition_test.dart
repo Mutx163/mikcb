@@ -68,4 +68,16 @@ void main() {
       expect(hyperosIsIncomingRouteSettled(animationValue: 0.998), isFalse);
     });
   });
+
+  group('hyperosContentUnderHeader', () {
+    test('false at scroll top', () {
+      expect(hyperosContentUnderHeader(scrollPixels: 0), isFalse);
+      expect(hyperosContentUnderHeader(scrollPixels: -40), isFalse);
+    });
+
+    test('true once content moves under header', () {
+      expect(hyperosContentUnderHeader(scrollPixels: 1), isTrue);
+      expect(hyperosContentUnderHeader(scrollPixels: 120), isTrue);
+    });
+  });
 }

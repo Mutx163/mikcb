@@ -17,8 +17,9 @@ abstract final class DiagnosticLogLevels {
 class UmengAnalyticsService {
   UmengAnalyticsService._();
 
-  static const MethodChannel _channel =
-      MethodChannel('com.mutx163.qingyu/umeng_analytics');
+  static const MethodChannel _channel = MethodChannel(
+    'com.mutx163.qingyu/umeng_analytics',
+  );
 
   static bool _initialized = false;
   static final Map<String, DateTime> _lastReportAt = {};
@@ -71,7 +72,8 @@ class UmengAnalyticsService {
     String? dedupeKey,
     DiagnosticLogLevel? level,
   }) async {
-    final effectiveLevel = level ??
+    final effectiveLevel =
+        level ??
         (error != null || stackTrace != null
             ? DiagnosticLogLevels.error
             : DiagnosticLogLevels.warn);
@@ -173,8 +175,9 @@ class UmengAnalyticsService {
       return null;
     }
     try {
-      final result =
-          await _channel.invokeMethod<String>('exportLiveDiagnosticsFile');
+      final result = await _channel.invokeMethod<String>(
+        'exportLiveDiagnosticsFile',
+      );
       return result;
     } on MissingPluginException {
       return null;
@@ -188,8 +191,9 @@ class UmengAnalyticsService {
       return null;
     }
     try {
-      final result =
-          await _channel.invokeMethod<String>('readLiveDiagnosticsText');
+      final result = await _channel.invokeMethod<String>(
+        'readLiveDiagnosticsText',
+      );
       return result;
     } on MissingPluginException {
       return null;

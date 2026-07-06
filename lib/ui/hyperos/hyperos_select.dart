@@ -20,8 +20,8 @@ import 'hyperos_widgets.dart';
   final isLast = listScope?.isLast ?? cardRowScope?.isLast ?? cardScope != null;
 
   var padding = (listScope != null || cardRowScope != null || cardScope != null)
-      ? HyperosTokens.rowPadding(isFirst: isFirst, isLast: isLast)
-      : HyperosTokens.rowPaddingUniform;
+      ? HyperosTokens.chevronRowPadding(isFirst: isFirst, isLast: isLast)
+      : HyperosTokens.chevronRowPadding(isFirst: true, isLast: true);
 
   var footerExtend = 0.0;
   if (cardScope != null && isLast) {
@@ -222,9 +222,7 @@ Future<T?> showHyperosSelectSheet<T>({
                     Text(
                       title,
                       textAlign: TextAlign.center,
-                      style: HyperosTypography.sheetTitle(
-                        sheetContext,
-                      ).copyWith(fontWeight: FontWeight.w600),
+                      style: HyperosTypography.sheetTitle(sheetContext),
                     ),
                     if (description != null) ...[
                       const SizedBox(height: 8),

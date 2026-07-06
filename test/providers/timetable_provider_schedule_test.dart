@@ -48,8 +48,9 @@ void main() {
         updatedAt: DateTime(2026, 4, 16, 9, 30),
       ),
     );
-    final updated =
-        provider.getScheduleItemsForDate(DateTime(2026, 4, 16)).single;
+    final updated = provider
+        .getScheduleItemsForDate(DateTime(2026, 4, 16))
+        .single;
     expect(updated.title, '学院例会');
     expect(updated.note, '改到十点半签到');
 
@@ -73,8 +74,9 @@ void main() {
     await provider.addScheduleItem(item);
 
     final reloaded = await createProvider();
-    final restored =
-        reloaded.getScheduleItemsForDate(DateTime(2026, 4, 18)).single;
+    final restored = reloaded
+        .getScheduleItemsForDate(DateTime(2026, 4, 18))
+        .single;
     expect(restored.title, '领取材料');
     expect(restored.location, '教务处');
     expect(restored.startTime, '14:00');

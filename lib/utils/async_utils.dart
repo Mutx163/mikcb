@@ -39,24 +39,26 @@ Future<RaceResult<T>> raceFutures<S, T>(
   T? winner;
 
   for (final future in futures) {
-    future.then((result) {
-      final extracted = extract(result);
-      if (extracted != null) {
-        winner = extracted;
-      }
-      completedCount++;
-      if (winner != null && !completer.isCompleted) {
-        completer.complete(RaceResult(winner: winner, errors: errors));
-      } else if (completedCount >= total && !completer.isCompleted) {
-        completer.complete(RaceResult(winner: winner, errors: errors));
-      }
-    }).catchError((error) {
-      errors.add(error);
-      completedCount++;
-      if (completedCount >= total && !completer.isCompleted) {
-        completer.complete(RaceResult(winner: winner, errors: errors));
-      }
-    });
+    future
+        .then((result) {
+          final extracted = extract(result);
+          if (extracted != null) {
+            winner = extracted;
+          }
+          completedCount++;
+          if (winner != null && !completer.isCompleted) {
+            completer.complete(RaceResult(winner: winner, errors: errors));
+          } else if (completedCount >= total && !completer.isCompleted) {
+            completer.complete(RaceResult(winner: winner, errors: errors));
+          }
+        })
+        .catchError((error) {
+          errors.add(error);
+          completedCount++;
+          if (completedCount >= total && !completer.isCompleted) {
+            completer.complete(RaceResult(winner: winner, errors: errors));
+          }
+        });
   }
 
   return completer.future;

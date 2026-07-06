@@ -33,12 +33,16 @@ class TimeScheme {
       id: json['id'] as String,
       name: json['name'] as String? ?? '未命名时间模板',
       sections: rawSections
-          .map((item) =>
-              SectionTime.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) =>
+                SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
-      createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
+      updatedAt:
+          DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.now(),
     );
   }
@@ -46,9 +50,7 @@ class TimeScheme {
   String toJsonString() => jsonEncode(toJson());
 
   factory TimeScheme.fromJsonString(String jsonString) {
-    return TimeScheme.fromJson(
-      jsonDecode(jsonString) as Map<String, dynamic>,
-    );
+    return TimeScheme.fromJson(jsonDecode(jsonString) as Map<String, dynamic>);
   }
 
   TimeScheme copyWith({
@@ -123,10 +125,7 @@ List<SectionTime> buildQuickSectionTimes({
       rule.afterSection: rule.breakDurationMinutes,
   };
 
-  void appendPeriod({
-    required int count,
-    required String? startTime,
-  }) {
+  void appendPeriod({required int count, required String? startTime}) {
     if (count <= 0) {
       return;
     }
@@ -138,9 +137,7 @@ List<SectionTime> buildQuickSectionTimes({
     for (var index = 0; index < count; index++) {
       final currentEndMinutes = currentStartMinutes + classDurationMinutes;
       if (currentEndMinutes > 24 * 60) {
-        throw FormatException(
-          '第 $sectionNumber 节会跨到次日，当前暂不支持跨 0 点课程',
-        );
+        throw FormatException('第 $sectionNumber 节会跨到次日，当前暂不支持跨 0 点课程');
       }
       sections.add(
         SectionTime(

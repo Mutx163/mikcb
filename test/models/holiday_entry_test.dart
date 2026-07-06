@@ -21,30 +21,33 @@ void main() {
       expect(restored.isAdjustedWorkday, isFalse);
     });
 
-    test('type helpers distinguish vacation, makeup workday, and adjusted restday', () {
-      final vacation = HolidayEntry(
-        date: DateTime(2026, 10, 1),
-        name: '国庆节',
-        type: HolidayType.vacation,
-      );
-      final makeup = HolidayEntry(
-        date: DateTime(2026, 10, 10),
-        name: '调休上班',
-        type: HolidayType.adjustedWorkday,
-      );
-      final restday = HolidayEntry(
-        date: DateTime(2026, 10, 5),
-        name: '调休休息',
-        type: HolidayType.adjustedRestday,
-      );
+    test(
+      'type helpers distinguish vacation, makeup workday, and adjusted restday',
+      () {
+        final vacation = HolidayEntry(
+          date: DateTime(2026, 10, 1),
+          name: '国庆节',
+          type: HolidayType.vacation,
+        );
+        final makeup = HolidayEntry(
+          date: DateTime(2026, 10, 10),
+          name: '调休上班',
+          type: HolidayType.adjustedWorkday,
+        );
+        final restday = HolidayEntry(
+          date: DateTime(2026, 10, 5),
+          name: '调休休息',
+          type: HolidayType.adjustedRestday,
+        );
 
-      expect(vacation.shouldHideCourses, isTrue);
-      expect(vacation.isAdjustedWorkday, isFalse);
-      expect(makeup.shouldHideCourses, isFalse);
-      expect(makeup.isAdjustedWorkday, isTrue);
-      expect(restday.shouldHideCourses, isTrue);
-      expect(restday.isAdjustedWorkday, isFalse);
-    });
+        expect(vacation.shouldHideCourses, isTrue);
+        expect(vacation.isAdjustedWorkday, isFalse);
+        expect(makeup.shouldHideCourses, isFalse);
+        expect(makeup.isAdjustedWorkday, isTrue);
+        expect(restday.shouldHideCourses, isTrue);
+        expect(restday.isAdjustedWorkday, isFalse);
+      },
+    );
   });
 
   group('HolidayData', () {
@@ -84,10 +87,7 @@ void main() {
     test('entryForDate returns matching day', () {
       final data = buildSampleData();
 
-      expect(
-        data.entryForDate(DateTime(2026, 10, 1, 15, 30))?.name,
-        '国庆节',
-      );
+      expect(data.entryForDate(DateTime(2026, 10, 1, 15, 30))?.name, '国庆节');
       expect(data.entryForDate(DateTime(2026, 3, 1)), isNull);
     });
 

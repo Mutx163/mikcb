@@ -2457,9 +2457,11 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
           HyperosControlCard(
             title: l10n.aboutDevelopersTitle,
             plainTitle: true,
-            child: _ContributorRow(
-              name: 'Mutx163',
-              subtitle: l10n.aboutDeveloperMaintainerSubtitle,
+            child: HyperosControlCardInset(
+              child: _ContributorRow(
+                name: 'Mutx163',
+                subtitle: l10n.aboutDeveloperMaintainerSubtitle,
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -2467,44 +2469,46 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
             title: l10n.aboutWarehouseMaintainersTitle,
             subtitle: l10n.aboutWarehouseMaintainersIntro,
             plainTitle: true,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_isLoadingMaintainers)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 12),
-                    child: Center(child: HyperosCircularProgress()),
-                  ),
-                if (_maintainersError != null && _maintainers.isEmpty)
-                  Text(
-                    l10n.aboutWarehouseMaintainersLoadFailed(
-                      _maintainersError!,
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (_isLoadingMaintainers)
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 12),
+                      child: Center(child: HyperosCircularProgress()),
                     ),
-                    style: HyperosTypography.listTitle(
-                      context,
-                    ).copyWith(color: HyperosTokens.error),
-                  )
-                else if (_maintainers.isEmpty && !_isLoadingMaintainers)
-                  Text(
-                    l10n.aboutWarehouseMaintainersEmpty,
-                    style: HyperosTypography.listDetail(context),
-                  )
-                else
-                  ..._maintainers.asMap().entries.expand((entry) {
-                    final index = entry.key;
-                    final group = entry.value;
-                    return [
-                      if (index > 0) const Divider(height: 24),
-                      _ContributorRow(
-                        name: group.name,
-                        subtitle: l10n.aboutWarehouseMaintainerCount(
-                          group.adapterLabels.length,
-                        ),
-                        details: group.adapterLabels,
+                  if (_maintainersError != null && _maintainers.isEmpty)
+                    Text(
+                      l10n.aboutWarehouseMaintainersLoadFailed(
+                        _maintainersError!,
                       ),
-                    ];
-                  }),
-              ],
+                      style: HyperosTypography.listTitle(
+                        context,
+                      ).copyWith(color: HyperosTokens.error),
+                    )
+                  else if (_maintainers.isEmpty && !_isLoadingMaintainers)
+                    Text(
+                      l10n.aboutWarehouseMaintainersEmpty,
+                      style: HyperosTypography.listDetail(context),
+                    )
+                  else
+                    ..._maintainers.asMap().entries.expand((entry) {
+                      final index = entry.key;
+                      final group = entry.value;
+                      return [
+                        if (index > 0) const Divider(height: 24),
+                        _ContributorRow(
+                          name: group.name,
+                          subtitle: l10n.aboutWarehouseMaintainerCount(
+                            group.adapterLabels.length,
+                          ),
+                          details: group.adapterLabels,
+                        ),
+                      ];
+                    }),
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -2512,20 +2516,22 @@ class _ContributorsScreenState extends State<ContributorsScreen> {
             title: l10n.aboutParticipateWarehouseTitle,
             subtitle: l10n.aboutParticipateWarehouseSubtitle,
             plainTitle: true,
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                HyperosButton(
-                  label: l10n.aboutOpenWarehouseRepoAction,
-                  onPressed: _openWarehouseRepository,
-                ),
-                HyperosButton(
-                  label: l10n.copyAddress,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _copyWarehouseRepositoryUrl,
-                ),
-              ],
+            child: HyperosControlCardInset(
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  HyperosButton(
+                    label: l10n.aboutOpenWarehouseRepoAction,
+                    onPressed: _openWarehouseRepository,
+                  ),
+                  HyperosButton(
+                    label: l10n.copyAddress,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: _copyWarehouseRepositoryUrl,
+                  ),
+                ],
+              ),
             ),
           ),
         ],

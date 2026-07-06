@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS list empty state (icon + title + optional action).
 class HyperosEmptyState extends StatelessWidget {
@@ -37,11 +38,7 @@ class HyperosEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: HyperosMiuixTypography.body1,
-              fontWeight: FontWeight.w500,
-              color: onSurface,
-            ),
+            style: HyperosTypography.title(context).copyWith(color: onSurface),
           ),
           if (subtitle != null) ...[
             const SizedBox(height: 8),

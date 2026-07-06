@@ -14,8 +14,5 @@ class AppAnalytics {
     Map<String, Object>? parameters,
   }) async {}
 
-  void logEventLater({
-    required String name,
-    Map<String, Object>? parameters,
-  }) {}
+  void logEventLater({required String name, Map<String, Object>? parameters}) {}
 }

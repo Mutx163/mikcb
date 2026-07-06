@@ -184,66 +184,68 @@ class _LanEditScreenState extends State<LanEditScreen>
             const HyperosSectionGap(),
             HyperosControlCard(
               title: l10n.lanEditStatusRunning,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (_lanAddress != null && _lanAddress!.isNotEmpty) ...[
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: colors.secondary,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: QrImageView(
-                          data: _lanAddress!,
-                          version: QrVersions.auto,
-                          size: MediaQuery.of(context).size.width * 0.5,
-                          gapless: true,
+              child: HyperosControlCardInset(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_lanAddress != null && _lanAddress!.isNotEmpty) ...[
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: colors.secondary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: QrImageView(
+                            data: _lanAddress!,
+                            version: QrVersions.auto,
+                            size: MediaQuery.of(context).size.width * 0.5,
+                            gapless: true,
+                          ),
                         ),
                       ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.lanEditQrHint,
+                        style: typo.xs2.copyWith(color: colors.mutedForeground),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _InfoRow(
+                      label: l10n.lanEditAddressLabel,
+                      value: _lanAddress ?? l10n.lanEditAddressUnavailable,
+                      trailing: _lanAddress == null
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.copy_rounded, size: 20),
+                              color: HyperosColors.actionIcon(context),
+                              onPressed: _copyAddress,
+                            ),
                     ),
-                    const SizedBox(height: 12),
+                    _InfoRow(label: l10n.lanEditPinLabel, value: session.pin),
+                    _InfoRow(
+                      label: l10n.lanEditPortLabel,
+                      value: '${_server.port ?? '-'}',
+                    ),
+                    _InfoRow(
+                      label: l10n.lanEditConnectedClientsLabel,
+                      value: session.connectedClientCount == 0
+                          ? l10n.lanEditConnectedClientsNone
+                          : l10n.lanEditConnectedClientsValue(
+                              session.connectedClientCount,
+                            ),
+                    ),
+                    _InfoRow(
+                      label: l10n.lanEditLastActivityLabel,
+                      value: _formatLastActivity(l10n, session.lastActivityAt),
+                    ),
+                    const SizedBox(height: 8),
                     Text(
-                      l10n.lanEditQrHint,
+                      l10n.lanEditHotspotHint,
                       style: typo.xs2.copyWith(color: colors.mutedForeground),
                     ),
-                    const SizedBox(height: 12),
                   ],
-                  _InfoRow(
-                    label: l10n.lanEditAddressLabel,
-                    value: _lanAddress ?? l10n.lanEditAddressUnavailable,
-                    trailing: _lanAddress == null
-                        ? null
-                        : IconButton(
-                            icon: const Icon(Icons.copy_rounded, size: 20),
-                            color: HyperosColors.actionIcon(context),
-                            onPressed: _copyAddress,
-                          ),
-                  ),
-                  _InfoRow(label: l10n.lanEditPinLabel, value: session.pin),
-                  _InfoRow(
-                    label: l10n.lanEditPortLabel,
-                    value: '${_server.port ?? '-'}',
-                  ),
-                  _InfoRow(
-                    label: l10n.lanEditConnectedClientsLabel,
-                    value: session.connectedClientCount == 0
-                        ? l10n.lanEditConnectedClientsNone
-                        : l10n.lanEditConnectedClientsValue(
-                            session.connectedClientCount,
-                          ),
-                  ),
-                  _InfoRow(
-                    label: l10n.lanEditLastActivityLabel,
-                    value: _formatLastActivity(l10n, session.lastActivityAt),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.lanEditHotspotHint,
-                    style: typo.xs2.copyWith(color: colors.mutedForeground),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -278,7 +280,7 @@ class _InfoRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: SelectableText(
+            child: Text(
               value,
               style: typo.sm.copyWith(fontWeight: FontWeight.w600),
             ),

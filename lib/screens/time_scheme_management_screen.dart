@@ -623,7 +623,6 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final provider = context.watch<TimetableProvider>();
     final isActive = provider.activeTimeScheme?.id == widget.schemeId;
     final usage = _buildUsageSummary(provider, widget.schemeId);
-    final theme = context.theme;
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -636,68 +635,65 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
         ),
       ],
       child: HyperosBlurredBodyInset(
-        child: ListView(
-          padding: HyperosTokens.listPadding,
+        child: HyperosListView(
+          includeHeaderInset: false,
           children: [
             HyperosControlCard(
               title: l10n.timeSchemeNameLabel,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: l10n.timeSchemeNameLabel,
+              child: HyperosControlCardInset(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    HyperosTextField(
+                      controller: _nameController,
+                      hint: l10n.timeSchemeNameHint,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (isActive)
-                        _TimeSchemeBadge(
-                          text: l10n.currentInUse,
-                          icon: Icons.check_circle_outline_rounded,
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (isActive) _TimeSchemeBadge(text: l10n.currentInUse),
+                        _TimeSchemeInfoChip(
+                          label: l10n.profileCountLabel,
+                          value: l10n.profileCountValue(usage.profileCount),
                         ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.profileCountLabel,
-                        value: l10n.profileCountValue(usage.profileCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.courseCountLabel,
-                        value: l10n.courseSectionCountValue(usage.courseCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.overrideTimeSchemeLabel,
-                        value: l10n.courseSectionCountValue(
-                          usage.overrideCourseCount,
+                        _TimeSchemeInfoChip(
+                          label: l10n.courseCountLabel,
+                          value: l10n.courseSectionCountValue(
+                            usage.courseCount,
+                          ),
                         ),
+                        _TimeSchemeInfoChip(
+                          label: l10n.overrideTimeSchemeLabel,
+                          value: l10n.courseSectionCountValue(
+                            usage.overrideCourseCount,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (isActive || usage.courseCount > 0) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        isActive && usage.courseCount > 0
+                            ? l10n.timeSchemeEditorActiveAndCoursesHint
+                            : isActive
+                            ? l10n.timeSchemeEditorActiveHint
+                            : l10n.timeSchemeEditorOverrideHint,
+                        style: HyperosTypography.sectionDescription(context),
                       ),
                     ],
-                  ),
-                  if (isActive || usage.courseCount > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      isActive && usage.courseCount > 0
-                          ? l10n.timeSchemeEditorActiveAndCoursesHint
-                          : isActive
-                          ? l10n.timeSchemeEditorActiveHint
-                          : l10n.timeSchemeEditorOverrideHint,
-                      style: theme.typography.body.xs,
-                    ),
+                    if (usage.previewText != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        usage.previewText!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: HyperosTypography.sectionDescription(context),
+                      ),
+                    ],
                   ],
-                  if (usage.previewText != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      usage.previewText!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.typography.body.xs,
-                    ),
-                  ],
-                ],
+                ),
               ),
             ),
             const HyperosSectionGap(),
@@ -705,100 +701,54 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
               title: l10n.sectionTimesTitle,
               subtitle: l10n.sectionTimesSubtitle,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      HyperosButton(
-                        label: l10n.quickGenerateAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: _openQuickGenerate,
-                      ),
-                      HyperosButton(
-                        label: l10n.addSectionAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: _sections.length >= 20 ? null : _addSection,
-                      ),
-                      HyperosButton(
-                        label: l10n.removeLastSectionAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: _sections.length <= 1
-                            ? null
-                            : _removeSection,
-                      ),
-                      HyperosButton(
-                        label: l10n.resetDefaultAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: _resetSections,
-                      ),
-                    ],
+                  HyperosControlCardInset(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        HyperosButton(
+                          label: l10n.quickGenerateAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: _openQuickGenerate,
+                        ),
+                        HyperosButton(
+                          label: l10n.addSectionAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: _sections.length >= 20
+                              ? null
+                              : _addSection,
+                        ),
+                        HyperosButton(
+                          label: l10n.removeLastSectionAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: _sections.length <= 1
+                              ? null
+                              : _removeSection,
+                        ),
+                        HyperosButton(
+                          label: l10n.resetDefaultAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: _resetSections,
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  ...List.generate(_sections.length, (index) {
-                    final section = _sections[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colors.muted,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.colors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: theme.colors.primary.withValues(
-                                alpha: 0.10,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: theme.typography.body.sm.copyWith(
-                                color: theme.colors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                  if (_sections.isNotEmpty)
+                    HyperosControlCardRows(
+                      children: [
+                        for (var index = 0; index < _sections.length; index++)
+                          HyperosListTile(
+                            icon: Icons.access_time_rounded,
+                            iconAccent: HyperosIconColors.teal,
+                            title: l10n.sectionLabel(index + 1),
+                            details:
+                                '${_sections[index].startTime} - ${_sections[index].endTime}',
+                            onTap: () => _editSectionTime(index),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.sectionLabel(index + 1),
-                                  style: theme.typography.body.sm.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${section.startTime} - ${section.endTime}',
-                                  style: theme.typography.body.sm.copyWith(
-                                    color: theme.colors.mutedForeground,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: l10n.editTimeAction,
-                            onPressed: () => _editSectionTime(index),
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -1133,54 +1083,28 @@ class _TimeSchemeInfoChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$label $value',
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
+    return HyperosTag(label: '$label $value');
   }
 }
 
 class _TimeSchemeBadge extends StatelessWidget {
   final String text;
-  final IconData icon;
 
-  const _TimeSchemeBadge({required this.text, required this.icon});
+  const _TimeSchemeBadge({required this.text});
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: colorScheme.primary),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark
+        ? HyperosMiuixDarkColors.primary
+        : HyperosMiuixLightColors.primary;
+    return HyperosTag(
+      label: text,
+      backgroundColor: primary.withValues(alpha: 0.12),
+      textStyle: TextStyle(
+        fontSize: HyperosMiuixTypography.footnote2,
+        fontWeight: FontWeight.w700,
+        color: primary,
       ),
     );
   }
@@ -1256,9 +1180,7 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   late final TextEditingController _eveningCountController;
   late final TextEditingController _classDurationController;
   late final TextEditingController _breakDurationController;
-  final List<_BreakOverrideDraft> _breakOverrides = [
-    _BreakOverrideDraft(afterSection: 2, breakDurationMinutes: 20),
-  ];
+  final List<_BreakOverrideDraft> _breakOverrides = [];
   String _morningStartTime = '08:00';
   String _afternoonStartTime = '14:00';
   String _eveningStartTime = '19:00';
@@ -1295,6 +1217,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
           ),
         ),
       );
+    if (_breakOverrides.isEmpty) {
+      _breakOverrides.add(
+        _BreakOverrideDraft(afterSection: 2, breakDurationMinutes: 20),
+      );
+    }
   }
 
   @override
@@ -1304,104 +1231,103 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
     _eveningCountController.dispose();
     _classDurationController.dispose();
     _breakDurationController.dispose();
+    for (final item in _breakOverrides) {
+      item.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
     return HyperosDialog(
       title: l10n.quickGenerateTimeSchemeTitle,
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildNumberField(
-              _morningCountController,
-              l10n.morningSectionCountLabel,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildNumberField(
+            _morningCountController,
+            l10n.morningSectionCountLabel,
+          ),
+          const SizedBox(height: 12),
+          _buildTimeTile(
+            label: l10n.morningFirstSectionTimeLabel,
+            value: _morningStartTime,
+            onTap: () => _pickTime(
+              currentValue: _morningStartTime,
+              onSelected: (value) {
+                setState(() {
+                  _morningStartTime = value;
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            _buildTimeTile(
-              label: l10n.morningFirstSectionTimeLabel,
-              value: _morningStartTime,
-              onTap: () => _pickTime(
-                currentValue: _morningStartTime,
-                onSelected: (value) {
-                  setState(() {
-                    _morningStartTime = value;
-                  });
-                },
-              ),
+          ),
+          const SizedBox(height: 12),
+          _buildNumberField(
+            _afternoonCountController,
+            l10n.afternoonSectionCountLabel,
+          ),
+          const SizedBox(height: 12),
+          _buildTimeTile(
+            label: l10n.afternoonFirstSectionTimeLabel,
+            value: _afternoonStartTime,
+            onTap: () => _pickTime(
+              currentValue: _afternoonStartTime,
+              onSelected: (value) {
+                setState(() {
+                  _afternoonStartTime = value;
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            _buildNumberField(
-              _afternoonCountController,
-              l10n.afternoonSectionCountLabel,
+          ),
+          const SizedBox(height: 12),
+          _buildNumberField(
+            _eveningCountController,
+            l10n.eveningSectionCountLabel,
+          ),
+          const SizedBox(height: 12),
+          _buildTimeTile(
+            label: l10n.eveningFirstSectionTimeLabel,
+            value: _eveningStartTime,
+            onTap: () => _pickTime(
+              currentValue: _eveningStartTime,
+              onSelected: (value) {
+                setState(() {
+                  _eveningStartTime = value;
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            _buildTimeTile(
-              label: l10n.afternoonFirstSectionTimeLabel,
-              value: _afternoonStartTime,
-              onTap: () => _pickTime(
-                currentValue: _afternoonStartTime,
-                onSelected: (value) {
-                  setState(() {
-                    _afternoonStartTime = value;
-                  });
-                },
-              ),
+          ),
+          const SizedBox(height: 12),
+          _buildNumberField(
+            _classDurationController,
+            l10n.classDurationMinutesLabel,
+          ),
+          const SizedBox(height: 12),
+          _buildNumberField(
+            _breakDurationController,
+            l10n.smallBreakDurationMinutesLabel,
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              l10n.largeBreakRulesTitle,
+              style: HyperosTypography.listTitle(context),
             ),
-            const SizedBox(height: 12),
-            _buildNumberField(
-              _eveningCountController,
-              l10n.eveningSectionCountLabel,
+          ),
+          const SizedBox(height: 8),
+          ..._buildBreakOverrideRows(),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: HyperosButton(
+              label: l10n.addBreakRuleAction,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: _addBreakOverride,
             ),
-            const SizedBox(height: 12),
-            _buildTimeTile(
-              label: l10n.eveningFirstSectionTimeLabel,
-              value: _eveningStartTime,
-              onTap: () => _pickTime(
-                currentValue: _eveningStartTime,
-                onSelected: (value) {
-                  setState(() {
-                    _eveningStartTime = value;
-                  });
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            _buildNumberField(
-              _classDurationController,
-              l10n.classDurationMinutesLabel,
-            ),
-            const SizedBox(height: 12),
-            _buildNumberField(
-              _breakDurationController,
-              l10n.smallBreakDurationMinutesLabel,
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                l10n.largeBreakRulesTitle,
-                style: theme.typography.body.sm.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ..._buildBreakOverrideRows(),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: HyperosButton(
-                label: l10n.addBreakRuleAction,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: _addBreakOverride,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       actions: [
         HyperosDialogAction(
@@ -1418,21 +1344,10 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   }
 
   Widget _buildNumberField(TextEditingController controller, String label) {
-    final theme = context.theme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: theme.typography.body.sm.copyWith(fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 6),
-        TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(border: OutlineInputBorder()),
-        ),
-      ],
+    return HyperosTextField(
+      controller: controller,
+      label: label,
+      keyboardType: TextInputType.number,
     );
   }
 
@@ -1451,10 +1366,12 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 
   List<Widget> _buildBreakOverrideRows() {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
     if (_breakOverrides.isEmpty) {
       return [
-        Text(l10n.noLargeBreakRulesHint, style: theme.typography.body.xs),
+        Text(
+          l10n.noLargeBreakRulesHint,
+          style: HyperosTypography.sectionDescription(context),
+        ),
       ];
     }
 
@@ -1463,42 +1380,31 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: TextFormField(
-                initialValue: '${item.afterSection}',
+              child: HyperosTextField(
+                controller: item.afterController,
+                label: l10n.afterSectionLabel,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: l10n.afterSectionLabel,
-                ),
-                onChanged: (value) {
-                  item.afterSection = int.tryParse(value) ?? 0;
-                },
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: TextFormField(
-                initialValue: '${item.breakDurationMinutes}',
+              child: HyperosTextField(
+                controller: item.durationController,
+                label: l10n.breakDurationMinutesLabel,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: l10n.breakDurationMinutesLabel,
-                ),
-                onChanged: (value) {
-                  item.breakDurationMinutes = int.tryParse(value) ?? 0;
-                },
               ),
             ),
-            IconButton(
+            HyperosIconButton(
+              icon: Icons.delete_outline_rounded,
               tooltip: l10n.deleteRuleTooltip,
               onPressed: () {
                 setState(() {
-                  _breakOverrides.removeAt(index);
+                  _breakOverrides.removeAt(index).dispose();
                 });
               },
-              icon: const Icon(Icons.delete_outline_rounded),
             ),
           ],
         ),
@@ -1579,11 +1485,24 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
 }
 
 class _BreakOverrideDraft {
-  int afterSection;
-  int breakDurationMinutes;
-
   _BreakOverrideDraft({
-    required this.afterSection,
-    required this.breakDurationMinutes,
-  });
+    required int afterSection,
+    required int breakDurationMinutes,
+  }) : afterController = TextEditingController(text: '$afterSection'),
+       durationController = TextEditingController(
+         text: '$breakDurationMinutes',
+       );
+
+  final TextEditingController afterController;
+  final TextEditingController durationController;
+
+  int get afterSection => int.tryParse(afterController.text.trim()) ?? 0;
+
+  int get breakDurationMinutes =>
+      int.tryParse(durationController.text.trim()) ?? 0;
+
+  void dispose() {
+    afterController.dispose();
+    durationController.dispose();
+  }
 }

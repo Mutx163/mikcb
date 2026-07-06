@@ -217,7 +217,8 @@ void main() {
 
     Navigator.of(tester.element(find.text('提醒时段'))).pop();
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+    await tester.pump();
     await tester.pumpAndSettle();
 
     final pixelsAfter = tester

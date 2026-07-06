@@ -12,17 +12,20 @@ void main() {
         .setMockMethodCallHandler(migrationChannel, null);
   });
 
-  test('migration service degrades gracefully when platform channel fails',
-      () async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-      migrationChannel,
-      (call) async => throw MissingPluginException('missing migration plugin'),
-    );
+  test(
+    'migration service degrades gracefully when platform channel fails',
+    () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            migrationChannel,
+            (call) async =>
+                throw MissingPluginException('missing migration plugin'),
+          );
 
-    final service = AppMigrationService();
+      final service = AppMigrationService();
 
-    expect(await service.findInstalledLegacyPackage(), isNull);
-    expect(await service.openPackage('com.example.legacy'), isFalse);
-  });
+      expect(await service.findInstalledLegacyPackage(), isNull);
+      expect(await service.openPackage('com.example.legacy'), isFalse);
+    },
+  );
 }

@@ -494,6 +494,31 @@ class _TimetableScreenState extends State<TimetableScreen>
         _selectedDayOfWeek == dayOfWeek;
   }
 
+  /// Opaque chrome for day-view layers over wallpaper-backed week chrome.
+  HomePageBackgroundVisual _opaqueHomePageRegionBackground({
+    required TimetableSettings settings,
+    required bool isDark,
+    required Color darkFallback,
+    required int region,
+  }) {
+    final regionBackground = resolveHomePageRegionBackground(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: darkFallback,
+      region: region,
+    );
+    if (regionBackground.isTransparent) {
+      return HomePageBackgroundVisual(
+        color: resolveHomePageBackgroundColor(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+        ),
+      );
+    }
+    return regionBackground;
+  }
+
   double get _dayViewAnchorAlignmentX =>
       (_dayViewAnchorFraction * 2).clamp(0.0, 2.0) - 1;
 
@@ -1396,16 +1421,28 @@ class _TimetableScreenState extends State<TimetableScreen>
       isDark: isDark,
     );
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
+    final pageChromeFallback = Theme.of(context).colorScheme.surface;
+    final isActiveDayViewWeek = _isDayView && week == _selectedWeekForDayView;
     final weekdayHeader = homePageBackgroundLayer(
-      visual: homePageRegionChromeVisual(
-        settings: settings,
-        isDark: isDark,
-        darkFallback: Theme.of(context).colorScheme.surface,
-        region: HomePageBackgroundScope.weekdayBar,
-        chromeBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
-      ),
+      visual: isActiveDayViewWeek
+          ? _opaqueHomePageRegionBackground(
+              settings: settings,
+              isDark: isDark,
+              darkFallback: pageChromeFallback,
+              region: HomePageBackgroundScope.weekdayBar,
+            )
+          : homePageRegionChromeVisual(
+              settings: settings,
+              isDark: isDark,
+              darkFallback: pageChromeFallback,
+              region: HomePageBackgroundScope.weekdayBar,
+              chromeBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
+            ),
       child: HomePageFrostedRegion(
-        enabled: !unifiedChromeBlur && settings.homePageWeekdayBarBlurEnabled,
+        enabled:
+            !unifiedChromeBlur &&
+            settings.homePageWeekdayBarBlurEnabled &&
+            !isActiveDayViewWeek,
         overlapTop: settings.homePageHeaderBlurEnabled && hasBackdrop
             ? homePageFrostedRegionSeamOverlap
             : 0,
@@ -1459,7 +1496,7 @@ class _TimetableScreenState extends State<TimetableScreen>
         fit: StackFit.expand,
         children: [
           if (backdropImage != null) Positioned.fill(child: backdropImage),
-          if (unifiedChromeBlur)
+          if (unifiedChromeBlur && !isActiveDayViewWeek)
             Positioned.fill(
               child: HomePageUnifiedWeekFrostedOverlay(
                 weekdayBarHeight: _weekDayHeaderHeight,
@@ -1578,10 +1615,11 @@ class _TimetableScreenState extends State<TimetableScreen>
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final backgroundVisual = resolveHomePageRegionBackground(
+    final darkFallback = colorScheme.surface;
+    final backgroundVisual = _opaqueHomePageRegionBackground(
       settings: settings,
       isDark: isDark,
-      darkFallback: colorScheme.surface,
+      darkFallback: darkFallback,
       region: HomePageBackgroundScope.timetable,
     );
     final controller = _ensureDayViewPageController(settings, week);

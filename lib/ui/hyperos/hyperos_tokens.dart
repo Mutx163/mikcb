@@ -51,6 +51,9 @@ abstract final class HyperosTokens {
   static double get chevronStrokeWidth => _t.chevronStrokeWidth;
 
   static double get listTitleSize => _t.listTitleSize;
+
+  /// Canonical title size for list rows, card headers, page/sheet/dialog titles.
+  static double get titleSize => listTitleSize;
   static double get titleChevronGap => _t.titleChevronGap;
 
   static const listDetailSize = HyperosMiuixSpec.body2Size;
@@ -61,7 +64,14 @@ abstract final class HyperosTokens {
   static const sectionLabelColor = HyperosMiuixSpec.settingsSectionLabelColor;
   static const sectionLabelInset = HyperosMiuixSpec.settingsSectionLabelInset;
   static const sectionDescriptionSize = HyperosMiuixSpec.footnote1Size;
-  static const headerTitleSize = HyperosMiuixSpec.title3Size;
+
+  /// Same as [titleSize]; prefer [titleSize] for new code.
+  static double get headerTitleSize => titleSize;
+
+  /// Frosted [HyperosSubpage] centered title (larger than list row titles).
+  static const nestedHeaderTitleSize = HyperosMiuixNestedHeader.titleSize;
+
+  static const nestedHeaderBackIconSize = HyperosMiuixNestedHeader.backIconSize;
 
   /// Row padding inside a shared [HyperosListGroup] card.
   static EdgeInsets rowPadding({bool isFirst = true, bool isLast = true}) {
@@ -72,6 +82,18 @@ abstract final class HyperosTokens {
       top: isFirst ? _t.paddingTopFirst : base.top,
       bottom: isLast ? _t.paddingBottomLast : base.bottom,
     );
+  }
+
+  /// Row padding for trailing chevron / up-down arrow rows.
+  ///
+  /// Uses the same horizontal insets as [rowPadding]: chevron sits at the
+  /// standard card edge inset (typically 16dp), matching label/title start on
+  /// text-only rows.
+  static EdgeInsets chevronRowPadding({
+    bool isFirst = true,
+    bool isLast = true,
+  }) {
+    return rowPadding(isFirst: isFirst, isLast: isLast);
   }
 
   static EdgeInsets get rowPaddingUniform =>

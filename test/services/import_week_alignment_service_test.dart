@@ -15,25 +15,22 @@ void main() {
   });
 
   test('shift courses offsets custom weeks directly', () {
-    final courses = service.shiftCoursesToSemesterWeeks(
-      [
-        Course(
-          id: 'course-custom',
-          name: '程序设计',
-          teacher: '黄老师',
-          location: 'A101',
-          dayOfWeek: 1,
-          startSection: 1,
-          endSection: 2,
-          startTime: '08:00',
-          endTime: '09:40',
-          startWeek: 1,
-          endWeek: 3,
-          customWeeks: const [1, 3, 5],
-        ),
-      ],
-      firstCourseWeek: 3,
-    );
+    final courses = service.shiftCoursesToSemesterWeeks([
+      Course(
+        id: 'course-custom',
+        name: '程序设计',
+        teacher: '黄老师',
+        location: 'A101',
+        dayOfWeek: 1,
+        startSection: 1,
+        endSection: 2,
+        startTime: '08:00',
+        endTime: '09:40',
+        startWeek: 1,
+        endWeek: 3,
+        customWeeks: const [1, 3, 5],
+      ),
+    ], firstCourseWeek: 3);
 
     expect(courses.single.customWeeks, const [3, 5, 7]);
     expect(courses.single.startWeek, 3);
@@ -41,25 +38,22 @@ void main() {
   });
 
   test('shift courses flips odd even flags when offset is odd', () {
-    final courses = service.shiftCoursesToSemesterWeeks(
-      [
-        Course(
-          id: 'course-odd',
-          name: '高数',
-          teacher: '张老师',
-          location: 'A201',
-          dayOfWeek: 2,
-          startSection: 3,
-          endSection: 4,
-          startTime: '10:00',
-          endTime: '11:40',
-          startWeek: 1,
-          endWeek: 16,
-          isOddWeek: true,
-        ),
-      ],
-      firstCourseWeek: 2,
-    );
+    final courses = service.shiftCoursesToSemesterWeeks([
+      Course(
+        id: 'course-odd',
+        name: '高数',
+        teacher: '张老师',
+        location: 'A201',
+        dayOfWeek: 2,
+        startSection: 3,
+        endSection: 4,
+        startTime: '10:00',
+        endTime: '11:40',
+        startWeek: 1,
+        endWeek: 16,
+        isOddWeek: true,
+      ),
+    ], firstCourseWeek: 2);
 
     expect(courses.single.startWeek, 2);
     expect(courses.single.endWeek, 17);

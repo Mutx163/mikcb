@@ -18,8 +18,8 @@ class AiCourseImportParseResult {
   int get requiredSectionCount => courses.isEmpty
       ? 0
       : courses
-          .map((course) => course.endSection)
-          .reduce((left, right) => left > right ? left : right);
+            .map((course) => course.endSection)
+            .reduce((left, right) => left > right ? left : right);
 }
 
 class AiCourseImportService {
@@ -100,9 +100,7 @@ class AiCourseImportService {
 
   final Uuid _uuid;
 
-  AiCourseImportService({
-    Uuid? uuid,
-  }) : _uuid = uuid ?? const Uuid();
+  AiCourseImportService({Uuid? uuid}) : _uuid = uuid ?? const Uuid();
 
   AiCourseImportParseResult parse(
     String content, {
@@ -161,10 +159,7 @@ class AiCourseImportService {
       );
     }
 
-    return AiCourseImportParseResult(
-      courses: courses,
-      warnings: warnings,
-    );
+    return AiCourseImportParseResult(courses: courses, warnings: warnings);
   }
 
   Course _parseCourse(
@@ -199,9 +194,7 @@ class AiCourseImportService {
       throw FormatException('courses[$index].startSection 必须大于等于 1');
     }
     if (endSection < startSection) {
-      throw FormatException(
-        'courses[$index].endSection 不能小于 startSection',
-      );
+      throw FormatException('courses[$index].endSection 不能小于 startSection');
     }
 
     final customWeeks = _readRequiredWeekList(
@@ -213,8 +206,10 @@ class AiCourseImportService {
       throw FormatException('courses[$index].customWeeks 不能为空');
     }
 
-    final courseNatureValue =
-        _readOptionalString(json, 'courseNature').trim().toLowerCase();
+    final courseNatureValue = _readOptionalString(
+      json,
+      'courseNature',
+    ).trim().toLowerCase();
     final courseNature = _resolveCourseNature(
       courseNatureValue,
       rawName: rawName,
@@ -279,9 +274,7 @@ class AiCourseImportService {
   }) {
     final unknownKeys = actualKeys.where((key) => !allowedKeys.contains(key));
     if (unknownKeys.isNotEmpty) {
-      throw FormatException(
-        '$targetName 包含不支持的字段：${unknownKeys.join('、')}',
-      );
+      throw FormatException('$targetName 包含不支持的字段：${unknownKeys.join('、')}');
     }
   }
 
@@ -324,9 +317,7 @@ class AiCourseImportService {
     if (value is List) {
       for (final item in value) {
         if (item is String) {
-          weeks.addAll(
-            WeekExpressionParser.parse(item, itemName: itemName),
-          );
+          weeks.addAll(WeekExpressionParser.parse(item, itemName: itemName));
           continue;
         }
         final parsed = _readInt(item);
@@ -336,9 +327,7 @@ class AiCourseImportService {
         weeks.add(parsed);
       }
     } else if (value is String) {
-      weeks.addAll(
-        WeekExpressionParser.parse(value, itemName: itemName),
-      );
+      weeks.addAll(WeekExpressionParser.parse(value, itemName: itemName));
     } else {
       throw FormatException('$key 必须是整数数组或周次字符串');
     }

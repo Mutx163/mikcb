@@ -47,6 +47,7 @@ import android.util.TypedValue
 import android.webkit.URLUtil
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -91,6 +92,13 @@ class MainActivity : FlutterActivity() {
     private var lanEditChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        window.setBackgroundDrawable(
+            SplashLayerDrawable(
+                this,
+                applicationInfo.loadLabel(packageManager),
+            ),
+        )
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         handleExternalImportIntent(intent)
         handleLanEditIntent(intent)

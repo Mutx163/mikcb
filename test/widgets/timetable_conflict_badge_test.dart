@@ -65,8 +65,9 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('home timetable shows conflict badge when enabled',
-      (tester) async {
+  testWidgets('home timetable shows conflict badge when enabled', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -103,7 +104,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -119,8 +123,9 @@ void main() {
     expect(find.text('冲突'), findsNothing);
   });
 
-  testWidgets('home timetable renders overlapping conflict courses together',
-      (tester) async {
+  testWidgets('home timetable renders overlapping conflict courses together', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -164,7 +169,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -174,8 +182,9 @@ void main() {
     expect(find.text('计算机网络'), findsOneWidget);
   });
 
-  testWidgets('tapping a conflicting course shows both course cards',
-      (tester) async {
+  testWidgets('tapping a conflicting course shows both course cards', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(800, 2000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -215,7 +224,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -242,8 +254,9 @@ void main() {
     );
   });
 
-  testWidgets('home timetable can show non-current-week courses separately',
-      (tester) async {
+  testWidgets('home timetable can show non-current-week courses separately', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -285,7 +298,10 @@ void main() {
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -295,9 +311,7 @@ void main() {
     expect(find.text('非本周课程'), findsNothing);
 
     await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableShowNonCurrentWeekCourses: true,
-      ),
+      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
     );
     await _pumpTimetableFrame(tester);
 
@@ -305,8 +319,9 @@ void main() {
     expect(find.text('非本周课程'), findsOneWidget);
   });
 
-  testWidgets('non-current-week course does not overlap current-week course',
-      (tester) async {
+  testWidgets('non-current-week course does not overlap current-week course', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -345,16 +360,17 @@ void main() {
     );
 
     await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableShowNonCurrentWeekCourses: true,
-      ),
+      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
     );
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -365,8 +381,9 @@ void main() {
     expect(find.text('非本周'), findsNothing);
   });
 
-  testWidgets('non-current-week course shows overline when displayed',
-      (tester) async {
+  testWidgets('non-current-week course shows overline when displayed', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -390,16 +407,17 @@ void main() {
     );
 
     await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableShowNonCurrentWeekCourses: true,
-      ),
+      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
     );
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );
@@ -409,8 +427,9 @@ void main() {
     expect(find.text('非本周'), findsOneWidget);
   });
 
-  testWidgets('overlapping non-current-week courses only show nearest one',
-      (tester) async {
+  testWidgets('overlapping non-current-week courses only show nearest one', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -449,16 +468,17 @@ void main() {
     );
 
     await provider.updateTimetableSettings(
-      provider.settings.copyWith(
-        timetableShowNonCurrentWeekCourses: true,
-      ),
+      provider.settings.copyWith(timetableShowNonCurrentWeekCourses: true),
     );
 
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
         child: const TestApp(
-          home: TimetableScreen(enableUpdateCheck: false, enableProgressTimer: false),
+          home: TimetableScreen(
+            enableUpdateCheck: false,
+            enableProgressTimer: false,
+          ),
         ),
       ),
     );

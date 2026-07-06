@@ -1,20 +1,17 @@
 import 'dart:convert';
 
-enum CourseNature {
-  required,
-  elective,
-}
+enum CourseNature { required, elective }
 
 extension CourseNatureX on CourseNature {
   String get value => switch (this) {
-        CourseNature.required => 'required',
-        CourseNature.elective => 'elective',
-      };
+    CourseNature.required => 'required',
+    CourseNature.elective => 'elective',
+  };
 
   String get label => switch (this) {
-        CourseNature.required => '必修',
-        CourseNature.elective => '选修',
-      };
+    CourseNature.required => '必修',
+    CourseNature.elective => '选修',
+  };
 
   static CourseNature fromValue(String? value) {
     return CourseNature.values.firstWhere(
@@ -161,8 +158,9 @@ class Course {
     return Course(
       id: id ?? this.id,
       name: name ?? this.name,
-      shortName:
-          identical(shortName, _unset) ? this.shortName : shortName as String?,
+      shortName: identical(shortName, _unset)
+          ? this.shortName
+          : shortName as String?,
       teacher: teacher ?? this.teacher,
       location: location ?? this.location,
       dayOfWeek: dayOfWeek ?? this.dayOfWeek,
@@ -214,8 +212,7 @@ class Course {
     return normalized;
   }
 
-  bool isSuspendedInWeek(int week) =>
-      suspendedWeeks?.contains(week) ?? false;
+  bool isSuspendedInWeek(int week) => suspendedWeeks?.contains(week) ?? false;
 
   List<int> get activeWeeks {
     final custom = normalizedCustomWeeks;
@@ -245,8 +242,8 @@ class Course {
     final mode = isOddWeek
         ? ' 单周'
         : isEvenWeek
-            ? ' 双周'
-            : '';
+        ? ' 双周'
+        : '';
     return '第$startWeek-$endWeek周$mode';
   }
 

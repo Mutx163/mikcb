@@ -28,11 +28,11 @@ class ScheduleItem {
     this.color = '#5B9CF6',
     required this.createdAt,
     required this.updatedAt,
-  })  : startDate = _normalizeDate(startDate ?? date ?? DateTime.now()),
-        endDate = _resolveNormalizedEndDate(
-          startDate: startDate ?? date ?? DateTime.now(),
-          endDate: endDate,
-        );
+  }) : startDate = _normalizeDate(startDate ?? date ?? DateTime.now()),
+       endDate = _resolveNormalizedEndDate(
+         startDate: startDate ?? date ?? DateTime.now(),
+         endDate: endDate,
+       );
 
   DateTime get date => startDate;
 
@@ -56,8 +56,9 @@ class ScheduleItem {
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
     final legacyDate = DateTime.tryParse(json['date'] as String? ?? '');
-    final parsedStartDate =
-        DateTime.tryParse(json['startDate'] as String? ?? '');
+    final parsedStartDate = DateTime.tryParse(
+      json['startDate'] as String? ?? '',
+    );
     final parsedEndDate = DateTime.tryParse(json['endDate'] as String? ?? '');
 
     return ScheduleItem(
@@ -103,8 +104,9 @@ class ScheduleItem {
     return ScheduleItem(
       id: id ?? this.id,
       title: title ?? this.title,
-      location:
-          identical(location, _unset) ? this.location : location as String?,
+      location: identical(location, _unset)
+          ? this.location
+          : location as String?,
       note: identical(note, _unset) ? this.note : note as String?,
       startDate: resolvedStartDate,
       endDate: endDate ?? this.endDate,

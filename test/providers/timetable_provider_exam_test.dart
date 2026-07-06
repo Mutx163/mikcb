@@ -79,10 +79,7 @@ void main() {
       final provider = await createProvider();
       final exam = buildExam(courseId: 'non-existent');
 
-      expect(
-        () => provider.addExam(exam),
-        throwsA(isA<ArgumentError>()),
-      );
+      expect(() => provider.addExam(exam), throwsA(isA<ArgumentError>()));
     });
 
     test('updateExam modifies existing exam', () async {
@@ -134,17 +131,19 @@ void main() {
     test('getExamsForCourse filters by courseId', () async {
       final provider = await createProvider();
       await addTestCourse(provider);
-      await provider.addCourse(Course(
-        id: 'course-2',
-        name: '大学英语',
-        teacher: '李老师',
-        location: 'B202',
-        dayOfWeek: 3,
-        startSection: 3,
-        endSection: 4,
-        startTime: '10:00',
-        endTime: '11:40',
-      ));
+      await provider.addCourse(
+        Course(
+          id: 'course-2',
+          name: '大学英语',
+          teacher: '李老师',
+          location: 'B202',
+          dayOfWeek: 3,
+          startSection: 3,
+          endSection: 4,
+          startTime: '10:00',
+          endTime: '11:40',
+        ),
+      );
       await provider.addExam(buildExam(id: 'e1', courseId: 'course-1'));
       await provider.addExam(buildExam(id: 'e2', courseId: 'course-2'));
       await provider.addExam(buildExam(id: 'e3', courseId: 'course-1'));
@@ -153,34 +152,58 @@ void main() {
       expect(provider.getExamsForCourse('course-2'), hasLength(1));
     });
 
-    test('getUpcomingExams returns only non-expired exams sorted by date', () async {
-      final provider = await createProvider();
-      await addTestCourse(provider);
-      await provider.addExam(buildExam(
-        id: 'past',
-        dateTime: DateTime.now().subtract(const Duration(days: 5)),
-      ));
-      await provider.addExam(buildExam(
-        id: 'future1',
-        dateTime: DateTime.now().add(const Duration(days: 10)),
-      ));
-      await provider.addExam(buildExam(
-        id: 'future2',
-        dateTime: DateTime.now().add(const Duration(days: 3)),
-      ));
+    test(
+      'getUpcomingExams returns only non-expired exams sorted by date',
+      () async {
+        final provider = await createProvider();
+        await addTestCourse(provider);
+        await provider.addExam(
+          buildExam(
+            id: 'past',
+            dateTime: DateTime.now().subtract(const Duration(days: 5)),
+          ),
+        );
+        await provider.addExam(
+          buildExam(
+            id: 'future1',
+            dateTime: DateTime.now().add(const Duration(days: 10)),
+          ),
+        );
+        await provider.addExam(
+          buildExam(
+            id: 'future2',
+            dateTime: DateTime.now().add(const Duration(days: 3)),
+          ),
+        );
 
-      final upcoming = provider.getUpcomingExams();
-      expect(upcoming, hasLength(2));
-      expect(upcoming.first.id, 'future2');
-      expect(upcoming.last.id, 'future1');
-    });
+        final upcoming = provider.getUpcomingExams();
+        expect(upcoming, hasLength(2));
+        expect(upcoming.first.id, 'future2');
+        expect(upcoming.last.id, 'future1');
+      },
+    );
 
     test('getUpcomingExams respects limit', () async {
       final provider = await createProvider();
       await addTestCourse(provider);
-      await provider.addExam(buildExam(id: 'e1', dateTime: DateTime.now().add(const Duration(days: 1))));
-      await provider.addExam(buildExam(id: 'e2', dateTime: DateTime.now().add(const Duration(days: 2))));
-      await provider.addExam(buildExam(id: 'e3', dateTime: DateTime.now().add(const Duration(days: 3))));
+      await provider.addExam(
+        buildExam(
+          id: 'e1',
+          dateTime: DateTime.now().add(const Duration(days: 1)),
+        ),
+      );
+      await provider.addExam(
+        buildExam(
+          id: 'e2',
+          dateTime: DateTime.now().add(const Duration(days: 2)),
+        ),
+      );
+      await provider.addExam(
+        buildExam(
+          id: 'e3',
+          dateTime: DateTime.now().add(const Duration(days: 3)),
+        ),
+      );
 
       expect(provider.getUpcomingExams(limit: 2), hasLength(2));
     });
@@ -188,14 +211,18 @@ void main() {
     test('getNextExam returns nearest future exam', () async {
       final provider = await createProvider();
       await addTestCourse(provider);
-      await provider.addExam(buildExam(
-        id: 'far',
-        dateTime: DateTime.now().add(const Duration(days: 20)),
-      ));
-      await provider.addExam(buildExam(
-        id: 'near',
-        dateTime: DateTime.now().add(const Duration(days: 5)),
-      ));
+      await provider.addExam(
+        buildExam(
+          id: 'far',
+          dateTime: DateTime.now().add(const Duration(days: 20)),
+        ),
+      );
+      await provider.addExam(
+        buildExam(
+          id: 'near',
+          dateTime: DateTime.now().add(const Duration(days: 5)),
+        ),
+      );
 
       expect(provider.getNextExam()?.id, 'near');
     });

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
 
 class TestApp extends StatelessWidget {
   final Widget home;
@@ -18,6 +19,7 @@ class TestApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      navigatorObservers: [hyperosRouteObserver],
       builder: (context, child) {
         return FTheme(
           data: FThemes.zinc.light.touch,

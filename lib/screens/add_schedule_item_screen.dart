@@ -130,54 +130,58 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
             HyperosControlCard(
               title: l10n.scheduleInfoSectionTitle,
               plainTitle: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _withSpacing([
-                  FormField<String>(
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return l10n.scheduleTitleRequired;
-                      }
-                      return null;
-                    },
-                    builder: (field) {
-                      return HyperosTextField(
-                        controller: _titleController,
-                        label: l10n.scheduleTitleLabel,
-                        hint: l10n.scheduleTitleHint,
-                        helper: field.errorText,
-                        textInputAction: TextInputAction.next,
-                        onChanged: field.didChange,
-                      );
-                    },
-                  ),
-                  HyperosTextField(
-                    controller: _locationController,
-                    label: l10n.scheduleLocationLabel,
-                    hint: l10n.scheduleLocationHint,
-                    textInputAction: TextInputAction.next,
-                  ),
-                  HyperosTextField(
-                    controller: _noteController,
-                    label: l10n.scheduleNoteLabel,
-                    hint: l10n.scheduleNoteHint,
-                    minLines: 1,
-                    maxLines: 3,
-                  ),
-                ]),
+              child: HyperosControlCardInset(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    FormField<String>(
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return l10n.scheduleTitleRequired;
+                        }
+                        return null;
+                      },
+                      builder: (field) {
+                        return HyperosTextField(
+                          controller: _titleController,
+                          label: l10n.scheduleTitleLabel,
+                          hint: l10n.scheduleTitleHint,
+                          helper: field.errorText,
+                          textInputAction: TextInputAction.next,
+                          onChanged: field.didChange,
+                        );
+                      },
+                    ),
+                    HyperosTextField(
+                      controller: _locationController,
+                      label: l10n.scheduleLocationLabel,
+                      hint: l10n.scheduleLocationHint,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    HyperosTextField(
+                      controller: _noteController,
+                      label: l10n.scheduleNoteLabel,
+                      hint: l10n.scheduleNoteHint,
+                      minLines: 1,
+                      maxLines: 3,
+                    ),
+                  ]),
+                ),
               ),
             ),
             const SizedBox(height: _sectionSpacing),
             HyperosControlCard(
               title: l10n.scheduleTimeSectionTitle,
               plainTitle: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _withSpacing([
-                  _buildStartEndTimeLayout(l10n),
-                  _buildScheduleRangeHint(),
-                  _buildColorSection(l10n),
-                ]),
+              child: HyperosControlCardInset(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: _withSpacing([
+                    _buildStartEndTimeLayout(l10n),
+                    _buildScheduleRangeHint(),
+                    _buildColorSection(l10n),
+                  ]),
+                ),
               ),
             ),
           ],

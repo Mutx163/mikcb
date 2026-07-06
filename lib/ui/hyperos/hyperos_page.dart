@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/scheduler.dart';
@@ -7,6 +5,7 @@ import 'package:forui/forui.dart';
 
 import 'hyperos_blurred_header.dart';
 import 'hyperos_header_diag.dart';
+import 'hyperos_navigation.dart';
 import 'hyperos_overscroll.dart';
 import 'hyperos_overlay_header.dart';
 import 'hyperos_theme.dart';
@@ -126,11 +125,18 @@ class _HyperosBlurredPage extends StatefulWidget {
   State<_HyperosBlurredPage> createState() => _HyperosBlurredPageState();
 }
 
-class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
-  static const _blurSettleDelay = Duration(milliseconds: 350);
+class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
+    with RouteAware {
+  /// Post-route frames before enabling [BackdropFilter] (layout behind header).
+  static const _blurSettleFrameCount = 2;
+
+  /// Scroll offset above which frosted header replaces solid page background.
+  static const scrollFrostThreshold = 0.5;
 
   bool _blurSettled = false;
-  Timer? _blurSettleTimer;
+  bool _contentUnderHeader = false;
+  int _blurSettleGeneration = 0;
+  ModalRoute<void>? _subscribedRoute;
   Animation<double>? _routeAnimation;
   Animation<double>? _secondaryRouteAnimation;
   VoidCallback? _routeAnimationListener;
@@ -172,6 +178,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
+    _subscribeRouteObserver(route);
     final animation = route?.animation;
     final secondary = route?.secondaryAnimation;
     if (animation == _routeAnimation && secondary == _secondaryRouteAnimation) {
@@ -206,9 +213,54 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     _scheduleBlurSettle();
   }
 
+  void _subscribeRouteObserver(ModalRoute<dynamic>? route) {
+    if (route is! ModalRoute<void> || identical(route, _subscribedRoute)) {
+      return;
+    }
+    if (_subscribedRoute != null) {
+      hyperosRouteObserver.unsubscribe(this);
+    }
+    _subscribedRoute = route;
+    hyperosRouteObserver.subscribe(this, route);
+  }
+
+  @override
+  void didPopNext() {
+    if (!mounted) {
+      return;
+    }
+    _syncRouteTransitioning();
+    _restoreBlurAfterRegainingVisibility(source: 'didPopNext');
+    _scheduleResyncHeaderFrostAfterLayout();
+  }
+
+  /// Re-enable header blur when this route becomes visible again after a pop.
+  void _restoreBlurAfterRegainingVisibility({required String source}) {
+    if (!_liveBlurActive) {
+      return;
+    }
+    if (_isRouteTransitioning) {
+      _scheduleBlurSettle();
+      return;
+    }
+    _cancelBlurSettle();
+    _markBlurSettled(source: source);
+  }
+
   void _cancelBlurSettle() {
-    _blurSettleTimer?.cancel();
-    _blurSettleTimer = null;
+    _blurSettleGeneration++;
+  }
+
+  void _markBlurSettled({String? source}) {
+    if (_blurSettled || !mounted) {
+      return;
+    }
+    HyperosHeaderDiag.log('blur_settle', {
+      'blurSettled': true,
+      if (source != null) 'source': source,
+    });
+    setState(() => _blurSettled = true);
+    _scheduleResyncHeaderFrostAfterLayout();
   }
 
   void _scheduleBlurSettle() {
@@ -221,13 +273,104 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       }
       return;
     }
-    _blurSettleTimer = Timer(_blurSettleDelay, () {
-      if (!mounted || _isRouteTransitioning) {
+    final generation = _blurSettleGeneration;
+    void afterFrames(int remaining) {
+      if (!mounted ||
+          generation != _blurSettleGeneration ||
+          _isRouteTransitioning) {
         return;
       }
-      HyperosHeaderDiag.log('blur_settle', {'blurSettled': true});
-      setState(() => _blurSettled = true);
+      if (remaining <= 0) {
+        _markBlurSettled(source: 'frames');
+        return;
+      }
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        afterFrames(remaining - 1);
+      });
+    }
+
+    afterFrames(_blurSettleFrameCount);
+  }
+
+  /// User scroll means content is moving under the header — enable blur immediately
+  /// instead of waiting for the post-route frame budget (fixes fast scroll after push).
+  void _tryEnableBlurOnUserScroll() {
+    if (!_liveBlurActive || _blurSettled || _isRouteTransitioning) {
+      return;
+    }
+    _cancelBlurSettle();
+    _markBlurSettled(source: 'scroll');
+  }
+
+  bool _handleBodyScrollForBlur(ScrollNotification notification) {
+    if (notification is ScrollStartNotification ||
+        notification is ScrollUpdateNotification ||
+        notification is ScrollEndNotification) {
+      _tryEnableBlurOnUserScroll();
+      _syncHeaderFrostForScroll(notification.metrics.pixels);
+    }
+    return false;
+  }
+
+  void _syncHeaderFrostForScroll(double pixels) {
+    if (!_useOverlayLayout) {
+      return;
+    }
+    final underHeader = hyperosContentUnderHeader(
+      scrollPixels: pixels,
+      threshold: scrollFrostThreshold,
+    );
+    if (_contentUnderHeader == underHeader) {
+      return;
+    }
+    setState(() => _contentUnderHeader = underHeader);
+  }
+
+  void _scheduleResyncHeaderFrostAfterLayout() {
+    if (!_useOverlayLayout) {
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final pixels = _findBodyScrollPixels();
+      if (pixels != null) {
+        _syncHeaderFrostForScroll(pixels);
+      }
     });
+  }
+
+  double? _findBodyScrollPixels() {
+    ScrollPosition? found;
+    void visit(Element element) {
+      if (found != null) {
+        return;
+      }
+      if (element is StatefulElement && element.state is ScrollableState) {
+        found = (element.state as ScrollableState).position;
+        return;
+      }
+      element.visitChildren(visit);
+    }
+
+    visit(context as Element);
+    return found?.pixels;
+  }
+
+  HyperosBlurredHeaderScope _buildHeaderScope({
+    required double contentTopInset,
+    required bool routeBlurEnabled,
+    required Color headerBackgroundColor,
+    required Widget child,
+  }) {
+    return HyperosBlurredHeaderScope(
+      contentTopInset: contentTopInset,
+      blurEnabled: routeBlurEnabled,
+      contentUnderHeader: _contentUnderHeader,
+      headerBackgroundColor: headerBackgroundColor,
+      child: child,
+    );
   }
 
   void _maybeLogRouteTransition({
@@ -310,6 +453,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   void dispose() {
+    if (_subscribedRoute != null) {
+      hyperosRouteObserver.unsubscribe(this);
+      _subscribedRoute = null;
+    }
     _cancelBlurSettle();
     _detachRouteListeners();
     super.dispose();
@@ -330,18 +477,29 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   }
 
   Widget _buildBody({required Color pageBackground, required Widget child}) {
-    return Material(
+    final body = Material(
       type: MaterialType.transparency,
       color: pageBackground,
-      child: child,
+      child: ScrollConfiguration(
+        behavior: const HyperosScrollBehavior(),
+        child: child,
+      ),
+    );
+    if (!_useOverlayLayout) {
+      return body;
+    }
+    return NotificationListener<ScrollNotification>(
+      onNotification: _handleBodyScrollForBlur,
+      child: body,
     );
   }
 
   Widget _buildScaffoldHeaderLayout(Color pageBackground) {
     final blurredHeader = _buildHeaderShell(widget.header, pageBackground);
-    final header = HyperosBlurredHeaderScope(
+    final header = _buildHeaderScope(
       contentTopInset: 0,
-      blurEnabled: _backdropBlurEnabled,
+      routeBlurEnabled: _backdropBlurEnabled,
+      headerBackgroundColor: pageBackground,
       child: blurredHeader,
     );
     return FScaffold(
@@ -374,9 +532,10 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
       scaffoldStyle: FScaffoldStyleDelta.delta(backgroundColor: pageBackground),
       childPad: widget.childPad,
-      child: HyperosBlurredHeaderScope(
+      child: _buildHeaderScope(
         contentTopInset: headerInset,
-        blurEnabled: _backdropBlurEnabled,
+        routeBlurEnabled: _backdropBlurEnabled,
+        headerBackgroundColor: pageBackground,
         child: Stack(
           fit: StackFit.expand,
           clipBehavior: Clip.hardEdge,
@@ -412,6 +571,15 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   }
 }
 
+/// Whether scroll offset places list content under the overlay header.
+@visibleForTesting
+bool hyperosContentUnderHeader({
+  required double scrollPixels,
+  double threshold = _HyperosBlurredPageState.scrollFrostThreshold,
+}) {
+  return scrollPixels > threshold;
+}
+
 /// Whether a HyperOS page route is mid transition.
 ///
 /// On the **current** (top) route, only the primary enter/exit animation
@@ -439,6 +607,10 @@ bool hyperosIsIncomingRouteSettled({required double animationValue}) {
 }
 
 /// Scrollable HyperOS settings list with standard page padding.
+///
+/// Uses [HyperosOverscrollPhysics] (same as [HyperosScrollBehavior] on
+/// [HyperosSubpage] / [HyperosRootPage]). Prefer this for settings-style
+/// pages; raw [ListView] inside those shells also inherits the physics.
 ///
 /// Provide either [children] (light pages) or [itemCount] + [itemBuilder] for
 /// lazy per-section construction on heavy settings subpages.

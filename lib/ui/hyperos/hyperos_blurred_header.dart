@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 
+import '../../models/timetable_settings.dart';
 import 'frosted/frosted_appearance.dart';
 import 'frosted/frosted_header_background.dart';
 export 'frosted/frosted_appearance.dart';
@@ -17,6 +18,8 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
   const HyperosBlurredHeaderScope({
     required this.contentTopInset,
     this.blurEnabled = true,
+    this.contentUnderHeader = false,
+    this.headerBackgroundColor,
     required super.child,
     super.key,
   });
@@ -26,6 +29,12 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
 
   /// When false, header shows tint only (no [BackdropFilter]).
   final bool blurEnabled;
+
+  /// When true, list content has scrolled under the header — show frosted blur.
+  final bool contentUnderHeader;
+
+  /// Opaque header fill while [contentUnderHeader] is false (matches page bg).
+  final Color? headerBackgroundColor;
 
   static HyperosBlurredHeaderScope? maybeOf(BuildContext context) {
     return context
@@ -40,23 +49,27 @@ class HyperosBlurredHeaderScope extends InheritedWidget {
     return maybeOf(context)?.blurEnabled ?? true;
   }
 
+  static bool contentUnderHeaderOf(BuildContext context) {
+    return maybeOf(context)?.contentUnderHeader ?? false;
+  }
+
+  static Color? headerBackgroundColorOf(BuildContext context) {
+    return maybeOf(context)?.headerBackgroundColor;
+  }
+
   @override
   bool updateShouldNotify(HyperosBlurredHeaderScope oldWidget) {
     return contentTopInset != oldWidget.contentTopInset ||
-        blurEnabled != oldWidget.blurEnabled;
+        blurEnabled != oldWidget.blurEnabled ||
+        contentUnderHeader != oldWidget.contentUnderHeader ||
+        headerBackgroundColor != oldWidget.headerBackgroundColor;
   }
 }
 
 /// Layout helpers for HyperOS frosted top app bars.
 abstract final class HyperosBlurredHeader {
   /// Fallback blur sigma when no [FrostedAppearanceScope] is available.
-  static const blurSigma = 10.0;
-
-  /// Translucent scrim alpha over the blurred backdrop (light mode).
-  static const lightTintAlpha = 0.28;
-
-  /// Translucent scrim alpha over the blurred backdrop (dark mode).
-  static const darkTintAlpha = 0.32;
+  static const blurSigma = TimetableSettings.defaultFrostedSheetBlurSigma;
 
   /// Tint-only scrim while blur is paused (route transition).
   static const lightTintOnlyAlpha = 0.58;
@@ -100,12 +113,26 @@ abstract final class HyperosBlurredHeader {
   }
 
   static Color tintColor(BuildContext context, {required bool withBlur}) {
-    final pageBackground = HyperosColors.scaffoldBackground(context);
+    if (!withBlur) {
+      final pageBackground = HyperosColors.scaffoldBackground(context);
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      return pageBackground.withValues(
+        alpha: isDark ? darkTintOnlyAlpha : lightTintOnlyAlpha,
+      );
+    }
+    return _frostedScrimColor(context);
+  }
+
+  /// Shared frosted scrim for subpage headers, sheets, and menus.
+  static Color _frostedScrimColor(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final tintAlpha = withBlur
-        ? (isDark ? darkTintAlpha : lightTintAlpha)
-        : (isDark ? darkTintOnlyAlpha : lightTintOnlyAlpha);
-    return pageBackground.withValues(alpha: tintAlpha);
+    final alpha = _appearanceOf(context).sheetTintAlpha;
+    if (isDark) {
+      return HyperosColors.scaffoldBackground(
+        context,
+      ).withValues(alpha: (alpha * 0.55 + 0.10).clamp(0.22, 0.72));
+    }
+    return Colors.white.withValues(alpha: alpha);
   }
 
   /// Frosted bottom sheet panel tint. Light mode uses a milky white overlay so
@@ -114,15 +141,7 @@ abstract final class HyperosBlurredHeader {
     if (!withBlur) {
       return tintColor(context, withBlur: false);
     }
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    if (isDark) {
-      return HyperosColors.scaffoldBackground(
-        context,
-      ).withValues(alpha: darkTintAlpha + 0.06);
-    }
-    return Colors.white.withValues(
-      alpha: _appearanceOf(context).sheetTintAlpha,
-    );
+    return _frostedScrimColor(context);
   }
 
   /// Frosted tint for nested surfaces (menu tiles, chips) over a frosted parent.
@@ -185,11 +204,25 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final scopeBlur = HyperosBlurredHeaderScope.blurEnabledOf(context);
+    final scope = HyperosBlurredHeaderScope.maybeOf(context);
+    final routeBlur = scope?.blurEnabled ?? true;
+    final underHeader = scope?.contentUnderHeader ?? true;
     final useBlur =
-        HyperosBlurredHeader.backdropBlurEnabled(context) && scopeBlur;
+        HyperosBlurredHeader.backdropBlurEnabled(context) &&
+        routeBlur &&
+        underHeader;
+    final atRestColor =
+        scope?.headerBackgroundColor ??
+        HyperosColors.scaffoldBackground(context);
+    final tint = useBlur
+        ? HyperosBlurredHeader.tintColor(context, withBlur: true)
+        : atRestColor;
 
-    return HyperosFrostedHeaderShell(blurEnabled: useBlur, child: child);
+    return HyperosFrostedHeaderShell(
+      blurEnabled: useBlur,
+      tint: tint,
+      child: child,
+    );
   }
 }
 

@@ -154,7 +154,6 @@ class _CourseActionSheetContent extends StatelessWidget {
         : course.weekDescription;
     final canReschedule = course.isInWeek(week);
     final isSuspended = course.isSuspendedInWeek(week);
-    final tileBg = colors.muted.withValues(alpha: 0.35);
     final muted = typo.xs2.copyWith(color: colors.mutedForeground);
 
     return Column(
@@ -223,7 +222,6 @@ class _CourseActionSheetContent extends StatelessWidget {
         ),
         const SizedBox(height: 14),
         _CourseDetailTile(
-          backgroundColor: tileBg,
           icon: Icons.schedule_outlined,
           title: sectionTitle,
           subtitle: timeSubtitle,
@@ -234,38 +232,20 @@ class _CourseActionSheetContent extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         _CourseDetailTile(
-          backgroundColor: tileBg,
           icon: Icons.person_outline_rounded,
           title: teacher.isNotEmpty ? teacher : l10n.unknownTeacher,
           subtitle: teacherSubtitle,
         ),
         const SizedBox(height: 8),
         _CourseDetailTile(
-          backgroundColor: tileBg,
           icon: Icons.location_on_outlined,
           title: location.isNotEmpty ? location : l10n.unknownLocation,
           subtitle: locationSubtitle,
         ),
         const SizedBox(height: 12),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-          decoration: BoxDecoration(
-            color: tileBg,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 16,
-                color: colors.mutedForeground,
-              ),
-              const SizedBox(width: 8),
-              Expanded(child: _CourseActionNoticeText(week: week)),
-            ],
-          ),
+        _CourseDetailTile(
+          icon: Icons.info_outline_rounded,
+          titleWidget: Expanded(child: _CourseActionNoticeText(week: week)),
         ),
         const SizedBox(height: 14),
         SizedBox(
@@ -280,10 +260,10 @@ class _CourseActionSheetContent extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: HyperosButton(
+              child: HyperosFrostedSheetButton(
                 key: ValueKey('course-action-reschedule-${course.id}'),
                 label: l10n.courseActionRescheduleSecondary,
-                variant: HyperosButtonVariant.secondary,
+                bordered: true,
                 expand: true,
                 onPressed: canReschedule
                     ? () => _closeSheetThen(context, () => onReschedule(course))
@@ -292,12 +272,12 @@ class _CourseActionSheetContent extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: HyperosButton(
+              child: HyperosFrostedSheetButton(
                 key: ValueKey('course-action-suspend-${course.id}'),
                 label: isSuspended
                     ? l10n.courseActionUnsuspend
                     : l10n.courseActionSuspendSecondary,
-                variant: HyperosButtonVariant.secondary,
+                bordered: true,
                 expand: true,
                 onPressed: () =>
                     _closeSheetThen(context, () => onSuspend(course)),
@@ -323,17 +303,17 @@ class _CourseActionSheetContent extends StatelessWidget {
 
 class _CourseDetailTile extends StatelessWidget {
   const _CourseDetailTile({
-    required this.backgroundColor,
     required this.icon,
-    required this.title,
-    required this.subtitle,
+    this.title,
+    this.subtitle,
+    this.titleWidget,
     this.trailing,
   });
 
-  final Color backgroundColor;
   final IconData icon;
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
+  final Widget? titleWidget;
   final Widget? trailing;
 
   @override
@@ -341,45 +321,49 @@ class _CourseDetailTile extends StatelessWidget {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 18, color: colors.mutedForeground),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: typo.sm.copyWith(
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: colors.mutedForeground),
+            const SizedBox(width: 10),
+            if (titleWidget != null)
+              titleWidget!
+            else
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title!,
+                      style: typo.sm.copyWith(
+                        fontWeight: FontWeight.w600,
+                        height: 1.25,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle != null && subtitle!.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: typo.xs2.copyWith(
+                          color: colors.mutedForeground,
+                          height: 1.3,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: typo.xs2.copyWith(
-                    color: colors.mutedForeground,
-                    height: 1.3,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          if (trailing != null) ...[const SizedBox(width: 8), trailing!],
-        ],
+              ),
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+          ],
+        ),
       ),
     );
   }

@@ -15,9 +15,7 @@ class _CountingProbeClient extends http.BaseClient {
   int streamedBytes = 0;
   Map<String, String>? lastGetHeaders;
 
-  _CountingProbeClient({
-    required this.totalBytes,
-  });
+  _CountingProbeClient({required this.totalBytes});
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -89,96 +87,100 @@ void main() {
     expect(requestedPaths, contains('/repos/Mutx163/mikcb/releases'));
   });
 
-  test('debug build with dash suffix is not treated as newer than release',
-      () async {
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.2.0.29',
-              'name': 'v1.2.0.29',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.2.0.29',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.2.0.29-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.2.0.29.apk',
-                },
-              ],
-              'updated_at': '2026-05-11T10:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      return http.Response('', 404);
-    });
+  test(
+    'debug build with dash suffix is not treated as newer than release',
+    () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/releases')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.2.0.29',
+                'name': 'v1.2.0.29',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.2.0.29',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.2.0.29-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.2.0.29.apk',
+                  },
+                ],
+                'updated_at': '2026-05-11T10:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response('', 404);
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.2.0-29-debug',
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.2.0-29-debug',
+      );
 
-    expect(result.hasRelease, isTrue);
-    expect(result.latestRelease?.version, '1.2.0.29');
-    // debug 构建 1.2.0-29-debug 应该等同于 1.2.0.29，不提示更新
-    expect(result.hasUpdate, isFalse);
-  });
+      expect(result.hasRelease, isTrue);
+      expect(result.latestRelease?.version, '1.2.0.29');
+      // debug 构建 1.2.0-29-debug 应该等同于 1.2.0.29，不提示更新
+      expect(result.hasUpdate, isFalse);
+    },
+  );
 
-  test('include prerelease picks highest version even if not first in list',
-      () async {
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.1.9.3',
-              'name': 'v1.1.9.3',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.1.9.3',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.9.3-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.9.3.apk',
-                },
-              ],
-              'updated_at': '2026-03-26T10:00:00Z',
-            },
-            {
-              'tag_name': 'v1.1.9.4',
-              'name': 'v1.1.9.4',
-              'draft': false,
-              'prerelease': true,
-              'html_url': 'https://example.com/1.1.9.4',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.9.4-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.9.4.apk',
-                },
-              ],
-              'updated_at': '2026-03-26T11:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      throw UnsupportedError('Unexpected url: ${request.url}');
-    });
+  test(
+    'include prerelease picks highest version even if not first in list',
+    () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/releases')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.1.9.3',
+                'name': 'v1.1.9.3',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.1.9.3',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.9.3-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.9.3.apk',
+                  },
+                ],
+                'updated_at': '2026-03-26T10:00:00Z',
+              },
+              {
+                'tag_name': 'v1.1.9.4',
+                'name': 'v1.1.9.4',
+                'draft': false,
+                'prerelease': true,
+                'html_url': 'https://example.com/1.1.9.4',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.9.4-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.9.4.apk',
+                  },
+                ],
+                'updated_at': '2026-03-26T11:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        throw UnsupportedError('Unexpected url: ${request.url}');
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.9.3',
-      includePrerelease: true,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.1.9.3',
+        includePrerelease: true,
+      );
 
-    expect(result.hasRelease, isTrue);
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.1.9.4');
-    expect(result.latestRelease?.isPrerelease, isTrue);
-  });
+      expect(result.hasRelease, isTrue);
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.1.9.4');
+      expect(result.latestRelease?.isPrerelease, isTrue);
+    },
+  );
 
   test('dotted tag suffix matches pubspec prerelease format', () async {
     final client = MockClient((request) async {
@@ -207,119 +209,121 @@ void main() {
     });
 
     final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.10-3+33',
-    );
+    final result = await service.checkForUpdates(currentVersion: '1.1.10-3+33');
 
     expect(result.hasRelease, isTrue);
     expect(result.hasUpdate, isFalse);
     expect(result.latestRelease?.version, '1.1.10.3');
   });
 
-  test('include prerelease keeps numbered prerelease above base release',
-      () async {
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.1.10',
-              'name': 'v1.1.10',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.1.10',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.10-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.10.apk',
-                },
-              ],
-              'updated_at': '2026-03-29T09:00:00Z',
-            },
-            {
-              'tag_name': 'v1.1.10.4',
-              'name': 'v1.1.10.4',
-              'draft': false,
-              'prerelease': true,
-              'html_url': 'https://example.com/1.1.10.4',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.10.4-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.10.4.apk',
-                },
-              ],
-              'updated_at': '2026-03-31T09:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      throw UnsupportedError('Unexpected url: ${request.url}');
-    });
+  test(
+    'include prerelease keeps numbered prerelease above base release',
+    () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/releases')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.1.10',
+                'name': 'v1.1.10',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.1.10',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.10-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.10.apk',
+                  },
+                ],
+                'updated_at': '2026-03-29T09:00:00Z',
+              },
+              {
+                'tag_name': 'v1.1.10.4',
+                'name': 'v1.1.10.4',
+                'draft': false,
+                'prerelease': true,
+                'html_url': 'https://example.com/1.1.10.4',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.10.4-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.10.4.apk',
+                  },
+                ],
+                'updated_at': '2026-03-31T09:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        throw UnsupportedError('Unexpected url: ${request.url}');
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.10-4+34',
-      includePrerelease: true,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.1.10-4+34',
+        includePrerelease: true,
+      );
 
-    expect(result.hasRelease, isTrue);
-    expect(result.hasUpdate, isFalse);
-    expect(result.latestRelease?.version, '1.1.10.4');
-    expect(result.latestRelease?.isPrerelease, isTrue);
-  });
+      expect(result.hasRelease, isTrue);
+      expect(result.hasUpdate, isFalse);
+      expect(result.latestRelease?.version, '1.1.10.4');
+      expect(result.latestRelease?.isPrerelease, isTrue);
+    },
+  );
 
-  test('numbered prerelease still upgrades from base release when enabled',
-      () async {
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.1.10',
-              'name': 'v1.1.10',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.1.10',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.10-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.10.apk',
-                },
-              ],
-              'updated_at': '2026-03-29T09:00:00Z',
-            },
-            {
-              'tag_name': 'v1.1.10.4',
-              'name': 'v1.1.10.4',
-              'draft': false,
-              'prerelease': true,
-              'html_url': 'https://example.com/1.1.10.4',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.1.10.4-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.1.10.4.apk',
-                },
-              ],
-              'updated_at': '2026-03-31T09:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      throw UnsupportedError('Unexpected url: ${request.url}');
-    });
+  test(
+    'numbered prerelease still upgrades from base release when enabled',
+    () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/releases')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.1.10',
+                'name': 'v1.1.10',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.1.10',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.10-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.10.apk',
+                  },
+                ],
+                'updated_at': '2026-03-29T09:00:00Z',
+              },
+              {
+                'tag_name': 'v1.1.10.4',
+                'name': 'v1.1.10.4',
+                'draft': false,
+                'prerelease': true,
+                'html_url': 'https://example.com/1.1.10.4',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.1.10.4-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.1.10.4.apk',
+                  },
+                ],
+                'updated_at': '2026-03-31T09:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        throw UnsupportedError('Unexpected url: ${request.url}');
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.10',
-      includePrerelease: true,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.1.10',
+        includePrerelease: true,
+      );
 
-    expect(result.hasRelease, isTrue);
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.1.10.4');
-  });
+      expect(result.hasRelease, isTrue);
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.1.10.4');
+    },
+  );
 
   test('include prerelease skips higher versions without apk assets', () async {
     final client = MockClient((request) async {
@@ -379,54 +383,59 @@ void main() {
     expect(result.hasUpdate, isTrue);
     expect(result.latestRelease?.version, '1.1.10.23');
     expect(
-        result.latestRelease?.downloadUrl, 'https://example.com/1.1.10.23.apk');
-  });
-
-  test('stable update skips newer release entries without apk assets',
-      () async {
-    final client = MockClient((request) async {
-      if (request.url.path.endsWith('/releases')) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.2.1',
-              'name': 'v1.2.1',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.2.1',
-              'assets': const [],
-              'updated_at': '2026-04-09T10:00:00Z',
-            },
-            {
-              'tag_name': 'v1.2.0',
-              'name': 'v1.2.0',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.2.0',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.2.0-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.2.0.apk',
-                },
-              ],
-              'updated_at': '2026-04-08T10:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      throw UnsupportedError('Unexpected url: ${request.url}');
-    });
-
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.9',
+      result.latestRelease?.downloadUrl,
+      'https://example.com/1.1.10.23.apk',
     );
-
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.2.0');
-    expect(result.latestRelease?.downloadUrl, 'https://example.com/1.2.0.apk');
   });
+
+  test(
+    'stable update skips newer release entries without apk assets',
+    () async {
+      final client = MockClient((request) async {
+        if (request.url.path.endsWith('/releases')) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.2.1',
+                'name': 'v1.2.1',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.2.1',
+                'assets': const [],
+                'updated_at': '2026-04-09T10:00:00Z',
+              },
+              {
+                'tag_name': 'v1.2.0',
+                'name': 'v1.2.0',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.2.0',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.2.0-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.2.0.apk',
+                  },
+                ],
+                'updated_at': '2026-04-08T10:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        throw UnsupportedError('Unexpected url: ${request.url}');
+      });
+
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(currentVersion: '1.1.9');
+
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.2.0');
+      expect(
+        result.latestRelease?.downloadUrl,
+        'https://example.com/1.2.0.apk',
+      );
+    },
+  );
 
   test('download can be cancelled and cleans up partial apk', () async {
     final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
@@ -479,178 +488,194 @@ void main() {
     await tempDir.delete(recursive: true);
   });
 
-  test('download clears stale managed installer apk files before writing',
-      () async {
-    final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
-    final staleApk = File('${tempDir.path}/mikcb_update_old.apk');
-    await staleApk.writeAsString('stale');
-    final staleCurrentApk = File('${tempDir.path}/mikcb_update.apk');
-    await staleCurrentApk.writeAsString('old-current');
+  test(
+    'download clears stale managed installer apk files before writing',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'mikcb_update_test_',
+      );
+      final staleApk = File('${tempDir.path}/mikcb_update_old.apk');
+      await staleApk.writeAsString('stale');
+      final staleCurrentApk = File('${tempDir.path}/mikcb_update.apk');
+      await staleCurrentApk.writeAsString('old-current');
 
-    final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    unawaited(() async {
-      await for (final request in server) {
-        request.response.statusCode = 200;
-        request.response.headers.contentType = ContentType.binary;
-        request.response.add(List<int>.filled(6, 7));
-        await request.response.close();
-      }
-    }());
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      unawaited(() async {
+        await for (final request in server) {
+          request.response.statusCode = 200;
+          request.response.headers.contentType = ContentType.binary;
+          request.response.add(List<int>.filled(6, 7));
+          await request.response.close();
+        }
+      }());
 
-    String? openedPath;
-    final service = AppUpdateService(
-      temporaryDirectoryProvider: () async => tempDir,
-      openInstaller: (path) async {
-        openedPath = path;
-        return OpenResult(type: ResultType.done);
-      },
-    );
+      String? openedPath;
+      final service = AppUpdateService(
+        temporaryDirectoryProvider: () async => tempDir,
+        openInstaller: (path) async {
+          openedPath = path;
+          return OpenResult(type: ResultType.done);
+        },
+      );
 
-    final result = await service.downloadAndInstallUpdate(
-      'http://${server.address.host}:${server.port}/app.apk',
-      (_, __) {},
-      null,
-    );
+      final result = await service.downloadAndInstallUpdate(
+        'http://${server.address.host}:${server.port}/app.apk',
+        (_, __) {},
+        null,
+      );
 
-    expect(result, isNull);
-    expect(openedPath, '${tempDir.path}/mikcb_update.apk');
-    expect(await staleApk.exists(), isFalse);
-    expect(await staleCurrentApk.exists(), isTrue);
-    expect(await staleCurrentApk.length(), 6);
+      expect(result, isNull);
+      expect(openedPath, '${tempDir.path}/mikcb_update.apk');
+      expect(await staleApk.exists(), isFalse);
+      expect(await staleCurrentApk.exists(), isTrue);
+      expect(await staleCurrentApk.length(), 6);
 
-    await server.close(force: true);
-    await tempDir.delete(recursive: true);
-  });
+      await server.close(force: true);
+      await tempDir.delete(recursive: true);
+    },
+  );
 
-  test('probe download falls back to range get when head is rejected',
-      () async {
-    final client = MockClient((request) async {
-      if (request.method == 'HEAD') {
-        return http.Response('', 405);
-      }
-      if (request.method == 'GET') {
-        expect(request.headers['Range'], 'bytes=0-0');
-        return http.Response('', 206);
-      }
-      throw UnsupportedError('Unexpected method: ${request.method}');
-    });
+  test(
+    'probe download falls back to range get when head is rejected',
+    () async {
+      final client = MockClient((request) async {
+        if (request.method == 'HEAD') {
+          return http.Response('', 405);
+        }
+        if (request.method == 'GET') {
+          expect(request.headers['Range'], 'bytes=0-0');
+          return http.Response('', 206);
+        }
+        throw UnsupportedError('Unexpected method: ${request.method}');
+      });
 
-    final service = AppUpdateService(client: client);
-    final result =
-        await service.probeDownloadUrl('https://example.com/app.apk');
+      final service = AppUpdateService(client: client);
+      final result = await service.probeDownloadUrl(
+        'https://example.com/app.apk',
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(result.statusCode, 206);
-  });
+      expect(result.isSuccess, isTrue);
+      expect(result.statusCode, 206);
+    },
+  );
 
-  test('probe download does not buffer the full body when range is ignored',
-      () async {
-    final client = _CountingProbeClient(totalBytes: 3 * 1024 * 1024);
-    final service = AppUpdateService(client: client);
+  test(
+    'probe download does not buffer the full body when range is ignored',
+    () async {
+      final client = _CountingProbeClient(totalBytes: 3 * 1024 * 1024);
+      final service = AppUpdateService(client: client);
 
-    final result =
-        await service.probeDownloadUrl('https://example.com/app.apk');
+      final result = await service.probeDownloadUrl(
+        'https://example.com/app.apk',
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(result.statusCode, 200);
-    expect(client.lastGetHeaders?['Range'], 'bytes=0-0');
-    expect(client.streamedBytes, lessThan(client.totalBytes));
-  });
+      expect(result.isSuccess, isTrue);
+      expect(result.statusCode, 200);
+      expect(client.lastGetHeaders?['Range'], 'bytes=0-0');
+      expect(client.streamedBytes, lessThan(client.totalBytes));
+    },
+  );
 
-  test('github api falls back to mirrored api when direct api is unavailable',
-      () async {
-    final requests = <String>[];
-    final selectedMirror = 'https://mirror.example/';
-    final mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
-    final client = MockClient((request) async {
-      requests.add(request.url.toString());
-      final url = request.url.toString();
-      if (url == AppUpdateService.releasesApiUrl) {
+  test(
+    'github api falls back to mirrored api when direct api is unavailable',
+    () async {
+      final requests = <String>[];
+      final selectedMirror = 'https://mirror.example/';
+      final mirroredApiUrl =
+          '$selectedMirror${AppUpdateService.releasesApiUrl}';
+      final client = MockClient((request) async {
+        requests.add(request.url.toString());
+        final url = request.url.toString();
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response('', 503);
+        }
+        if (url == mirroredApiUrl) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.3.0',
+                'name': 'v1.3.0',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.3.0',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.3.0-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.3.0.apk',
+                  },
+                ],
+                'updated_at': '2026-04-09T10:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
         return http.Response('', 503);
-      }
-      if (url == mirroredApiUrl) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.3.0',
-              'name': 'v1.3.0',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.3.0',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.3.0-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.3.0.apk',
-                },
-              ],
-              'updated_at': '2026-04-09T10:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      return http.Response('', 503);
-    });
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.2.0',
-      mirrorUrlPrefix: selectedMirror,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.2.0',
+        mirrorUrlPrefix: selectedMirror,
+      );
 
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.3.0');
-    expect(requests, contains(AppUpdateService.releasesApiUrl));
-    expect(requests, contains(mirroredApiUrl));
-  });
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.3.0');
+      expect(requests, contains(AppUpdateService.releasesApiUrl));
+      expect(requests, contains(mirroredApiUrl));
+    },
+  );
 
-  test('github api keeps falling back when preferred mirror returns 404',
-      () async {
-    final requests = <String>[];
-    final selectedMirror = 'https://mirror.example/';
-    final mirroredApiUrl = '$selectedMirror${AppUpdateService.releasesApiUrl}';
-    final client = MockClient((request) async {
-      requests.add(request.url.toString());
-      final url = request.url.toString();
-      if (url == mirroredApiUrl) {
-        return http.Response('', 404);
-      }
-      if (url == AppUpdateService.releasesApiUrl) {
-        return http.Response(
-          jsonEncode([
-            {
-              'tag_name': 'v1.3.1',
-              'name': 'v1.3.1',
-              'draft': false,
-              'prerelease': false,
-              'html_url': 'https://example.com/1.3.1',
-              'assets': const [
-                {
-                  'name': 'mikcb-1.3.1-arm64-v8a.apk',
-                  'browser_download_url': 'https://example.com/1.3.1.apk',
-                },
-              ],
-              'updated_at': '2026-04-09T10:00:00Z',
-            },
-          ]),
-          200,
-        );
-      }
-      return http.Response('', 503);
-    });
+  test(
+    'github api keeps falling back when preferred mirror returns 404',
+    () async {
+      final requests = <String>[];
+      final selectedMirror = 'https://mirror.example/';
+      final mirroredApiUrl =
+          '$selectedMirror${AppUpdateService.releasesApiUrl}';
+      final client = MockClient((request) async {
+        requests.add(request.url.toString());
+        final url = request.url.toString();
+        if (url == mirroredApiUrl) {
+          return http.Response('', 404);
+        }
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response(
+            jsonEncode([
+              {
+                'tag_name': 'v1.3.1',
+                'name': 'v1.3.1',
+                'draft': false,
+                'prerelease': false,
+                'html_url': 'https://example.com/1.3.1',
+                'assets': const [
+                  {
+                    'name': 'mikcb-1.3.1-arm64-v8a.apk',
+                    'browser_download_url': 'https://example.com/1.3.1.apk',
+                  },
+                ],
+                'updated_at': '2026-04-09T10:00:00Z',
+              },
+            ]),
+            200,
+          );
+        }
+        return http.Response('', 503);
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.3.0',
-      preferredSource: AppUpdateDownloadSource.mirror,
-      mirrorUrlPrefix: selectedMirror,
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(
+        currentVersion: '1.3.0',
+        preferredSource: AppUpdateDownloadSource.mirror,
+        mirrorUrlPrefix: selectedMirror,
+      );
 
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.3.1');
-    expect(requests, contains(mirroredApiUrl));
-    expect(requests, contains(AppUpdateService.releasesApiUrl));
-  });
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.3.1');
+      expect(requests, contains(mirroredApiUrl));
+      expect(requests, contains(AppUpdateService.releasesApiUrl));
+    },
+  );
 
   test('github api does not wait for a stalled preferred mirror', () async {
     final requests = <String>[];
@@ -705,8 +730,7 @@ void main() {
     expect(requests, contains(AppUpdateService.releasesApiUrl));
   });
 
-  test('releases page fallback bypasses api 403 for prerelease updates',
-      () async {
+  test('releases page fallback bypasses api 403 for prerelease updates', () async {
     final requests = <String>[];
     const releasesHtml = '''
 <section>
@@ -772,9 +796,10 @@ void main() {
     expect(requests, contains(AppUpdateService.releasesPageUrl));
   });
 
-  test('releases page fallback skips prerelease when stable only is enabled',
-      () async {
-    const releasesHtml = '''
+  test(
+    'releases page fallback skips prerelease when stable only is enabled',
+    () async {
+      const releasesHtml = '''
 <section>
   <a href="/Mutx163/mikcb/releases/tag/v1.1.10.23">v1.1.10.23</a>
   <span>Pre-release</span>
@@ -788,35 +813,34 @@ void main() {
   <include-fragment src="https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.20"></include-fragment>
 </section>
 ''';
-    const assets20Html = '''
+      const assets20Html = '''
 <ul>
   <li><a href="/Mutx163/mikcb/releases/download/v1.1.10.20/mikcb-1.1.10.20-arm64-v8a.apk">mikcb-1.1.10.20-arm64-v8a.apk</a></li>
 </ul>
 ''';
 
-    final client = MockClient((request) async {
-      final url = request.url.toString();
-      if (url == AppUpdateService.releasesApiUrl) {
-        return http.Response('', 403);
-      }
-      if (url == AppUpdateService.releasesPageUrl) {
-        return http.Response(releasesHtml, 200);
-      }
-      if (url ==
-          'https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.20') {
-        return http.Response(assets20Html, 200);
-      }
-      return http.Response('', 503);
-    });
+      final client = MockClient((request) async {
+        final url = request.url.toString();
+        if (url == AppUpdateService.releasesApiUrl) {
+          return http.Response('', 403);
+        }
+        if (url == AppUpdateService.releasesPageUrl) {
+          return http.Response(releasesHtml, 200);
+        }
+        if (url ==
+            'https://github.com/Mutx163/mikcb/releases/expanded_assets/v1.1.10.20') {
+          return http.Response(assets20Html, 200);
+        }
+        return http.Response('', 503);
+      });
 
-    final service = AppUpdateService(client: client);
-    final result = await service.checkForUpdates(
-      currentVersion: '1.1.10.19',
-    );
+      final service = AppUpdateService(client: client);
+      final result = await service.checkForUpdates(currentVersion: '1.1.10.19');
 
-    expect(result.hasUpdate, isTrue);
-    expect(result.latestRelease?.version, '1.1.10.20');
-    expect(result.latestRelease?.isPrerelease, isFalse);
-    expect(result.latestRelease?.body, 'stable body');
-  });
+      expect(result.hasUpdate, isTrue);
+      expect(result.latestRelease?.version, '1.1.10.20');
+      expect(result.latestRelease?.isPrerelease, isFalse);
+      expect(result.latestRelease?.body, 'stable body');
+    },
+  );
 }

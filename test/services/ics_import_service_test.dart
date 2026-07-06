@@ -2,9 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/services/ics_import_service.dart';
 
 void main() {
-  test('imports saturday single-week wakeup event without spilling into next week',
-      () {
-    const content = '''
+  test(
+    'imports saturday single-week wakeup event without spilling into next week',
+    () {
+      const content = '''
 BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//YZune//WakeUpSchedule//EN
@@ -27,14 +28,15 @@ END:VEVENT
 END:VCALENDAR
 ''';
 
-    final result = IcsImportService().parseWakeUpSchedule(content);
-    final course = result.courses.singleWhere(
-      (item) => item.name == '程序设计技术基础',
-    );
+      final result = IcsImportService().parseWakeUpSchedule(content);
+      final course = result.courses.singleWhere(
+        (item) => item.name == '程序设计技术基础',
+      );
 
-    expect(course.startWeek, 6);
-    expect(course.endWeek, 6);
-  });
+      expect(course.startWeek, 6);
+      expect(course.endWeek, 6);
+    },
+  );
 
   test('imports continuous weekly wakeup event with correct end week', () {
     const content = '''
@@ -118,9 +120,10 @@ END:VCALENDAR
     expect(course.isEvenWeek, isTrue);
   });
 
-  test('keeps full campus and classroom text when description provides location',
-      () {
-    const content = '''
+  test(
+    'keeps full campus and classroom text when description provides location',
+    () {
+      const content = '''
 BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//YZune//WakeUpSchedule//EN
@@ -135,10 +138,11 @@ END:VEVENT
 END:VCALENDAR
 ''';
 
-    final result = IcsImportService().parseWakeUpSchedule(content);
-    final course = result.courses.single;
+      final result = IcsImportService().parseWakeUpSchedule(content);
+      final course = result.courses.single;
 
-    expect(course.location, '奉贤校区 一教C104');
-    expect(course.teacher, '白玮玮(讲师)(主讲)');
-  });
+      expect(course.location, '奉贤校区 一教C104');
+      expect(course.teacher, '白玮玮(讲师)(主讲)');
+    },
+  );
 }

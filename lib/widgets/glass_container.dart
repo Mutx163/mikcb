@@ -50,7 +50,8 @@ class GlassContainer extends StatelessWidget {
             decoration: BoxDecoration(
               color: effectiveTintColor,
               borderRadius: borderRadius,
-              border: border ??
+              border:
+                  border ??
                   Border.all(
                     color: colorScheme.outlineVariant.withValues(alpha: 0.2),
                     width: 1,
@@ -70,10 +71,7 @@ class GlassContainer extends StatelessWidget {
 class GlassModalContent extends StatelessWidget {
   final Widget child;
 
-  const GlassModalContent({
-    super.key,
-    required this.child,
-  });
+  const GlassModalContent({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

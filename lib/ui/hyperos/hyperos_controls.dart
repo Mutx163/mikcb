@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'hyperos_blurred_header.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
@@ -193,13 +194,7 @@ class HyperosControlCard extends StatelessWidget {
                             if (title != null && title!.isNotEmpty)
                               Text(
                                 title!,
-                                style: TextStyle(
-                                  fontSize: HyperosMiuixTypography.body2,
-                                  fontWeight: plainTitle
-                                      ? FontWeight.w400
-                                      : FontWeight.w600,
-                                  color: HyperosColors.primaryText(context),
-                                ),
+                                style: HyperosTypography.title(context),
                               ),
                             if (subtitle != null) ...[
                               if (title != null && title!.isNotEmpty)
@@ -263,32 +258,46 @@ class HyperosSlider extends StatelessWidget {
         ? HyperosMiuixDarkColors.disabledOnPrimary
         : HyperosMiuixLightColors.disabledOnPrimary;
 
-    return SizedBox(
-      height: HyperosMiuixSlider.minHeight,
-      child: SliderTheme(
-        data: SliderThemeData(
-          trackHeight: 4,
-          activeTrackColor: enabled ? active : disabledActive,
-          inactiveTrackColor: inactive,
-          thumbColor: enabled ? thumb : disabledThumb,
-          disabledActiveTrackColor: disabledActive,
-          disabledInactiveTrackColor: inactive,
-          disabledThumbColor: disabledThumb,
-          overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
-          thumbShape: const RoundSliderThumbShape(
-            enabledThumbRadius: 10,
-            disabledThumbRadius: 10,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final expandedWidth =
+            constraints.maxWidth + HyperosMiuixSlider.thumbRadius * 2;
+        return SizedBox(
+          height: HyperosMiuixSlider.minHeight,
+          width: constraints.maxWidth,
+          child: Transform.translate(
+            offset: const Offset(-HyperosMiuixSlider.thumbRadius, 0),
+            child: SizedBox(
+              width: expandedWidth,
+              child: SliderTheme(
+                data: SliderThemeData(
+                  trackHeight: 4,
+                  activeTrackColor: enabled ? active : disabledActive,
+                  inactiveTrackColor: inactive,
+                  thumbColor: enabled ? thumb : disabledThumb,
+                  disabledActiveTrackColor: disabledActive,
+                  disabledInactiveTrackColor: inactive,
+                  disabledThumbColor: disabledThumb,
+                  overlayShape: const RoundSliderOverlayShape(overlayRadius: 0),
+                  tickMarkShape: SliderTickMarkShape.noTickMark,
+                  thumbShape: const RoundSliderThumbShape(
+                    enabledThumbRadius: HyperosMiuixSlider.thumbRadius,
+                    disabledThumbRadius: HyperosMiuixSlider.thumbRadius,
+                  ),
+                  trackShape: const RoundedRectSliderTrackShape(),
+                ),
+                child: Slider(
+                  value: value.clamp(min, max),
+                  min: min,
+                  max: max,
+                  divisions: divisions,
+                  onChanged: enabled ? onChanged : null,
+                ),
+              ),
+            ),
           ),
-          trackShape: const RoundedRectSliderTrackShape(),
-        ),
-        child: Slider(
-          value: value.clamp(min, max),
-          min: min,
-          max: max,
-          divisions: divisions,
-          onChanged: enabled ? onChanged : null,
-        ),
-      ),
+        );
+      },
     );
   }
 }
@@ -297,7 +306,7 @@ class HyperosSlider extends StatelessWidget {
 class HyperosSliderTile extends StatelessWidget {
   const HyperosSliderTile({
     super.key,
-    required this.title,
+    this.title,
     required this.value,
     required this.onChanged,
     this.valueLabel,
@@ -307,7 +316,8 @@ class HyperosSliderTile extends StatelessWidget {
     this.enabled = true,
   });
 
-  final String title;
+  /// When omitted, only the slider is shown (e.g. under [HyperosControlCard] header).
+  final String? title;
   final String? valueLabel;
   final double value;
   final ValueChanged<double>? onChanged;
@@ -328,13 +338,21 @@ class HyperosSliderTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(child: Text(title, style: titleStyle)),
-              if (valueLabel != null) Text(valueLabel!, style: labelStyle),
-            ],
-          ),
-          const SizedBox(height: 8),
+          if (title != null) ...[
+            Row(
+              children: [
+                Expanded(child: Text(title!, style: titleStyle)),
+                if (valueLabel != null) Text(valueLabel!, style: labelStyle),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ] else if (valueLabel != null) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(valueLabel!, style: labelStyle),
+            ),
+            const SizedBox(height: 8),
+          ],
           HyperosSlider(
             value: value,
             onChanged: onChanged,
@@ -360,6 +378,7 @@ class HyperosButton extends StatelessWidget {
     this.variant = HyperosButtonVariant.primary,
     this.loading = false,
     this.expand = false,
+    this.dense = false,
   });
 
   final String label;
@@ -367,6 +386,9 @@ class HyperosButton extends StatelessWidget {
   final HyperosButtonVariant variant;
   final bool loading;
   final bool expand;
+
+  /// Tighter padding and scaled label for grid / chip-like layouts.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -416,7 +438,16 @@ class HyperosButton extends StatelessWidget {
       ),
     };
 
-    final child = loading
+    final labelStyle = TextStyle(
+      fontSize: dense
+          ? HyperosMiuixTypography.footnote1
+          : HyperosMiuixTypography.button,
+      color: enabled ? fg : disabledFg,
+      fontWeight: dense ? FontWeight.w600 : FontWeight.w400,
+      height: 1.1,
+    );
+
+    final Widget labelChild = loading
         ? SizedBox(
             width: 18,
             height: 18,
@@ -425,13 +456,18 @@ class HyperosButton extends StatelessWidget {
               color: enabled ? fg : disabledFg,
             ),
           )
-        : Text(
-            label,
-            style: TextStyle(
-              fontSize: HyperosMiuixTypography.button,
-              color: enabled ? fg : disabledFg,
+        : dense
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: labelStyle,
             ),
-          );
+          )
+        : Text(label, style: labelStyle);
 
     final button = Material(
       color: enabled ? bg : disabledBg,
@@ -445,13 +481,122 @@ class HyperosButton extends StatelessWidget {
               }
             : null,
         child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            minWidth: HyperosMiuixButton.minWidth,
-            minHeight: HyperosMiuixButton.minHeight,
+          constraints: BoxConstraints(
+            minWidth: dense ? 0 : HyperosMiuixButton.minWidth,
+            minHeight: dense ? 36 : HyperosMiuixButton.minHeight,
           ),
           child: Padding(
-            padding: HyperosMiuixButton.insideMargin,
-            child: Center(child: child),
+            padding: dense
+                ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
+                : HyperosMiuixButton.insideMargin,
+            child: Center(child: labelChild),
+          ),
+        ),
+      ),
+    );
+
+    if (expand) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+    return button;
+  }
+}
+
+/// Tappable control on frosted home sheets — nested [HyperosFrostedSurface]
+/// stays visible over the panel (flat [HyperosButtonVariant.secondary] does not).
+class HyperosFrostedSheetButton extends StatelessWidget {
+  const HyperosFrostedSheetButton({
+    super.key,
+    required this.label,
+    required this.onPressed,
+    this.expand = false,
+    this.dense = false,
+    this.bordered = false,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final bool expand;
+  final bool dense;
+
+  /// Outline for full-width bar actions; grid tiles match course detail cards.
+  final bool bordered;
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final enabled = onPressed != null;
+    final fg = enabled
+        ? (isDark
+              ? HyperosMiuixDarkColors.onSecondaryVariant
+              : HyperosMiuixLightColors.onSecondaryVariant)
+        : (isDark
+              ? HyperosMiuixDarkColors.disabledOnSecondaryVariant
+              : HyperosMiuixLightColors.disabledOnSecondaryVariant);
+    final outline = isDark
+        ? HyperosMiuixDarkColors.outline
+        : HyperosMiuixLightColors.outline;
+    final radius = BorderRadius.circular(HyperosMiuixButton.cornerRadius);
+    final fontSize = dense
+        ? HyperosMiuixTypography.footnote1
+        : HyperosMiuixTypography.button;
+
+    final labelChild = dense
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              softWrap: false,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                color: fg,
+                fontWeight: FontWeight.w600,
+                height: 1.1,
+              ),
+            ),
+          )
+        : Text(
+            label,
+            style: TextStyle(
+              fontSize: fontSize,
+              color: fg,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+
+    final button = HyperosFrostedSurface(
+      borderRadius: radius,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled
+              ? () {
+                  HapticFeedback.lightImpact();
+                  onPressed!();
+                }
+              : null,
+          borderRadius: radius,
+          child: Ink(
+            decoration: bordered
+                ? BoxDecoration(
+                    borderRadius: radius,
+                    border: Border.all(color: outline),
+                  )
+                : null,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: dense ? 0 : HyperosMiuixButton.minWidth,
+                minHeight: dense ? 36 : HyperosMiuixButton.minHeight,
+              ),
+              child: Padding(
+                padding: dense
+                    ? const EdgeInsets.symmetric(horizontal: 8, vertical: 8)
+                    : HyperosMiuixButton.insideMargin,
+                child: Center(child: labelChild),
+              ),
+            ),
           ),
         ),
       ),

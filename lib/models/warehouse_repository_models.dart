@@ -28,7 +28,9 @@ class WarehouseRepositorySource {
     }
 
     if (uri.host == 'github.com') {
-      final segments = uri.pathSegments.where((item) => item.isNotEmpty).toList();
+      final segments = uri.pathSegments
+          .where((item) => item.isNotEmpty)
+          .toList();
       if (segments.length < 2) {
         throw const WarehouseRepositoryException('GitHub 仓库地址不完整');
       }
@@ -40,9 +42,13 @@ class WarehouseRepositorySource {
     }
 
     if (uri.host == 'raw.githubusercontent.com') {
-      final segments = uri.pathSegments.where((item) => item.isNotEmpty).toList();
+      final segments = uri.pathSegments
+          .where((item) => item.isNotEmpty)
+          .toList();
       if (segments.length < 3) {
-        throw const WarehouseRepositoryException('raw.githubusercontent.com 地址不完整');
+        throw const WarehouseRepositoryException(
+          'raw.githubusercontent.com 地址不完整',
+        );
       }
       return WarehouseRepositorySource(
         owner: segments[0],

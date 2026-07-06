@@ -68,14 +68,17 @@ abstract final class HyperosColors {
 }
 
 abstract final class HyperosTypography {
-  static TextStyle listTitle(BuildContext context) {
+  /// Canonical settings title — list rows, card headers, page/sheet/dialog titles.
+  static TextStyle title(BuildContext context) {
     return TextStyle(
-      fontSize: HyperosTokens.listTitleSize,
-      fontWeight: FontWeight.w500,
+      fontSize: HyperosTokens.titleSize,
+      fontWeight: FontWeight.w400,
       color: HyperosColors.primaryText(context),
       height: 1.25,
     );
   }
+
+  static TextStyle listTitle(BuildContext context) => title(context);
 
   static TextStyle listDetail(BuildContext context) {
     return TextStyle(
@@ -105,24 +108,11 @@ abstract final class HyperosTypography {
   }
 
   /// Large title on bottom sheets (e.g. memory-extension picker).
-  static TextStyle sheetTitle(BuildContext context) {
-    return TextStyle(
-      fontSize: HyperosTokens.headerTitleSize,
-      fontWeight: FontWeight.w600,
-      height: 1.2,
-      color: HyperosColors.primaryText(context),
-    );
-  }
+  static TextStyle sheetTitle(BuildContext context) =>
+      title(context).copyWith(height: 1.2);
 
-  /// Summary card primary line (Miuix body1 / headline2, w500).
-  static TextStyle summaryTitle(BuildContext context) {
-    return TextStyle(
-      fontSize: HyperosMiuixTypography.body1,
-      fontWeight: FontWeight.w500,
-      height: 1.25,
-      color: HyperosColors.primaryText(context),
-    );
-  }
+  /// Summary card primary line.
+  static TextStyle summaryTitle(BuildContext context) => title(context);
 
   /// Summary card secondary line (Miuix footnote1 + onSurfaceVariantSummary).
   static TextStyle summarySubtitle(BuildContext context) {
@@ -184,7 +174,7 @@ abstract final class HyperosTheme {
       decoration: DecorationDelta.boxDelta(color: Colors.transparent),
       backgroundFilter: null,
       titleTextStyle: TextStyleDelta.delta(
-        fontSize: HyperosTokens.headerTitleSize,
+        fontSize: HyperosTokens.nestedHeaderTitleSize,
         fontWeight: FontWeight.w400,
         height: 1.2,
         color: HyperosColors.primaryText(context),
@@ -193,6 +183,15 @@ abstract final class HyperosTheme {
         const EdgeInsets.fromLTRB(4, 0, 4, 4),
       ),
       constraints: const BoxConstraints(minHeight: 44),
+      actionStyle: FHeaderActionStyleDelta.delta(
+        iconStyle: FVariantsDelta.delta([
+          FVariantOperation.all(
+            IconThemeDataDelta.delta(
+              size: HyperosTokens.nestedHeaderBackIconSize,
+            ),
+          ),
+        ]),
+      ),
     );
   }
 }

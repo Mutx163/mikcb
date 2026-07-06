@@ -495,14 +495,38 @@ void main() {
       expect(restored.unifiedCardColor, original.unifiedCardColor);
       expect(restored.useUnifiedCardColor, original.useUnifiedCardColor);
       expect(restored.themeMode, original.themeMode);
-      expect(restored.courseCardTitleColorLight, original.courseCardTitleColorLight);
-      expect(restored.courseCardTitleColorDark, original.courseCardTitleColorDark);
-      expect(restored.courseCardDetailColorLight, original.courseCardDetailColorLight);
-      expect(restored.courseCardDetailColorDark, original.courseCardDetailColorDark);
-      expect(restored.weekdayBarFontColorLight, original.weekdayBarFontColorLight);
-      expect(restored.weekdayBarFontColorDark, original.weekdayBarFontColorDark);
-      expect(restored.weekdayBarAccentColorLight, original.weekdayBarAccentColorLight);
-      expect(restored.weekdayBarAccentColorDark, original.weekdayBarAccentColorDark);
+      expect(
+        restored.courseCardTitleColorLight,
+        original.courseCardTitleColorLight,
+      );
+      expect(
+        restored.courseCardTitleColorDark,
+        original.courseCardTitleColorDark,
+      );
+      expect(
+        restored.courseCardDetailColorLight,
+        original.courseCardDetailColorLight,
+      );
+      expect(
+        restored.courseCardDetailColorDark,
+        original.courseCardDetailColorDark,
+      );
+      expect(
+        restored.weekdayBarFontColorLight,
+        original.weekdayBarFontColorLight,
+      );
+      expect(
+        restored.weekdayBarFontColorDark,
+        original.weekdayBarFontColorDark,
+      );
+      expect(
+        restored.weekdayBarAccentColorLight,
+        original.weekdayBarAccentColorLight,
+      );
+      expect(
+        restored.weekdayBarAccentColorDark,
+        original.weekdayBarAccentColorDark,
+      );
       expect(restored.timeAxisFontColorLight, original.timeAxisFontColorLight);
       expect(restored.timeAxisFontColorDark, original.timeAxisFontColorDark);
       expect(restored.linkCourseCardColors, original.linkCourseCardColors);
@@ -556,10 +580,22 @@ void main() {
       final restored = config.applyToSettings(settings);
 
       expect(restored.themeSeedColor, settings.themeSeedColor);
-      expect(restored.timetablePageBackgroundColor, settings.timetablePageBackgroundColor);
-      expect(restored.courseCardTitleColorLight, settings.courseCardTitleColorLight);
-      expect(restored.weekdayBarAccentColorLight, settings.weekdayBarAccentColorLight);
-      expect(restored.weekdayBarAccentColorDark, settings.weekdayBarAccentColorDark);
+      expect(
+        restored.timetablePageBackgroundColor,
+        settings.timetablePageBackgroundColor,
+      );
+      expect(
+        restored.courseCardTitleColorLight,
+        settings.courseCardTitleColorLight,
+      );
+      expect(
+        restored.weekdayBarAccentColorLight,
+        settings.weekdayBarAccentColorLight,
+      );
+      expect(
+        restored.weekdayBarAccentColorDark,
+        settings.weekdayBarAccentColorDark,
+      );
     });
 
     test('previewColors returns up to 4 colors', () {
@@ -597,7 +633,10 @@ void main() {
       expect(restored.id, original.id);
       expect(restored.name, original.name);
       expect(restored.config.seedColor, original.config.seedColor);
-      expect(restored.config.weekdayBarAccentColorLight, original.config.weekdayBarAccentColorLight);
+      expect(
+        restored.config.weekdayBarAccentColorLight,
+        original.config.weekdayBarAccentColorLight,
+      );
       expect(restored.createdAt, original.createdAt);
     });
 
@@ -656,9 +695,7 @@ void main() {
 
     test('returns false when only non-checkpoint fields differ', () {
       // checkpoint 只设置 seedColor，其他字段为 null
-      const checkpoint = ThemeConfig(
-        seedColor: '#FF0000',
-      );
+      const checkpoint = ThemeConfig(seedColor: '#FF0000');
 
       final settings = TimetableSettings.defaults().copyWith(
         themeSeedColor: '#FF0000', // 与 checkpoint 一致
@@ -764,8 +801,14 @@ void main() {
       expect(restored.themeCheckpointConfig, isNotNull);
       expect(restored.themeCheckpointConfig!.seedColor, '#FF0000');
       expect(restored.themeCheckpointConfig!.backgroundColor, '#FFFFFF');
-      expect(restored.themeCheckpointConfig!.courseCardTitleColorLight, '#111111');
-      expect(restored.themeCheckpointConfig!.weekdayBarAccentColorLight, '#2563EB');
+      expect(
+        restored.themeCheckpointConfig!.courseCardTitleColorLight,
+        '#111111',
+      );
+      expect(
+        restored.themeCheckpointConfig!.weekdayBarAccentColorLight,
+        '#2563EB',
+      );
     });
 
     test('handles null checkpoint in JSON', () {

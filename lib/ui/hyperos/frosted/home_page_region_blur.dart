@@ -56,16 +56,16 @@ class HomePageHeaderBlurBand extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+    final layout = homePageHeaderBlurBandRect(
+      safeAreaTop: MediaQuery.paddingOf(context).top,
+      includeStatusBar: includeStatusBar,
+      extendBottom: extendBottom,
+    );
     return Positioned(
-      top: 0,
+      top: layout.top,
       left: 0,
       right: 0,
-      height:
-          homePageHeaderBandHeight(
-            context,
-            includeStatusBar: includeStatusBar,
-          ) +
-          extendBottom,
+      height: layout.height,
       child: IgnorePointer(
         child: FrostedHeaderBackground(
           blurEnabled: useBlur,

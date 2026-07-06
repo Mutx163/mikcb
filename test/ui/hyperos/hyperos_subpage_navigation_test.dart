@@ -18,6 +18,12 @@ Future<void> tapListTileBelowOverlayHeader(
   await tester.pump();
 }
 
+/// Waits for post-route blur settle frames on overlay-header pages.
+Future<void> pumpBlurSettleFrames(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+}
+
 void main() {
   testWidgets('pushing HyperosSubpage over settings home does not throw', (
     WidgetTester tester,
@@ -59,7 +65,7 @@ void main() {
     expect(find.text('Appearance settings'), findsOneWidget);
     expect(find.text('Dark mode'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 350));
+    await pumpBlurSettleFrames(tester);
     await tester.pump();
 
     // Subpages default to overlay layout for BackdropFilter header blur.
@@ -137,9 +143,62 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(buildCount, lessThan(20));
+    // Visible window only; blur settle may rebuild the list once after 2 frames.
+    expect(buildCount, lessThan(35));
     expect(find.text('Item 0'), findsOneWidget);
+    expect(find.text('Item 19'), findsNothing);
   });
+
+  testWidgets('HyperosSubpage provides HyperosOverscrollPhysics to ListView', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          onBack: () {},
+          title: const Text('Scroll'),
+          child: ListView(
+            primary: false,
+            children: const [SizedBox(height: 2000)],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollableFinder = find.descendant(
+      of: find.byType(HyperosSubpage),
+      matching: find.byType(Scrollable),
+    );
+    final position = tester.state<ScrollableState>(scrollableFinder).position;
+    expect(position.physics, isA<HyperosOverscrollPhysics>());
+  });
+
+  testWidgets(
+    'HyperosSubpage provides HyperosOverscrollPhysics to SingleChildScrollView',
+    (WidgetTester tester) async {
+      await tester.pumpWidget(
+        TestApp(
+          home: HyperosSubpage(
+            onBack: () {},
+            title: const Text('Scroll'),
+            child: SingleChildScrollView(
+              primary: false,
+              child: SizedBox(height: 2000),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final scrollableFinder = find.descendant(
+        of: find.byType(HyperosSubpage),
+        matching: find.byType(Scrollable),
+      );
+      final position = tester.state<ScrollableState>(scrollableFinder).position;
+      expect(position.physics, isA<HyperosOverscrollPhysics>());
+    },
+  );
 
   testWidgets('settings home preserves scroll after popping subpage', (
     WidgetTester tester,
@@ -211,7 +270,7 @@ void main() {
 
     Navigator.of(tester.element(find.text('Sub item'))).pop();
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 350));
+    await pumpBlurSettleFrames(tester);
     await tester.pumpAndSettle();
 
     final pixelsAfter = tester
@@ -256,7 +315,7 @@ void main() {
     await tapListTileBelowOverlayHeader(tester, 'Appearance');
     await tester.pumpAndSettle();
 
-    await tester.pump(const Duration(milliseconds: 350));
+    await pumpBlurSettleFrames(tester);
     await tester.pump();
 
     expect(
@@ -302,7 +361,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.pump(const Duration(milliseconds: 350));
+    await pumpBlurSettleFrames(tester);
     await tester.pump();
 
     expect(
@@ -320,6 +379,134 @@ void main() {
         (widget) => widget is HyperosBlurredHeaderScope && widget.blurEnabled,
       ),
       findsOneWidget,
+    );
+  });
+
+  testWidgets('settings home blur restores after popping subpage', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return HyperosSubpage(
+              overlayHeader: true,
+              onBack: () {},
+              title: const Text('Settings'),
+              child: HyperosListView(
+                children: [
+                  HyperosListTile(
+                    icon: Icons.palette_outlined,
+                    title: 'Appearance',
+                    onTap: () {
+                      HyperosNavigation.push(
+                        context,
+                        builder: (_) => const _AppearanceStub(),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await pumpBlurSettleFrames(tester);
+    await tester.pump();
+
+    Finder homeBlurScope() {
+      return find.ancestor(
+        of: find.text('Settings'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is HyperosBlurredHeaderScope,
+        ),
+      );
+    }
+
+    expect(homeBlurScope(), findsOneWidget);
+    expect(
+      tester.widget<HyperosBlurredHeaderScope>(homeBlurScope()).blurEnabled,
+      isTrue,
+    );
+
+    await tapListTileBelowOverlayHeader(tester, 'Appearance');
+    await tester.pumpAndSettle();
+
+    Navigator.of(tester.element(find.text('Dark mode'))).pop();
+    await tester.pumpAndSettle();
+
+    expect(homeBlurScope(), findsOneWidget);
+    expect(
+      tester.widget<HyperosBlurredHeaderScope>(homeBlurScope()).blurEnabled,
+      isTrue,
+    );
+  });
+
+  testWidgets('header frost follows scroll position on overlay pages', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          overlayHeader: true,
+          onBack: () {},
+          title: const Text('Settings'),
+          child: HyperosListView(
+            children: List.generate(
+              20,
+              (index) => HyperosListTile(
+                icon: Icons.settings_outlined,
+                title: 'Item $index',
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await pumpBlurSettleFrames(tester);
+    await tester.pump();
+
+    Finder headerScope() {
+      return find.ancestor(
+        of: find.text('Settings'),
+        matching: find.byWidgetPredicate(
+          (widget) => widget is HyperosBlurredHeaderScope,
+        ),
+      );
+    }
+
+    expect(
+      tester
+          .widget<HyperosBlurredHeaderScope>(headerScope())
+          .contentUnderHeader,
+      isFalse,
+    );
+
+    final scrollable = find.descendant(
+      of: find.byType(HyperosListView),
+      matching: find.byType(Scrollable),
+    );
+    await tester.drag(scrollable, const Offset(0, -120));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<HyperosBlurredHeaderScope>(headerScope())
+          .contentUnderHeader,
+      isTrue,
+    );
+
+    await tester.drag(scrollable, const Offset(0, 120));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<HyperosBlurredHeaderScope>(headerScope())
+          .contentUnderHeader,
+      isFalse,
     );
   });
 }

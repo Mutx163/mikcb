@@ -60,7 +60,10 @@ class CourseCard extends StatelessWidget {
   });
 
   Color _parseColor(String colorString) {
-    return parseHexColorOrFallback(colorString, fallback: const Color(0xFF2196F3));
+    return parseHexColorOrFallback(
+      colorString,
+      fallback: const Color(0xFF2196F3),
+    );
   }
 
   @override
@@ -80,7 +83,12 @@ class CourseCard extends StatelessWidget {
     return _buildFullCard(context, color, titleColor, detailColor);
   }
 
-  Widget _buildFullCard(BuildContext context, Color color, Color titleColor, Color detailColor) {
+  Widget _buildFullCard(
+    BuildContext context,
+    Color color,
+    Color titleColor,
+    Color detailColor,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final detailLines = _buildDetailLines(context, detailColor);
     final titleAlignment = _contentAlignment;
@@ -191,19 +199,13 @@ class CourseCard extends StatelessWidget {
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: _buildBadgeRow(
-                    context,
-                    showHoliday: true,
-                  ),
+                  child: _buildBadgeRow(context, showHoliday: true),
                 ),
               if (isSuspended && topRightBadgeText == null && !isHoliday)
                 Positioned(
                   top: 8,
                   right: 8,
-                  child: _buildBadgeRow(
-                    context,
-                    showSuspended: true,
-                  ),
+                  child: _buildBadgeRow(context, showSuspended: true),
                 ),
             ],
           ),
@@ -220,7 +222,12 @@ class CourseCard extends StatelessWidget {
     return card;
   }
 
-  Widget _buildCompactCard(BuildContext context, Color color, Color titleColor, Color detailColor) {
+  Widget _buildCompactCard(
+    BuildContext context,
+    Color color,
+    Color titleColor,
+    Color detailColor,
+  ) {
     final textLines = _buildCompactTextLines(context, titleColor, detailColor);
     final crossAxisAlignment = _crossAxisAlignment;
     final textAlign = _textAlign;
@@ -228,7 +235,7 @@ class CourseCard extends StatelessWidget {
     final card = GestureDetector(
       onTap: onTap,
       child: SizedBox.expand(
-              child: Stack(
+        child: Stack(
           fit: StackFit.expand,
           children: [
             Container(
@@ -342,19 +349,13 @@ class CourseCard extends StatelessWidget {
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadgeRow(
-                  context,
-                  showHoliday: true,
-                ),
+                child: _buildBadgeRow(context, showHoliday: true),
               ),
             if (isSuspended && topRightBadgeText == null && !isHoliday)
               Positioned(
                 top: 6,
                 right: 6,
-                child: _buildBadgeRow(
-                  context,
-                  showSuspended: true,
-                ),
+                child: _buildBadgeRow(context, showSuspended: true),
               ),
           ],
         ),
@@ -404,16 +405,14 @@ class CourseCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final badges = <Widget>[];
     if (showHoliday && l10n != null) {
-      badges.add(_buildBadge(
-        l10n.holidayBadgeLabel,
-        color: Colors.orange.shade700,
-      ));
+      badges.add(
+        _buildBadge(l10n.holidayBadgeLabel, color: Colors.orange.shade700),
+      );
     }
     if (showSuspended && l10n != null) {
-      badges.add(_buildBadge(
-        l10n.suspendedBadgeLabel,
-        color: Colors.red.shade700,
-      ));
+      badges.add(
+        _buildBadge(l10n.suspendedBadgeLabel, color: Colors.red.shade700),
+      );
     }
     if (customBadgeText != null) {
       badges.add(_buildBadge(customBadgeText));
@@ -438,7 +437,9 @@ class CourseCard extends StatelessWidget {
     }
     if (showLocation && course.location.trim().isNotEmpty) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
-      lines.add(_buildDetailRow(Icons.location_on, course.location, detailColor));
+      lines.add(
+        _buildDetailRow(Icons.location_on, course.location, detailColor),
+      );
     }
     if (showTime) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
@@ -463,7 +464,12 @@ class CourseCard extends StatelessWidget {
     if (showDescription && (course.description?.trim().isNotEmpty ?? false)) {
       if (lines.isNotEmpty) lines.add(const SizedBox(height: 4));
       lines.add(
-          _buildDetailRow(Icons.notes_rounded, course.description!.trim(), detailColor));
+        _buildDetailRow(
+          Icons.notes_rounded,
+          course.description!.trim(),
+          detailColor,
+        ),
+      );
     }
     return lines;
   }
@@ -477,11 +483,7 @@ class CourseCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(
-              fontSize: 13,
-              color: detailColor,
-              height: 1.15,
-            ),
+            style: TextStyle(fontSize: 13, color: detailColor, height: 1.15),
             softWrap: true,
           ),
         ),
@@ -489,7 +491,11 @@ class CourseCard extends StatelessWidget {
     );
   }
 
-  List<_CompactTextLine> _buildCompactTextLines(BuildContext context, Color titleColor, Color detailColor) {
+  List<_CompactTextLine> _buildCompactTextLines(
+    BuildContext context,
+    Color titleColor,
+    Color detailColor,
+  ) {
     final l10n = AppLocalizations.of(context)!;
     final lines = <_CompactTextLine>[];
     if (compactOverlineText?.trim().isNotEmpty ?? false) {
@@ -622,35 +628,36 @@ class CourseCard extends StatelessWidget {
     final start = showTimeLabels
         ? l10n.classStartsAtLabel(course.startTime)
         : course.startTime;
-    final end =
-        showTimeLabels ? l10n.classEndsAtLabel(course.endTime) : course.endTime;
+    final end = showTimeLabels
+        ? l10n.classEndsAtLabel(course.endTime)
+        : course.endTime;
     return isCompact ? '$start\n$end' : '$start\n$end';
   }
 
   Alignment get _verticalContentAlignment => switch (verticalAlign) {
-        CourseCardVerticalAlign.top => Alignment.topCenter,
-        CourseCardVerticalAlign.center => Alignment.center,
-        CourseCardVerticalAlign.bottom => Alignment.bottomCenter,
-        CourseCardVerticalAlign.spaceEvenly => Alignment.center,
-      };
+    CourseCardVerticalAlign.top => Alignment.topCenter,
+    CourseCardVerticalAlign.center => Alignment.center,
+    CourseCardVerticalAlign.bottom => Alignment.bottomCenter,
+    CourseCardVerticalAlign.spaceEvenly => Alignment.center,
+  };
 
   CrossAxisAlignment get _crossAxisAlignment => switch (horizontalAlign) {
-        CourseCardHorizontalAlign.left => CrossAxisAlignment.start,
-        CourseCardHorizontalAlign.center => CrossAxisAlignment.center,
-        CourseCardHorizontalAlign.right => CrossAxisAlignment.end,
-      };
+    CourseCardHorizontalAlign.left => CrossAxisAlignment.start,
+    CourseCardHorizontalAlign.center => CrossAxisAlignment.center,
+    CourseCardHorizontalAlign.right => CrossAxisAlignment.end,
+  };
 
   Alignment get _contentAlignment => switch (horizontalAlign) {
-        CourseCardHorizontalAlign.left => Alignment.centerLeft,
-        CourseCardHorizontalAlign.center => Alignment.center,
-        CourseCardHorizontalAlign.right => Alignment.centerRight,
-      };
+    CourseCardHorizontalAlign.left => Alignment.centerLeft,
+    CourseCardHorizontalAlign.center => Alignment.center,
+    CourseCardHorizontalAlign.right => Alignment.centerRight,
+  };
 
   TextAlign get _textAlign => switch (horizontalAlign) {
-        CourseCardHorizontalAlign.left => TextAlign.left,
-        CourseCardHorizontalAlign.center => TextAlign.center,
-        CourseCardHorizontalAlign.right => TextAlign.right,
-      };
+    CourseCardHorizontalAlign.left => TextAlign.left,
+    CourseCardHorizontalAlign.center => TextAlign.center,
+    CourseCardHorizontalAlign.right => TextAlign.right,
+  };
 }
 
 class _CompactTextLine {
@@ -664,4 +671,3 @@ class _CompactTextLine {
     required this.style,
   });
 }
-

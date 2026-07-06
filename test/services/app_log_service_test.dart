@@ -10,9 +10,6 @@ void main() {
       'flutter.timetable_settings': '{bad-json',
     });
 
-    await expectLater(
-      AppLogService.instance.initialize(),
-      completes,
-    );
+    await expectLater(AppLogService.instance.initialize(), completes);
   });
 }

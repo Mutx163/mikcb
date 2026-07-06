@@ -242,6 +242,33 @@ void main() {
         greaterThanOrEqualTo(HyperosTokens.detailChevronGap - 1),
       );
     });
+
+    testWidgets('uses standard trailing inset for icon rows', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosListGroup(
+              children: [
+                HyperosListTile(
+                  icon: Icons.palette_outlined,
+                  title: 'Appearance',
+                  onTap: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      final cardRect = tester.getRect(find.byType(HyperosListGroup));
+      final titleRect = tester.getRect(find.text('Appearance'));
+      final chevronRect = tester.getRect(find.byType(HyperosChevron));
+      final leadingInset = titleRect.left - cardRect.left;
+      final trailingInset = cardRect.right - chevronRect.right;
+
+      expect(leadingInset, greaterThan(HyperosTokens.rowPaddingUniform.left));
+      expect(trailingInset, closeTo(HyperosTokens.rowPaddingUniform.right, 1));
+    });
   });
 
   group('HyperosEmptyState', () {

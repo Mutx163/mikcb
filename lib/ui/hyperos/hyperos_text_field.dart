@@ -169,14 +169,7 @@ class HyperosTextFieldTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (cardTitle != null) ...[
-              Text(
-                cardTitle!,
-                style: TextStyle(
-                  fontSize: HyperosMiuixTypography.body2,
-                  fontWeight: FontWeight.w600,
-                  color: HyperosColors.primaryText(context),
-                ),
-              ),
+              Text(cardTitle!, style: HyperosTypography.title(context)),
               if (cardSubtitle != null) ...[
                 const SizedBox(height: 2),
                 Text(

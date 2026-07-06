@@ -44,9 +44,7 @@ void main() {
       'name': '大一上',
       'courses': const [],
       'settings': TimetableSettings.defaults()
-          .copyWith(
-            semesterWeekCount: 12,
-          )
+          .copyWith(semesterWeekCount: 12)
           .toJson(),
       'currentWeek': 20,
       'createdAt': '2026-03-22T09:00:00.000',

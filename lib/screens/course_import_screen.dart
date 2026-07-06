@@ -1258,7 +1258,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: SingleChildScrollView(
-                    child: SelectableText(
+                    child: Text(
                       AiCourseImportService.prompt.trim(),
                       style: theme.textTheme.bodySmall?.copyWith(height: 1.55),
                     ),
@@ -1310,9 +1310,7 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
             children: [
               Text(title, style: HyperosTypography.sheetTitle(sheetContext)),
               const SizedBox(height: 12),
-              Expanded(
-                child: SingleChildScrollView(child: SelectableText(content)),
-              ),
+              Expanded(child: SingleChildScrollView(child: Text(content))),
             ],
           ),
         );
@@ -5538,7 +5536,7 @@ class _DetailLine extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 2),
-          SelectableText(value, style: theme.textTheme.bodyMedium),
+          Text(value, style: theme.textTheme.bodyMedium),
         ],
       ),
     );

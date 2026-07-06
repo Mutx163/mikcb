@@ -132,6 +132,7 @@ tasks.configureEach { task ->
 }
 
 dependencies {
+    implementation 'androidx.core:core-splashscreen:1.0.1'
     implementation 'com.umeng.umsdk:common:9.6.3'
     implementation 'com.umeng.umsdk:asms:1.8.0'
     implementation 'com.umeng.umsdk:apm:1.5.2'

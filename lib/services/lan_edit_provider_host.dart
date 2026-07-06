@@ -159,15 +159,7 @@ class LanEditProviderHost implements LanEditHost {
       'sectionCount': settings.sectionCount,
       'sections': settings.sections.map((section) => section.toJson()).toList(),
       'presetColors': _presetCourseColors,
-      'weekdayLabels': const [
-        '周一',
-        '周二',
-        '周三',
-        '周四',
-        '周五',
-        '周六',
-        '周日',
-      ],
+      'weekdayLabels': const ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
     };
   }
 
@@ -178,7 +170,8 @@ class LanEditProviderHost implements LanEditHost {
     required int semesterWeekCount,
     List<String>? warnings,
   }) {
-    final weekExpression = slotMap.remove('weekExpression')?.toString().trim() ?? '';
+    final weekExpression =
+        slotMap.remove('weekExpression')?.toString().trim() ?? '';
     if (weekExpression.isNotEmpty) {
       final weeks = WeekExpressionParser.parse(
         weekExpression,
@@ -218,11 +211,10 @@ class LanEditProviderHost implements LanEditHost {
     final safeSections = sections.isEmpty
         ? TimetableSettings.defaults().sections
         : sections;
-    final startIndex =
-        (startSection - 1).clamp(0, safeSections.length - 1);
+    final startIndex = (startSection - 1).clamp(0, safeSections.length - 1);
     final endIndex = (endSection - 1).clamp(0, safeSections.length - 1);
-    final startTime = json['startTime'] as String? ??
-        safeSections[startIndex].startTime;
+    final startTime =
+        json['startTime'] as String? ?? safeSections[startIndex].startTime;
     final endTime =
         json['endTime'] as String? ?? safeSections[endIndex].endTime;
 

@@ -1373,6 +1373,7 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
           final settings = provider.settings;
           return Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const HyperosSectionGap(),
               HyperosSectionLabel(text: l10n.themeSaved),
@@ -2050,6 +2051,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
   }) {
     return switch (section) {
       _LiveTestingSection.holidayOverride => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
           HyperosSectionLabel(text: l10n.liveTestingHolidayOverride),
@@ -2085,45 +2087,47 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           HyperosControlCard(
             title: l10n.liveTestingNotificationTitle,
             subtitle: l10n.liveTestingNotificationSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HyperosButton(
-                  label: l10n.liveTestingSendAction,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: () async {
-                    await _showTestOptions(context);
-                    await Future<void>.delayed(
-                      const Duration(milliseconds: 300),
-                    );
-                    await _refreshDebugStatus(showLoading: true);
-                  },
-                ),
-                if (!kReleaseMode) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.liveTestingUmengHint,
-                    style: Theme.of(context).textTheme.bodySmall,
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  HyperosButton(
+                    label: l10n.liveTestingSendAction,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: () async {
+                      await _showTestOptions(context);
+                      await Future<void>.delayed(
+                        const Duration(milliseconds: 300),
+                      );
+                      await _refreshDebugStatus(showLoading: true);
+                    },
                   ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      HyperosButton(
-                        label: l10n.liveTestingCrashAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: () => _triggerUmengTestCrash(context),
-                      ),
-                      HyperosButton(
-                        label: l10n.liveTestingAnrAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: () => _triggerUmengTestAnr(context),
-                      ),
-                    ],
-                  ),
+                  if (!kReleaseMode) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.liveTestingUmengHint,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        HyperosButton(
+                          label: l10n.liveTestingCrashAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: () => _triggerUmengTestCrash(context),
+                        ),
+                        HyperosButton(
+                          label: l10n.liveTestingAnrAction,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: () => _triggerUmengTestAnr(context),
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -2135,104 +2139,107 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           HyperosControlCard(
             title: l10n.liveTestingIslandStatusTitle,
             subtitle: l10n.liveTestingIslandStatusSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _DebugStatusChip(
-                      icon: serviceRunning
-                          ? Icons.play_circle_outline_rounded
-                          : Icons.stop_circle_outlined,
-                      label: serviceRunning
-                          ? l10n.liveTestingServiceStatusRunning
-                          : l10n.liveTestingServiceStatusStopped,
-                      color: serviceRunning
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).colorScheme.outline,
-                    ),
-                    _DebugStatusChip(
-                      icon: isActuallyPromotable
-                          ? Icons.verified_outlined
-                          : Icons.warning_amber_rounded,
-                      label: statusText,
-                      color: isActuallyPromotable
-                          ? Colors.green
-                          : Colors.orange,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  l10n.liveTestingNoIslandReasonTitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  notIslandReason.isEmpty
-                      ? l10n.liveTestingNoIslandReasonEmpty
-                      : notIslandReason,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
                     children: [
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          HyperosButton(
-                            label: _loadingDebugStatus
-                                ? l10n.liveTestingRefreshing
-                                : l10n.liveTestingRefreshAction,
-                            variant: HyperosButtonVariant.secondary,
-                            loading: _loadingDebugStatus,
-                            onPressed: _loadingDebugStatus
-                                ? null
-                                : () => _refreshDebugStatus(showLoading: true),
-                          ),
-                          HyperosButton(
-                            label: _exportingDiagnostics
-                                ? l10n.liveTestingExporting
-                                : l10n.liveTestingExportAction,
-                            variant: HyperosButtonVariant.secondary,
-                            loading: _exportingDiagnostics,
-                            onPressed: _exportingDiagnostics
-                                ? null
-                                : _exportLiveDiagnostics,
-                          ),
-                        ],
+                      _DebugStatusChip(
+                        icon: serviceRunning
+                            ? Icons.play_circle_outline_rounded
+                            : Icons.stop_circle_outlined,
+                        label: serviceRunning
+                            ? l10n.liveTestingServiceStatusRunning
+                            : l10n.liveTestingServiceStatusStopped,
+                        color: serviceRunning
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
                       ),
-                      const SizedBox(height: 8),
-                      HyperosSwitchTile(
-                        value: _autoRefreshEnabled,
-                        onChanged: (value) {
-                          setState(() {
-                            _autoRefreshEnabled = value;
-                          });
-                        },
-                        title: l10n.liveTestingAutoRefreshTitle,
-                        subtitle: _autoRefreshEnabled
-                            ? l10n.liveTestingAutoRefreshOn(
-                                _autoRefreshInterval.inSeconds,
-                              )
-                            : l10n.liveTestingAutoRefreshOff,
-                      ),
-                      Text(
-                        l10n.liveTestingRefreshedAt(refreshedAtText),
-                        style: Theme.of(context).textTheme.bodySmall,
+                      _DebugStatusChip(
+                        icon: isActuallyPromotable
+                            ? Icons.verified_outlined
+                            : Icons.warning_amber_rounded,
+                        label: statusText,
+                        color: isActuallyPromotable
+                            ? Colors.green
+                            : Colors.orange,
                       ),
                     ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.liveTestingNoIslandReasonTitle,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    notIslandReason.isEmpty
+                        ? l10n.liveTestingNoIslandReasonEmpty
+                        : notIslandReason,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          children: [
+                            HyperosButton(
+                              label: _loadingDebugStatus
+                                  ? l10n.liveTestingRefreshing
+                                  : l10n.liveTestingRefreshAction,
+                              variant: HyperosButtonVariant.secondary,
+                              loading: _loadingDebugStatus,
+                              onPressed: _loadingDebugStatus
+                                  ? null
+                                  : () =>
+                                        _refreshDebugStatus(showLoading: true),
+                            ),
+                            HyperosButton(
+                              label: _exportingDiagnostics
+                                  ? l10n.liveTestingExporting
+                                  : l10n.liveTestingExportAction,
+                              variant: HyperosButtonVariant.secondary,
+                              loading: _exportingDiagnostics,
+                              onPressed: _exportingDiagnostics
+                                  ? null
+                                  : _exportLiveDiagnostics,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        HyperosSwitchTile(
+                          value: _autoRefreshEnabled,
+                          onChanged: (value) {
+                            setState(() {
+                              _autoRefreshEnabled = value;
+                            });
+                          },
+                          title: l10n.liveTestingAutoRefreshTitle,
+                          subtitle: _autoRefreshEnabled
+                              ? l10n.liveTestingAutoRefreshOn(
+                                  _autoRefreshInterval.inSeconds,
+                                )
+                              : l10n.liveTestingAutoRefreshOff,
+                        ),
+                        Text(
+                          l10n.liveTestingRefreshedAt(refreshedAtText),
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -2318,28 +2325,30 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           HyperosControlCard(
             title: l10n.liveTestingRawDataTitle,
             subtitle: l10n.liveTestingRawDataSubtitle,
-            child: HyperosAccordion(
-              items: [
-                HyperosAccordionItem(
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(l10n.liveTestingExpandRawJson),
-                      Text(
-                        l10n.liveTestingExpandRawJsonSubtitle,
-                        style: Theme.of(context).textTheme.bodySmall,
+            child: HyperosControlCardInset(
+              child: HyperosAccordion(
+                items: [
+                  HyperosAccordionItem(
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(l10n.liveTestingExpandRawJson),
+                        Text(
+                          l10n.liveTestingExpandRawJsonSubtitle,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      rawDebugJson,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        height: 1.4,
+                        fontFamily: 'monospace',
                       ),
-                    ],
-                  ),
-                  child: SelectableText(
-                    rawDebugJson,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      height: 1.4,
-                      fontFamily: 'monospace',
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
@@ -2348,34 +2357,36 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       _LiveTestingSection.localLogs => HyperosControlCard(
         title: l10n.liveTestingLocalLogsTitle,
         subtitle: l10n.liveTestingLocalLogsSubtitle,
-        child: Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            HyperosButton(
-              label: _clearingDiagnostics
-                  ? l10n.liveTestingClearingLogs
-                  : l10n.liveTestingClearLogsAction,
-              variant: HyperosButtonVariant.secondary,
-              loading: _clearingDiagnostics,
-              onPressed: _clearingDiagnostics ? null : _clearLiveDiagnostics,
-            ),
-            HyperosButton(
-              label: l10n.liveTestingViewPhoneLogsAction,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: _openLiveDiagnosticsViewer,
-            ),
-            HyperosButton(
-              label: l10n.liveTestingMoreTesterOptionsAction,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: () {
-                HyperosNavigation.push(
-                  context,
-                  builder: (_) => const AboutScreen(),
-                );
-              },
-            ),
-          ],
+        child: HyperosControlCardInset(
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              HyperosButton(
+                label: _clearingDiagnostics
+                    ? l10n.liveTestingClearingLogs
+                    : l10n.liveTestingClearLogsAction,
+                variant: HyperosButtonVariant.secondary,
+                loading: _clearingDiagnostics,
+                onPressed: _clearingDiagnostics ? null : _clearLiveDiagnostics,
+              ),
+              HyperosButton(
+                label: l10n.liveTestingViewPhoneLogsAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: _openLiveDiagnosticsViewer,
+              ),
+              HyperosButton(
+                label: l10n.liveTestingMoreTesterOptionsAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: () {
+                  HyperosNavigation.push(
+                    context,
+                    builder: (_) => const AboutScreen(),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     };
@@ -2467,17 +2478,19 @@ class _DebugSectionCard extends StatelessWidget {
       subtitle: AppLocalizations.of(
         context,
       )!.liveTestingCurrentNativeFieldsSubtitle,
-      child: Column(
-        children: data.entries
-            .map(
-              (entry) => _DebugValueRow(
-                label: entry.key,
-                value: _debugValueText(entry.value).isEmpty
-                    ? '-'
-                    : _debugValueText(entry.value),
-              ),
-            )
-            .toList(),
+      child: HyperosControlCardInset(
+        child: Column(
+          children: data.entries
+              .map(
+                (entry) => _DebugValueRow(
+                  label: entry.key,
+                  value: _debugValueText(entry.value).isEmpty
+                      ? '-'
+                      : _debugValueText(entry.value),
+                ),
+              )
+              .toList(),
+        ),
       ),
     );
   }
@@ -2509,7 +2522,7 @@ class _DebugValueRow extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: SelectableText(
+            child: Text(
               value,
               style: textTheme.bodyMedium?.copyWith(height: 1.35),
             ),
@@ -3131,16 +3144,25 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       title: Text(l10n.layoutSettingsTitle),
       child: Column(
         children: [
-          HyperosBlurredBodyInset(
-            child: TimetableWeekPreview(
-              provider: provider,
-              settings: _draft,
-              week: provider.currentWeek,
+          Expanded(
+            child: SingleChildScrollView(
+              key: const PageStorageKey<String>('layout-settings-preview'),
+              child: HyperosBlurredBodyInset(
+                child: TimetableWeekPreview(
+                  provider: provider,
+                  settings: _draft,
+                  week: provider.currentWeek,
+                  maxVisibleSections: _draft.sectionCount,
+                ),
+              ),
             ),
           ),
           Expanded(
             child: HyperosListView(
               includeHeaderInset: false,
+              pageStorageKey: const PageStorageKey<String>(
+                'layout-settings-editor',
+              ),
               itemCount: _layoutSectionCount,
               itemBuilder: _buildLayoutSection,
             ),
@@ -3185,6 +3207,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       1 => const HyperosSectionGap(),
       2 => HyperosControlCard(
         subtitle: l10n.layoutEntrySubtitle,
+        edgeToEdge: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3228,10 +3251,14 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
               },
             ),
             const SizedBox(height: 8),
-            Text(
-              l10n.layoutBackToCurrentWeekButtonStyleHelper,
-              style: context.theme.typography.body.xs.copyWith(
-                color: context.theme.colors.mutedForeground,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+              ),
+              child: Text(
+                l10n.layoutBackToCurrentWeekButtonStyleHelper,
+                style: HyperosTypography.sectionDescription(context),
+                softWrap: true,
               ),
             ),
             if (_draft.timetableBackToCurrentWeekButtonStyle ==
@@ -3398,7 +3425,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       ),
       7 => const HyperosSectionGap(),
       8 => HyperosControlCard(
-        title: l10n.layoutVerticalAlignLabel,
+        edgeToEdge: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -3433,9 +3460,6 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
         ),
         subtitle: l10n.layoutConflictOpacitySubtitle,
         child: HyperosSliderTile(
-          title: l10n.layoutConflictOpacityLabel(
-            (_draft.timetableConflictCourseOpacity * 100).round(),
-          ),
           value: _draft.timetableConflictCourseOpacity,
           min: 0.2,
           max: 1.0,
@@ -3450,8 +3474,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       12 => HyperosControlCard(
         title: l10n.textColorTitle,
         subtitle: l10n.textColorSubtitle,
+        edgeToEdge: true,
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             HyperosSwitchTile(
               title: l10n.textColorIndependentDetail,
@@ -3472,100 +3497,113 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
                 }
               },
             ),
-            const SizedBox(height: 12),
-            // 浅色模式颜色设置
-            _buildModeColorSettings(
-              context,
-              l10n: l10n,
-              modeLabel: l10n.themeModeLight,
-              containerColor: Theme.of(context).colorScheme.surfaceContainerLow,
-              titleColor: _draft.courseCardTitleColorLight,
-              detailColor: _draft.courseCardDetailColorLight,
-              weekdayColor: _draft.weekdayBarFontColorLight,
-              timeAxisColor: _draft.timeAxisFontColorLight,
-              accentColor: _draft.weekdayBarAccentColorLight,
-              onTitleColorChanged: (color) {
-                if (_draft.linkCourseCardColors) {
-                  _updateDraft(
-                    _draft.copyWith(
-                      courseCardTitleColorLight: color,
-                      courseCardDetailColorLight: color,
+            HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 浅色模式颜色设置
+                  _buildModeColorSettings(
+                    context,
+                    l10n: l10n,
+                    modeLabel: l10n.themeModeLight,
+                    containerColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerLow,
+                    titleColor: _draft.courseCardTitleColorLight,
+                    detailColor: _draft.courseCardDetailColorLight,
+                    weekdayColor: _draft.weekdayBarFontColorLight,
+                    timeAxisColor: _draft.timeAxisFontColorLight,
+                    accentColor: _draft.weekdayBarAccentColorLight,
+                    onTitleColorChanged: (color) {
+                      if (_draft.linkCourseCardColors) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            courseCardTitleColorLight: color,
+                            courseCardDetailColorLight: color,
+                          ),
+                        );
+                      } else {
+                        _updateDraft(
+                          _draft.copyWith(courseCardTitleColorLight: color),
+                        );
+                      }
+                    },
+                    onDetailColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(courseCardDetailColorLight: color),
                     ),
-                  );
-                } else {
-                  _updateDraft(
-                    _draft.copyWith(courseCardTitleColorLight: color),
-                  );
-                }
-              },
-              onDetailColorChanged: (color) => _updateDraft(
-                _draft.copyWith(courseCardDetailColorLight: color),
-              ),
-              onWeekdayColorChanged: (color) => _updateDraft(
-                _draft.copyWith(weekdayBarFontColorLight: color),
-              ),
-              onTimeAxisColorChanged: (color) =>
-                  _updateDraft(_draft.copyWith(timeAxisFontColorLight: color)),
-              onAccentColorChanged: (color) => _updateDraft(
-                _draft.copyWith(weekdayBarAccentColorLight: color),
-              ),
-              defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
-              defaultDetailColor:
-                  TimetableSettings.defaultCourseCardDetailColor,
-              defaultWeekdayColor:
-                  TimetableSettings.defaultWeekdayBarFontColorLight,
-              defaultTimeAxisColor:
-                  TimetableSettings.defaultTimeAxisFontColorLight,
-              defaultAccentColor:
-                  TimetableSettings.defaultWeekdayBarAccentColorLight,
-            ),
-            const SizedBox(height: 12),
-            // 深色模式颜色设置
-            _buildModeColorSettings(
-              context,
-              l10n: l10n,
-              modeLabel: l10n.themeModeDark,
-              containerColor: Theme.of(
-                context,
-              ).colorScheme.surfaceContainerHigh,
-              titleColor: _draft.courseCardTitleColorDark,
-              detailColor: _draft.courseCardDetailColorDark,
-              weekdayColor: _draft.weekdayBarFontColorDark,
-              timeAxisColor: _draft.timeAxisFontColorDark,
-              accentColor: _draft.weekdayBarAccentColorDark,
-              onTitleColorChanged: (color) {
-                if (_draft.linkCourseCardColors) {
-                  _updateDraft(
-                    _draft.copyWith(
-                      courseCardTitleColorDark: color,
-                      courseCardDetailColorDark: color,
+                    onWeekdayColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(weekdayBarFontColorLight: color),
                     ),
-                  );
-                } else {
-                  _updateDraft(
-                    _draft.copyWith(courseCardTitleColorDark: color),
-                  );
-                }
-              },
-              onDetailColorChanged: (color) => _updateDraft(
-                _draft.copyWith(courseCardDetailColorDark: color),
+                    onTimeAxisColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(timeAxisFontColorLight: color),
+                    ),
+                    onAccentColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(weekdayBarAccentColorLight: color),
+                    ),
+                    defaultTitleColor:
+                        TimetableSettings.defaultCourseCardTitleColor,
+                    defaultDetailColor:
+                        TimetableSettings.defaultCourseCardDetailColor,
+                    defaultWeekdayColor:
+                        TimetableSettings.defaultWeekdayBarFontColorLight,
+                    defaultTimeAxisColor:
+                        TimetableSettings.defaultTimeAxisFontColorLight,
+                    defaultAccentColor:
+                        TimetableSettings.defaultWeekdayBarAccentColorLight,
+                  ),
+                  const SizedBox(height: 12),
+                  // 深色模式颜色设置
+                  _buildModeColorSettings(
+                    context,
+                    l10n: l10n,
+                    modeLabel: l10n.themeModeDark,
+                    containerColor: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHigh,
+                    titleColor: _draft.courseCardTitleColorDark,
+                    detailColor: _draft.courseCardDetailColorDark,
+                    weekdayColor: _draft.weekdayBarFontColorDark,
+                    timeAxisColor: _draft.timeAxisFontColorDark,
+                    accentColor: _draft.weekdayBarAccentColorDark,
+                    onTitleColorChanged: (color) {
+                      if (_draft.linkCourseCardColors) {
+                        _updateDraft(
+                          _draft.copyWith(
+                            courseCardTitleColorDark: color,
+                            courseCardDetailColorDark: color,
+                          ),
+                        );
+                      } else {
+                        _updateDraft(
+                          _draft.copyWith(courseCardTitleColorDark: color),
+                        );
+                      }
+                    },
+                    onDetailColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(courseCardDetailColorDark: color),
+                    ),
+                    onWeekdayColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(weekdayBarFontColorDark: color),
+                    ),
+                    onTimeAxisColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(timeAxisFontColorDark: color),
+                    ),
+                    onAccentColorChanged: (color) => _updateDraft(
+                      _draft.copyWith(weekdayBarAccentColorDark: color),
+                    ),
+                    defaultTitleColor:
+                        TimetableSettings.defaultCourseCardTitleColor,
+                    defaultDetailColor:
+                        TimetableSettings.defaultCourseCardDetailColor,
+                    defaultWeekdayColor:
+                        TimetableSettings.defaultWeekdayBarFontColorDark,
+                    defaultTimeAxisColor:
+                        TimetableSettings.defaultTimeAxisFontColorDark,
+                    defaultAccentColor:
+                        TimetableSettings.defaultWeekdayBarAccentColorDark,
+                  ),
+                ],
               ),
-              onWeekdayColorChanged: (color) =>
-                  _updateDraft(_draft.copyWith(weekdayBarFontColorDark: color)),
-              onTimeAxisColorChanged: (color) =>
-                  _updateDraft(_draft.copyWith(timeAxisFontColorDark: color)),
-              onAccentColorChanged: (color) => _updateDraft(
-                _draft.copyWith(weekdayBarAccentColorDark: color),
-              ),
-              defaultTitleColor: TimetableSettings.defaultCourseCardTitleColor,
-              defaultDetailColor:
-                  TimetableSettings.defaultCourseCardDetailColor,
-              defaultWeekdayColor:
-                  TimetableSettings.defaultWeekdayBarFontColorDark,
-              defaultTimeAxisColor:
-                  TimetableSettings.defaultTimeAxisFontColorDark,
-              defaultAccentColor:
-                  TimetableSettings.defaultWeekdayBarAccentColorDark,
             ),
           ],
         ),

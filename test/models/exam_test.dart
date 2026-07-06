@@ -22,7 +22,10 @@ void main() {
     });
 
     test('fromValue defaults to day1AndHour1 for unknown', () {
-      expect(ExamReminderPresetX.fromValue('garbage'), ExamReminderPreset.day1AndHour1);
+      expect(
+        ExamReminderPresetX.fromValue('garbage'),
+        ExamReminderPreset.day1AndHour1,
+      );
     });
   });
 
@@ -74,10 +77,7 @@ void main() {
     });
 
     test('copyWith overrides specified fields', () {
-      final updated = baseExam.copyWith(
-        name: '期中考试',
-        location: 'B-201',
-      );
+      final updated = baseExam.copyWith(name: '期中考试', location: 'B-201');
       expect(updated.name, '期中考试');
       expect(updated.location, 'B-201');
       expect(updated.courseId, baseExam.courseId);

@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
+import '../../../models/timetable_settings.dart';
 import '../../../services/frosted_blur_service.dart';
 import '../hyperos_header_diag.dart';
 import 'frosted_capture.dart';
@@ -45,8 +46,9 @@ class FrostedHeaderController extends ChangeNotifier {
 
   static const _idleDebounce = Duration(milliseconds: 100);
 
-  /// Keep in sync with [HyperosBlurredHeader.blurSigma].
-  static const _blurSigmaLogical = 10.0;
+  /// Keep in sync with [TimetableSettings.defaultFrostedSheetBlurSigma].
+  static const _blurSigmaLogical =
+      TimetableSettings.defaultFrostedSheetBlurSigma;
 
   GlobalKey? _boundaryKey;
   bool _captureEnabled = false;

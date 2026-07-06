@@ -50,8 +50,8 @@ class FrostedSheetSettingsPreview extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(16),
+          ClipPath.shape(
+            shape: HyperosTheme.cardShape(),
             child: SizedBox(
               height: _previewHeight,
               child: Stack(

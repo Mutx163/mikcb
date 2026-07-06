@@ -62,7 +62,7 @@ TextStyle _descriptionStyle(BuildContext context) {
       : HyperosMiuixLightColors.onPrimary;
   return TextStyle(
     fontSize: HyperosMiuixTypography.footnote1,
-    height: 1.35,
+    height: 1.45,
     color: onBackground.withValues(alpha: 0.78),
   );
 }

@@ -48,7 +48,24 @@ void main() {
     expect(course.endSection, 4);
     expect(course.teacher, isEmpty);
     expect(course.location, isEmpty);
-    expect(course.customWeeks, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+    expect(course.customWeeks, [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+    ]);
     expect(course.color, '#2196F3');
     expect(course.courseNature, CourseNature.required);
     expect(course.id, startsWith('spreadsheet-'));
@@ -113,8 +130,9 @@ void main() {
   });
 
   test('parses mikcb official template XLSX sample', () {
-    final bytes = File('test/fixtures/mikcb_course_import_template.xlsx')
-        .readAsBytesSync();
+    final bytes = File(
+      'test/fixtures/mikcb_course_import_template.xlsx',
+    ).readAsBytesSync();
     final result = service.parseBytes(
       bytes,
       fileName: 'courses.xlsx',
@@ -166,14 +184,43 @@ void main() {
     expect(math.teacher, '张老师');
     expect(math.location, 'A101');
     expect(math.customWeeks, [
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
     ]);
 
     final english = result.courses[1];
     expect(english.teacher, isEmpty);
     expect(english.location, '教学楼201');
     expect(english.customWeeks, [
-      1, 2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15, 16,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
     ]);
 
     final programming = result.courses[2];

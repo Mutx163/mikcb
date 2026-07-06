@@ -250,12 +250,16 @@ class PickerSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
-    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
+    // showHyperosSheet already offsets the sheet by viewInsets.bottom; do not
+    // add keyboard padding again here or the footer/content layout breaks.
+    final viewInsets = MediaQuery.viewInsetsOf(context);
+    final availableHeight =
+        MediaQuery.sizeOf(context).height - viewInsets.bottom;
+    final maxHeight = availableHeight * 0.88;
 
     return HyperosSheetFrame(
       maxHeight: maxHeight,
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: LayoutBuilder(
         builder: (context, constraints) {
           return ConstrainedBox(

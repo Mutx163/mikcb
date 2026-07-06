@@ -74,12 +74,12 @@ class _FakeLanEditHost implements LanEditHost {
 
   @override
   String buildProfileBackupJson() => jsonEncode({
-        'app': 'mikcb',
-        'schemaVersion': 1,
-        'courses': courses.map((course) => course.toJson()).toList(),
-        'settings': settings.toJson(),
-        'currentWeek': currentWeek,
-      });
+    'app': 'mikcb',
+    'schemaVersion': 1,
+    'courses': courses.map((course) => course.toJson()).toList(),
+    'settings': settings.toJson(),
+    'currentWeek': currentWeek,
+  });
 
   @override
   Future<void> importProfileBackupJson(String content) async {
@@ -127,13 +127,13 @@ class _FakeLanEditHost implements LanEditHost {
 
   @override
   Map<String, dynamic> buildMetaJson() => {
-        'profileName': activeProfileName,
-        'currentWeek': currentWeek,
-        'semesterWeekCount': settings.semesterWeekCount,
-        'sectionCount': settings.sectionCount,
-        'sections': settings.sections.map((section) => section.toJson()).toList(),
-        'presetColors': const ['#2196F3'],
-      };
+    'profileName': activeProfileName,
+    'currentWeek': currentWeek,
+    'semesterWeekCount': settings.semesterWeekCount,
+    'sectionCount': settings.sectionCount,
+    'sections': settings.sections.map((section) => section.toJson()).toList(),
+    'presetColors': const ['#2196F3'],
+  };
 
   @override
   int get semesterWeekCount => settings.semesterWeekCount;
@@ -637,10 +637,7 @@ void main() {
         method: 'POST',
         path: '/api/v1/week-expression/parse',
         token: token,
-        body: jsonEncode({
-          'expression': '1-3、5',
-          'itemName': '高等数学',
-        }),
+        body: jsonEncode({'expression': '1-3、5', 'itemName': '高等数学'}),
       );
       expect(response.statusCode, 200);
       final weeks =
@@ -849,7 +846,9 @@ void main() {
         method: 'POST',
         path: '/api/v1/courses/batch-delete',
         token: token,
-        body: jsonEncode({'ids': ['a', 'b']}),
+        body: jsonEncode({
+          'ids': ['a', 'b'],
+        }),
       );
       expect(response.statusCode, 200);
       final body = jsonDecode(response.body) as Map<String, dynamic>;

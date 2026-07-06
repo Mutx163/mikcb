@@ -74,7 +74,7 @@ abstract final class HyperosMiuixSpec {
   static const settingsSectionGap = 12.0;
   static const listPadding = EdgeInsets.fromLTRB(16, 4, 16, 24);
   static const preferenceTitleSize = 17.0;
-  static const settingsRowPadding = EdgeInsets.fromLTRB(16, 13, 12, 13);
+  static const settingsRowPadding = EdgeInsets.fromLTRB(16, 13, 16, 13);
   static const settingsRowMinHeight = 56.0;
 
   /// Title + subtitle rows (SwitchPreference / two-line nav).
@@ -318,6 +318,7 @@ abstract final class HyperosMiuixCard {
 
 abstract final class HyperosMiuixSlider {
   static const minHeight = 28.0;
+  static const thumbRadius = 10.0;
   static const keyPointRadius = 3.855;
   static const thumbPressedScale = 1.127;
   static const thumbKnobRadiusFactor = 0.72;
@@ -358,6 +359,18 @@ abstract final class HyperosMiuixTopAppBar {
   static const smallCenterHeight = 50.0;
   static const largeTitleBottomPadding = 4.0;
   static const subtitleBottomPadding = 8.0;
+}
+
+// =============================================================================
+// Frosted nested subpage header (HyperosSubpage / HyperosOverlayNestedHeader)
+// =============================================================================
+
+abstract final class HyperosMiuixNestedHeader {
+  /// Centered title on blurred settings subpages (e.g. 课表设置).
+  static const titleSize = 20.0;
+
+  /// [FHeaderAction.back] glyph size on nested frosted headers.
+  static const backIconSize = 24.0;
 }
 
 // =============================================================================
@@ -486,7 +499,7 @@ abstract final class HyperosMiuixTabRow {
 // =============================================================================
 
 abstract final class HyperosMiuixDropdown {
-  static const arrowWidth = 10.0;
+  static const arrowWidth = 8.0;
   static const arrowHeight = 16.0;
 
   /// Vertical gap between ^ and v strokes (~half body2 character).

@@ -21,18 +21,18 @@ class SpreadsheetImportResult {
   int get requiredSectionCount => courses.isEmpty
       ? 0
       : courses
-          .map((course) => course.endSection)
-          .reduce((left, right) => left > right ? left : right);
+            .map((course) => course.endSection)
+            .reduce((left, right) => left > right ? left : right);
 }
 
 class _SpreadsheetColumnMap {
   final Map<String, int> _indices;
 
   _SpreadsheetColumnMap(List<String> headers)
-      : _indices = {
-          for (var i = 0; i < headers.length; i++)
-            if (headers[i].trim().isNotEmpty) headers[i].trim(): i,
-        };
+    : _indices = {
+        for (var i = 0; i < headers.length; i++)
+          if (headers[i].trim().isNotEmpty) headers[i].trim(): i,
+      };
 
   int? indexOf(String canonical, List<String> aliases) {
     final idx = _indices[canonical];
@@ -94,9 +94,7 @@ class SpreadsheetImportService {
 
   final Uuid _uuid;
 
-  SpreadsheetImportService({
-    Uuid? uuid,
-  }) : _uuid = uuid ?? const Uuid();
+  SpreadsheetImportService({Uuid? uuid}) : _uuid = uuid ?? const Uuid();
 
   SpreadsheetImportResult parseBytes(
     List<int> bytes, {
@@ -204,9 +202,9 @@ class SpreadsheetImportService {
       return false;
     }
 
-    final hasCustomWeeks =
-        columns.hasColumn('上课周', _customWeeksAliases);
-    final hasRangeWeeks = columns.hasColumn('开始周', const []) &&
+    final hasCustomWeeks = columns.hasColumn('上课周', _customWeeksAliases);
+    final hasRangeWeeks =
+        columns.hasColumn('开始周', const []) &&
         columns.hasColumn('结束周', const []);
     return hasCustomWeeks || hasRangeWeeks;
   }
@@ -289,8 +287,7 @@ class SpreadsheetImportService {
       throw FormatException('星期必须是 1-7');
     }
 
-    final startSection =
-        _readRequiredInt(row[2], fieldName: '开始节数');
+    final startSection = _readRequiredInt(row[2], fieldName: '开始节数');
     final endSection = _readRequiredInt(row[3], fieldName: '结束节数');
     _validateSections(startSection, endSection, '开始节数', '结束节数');
 
@@ -333,23 +330,24 @@ class SpreadsheetImportService {
     required _SpreadsheetColumnMap columns,
     required List<String> warnings,
   }) {
-    final nameField =
-        columns.indexOf('课程名', const []) != null ? '课程名' : '课程名称';
+    final nameField = columns.indexOf('课程名', const []) != null ? '课程名' : '课程名称';
     final name = columns.cell(row, '课程名', _nameAliases).trim();
     if (name.isEmpty) {
       throw FormatException('$nameField 不能为空');
     }
 
-    final dayOfWeek =
-        _readRequiredInt(columns.cell(row, '星期', const []), fieldName: '星期');
+    final dayOfWeek = _readRequiredInt(
+      columns.cell(row, '星期', const []),
+      fieldName: '星期',
+    );
     if (dayOfWeek < 1 || dayOfWeek > 7) {
       throw FormatException('星期必须是 1-7');
     }
 
-    final startSectionField =
-        columns.hasColumn('开始节', const []) ? '开始节' : '开始节数';
-    final endSectionField =
-        columns.hasColumn('结束节', const []) ? '结束节' : '结束节数';
+    final startSectionField = columns.hasColumn('开始节', const [])
+        ? '开始节'
+        : '开始节数';
+    final endSectionField = columns.hasColumn('结束节', const []) ? '结束节' : '结束节数';
     final startSection = _readRequiredInt(
       columns.cell(row, '开始节', _startSectionAliases),
       fieldName: startSectionField,
@@ -372,9 +370,9 @@ class SpreadsheetImportService {
         ? _normalizeOptionalField(columns.cell(row, '教室', _locationAliases))
         : '';
 
-    final customWeeksRaw =
-        columns.cell(row, '上课周', _customWeeksAliases).trim();
-    final hasRangeWeekColumns = columns.hasColumn('开始周', const []) &&
+    final customWeeksRaw = columns.cell(row, '上课周', _customWeeksAliases).trim();
+    final hasRangeWeekColumns =
+        columns.hasColumn('开始周', const []) &&
         columns.hasColumn('结束周', const []);
 
     List<int>? customWeeks;
@@ -481,9 +479,7 @@ class SpreadsheetImportService {
         ? _normalizeNullableField(columns.cell(row, '备注', const []))
         : null;
     final timeSchemeIdOverride = columns.hasColumn('时间模板', _timeSchemeAliases)
-        ? _normalizeNullableField(
-            columns.cell(row, '时间模板', _timeSchemeAliases),
-          )
+        ? _normalizeNullableField(columns.cell(row, '时间模板', _timeSchemeAliases))
         : null;
 
     return Course(
@@ -531,9 +527,7 @@ class SpreadsheetImportService {
     required bool isStart,
   }) {
     if (section < 1 || section > settings.sectionCount) {
-      throw FormatException(
-        '节次 $section 超出时间模板范围（1-${settings.sectionCount}）',
-      );
+      throw FormatException('节次 $section 超出时间模板范围（1-${settings.sectionCount}）');
     }
     final sectionInfo = settings.sections[section - 1];
     return isStart ? sectionInfo.startTime : sectionInfo.endTime;
@@ -554,7 +548,9 @@ class SpreadsheetImportService {
     }
     final color = trimmed.startsWith('#') ? trimmed : '#$trimmed';
     // 校验 hex 颜色格式：#RGB、#RRGGBB 或 #AARRGGBB
-    final hexPattern = RegExp(r'^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$');
+    final hexPattern = RegExp(
+      r'^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?([0-9a-fA-F]{2})?$',
+    );
     if (!hexPattern.hasMatch(color)) {
       return _defaultColor;
     }

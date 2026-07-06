@@ -242,9 +242,15 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  l10n.timeCorrectionHelp,
-                  style: HyperosTypography.listDetail(context),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal:
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                  ),
+                  child: Text(
+                    l10n.timeCorrectionHelp,
+                    style: HyperosTypography.listDetail(context),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 HyperosSelectTile<LiveDuringClassTimeDisplayMode>(
@@ -259,9 +265,15 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  l10n.duringEndTimeDisplayHelp,
-                  style: HyperosTypography.listDetail(context),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal:
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                  ),
+                  child: Text(
+                    l10n.duringEndTimeDisplayHelp,
+                    style: HyperosTypography.listDetail(context),
+                  ),
                 ),
               ],
             ),

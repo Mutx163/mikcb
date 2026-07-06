@@ -18,8 +18,9 @@ class WeekExpressionParser {
         .replaceAll(RegExp(r'\[[^\]]*节\]'), '')
         .replaceAll(RegExp(r'【[^】]*节】'), '');
 
-    final modeMatch =
-        RegExp(r'[（(](全部|单|双)[）)]').firstMatch(normalized)?.group(1);
+    final modeMatch = RegExp(
+      r'[（(](全部|单|双)[）)]',
+    ).firstMatch(normalized)?.group(1);
     normalized = normalized.replaceAll(RegExp(r'[（(][^）)]*[）)]'), '');
 
     final result = <int>{};

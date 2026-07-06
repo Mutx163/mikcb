@@ -129,10 +129,45 @@ void main() {
 
         expect(
           cardRect.right - chevronRect.right,
-          closeTo(HyperosTokens.rowPaddingUniform.right, 1),
+          closeTo(HyperosTokens.rowPaddingUniform.left, 1),
         );
       },
     );
+
+    testWidgets('matches label leading inset to chevron trailing inset', (
+      tester,
+    ) async {
+      const listWidth = 360.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(listWidth, 640));
+
+      await tester.pumpWidget(
+        TestApp(
+          home: ListView(
+            children: [
+              HyperosControlCard(
+                title: 'Display mode',
+                child: HyperosSelectTile<String>(
+                  label: 'Theme mode',
+                  items: const {'Light': 'light', 'Dark': 'dark'},
+                  value: 'light',
+                  onChanged: _noop,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final cardRect = tester.getRect(find.byType(HyperosControlCard));
+      final labelRect = tester.getRect(find.text('Theme mode'));
+      final chevronRect = tester.getRect(find.byType(HyperosUpDownChevron));
+      final leadingInset = labelRect.left - cardRect.left;
+      final trailingInset = cardRect.right - chevronRect.right;
+
+      expect(leadingInset, closeTo(HyperosTokens.rowPaddingUniform.left, 1));
+      expect(trailingInset, closeTo(leadingInset, 1));
+    });
 
     testWidgets('last row extends to card bottom for press highlight', (
       tester,

@@ -404,40 +404,46 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         const HyperosSectionGap(),
         HyperosControlCard(
           title: l10n.guidePrivacySectionTitle,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.guidePrivacyParagraph1, style: typo.sm),
-              const SizedBox(height: 8),
-              Text(l10n.guidePrivacyParagraph2, style: typo.sm),
-              const SizedBox(height: 8),
-              Text(l10n.guidePrivacyParagraph3, style: typo.sm),
-              const SizedBox(height: 8),
-              Text(l10n.guidePrivacyParagraph4, style: typo.sm),
-            ],
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.guidePrivacyParagraph1, style: typo.sm),
+                const SizedBox(height: 8),
+                Text(l10n.guidePrivacyParagraph2, style: typo.sm),
+                const SizedBox(height: 8),
+                Text(l10n.guidePrivacyParagraph3, style: typo.sm),
+                const SizedBox(height: 8),
+                Text(l10n.guidePrivacyParagraph4, style: typo.sm),
+              ],
+            ),
           ),
         ),
         const HyperosSectionGap(),
         HyperosControlCard(
           title: l10n.guideRiskTitle,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(l10n.guideRiskParagraph1, style: typo.sm),
-              const SizedBox(height: 8),
-              Text(l10n.guideRiskParagraph2, style: typo.sm),
-              const SizedBox(height: 8),
-              Text(l10n.guideRiskParagraph3, style: typo.sm),
-            ],
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.guideRiskParagraph1, style: typo.sm),
+                const SizedBox(height: 8),
+                Text(l10n.guideRiskParagraph2, style: typo.sm),
+                const SizedBox(height: 8),
+                Text(l10n.guideRiskParagraph3, style: typo.sm),
+              ],
+            ),
           ),
         ),
         const HyperosSectionGap(),
         HyperosControlCard(
           subtitle: helperText,
-          child: Text(
-            l10n.guideUmengPrivacyLink,
-            style: typo.xs2.copyWith(
-              color: context.theme.colors.mutedForeground,
+          child: HyperosControlCardInset(
+            child: Text(
+              l10n.guideUmengPrivacyLink,
+              style: typo.xs2.copyWith(
+                color: context.theme.colors.mutedForeground,
+              ),
             ),
           ),
         ),
@@ -847,6 +853,14 @@ class _GuideIconBadge extends StatelessWidget {
   }
 }
 
+EdgeInsets _guideChevronRowPadding(BuildContext context) {
+  final scope = HyperosListTileScope.maybeOf(context);
+  return HyperosTokens.chevronRowPadding(
+    isFirst: scope?.isFirst ?? true,
+    isLast: scope?.isLast ?? true,
+  );
+}
+
 EdgeInsets _guideRowPadding(BuildContext context) {
   final scope = HyperosListTileScope.maybeOf(context);
   return HyperosTokens.rowPadding(
@@ -878,7 +892,7 @@ class _GuideActionTile extends StatelessWidget {
         minHeight: HyperosTokens.listRowMinHeight,
       ),
       child: Padding(
-        padding: _guideRowPadding(context),
+        padding: _guideChevronRowPadding(context),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [

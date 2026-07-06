@@ -1076,8 +1076,8 @@ class TimetableSettings {
   static const String defaultTimeAxisFontColorLight = '#757575';
   static const String defaultTimeAxisFontColorDark = '#FFFFFF';
 
-  static const double defaultFrostedSheetBlurSigma = 10.0;
-  static const double defaultFrostedSheetTintAlpha = 0.40;
+  static const double defaultFrostedSheetBlurSigma = 15.0;
+  static const double defaultFrostedSheetTintAlpha = 0.70;
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
 

@@ -25,9 +25,7 @@ void main() {
 
     test('applyThemeWithUndo sets pending undo state', () async {
       final originalSettings = provider.settings;
-      final newSettings = originalSettings.copyWith(
-        themeSeedColor: '#FF0000',
-      );
+      final newSettings = originalSettings.copyWith(themeSeedColor: '#FF0000');
 
       await provider.applyThemeWithUndo(newSettings, themeName: 'Test Theme');
 
@@ -38,9 +36,7 @@ void main() {
 
     test('undoThemeChange restores original settings', () async {
       final originalSettings = provider.settings;
-      final newSettings = originalSettings.copyWith(
-        themeSeedColor: '#FF0000',
-      );
+      final newSettings = originalSettings.copyWith(themeSeedColor: '#FF0000');
 
       await provider.applyThemeWithUndo(newSettings, themeName: 'Test Theme');
       expect(provider.settings.themeSeedColor, '#FF0000');
@@ -85,12 +81,8 @@ void main() {
 
     test('multiple applyThemeWithUndo calls only keep last undo', () async {
       final originalSettings = provider.settings;
-      final settings1 = originalSettings.copyWith(
-        themeSeedColor: '#FF0000',
-      );
-      final settings2 = originalSettings.copyWith(
-        themeSeedColor: '#00FF00',
-      );
+      final settings1 = originalSettings.copyWith(themeSeedColor: '#FF0000');
+      final settings2 = originalSettings.copyWith(themeSeedColor: '#00FF00');
 
       await provider.applyThemeWithUndo(settings1, themeName: 'Theme 1');
       expect(provider.undoThemeName, 'Theme 1');
@@ -108,13 +100,16 @@ void main() {
       // Use a separate provider for this test
       final testProvider = TimetableProvider();
       await Future.delayed(Duration.zero);
-      
+
       final newSettings = testProvider.settings.copyWith(
         themeSeedColor: '#FF0000',
       );
 
       // Apply theme with undo
-      await testProvider.applyThemeWithUndo(newSettings, themeName: 'Test Theme');
+      await testProvider.applyThemeWithUndo(
+        newSettings,
+        themeName: 'Test Theme',
+      );
       expect(testProvider.hasPendingUndo, isTrue);
 
       // Dispose provider - should not throw

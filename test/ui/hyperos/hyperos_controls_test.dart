@@ -65,6 +65,32 @@ void main() {
       final box = tester.widget<SizedBox>(find.byType(SizedBox).first);
       expect(box.height, HyperosMiuixSlider.minHeight);
     });
+
+    testWidgets('hides division tick marks when divisions is set', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: HyperosSlider(
+              value: 0.5,
+              min: 0,
+              max: 10,
+              divisions: 10,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final sliderTheme = tester.widget<SliderTheme>(
+        find.descendant(
+          of: find.byType(HyperosSlider),
+          matching: find.byType(SliderTheme),
+        ),
+      );
+      expect(sliderTheme.data.tickMarkShape, SliderTickMarkShape.noTickMark);
+    });
   });
 
   group('HyperosControlCard', () {
@@ -225,8 +251,7 @@ void main() {
           of: find.byType(HyperosListGroup),
           matching: find.byWidgetPredicate(
             (widget) =>
-                widget is Padding &&
-                widget.padding == const EdgeInsets.all(16),
+                widget is Padding && widget.padding == const EdgeInsets.all(16),
           ),
         ),
       );

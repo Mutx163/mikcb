@@ -100,9 +100,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: CourseOverviewScreen(),
-        ),
+        child: const TestApp(home: CourseOverviewScreen()),
       ),
     );
     await _pumpScreen(tester);
@@ -111,8 +109,9 @@ void main() {
     expect(find.text('冲突 1 节'), findsNWidgets(2));
   });
 
-  testWidgets('course overview does not mark same slot on different weeks',
-      (tester) async {
+  testWidgets('course overview does not mark same slot on different weeks', (
+    tester,
+  ) async {
     final provider = TimetableProvider(
       autoInitialize: false,
       enableLiveActivitySync: false,
@@ -152,9 +151,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: CourseOverviewScreen(),
-        ),
+        child: const TestApp(home: CourseOverviewScreen()),
       ),
     );
     await _pumpScreen(tester);

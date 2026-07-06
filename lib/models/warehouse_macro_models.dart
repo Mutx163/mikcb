@@ -18,9 +18,7 @@ String warehouseDialogResponseKey(String type, Map<String, dynamic> message) {
   }
   final title = (message['title'] as String? ?? '').trim();
   final body =
-      (message['message'] as String? ??
-              message['optionsJson'] as String? ??
-              '')
+      (message['message'] as String? ?? message['optionsJson'] as String? ?? '')
           .trim();
   return '$type|$title|$body';
 }
@@ -95,8 +93,7 @@ class MacroStep {
 
   Map<String, dynamic> toJson() {
     final shouldOmitValue =
-        type == MacroStepType.fillField &&
-        isSensitiveMacroFieldType(fieldType);
+        type == MacroStepType.fillField && isSensitiveMacroFieldType(fieldType);
     return {
       'type': type.name,
       if (fieldType != null && fieldType!.isNotEmpty) 'fieldType': fieldType,

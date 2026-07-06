@@ -53,9 +53,7 @@ void main() {
         TimeScheme(
           id: 'scheme-1',
           name: '本校作息',
-          sections: const [
-            SectionTime(startTime: '08:00', endTime: '08:45'),
-          ],
+          sections: const [SectionTime(startTime: '08:00', endTime: '08:45')],
           createdAt: DateTime(2026, 3, 22, 8),
           updatedAt: DateTime(2026, 3, 22, 9),
         ),

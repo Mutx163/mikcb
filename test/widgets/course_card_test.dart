@@ -7,7 +7,9 @@ import '../helpers_test_app.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('invalid course color does not crash course card', (tester) async {
+  testWidgets('invalid course color does not crash course card', (
+    tester,
+  ) async {
     final course = Course(
       id: 'course-1',
       name: '高等数学',
@@ -21,11 +23,7 @@ void main() {
       color: 'broken',
     );
 
-    await tester.pumpWidget(
-      TestApp(
-        home: CourseCard(course: course),
-      ),
-    );
+    await tester.pumpWidget(TestApp(home: CourseCard(course: course)));
 
     expect(find.text('高等数学'), findsOneWidget);
     expect(tester.takeException(), isNull);

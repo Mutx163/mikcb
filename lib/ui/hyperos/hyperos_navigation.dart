@@ -4,6 +4,10 @@ import '../../services/android_animation_scale_service.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 
+/// Observes route cover/pop so frosted headers restore blur after pop.
+final RouteObserver<ModalRoute<void>> hyperosRouteObserver =
+    RouteObserver<ModalRoute<void>>();
+
 /// HyperOS / MIUI system-settings style page navigation.
 ///
 /// Use [push] / [route] instead of [MaterialPageRoute] so every sub-page gets
@@ -83,6 +87,13 @@ abstract final class HyperosNavigation {
     return 1 - progress;
   }
 
+  /// Viewport width plus right-side bleed so parallax exit never exposes routes
+  /// below in the [Navigator] stack.
+  @visibleForTesting
+  static double parallaxBleedWidth(double viewportWidth) {
+    return viewportWidth * (1 + HyperosMiuixNavigation.exitSlideFraction);
+  }
+
   /// Opaque horizontal shared-axis transition — no fade-through so pages never
   /// become transparent like MIUI / HyperOS system settings.
   ///
@@ -117,8 +128,56 @@ abstract final class HyperosNavigation {
       position: parallaxSlide,
       child: SlideTransition(
         position: enterSlide,
-        child: _HyperosTransitionPageShell(animation: animation, child: child),
+        child: _HyperosParallaxBleed(
+          secondaryAnimation: secondaryAnimation,
+          child: _HyperosTransitionPageShell(
+            animation: animation,
+            child: child,
+          ),
+        ),
       ),
+    );
+  }
+}
+
+/// Extends the route surface to the right while the route is being covered so
+/// parallax exit never reveals routes below in the [Navigator] stack.
+class _HyperosParallaxBleed extends StatelessWidget {
+  const _HyperosParallaxBleed({
+    required this.secondaryAnimation,
+    required this.child,
+  });
+
+  final Animation<double> secondaryAnimation;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: secondaryAnimation,
+      builder: (context, child) {
+        if (secondaryAnimation.value <= 0.001) {
+          return child!;
+        }
+        final surface = HyperosColors.scaffoldBackground(context);
+        final width = MediaQuery.sizeOf(context).width;
+        if (width <= 0) {
+          return child!;
+        }
+        final bleedWidth = HyperosNavigation.parallaxBleedWidth(width);
+        return SizedBox(
+          width: bleedWidth,
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.centerLeft,
+            children: [
+              Positioned.fill(child: ColoredBox(color: surface)),
+              SizedBox(width: width, child: child),
+            ],
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

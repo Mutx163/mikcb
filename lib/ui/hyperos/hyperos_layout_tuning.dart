@@ -42,7 +42,7 @@ class HyperosLayoutTuning {
     iconBadgeSize: 26,
     iconGlyphSize: 14,
     paddingLeft: 16,
-    paddingRight: 12,
+    paddingRight: 16,
     paddingTopFirst: 13,
     paddingBottomLast: 13,
     paddingInnerVertical: 13,

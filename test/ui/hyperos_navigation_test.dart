@@ -28,4 +28,12 @@ void main() {
       closeTo(0.5, 0.001),
     );
   });
+
+  test('parallax bleed covers exit slide fraction', () {
+    expect(HyperosNavigation.parallaxBleedWidth(400), 500);
+    expect(
+      HyperosNavigation.parallaxBleedWidth(400),
+      400 * (1 + HyperosMiuixNavigation.exitSlideFraction),
+    );
+  });
 }

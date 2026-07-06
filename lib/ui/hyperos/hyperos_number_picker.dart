@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_miuix_spec.dart';
+import 'hyperos_theme.dart';
 
 /// HyperOS / Miuix wheel number picker (Miuix `NumberPicker` dimensions).
 class HyperosNumberPicker extends StatefulWidget {
@@ -187,9 +188,7 @@ class HyperosNumberPickerTile extends StatelessWidget {
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontSize: HyperosMiuixTypography.body1,
-            fontWeight: FontWeight.w500,
+          style: HyperosTypography.title(context).copyWith(
             color: isDark
                 ? HyperosMiuixDarkColors.onSurface
                 : HyperosMiuixLightColors.onSurface,

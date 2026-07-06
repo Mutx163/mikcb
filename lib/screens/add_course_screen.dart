@@ -653,16 +653,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           : l10n.scheduleEntrySingleTitle,
       subtitle: l10n.scheduleEntryCardSubtitle,
       plainTitle: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < _scheduleEntries.length; i++) ...[
-            if (i > 0) const SizedBox(height: 10),
-            _buildScheduleEntryFields(provider, settings, i, l10n),
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (var i = 0; i < _scheduleEntries.length; i++) ...[
+              if (i > 0) const SizedBox(height: 10),
+              _buildScheduleEntryFields(provider, settings, i, l10n),
+            ],
+            if (_scheduleEntries.isNotEmpty) const SizedBox(height: 8),
+            _buildAddScheduleEntryButton(l10n),
           ],
-          if (_scheduleEntries.isNotEmpty) const SizedBox(height: 8),
-          _buildAddScheduleEntryButton(l10n),
-        ],
+        ),
       ),
     );
   }

@@ -228,14 +228,34 @@ Widget? homePageBackdropImageWidget({
   );
 }
 
+/// Title row height under the status bar on the home timetable header.
+const homePageHeaderContentHeight = 46.0;
+
 /// Approximate stacked header band: optional status bar + title row.
 double homePageHeaderBandHeight(
   BuildContext context, {
   bool includeStatusBar = true,
 }) {
   final safeTop = includeStatusBar ? MediaQuery.paddingOf(context).top : 0;
-  const headerContentHeight = 46.0;
-  return safeTop + headerContentHeight;
+  return safeTop + homePageHeaderContentHeight;
+}
+
+/// [Stack] geometry for [HomePageHeaderBlurBand].
+///
+/// When the status bar is masked (scope off), the band starts below [safeAreaTop]
+/// so it aligns with [FHeader] content instead of the status bar inset.
+({double top, double height}) homePageHeaderBlurBandRect({
+  required double safeAreaTop,
+  required bool includeStatusBar,
+  double extendBottom = 0,
+}) {
+  if (includeStatusBar) {
+    return (
+      top: 0,
+      height: safeAreaTop + homePageHeaderContentHeight + extendBottom,
+    );
+  }
+  return (top: safeAreaTop, height: homePageHeaderContentHeight + extendBottom);
 }
 
 @Deprecated('Use homePageBackdropLayer')

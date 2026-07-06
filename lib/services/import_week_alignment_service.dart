@@ -7,9 +7,9 @@ class ImportWeekAlignmentService {
     required DateTime semesterStartDate,
     required DateTime firstCourseDate,
   }) {
-    final days = _startOfWeek(firstCourseDate)
-        .difference(_startOfWeek(semesterStartDate))
-        .inDays;
+    final days = _startOfWeek(
+      firstCourseDate,
+    ).difference(_startOfWeek(semesterStartDate)).inDays;
     if (days <= 0) {
       return 1;
     }

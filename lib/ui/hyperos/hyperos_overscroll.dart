@@ -96,6 +96,16 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
     final wouldOverscrollPastEnd =
         offset > 0 && position.pixels + offset > position.maxScrollExtent;
 
+    // Closing rubber-band (pull-back) follows the finger 1:1 so a reverse swipe
+    // can collapse the blank gap and keep scrolling into content. Nonlinear
+    // resistance applies only when pulling deeper into overscroll.
+    if (overscrollPastEnd > 0 && offset < 0) {
+      return offset;
+    }
+    if (overscrollPastStart > 0 && offset > 0) {
+      return offset;
+    }
+
     if (!position.outOfRange &&
         !wouldOverscrollPastStart &&
         !wouldOverscrollPastEnd) {
@@ -153,5 +163,21 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
       );
     }
     return null;
+  }
+}
+
+/// Default scroll behavior for [HyperosSubpage] / [HyperosRootPage] bodies.
+///
+/// Child [ListView], [SingleChildScrollView], etc. inherit
+/// [HyperosOverscrollPhysics] unless they set [ScrollPhysics] explicitly
+/// (e.g. [NeverScrollableScrollPhysics] for nested grids).
+class HyperosScrollBehavior extends MaterialScrollBehavior {
+  const HyperosScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    return const HyperosOverscrollPhysics(
+      parent: AlwaysScrollableScrollPhysics(),
+    );
   }
 }

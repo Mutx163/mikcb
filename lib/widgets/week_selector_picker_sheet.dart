@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
-/// Bottom sheet for picking the visible timetable week using Forui styling.
+/// Bottom sheet for picking the visible timetable week using HyperOS styling.
 Future<int?> showWeekSelectorPickerSheet(
   BuildContext context, {
   required List<int> availableWeeks,
@@ -37,25 +37,22 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
     final showBackToCurrentWeek =
         currentSemesterWeek != null && visibleWeek != currentSemesterWeek;
 
-    return HyperosSheet(
+    return HyperosSheetFrame(
       frosted: true,
-      title: l10n.selectWeekTitle,
-      description: l10n.availableWeeksCount(availableWeeks.length),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (showBackToCurrentWeek) ...[
-            Align(
-              alignment: Alignment.centerRight,
-              child: HyperosButton(
-                label: l10n.backToCurrentWeekAction,
-                variant: HyperosButtonVariant.secondary,
-                onPressed: () => Navigator.of(context).pop(currentSemesterWeek),
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
+          Text(
+            l10n.selectWeekTitle,
+            style: HyperosTypography.sheetTitle(context),
+          ),
+          const SizedBox(height: 8),
+          HyperosSectionDescription(
+            text: l10n.availableWeeksCount(availableWeeks.length),
+          ),
+          const SizedBox(height: 16),
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxListHeight),
             child: SingleChildScrollView(
@@ -64,49 +61,44 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: availableWeeks.length,
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 5,
+                  crossAxisCount: 4,
                   mainAxisSpacing: 10,
                   crossAxisSpacing: 10,
-                  childAspectRatio: 1.35,
+                  childAspectRatio: 1.55,
                 ),
                 itemBuilder: (context, index) {
                   final week = availableWeeks[index];
                   final isCurrentSemesterWeek = week == currentSemesterWeek;
-                  return _WeekSelectorChip(
+                  if (isCurrentSemesterWeek) {
+                    return HyperosButton(
+                      label: l10n.goToWeekLabel(week),
+                      variant: HyperosButtonVariant.primary,
+                      dense: true,
+                      expand: true,
+                      onPressed: () => Navigator.of(context).pop(week),
+                    );
+                  }
+                  return HyperosFrostedSheetButton(
                     label: l10n.goToWeekLabel(week),
-                    isCurrentSemesterWeek: isCurrentSemesterWeek,
-                    onPress: () => Navigator.of(context).pop(week),
+                    dense: true,
+                    expand: true,
+                    onPressed: () => Navigator.of(context).pop(week),
                   );
                 },
               ),
             ),
           ),
+          if (showBackToCurrentWeek) ...[
+            const SizedBox(height: 14),
+            HyperosFrostedSheetButton(
+              label: l10n.backToCurrentWeekAction,
+              bordered: true,
+              expand: true,
+              onPressed: () => Navigator.of(context).pop(currentSemesterWeek),
+            ),
+          ],
         ],
       ),
-    );
-  }
-}
-
-class _WeekSelectorChip extends StatelessWidget {
-  const _WeekSelectorChip({
-    required this.label,
-    required this.isCurrentSemesterWeek,
-    required this.onPress,
-  });
-
-  final String label;
-  final bool isCurrentSemesterWeek;
-  final VoidCallback onPress;
-
-  @override
-  Widget build(BuildContext context) {
-    return HyperosButton(
-      label: label,
-      variant: isCurrentSemesterWeek
-          ? HyperosButtonVariant.primary
-          : HyperosButtonVariant.secondary,
-      expand: true,
-      onPressed: onPress,
     );
   }
 }
