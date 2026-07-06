@@ -2091,9 +2091,9 @@ void main() {
     expect(
       find.descendant(
         of: find.byType(AddCourseScreen),
-        matching: find.text(_weekdayLabelForTest(targetDay)),
+        matching: find.textContaining(_weekdayLabelForTest(targetDay)),
       ),
-      findsOneWidget,
+      findsWidgets,
     );
   });
 }

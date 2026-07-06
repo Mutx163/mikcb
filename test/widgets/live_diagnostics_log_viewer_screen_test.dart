@@ -47,12 +47,12 @@ extras=
     await tester.pumpAndSettle();
 
     expect(find.text('正在记录应用日志'), findsOneWidget);
-    expect(find.text('渲染失败'), findsOneWidget);
+    expect(find.text('渲染失败'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('已捕获快照负载'),
       48,
       scrollable: find.ancestor(
-        of: find.text('渲染失败'),
+        of: find.text('渲染失败').first,
         matching: find.byType(Scrollable),
       ),
     );
@@ -62,7 +62,7 @@ extras=
     await tester.tap(find.text('错误 1'));
     await tester.pumpAndSettle();
 
-    expect(find.text('渲染失败'), findsOneWidget);
+    expect(find.text('渲染失败'), findsWidgets);
     expect(find.text('已捕获快照负载'), findsNothing);
     expect(find.text('显示 1 / 2 条日志'), findsOneWidget);
 

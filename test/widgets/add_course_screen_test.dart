@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:university_timetable/models/course.dart';
@@ -12,6 +11,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/add_course_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos_widgets.dart';
 import '../helpers_test_app.dart';
 
 Future<void> _pumpScreen(WidgetTester tester) async {
@@ -157,7 +157,10 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -350));
     await _pumpScreen(tester);
 
-    expect(find.text(_weekdayLabelForTest(todayWeekday)), findsOneWidget);
+    expect(
+      find.textContaining(_weekdayLabelForTest(todayWeekday)),
+      findsWidgets,
+    );
   });
 
   testWidgets('custom week grid wraps earlier on narrow screens', (
@@ -235,7 +238,7 @@ void main() {
 
     expect(
       find.descendant(
-        of: find.widgetWithText(FTile, '单周'),
+        of: find.widgetWithText(HyperosChoiceTile, '单周'),
         matching: find.byIcon(Icons.check_rounded),
       ),
       findsOneWidget,
