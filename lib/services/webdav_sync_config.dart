@@ -50,9 +50,9 @@ class WebdavSyncConfig {
     return folder;
   }
 
-  String get snapshotRemotePath => '${normalizedRemoteFolder}$snapshotFileName';
+  String get snapshotRemotePath => '$normalizedRemoteFolder$snapshotFileName';
 
-  String get metaRemotePath => '${normalizedRemoteFolder}$metaFileName';
+  String get metaRemotePath => '$normalizedRemoteFolder$metaFileName';
 
   WebdavSyncConfig copyWith({
     bool? enabled,

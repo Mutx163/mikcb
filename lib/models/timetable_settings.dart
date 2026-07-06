@@ -1054,13 +1054,16 @@ class ThemeConfig {
   List<String> get previewColors {
     final colors = <String>[];
     if (seedColor != null) colors.add(seedColor!);
-    if (courseCardTitleColorLight != null)
+    if (courseCardTitleColorLight != null) {
       colors.add(courseCardTitleColorLight!);
-    if (courseCardDetailColorLight != null)
+    }
+    if (courseCardDetailColorLight != null) {
       colors.add(courseCardDetailColorLight!);
+    }
     if (weekdayBarFontColorLight != null) colors.add(weekdayBarFontColorLight!);
-    if (weekdayBarAccentColorLight != null)
+    if (weekdayBarAccentColorLight != null) {
       colors.add(weekdayBarAccentColorLight!);
+    }
     return colors.take(4).toList();
   }
 }

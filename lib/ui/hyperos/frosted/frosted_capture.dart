@@ -53,16 +53,18 @@ abstract final class FrostedCapture {
     GlobalKey boundaryKey, {
     double pixelRatio = headerPixelRatio,
   }) async {
+    final context = boundaryKey.currentContext;
+    final fillColor = context != null
+        ? HyperosColors.scaffoldBackground(context)
+        : null;
     final snapshot = await fromBoundary(boundaryKey, pixelRatio: pixelRatio);
     if (snapshot == null) {
       return null;
     }
-    final context = boundaryKey.currentContext;
-    if (context == null) {
+    if (fillColor == null) {
       return snapshot;
     }
 
-    final fillColor = HyperosColors.scaffoldBackground(context);
     final width = snapshot.width;
     final height = snapshot.height;
     final recorder = ui.PictureRecorder();
@@ -91,6 +93,7 @@ abstract final class FrostedCapture {
     BuildContext? context,
     double? stripHeightLogical,
     double? visibleHeightLogical,
+    Color? scaffoldBackground,
     double scrollOffsetLogical = 0,
     double pixelRatio = headerPixelRatio,
     bool paintBackground = true,
@@ -136,9 +139,11 @@ abstract final class FrostedCapture {
     // Opaque fill before compositing: transparent [toImage] pixels blur to black
     // halos and blow out light content when alpha is mishandled downstream.
     if (paintBackground) {
-      final fillColor = context != null
-          ? HyperosColors.scaffoldBackground(context)
-          : const Color(0xFFF5F5F5);
+      final fillColor =
+          scaffoldBackground ??
+          (context != null
+              ? HyperosColors.scaffoldBackground(context)
+              : const Color(0xFFF5F5F5));
       canvas.drawRect(dst, ui.Paint()..color = fillColor);
     }
     canvas.drawImageRect(snapshot, src, dst, ui.Paint());
@@ -197,7 +202,6 @@ abstract final class FrostedCapture {
 
     final stripWithBleed = await cropHeaderStripFromSnapshot(
       snapshot,
-      context: context,
       stripHeightLogical: stripHeightLogical,
       visibleHeightLogical: visibleHeightLogical,
       pixelRatio: pixelRatio,

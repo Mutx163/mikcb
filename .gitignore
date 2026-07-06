@@ -19,8 +19,9 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# VS Code个人配置
+# VS Code / Cursor 个人配置
 .vscode/
+.cursor/
 .codex
 .codex_tmp/
 .claude/

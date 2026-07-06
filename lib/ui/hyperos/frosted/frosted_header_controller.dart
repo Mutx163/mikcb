@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import '../../../models/timetable_settings.dart';
 import '../../../services/frosted_blur_service.dart';
 import '../hyperos_header_diag.dart';
+import '../hyperos_theme.dart';
 import 'frosted_capture.dart';
 
 class _BackdropRequest {
@@ -334,6 +335,17 @@ class FrostedHeaderController extends ChangeNotifier {
       doFullCapture = false;
     }
 
+    final layoutContext = key.currentContext;
+    final stripHeightLogical = layoutContext != null
+        ? FrostedCapture.headerStripHeightLogical(layoutContext)
+        : null;
+    final visibleHeightLogical = layoutContext != null
+        ? FrostedCapture.headerVisibleHeightLogical(layoutContext)
+        : null;
+    final scaffoldBackground = layoutContext != null
+        ? HyperosColors.scaffoldBackground(layoutContext)
+        : null;
+
     if (doFullCapture) {
       if (_isCapturingSnapshot) {
         if (_rawFull == null) {
@@ -377,8 +389,9 @@ class FrostedHeaderController extends ChangeNotifier {
     }
 
     final raw = _rawFull;
-    final context = key.currentContext;
-    if (raw == null || context == null) {
+    if (raw == null ||
+        stripHeightLogical == null ||
+        visibleHeightLogical == null) {
       if (doFullCapture) {
         return;
       }
@@ -391,16 +404,12 @@ class FrostedHeaderController extends ChangeNotifier {
     }
 
     final scrollDelta = _lastScrollPixels - _captureScrollPixels;
-    final stripHeightLogical = FrostedCapture.headerStripHeightLogical(context);
-    final visibleHeightLogical = FrostedCapture.headerVisibleHeightLogical(
-      context,
-    );
 
     final stripWithBleed = await FrostedCapture.cropHeaderStripFromSnapshot(
       raw,
-      context: context,
       stripHeightLogical: stripHeightLogical,
       visibleHeightLogical: visibleHeightLogical,
+      scaffoldBackground: scaffoldBackground,
       scrollOffsetLogical: scrollDelta,
     );
     if (!_captureEnabled) {
