@@ -941,6 +941,9 @@ void main() {
   testWidgets('back to today jumps from a boundary-swiped earlier week', (
     tester,
   ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 2800));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     final now = DateTime.now();
     final currentWeekStart = _startOfCurrentWeek(now);
     final provider = TimetableProvider(
@@ -988,10 +991,9 @@ void main() {
 
     await tester.drag(
       find.byKey(const ValueKey('day-view-swipe-area')),
-      const Offset(420, 0),
-      warnIfMissed: false,
+      const Offset(600, 0),
     );
-    await _pumpFiniteFrames(tester, count: 12);
+    await _pumpFiniteFrames(tester, count: 20);
 
     expect(
       find.byKey(const ValueKey('timetable-day-view-6-7')),
