@@ -8,6 +8,34 @@ import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
 
+({double minHeight, EdgeInsets padding}) hyperosSelectRowLayout(
+  BuildContext context, {
+  bool twoLine = false,
+}) {
+  final listScope = HyperosListTileScope.maybeOf(context);
+  final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
+  final cardScope = HyperosControlCardScope.maybeOf(context);
+
+  final isFirst = listScope?.isFirst ?? cardRowScope?.isFirst ?? true;
+  final isLast = listScope?.isLast ?? cardRowScope?.isLast ?? cardScope != null;
+
+  var padding = (listScope != null || cardRowScope != null || cardScope != null)
+      ? HyperosTokens.rowPadding(isFirst: isFirst, isLast: isLast)
+      : HyperosTokens.rowPaddingUniform;
+
+  var footerExtend = 0.0;
+  if (cardScope != null && isLast) {
+    footerExtend = cardScope.bodyBottomInset;
+    padding = padding.copyWith(bottom: padding.bottom + footerExtend);
+  }
+
+  final baseMinHeight = twoLine
+      ? HyperosTokens.listRowTwoLineMinHeight
+      : HyperosTokens.listRowMinHeight;
+
+  return (minHeight: baseMinHeight + footerExtend, padding: padding);
+}
+
 /// Global rect of [anchorKey]'s render box (for anchored select popups).
 Rect hyperosSelectPopupAnchorRect(BuildContext context, GlobalKey anchorKey) {
   final box = anchorKey.currentContext!.findRenderObject()! as RenderBox;
@@ -94,33 +122,45 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
                     28,
               ),
             ),
-            child: Material(
-              color: surface,
-              elevation: HyperosMiuixDropdown.popupElevation,
-              shadowColor: Colors.black.withValues(alpha: 0.16),
-              borderRadius: BorderRadius.circular(
-                HyperosMiuixDropdown.popupCornerRadius,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixDropdown.popupCornerRadius,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.14),
+                    blurRadius: 20,
+                    spreadRadius: 0,
+                    offset: Offset.zero,
+                  ),
+                ],
               ),
-              clipBehavior: Clip.antiAlias,
-              child: IntrinsicWidth(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var i = 0; i < entries.length; i++)
-                      HyperosChoiceTile(
-                        title: entries[i].key,
-                        selected: entries[i].value == currentValue,
-                        highlightSelectedText: true,
-                        variant: HyperosChoiceVariant.popup,
-                        isFirstInPopup: i == 0,
-                        isLastInPopup: i == entries.length - 1,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          Navigator.of(context).pop(entries[i].value);
-                        },
-                      ),
-                  ],
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                  HyperosMiuixDropdown.popupCornerRadius,
+                ),
+                child: IntrinsicWidth(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < entries.length; i++)
+                        HyperosChoiceTile(
+                          title: entries[i].key,
+                          selected: entries[i].value == currentValue,
+                          highlightSelectedText: true,
+                          variant: HyperosChoiceVariant.popup,
+                          isFirstInPopup: i == 0,
+                          isLastInPopup: i == entries.length - 1,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            Navigator.of(context).pop(entries[i].value);
+                          },
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -151,10 +191,10 @@ Future<T?> showHyperosSelectSheet<T>({
           ? HyperosMiuixDarkColors.surfaceContainer
           : HyperosMiuixLightColors.surfaceContainer;
 
-      // ~1 body1 char side inset, ~2 chars bottom (Miuix floating select sheet).
+      // ~1 body1 char side inset; floating select sheet bottom gap (see spec).
       const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
       const bottomInsetBase =
-          HyperosMiuixBasicComponent.insideMarginHorizontal * 2;
+          HyperosMiuixBasicComponent.selectSheetBottomMargin;
       final bottomInset =
           bottomInsetBase + MediaQuery.paddingOf(sheetContext).bottom;
 
@@ -270,6 +310,7 @@ class HyperosSelectTile<T> extends StatefulWidget {
   const HyperosSelectTile({
     super.key,
     required this.label,
+    this.subtitle,
     required this.items,
     required this.value,
     required this.onChanged,
@@ -281,6 +322,7 @@ class HyperosSelectTile<T> extends StatefulWidget {
   });
 
   final String label;
+  final String? subtitle;
   final Map<String, T> items;
   final T? value;
   final ValueChanged<T>? onChanged;
@@ -359,24 +401,50 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
         : (isDark
               ? HyperosMiuixDarkColors.disabledOnSurface
               : HyperosMiuixLightColors.disabledOnSurface);
+    final subtitleStyle = HyperosTypography.listDetail(context).copyWith(
+      color: effectiveEnabled
+          ? HyperosColors.secondaryText(context)
+          : HyperosColors.secondaryText(context).withValues(alpha: 0.45),
+    );
+
+    final rowLayout = hyperosSelectRowLayout(
+      context,
+      twoLine: widget.subtitle != null,
+    );
 
     final row = ConstrainedBox(
       key: _anchorKey,
-      constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowMinHeight,
-      ),
+      constraints: BoxConstraints(minHeight: rowLayout.minHeight),
       child: Padding(
-        padding: HyperosTokens.rowPaddingUniform,
+        padding: rowLayout.padding,
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Text(
-                widget.label,
-                style: HyperosTypography.listTitle(context).copyWith(
-                  color: effectiveEnabled
-                      ? primaryText
-                      : primaryText.withValues(alpha: 0.45),
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.label,
+                    style: HyperosTypography.listTitle(context).copyWith(
+                      color: effectiveEnabled
+                          ? primaryText
+                          : primaryText.withValues(alpha: 0.45),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (widget.subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle!,
+                      style: subtitleStyle,
+                      softWrap: true,
+                    ),
+                  ],
+                ],
               ),
             ),
             if (valueLabel != null) ...[
@@ -405,32 +473,13 @@ class _HyperosSelectTileState<T> extends State<HyperosSelectTile<T>> {
       ),
     );
 
-    final pressable = HyperosPressableRow(
+    return HyperosPressableRow(
       onTap: effectiveEnabled ? () => _openSelector(context) : null,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       forceHighlighted: _menuOpen,
       child: row,
     );
-
-    final controlScope = HyperosControlCardScope.maybeOf(context);
-    if (controlScope != null) {
-      final bleed = controlScope.horizontalPadding;
-      // Extend press highlight to card edges without negative Padding (asserts).
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          return Transform.translate(
-            offset: Offset(-bleed, 0),
-            child: SizedBox(
-              width: constraints.maxWidth + 2 * bleed,
-              child: pressable,
-            ),
-          );
-        },
-      );
-    }
-
-    return pressable;
   }
 }
 

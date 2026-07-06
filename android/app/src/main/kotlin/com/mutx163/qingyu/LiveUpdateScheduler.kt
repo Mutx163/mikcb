@@ -310,7 +310,7 @@ object LiveUpdateScheduler {
                 UmengDiagnosticReporter.record(
                     context = context.applicationContext,
                     category = "live_update_snapshot_settings",
-                    message = "Synced live update settings values",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_SETTINGS,
                     extras = mapOf(
                         "liveEnableDuringClass" to settingsJson.optBoolean("liveEnableDuringClass", true),
                         "liveEnableBeforeEnd" to settingsJson.optBoolean("liveEnableBeforeEnd", true),
@@ -323,7 +323,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_snapshot_synced",
-            message = "Live update schedule snapshot synced",
+            message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_SYNCED,
             extras = mapOf(
                 "snapshotLength" to snapshotJson.length
             )
@@ -343,7 +343,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_snapshot_cleared",
-            message = "Live update schedule snapshot cleared",
+            message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_CLEARED,
         )
         cancelPendingTriggers(context)
         LiveUpdateRefreshWorker.cancel(context)
@@ -358,7 +358,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_alarm_triggered",
-            message = "Alarm triggered live update reschedule",
+            message = DiagnosticLogMessages.LIVE_UPDATE_ALARM_TRIGGERED,
         )
         reschedule(context, allowImmediateStart = true)
     }
@@ -371,7 +371,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_scheduler_resume",
-            message = "Scheduler resumed after live update stop",
+            message = DiagnosticLogMessages.LIVE_UPDATE_SCHEDULER_RESUME,
         )
         reschedule(context, allowImmediateStart = false)
     }
@@ -466,7 +466,7 @@ object LiveUpdateScheduler {
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_reschedule_holiday",
-                message = "Reschedule skipped due to holiday override",
+                message = DiagnosticLogMessages.LIVE_UPDATE_RESCHEDULE_HOLIDAY,
             )
             return false
         }
@@ -476,7 +476,7 @@ object LiveUpdateScheduler {
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_reschedule_active",
-                message = "Reschedule found active selection and started immediately",
+                message = DiagnosticLogMessages.LIVE_UPDATE_RESCHEDULE_ACTIVE,
                 extras = mapOf(
                     "courseName" to activeSelection.currentCourse.name,
                     "stage" to activeSelection.stage,
@@ -490,7 +490,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_reschedule_scheduled",
-            message = "Reschedule scheduled next live update trigger",
+            message = DiagnosticLogMessages.LIVE_UPDATE_RESCHEDULE_SCHEDULED,
             extras = mapOf(
                 "courseName" to nextSelection.currentCourse.name,
                 "stage" to nextSelection.stage,
@@ -521,11 +521,11 @@ object LiveUpdateScheduler {
         return try {
             parseSnapshot(JSONObject(snapshotJson))
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to parse snapshot", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_PARSE_SNAPSHOT_FAILED, e)
             UmengDiagnosticReporter.report(
                 context = context.applicationContext,
                 category = "live_update_snapshot_parse_failed",
-                message = "Failed to parse live update schedule snapshot",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_PARSE_FAILED,
                 throwable = e,
                 dedupeKey = "live_update_snapshot_parse_failed",
             )
@@ -548,7 +548,7 @@ object LiveUpdateScheduler {
         UmengDiagnosticReporter.record(
             context = context.applicationContext,
             category = "live_update_snapshot_invalidated_after_upgrade",
-            message = "Invalidated stale live update snapshot after app version change",
+            message = DiagnosticLogMessages.LIVE_UPDATE_SNAPSHOT_INVALIDATED,
             extras = mapOf(
                 "storedSnapshotVersion" to (storedSnapshotVersion ?: "missing"),
                 "currentVersion" to (currentVersion ?: "unknown"),
@@ -575,7 +575,7 @@ object LiveUpdateScheduler {
             }
             "${packageInfo.versionName ?: ""}:$versionCode"
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to resolve app version token", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_RESOLVE_APP_VERSION_FAILED, e)
             null
         }
     }
@@ -1576,7 +1576,7 @@ object LiveUpdateScheduler {
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_payload_selected",
-                message = "Scheduler selected live update payload for native service",
+                message = DiagnosticLogMessages.LIVE_UPDATE_PAYLOAD_SELECTED,
                 extras = mapOf(
                     "stage" to payload.stage,
                     "courseName" to payload.currentCourse.name,
@@ -1595,11 +1595,11 @@ object LiveUpdateScheduler {
             )
             ContextCompat.startForegroundService(context, buildServiceIntent(context, payload))
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to start live update service", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_START_LIVE_UPDATE_SERVICE_FAILED, e)
             UmengDiagnosticReporter.report(
                 context = context.applicationContext,
                 category = "live_update_scheduler_start_failed",
-                message = "Scheduler failed to start live update service",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SCHEDULER_START_FAILED,
                 throwable = e,
                 dedupeKey = "live_update_scheduler_start_failed",
                 extras = mapOf(

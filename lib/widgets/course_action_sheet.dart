@@ -23,7 +23,7 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onDelete,
   required CourseActionHandler onSuspend,
 }) {
-  return showHyperosSheet<void>(
+  return showHomeHyperosSheet<void>(
     context: context,
     builder: (sheetContext) => CourseActionSheetBody(
       previewCourses: previewCourses,
@@ -62,6 +62,7 @@ class CourseActionSheetBody extends StatelessWidget {
     final colors = context.theme.colors;
 
     return HyperosSheetFrame(
+      frosted: true,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: SingleChildScrollView(
         child: Column(

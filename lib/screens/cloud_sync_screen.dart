@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/app_sync_snapshot_service.dart';
@@ -37,7 +36,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   WebdavSyncConfig _config = const WebdavSyncConfig();
   bool _loading = true;
   bool _syncing = false;
-  bool _showAdvanced = false;
   String? _storedPassword;
 
   WebdavSyncCoordinator get _coordinator => WebdavSyncCoordinator.instance();
@@ -244,29 +242,115 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         '${local.minute.toString().padLeft(2, '0')}';
   }
 
+  String _providerLabel(AppLocalizations l10n) {
+    return switch (_config.provider) {
+      WebdavSyncProvider.jianguoyun => l10n.cloudSyncProviderJianguoyun,
+      WebdavSyncProvider.custom => l10n.cloudSyncProviderCustom,
+    };
+  }
+
+  Widget _buildIntroBanner(AppLocalizations l10n) {
+    return HyperosHintBanner(
+      icon: Icon(
+        Icons.cloud_sync_rounded,
+        size: 18,
+        color: HyperosTokens.accent,
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.cloudSyncIntroTitle,
+            style: HyperosTypography.listTitle(context),
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.cloudSyncIntroSubtitle),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHelpBanner(AppLocalizations l10n) {
+    return HyperosHintBanner(
+      icon: Icon(
+        Icons.help_outline_rounded,
+        size: 18,
+        color: HyperosTokens.accent,
+      ),
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.cloudSyncHelpTitle,
+            style: HyperosTypography.listTitle(context),
+          ),
+          const SizedBox(height: 4),
+          Text(l10n.cloudSyncHelpBody),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdvancedSection(AppLocalizations l10n) {
+    return HyperosControlCard(
+      child: HyperosAccordion(
+        items: [
+          HyperosAccordionItem(
+            title: Row(
+              children: [
+                const HyperosIconBadge(
+                  icon: Icons.tune_outlined,
+                  accent: HyperosIconColors.blue,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    l10n.cloudSyncAdvancedTitle,
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                HyperosTextField(
+                  controller: _baseUrlController,
+                  label: l10n.cloudSyncBaseUrlLabel,
+                  onSubmitted: (_) => _saveAdvancedFields(),
+                ),
+                const SizedBox(height: 12),
+                HyperosTextField(
+                  controller: _remoteFolderController,
+                  label: l10n.cloudSyncRemoteFolderLabel,
+                  onSubmitted: (_) => _saveAdvancedFields(),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAccountSection(AppLocalizations l10n) {
     if (_isAccountConnected) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           HyperosSectionLabel(text: l10n.cloudSyncAccountSectionTitle),
-          HyperosControlCard(
-            strip: true,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    l10n.cloudSyncConnectedAs(_config.username.trim()),
-                    style: HyperosTypography.listTitle(context),
-                  ),
+          HyperosSummaryCard(
+            leading: SizedBox(
+              width: HyperosSummaryCard.leadingSize,
+              height: HyperosSummaryCard.leadingSize,
+              child: Center(
+                child: HyperosIconBadge(
+                  icon: Icons.cloud_done_rounded,
+                  accent: HyperosIconColors.teal,
                 ),
-                Icon(
-                  Icons.check_circle_rounded,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-              ],
+              ),
             ),
+            title: l10n.cloudSyncConnectedAs(_config.username.trim()),
+            subtitle: _providerLabel(l10n),
           ),
           const HyperosSectionGap(),
           HyperosListGroup(
@@ -286,12 +370,11 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HyperosSectionLabel(text: l10n.cloudSyncAccountSectionTitle),
-        HyperosSectionDescription(text: l10n.cloudSyncNotConnectedHint),
         HyperosListGroup(
           children: [
-            HyperosActionTile(
-              icon: Icons.login_rounded,
+            HyperosNavTile(
               title: l10n.cloudSyncConnectAccount,
+              subtitle: l10n.cloudSyncNotConnectedHint,
               onTap: _openConnectSheet,
             ),
           ],
@@ -304,36 +387,38 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     return HyperosControlCard(
       title: l10n.cloudSyncStatusTitle,
       plainTitle: true,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _CloudSyncInfoRow(
-            label: l10n.cloudSyncLastSyncedLabel,
-            value: _formatDateTime(status.lastSyncedAt),
-          ),
-          if (status.isSyncing)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Row(
-                children: [
-                  _buttonLoadingPrefix(),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.cloudSyncSyncing,
-                    style: context.theme.typography.body.xs2.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (status.lastError != null)
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             _CloudSyncInfoRow(
-              label: l10n.cloudSyncLastErrorLabel,
-              value: status.lastError!,
-              valueColor: context.theme.colors.destructive,
+              label: l10n.cloudSyncLastSyncedLabel,
+              value: _formatDateTime(status.lastSyncedAt),
             ),
-        ],
+            if (status.isSyncing)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    _buttonLoadingPrefix(),
+                    const SizedBox(width: 8),
+                    Text(
+                      l10n.cloudSyncSyncing,
+                      style: HyperosTypography.listTitle(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+            if (status.lastError != null)
+              _CloudSyncInfoRow(
+                label: l10n.cloudSyncLastErrorLabel,
+                value: status.lastError!,
+                valueColor: HyperosTokens.error,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -354,30 +439,18 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       listenable: _coordinator,
       builder: (context, _) {
         final status = _coordinator.status;
-        final showAdvanced =
-            _showAdvanced &&
-            (_isAccountConnected ||
-                _config.provider == WebdavSyncProvider.custom);
 
         return HyperosSubpage(
           onBack: () => Navigator.pop(context),
           title: Text(l10n.cloudSyncTitle),
           child: HyperosListView(
             children: [
-              HyperosControlCard(
-                title: l10n.cloudSyncIntroTitle,
-                subtitle: l10n.cloudSyncIntroSubtitle,
-                plainTitle: true,
-                child: const SizedBox.shrink(),
-              ),
+              _buildIntroBanner(l10n),
               const HyperosSectionGap(),
               _buildAccountSection(l10n),
               if (_isAccountConnected) ...[
                 const HyperosSectionGap(),
                 HyperosSectionLabel(text: l10n.cloudSyncSettingsSectionTitle),
-                HyperosSectionDescription(
-                  text: l10n.cloudSyncSettingsSectionSubtitle,
-                ),
                 HyperosListGroup(
                   children: [
                     HyperosSwitchTile(
@@ -394,6 +467,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 ),
                 const HyperosSectionGap(),
                 HyperosControlCard(
+                  edgeToEdge: true,
                   child: HyperosSelectTile<WebdavSyncProvider>(
                     label: l10n.cloudSyncProviderTitle,
                     items: {
@@ -421,8 +495,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 ),
                 const HyperosSectionGap(),
                 HyperosControlCard(
+                  edgeToEdge: true,
                   child: HyperosSelectTile<WebdavSyncMode>(
                     label: l10n.cloudSyncModeTitle,
+                    subtitle: l10n.cloudSyncSettingsSectionSubtitle,
                     items: {
                       l10n.cloudSyncModeAuto: WebdavSyncMode.auto,
                       l10n.cloudSyncModeManual: WebdavSyncMode.manual,
@@ -437,58 +513,22 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                   ),
                 ),
                 const HyperosSectionGap(),
-                HyperosListGroup(
-                  children: [
-                    HyperosListTile(
-                      icon: Icons.tune_outlined,
-                      iconAccent: HyperosIconColors.blue,
-                      title: l10n.cloudSyncAdvancedTitle,
-                      onTap: () {
-                        setState(() {
-                          _showAdvanced = !_showAdvanced;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-                if (showAdvanced) ...[
-                  const HyperosSectionGap(),
-                  HyperosControlCard(
-                    child: Column(
-                      children: [
-                        HyperosTextField(
-                          controller: _baseUrlController,
-                          label: l10n.cloudSyncBaseUrlLabel,
-                          onSubmitted: (_) => _saveAdvancedFields(),
-                        ),
-                        const SizedBox(height: 12),
-                        HyperosTextField(
-                          controller: _remoteFolderController,
-                          label: l10n.cloudSyncRemoteFolderLabel,
-                          onSubmitted: (_) => _saveAdvancedFields(),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                _buildAdvancedSection(l10n),
                 const HyperosSectionGap(),
                 _buildStatusSection(l10n, status),
                 const HyperosSectionGap(),
                 HyperosControlCard(
-                  child: HyperosButton(
-                    label: l10n.cloudSyncSyncNow,
-                    loading: _syncing,
-                    onPressed: _syncing || !_config.enabled ? null : _syncNow,
+                  child: HyperosControlCardInset(
+                    child: HyperosButton(
+                      label: l10n.cloudSyncSyncNow,
+                      loading: _syncing,
+                      onPressed: _syncing || !_config.enabled ? null : _syncNow,
+                    ),
                   ),
                 ),
               ],
               const HyperosSectionGap(),
-              HyperosControlCard(
-                title: l10n.cloudSyncHelpTitle,
-                subtitle: l10n.cloudSyncHelpBody,
-                plainTitle: true,
-                child: const SizedBox.shrink(),
-              ),
+              _buildHelpBanner(l10n),
             ],
           ),
         );
@@ -510,8 +550,6 @@ class _CloudSyncInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -519,18 +557,14 @@ class _CloudSyncInfoRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 72,
-            child: Text(
-              label,
-              style: typo.xs2.copyWith(color: colors.mutedForeground),
-            ),
+            child: Text(label, style: HyperosTypography.listDetail(context)),
           ),
           Expanded(
             child: Text(
               value,
-              style: typo.xs2.copyWith(
-                fontWeight: FontWeight.w600,
-                color: valueColor,
-              ),
+              style: HyperosTypography.listTitle(
+                context,
+              ).copyWith(color: valueColor),
             ),
           ),
         ],

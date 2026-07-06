@@ -6,6 +6,7 @@ import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../logging/app_debug_log.dart';
 import '../utils/app_toast.dart';
 
 /// 统计分享服务
@@ -24,7 +25,7 @@ class StatisticsShareService {
           repaintBoundaryKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
       if (boundary == null) {
-        debugPrint('Share: RepaintBoundary not found');
+        appDebugLog('StatisticsShare', '未找到 RepaintBoundary');
         return;
       }
 
@@ -32,7 +33,7 @@ class StatisticsShareService {
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        debugPrint('Share: Failed to convert image to bytes');
+        appDebugLog('StatisticsShare', '图片转字节失败');
         return;
       }
 
@@ -48,7 +49,7 @@ class StatisticsShareService {
         text: '来自轻屿课表的学期统计',
       );
     } catch (e) {
-      debugPrint('Share error: $e');
+      appDebugLog('StatisticsShare', '分享失败：$e');
       if (context.mounted) {
         showAppToast(context, message: '分享失败: $e', kind: AppToastKind.error);
       }

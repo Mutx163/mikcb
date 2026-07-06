@@ -82,9 +82,19 @@ class DebugTuningOverlayHost extends StatelessWidget {
         if (!DebugTuningPreferences.instance.visible) {
           return child;
         }
+        // Host the panel in a local [Overlay]. This widget tree sits in
+        // MaterialApp.builder *outside* the route Navigator, but [Slider] and
+        // [Tooltip] need an [Overlay] ancestor for [OverlayPortal].
         return Stack(
           fit: StackFit.expand,
-          children: [child, const DebugTuningPanel()],
+          children: [
+            child,
+            Overlay(
+              initialEntries: [
+                OverlayEntry(builder: (context) => const DebugTuningPanel()),
+              ],
+            ),
+          ],
         );
       },
     );
@@ -358,8 +368,9 @@ class _DebugTuningPanelState extends State<DebugTuningPanel> {
   }
 
   Widget _footerButton(IconData icon, String tooltip, VoidCallback onTap) {
-    return Tooltip(
-      message: tooltip,
+    return Semantics(
+      label: tooltip,
+      button: true,
       child: InkWell(
         onTap: onTap,
         child: Padding(

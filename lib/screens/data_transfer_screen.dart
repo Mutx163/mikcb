@@ -37,36 +37,40 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
           HyperosControlCard(
             title: l10n.fullExportTitle,
             subtitle: l10n.fullExportSubtitle,
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                HyperosButton(
-                  label: _isExporting
-                      ? '${l10n.fullExportTitle}...'
-                      : l10n.exportCurrentTimetable,
-                  loading: _isExporting,
-                  onPressed: _isExporting ? null : _exportCurrentProfile,
-                ),
-                HyperosButton(
-                  label: l10n.exportAllData,
-                  variant: HyperosButtonVariant.secondary,
-                  onPressed: _isExporting ? null : _exportFullData,
-                ),
-              ],
+            child: HyperosControlCardInset(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  HyperosButton(
+                    label: _isExporting
+                        ? '${l10n.fullExportTitle}...'
+                        : l10n.exportCurrentTimetable,
+                    loading: _isExporting,
+                    onPressed: _isExporting ? null : _exportCurrentProfile,
+                  ),
+                  HyperosButton(
+                    label: l10n.exportAllData,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: _isExporting ? null : _exportFullData,
+                  ),
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
             title: l10n.fullImportTitle,
             subtitle: l10n.fullImportSubtitle,
-            child: HyperosButton(
-              label: _isImporting
-                  ? '${l10n.fullImportTitle}...'
-                  : l10n.chooseFileAndImport,
-              variant: HyperosButtonVariant.secondary,
-              loading: _isImporting,
-              onPressed: _isImporting ? null : _confirmAndImport,
+            child: HyperosControlCardInset(
+              child: HyperosButton(
+                label: _isImporting
+                    ? '${l10n.fullImportTitle}...'
+                    : l10n.chooseFileAndImport,
+                variant: HyperosButtonVariant.secondary,
+                loading: _isImporting,
+                onPressed: _isImporting ? null : _confirmAndImport,
+              ),
             ),
           ),
           const HyperosSectionGap(),

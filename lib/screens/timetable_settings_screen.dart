@@ -11,6 +11,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../logging/app_log_messages.dart';
 import '../models/course.dart';
 import '../models/holiday_entry.dart';
 import '../models/timetable_settings.dart';
@@ -21,10 +22,13 @@ import '../services/miui_live_activities_service.dart';
 import '../services/umeng_analytics_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../utils/home_page_background.dart';
+import '../utils/managed_image_storage.dart';
 import '../ui/debug/debug.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
+import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
@@ -170,6 +174,9 @@ class TimetableSettingsScreen extends StatelessWidget {
               onBack: () => Navigator.pop(context),
               title: Text(l10n.settingsTitle),
               child: HyperosListView(
+                pageStorageKey: const PageStorageKey<String>(
+                  'timetable-settings-main',
+                ),
                 children: [
                   HyperosSummaryCard(
                     leading: ClipRRect(
@@ -459,7 +466,7 @@ class _AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
-  static const _appearanceSectionCount = 8;
+  static const _appearanceSectionCount = 11;
 
   static const List<String> _backgroundColors = [
     '#F8FAFC',
@@ -502,18 +509,22 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return HyperosSubpage(
-      onBack: () => Navigator.pop(context),
-      title: Text(l10n.appearanceTitle),
-      child: HyperosListView(
-        itemCount: _appearanceSectionCount,
-        itemBuilder: _buildAppearanceSection,
+    return FrostedAppearanceScope(
+      appearance: FrostedAppearance.fromSettings(_draft),
+      child: HyperosSubpage(
+        onBack: () => Navigator.pop(context),
+        title: Text(l10n.appearanceTitle),
+        child: HyperosListView(
+          itemCount: _appearanceSectionCount,
+          itemBuilder: _buildAppearanceSection,
+        ),
       ),
     );
   }
 
   Widget _buildAppearanceSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
+    final provider = context.watch<TimetableProvider>();
     final previewCardColor = _draft.timetableUseUnifiedCardColor
         ? _draft.timetableUnifiedCardColor
         : _draft.themeSeedColor;
@@ -601,100 +612,223 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ),
         ),
       ),
-      1 => HyperosControlCard(
+      1 => HyperosSettingsBlock(
         title: l10n.displayModeTitle,
-        subtitle: l10n.displayModeSubtitle,
-        child: HyperosSelectTile<AppThemeMode>(
-          label: l10n.themeModeLabel,
-          items: {
-            for (final v in AppThemeMode.values) _themeModeLabel(context, v): v,
-          },
-          value: _draft.appThemeMode,
-          onChanged: (value) {
-            _updateDraft(_draft.copyWith(appThemeMode: value));
-          },
-        ),
-      ),
-      2 => HyperosControlCard(
-        title: l10n.fontSectionTitle,
-        subtitle: l10n.fontSectionSubtitle,
-        child: HyperosSelectTile<AppFontMode>(
-          label: l10n.fontModeLabel,
-          items: {
-            for (final v in AppFontMode.values) _fontModeLabel(context, v): v,
-          },
-          value: _draft.appFontMode,
-          onChanged: (value) {
-            _updateDraft(_draft.copyWith(appFontMode: value));
-          },
-        ),
-      ),
-      3 => HyperosControlCard(
-        title: l10n.languageSectionTitle,
-        subtitle: l10n.languageSectionSubtitle,
-        child: HyperosSelectTile<String>(
-          label: l10n.languageModeLabel,
-          items: buildLocaleMenuMap(context),
-          value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
-          onChanged: (value) {
-            _updateDraft(_draft.copyWith(appLocaleTag: value));
-          },
-        ),
-      ),
-      4 => HyperosControlCard(
-        title: l10n.homeTitleSectionTitle,
-        subtitle: l10n.homeTitleSectionSubtitle,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: HyperosListGroup(
           children: [
-            HyperosSelectTile<HomeTitleStyle>(
-              label: l10n.homeTitleStyleLabel,
+            HyperosSelectTile<AppThemeMode>(
+              label: l10n.themeModeLabel,
+              subtitle: l10n.displayModeSubtitle,
               items: {
-                for (final v in HomeTitleStyle.values)
-                  _homeTitleStyleLabel(context, v): v,
+                for (final v in AppThemeMode.values)
+                  _themeModeLabel(context, v): v,
               },
-              value: _draft.homeTitleStyle,
+              value: _draft.appThemeMode,
               onChanged: (value) {
-                _updateDraft(_draft.copyWith(homeTitleStyle: value));
+                _updateDraft(_draft.copyWith(appThemeMode: value));
               },
-            ),
-            const SizedBox(height: 12),
-            _HomeTitleStylePreview(style: _draft.homeTitleStyle),
-            const SizedBox(height: 8),
-            Text(
-              _homeTitleStyleDescription(context, _draft.homeTitleStyle),
-              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),
       ),
-      5 => HyperosControlCard(
+      2 => HyperosSettingsBlock(
+        title: l10n.fontSectionTitle,
+        child: HyperosListGroup(
+          children: [
+            HyperosSelectTile<AppFontMode>(
+              label: l10n.fontModeLabel,
+              subtitle: l10n.fontSectionSubtitle,
+              items: {
+                for (final v in AppFontMode.values)
+                  _fontModeLabel(context, v): v,
+              },
+              value: _draft.appFontMode,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(appFontMode: value));
+              },
+            ),
+          ],
+        ),
+      ),
+      3 => HyperosSettingsBlock(
+        title: l10n.languageSectionTitle,
+        child: HyperosListGroup(
+          children: [
+            HyperosSelectTile<String>(
+              label: l10n.languageModeLabel,
+              subtitle: l10n.languageSectionSubtitle,
+              items: buildLocaleMenuMap(context),
+              value: normalizeLocaleTagForDropdown(_draft.appLocaleTag),
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(appLocaleTag: value));
+              },
+            ),
+          ],
+        ),
+      ),
+      4 => HyperosSettingsBlock(
+        title: l10n.homeTitleSectionTitle,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HyperosListGroup(
+              children: [
+                HyperosSelectTile<HomeTitleStyle>(
+                  label: l10n.homeTitleStyleLabel,
+                  subtitle: l10n.homeTitleSectionSubtitle,
+                  items: {
+                    for (final v in HomeTitleStyle.values)
+                      _homeTitleStyleLabel(context, v): v,
+                  },
+                  value: _draft.homeTitleStyle,
+                  onChanged: (value) {
+                    _updateDraft(_draft.copyWith(homeTitleStyle: value));
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            HyperosControlCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _HomeTitleStylePreview(style: _draft.homeTitleStyle),
+                  const SizedBox(height: 8),
+                  Text(
+                    _homeTitleStyleDescription(context, _draft.homeTitleStyle),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      5 => HyperosSettingsBlock(
         title: l10n.themeSeedSectionTitle,
-        subtitle: l10n.themeSeedSectionSubtitle,
-        child: HyperosSelectTile<ForuiTheme>(
-          label: l10n.themeSeedSectionTitle,
-          items: {for (final v in ForuiTheme.values) _foruiThemeLabel(v): v},
-          value: _draft.foruiTheme,
-          onChanged: (value) {
-            _updateDraft(
-              _draft.copyWith(foruiTheme: value, themeSeedColor: value.seedHex),
-            );
-          },
+        child: HyperosListGroup(
+          children: [
+            HyperosSelectTile<ForuiTheme>(
+              label: l10n.themePreset,
+              subtitle: l10n.themeSeedSectionSubtitle,
+              items: {
+                for (final v in ForuiTheme.values) _foruiThemeLabel(v): v,
+              },
+              value: _draft.foruiTheme,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(
+                    foruiTheme: value,
+                    themeSeedColor: value.seedHex,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
       ),
-      6 => HyperosControlCard(
+      6 => HyperosSettingsBlock(
         title: l10n.timetableBackgroundColorSectionTitle,
-        subtitle: l10n.timetableBackgroundColorSectionSubtitle,
-        child: HyperosHexColorChipGroup(
-          colorHexes: _backgroundColors,
-          selectedHex: _draft.timetablePageBackgroundColor,
-          colorParser: _colorFromHex,
-          onSelectedHex: (color) {
-            _updateDraft(_draft.copyWith(timetablePageBackgroundColor: color));
-          },
+        child: HyperosListGroup(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  HyperosHexColorChipGroup(
+                    colorHexes: _backgroundColors,
+                    selectedHex: _draft.timetablePageBackgroundColor,
+                    colorParser: _colorFromHex,
+                    onSelectedHex: (color) {
+                      _updateDraft(
+                        _draft.copyWith(timetablePageBackgroundColor: color),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.timetableBackgroundColorSectionSubtitle,
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
-      7 => HyperosListGroup(
+      7 => HyperosSettingsBlock(
+        title: l10n.frostedSheetSectionTitle,
+        child: HyperosListGroup(
+          children: [
+            HyperosSwitchTile(
+              title: l10n.frostedBlurEnabledTitle,
+              subtitle: l10n.frostedBlurEnabledSubtitle,
+              value: _draft.frostedBlurEnabled,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(frostedBlurEnabled: value));
+              },
+            ),
+            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  FrostedSheetSettingsPreview(
+                    provider: provider,
+                    settings: _draft,
+                    week: provider.currentWeek,
+                    blurSigma: _draft.frostedSheetBlurSigma,
+                    tintAlpha: _draft.frostedSheetTintAlpha,
+                    barrierAlpha: _draft.frostedSheetBarrierAlpha,
+                    blurEnabled: _draft.frostedBlurEnabled,
+                    onOpenDemoSheet: () =>
+                        showFrostedSheetSettingsDemo(context),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.frostedSheetSectionSubtitle,
+                    style: HyperosTypography.sectionDescription(context),
+                  ),
+                ],
+              ),
+            ),
+            HyperosSliderTile(
+              title: l10n.frostedSheetBlurLabel,
+              value: _draft.frostedSheetBlurSigma,
+              min: 0,
+              max: 24,
+              divisions: 24,
+              valueLabel: _draft.frostedSheetBlurSigma.toStringAsFixed(0),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(frostedSheetBlurSigma: value),
+                  debounce: true,
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            HyperosSliderTile(
+              title: l10n.frostedSheetTintLabel,
+              value: _draft.frostedSheetTintAlpha,
+              min: 0,
+              max: 0.75,
+              divisions: 75,
+              valueLabel: '${(_draft.frostedSheetTintAlpha * 100).round()}%',
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(frostedSheetTintAlpha: value),
+                  debounce: true,
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+      8 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.unifiedCourseCardColorTitle,
@@ -724,6 +858,162 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
           ],
         ],
       ),
+      9 => HyperosSettingsBlock(
+        title: l10n.homePageBackgroundScopeTitle,
+        child: HyperosListGroup(
+          children: [
+            _buildHomePageImageTile(
+              context,
+              l10n: l10n,
+              title: l10n.homePageWallpaperTitle,
+              subtitle: l10n.homePageWallpaperSubtitle,
+              path: resolveHomePageBackdropImagePath(_draft),
+              onPick: _pickHomePageBackdropImage,
+              onClear: () {
+                evictHomePageImageCache(
+                  resolveHomePageBackdropImagePath(_draft),
+                );
+                _updateDraft(
+                  _draft.copyWith(
+                    clearHomePageWallpaperPath: true,
+                    clearHomePageBackgroundImagePath: true,
+                  ),
+                );
+              },
+            ),
+            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
+            HyperosSwitchTile(
+              title: l10n.homePageBackdropFollowsWeekPagerTitle,
+              subtitle: l10n.homePageBackdropFollowsWeekPagerSubtitle,
+              value: _draft.homePageBackdropFollowsWeekPager,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(homePageBackdropFollowsWeekPager: value),
+                );
+              },
+            ),
+            HyperosInsetDivider(indent: HyperosTokens.listTileDividerIndent),
+            HyperosSwitchTile(
+              title: l10n.homePageBackgroundScopeStatusBar,
+              value: HomePageBackgroundScope.includes(
+                _draft.homePageBackgroundScope,
+                HomePageBackgroundScope.statusBar,
+              ),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(
+                    homePageBackgroundScope: HomePageBackgroundScope.toggle(
+                      _draft.homePageBackgroundScope,
+                      HomePageBackgroundScope.statusBar,
+                      enabled: value,
+                    ),
+                  ),
+                );
+              },
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageBackgroundScopeHeader,
+              value: HomePageBackgroundScope.includes(
+                _draft.homePageBackgroundScope,
+                HomePageBackgroundScope.header,
+              ),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(
+                    homePageBackgroundScope: HomePageBackgroundScope.toggle(
+                      _draft.homePageBackgroundScope,
+                      HomePageBackgroundScope.header,
+                      enabled: value,
+                    ),
+                  ),
+                );
+              },
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageBackgroundScopeWeekdayBar,
+              value: HomePageBackgroundScope.includes(
+                _draft.homePageBackgroundScope,
+                HomePageBackgroundScope.weekdayBar,
+              ),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(
+                    homePageBackgroundScope: HomePageBackgroundScope.toggle(
+                      _draft.homePageBackgroundScope,
+                      HomePageBackgroundScope.weekdayBar,
+                      enabled: value,
+                    ),
+                  ),
+                );
+              },
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageBackgroundScopeTimetable,
+              value: HomePageBackgroundScope.includes(
+                _draft.homePageBackgroundScope,
+                HomePageBackgroundScope.timetable,
+              ),
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(
+                    homePageBackgroundScope: HomePageBackgroundScope.toggle(
+                      _draft.homePageBackgroundScope,
+                      HomePageBackgroundScope.timetable,
+                      enabled: value,
+                    ),
+                  ),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                l10n.homePageBackgroundScopeSubtitle,
+                style: HyperosTypography.sectionDescription(context),
+              ),
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageHeaderBlurTitle,
+              subtitle: l10n.homePageHeaderBlurSubtitle,
+              value: _draft.homePageHeaderBlurEnabled,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(homePageHeaderBlurEnabled: value));
+              },
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageWeekdayBarBlurTitle,
+              subtitle: l10n.homePageWeekdayBarBlurSubtitle,
+              value: _draft.homePageWeekdayBarBlurEnabled,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(homePageWeekdayBarBlurEnabled: value),
+                );
+              },
+            ),
+            HyperosSwitchTile(
+              title: l10n.homePageTimeColumnBlurTitle,
+              subtitle: l10n.homePageTimeColumnBlurSubtitle,
+              value: _draft.homePageTimeColumnBlurEnabled,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(homePageTimeColumnBlurEnabled: value),
+                );
+              },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
+                l10n.homePageRegionBlurSectionSubtitle,
+                style: HyperosTypography.sectionDescription(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+      10 => TimetableTextColorSettings(
+        settings: _draft,
+        onChanged: (next) => _updateDraft(next),
+      ),
       _ => const SizedBox.shrink(),
     };
 
@@ -733,6 +1023,71 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [const HyperosSectionGap(), section],
+    );
+  }
+
+  Widget _buildHomePageImageTile(
+    BuildContext context, {
+    required AppLocalizations l10n,
+    required String title,
+    required String subtitle,
+    required String? path,
+    required Future<void> Function() onPick,
+    required VoidCallback onClear,
+  }) {
+    final fileName = path == null || path.isEmpty
+        ? l10n.homePageImageNotSelected
+        : path.split(Platform.pathSeparator).last;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(subtitle, style: HyperosTypography.sectionDescription(context)),
+          const SizedBox(height: 12),
+          Text(fileName, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosButton(
+                  label: l10n.homePagePickImageAction,
+                  onPressed: () => unawaited(onPick()),
+                ),
+              ),
+              if (path != null && path.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                Expanded(
+                  child: HyperosButton(
+                    label: l10n.homePageClearImageAction,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: onClear,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _pickHomePageBackdropImage() async {
+    final targetPath = await pickAndStoreManagedImage(
+      directoryName: 'home_page_wallpaper',
+      filePrefix: 'wallpaper',
+    );
+    if (!mounted || targetPath == null) {
+      return;
+    }
+    evictHomePageImageCache(resolveHomePageBackdropImagePath(_draft));
+    _updateDraft(
+      _draft.copyWith(
+        homePageWallpaperPath: targetPath,
+        clearHomePageBackgroundImagePath: true,
+      ),
     );
   }
 
@@ -925,29 +1280,31 @@ class _ThemeManageScreenState extends State<_ThemeManageScreen> {
                 : checkpointName,
             plainTitle: true,
             child: hasModifications
-                ? Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      HyperosButton(
-                        label: l10n.themeResetToPreset,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: () {
-                          if (settings.themeCheckpointConfig != null) {
-                            _applyThemeWithUndo(
-                              context,
-                              settings.themeCheckpointConfig!,
-                              themeName: checkpointName,
-                            );
-                          }
-                        },
-                      ),
-                      HyperosButton(
-                        label: l10n.themeSaveCurrent,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: () => _showSaveThemeDialog(context),
-                      ),
-                    ],
+                ? HyperosControlCardInset(
+                    child: Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        HyperosButton(
+                          label: l10n.themeResetToPreset,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: () {
+                            if (settings.themeCheckpointConfig != null) {
+                              _applyThemeWithUndo(
+                                context,
+                                settings.themeCheckpointConfig!,
+                                themeName: checkpointName,
+                              );
+                            }
+                          },
+                        ),
+                        HyperosButton(
+                          label: l10n.themeSaveCurrent,
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: () => _showSaveThemeDialog(context),
+                        ),
+                      ],
+                    ),
                   )
                 : const SizedBox.shrink(),
           );
@@ -1696,9 +2053,6 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           HyperosSectionLabel(text: l10n.liveTestingHolidayOverride),
-          HyperosSectionDescription(
-            text: l10n.liveTestingHolidayOverrideSubtitle,
-          ),
           HyperosListGroup(
             children: [
               HyperosSwitchTile(
@@ -1718,7 +2072,7 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
                     : l10n.liveTestingHolidayModeDisabled,
                 subtitle: _holidayOverrideEnabled
                     ? l10n.liveTestingHolidayModeEnabledDesc
-                    : l10n.liveTestingHolidayModeDisabledDesc,
+                    : l10n.liveTestingHolidayOverrideSubtitle,
               ),
             ],
           ),
@@ -2204,7 +2558,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   await liveService.initialize();
   await liveService.recordDiagnosticEvent(
     'live_update_test_requested',
-    'User requested manual live island test notification',
+    AppLogMessages.liveUpdateTestRequested,
     extras: {'from': 'settings_screen', 'currentWeek': provider.currentWeek},
   );
 
@@ -2212,7 +2566,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   if (selection == null) {
     await liveService.recordDiagnosticEvent(
       'live_update_test_no_selection',
-      'Manual live island test found no eligible course',
+      AppLogMessages.liveUpdateTestNoSelection,
       extras: {'weekday': now.weekday},
     );
     if (!context.mounted) return;
@@ -2233,7 +2587,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   final resolvedShortName = provider.resolveCourseShortName(baseCourse);
   await liveService.recordDiagnosticEvent(
     'live_update_test_selection_ready',
-    'Manual live island test resolved target course',
+    AppLogMessages.liveUpdateTestSelectionReady,
     extras: {
       'courseName': baseCourse.name,
       'stage': selection.stage.name,
@@ -2266,7 +2620,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     await liveService.recordDiagnosticEvent(
       'live_update_test_suspend_sync',
-      'Temporarily suspended scheduled live update sync for manual test',
+      AppLogMessages.liveUpdateTestSuspendSync,
       extras: {
         'untilMillis': end
             .add(const Duration(seconds: 20))
@@ -2288,7 +2642,7 @@ Future<void> _showTestOptions(BuildContext context) async {
         );
     await liveService.recordDiagnosticEvent(
       'live_update_test_starting',
-      'Manual live island test is starting native live update',
+      AppLogMessages.liveUpdateTestStarting,
       extras: {
         'courseName': testCourse.name,
         'startAtMillis': start.millisecondsSinceEpoch,
@@ -2344,7 +2698,7 @@ Future<void> _showTestOptions(BuildContext context) async {
     );
     await liveService.recordDiagnosticEvent(
       'live_update_test_started',
-      'Manual live island test successfully requested native live update',
+      AppLogMessages.liveUpdateTestStarted,
       extras: {
         'courseName': testCourse.name,
         'stage': LiveActivityStage.beforeClass.name,
@@ -2359,7 +2713,7 @@ Future<void> _showTestOptions(BuildContext context) async {
   } catch (e, stackTrace) {
     await UmengAnalyticsService.reportDiagnostic(
       'live_update_test_failed',
-      'Manual live island test failed before native island appeared',
+      AppLogMessages.liveUpdateTestFailed,
       error: e,
       stackTrace: stackTrace,
       dedupeKey: 'live_update_test_failed',
@@ -2435,79 +2789,68 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
     if (!_draft.widgetShowCountdown && section >= 3) {
       section += 1;
     }
-    return switch (section) {
-      0 => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosControlCard(
-            title: l10n.homeWidgetQuickAddTitle,
-            subtitle: _isCheckingPinSupport
-                ? l10n.homeWidgetCheckingPinSupport
-                : (_canRequestPinWidget
-                      ? l10n.homeWidgetPinSupported
-                      : l10n.homeWidgetPinUnsupported),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildPinWidgetButton(
-                        HomeWidgetPinTarget.compact22,
-                      ),
+
+    final Widget content = switch (section) {
+      0 => HyperosControlCard(
+        title: l10n.homeWidgetQuickAddTitle,
+        subtitle: _isCheckingPinSupport
+            ? l10n.homeWidgetCheckingPinSupport
+            : (_canRequestPinWidget
+                  ? l10n.homeWidgetPinSupported
+                  : l10n.homeWidgetPinUnsupported),
+        child: HyperosControlCardInset(
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPinWidgetButton(HomeWidgetPinTarget.compact22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPinWidgetButton(
+                      HomeWidgetPinTarget.miniList22,
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildPinWidgetButton(
-                        HomeWidgetPinTarget.miniList22,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildPinWidgetButton(
-                        HomeWidgetPinTarget.medium24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildPinWidgetButton(HomeWidgetPinTarget.large44),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildPinWidgetButton(HomeWidgetPinTarget.medium24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildPinWidgetButton(HomeWidgetPinTarget.large44),
+                  ),
+                ],
+              ),
+            ],
           ),
-          const HyperosSectionGap(),
-        ],
+        ),
       ),
-      1 => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosControlCard(
-            title: l10n.homeWidgetTodayCourseTitle,
-            subtitle: l10n.homeWidgetTodayCourseSubtitle,
-            child: HyperosSelectTile<WidgetBackgroundStyle>(
-              label: l10n.homeWidgetBackgroundStyleLabel,
-              items: {
-                for (final v in WidgetBackgroundStyle.values)
-                  _widgetBackgroundStyleLabel(context, v): v,
-              },
-              value: _draft.widgetBackgroundStyle,
-              onChanged: (value) {
-                _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
-              },
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
+      1 => HyperosControlCard(
+        title: l10n.homeWidgetTodayCourseTitle,
+        subtitle: l10n.homeWidgetTodayCourseSubtitle,
+        edgeToEdge: true,
+        child: HyperosSelectTile<WidgetBackgroundStyle>(
+          label: l10n.homeWidgetBackgroundStyleLabel,
+          items: {
+            for (final v in WidgetBackgroundStyle.values)
+              _widgetBackgroundStyleLabel(context, v): v,
+          },
+          value: _draft.widgetBackgroundStyle,
+          onChanged: (value) {
+            _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
+          },
+        ),
       ),
       2 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.homeWidgetShowLocationTitle,
+            subtitle: l10n.homeWidgetShowLocationSubtitle,
             value: _draft.widgetShowLocation,
             onChanged: (value) {
               _updateDraft(_draft.copyWith(widgetShowLocation: value));
@@ -2515,6 +2858,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
           HyperosSwitchTile(
             title: l10n.homeWidgetShowCountdownTitle,
+            subtitle: l10n.homeWidgetShowCountdownSubtitle,
             value: _draft.widgetShowCountdown,
             onChanged: (value) {
               _updateDraft(_draft.copyWith(widgetShowCountdown: value));
@@ -2522,6 +2866,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
           HyperosSwitchTile(
             title: l10n.homeWidgetHideCompletedTitle,
+            subtitle: l10n.homeWidgetHideCompletedSubtitle,
             value: _draft.widgetHideCompletedCourses,
             onChanged: (value) {
               _updateDraft(_draft.copyWith(widgetHideCompletedCourses: value));
@@ -2529,6 +2874,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
           HyperosSwitchTile(
             title: l10n.homeWidgetShowTomorrowTitle,
+            subtitle: l10n.homeWidgetShowTomorrowSubtitle,
             value: _draft.widgetShowTomorrowCourses,
             onChanged: (value) {
               _updateDraft(_draft.copyWith(widgetShowTomorrowCourses: value));
@@ -2536,95 +2882,104 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
         ],
       ),
-      3 => Column(
+      3 => HyperosControlCard(
+        title: l10n.homeWidgetCountdownLeadTitle,
+        subtitle: l10n.homeWidgetCountdownLeadSubtitle,
+        edgeToEdge: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            HyperosSelectTile<int>(
+              label: l10n.homeWidgetCountdownLeadTitle,
+              items: {
+                l10n.homeWidgetCountdownLeadAlways: 0,
+                for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
+                  l10n.beforeClassMinutesOption(m): m,
+              },
+              value: _draft.widgetCountdownLeadMinutes,
+              onChanged: (value) {
+                _updateDraft(
+                  _draft.copyWith(widgetCountdownLeadMinutes: value),
+                );
+              },
+            ),
+            HyperosSelectTile<LiveCountdownTextStyle>(
+              label: l10n.widgetCountdownStyleTitle,
+              items: {
+                for (final v in LiveCountdownTextStyle.values) v.label: v,
+              },
+              value: _draft.widgetCountdownTextStyle,
+              onChanged: (value) {
+                _updateDraft(_draft.copyWith(widgetCountdownTextStyle: value));
+              },
+            ),
+          ],
+        ),
+      ),
+      4 => HyperosControlCard(
+        title: l10n.homeWidgetHeightAdjustTitle,
+        plainTitle: true,
+        child: HyperosControlCardInset(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HyperosSliderTile(
+                title: _widgetHeightAdjustmentLabel(l10n),
+                value: _draft.widgetHeightAdjustment,
+                min: _defaultWidgetHeightAdjustment - 16,
+                max: _defaultWidgetHeightAdjustment + 16,
+                divisions: 32,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(widgetHeightAdjustment: value),
+                  debounce: true,
+                ),
+              ),
+              const SizedBox(height: 12),
+              HyperosSliderTile(
+                title: l10n.homeWidgetCornerRadiusTitle,
+                valueLabel: '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
+                value: _draft.widgetCornerRadius,
+                min: _defaultWidgetCornerRadius - 14,
+                max: _defaultWidgetCornerRadius + 14,
+                divisions: 28,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(widgetCornerRadius: value),
+                  debounce: true,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      _ => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const HyperosSectionGap(),
-          HyperosControlCard(
-            title: l10n.homeWidgetCountdownLeadTitle,
-            subtitle: l10n.homeWidgetCountdownLeadSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HyperosSelectTile<int>(
-                  label: l10n.homeWidgetCountdownLeadTitle,
-                  items: {
-                    l10n.homeWidgetCountdownLeadAlways: 0,
-                    for (final m in const [1, 5, 10, 15, 20, 30, 40, 50, 60])
-                      l10n.beforeClassMinutesOption(m): m,
-                  },
-                  value: _draft.widgetCountdownLeadMinutes,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(widgetCountdownLeadMinutes: value),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-                HyperosSelectTile<LiveCountdownTextStyle>(
-                  label: l10n.widgetCountdownStyleTitle,
-                  items: {
-                    for (final v in LiveCountdownTextStyle.values) v.label: v,
-                  },
-                  value: _draft.widgetCountdownTextStyle,
-                  onChanged: (value) {
-                    _updateDraft(
-                      _draft.copyWith(widgetCountdownTextStyle: value),
-                    );
-                  },
-                ),
-              ],
+          HyperosSectionLabel(text: l10n.homeWidgetDescriptionTitle),
+          Padding(
+            padding: const EdgeInsets.only(
+              left: HyperosTokens.sectionLabelInset,
+              right: HyperosTokens.sectionLabelInset,
+            ),
+            child: Text(
+              l10n.homeWidgetDescriptionText,
+              style: HyperosTypography.sectionDescription(context),
+              softWrap: true,
             ),
           ),
-          const HyperosSectionGap(),
         ],
-      ),
-      4 => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const HyperosSectionGap(),
-          HyperosControlCard(
-            title: l10n.homeWidgetHeightAdjustTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                HyperosSliderTile(
-                  title: _widgetHeightAdjustmentLabel(l10n),
-                  value: _draft.widgetHeightAdjustment,
-                  min: _defaultWidgetHeightAdjustment - 16,
-                  max: _defaultWidgetHeightAdjustment + 16,
-                  divisions: 32,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(widgetHeightAdjustment: value),
-                    debounce: true,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                HyperosSliderTile(
-                  title: l10n.homeWidgetCornerRadiusTitle,
-                  valueLabel:
-                      '${_draft.widgetCornerRadius.toStringAsFixed(0)}dp',
-                  value: _draft.widgetCornerRadius,
-                  min: _defaultWidgetCornerRadius - 14,
-                  max: _defaultWidgetCornerRadius + 14,
-                  divisions: 28,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(widgetCornerRadius: value),
-                    debounce: true,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const HyperosSectionGap(),
-        ],
-      ),
-      _ => HyperosControlCard(
-        title: l10n.homeWidgetDescriptionTitle,
-        subtitle: l10n.homeWidgetDescriptionText,
-        child: const SizedBox.shrink(),
       ),
     };
+
+    if (index == 0) {
+      return content;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [const HyperosSectionGap(), content],
+    );
   }
 
   String _widgetHeightAdjustmentLabel(AppLocalizations l10n) {
@@ -2776,13 +3131,16 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
       title: Text(l10n.layoutSettingsTitle),
       child: Column(
         children: [
-          TimetableWeekPreview(
-            provider: provider,
-            settings: _draft,
-            week: provider.currentWeek,
+          HyperosBlurredBodyInset(
+            child: TimetableWeekPreview(
+              provider: provider,
+              settings: _draft,
+              week: provider.currentWeek,
+            ),
           ),
           Expanded(
             child: HyperosListView(
+              includeHeaderInset: false,
               itemCount: _layoutSectionCount,
               itemBuilder: _buildLayoutSection,
             ),
@@ -3557,9 +3915,7 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
     parts.add(l10n.liveDisplaySummaryLocation);
   }
   if (settings.showCountdown) {
-    parts.add(
-      l10n.liveDisplaySummaryCountdown(settings.countdownTextStyle.label),
-    );
+    parts.add(l10n.liveDisplaySummaryCountdownShort);
   } else if (settings.showStageText) {
     parts.add(l10n.liveDisplaySummaryStageText);
   }
@@ -3569,7 +3925,10 @@ String _liveDisplaySummary(BuildContext context, LiveDisplaySettings settings) {
   if (parts.isEmpty) {
     return l10n.liveDisplaySummaryMinimal;
   }
-  return parts.join(' / ');
+  if (parts.length <= 2) {
+    return parts.join('·');
+  }
+  return l10n.liveDisplaySummaryMore(parts.first, parts.length);
 }
 
 Color _colorFromHex(String hexColor) {

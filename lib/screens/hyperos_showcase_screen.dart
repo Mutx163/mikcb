@@ -543,39 +543,45 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           _section('颜色选择 · ColorChip'),
           HyperosControlCard(
             title: 'HyperosColorChip',
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                for (final color in _chipColors)
-                  HyperosColorChip(
-                    color: color,
-                    selected: _singleChipColor == color,
-                    onTap: () => setState(() => _singleChipColor = color),
-                  ),
-              ],
+            child: HyperosControlCardInset(
+              child: Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  for (final color in _chipColors)
+                    HyperosColorChip(
+                      color: color,
+                      selected: _singleChipColor == color,
+                      onTap: () => setState(() => _singleChipColor = color),
+                    ),
+                ],
+              ),
             ),
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
             title: 'HyperosColorChipGroup',
-            child: HyperosColorChipGroup(
-              colors: _chipColors,
-              selectedColor: _selectedChipColor,
-              onSelected: (c) => setState(() => _selectedChipColor = c),
+            child: HyperosControlCardInset(
+              child: HyperosColorChipGroup(
+                colors: _chipColors,
+                selectedColor: _selectedChipColor,
+                onSelected: (c) => setState(() => _selectedChipColor = c),
+              ),
             ),
           ),
           const HyperosSectionGap(),
           HyperosControlCard(
             title: 'HyperosHexColorChipGroup',
-            child: HyperosHexColorChipGroup(
-              colorHexes: _hexColors,
-              selectedHex: _selectedHexColor,
-              colorParser: (hex) => parseHexColorOrFallback(
-                hex,
-                fallback: HyperosIconColors.blue,
+            child: HyperosControlCardInset(
+              child: HyperosHexColorChipGroup(
+                colorHexes: _hexColors,
+                selectedHex: _selectedHexColor,
+                colorParser: (hex) => parseHexColorOrFallback(
+                  hex,
+                  fallback: HyperosIconColors.blue,
+                ),
+                onSelectedHex: (hex) => setState(() => _selectedHexColor = hex),
               ),
-              onSelectedHex: (hex) => setState(() => _selectedHexColor = hex),
             ),
           ),
           const HyperosSectionGap(),

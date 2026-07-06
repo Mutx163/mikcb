@@ -10,6 +10,7 @@ import 'package:university_timetable/models/timetable_settings.dart';
 import 'package:university_timetable/providers/timetable_provider.dart';
 import 'package:university_timetable/screens/timetable_settings_screen.dart';
 import 'package:university_timetable/services/storage_service.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import '../helpers_test_app.dart';
 
 Future<void> _pumpScreen(WidgetTester tester) async {
@@ -53,23 +54,23 @@ void main() {
         .setMockMethodCallHandler(analyticsChannel, (call) async => null);
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(liveChannel, (call) async {
-      switch (call.method) {
-        case 'initialize':
-          return null;
-        case 'getLiveUpdateDebugStatus':
-          return {
-            'summary': {
-              'serviceRunning': false,
-              'isActuallyPromotable': false,
-              'statusText': '读取成功',
-              'notIslandReason': '',
-            },
-            'recentDiagnostics': <String, dynamic>{},
-          };
-        default:
-          return null;
-      }
-    });
+          switch (call.method) {
+            case 'initialize':
+              return null;
+            case 'getLiveUpdateDebugStatus':
+              return {
+                'summary': {
+                  'serviceRunning': false,
+                  'isActuallyPromotable': false,
+                  'statusText': '读取成功',
+                  'notIslandReason': '',
+                },
+                'recentDiagnostics': <String, dynamic>{},
+              };
+            default:
+              return null;
+          }
+        });
   });
 
   tearDown(() {
@@ -81,8 +82,9 @@ void main() {
         .setMockMethodCallHandler(liveChannel, null);
   });
 
-  testWidgets('live testing screen keeps one-second auto refresh cadence',
-      (tester) async {
+  testWidgets('live testing screen keeps one-second auto refresh cadence', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -95,9 +97,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: TimetableSettingsScreen(),
-        ),
+        child: const TestApp(home: TimetableSettingsScreen()),
       ),
     );
     await _pumpScreen(tester);
@@ -122,8 +122,9 @@ void main() {
     expect(find.textContaining('上次刷新：'), findsOneWidget);
   });
 
-  testWidgets('before class reminder popup includes 30 to 60 minute options',
-      (tester) async {
+  testWidgets('before class reminder popup includes 30 to 60 minute options', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -136,9 +137,7 @@ void main() {
     await tester.pumpWidget(
       ChangeNotifierProvider.value(
         value: provider,
-        child: const TestApp(
-          home: TimetableSettingsScreen(),
-        ),
+        child: const TestApp(home: TimetableSettingsScreen()),
       ),
     );
     await _pumpScreen(tester);
@@ -170,5 +169,61 @@ void main() {
     for (final minutes in [30, 40, 50, 60]) {
       expect(find.text('$minutes 分钟'), findsWidgets);
     }
+  });
+
+  testWidgets('main settings preserves scroll after subpage pop', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: TimetableSettingsScreen()),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    final homeScrollable = find.descendant(
+      of: find.byType(HyperosListView).first,
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text('超级岛与通知'),
+      200,
+      scrollable: homeScrollable,
+    );
+    await tester.pumpAndSettle();
+
+    final pixelsBefore = tester
+        .state<ScrollableState>(homeScrollable)
+        .position
+        .pixels;
+    expect(pixelsBefore, greaterThan(100));
+
+    final liveTile = find.widgetWithText(HyperosListTile, '超级岛与通知');
+    final onTap = tester.widget<HyperosListTile>(liveTile).onTap;
+    expect(onTap, isNotNull);
+    onTap!.call();
+    await tester.pumpAndSettle();
+    expect(find.text('提醒时段'), findsWidgets);
+
+    Navigator.of(tester.element(find.text('提醒时段'))).pop();
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+
+    final pixelsAfter = tester
+        .state<ScrollableState>(homeScrollable)
+        .position
+        .pixels;
+    expect(pixelsAfter, closeTo(pixelsBefore, 1));
   });
 }

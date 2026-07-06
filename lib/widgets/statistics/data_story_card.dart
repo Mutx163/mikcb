@@ -161,14 +161,14 @@ class DataStoryList extends StatelessWidget {
     }
 
     return Column(
-      children: stories
-          .map(
-            (story) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: DataStoryCard(story: story),
-            ),
-          )
-          .toList(),
+      children: List.generate(stories.length, (index) {
+        final story = stories[index];
+        final isLast = index == stories.length - 1;
+        return Padding(
+          padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
+          child: DataStoryCard(story: story),
+        );
+      }),
     );
   }
 }

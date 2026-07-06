@@ -31,7 +31,7 @@ class WidgetRefreshWorker(
             HomeWidgetStorage.rescheduleRefresh(applicationContext)
             Result.success()
         } catch (e: Exception) {
-            Log.w(TAG, "Widget refresh worker failed", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_WIDGET_REFRESH_WORKER_FAILED, e)
             Result.retry()
         }
     }

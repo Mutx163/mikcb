@@ -68,7 +68,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
-        child: ListView(
+        child: HyperosListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             _buildCompactHero(context, colors: colors, typo: typo),

@@ -1,7 +1,8 @@
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint, kDebugMode;
+import '../../logging/app_debug_log.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/services.dart';
 
 /// Android-native RGBA blur (RenderEffect API 31+) with Dart Gaussian fallback.
@@ -40,12 +41,14 @@ abstract final class FrostedBlurService {
     }
   }
 
-  /// Blurs [source] and returns a new [ui.Image]. Disposes [source].
+  /// Blurs [source] and returns a new [ui.Image].
   ///
-  /// [sigmaPx] is the Gaussian sigma in **snapshot pixel** coordinates.
+  /// When [disposeSource] is true (default), [source] is disposed after the
+  /// pixels are read. CFH passes false while the source may still be painted.
   static Future<ui.Image?> blurImage(
     ui.Image source, {
     double sigmaPx = 8,
+    bool disposeSource = true,
   }) async {
     final width = source.width;
     final height = source.height;
@@ -67,7 +70,9 @@ abstract final class FrostedBlurService {
             'radius': radiusPx,
           });
           if (result != null && result.length == width * height * 4) {
-            source.dispose();
+            if (disposeSource) {
+              source.dispose();
+            }
             _setBlurEngine('native');
             _logBlurPath('native-rgba', radiusPx);
             return _imageFromRgba(result, width, height);
@@ -80,7 +85,7 @@ abstract final class FrostedBlurService {
 
     _setBlurEngine('dart');
     _logBlurPath('dart', radiusPx);
-    return _blurInDart(source, radiusPx);
+    return _blurInDart(source, radiusPx, disposeSource: disposeSource);
   }
 
   static void _setBlurEngine(String engine) {
@@ -89,7 +94,7 @@ abstract final class FrostedBlurService {
 
   static void _logBlurPath(String path, double sigma) {
     if (kDebugMode) {
-      debugPrint('[FrostedBlur] path=$path sigma=$sigma');
+      appDebugLog('FrostedBlur', '路径=$path sigma=$sigma');
     }
   }
 
@@ -110,7 +115,11 @@ abstract final class FrostedBlurService {
     return frame.image;
   }
 
-  static Future<ui.Image?> _blurInDart(ui.Image source, double sigmaPx) async {
+  static Future<ui.Image?> _blurInDart(
+    ui.Image source,
+    double sigmaPx, {
+    required bool disposeSource,
+  }) async {
     final width = source.width;
     final height = source.height;
     final recorder = ui.PictureRecorder();
@@ -122,7 +131,9 @@ abstract final class FrostedBlurService {
         tileMode: ui.TileMode.clamp,
       );
     canvas.drawImage(source, ui.Offset.zero, paint);
-    source.dispose();
+    if (disposeSource) {
+      source.dispose();
+    }
     final picture = recorder.endRecording();
     final blurred = await picture.toImage(width, height);
     picture.dispose();

@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+import '../logging/app_log_messages.dart';
 import 'lan_edit_audit_log.dart';
 import 'lan_edit_api_handlers.dart';
 import 'lan_edit_foreground_service.dart';
@@ -51,7 +52,7 @@ class LanEditServerService {
     }
     lanEditAuditInfo(
       'lan_edit_session_started',
-      'LAN edit session started',
+      AppLogMessages.lanEditSessionStarted,
       extras: {'port': _server!.port},
     );
   }
@@ -72,11 +73,8 @@ class LanEditServerService {
       unawaited(LanEditForegroundBridge.stop());
       lanEditAuditInfo(
         'lan_edit_session_stopped',
-        'LAN edit session stopped',
-        extras: {
-          'reason': reason,
-          if (port != null) 'port': port,
-        },
+        AppLogMessages.lanEditSessionStopped,
+        extras: {'reason': reason, if (port != null) 'port': port},
       );
     }
     onStopped?.call();

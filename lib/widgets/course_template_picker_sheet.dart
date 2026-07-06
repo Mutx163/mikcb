@@ -53,10 +53,6 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (subtitle != null) ...[
-            HyperosSectionDescription(text: subtitle!),
-            const SizedBox(height: 12),
-          ],
           ConstrainedBox(
             constraints: BoxConstraints(maxHeight: maxListHeight),
             child: SingleChildScrollView(

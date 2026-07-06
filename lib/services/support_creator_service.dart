@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../logging/app_debug_log.dart';
 import 'app_update_service.dart';
 import '../utils/async_utils.dart';
 
@@ -45,8 +46,9 @@ class SupportDonorData {
   factory SupportDonorData.fromJson(Map<String, dynamic> json) {
     final donorItems = (json['donors'] as List<dynamic>? ?? const [])
         .whereType<Map>()
-        .map((item) =>
-            SupportDonorEntry.fromJson(Map<String, dynamic>.from(item)))
+        .map(
+          (item) => SupportDonorEntry.fromJson(Map<String, dynamic>.from(item)),
+        )
         .where((item) => item.name.isNotEmpty)
         .toList();
     return SupportDonorData(
@@ -59,20 +61,18 @@ class SupportDonorData {
 }
 
 class SupportCreatorService {
-  static const MethodChannel _channel =
-      MethodChannel('com.mutx163.qingyu/support');
+  static const MethodChannel _channel = MethodChannel(
+    'com.mutx163.qingyu/support',
+  );
   static const String _donorsUrl =
       'https://raw.githubusercontent.com/Mutx163/mikcb/main/docs/donors.json';
 
   final http.Client _client;
 
-  SupportCreatorService({
-    http.Client? client,
-  }) : _client = client ?? http.Client();
+  SupportCreatorService({http.Client? client})
+    : _client = client ?? http.Client();
 
-  Future<SupportDonorData> fetchDonors({
-    String? mirrorUrlPrefix,
-  }) async {
+  Future<SupportDonorData> fetchDonors({String? mirrorUrlPrefix}) async {
     final normalizedMirrorPrefix = _normalizeMirrorUrlPrefix(mirrorUrlPrefix);
     final candidateUrls = buildMirrorCandidateUrls(
       _donorsUrl,
@@ -80,9 +80,12 @@ class SupportCreatorService {
     );
 
     final sw = Stopwatch()..start();
-    debugPrint('[SupportCreator] fetchDonors 开始，候选 ${candidateUrls.length} 个');
+    appDebugLog(
+      'SupportCreator',
+      'fetchDonors 开始，候选 ${candidateUrls.length} 个',
+    );
     for (var i = 0; i < candidateUrls.length; i++) {
-      debugPrint('[SupportCreator]   候选 $i: ${candidateUrls[i]}');
+      appDebugLog('SupportCreator', '候选 $i：${candidateUrls[i]}');
     }
 
     final result = await raceFutures<http.Response, SupportDonorData>(
@@ -98,26 +101,31 @@ class SupportCreatorService {
             .timeout(const Duration(seconds: 6));
       }).toList(),
       (response) {
-        debugPrint('[SupportCreator] 收到响应 ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms');
+        appDebugLog(
+          'SupportCreator',
+          '收到响应 ${response.statusCode}，耗时 ${sw.elapsedMilliseconds}ms',
+        );
         if (response.statusCode != 200) return null;
         final decoded = jsonDecode(utf8.decode(response.bodyBytes));
         if (decoded is! Map) {
-          debugPrint('[SupportCreator] 响应不是 Map 格式');
+          appDebugLog('SupportCreator', '响应不是 Map 格式');
           return null;
         }
-        final data = SupportDonorData.fromJson(Map<String, dynamic>.from(decoded));
-        debugPrint('[SupportCreator] 解析成功，${data.donors.length} 位捐赠者');
+        final data = SupportDonorData.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+        appDebugLog('SupportCreator', '解析成功，${data.donors.length} 位捐赠者');
         return data;
       },
     );
 
     if (result.winner != null) {
-      debugPrint('[SupportCreator] 竞争胜出，总耗时 ${sw.elapsedMilliseconds}ms');
+      appDebugLog('SupportCreator', '竞争胜出，总耗时 ${sw.elapsedMilliseconds}ms');
       return result.winner!;
     }
 
     final lastError = result.errors.isNotEmpty ? result.errors.last : null;
-    debugPrint('[SupportCreator] 全部失败，errors: ${result.errors}');
+    appDebugLog('SupportCreator', '全部失败，errors：${result.errors}');
     throw Exception('加载鸣谢名单失败：$lastError');
   }
 
@@ -127,14 +135,11 @@ class SupportCreatorService {
   }) async {
     final byteData = await rootBundle.load(assetPath);
     final bytes = Uint8List.sublistView(byteData);
-    final savedUri = await _channel.invokeMethod<String>(
-      'saveImageToGallery',
-      {
-        'bytes': bytes,
-        'fileName': fileName,
-        'mimeType': 'image/png',
-      },
-    );
+    final savedUri = await _channel.invokeMethod<String>('saveImageToGallery', {
+      'bytes': bytes,
+      'fileName': fileName,
+      'mimeType': 'image/png',
+    });
     return savedUri != null && savedUri.isNotEmpty;
   }
 
@@ -144,20 +149,17 @@ class SupportCreatorService {
     String? title,
     String? description,
   }) {
-    return _channel.invokeMethod<int>(
-      'enqueueSystemDownload',
-      {
-        'url': url,
-        'fileName': fileName,
-        'title': title,
-        'description': description,
-      },
-    );
+    return _channel.invokeMethod<int>('enqueueSystemDownload', {
+      'url': url,
+      'fileName': fileName,
+      'title': title,
+      'description': description,
+    });
   }
 
   String? _normalizeMirrorUrlPrefix(String? prefix) {
-    final candidate =
-        (prefix ?? AppUpdateService.defaultMirrorUrlPrefix).trim();
+    final candidate = (prefix ?? AppUpdateService.defaultMirrorUrlPrefix)
+        .trim();
     if (candidate.isEmpty) {
       return null;
     }

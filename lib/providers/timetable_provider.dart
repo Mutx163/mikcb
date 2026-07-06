@@ -13,6 +13,8 @@ import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
 import '../services/app_analytics.dart';
+import '../logging/app_debug_log.dart';
+import '../logging/app_log_messages.dart';
 import '../services/app_log_service.dart';
 import '../services/data_transfer_service.dart';
 import '../services/holiday_service.dart';
@@ -22,6 +24,7 @@ import '../services/storage_service.dart';
 import '../services/user_data_sync_hooks.dart';
 import '../services/ics_import_service.dart';
 import '../services/miui_live_activities_service.dart';
+import '../utils/home_page_background.dart';
 import 'timetable/time_scheme_logic.dart';
 import 'timetable/import_export_logic.dart';
 import 'timetable/live_activity_logic.dart';
@@ -368,6 +371,8 @@ class TimetableProvider with ChangeNotifier {
     }
     _applyProfileState(activeProfile);
 
+    await precacheHomePageBackdropImage(_settings);
+
     // --- 迁移逻辑：不阻塞首帧，后台完成 ---
     unawaited(_runAppLogsMigrationIfNeeded(activeProfile));
 
@@ -413,7 +418,7 @@ class TimetableProvider with ChangeNotifier {
       unawaited(
         AppLogService.instance.info(
           'app_logs_default_migrated',
-          'Enabled app log recording during migration',
+          AppLogMessages.appLogsDefaultMigrated,
           extras: {'profileId': activeProfile.id},
           force: true,
         ),
@@ -728,11 +733,11 @@ class TimetableProvider with ChangeNotifier {
       unawaited(
         AppLogService.instance.warn(
           'timetable_load_settings_failed',
-          'Error loading timetable settings',
+          AppLogMessages.timetableLoadSettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Error loading timetable settings: $e');
+      appDebugLog('TimetableProvider', '加载课表设置失败：$e');
     }
   }
 
@@ -752,11 +757,11 @@ class TimetableProvider with ChangeNotifier {
       unawaited(
         AppLogService.instance.warn(
           'timetable_load_courses_failed',
-          'Error loading courses',
+          AppLogMessages.timetableLoadCoursesFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Error loading courses: $e');
+      appDebugLog('TimetableProvider', '加载课程数据失败：$e');
     }
 
     _isLoading = false;
@@ -772,11 +777,11 @@ class TimetableProvider with ChangeNotifier {
       unawaited(
         AppLogService.instance.warn(
           'timetable_load_current_week_failed',
-          'Error loading current week',
+          AppLogMessages.timetableLoadCurrentWeekFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Error loading current week: $e');
+      appDebugLog('TimetableProvider', '加载当前周次失败：$e');
     }
   }
 
@@ -1645,12 +1650,16 @@ class TimetableProvider with ChangeNotifier {
       return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
     }
 
+    final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);
     _settings = _normalizeSettingsWithTimeScheme(settings);
     _currentDateWeek = _resolveCurrentDateWeek();
     await _persistActiveProfileState();
     unawaited(_syncNativeRuntimePreferences());
     _lastLiveSnapshotSignature = null;
     _currentLiveCourseId = null;
+    if (resolveHomePageBackdropImagePath(_settings) != previousBackdropPath) {
+      await precacheHomePageBackdropImage(_settings);
+    }
     notifyListeners();
     unawaited(_syncLiveScheduleSnapshot());
     unawaited(_updateLiveActivity(syncScheduleSnapshot: false));

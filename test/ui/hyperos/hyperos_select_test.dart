@@ -25,6 +25,32 @@ void main() {
       expect(find.byType(HyperosUpDownChevron), findsOneWidget);
     });
 
+    testWidgets('shows subtitle below label with multiline wrap', (
+      tester,
+    ) async {
+      const subtitle =
+          'Follow system light/dark mode and apply detected theme automatically.';
+
+      await tester.pumpWidget(
+        TestApp(
+          home: SizedBox(
+            width: 280,
+            child: HyperosSelectTile<String>(
+              label: 'Theme mode',
+              subtitle: subtitle,
+              items: const {'Light': 'light', 'Dark': 'dark'},
+              value: 'light',
+              onChanged: _noop,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Theme mode'), findsOneWidget);
+      expect(find.text(subtitle), findsOneWidget);
+      expect(find.text('Light'), findsOneWidget);
+    });
+
     testWidgets('aligns current value next to chevron', (tester) async {
       await tester.pumpWidget(
         TestApp(
@@ -71,6 +97,72 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Minutes before class'), findsOneWidget);
       expect(find.text('5 min'), findsOneWidget);
+    });
+
+    testWidgets(
+      'inside HyperosControlCard chevron aligns near card right edge',
+      (tester) async {
+        const listWidth = 360.0;
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.binding.setSurfaceSize(const Size(listWidth, 640));
+
+        await tester.pumpWidget(
+          TestApp(
+            home: ListView(
+              children: [
+                HyperosControlCard(
+                  title: 'Display mode',
+                  child: HyperosSelectTile<String>(
+                    label: 'Theme mode',
+                    items: const {'Light': 'light', 'Dark': 'dark'},
+                    value: 'light',
+                    onChanged: _noop,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+        final cardRect = tester.getRect(find.byType(HyperosControlCard));
+        final chevronRect = tester.getRect(find.byType(HyperosUpDownChevron));
+
+        expect(
+          cardRect.right - chevronRect.right,
+          closeTo(HyperosTokens.rowPaddingUniform.right, 1),
+        );
+      },
+    );
+
+    testWidgets('last row extends to card bottom for press highlight', (
+      tester,
+    ) async {
+      const listWidth = 360.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(listWidth, 640));
+
+      await tester.pumpWidget(
+        TestApp(
+          home: ListView(
+            children: [
+              HyperosControlCard(
+                title: 'Display mode',
+                child: HyperosSelectTile<String>(
+                  label: 'Theme mode',
+                  items: const {'Light': 'light', 'Dark': 'dark'},
+                  value: 'light',
+                  onChanged: _noop,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      final cardRect = tester.getRect(find.byType(HyperosControlCard));
+      final rowRect = tester.getRect(find.byType(HyperosPressableRow));
+
+      expect(cardRect.bottom - rowRect.bottom, closeTo(0, 1));
     });
 
     testWidgets('opens sheet and reports selection', (tester) async {
@@ -142,7 +234,7 @@ void main() {
       );
       final cardRect = tester.getRect(cardMaterial);
       const horizontalInset = HyperosMiuixBasicComponent.insideMarginHorizontal;
-      const bottomInset = HyperosMiuixBasicComponent.insideMarginHorizontal * 2;
+      const bottomInset = HyperosMiuixBasicComponent.selectSheetBottomMargin;
       expect(cardRect.left, closeTo(horizontalInset, 1));
       expect(cardRect.right, closeTo(screenWidth - horizontalInset, 1));
       expect(cardRect.bottom, closeTo(screenHeight - bottomInset, 1));

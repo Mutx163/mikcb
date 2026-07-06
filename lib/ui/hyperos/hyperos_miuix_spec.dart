@@ -238,6 +238,11 @@ abstract final class HyperosMiuixBasicComponent {
   static const insideMarginHorizontal = 16.0;
   static const insideMarginVertical = 16.0;
   static const insideMargin = EdgeInsets.all(16);
+
+  /// Floating select sheet gap above the screen bottom (excludes safe area).
+  /// Slightly tighter than 2× [insideMarginHorizontal] (32) for visual balance.
+  static const selectSheetBottomMargin = 24.0;
+
   static const minHeight = 56.0;
   static const startEndSpacer = 8.0;
   static const bottomActionGap = 8.0;
@@ -483,6 +488,10 @@ abstract final class HyperosMiuixTabRow {
 abstract final class HyperosMiuixDropdown {
   static const arrowWidth = 10.0;
   static const arrowHeight = 16.0;
+
+  /// Vertical gap between ^ and v strokes (~half body2 character).
+  static const arrowChevronGap = HyperosMiuixTypography.body2 / 2;
+
   static const checkIconSize = 20.0;
   static const insideHorizontalPadding = 20.0;
   static const dialogHorizontalPadding = 28.0;
@@ -492,7 +501,9 @@ abstract final class HyperosMiuixDropdown {
   static const popupCornerRadius = 20.0;
   static const popupElevation = 6.0;
   static const popupVerticalGap = 2.0;
-  static const valueEndPadding = 8.0;
+
+  /// Gap between trailing value text and [HyperosUpDownChevron] (~half body2).
+  static const valueEndPadding = arrowChevronGap;
 }
 
 // =============================================================================

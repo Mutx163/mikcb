@@ -47,7 +47,7 @@ class OverviewSection extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: 10),
               child: Divider(
                 height: 1,
                 color: theme.colors.border.withValues(alpha: 0.6),

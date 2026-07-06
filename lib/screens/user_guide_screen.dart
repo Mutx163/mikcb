@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
+import '../widgets/third_party_disclaimer_card.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -215,24 +216,26 @@ class _UserGuideScreenState extends State<UserGuideScreen>
               ? l10n.firstUseGuideTitle
               : l10n.guideAndPermissionsTitle,
         ),
-        child: Column(
-          children: [
-            _buildProgressBar(l10n),
-            Expanded(
-              child: PageView(
-                controller: _pageController,
-                physics: const ClampingScrollPhysics(),
-                onPageChanged: _onPageChanged,
-                children: [
-                  _buildWelcomePage(l10n),
-                  _buildPrivacyPage(l10n),
-                  _buildPermissionsPage(l10n),
-                  _buildTipsPage(l10n),
-                ],
+        child: HyperosBlurredBodyInset(
+          child: Column(
+            children: [
+              _buildProgressBar(l10n),
+              Expanded(
+                child: PageView(
+                  controller: _pageController,
+                  physics: const ClampingScrollPhysics(),
+                  onPageChanged: _onPageChanged,
+                  children: [
+                    _buildWelcomePage(l10n),
+                    _buildPrivacyPage(l10n),
+                    _buildPermissionsPage(l10n),
+                    _buildTipsPage(l10n),
+                  ],
+                ),
               ),
-            ),
-            _buildBottomBar(l10n),
-          ],
+              _buildBottomBar(l10n),
+            ],
+          ),
         ),
       ),
     );
@@ -308,6 +311,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
+        ThirdPartyDisclaimerCard(text: l10n.thirdPartyDisclaimer),
+        const HyperosSectionGap(),
         HyperosCard(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -352,11 +357,6 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 onTap: () => _runWelcomeAction(widget.onRestoreBackup!),
               ),
           ],
-        ),
-        const HyperosSectionGap(),
-        Text(
-          l10n.thirdPartyDisclaimer,
-          style: typo.xs2.copyWith(color: colors.mutedForeground),
         ),
       ],
     );
@@ -475,12 +475,16 @@ class _UserGuideScreenState extends State<UserGuideScreen>
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
         HyperosSectionLabel(text: l10n.guidePermissionsHeader),
-        HyperosSectionDescription(text: l10n.guidePermissionsSubtitle),
         const SizedBox(height: 8),
         HyperosControlCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Text(
+                l10n.guidePermissionsSubtitle,
+                style: HyperosTypography.listDetail(context),
+              ),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(

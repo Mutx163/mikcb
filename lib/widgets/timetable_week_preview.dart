@@ -7,7 +7,9 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
+import '../ui/hyperos/frosted/home_page_region_blur.dart';
 import '../utils/hex_color.dart';
+import '../utils/home_page_background.dart';
 import 'course_card.dart';
 
 /// Renders the home week timetable surface for settings previews.
@@ -17,13 +19,22 @@ class TimetableWeekPreview extends StatelessWidget {
     required this.provider,
     required this.settings,
     required this.week,
+    this.maxVisibleSections,
+    this.includeAppHeader = false,
+    this.applyHomePageBackdrop = false,
+    this.heightBudget,
   });
 
   final TimetableProvider provider;
   final TimetableSettings settings;
   final int week;
+  final int? maxVisibleSections;
+  final bool includeAppHeader;
+  final bool applyHomePageBackdrop;
+  final double? heightBudget;
 
   static const double _headerHeight = 40;
+  static const double _appHeaderHeight = 44;
   static const double _homeHeaderHeightEstimate = 44;
   static const double _homeSurfaceBottomPadding = 8;
   static const int _previewMorningSectionCount = 4;
@@ -33,7 +44,12 @@ class TimetableWeekPreview extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final backgroundColor = theme.brightness == Brightness.dark
+    final isDark = theme.brightness == Brightness.dark;
+    final darkFallback = colorScheme.surface;
+    final hasBackdrop =
+        applyHomePageBackdrop &&
+        hasHomePageBackdropImage(settings, isDark: isDark);
+    final backgroundColor = isDark
         ? colorScheme.surface
         : parseHexColorOrFallback(
             settings.timetablePageBackgroundColor,
@@ -42,14 +58,31 @@ class TimetableWeekPreview extends StatelessWidget {
     final showsFloatingButton =
         settings.timetableBackToCurrentWeekButtonStyle ==
         BackToCurrentWeekButtonStyle.floating;
-    final sectionHeight = _resolveHomeSectionHeight(context);
     final visibleSectionCount = _resolveVisibleSectionCount();
-    final bodyHeight = sectionHeight * visibleSectionCount;
+    final appHeaderHeight = includeAppHeader ? _appHeaderHeight : 0.0;
+
+    late final double sectionHeight;
+    late final double bodyHeight;
+    if (heightBudget != null) {
+      bodyHeight = (heightBudget! - appHeaderHeight - _headerHeight).clamp(
+        0.0,
+        double.infinity,
+      );
+      sectionHeight = visibleSectionCount > 0
+          ? bodyHeight / visibleSectionCount
+          : settings.sectionHeight;
+    } else {
+      sectionHeight = _resolveHomeSectionHeight(context);
+      bodyHeight = sectionHeight * visibleSectionCount;
+    }
+
+    final totalHeight =
+        heightBudget ?? (appHeaderHeight + _headerHeight + bodyHeight);
 
     return ColoredBox(
-      color: backgroundColor,
+      color: hasBackdrop ? Colors.transparent : backgroundColor,
       child: Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: EdgeInsets.only(bottom: heightBudget == null ? 8 : 0),
         child: LayoutBuilder(
           builder: (context, constraints) {
             final grid = _buildTimetableGrid(
@@ -58,20 +91,65 @@ class TimetableWeekPreview extends StatelessWidget {
               week: week,
               sectionHeight: sectionHeight,
               visibleSectionCount: visibleSectionCount,
+              isDark: isDark,
+              darkFallback: darkFallback,
+              hasBackdrop: hasBackdrop,
             );
 
-            return SizedBox(
-              height: _headerHeight + bodyHeight,
+            final weekdayHeader = homePageBackgroundLayer(
+              visual: resolveHomePageRegionBackground(
+                settings: settings,
+                isDark: isDark,
+                darkFallback: darkFallback,
+                region: HomePageBackgroundScope.weekdayBar,
+              ),
+              child: HomePageFrostedRegion(
+                enabled: hasBackdrop && settings.homePageWeekdayBarBlurEnabled,
+                overlapTop: settings.homePageHeaderBlurEnabled || !hasBackdrop
+                    ? 0
+                    : homePageFrostedRegionSeamOverlap,
+                child: _buildWeekDayHeader(
+                  context: context,
+                  week: week,
+                  timeColumnWidth: _resolveTimeColumnWidth(settings),
+                  hideBottomBorder:
+                      hasBackdrop &&
+                      (homePageRegionShowsBackdrop(
+                            settings,
+                            HomePageBackgroundScope.weekdayBar,
+                            isDark: isDark,
+                          ) ||
+                          settings.homePageWeekdayBarBlurEnabled),
+                ),
+              ),
+            );
+
+            final surface = SizedBox(
+              height: totalHeight,
               child: Stack(
                 clipBehavior: Clip.hardEdge,
                 children: [
+                  if (hasBackdrop)
+                    homePageBackdropLayer(settings: settings, isDark: isDark),
+                  if (hasBackdrop && settings.homePageHeaderBlurEnabled)
+                    HomePageHeaderBlurBand(
+                      enabled: true,
+                      includeStatusBar: false,
+                      extendBottom:
+                          settings.homePageWeekdayBarBlurEnabled && hasBackdrop
+                          ? homePageFrostedRegionSeamOverlap
+                          : 0,
+                    ),
                   Column(
                     children: [
-                      _buildWeekDayHeader(
-                        context: context,
-                        week: week,
-                        timeColumnWidth: _resolveTimeColumnWidth(settings),
-                      ),
+                      if (includeAppHeader)
+                        _buildAppHeader(
+                          context: context,
+                          isDark: isDark,
+                          darkFallback: darkFallback,
+                          hasBackdrop: hasBackdrop,
+                        ),
+                      weekdayHeader,
                       SizedBox(
                         height: bodyHeight,
                         child: IgnorePointer(child: grid),
@@ -91,9 +169,7 @@ class TimetableWeekPreview extends StatelessWidget {
                           ),
                           elevation: 2,
                           shadowColor: Colors.black.withValues(
-                            alpha: theme.brightness == Brightness.dark
-                                ? 0.12
-                                : 0.06,
+                            alpha: isDark ? 0.12 : 0.06,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(18),
@@ -135,9 +211,101 @@ class TimetableWeekPreview extends StatelessWidget {
                 ],
               ),
             );
+
+            return surface;
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildAppHeader({
+    required BuildContext context,
+    required bool isDark,
+    required Color darkFallback,
+    required bool hasBackdrop,
+  }) {
+    final l10n = AppLocalizations.of(context)!;
+    final foruiTheme = context.theme;
+    final colorScheme = Theme.of(context).colorScheme;
+    final headerShowsBackdrop = homePageRegionShowsBackdrop(
+      settings,
+      HomePageBackgroundScope.header,
+      isDark: isDark,
+    );
+    final headerUsesFrostedChrome =
+        hasBackdrop &&
+        (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+    final headerBackground = resolveHomePageRegionBackground(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: darkFallback,
+      region: HomePageBackgroundScope.header,
+    );
+    final headerBarColor = headerUsesFrostedChrome
+        ? Colors.transparent
+        : headerBackground.color;
+
+    Widget title;
+    switch (settings.homeTitleStyle) {
+      case HomeTitleStyle.classic:
+        title = Text(
+          l10n.appTitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: foruiTheme.typography.display.xl.copyWith(
+            fontWeight: FontWeight.w400,
+            height: 1.1,
+            color: foruiTheme.colors.foreground,
+          ),
+        );
+      case HomeTitleStyle.brand:
+        title = Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              l10n.appTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: foruiTheme.typography.display.xl.copyWith(
+                fontWeight: FontWeight.w900,
+                height: 1.0,
+                color: foruiTheme.colors.foreground,
+              ),
+            ),
+            Text(
+              l10n.defaultTimetablePreviewName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: foruiTheme.typography.body.xs.copyWith(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        );
+    }
+
+    final headerChild = Container(
+      height: _appHeaderHeight,
+      color: headerBarColor,
+      padding: const EdgeInsets.fromLTRB(8, 0, 8, 2),
+      child: Row(
+        children: [
+          Expanded(child: title),
+          Icon(Icons.more_vert_rounded, color: foruiTheme.colors.foreground),
+        ],
+      ),
+    );
+
+    if (headerUsesFrostedChrome && settings.homePageHeaderBlurEnabled) {
+      return HomePageFrostedRegion(enabled: true, child: headerChild);
+    }
+
+    return homePageBackgroundLayer(
+      visual: headerBackground,
+      child: headerChild,
     );
   }
 
@@ -166,13 +334,15 @@ class TimetableWeekPreview extends StatelessWidget {
     if (settings.sectionCount <= 0) {
       return 0;
     }
-    return math.min(_previewMorningSectionCount, settings.sectionCount);
+    final cap = maxVisibleSections ?? _previewMorningSectionCount;
+    return math.min(cap, settings.sectionCount);
   }
 
   Widget _buildWeekDayHeader({
     required BuildContext context,
     required int week,
     required double timeColumnWidth,
+    bool hideBottomBorder = false,
   }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
@@ -188,7 +358,9 @@ class TimetableWeekPreview extends StatelessWidget {
       height: _headerHeight,
       padding: EdgeInsets.zero,
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+        border: hideBottomBorder
+            ? null
+            : Border(bottom: BorderSide(color: subtleBorder, width: 1)),
       ),
       child: Row(
         children: [
@@ -302,6 +474,9 @@ class TimetableWeekPreview extends StatelessWidget {
     required int week,
     required double sectionHeight,
     required int visibleSectionCount,
+    required bool isDark,
+    required Color darkFallback,
+    required bool hasBackdrop,
   }) {
     final visibleDays = _visibleDayNumbers(settings);
     final timeColumnWidth = _resolveTimeColumnWidth(settings);
@@ -311,54 +486,84 @@ class TimetableWeekPreview extends StatelessWidget {
     final courses = _effectiveCourses(context);
     final sectionRows = math.min(visibleSectionCount, settings.sectionCount);
 
+    Widget timeColumn = SizedBox(
+      width: timeColumnWidth,
+      child: Column(
+        children: List.generate(sectionRows, (index) {
+          final section = settings.sections[index];
+          return SizedBox(
+            height: sectionHeight,
+            child: Center(
+              child: _buildSectionTimeCell(
+                context,
+                index + 1,
+                section,
+                sectionHeight,
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+
+    if (hasBackdrop && settings.homePageTimeColumnBlurEnabled) {
+      timeColumn = HomePageFrostedRegion(enabled: true, child: timeColumn);
+    } else if (hasBackdrop) {
+      timeColumn = homePageBackgroundLayer(
+        visual: resolveHomePageRegionBackground(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+          region: HomePageBackgroundScope.timetable,
+        ),
+        child: timeColumn,
+      );
+    }
+
+    Widget dayColumns = Row(
+      children: visibleDays.map((dayOfWeek) {
+        final dayCourses = _getCoursesForDay(courses, week, dayOfWeek);
+        final displayItems = _buildDayCourseDisplayItems(
+          context: context,
+          courses: dayCourses,
+          week: week,
+          conflictMap: conflictMap,
+        );
+        return SizedBox(
+          width: dayWidth,
+          child: _buildDayColumn(
+            context: context,
+            week: week,
+            dayOfWeek: dayOfWeek,
+            displayItems: displayItems,
+            sectionHeight: sectionHeight,
+            cardInset: cardInset,
+            visibleSectionCount: sectionRows,
+          ),
+        );
+      }).toList(),
+    );
+
+    if (hasBackdrop) {
+      dayColumns = homePageBackgroundLayer(
+        visual: resolveHomePageRegionBackground(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+          region: HomePageBackgroundScope.timetable,
+        ),
+        child: dayColumns,
+      );
+    }
+
     return SizedBox(
       width: availableWidth,
       height: sectionHeight * sectionRows,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: timeColumnWidth,
-            child: Column(
-              children: List.generate(sectionRows, (index) {
-                final section = settings.sections[index];
-                return SizedBox(
-                  height: sectionHeight,
-                  child: Center(
-                    child: _buildSectionTimeCell(
-                      context,
-                      index + 1,
-                      section,
-                      sectionHeight,
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          Row(
-            children: visibleDays.map((dayOfWeek) {
-              final dayCourses = _getCoursesForDay(courses, week, dayOfWeek);
-              final displayItems = _buildDayCourseDisplayItems(
-                context: context,
-                courses: dayCourses,
-                week: week,
-                conflictMap: conflictMap,
-              );
-              return SizedBox(
-                width: dayWidth,
-                child: _buildDayColumn(
-                  context: context,
-                  week: week,
-                  dayOfWeek: dayOfWeek,
-                  displayItems: displayItems,
-                  sectionHeight: sectionHeight,
-                  cardInset: cardInset,
-                  visibleSectionCount: sectionRows,
-                ),
-              );
-            }).toList(),
-          ),
+          timeColumn,
+          Expanded(child: dayColumns),
         ],
       ),
     );
@@ -373,10 +578,6 @@ class TimetableWeekPreview extends StatelessWidget {
     required double cardInset,
     required int visibleSectionCount,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final columnBackground = colorScheme.surfaceContainerLowest.withValues(
-      alpha: 0.45,
-    );
     final courseCards = <Widget>[];
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
@@ -437,10 +638,7 @@ class TimetableWeekPreview extends StatelessWidget {
 
     return Container(
       height: visibleSectionCount * sectionHeight,
-      decoration: BoxDecoration(
-        color: columnBackground,
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: Stack(clipBehavior: Clip.hardEdge, children: courseCards),
     );
   }

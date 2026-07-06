@@ -15,6 +15,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appTitleDebug => '轻屿课表调试版';
 
   @override
+  String get appTitleProfile => '轻屿课表性能版';
+
+  @override
   String get appearanceTitle => '外观与配色';
 
   @override
@@ -78,7 +81,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appearanceEntryTitle => '外观与配色';
 
   @override
-  String get appearanceEntrySubtitle => '主题色、课表背景、课程卡片颜色';
+  String get appearanceEntrySubtitle => '主题色、背景图/壁纸、文字颜色与课程卡片颜色';
 
   @override
   String get layoutSectionEntryTitle => '布局与节次';
@@ -2406,10 +2409,123 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeSeedSectionSubtitle => '影响顶部栏、强调色和全局主色调。';
 
   @override
+  String get frostedSheetSectionTitle => '弹窗磨砂玻璃';
+
+  @override
+  String get frostedSheetSectionSubtitle =>
+      '调节首页弹出面板的高斯模糊强度与磨砂亮度。滑块越靠右，白色磨砂层越明显。';
+
+  @override
+  String get frostedBlurEnabledTitle => '高斯模糊';
+
+  @override
+  String get frostedBlurEnabledSubtitle =>
+      '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊。';
+
+  @override
+  String get frostedSheetPreviewOpenAction => '打开弹窗预览';
+
+  @override
+  String get frostedSheetPreviewDemoTitle => '弹窗预览';
+
+  @override
+  String get frostedSheetPreviewDemoSubtitle => '与首页右上角菜单相同的磨砂玻璃效果。';
+
+  @override
+  String get frostedSheetBlurLabel => '模糊强度';
+
+  @override
+  String get frostedSheetTintLabel => '磨砂亮度';
+
+  @override
   String get timetableBackgroundColorSectionTitle => '课表背景色';
 
   @override
-  String get timetableBackgroundColorSectionSubtitle => '只作用于课表页面的大背景。';
+  String get timetableBackgroundColorSectionSubtitle =>
+      '纯色模式下作用于已选显示区域；可与背景图搭配使用。';
+
+  @override
+  String get homePageBackgroundFillLabel => '背景填充';
+
+  @override
+  String get homePageBackgroundFillColor => '纯色';
+
+  @override
+  String get homePageBackgroundFillImage => '图片';
+
+  @override
+  String get homePageBackgroundImageTitle => '背景图';
+
+  @override
+  String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域。';
+
+  @override
+  String get homePageWallpaperTitle => '背景图片';
+
+  @override
+  String get homePageWallpaperSubtitle => '全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色。';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerTitle => '背景随周次滑动';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerSubtitle =>
+      '左右切换周次时，背景图与课表页面一起移动。';
+
+  @override
+  String get homePageBackgroundScopeTitle => '背景显示区域';
+
+  @override
+  String get homePageBackgroundScopeSubtitle =>
+      '从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色。';
+
+  @override
+  String get homePageBackgroundScopeStatusBar => '状态栏';
+
+  @override
+  String get homePageBackgroundScopeTimetable => '课表区域';
+
+  @override
+  String get homePageBackgroundScopeWeekdayBar => '信息栏';
+
+  @override
+  String get homePageBackgroundScopeHeader => '顶栏';
+
+  @override
+  String get homePageHeaderBlurTitle => '顶栏高斯模糊';
+
+  @override
+  String get homePageHeaderBlurSubtitle => '模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏。';
+
+  @override
+  String get homePageWeekdayBarBlurTitle => '信息栏高斯模糊';
+
+  @override
+  String get homePageWeekdayBarBlurSubtitle => '模糊周次与星期信息栏，透出下方背景图。';
+
+  @override
+  String get homePageTimeColumnBlurTitle => '时间栏高斯模糊';
+
+  @override
+  String get homePageTimeColumnBlurSubtitle => '模糊左侧节次/时间列，透出下方背景图。';
+
+  @override
+  String get homePageRegionBlurSectionSubtitle => '需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置。';
+
+  @override
+  String get homePagePickImageAction => '选择图片';
+
+  @override
+  String get homePageClearImageAction => '清除图片';
+
+  @override
+  String get homePageImageNotSelected => '未选择';
+
+  @override
+  String get appearanceTextColorsSectionTitle => '文字颜色';
+
+  @override
+  String get appearanceTextColorsSectionSubtitle => '自定义课程卡片、星期栏与时间轴文字颜色。';
 
   @override
   String get defaultTimetablePreviewName => '默认课表';
@@ -2438,10 +2554,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveDisplaySummaryStageText => '阶段文字';
 
   @override
-  String get liveDisplaySummaryLeftLabelImage => '左侧图标';
+  String get liveDisplaySummaryLeftLabelImage => '图标';
 
   @override
   String get liveDisplaySummaryMinimal => '最简显示';
+
+  @override
+  String get liveDisplaySummaryCountdownShort => '倒计时';
+
+  @override
+  String liveDisplaySummaryMore(String first, int count) {
+    return '$first等$count项';
+  }
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';
@@ -5261,6 +5385,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get appTitleDebug => '輕嶼課表偵錯版';
 
   @override
+  String get appTitleProfile => '輕嶼課表效能版';
+
+  @override
   String get appearanceTitle => '外觀與配色';
 
   @override
@@ -5366,6 +5493,189 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
+
+  @override
+  String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
+
+  @override
+  String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
+
+  @override
+  String get cloudSyncTitle => '雲端同步';
+
+  @override
+  String get cloudSyncIntroTitle => '多裝置同步';
+
+  @override
+  String get cloudSyncIntroSubtitle =>
+      '設定堅果雲 WEBDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定。';
+
+  @override
+  String get cloudSyncSettingsSectionTitle => '同步設定';
+
+  @override
+  String get cloudSyncSettingsSectionSubtitle => '可切換手動或自動同步。';
+
+  @override
+  String get cloudSyncEnabledTitle => '啟用雲端同步';
+
+  @override
+  String get cloudSyncEnabledSubtitle => '關閉後不會上傳或下載雲端快照';
+
+  @override
+  String get cloudSyncProviderTitle => '服務提供商';
+
+  @override
+  String get cloudSyncProviderJianguoyun => '堅果雲';
+
+  @override
+  String get cloudSyncProviderCustom => '自訂 WEBDAV';
+
+  @override
+  String get cloudSyncModeTitle => '同步方式';
+
+  @override
+  String get cloudSyncModeAuto => '自動同步';
+
+  @override
+  String get cloudSyncModeManual => '手動同步';
+
+  @override
+  String get cloudSyncAccountTitle => '帳號設定';
+
+  @override
+  String get cloudSyncAccountSubtitle =>
+      '請使用堅果雲應用程式專用密碼，而不是登入密碼。快照會包含倉庫記住的學校帳號。';
+
+  @override
+  String get cloudSyncUsernameLabel => '電郵 / 用戶名稱';
+
+  @override
+  String get cloudSyncUsernameHint => '堅果雲註冊電郵';
+
+  @override
+  String get cloudSyncPasswordLabel => '應用程式專用密碼';
+
+  @override
+  String get cloudSyncPasswordHint => '在堅果雲帳戶安全選項中產生';
+
+  @override
+  String get cloudSyncPasswordStoredHint => '已儲存密碼；留空表示繼續使用已儲存的密碼。';
+
+  @override
+  String get cloudSyncAdvancedTitle => '進階設定';
+
+  @override
+  String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
+
+  @override
+  String get cloudSyncRemoteFolderLabel => '遠端目錄';
+
+  @override
+  String get cloudSyncStatusTitle => '同步狀態';
+
+  @override
+  String get cloudSyncLastSyncedLabel => '上次同步';
+
+  @override
+  String get cloudSyncLastErrorLabel => '最近錯誤';
+
+  @override
+  String cloudSyncLastSyncedAt(String time) {
+    return '上次同步：$time';
+  }
+
+  @override
+  String get cloudSyncSyncing => '正在同步…';
+
+  @override
+  String cloudSyncLastError(String message) {
+    return '最近錯誤：$message';
+  }
+
+  @override
+  String get cloudSyncHelpTitle => '如何取得堅果雲應用程式密碼';
+
+  @override
+  String get cloudSyncHelpBody =>
+      '開啟堅果雲網頁或客戶端 → 帳戶資料 → 安全選項 → 新增應用程式密碼。WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ 。';
+
+  @override
+  String get cloudSyncTestConnection => '測試連線';
+
+  @override
+  String get cloudSyncSyncNow => '立即同步';
+
+  @override
+  String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
+
+  @override
+  String get cloudSyncTestFailed => 'WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網絡';
+
+  @override
+  String get cloudSyncResultUploaded => '已上傳到雲端';
+
+  @override
+  String get cloudSyncResultDownloaded => '已從雲端還原';
+
+  @override
+  String get cloudSyncResultUpToDate => '本機與雲端已一致';
+
+  @override
+  String get cloudSyncResultCancelled => '已取消同步';
+
+  @override
+  String cloudSyncResultFailed(String message) {
+    return '同步失敗：$message';
+  }
+
+  @override
+  String get cloudSyncConflictTitle => '偵測到同步衝突';
+
+  @override
+  String get cloudSyncConflictBody => '本機和雲端都有新的修改。請選擇保留哪一邊的資料。';
+
+  @override
+  String get cloudSyncUseRemoteAction => '使用雲端';
+
+  @override
+  String get cloudSyncKeepLocalAction => '保留本機';
+
+  @override
+  String get cloudSyncAccountSectionTitle => '雲端帳號';
+
+  @override
+  String get cloudSyncNotConnectedHint => '連接堅果雲後，可在多裝置間同步課表與匯入資料。';
+
+  @override
+  String get cloudSyncConnectAccount => '連接堅果雲';
+
+  @override
+  String cloudSyncConnectedAs(String email) {
+    return '已連接：$email';
+  }
+
+  @override
+  String get cloudSyncDisconnect => '中斷連線';
+
+  @override
+  String get cloudSyncDisconnectTitle => '中斷雲端同步帳號';
+
+  @override
+  String get cloudSyncDisconnectBody =>
+      '中斷後將清除本機儲存的 WEBDAV 憑證，課表資料仍保留在本機。是否繼續？';
+
+  @override
+  String get cloudSyncLoginSheetTitle => '連接堅果雲';
+
+  @override
+  String get cloudSyncLoginSheetSubtitle => '請使用應用程式專用密碼，不要使用堅果雲登入密碼。';
+
+  @override
+  String get cloudSyncConfirmConnect => '確認連接';
+
+  @override
+  String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
   String get lanEditEntryTitle => '局域網編輯';
@@ -7502,10 +7812,18 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get liveDisplaySummaryStageText => '階段文字';
 
   @override
-  String get liveDisplaySummaryLeftLabelImage => '左側圖示';
+  String get liveDisplaySummaryLeftLabelImage => '圖示';
 
   @override
   String get liveDisplaySummaryMinimal => '最簡顯示';
+
+  @override
+  String get liveDisplaySummaryCountdownShort => '倒數';
+
+  @override
+  String liveDisplaySummaryMore(String first, int count) {
+    return '$first等$count項';
+  }
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';
@@ -10326,6 +10644,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get appTitleDebug => '輕嶼課表偵錯版';
 
   @override
+  String get appTitleProfile => '輕嶼課表效能版';
+
+  @override
   String get appearanceTitle => '外觀與配色';
 
   @override
@@ -10431,6 +10752,189 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get dataTransferEntrySubtitle => '匯出完整課表檔案，給別人直接匯入使用';
+
+  @override
+  String get cloudSyncEntryTitle => '雲端同步（WEBDAV）';
+
+  @override
+  String get cloudSyncEntrySubtitle => '透過堅果雲等多裝置同步課表與匯入資料';
+
+  @override
+  String get cloudSyncTitle => '雲端同步';
+
+  @override
+  String get cloudSyncIntroTitle => '多裝置同步';
+
+  @override
+  String get cloudSyncIntroSubtitle =>
+      '設定堅果雲 WEBDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定。';
+
+  @override
+  String get cloudSyncSettingsSectionTitle => '同步設定';
+
+  @override
+  String get cloudSyncSettingsSectionSubtitle => '可切換手動或自動同步。';
+
+  @override
+  String get cloudSyncEnabledTitle => '啟用雲端同步';
+
+  @override
+  String get cloudSyncEnabledSubtitle => '關閉後不會上傳或下載雲端快照';
+
+  @override
+  String get cloudSyncProviderTitle => '服務提供商';
+
+  @override
+  String get cloudSyncProviderJianguoyun => '堅果雲';
+
+  @override
+  String get cloudSyncProviderCustom => '自訂 WEBDAV';
+
+  @override
+  String get cloudSyncModeTitle => '同步方式';
+
+  @override
+  String get cloudSyncModeAuto => '自動同步';
+
+  @override
+  String get cloudSyncModeManual => '手動同步';
+
+  @override
+  String get cloudSyncAccountTitle => '帳號設定';
+
+  @override
+  String get cloudSyncAccountSubtitle =>
+      '請使用堅果雲應用程式專用密碼，而不是登入密碼。快照會包含倉庫記住的學校帳號。';
+
+  @override
+  String get cloudSyncUsernameLabel => '電子郵件 / 使用者名稱';
+
+  @override
+  String get cloudSyncUsernameHint => '堅果雲註冊電子郵件';
+
+  @override
+  String get cloudSyncPasswordLabel => '應用程式專用密碼';
+
+  @override
+  String get cloudSyncPasswordHint => '在堅果雲帳戶安全選項中產生';
+
+  @override
+  String get cloudSyncPasswordStoredHint => '已儲存密碼；留空表示繼續使用已儲存的密碼。';
+
+  @override
+  String get cloudSyncAdvancedTitle => '進階設定';
+
+  @override
+  String get cloudSyncBaseUrlLabel => 'WEBDAV 網址';
+
+  @override
+  String get cloudSyncRemoteFolderLabel => '遠端目錄';
+
+  @override
+  String get cloudSyncStatusTitle => '同步狀態';
+
+  @override
+  String get cloudSyncLastSyncedLabel => '上次同步';
+
+  @override
+  String get cloudSyncLastErrorLabel => '最近錯誤';
+
+  @override
+  String cloudSyncLastSyncedAt(String time) {
+    return '上次同步：$time';
+  }
+
+  @override
+  String get cloudSyncSyncing => '正在同步…';
+
+  @override
+  String cloudSyncLastError(String message) {
+    return '最近錯誤：$message';
+  }
+
+  @override
+  String get cloudSyncHelpTitle => '如何取得堅果雲應用程式密碼';
+
+  @override
+  String get cloudSyncHelpBody =>
+      '開啟堅果雲網頁或客戶端 → 帳戶資訊 → 安全選項 → 新增應用程式密碼。WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ 。';
+
+  @override
+  String get cloudSyncTestConnection => '測試連線';
+
+  @override
+  String get cloudSyncSyncNow => '立即同步';
+
+  @override
+  String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
+
+  @override
+  String get cloudSyncTestFailed => 'WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網路';
+
+  @override
+  String get cloudSyncResultUploaded => '已上傳到雲端';
+
+  @override
+  String get cloudSyncResultDownloaded => '已從雲端還原';
+
+  @override
+  String get cloudSyncResultUpToDate => '本機與雲端已一致';
+
+  @override
+  String get cloudSyncResultCancelled => '已取消同步';
+
+  @override
+  String cloudSyncResultFailed(String message) {
+    return '同步失敗：$message';
+  }
+
+  @override
+  String get cloudSyncConflictTitle => '偵測到同步衝突';
+
+  @override
+  String get cloudSyncConflictBody => '本機和雲端都有新的修改。請選擇保留哪一邊的資料。';
+
+  @override
+  String get cloudSyncUseRemoteAction => '使用雲端';
+
+  @override
+  String get cloudSyncKeepLocalAction => '保留本機';
+
+  @override
+  String get cloudSyncAccountSectionTitle => '雲端帳號';
+
+  @override
+  String get cloudSyncNotConnectedHint => '連接堅果雲後，可在多裝置間同步課表與匯入資料。';
+
+  @override
+  String get cloudSyncConnectAccount => '連接堅果雲';
+
+  @override
+  String cloudSyncConnectedAs(String email) {
+    return '已連接：$email';
+  }
+
+  @override
+  String get cloudSyncDisconnect => '中斷連線';
+
+  @override
+  String get cloudSyncDisconnectTitle => '中斷雲端同步帳號';
+
+  @override
+  String get cloudSyncDisconnectBody =>
+      '中斷後將清除本機儲存的 WEBDAV 憑證，課表資料仍保留在本機。是否繼續？';
+
+  @override
+  String get cloudSyncLoginSheetTitle => '連接堅果雲';
+
+  @override
+  String get cloudSyncLoginSheetSubtitle => '請使用應用程式專用密碼，不要使用堅果雲登入密碼。';
+
+  @override
+  String get cloudSyncConfirmConnect => '確認連接';
+
+  @override
+  String get cloudSyncConnectSuccess => '帳號連接成功';
 
   @override
   String get lanEditEntryTitle => '區域網路編輯';
@@ -12567,10 +13071,18 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get liveDisplaySummaryStageText => '階段文字';
 
   @override
-  String get liveDisplaySummaryLeftLabelImage => '左側圖示';
+  String get liveDisplaySummaryLeftLabelImage => '圖示';
 
   @override
   String get liveDisplaySummaryMinimal => '最簡顯示';
+
+  @override
+  String get liveDisplaySummaryCountdownShort => '倒數';
+
+  @override
+  String liveDisplaySummaryMore(String first, int count) {
+    return '$first等$count項';
+  }
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';

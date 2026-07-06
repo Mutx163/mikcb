@@ -26,6 +26,7 @@ import '../services/miui_live_activities_service.dart';
 import '../services/support_creator_service.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/about_info_sheet.dart';
+import '../widgets/third_party_disclaimer_card.dart';
 import '../widgets/bundled_asset_image.dart';
 import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
@@ -191,12 +192,6 @@ class _AboutScreenState extends State<AboutScreen> {
                     textAlign: TextAlign.center,
                     style: HyperosTypography.sectionDescription(context),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.thirdPartyDisclaimer,
-                    textAlign: TextAlign.center,
-                    style: HyperosTypography.sectionDescription(context),
-                  ),
                   const SizedBox(height: 16),
                   Wrap(
                     spacing: 8,
@@ -221,6 +216,16 @@ class _AboutScreenState extends State<AboutScreen> {
                             : l10n.stableOnly,
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 20),
+                  Divider(
+                    height: 1,
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  ),
+                  const SizedBox(height: 16),
+                  ThirdPartyDisclaimerContent(
+                    text: l10n.thirdPartyDisclaimer,
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -365,24 +370,32 @@ class _AboutScreenState extends State<AboutScreen> {
               style: HyperosTypography.listDetail(sheetContext),
             ),
             const SizedBox(height: 16),
-            HyperosButton(
-              label: l10n.aboutOpenGitHubAction,
-              expand: true,
-              onPressed: _openRepository,
-            ),
-            const SizedBox(height: 10),
-            HyperosButton(
-              label: l10n.aboutOpenWarehouseRepoAction,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: _openWarehouseRepository,
-            ),
-            const SizedBox(height: 10),
-            HyperosButton(
-              label: l10n.copyAddress,
-              variant: HyperosButtonVariant.secondary,
-              expand: true,
-              onPressed: _copyRepositoryUrl,
+            HyperosCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  HyperosButton(
+                    label: l10n.aboutOpenGitHubAction,
+                    expand: true,
+                    onPressed: _openRepository,
+                  ),
+                  const SizedBox(height: 10),
+                  HyperosButton(
+                    label: l10n.aboutOpenWarehouseRepoAction,
+                    variant: HyperosButtonVariant.secondary,
+                    expand: true,
+                    onPressed: _openWarehouseRepository,
+                  ),
+                  const SizedBox(height: 10),
+                  HyperosButton(
+                    label: l10n.copyAddress,
+                    variant: HyperosButtonVariant.secondary,
+                    expand: true,
+                    onPressed: _copyRepositoryUrl,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -575,21 +588,18 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           onPress: () => _openAdvancedOptions(theme, settings),
         ),
       ],
-      child: Column(
-        children: [
-          Expanded(
-            child: Padding(
-              padding: HyperosTokens.listPadding,
-              child: _buildUpdateCard(theme, settings),
-            ),
-          ),
-          if (_isDownloading) _buildDownloadProgressBar(theme),
-        ],
+      child: HyperosBlurredBodyInset(
+        child: Column(
+          children: [
+            Expanded(child: _buildUpdateList(theme, settings)),
+            if (_isDownloading) _buildDownloadProgressBar(theme),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildUpdateCard(ThemeData theme, TimetableSettings settings) {
+  Widget _buildUpdateList(ThemeData theme, TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
 
@@ -598,74 +608,82 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       builder: (context, snapshot) {
         if (widget.packageInfo == null ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _UpdateCheckAnimation(colorScheme: colorScheme),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.aboutCheckingLatestVersion,
-                    style: theme.textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '正在连接更新服务器...',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+          return HyperosListView(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 48,
+                  horizontal: 8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _UpdateCheckAnimation(colorScheme: colorScheme),
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.aboutCheckingLatestVersion,
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      '正在连接更新服务器...',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           );
         }
 
         final result = snapshot.data;
         if (result == null) {
-          return Material(
-            color: HyperosColors.card(context),
-            shape: HyperosTheme.cardShape(),
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.error_outline_rounded,
-                    size: 48,
-                    color: colorScheme.error,
+          return HyperosListView(
+            children: [
+              Material(
+                color: HyperosColors.card(context),
+                shape: HyperosTheme.cardShape(),
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        size: 48,
+                        color: colorScheme.error,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.aboutReadVersionFailed,
+                        style: HyperosTypography.sectionLabel(context),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        l10n.aboutReadVersionFailedHint,
+                        style: HyperosTypography.sectionDescription(context),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.aboutReadVersionFailed,
-                    style: HyperosTypography.sectionLabel(context),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.aboutReadVersionFailedHint,
-                    style: HyperosTypography.sectionDescription(context),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         }
 
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildStatusCard(theme, result),
-              if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
-                const SizedBox(height: 16),
-                _buildNotesCard(theme, result),
-              ],
+        return HyperosListView(
+          children: [
+            _buildStatusCard(theme, result),
+            if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
+              const HyperosSectionGap(),
+              _buildNotesCard(theme, result),
             ],
-          ),
+          ],
         );
       },
     );
@@ -1828,10 +1846,11 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
 
           return HyperosListView(
             children: [
-              _buildDownloadChannelGroup(theme, settings),
+              _buildDownloadChannelGroup(settings),
               const HyperosSectionGap(),
-              _buildDownloadMethodGroup(theme),
+              _buildDownloadMethodGroup(),
               const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.aboutCheckPrereleaseTitle),
               HyperosListGroup(
                 children: [
                   HyperosSwitchTile(
@@ -1852,41 +1871,11 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                   settings: settings,
                   mirrorPreset: mirrorPreset,
                   recommendedPreset: recommendedMirrorPreset,
-                ),
-                const HyperosSectionGap(),
-                HyperosControlCard(
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      HyperosButton(
-                        label: _isProbingMirrors
-                            ? l10n.aboutProbingMirrors
-                            : l10n.aboutProbeMirrorsAction,
-                        variant: HyperosButtonVariant.secondary,
-                        loading: _isProbingMirrors,
-                        onPressed:
-                            originalDownloadUrl == null || _isProbingMirrors
-                            ? null
-                            : () => _probeAndRecommendMirrors(
-                                originalDownloadUrl,
-                                customMirrorUrlPrefix:
-                                    settings.appUpdateMirrorUrlPrefix,
-                              ),
-                      ),
-                      HyperosButton(
-                        label: mirrorPreset.usesCustomUrl
-                            ? l10n.aboutEditCustomMirrorAction
-                            : l10n.aboutSetCustomMirrorAction,
-                        variant: HyperosButtonVariant.secondary,
-                        onPressed: _editMirrorUrlPrefix,
-                      ),
-                    ],
-                  ),
+                  originalDownloadUrl: originalDownloadUrl,
                 ),
               ],
               const HyperosSectionGap(),
-              _buildDiagnosticsCard(theme, settings),
+              _buildDiagnosticsCard(settings),
             ],
           );
         },
@@ -1894,56 +1883,53 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
-  Widget _buildDownloadChannelGroup(
-    ThemeData theme,
-    TimetableSettings settings,
-  ) {
+  Widget _buildDownloadChannelGroup(TimetableSettings settings) {
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
     );
+    const channels = AppUpdateDownloadChannel.values;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const HyperosSectionLabel(text: '下载渠道'),
-        const HyperosSectionDescription(text: '蒲公英国内高速下载，GitHub 支持镜像加速'),
-        HyperosListGroup(
+        HyperosChoiceGroup(
           children: [
-            _HyperosChoiceTile(
-              title: '蒲公英下载',
-              selected: downloadChannel == AppUpdateDownloadChannel.pgyer,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.pgyer),
-            ),
-            _HyperosChoiceTile(
-              title: 'GitHub 下载',
-              selected: downloadChannel == AppUpdateDownloadChannel.github,
-              onTap: () =>
-                  _updateDownloadChannel(AppUpdateDownloadChannel.github),
-            ),
+            for (var i = 0; i < channels.length; i++)
+              HyperosChoiceTile(
+                title: channels[i].label,
+                subtitle: Text(channels[i].description),
+                selected: downloadChannel == channels[i],
+                showDivider: i < channels.length - 1,
+                onTap: () => _updateDownloadChannel(channels[i]),
+              ),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildDownloadMethodGroup(ThemeData theme) {
+  Widget _buildDownloadMethodGroup() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         const HyperosSectionLabel(text: '下载安装包方式'),
-        const HyperosSectionDescription(text: '选择应用内直接下载或系统下载管理器'),
-        HyperosListGroup(
+        HyperosChoiceGroup(
           children: [
-            _HyperosChoiceTile(
+            HyperosChoiceTile(
               title: '应用内下载',
+              subtitle: const Text('下载完成后直接在应用内安装'),
               selected: !_useSystemDownloader,
+              showDivider: true,
               onTap: () {
                 setState(() => _useSystemDownloader = false);
                 widget.onUseSystemDownloaderChanged(false);
               },
             ),
-            _HyperosChoiceTile(
+            HyperosChoiceTile(
               title: '系统管理器',
+              subtitle: const Text('交给系统下载管理器处理'),
               selected: _useSystemDownloader,
               onTap: () {
                 setState(() => _useSystemDownloader = true);
@@ -1961,24 +1947,53 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     required TimetableSettings settings,
     required AppUpdateMirrorPreset mirrorPreset,
     required AppUpdateMirrorPreset? recommendedPreset,
+    required String? originalDownloadUrl,
   }) {
     final l10n = AppLocalizations.of(context)!;
+    final presets = AppUpdateMirrorPreset.values;
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         HyperosSectionLabel(text: l10n.aboutMirrorSectionTitle),
-        HyperosSectionDescription(text: l10n.aboutMirrorSectionMirrorHint),
-        HyperosListGroup(
+        HyperosChoiceGroup(
           children: [
-            for (final preset in AppUpdateMirrorPreset.values)
+            for (var i = 0; i < presets.length; i++)
               _buildMirrorPresetTile(
                 theme,
-                preset: preset,
+                preset: presets[i],
                 currentPreset: mirrorPreset,
                 recommendedPreset: recommendedPreset,
                 settings: settings,
-                onTap: () => _handleMirrorPresetTap(preset, settings),
+                showDivider: i < presets.length - 1,
+                onTap: () => _handleMirrorPresetTap(presets[i], settings),
               ),
+          ],
+        ),
+        const HyperosSectionGap(),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.speed_rounded,
+              iconAccent: HyperosIconColors.blue,
+              title: _isProbingMirrors
+                  ? l10n.aboutProbingMirrors
+                  : l10n.aboutProbeMirrorsAction,
+              onTap: originalDownloadUrl == null || _isProbingMirrors
+                  ? null
+                  : () => _probeAndRecommendMirrors(
+                      originalDownloadUrl,
+                      customMirrorUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+                    ),
+            ),
+            HyperosListTile(
+              icon: Icons.link_rounded,
+              iconAccent: HyperosIconColors.teal,
+              title: mirrorPreset.usesCustomUrl
+                  ? l10n.aboutEditCustomMirrorAction
+                  : l10n.aboutSetCustomMirrorAction,
+              onTap: _editMirrorUrlPrefix,
+            ),
           ],
         ),
       ],
@@ -1991,6 +2006,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     required AppUpdateMirrorPreset currentPreset,
     required AppUpdateMirrorPreset? recommendedPreset,
     required TimetableSettings settings,
+    required bool showDivider,
     required VoidCallback onTap,
   }) {
     final l10n = AppLocalizations.of(context)!;
@@ -2010,20 +2026,16 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                 )
               : preset.description);
 
-    final suffixChildren = <Widget>[];
-    if (probeState != null) {
-      suffixChildren.add(_buildMirrorProbeStatusChip(theme, probeState.result));
-    }
-
-    return _HyperosChoiceTile(
+    return HyperosChoiceTile(
       title: isRecommended
           ? '${preset.label} · ${l10n.aboutRecommended}'
           : preset.label,
-      subtitle: subtitleText,
+      subtitle: Text(subtitleText),
       selected: isSelected,
-      trailing: suffixChildren.isEmpty
+      showDivider: showDivider,
+      trailing: probeState == null
           ? null
-          : Row(mainAxisSize: MainAxisSize.min, children: suffixChildren),
+          : _buildMirrorProbeStatusChip(theme, probeState.result),
       onTap: onTap,
     );
   }
@@ -2063,33 +2075,36 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
     );
   }
 
-  Widget _buildDiagnosticsCard(ThemeData theme, TimetableSettings settings) {
+  Widget _buildDiagnosticsCard(TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
-    return HyperosControlCard(
-      title: l10n.aboutDiagnosticsTitle,
-      subtitle: l10n.aboutDiagnosticsSubtitle,
-      plainTitle: true,
-      child: Wrap(
-        spacing: 12,
-        runSpacing: 12,
-        children: [
-          HyperosButton(
-            label: l10n.aboutExportDiagnosticsAction,
-            variant: HyperosButtonVariant.secondary,
-            onPressed: widget.onExportLiveDiagnostics,
-          ),
-          HyperosButton(
-            label: l10n.aboutViewPhoneLogsAction,
-            variant: HyperosButtonVariant.secondary,
-            onPressed: widget.onOpenLiveDiagnosticsViewer,
-          ),
-          HyperosButton(
-            label: l10n.aboutClearAndRecollectAction,
-            variant: HyperosButtonVariant.secondary,
-            onPressed: widget.onClearLiveDiagnostics,
-          ),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HyperosSectionLabel(text: l10n.aboutDiagnosticsTitle),
+        HyperosListGroup(
+          children: [
+            HyperosListTile(
+              icon: Icons.upload_outlined,
+              iconAccent: HyperosIconColors.indigo,
+              title: l10n.aboutExportDiagnosticsAction,
+              onTap: () => widget.onExportLiveDiagnostics(),
+            ),
+            HyperosListTile(
+              icon: Icons.article_outlined,
+              iconAccent: HyperosIconColors.cyan,
+              title: l10n.aboutViewPhoneLogsAction,
+              onTap: () => widget.onOpenLiveDiagnosticsViewer(),
+            ),
+            HyperosListTile(
+              icon: Icons.delete_outline_rounded,
+              iconAccent: HyperosIconColors.orange,
+              title: l10n.aboutClearAndRecollectAction,
+              onTap: () => widget.onClearLiveDiagnostics(),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -2649,87 +2664,6 @@ class _ContributorRow extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _HyperosChoiceTile extends StatelessWidget {
-  const _HyperosChoiceTile({
-    required this.title,
-    this.subtitle,
-    this.selected = false,
-    this.trailing,
-    this.onTap,
-  });
-
-  final String title;
-  final String? subtitle;
-  final bool selected;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cardColor = HyperosColors.card(context);
-    final highlightColor = HyperosColors.rowHighlight(context);
-
-    Widget? suffix;
-    if (trailing != null) {
-      suffix = Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          trailing!,
-          if (selected) ...[
-            const SizedBox(width: 8),
-            const HyperosSelectedCheckmark(),
-          ],
-        ],
-      );
-    } else if (selected) {
-      suffix = const HyperosSelectedCheckmark();
-    }
-
-    final row = ConstrainedBox(
-      constraints: const BoxConstraints(
-        minHeight: HyperosTokens.listRowMinHeight,
-      ),
-      child: Padding(
-        padding: _aboutRowPadding(context),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(title, style: HyperosTypography.listTitle(context)),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: HyperosTypography.listDetail(context),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            if (suffix != null) ...[
-              SizedBox(width: HyperosTokens.titleChevronGap),
-              suffix,
-            ],
-          ],
-        ),
-      ),
-    );
-
-    return HyperosPressableRow(
-      onTap: onTap,
-      backgroundColor: cardColor,
-      highlightColor: highlightColor,
-      child: row,
     );
   }
 }

@@ -15,6 +15,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get appTitleDebug => '경屿 시간표 디버그판';
 
   @override
+  String get appTitleProfile => '경屿 시간표 프로필판';
+
+  @override
   String get appearanceTitle => '외관 및 색상';
 
   @override
@@ -123,186 +126,192 @@ class AppLocalizationsKo extends AppLocalizations {
   String get dataTransferEntrySubtitle => '시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다';
 
   @override
-  String get cloudSyncEntryTitle => '云同步（WEBDAV）';
+  String get cloudSyncEntryTitle => '클라우드 동기화 (WEBDAV)';
 
   @override
-  String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
+  String get cloudSyncEntrySubtitle =>
+      'Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화';
 
   @override
-  String get cloudSyncTitle => '云同步';
+  String get cloudSyncTitle => '클라우드 동기화';
 
   @override
-  String get cloudSyncIntroTitle => '多设备同步';
+  String get cloudSyncIntroTitle => '다중 기기 동기화';
 
   @override
   String get cloudSyncIntroSubtitle =>
-      '配置坚果云 WEBDAV 后，可在手机、平板之间自动同步课表、仓库账号与相关设置。';
+      'Jianguoyun WEBDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다.';
 
   @override
-  String get cloudSyncSettingsSectionTitle => '同步设置';
+  String get cloudSyncSettingsSectionTitle => '동기화 설정';
 
   @override
-  String get cloudSyncSettingsSectionSubtitle => '可切换手动或自动同步。';
+  String get cloudSyncSettingsSectionSubtitle => '수동 또는 자동 동기화를 전환할 수 있습니다.';
 
   @override
-  String get cloudSyncEnabledTitle => '启用云同步';
+  String get cloudSyncEnabledTitle => '클라우드 동기화 사용';
 
   @override
-  String get cloudSyncEnabledSubtitle => '关闭后不会上传或下载云端快照';
+  String get cloudSyncEnabledSubtitle => '끄면 스냅샷을 업로드하거나 다운로드하지 않습니다';
 
   @override
-  String get cloudSyncProviderTitle => '服务提供商';
+  String get cloudSyncProviderTitle => '서비스 제공자';
 
   @override
-  String get cloudSyncProviderJianguoyun => '坚果云';
+  String get cloudSyncProviderJianguoyun => 'Jianguoyun';
 
   @override
-  String get cloudSyncProviderCustom => '自定义 WEBDAV';
+  String get cloudSyncProviderCustom => '사용자 지정 WEBDAV';
 
   @override
-  String get cloudSyncModeTitle => '同步方式';
+  String get cloudSyncModeTitle => '동기화 방식';
 
   @override
-  String get cloudSyncModeAuto => '自动同步';
+  String get cloudSyncModeAuto => '자동 동기화';
 
   @override
-  String get cloudSyncModeManual => '手动同步';
+  String get cloudSyncModeManual => '수동 동기화';
 
   @override
-  String get cloudSyncAccountTitle => '账号配置';
+  String get cloudSyncAccountTitle => '계정 설정';
 
   @override
-  String get cloudSyncAccountSubtitle => '请使用坚果云应用专用密码，而不是登录密码。快照会包含仓库记住的学校账号。';
+  String get cloudSyncAccountSubtitle =>
+      'Jianguoyun 앱 전용 비밀번호를 사용하세요 (로그인 비밀번호 아님). 스냅샷에는 창고에 저장된 학교 계정도 포함됩니다.';
 
   @override
-  String get cloudSyncUsernameLabel => '邮箱 / 用户名';
+  String get cloudSyncUsernameLabel => '이메일 / 사용자명';
 
   @override
-  String get cloudSyncUsernameHint => '坚果云注册邮箱';
+  String get cloudSyncUsernameHint => 'Jianguoyun 가입 이메일';
 
   @override
-  String get cloudSyncPasswordLabel => '应用专用密码';
+  String get cloudSyncPasswordLabel => '앱 전용 비밀번호';
 
   @override
-  String get cloudSyncPasswordHint => '在坚果云账户安全选项中生成';
+  String get cloudSyncPasswordHint => 'Jianguoyun 계정 보안 설정에서 생성';
 
   @override
-  String get cloudSyncPasswordStoredHint => '已保存密码；留空表示继续使用已保存的密码。';
+  String get cloudSyncPasswordStoredHint =>
+      '비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다.';
 
   @override
-  String get cloudSyncAdvancedTitle => '高级设置';
+  String get cloudSyncAdvancedTitle => '고급 설정';
 
   @override
-  String get cloudSyncBaseUrlLabel => 'WEBDAV 地址';
+  String get cloudSyncBaseUrlLabel => 'WEBDAV 주소';
 
   @override
-  String get cloudSyncRemoteFolderLabel => '远程目录';
+  String get cloudSyncRemoteFolderLabel => '원격 폴더';
 
   @override
-  String get cloudSyncStatusTitle => '同步状态';
+  String get cloudSyncStatusTitle => '동기화 상태';
 
   @override
-  String get cloudSyncLastSyncedLabel => '上次同步';
+  String get cloudSyncLastSyncedLabel => '마지막 동기화';
 
   @override
-  String get cloudSyncLastErrorLabel => '最近错误';
+  String get cloudSyncLastErrorLabel => '최근 오류';
 
   @override
   String cloudSyncLastSyncedAt(String time) {
-    return '上次同步：$time';
+    return '마지막 동기화: $time';
   }
 
   @override
-  String get cloudSyncSyncing => '正在同步…';
+  String get cloudSyncSyncing => '동기화 중…';
 
   @override
   String cloudSyncLastError(String message) {
-    return '最近错误：$message';
+    return '최근 오류: $message';
   }
 
   @override
-  String get cloudSyncHelpTitle => '如何获取坚果云应用密码';
+  String get cloudSyncHelpTitle => 'Jianguoyun 앱 비밀번호 받는 방법';
 
   @override
   String get cloudSyncHelpBody =>
-      '打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。';
+      'Jianguoyun 웹 또는 클라이언트 → 계정 정보 → 보안 → 앱 비밀번호 추가. WEBDAV 주소 기본값: https://dav.jianguoyun.com/dav/';
 
   @override
-  String get cloudSyncTestConnection => '测试连接';
+  String get cloudSyncTestConnection => '연결 테스트';
 
   @override
-  String get cloudSyncSyncNow => '立即同步';
+  String get cloudSyncSyncNow => '지금 동기화';
 
   @override
-  String get cloudSyncTestSuccess => 'WEBDAV 连接成功';
+  String get cloudSyncTestSuccess => 'WEBDAV 연결 성공';
 
   @override
-  String get cloudSyncTestFailed => 'WEBDAV 连接失败，请检查账号、应用密码和网络';
+  String get cloudSyncTestFailed => 'WEBDAV 연결 실패. 계정, 앱 비밀번호, 네트워크를 확인하세요';
 
   @override
-  String get cloudSyncResultUploaded => '已上传到云端';
+  String get cloudSyncResultUploaded => '클라우드에 업로드됨';
 
   @override
-  String get cloudSyncResultDownloaded => '已从云端恢复';
+  String get cloudSyncResultDownloaded => '클라우드에서 복원됨';
 
   @override
-  String get cloudSyncResultUpToDate => '本地与云端已一致';
+  String get cloudSyncResultUpToDate => '로컬과 클라우드가 일치함';
 
   @override
-  String get cloudSyncResultCancelled => '已取消同步';
+  String get cloudSyncResultCancelled => '동기화 취소됨';
 
   @override
   String cloudSyncResultFailed(String message) {
-    return '同步失败：$message';
+    return '동기화 실패: $message';
   }
 
   @override
-  String get cloudSyncConflictTitle => '检测到同步冲突';
+  String get cloudSyncConflictTitle => '동기화 충돌 감지';
 
   @override
-  String get cloudSyncConflictBody => '本机和云端都有新的修改。请选择保留哪一边的数据。';
+  String get cloudSyncConflictBody =>
+      '이 기기와 클라우드 모두 새 변경 사항이 있습니다. 유지할 데이터를 선택하세요.';
 
   @override
-  String get cloudSyncUseRemoteAction => '使用云端';
+  String get cloudSyncUseRemoteAction => '클라우드 사용';
 
   @override
-  String get cloudSyncKeepLocalAction => '保留本机';
+  String get cloudSyncKeepLocalAction => '로컬 유지';
 
   @override
-  String get cloudSyncAccountSectionTitle => '云账号';
+  String get cloudSyncAccountSectionTitle => '클라우드 계정';
 
   @override
-  String get cloudSyncNotConnectedHint => '连接坚果云后，可在多设备间同步课表与导入数据。';
+  String get cloudSyncNotConnectedHint =>
+      'Jianguoyun에 연결하면 여러 기기에서 시간표와 가져온 데이터를 동기화할 수 있습니다.';
 
   @override
-  String get cloudSyncConnectAccount => '连接坚果云';
+  String get cloudSyncConnectAccount => 'Jianguoyun 연결';
 
   @override
   String cloudSyncConnectedAs(String email) {
-    return '已连接：$email';
+    return '연결됨: $email';
   }
 
   @override
-  String get cloudSyncDisconnect => '断开连接';
+  String get cloudSyncDisconnect => '연결 해제';
 
   @override
-  String get cloudSyncDisconnectTitle => '断开云同步账号';
+  String get cloudSyncDisconnectTitle => '클라우드 동기화 계정 연결 해제';
 
   @override
   String get cloudSyncDisconnectBody =>
-      '断开后将清除本机保存的 WEBDAV 凭据，课表数据仍保留在本机。是否继续？';
+      '연결 해제 시 이 기기에 저장된 WEBDAV 자격 증명이 삭제됩니다. 시간표 데이터는 기기에 남습니다. 계속하시겠습니까?';
 
   @override
-  String get cloudSyncLoginSheetTitle => '连接坚果云';
+  String get cloudSyncLoginSheetTitle => 'Jianguoyun 연결';
 
   @override
-  String get cloudSyncLoginSheetSubtitle => '请使用应用专用密码，不要使用坚果云登录密码。';
+  String get cloudSyncLoginSheetSubtitle =>
+      '앱 전용 비밀번호를 사용하세요 (Jianguoyun 로그인 비밀번호 아님).';
 
   @override
-  String get cloudSyncConfirmConnect => '确认连接';
+  String get cloudSyncConfirmConnect => '연결 확인';
 
   @override
-  String get cloudSyncConnectSuccess => '账号连接成功';
+  String get cloudSyncConnectSuccess => '계정 연결 성공';
 
   @override
   String get lanEditEntryTitle => 'LAN 편집';
@@ -2457,11 +2466,123 @@ class AppLocalizationsKo extends AppLocalizations {
   String get themeSeedSectionSubtitle => '상단 바, 강조색 및 전반적인 주色调에 영향을 줍니다.';
 
   @override
+  String get frostedSheetSectionTitle => '弹窗磨砂玻璃';
+
+  @override
+  String get frostedSheetSectionSubtitle =>
+      '调节首页弹出面板的高斯模糊强度与磨砂亮度。滑块越靠右，白色磨砂层越明显。';
+
+  @override
+  String get frostedBlurEnabledTitle => '高斯模糊';
+
+  @override
+  String get frostedBlurEnabledSubtitle =>
+      '关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊。';
+
+  @override
+  String get frostedSheetPreviewOpenAction => '打开弹窗预览';
+
+  @override
+  String get frostedSheetPreviewDemoTitle => '弹窗预览';
+
+  @override
+  String get frostedSheetPreviewDemoSubtitle => '与首页右上角菜单相同的磨砂玻璃效果。';
+
+  @override
+  String get frostedSheetBlurLabel => '模糊强度';
+
+  @override
+  String get frostedSheetTintLabel => '磨砂亮度';
+
+  @override
   String get timetableBackgroundColorSectionTitle => '시간표 배경색';
 
   @override
   String get timetableBackgroundColorSectionSubtitle =>
       '시간표 페이지의 큰 배경에만 적용됩니다.';
+
+  @override
+  String get homePageBackgroundFillLabel => '背景填充';
+
+  @override
+  String get homePageBackgroundFillColor => '纯色';
+
+  @override
+  String get homePageBackgroundFillImage => '图片';
+
+  @override
+  String get homePageBackgroundImageTitle => '背景图';
+
+  @override
+  String get homePageBackgroundImageSubtitle => '在「图片」模式下，作用于下方勾选的显示区域。';
+
+  @override
+  String get homePageWallpaperTitle => '背景图片';
+
+  @override
+  String get homePageWallpaperSubtitle => '全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色。';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerTitle => '背景随周次滑动';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerSubtitle =>
+      '左右切换周次时，背景图与课表页面一起移动。';
+
+  @override
+  String get homePageBackgroundScopeTitle => '背景显示区域';
+
+  @override
+  String get homePageBackgroundScopeSubtitle =>
+      '从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色。';
+
+  @override
+  String get homePageBackgroundScopeStatusBar => '状态栏';
+
+  @override
+  String get homePageBackgroundScopeTimetable => '课表区域';
+
+  @override
+  String get homePageBackgroundScopeWeekdayBar => '信息栏';
+
+  @override
+  String get homePageBackgroundScopeHeader => '顶栏';
+
+  @override
+  String get homePageHeaderBlurTitle => '顶栏高斯模糊';
+
+  @override
+  String get homePageHeaderBlurSubtitle => '模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏。';
+
+  @override
+  String get homePageWeekdayBarBlurTitle => '信息栏高斯模糊';
+
+  @override
+  String get homePageWeekdayBarBlurSubtitle => '模糊周次与星期信息栏，透出下方背景图。';
+
+  @override
+  String get homePageTimeColumnBlurTitle => '时间栏高斯模糊';
+
+  @override
+  String get homePageTimeColumnBlurSubtitle => '模糊左侧节次/时间列，透出下方背景图。';
+
+  @override
+  String get homePageRegionBlurSectionSubtitle => '需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置。';
+
+  @override
+  String get homePagePickImageAction => '选择图片';
+
+  @override
+  String get homePageClearImageAction => '清除图片';
+
+  @override
+  String get homePageImageNotSelected => '未选择';
+
+  @override
+  String get appearanceTextColorsSectionTitle => '文字颜色';
+
+  @override
+  String get appearanceTextColorsSectionSubtitle => '自定义课程卡片、星期栏与时间轴文字颜色。';
 
   @override
   String get defaultTimetablePreviewName => '기본 시간표';
@@ -2490,10 +2611,18 @@ class AppLocalizationsKo extends AppLocalizations {
   String get liveDisplaySummaryStageText => '스테이지 텍스트';
 
   @override
-  String get liveDisplaySummaryLeftLabelImage => '왼쪽 아이콘';
+  String get liveDisplaySummaryLeftLabelImage => '아이콘';
 
   @override
   String get liveDisplaySummaryMinimal => '최소 표시';
+
+  @override
+  String get liveDisplaySummaryCountdownShort => '카운트다운';
+
+  @override
+  String liveDisplaySummaryMore(String first, int count) {
+    return '$first 외 $count개';
+  }
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';

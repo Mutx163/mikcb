@@ -9,7 +9,7 @@ Future<int?> showWeekSelectorPickerSheet(
   required int visibleWeek,
   required int? currentSemesterWeek,
 }) {
-  return showHyperosSheet<int>(
+  return showHomeHyperosSheet<int>(
     context: context,
     builder: (sheetContext) => _WeekSelectorPickerSheetBody(
       availableWeeks: availableWeeks,
@@ -38,6 +38,7 @@ class _WeekSelectorPickerSheetBody extends StatelessWidget {
         currentSemesterWeek != null && visibleWeek != currentSemesterWeek;
 
     return HyperosSheet(
+      frosted: true,
       title: l10n.selectWeekTitle,
       description: l10n.availableWeeksCount(availableWeeks.length),
       child: Column(

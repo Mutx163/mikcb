@@ -20,6 +20,8 @@ import '../providers/timetable_provider.dart';
 import '../services/app_update_service.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../ui/hyperos/frosted/home_page_region_blur.dart';
+import '../utils/home_page_background.dart';
 import '../widgets/course_action_sheet.dart';
 import '../widgets/course_followup_sheets.dart';
 import '../widgets/course_card.dart';
@@ -167,12 +169,58 @@ class _TimetableScreenState extends State<TimetableScreen>
         _syncWeekPageWithProvider(provider.currentWeek, provider.settings);
         final colorScheme = Theme.of(context).colorScheme;
         final foruiTheme = context.theme;
-        final backgroundColor = Theme.of(context).brightness == Brightness.dark
-            ? colorScheme.surface
-            : _colorFromHex(
-                provider.settings.timetablePageBackgroundColor,
-                colorScheme.surface,
-              );
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final darkFallback = colorScheme.surface;
+        final settings = provider.settings;
+        final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+        final statusBarShowsBackdrop = homePageRegionShowsBackdrop(
+          settings,
+          HomePageBackgroundScope.statusBar,
+          isDark: isDark,
+        );
+        final timetableShowsBackdrop = homePageRegionShowsBackdrop(
+          settings,
+          HomePageBackgroundScope.timetable,
+          isDark: isDark,
+        );
+        final pageBackgroundColor = resolveHomePageBackgroundColor(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+        );
+        final headerBackground = resolveHomePageRegionBackground(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+          region: HomePageBackgroundScope.header,
+        );
+        final timetableBackground = resolveHomePageRegionBackground(
+          settings: settings,
+          isDark: isDark,
+          darkFallback: darkFallback,
+          region: HomePageBackgroundScope.timetable,
+        );
+        final headerShowsBackdrop = homePageRegionShowsBackdrop(
+          settings,
+          HomePageBackgroundScope.header,
+          isDark: isDark,
+        );
+        final headerUsesFrostedChrome =
+            hasBackdrop &&
+            (headerShowsBackdrop || settings.homePageHeaderBlurEnabled);
+        final headerBarColor = headerUsesFrostedChrome
+            ? Colors.transparent
+            : headerBackground.color;
+        final scaffoldBackgroundColor = timetableShowsBackdrop
+            ? Colors.transparent
+            : timetableBackground.color;
+        final systemOverlayBackground = statusBarShowsBackdrop
+            ? (hasBackdrop
+                  ? (headerUsesFrostedChrome
+                        ? const Color(0xFF1A1A1A)
+                        : Colors.black)
+                  : pageBackgroundColor)
+            : pageBackgroundColor;
         final headerTitleStyle = foruiTheme.typography.display.xl.copyWith(
           fontWeight: FontWeight.w400,
           height: 1.1,
@@ -180,100 +228,122 @@ class _TimetableScreenState extends State<TimetableScreen>
         );
         const headerHorizontalInset = 8.0;
         const headerTopInset = 0.0;
-        const headerBottomInset = 2.0;
-        return HyperosRootPage(
-          overlayHeader: false,
-          resizeToAvoidBottomInset: false,
-          backgroundColor: backgroundColor,
-          headerStyle: FHeaderStyleDelta.delta(
-            decoration: DecorationDelta.boxDelta(color: backgroundColor),
-            titleTextStyle: TextStyleDelta.value(headerTitleStyle),
-            padding: EdgeInsetsGeometryDelta.value(
-              const EdgeInsets.fromLTRB(
-                headerHorizontalInset,
-                headerTopInset,
-                headerHorizontalInset,
-                headerBottomInset,
-              ),
+        final headerBottomInset = headerUsesFrostedChrome ? 0.0 : 2.0;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            if (hasBackdrop)
+              homePageBackdropLayer(settings: settings, isDark: isDark),
+            if (hasBackdrop && !statusBarShowsBackdrop)
+              HomePageStatusBarBackdropMask(color: pageBackgroundColor),
+            HomePageHeaderBlurBand(
+              enabled: settings.homePageHeaderBlurEnabled,
+              includeStatusBar: statusBarShowsBackdrop,
+              extendBottom:
+                  settings.homePageWeekdayBarBlurEnabled && hasBackdrop
+                  ? homePageFrostedRegionSeamOverlap
+                  : 0,
             ),
-            constraints: const BoxConstraints(minHeight: 44),
-          ),
-          title: _buildProfileSwitcherTrigger(provider),
-          suffixes: [
-            FHeaderAction(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.more_vert_rounded),
-                  if (_hasAvailableUpdate)
-                    Positioned(
-                      right: -1,
-                      top: -1,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: Colors.redAccent,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: backgroundColor,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+            HyperosRootPage(
+              overlayHeader: false,
+              resizeToAvoidBottomInset: false,
+              backgroundColor: scaffoldBackgroundColor,
+              headerDecoration: BoxDecoration(color: headerBarColor),
+              headerStyle: FHeaderStyleDelta.delta(
+                decoration: DecorationDelta.boxDelta(color: headerBarColor),
+                systemOverlayStyle: HyperosColors.systemOverlayForBackground(
+                  systemOverlayBackground,
+                ),
+                titleTextStyle: TextStyleDelta.value(headerTitleStyle),
+                padding: EdgeInsetsGeometryDelta.value(
+                  EdgeInsets.fromLTRB(
+                    headerHorizontalInset,
+                    headerTopInset,
+                    headerHorizontalInset,
+                    headerBottomInset,
+                  ),
+                ),
+                constraints: const BoxConstraints(minHeight: 44),
               ),
-              semanticsLabel: l10n.moreTooltip,
-              onPress: _showTopActionsSheet,
-            ),
-          ],
-          childPad: false,
-          child: Material(
-            type: MaterialType.transparency,
-            child: provider.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : MediaQuery.removeViewInsets(
-                    context: context,
-                    removeBottom: true,
-                    child: Stack(
-                      children: [
-                        Container(
-                          color: backgroundColor,
-                          child: Padding(
-                            key: _timetableSurfaceKey,
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: LayoutBuilder(
-                              builder: (context, constraints) {
-                                return _buildWeekPager(
-                                  provider,
-                                  provider.settings,
-                                  constraints.maxWidth,
-                                  constraints.maxHeight,
-                                );
-                              },
+              title: _buildProfileSwitcherTrigger(provider),
+              suffixes: [
+                FHeaderAction(
+                  icon: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      const Icon(Icons.more_vert_rounded),
+                      if (_hasAvailableUpdate)
+                        Positioned(
+                          right: -1,
+                          top: -1,
+                          child: Container(
+                            width: 9,
+                            height: 9,
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: headerBarColor.a == 0
+                                    ? colorScheme.surface
+                                    : headerBarColor,
+                                width: 1.5,
+                              ),
                             ),
                           ),
                         ),
-                        ValueListenableBuilder<int>(
-                          valueListenable: _visibleWeekListenable,
-                          builder: (context, visibleWeek, child) {
-                            if (!_shouldShowFloatingBackToCurrentWeekButton(
-                              provider,
-                              provider.settings,
-                              visibleWeek,
-                            )) {
-                              return const SizedBox.shrink();
-                            }
-                            return _buildFloatingBackToCurrentWeekButton(
-                              provider,
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-          ),
+                  semanticsLabel: l10n.moreTooltip,
+                  onPress: _showTopActionsSheet,
+                ),
+              ],
+              childPad: false,
+              child: Material(
+                type: MaterialType.transparency,
+                child: provider.isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : MediaQuery.removeViewInsets(
+                        context: context,
+                        removeBottom: true,
+                        child: Stack(
+                          children: [
+                            Padding(
+                              key: _timetableSurfaceKey,
+                              padding: EdgeInsets.only(
+                                bottom: hasBackdrop ? 0 : 8,
+                              ),
+                              child: LayoutBuilder(
+                                builder: (context, constraints) {
+                                  return _buildWeekPager(
+                                    provider,
+                                    provider.settings,
+                                    constraints.maxWidth,
+                                    constraints.maxHeight,
+                                  );
+                                },
+                              ),
+                            ),
+                            ValueListenableBuilder<int>(
+                              valueListenable: _visibleWeekListenable,
+                              builder: (context, visibleWeek, child) {
+                                if (!_shouldShowFloatingBackToCurrentWeekButton(
+                                  provider,
+                                  provider.settings,
+                                  visibleWeek,
+                                )) {
+                                  return const SizedBox.shrink();
+                                }
+                                return _buildFloatingBackToCurrentWeekButton(
+                                  provider,
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ),
+          ],
         );
       },
     );
@@ -840,8 +910,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider,
     int week,
     TimetableSettings settings,
-    double timeColumnWidth,
-  ) {
+    double timeColumnWidth, {
+    bool hideBottomBorder = false,
+  }) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = Theme.of(context).colorScheme;
     final subtleBorder = context.theme.colors.border;
@@ -855,9 +926,11 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Container(
       height: _weekDayHeaderHeight,
       padding: EdgeInsets.zero,
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
-      ),
+      decoration: hideBottomBorder
+          ? null
+          : BoxDecoration(
+              border: Border(bottom: BorderSide(color: subtleBorder, width: 1)),
+            ),
       child: Row(
         children: [
           SizedBox(
@@ -1166,6 +1239,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     final cardInset = _resolveCourseCardInset(settings);
     final dayWidth = (availableWidth - timeColumnWidth) / visibleDays.length;
     final conflictMap = provider.courseConflictMapForWeek(week);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final unifiedChromeBlur = homePageUsesUnifiedChromeBlur(
+      settings,
+      hasBackdrop: hasBackdrop,
+    );
 
     return SizedBox(
       key: ValueKey<int>(week),
@@ -1175,19 +1254,25 @@ class _TimetableScreenState extends State<TimetableScreen>
         children: [
           SizedBox(
             width: timeColumnWidth,
-            child: Column(
-              children: List.generate(settings.sectionCount, (index) {
-                final section = settings.sections[index];
-                return Container(
-                  height: sectionHeight,
-                  alignment: Alignment.center,
-                  child: _buildSectionTimeCell(index + 1, section, settings),
-                );
-              }),
+            child: HomePageFrostedRegion(
+              enabled:
+                  !unifiedChromeBlur && settings.homePageTimeColumnBlurEnabled,
+              child: Column(
+                children: List.generate(settings.sectionCount, (index) {
+                  final section = settings.sections[index];
+                  return Container(
+                    height: sectionHeight,
+                    alignment: Alignment.center,
+                    child: _buildSectionTimeCell(index + 1, section, settings),
+                  );
+                }),
+              ),
             ),
           ),
           Row(
-            children: visibleDays.map((dayOfWeek) {
+            children: visibleDays.asMap().entries.map((entry) {
+              final dayIndex = entry.key;
+              final dayOfWeek = entry.value;
               final dayCourses = _getCoursesForDay(
                 provider.courses,
                 week,
@@ -1211,6 +1296,8 @@ class _TimetableScreenState extends State<TimetableScreen>
                   sectionHeight,
                   cardInset,
                   provider,
+                  dayIndex: dayIndex,
+                  dayCount: visibleDays.length,
                 ),
               );
             }).toList(),
@@ -1297,17 +1384,55 @@ class _TimetableScreenState extends State<TimetableScreen>
       week,
       sectionHeight,
     );
-    return KeyedSubtree(
-      key: ValueKey('week-page-$week'),
-      child: Column(
-        children: [
-          _buildWeekDayHeader(
-            provider,
-            week,
-            settings,
-            _resolveTimeColumnWidth(settings),
-          ),
-          Expanded(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasBackdrop = hasHomePageBackdropImage(settings, isDark: isDark);
+    final unifiedChromeBlur = homePageUsesUnifiedChromeBlur(
+      settings,
+      hasBackdrop: hasBackdrop,
+    );
+    final weekdayShowsBackdrop = homePageRegionShowsBackdrop(
+      settings,
+      HomePageBackgroundScope.weekdayBar,
+      isDark: isDark,
+    );
+    final timeColumnWidth = _resolveTimeColumnWidth(settings);
+    final weekdayHeader = homePageBackgroundLayer(
+      visual: homePageRegionChromeVisual(
+        settings: settings,
+        isDark: isDark,
+        darkFallback: Theme.of(context).colorScheme.surface,
+        region: HomePageBackgroundScope.weekdayBar,
+        chromeBlurEnabled: settings.homePageWeekdayBarBlurEnabled,
+      ),
+      child: HomePageFrostedRegion(
+        enabled: !unifiedChromeBlur && settings.homePageWeekdayBarBlurEnabled,
+        overlapTop: settings.homePageHeaderBlurEnabled && hasBackdrop
+            ? homePageFrostedRegionSeamOverlap
+            : 0,
+        child: _buildWeekDayHeader(
+          provider,
+          week,
+          settings,
+          timeColumnWidth,
+          hideBottomBorder:
+              weekdayShowsBackdrop ||
+              settings.homePageWeekdayBarBlurEnabled ||
+              unifiedChromeBlur,
+        ),
+      ),
+    );
+
+    final pageBody = Column(
+      children: [
+        weekdayHeader,
+        Expanded(
+          child: homePageBackgroundLayer(
+            visual: resolveHomePageRegionBackground(
+              settings: settings,
+              isDark: isDark,
+              darkFallback: Theme.of(context).colorScheme.surface,
+              region: HomePageBackgroundScope.timetable,
+            ),
             child: _buildWeekPageBody(
               provider: provider,
               settings: settings,
@@ -1315,6 +1440,36 @@ class _TimetableScreenState extends State<TimetableScreen>
               grid: grid,
             ),
           ),
+        ),
+      ],
+    );
+
+    final backdropImage = settings.homePageBackdropFollowsWeekPager
+        ? homePageBackdropImageWidget(settings: settings, isDark: isDark)
+        : null;
+    final needsPageStack = backdropImage != null || unifiedChromeBlur;
+
+    if (!needsPageStack) {
+      return KeyedSubtree(key: ValueKey('week-page-$week'), child: pageBody);
+    }
+
+    return KeyedSubtree(
+      key: ValueKey('week-page-$week'),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (backdropImage != null) Positioned.fill(child: backdropImage),
+          if (unifiedChromeBlur)
+            Positioned.fill(
+              child: HomePageUnifiedWeekFrostedOverlay(
+                weekdayBarHeight: _weekDayHeaderHeight,
+                timeColumnWidth: timeColumnWidth,
+                overlapTop: settings.homePageHeaderBlurEnabled
+                    ? homePageFrostedRegionSeamOverlap
+                    : 0,
+              ),
+            ),
+          pageBody,
         ],
       ),
     );
@@ -1422,140 +1577,143 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final backgroundColor = Theme.of(context).brightness == Brightness.dark
-        ? colorScheme.surface
-        : _colorFromHex(
-            provider.settings.timetablePageBackgroundColor,
-            colorScheme.surface,
-          );
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundVisual = resolveHomePageRegionBackground(
+      settings: settings,
+      isDark: isDark,
+      darkFallback: colorScheme.surface,
+      region: HomePageBackgroundScope.timetable,
+    );
     final controller = _ensureDayViewPageController(settings, week);
     _syncDayViewPageWithSelection(settings, week);
     final pageCount = _dayViewPageCount(settings, week);
 
-    return Container(
-      key: ValueKey('timetable-day-view-panel-$week'),
-      color: backgroundColor,
-      child: Column(
-        children: [
-          const SizedBox(height: 14),
-          SizedBox(key: ValueKey('timetable-day-view-$week-$dayOfWeek')),
-          Expanded(
-            child: IgnorePointer(
-              ignoring: _isDaySwipeAnimating,
-              child: PageView.builder(
-                key: const ValueKey('day-view-swipe-area'),
-                controller: controller,
-                physics: const PageScrollPhysics(
-                  parent: ClampingScrollPhysics(),
-                ),
-                itemCount: pageCount,
-                onPageChanged: (page) =>
-                    _handleDayViewPageChanged(provider, settings, week, page),
-                itemBuilder: (context, page) {
-                  final target = _dayViewTargetForPage(settings, week, page);
-                  final selectedDate = _dateForWeekDay(
-                    settings,
-                    target.week,
-                    target.dayOfWeek,
-                  );
-                  final conflictMap = provider.courseConflictMapForWeek(
-                    target.week,
-                  );
-                  final courses = _getCoursesForDay(
-                    provider.courses,
-                    target.week,
-                    target.dayOfWeek,
-                    settings,
-                  );
-                  final currentCourse =
-                      _isSelectedDayToday(
-                        provider: provider,
-                        settings: settings,
-                        week: target.week,
-                        dayOfWeek: target.dayOfWeek,
-                      )
-                      ? provider.getCourseInProgress(
-                          dayOfWeek: target.dayOfWeek,
+    return homePageBackgroundLayer(
+      visual: backgroundVisual,
+      child: Container(
+        key: ValueKey('timetable-day-view-panel-$week'),
+        child: Column(
+          children: [
+            const SizedBox(height: 14),
+            SizedBox(key: ValueKey('timetable-day-view-$week-$dayOfWeek')),
+            Expanded(
+              child: IgnorePointer(
+                ignoring: _isDaySwipeAnimating,
+                child: PageView.builder(
+                  key: const ValueKey('day-view-swipe-area'),
+                  controller: controller,
+                  physics: const PageScrollPhysics(
+                    parent: ClampingScrollPhysics(),
+                  ),
+                  itemCount: pageCount,
+                  onPageChanged: (page) =>
+                      _handleDayViewPageChanged(provider, settings, week, page),
+                  itemBuilder: (context, page) {
+                    final target = _dayViewTargetForPage(settings, week, page);
+                    final selectedDate = _dateForWeekDay(
+                      settings,
+                      target.week,
+                      target.dayOfWeek,
+                    );
+                    final conflictMap = provider.courseConflictMapForWeek(
+                      target.week,
+                    );
+                    final courses = _getCoursesForDay(
+                      provider.courses,
+                      target.week,
+                      target.dayOfWeek,
+                      settings,
+                    );
+                    final currentCourse =
+                        _isSelectedDayToday(
+                          provider: provider,
+                          settings: settings,
                           week: target.week,
+                          dayOfWeek: target.dayOfWeek,
                         )
-                      : null;
-                  final currentCourseIds =
-                      _isSelectedDayToday(
-                        provider: provider,
-                        settings: settings,
-                        week: target.week,
-                        dayOfWeek: target.dayOfWeek,
-                      )
-                      ? provider
-                            .getCoursesInProgress(
-                              dayOfWeek: target.dayOfWeek,
-                              week: target.week,
-                            )
-                            .map((course) => course.id)
-                            .toSet()
-                      : const <String>{};
-                  final displayItems = _buildDayCourseDisplayItems(
-                    courses: courses,
-                    week: target.week,
-                    settings: settings,
-                    conflictMap: conflictMap,
-                    currentCourseIds: currentCourseIds,
-                  );
-                  final agendaItems = _buildDayAgendaItems(
-                    provider: provider,
-                    settings: settings,
-                    week: target.week,
-                    dayOfWeek: target.dayOfWeek,
-                    courseItems: displayItems,
-                  );
-                  final scheduleItems = agendaItems
-                      .where((item) => item.isScheduleItem)
-                      .map((item) => item.scheduleItem!)
-                      .toList(growable: false);
-                  final isActivePage =
-                      target.week == _selectedWeekForDayView &&
-                      target.dayOfWeek == _selectedDayOfWeek;
-                  return Column(
-                    key: ValueKey(
-                      'day-content-${target.week}-${target.dayOfWeek}',
-                    ),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14),
-                        child: _buildDayViewSummary(
-                          key: isActivePage
-                              ? const ValueKey('day-view-summary')
-                              : null,
+                        ? provider.getCourseInProgress(
+                            dayOfWeek: target.dayOfWeek,
+                            week: target.week,
+                          )
+                        : null;
+                    final currentCourseIds =
+                        _isSelectedDayToday(
                           provider: provider,
                           settings: settings,
                           week: target.week,
                           dayOfWeek: target.dayOfWeek,
-                          selectedDate: selectedDate,
-                          currentCourse: currentCourse,
-                          courseItems: displayItems,
-                          scheduleItems: scheduleItems,
-                          agendaItems: agendaItems,
-                        ),
+                        )
+                        ? provider
+                              .getCoursesInProgress(
+                                dayOfWeek: target.dayOfWeek,
+                                week: target.week,
+                              )
+                              .map((course) => course.id)
+                              .toSet()
+                        : const <String>{};
+                    final displayItems = _buildDayCourseDisplayItems(
+                      courses: courses,
+                      week: target.week,
+                      settings: settings,
+                      conflictMap: conflictMap,
+                      currentCourseIds: currentCourseIds,
+                    );
+                    final agendaItems = _buildDayAgendaItems(
+                      provider: provider,
+                      settings: settings,
+                      week: target.week,
+                      dayOfWeek: target.dayOfWeek,
+                      courseItems: displayItems,
+                    );
+                    final scheduleItems = agendaItems
+                        .where((item) => item.isScheduleItem)
+                        .map((item) => item.scheduleItem!)
+                        .toList(growable: false);
+                    final isActivePage =
+                        target.week == _selectedWeekForDayView &&
+                        target.dayOfWeek == _selectedDayOfWeek;
+                    return Column(
+                      key: ValueKey(
+                        'day-content-${target.week}-${target.dayOfWeek}',
                       ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        child: _buildExpandedDayColumnView(
-                          key: ValueKey(
-                            'day-column-${target.week}-${target.dayOfWeek}',
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: _buildDayViewSummary(
+                            key: isActivePage
+                                ? const ValueKey('day-view-summary')
+                                : null,
+                            provider: provider,
+                            settings: settings,
+                            week: target.week,
+                            dayOfWeek: target.dayOfWeek,
+                            selectedDate: selectedDate,
+                            currentCourse: currentCourse,
+                            courseItems: displayItems,
+                            scheduleItems: scheduleItems,
+                            agendaItems: agendaItems,
                           ),
-                          provider: provider,
-                          settings: settings,
-                          week: target.week,
-                          dayOfWeek: target.dayOfWeek,
                         ),
-                      ),
-                    ],
-                  );
-                },
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: _buildExpandedDayColumnView(
+                            key: ValueKey(
+                              'day-column-${target.week}-${target.dayOfWeek}',
+                            ),
+                            provider: provider,
+                            settings: settings,
+                            week: target.week,
+                            dayOfWeek: target.dayOfWeek,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -2117,13 +2275,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int week,
     required TimetableSettings settings,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLowest.withValues(alpha: 0.45),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
       child: _buildDayViewEmptyState(week: week),
     );
   }
@@ -3171,6 +3325,26 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
+  BorderRadius _groupedDayColumnBorderRadius(
+    int dayIndex,
+    int dayCount, {
+    double radius = 12,
+  }) {
+    if (dayCount <= 1) {
+      return BorderRadius.circular(radius);
+    }
+    return BorderRadius.only(
+      topLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
+      bottomLeft: dayIndex == 0 ? Radius.circular(radius) : Radius.zero,
+      topRight: dayIndex == dayCount - 1
+          ? Radius.circular(radius)
+          : Radius.zero,
+      bottomRight: dayIndex == dayCount - 1
+          ? Radius.circular(radius)
+          : Radius.zero,
+    );
+  }
+
   Widget _buildDayColumn(
     int week,
     int dayOfWeek,
@@ -3179,12 +3353,10 @@ class _TimetableScreenState extends State<TimetableScreen>
     bool showConflictBadge,
     double sectionHeight,
     double cardInset,
-    TimetableProvider provider,
-  ) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final columnBackground = colorScheme.surfaceContainerLowest.withValues(
-      alpha: 0.45,
-    );
+    TimetableProvider provider, {
+    required int dayIndex,
+    required int dayCount,
+  }) {
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
@@ -3270,8 +3442,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     return Container(
       height: settings.sectionCount * sectionHeight,
       decoration: BoxDecoration(
-        color: columnBackground,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: _groupedDayColumnBorderRadius(dayIndex, dayCount),
       ),
       child: Stack(
         clipBehavior: Clip.antiAlias,
@@ -3572,47 +3743,60 @@ class _TimetableScreenState extends State<TimetableScreen>
         alignment: Alignment.bottomRight,
         child: Tooltip(
           message: l10n.backToCurrentWeekAction,
-          child: Material(
-            color: colorScheme.surfaceContainerHigh.withValues(
-              alpha: buttonOpacity,
-            ),
-            elevation: 2,
-            shadowColor: Colors.black.withValues(
-              alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: borderRadius,
-              side: BorderSide(color: foruiColors.border, width: 1),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: InkWell(
-              key: const ValueKey('back-to-current-week-button'),
-              onTap: () => _jumpToCurrentWeek(provider),
-              borderRadius: borderRadius,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.my_location_rounded,
-                      size: 15,
-                      color: colorScheme.primary,
+          child: Opacity(
+            opacity: buttonOpacity,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: borderRadius,
+                border: Border.all(color: foruiColors.border, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(
+                      alpha: theme.brightness == Brightness.dark ? 0.12 : 0.06,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      l10n.backToCurrentWeekAction,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
-                        height: 1,
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: borderRadius,
+                child: HyperosFrostedSurface(
+                  borderRadius: borderRadius,
+                  child: Material(
+                    type: MaterialType.transparency,
+                    child: InkWell(
+                      key: const ValueKey('back-to-current-week-button'),
+                      onTap: () => _jumpToCurrentWeek(provider),
+                      borderRadius: borderRadius,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 8,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.my_location_rounded,
+                              size: 15,
+                              color: colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              l10n.backToCurrentWeekAction,
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
+                                height: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -3866,7 +4050,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final initialDayOfWeek = _isDayView && _selectedDayOfWeek != null
         ? _selectedDayOfWeek!
         : DateTime.now().weekday;
-    await showHyperosSheet<void>(
+    await showHomeHyperosSheet<void>(
       context: context,
       builder: (sheetContext) {
         final itemWidth =
@@ -3876,6 +4060,7 @@ class _TimetableScreenState extends State<TimetableScreen>
             );
 
         return HyperosSheet(
+          frosted: true,
           title: l10n.addCourseSheetTitle,
           description: l10n.addCourseSheetSubtitle,
           child: Wrap(
@@ -4515,40 +4700,46 @@ class _HomeActionButtonBody extends StatelessWidget {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
 
-    return HyperosCard(
-      padding: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-        splashFactory: NoSplash.splashFactory,
-        onTap: enabled ? onTap : null,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: highlightColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(16),
+    return HyperosFrostedSurface(
+      borderRadius: HyperosTheme.cardBorderRadius,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          borderRadius: HyperosTheme.cardBorderRadius,
+          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+          splashFactory: NoSplash.splashFactory,
+          onTap: enabled ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                HyperosFrostedSurface(
+                  borderRadius: const BorderRadius.all(Radius.circular(16)),
+                  blurEnabled: false,
+                  tint: HyperosBlurredHeader.accentSurfaceTintColor(
+                    highlightColor,
+                  ),
+                  child: SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: Center(child: Icon(icon, color: highlightColor)),
+                  ),
                 ),
-                child: Icon(icon, color: highlightColor),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                title,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
-                  color: enabled ? null : colors.mutedForeground,
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                    color: enabled ? null : colors.mutedForeground,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

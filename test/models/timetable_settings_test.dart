@@ -779,4 +779,40 @@ void main() {
       expect(restored.themeCheckpointConfig, isNull);
     });
   });
+
+  test('home page background settings roundtrip in json', () {
+    final settings = TimetableSettings.defaults().copyWith(
+      homePageBackgroundFill: HomePageBackgroundFill.image,
+      homePageBackgroundImagePath: '/tmp/home_bg.png',
+      homePageWallpaperPath: '/tmp/wallpaper.png',
+      homePageBackgroundScope:
+          HomePageBackgroundScope.timetable | HomePageBackgroundScope.header,
+    );
+
+    final restored = TimetableSettings.fromJson(settings.toJson());
+    expect(restored.homePageBackgroundFill, HomePageBackgroundFill.image);
+    expect(restored.homePageBackgroundImagePath, '/tmp/home_bg.png');
+    expect(restored.homePageWallpaperPath, '/tmp/wallpaper.png');
+    expect(
+      HomePageBackgroundScope.includes(
+        restored.homePageBackgroundScope,
+        HomePageBackgroundScope.timetable,
+      ),
+      isTrue,
+    );
+    expect(
+      HomePageBackgroundScope.includes(
+        restored.homePageBackgroundScope,
+        HomePageBackgroundScope.header,
+      ),
+      isTrue,
+    );
+    expect(
+      HomePageBackgroundScope.includes(
+        restored.homePageBackgroundScope,
+        HomePageBackgroundScope.weekdayBar,
+      ),
+      isFalse,
+    );
+  });
 }

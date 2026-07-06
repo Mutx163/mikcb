@@ -4,7 +4,14 @@ enum AppUpdateDownloadSource { original, mirror }
 
 enum AppUpdateDownloadChannel { pgyer, github }
 
-enum AppUpdateMirrorPreset { ghfast, ghproxyCn, ghLlkk, ghProxyCom, ghproxyNet, custom }
+enum AppUpdateMirrorPreset {
+  ghfast,
+  ghproxyCn,
+  ghLlkk,
+  ghProxyCom,
+  ghproxyNet,
+  custom,
+}
 
 enum WidgetBackgroundStyle { glass, solid, gradient }
 
@@ -52,6 +59,34 @@ extension ForuiThemeX on ForuiTheme {
 }
 
 enum HomeTitleStyle { classic, brand }
+
+enum HomePageBackgroundFill { color, image }
+
+extension HomePageBackgroundFillX on HomePageBackgroundFill {
+  String get value => name;
+
+  static HomePageBackgroundFill fromValue(String? value) {
+    return HomePageBackgroundFill.values.firstWhere(
+      (item) => item.value == value,
+      orElse: () => HomePageBackgroundFill.color,
+    );
+  }
+}
+
+/// Bit flags for home page background display regions.
+abstract final class HomePageBackgroundScope {
+  static const int timetable = 1;
+  static const int weekdayBar = 2;
+  static const int header = 4;
+  static const int statusBar = 8;
+  static const int defaultValue = timetable;
+
+  static bool includes(int scope, int region) => (scope & region) != 0;
+
+  static int toggle(int scope, int region, {required bool enabled}) {
+    return enabled ? (scope | region) : (scope & ~region);
+  }
+}
 
 enum TimetableHomeViewMode { week, day }
 
@@ -622,10 +657,12 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     if (normalized == _normalizeMirrorUrlPrefixValue(ghLlkkMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghLlkk;
     }
-    if (normalized == _normalizeMirrorUrlPrefixValue(ghProxyComMirrorUrlPrefix)) {
+    if (normalized ==
+        _normalizeMirrorUrlPrefixValue(ghProxyComMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghProxyCom;
     }
-    if (normalized == _normalizeMirrorUrlPrefixValue(ghproxyNetMirrorUrlPrefix)) {
+    if (normalized ==
+        _normalizeMirrorUrlPrefixValue(ghproxyNetMirrorUrlPrefix)) {
       return AppUpdateMirrorPreset.ghproxyNet;
     }
     return AppUpdateMirrorPreset.custom;
@@ -966,21 +1003,37 @@ class ThemeConfig {
   TimetableSettings applyToSettings(TimetableSettings current) {
     return current.copyWith(
       themeSeedColor: seedColor ?? current.themeSeedColor,
-      timetablePageBackgroundColor: backgroundColor ?? current.timetablePageBackgroundColor,
-      timetableUnifiedCardColor: unifiedCardColor ?? current.timetableUnifiedCardColor,
-      timetableUseUnifiedCardColor: useUnifiedCardColor ?? current.timetableUseUnifiedCardColor,
-      appThemeMode: themeMode != null ? AppThemeModeX.fromValue(themeMode) : current.appThemeMode,
-      courseCardTitleColorLight: courseCardTitleColorLight ?? current.courseCardTitleColorLight,
-      courseCardTitleColorDark: courseCardTitleColorDark ?? current.courseCardTitleColorDark,
-      courseCardDetailColorLight: courseCardDetailColorLight ?? current.courseCardDetailColorLight,
-      courseCardDetailColorDark: courseCardDetailColorDark ?? current.courseCardDetailColorDark,
-      weekdayBarFontColorLight: weekdayBarFontColorLight ?? current.weekdayBarFontColorLight,
-      weekdayBarFontColorDark: weekdayBarFontColorDark ?? current.weekdayBarFontColorDark,
-      weekdayBarAccentColorLight: weekdayBarAccentColorLight ?? current.weekdayBarAccentColorLight,
-      weekdayBarAccentColorDark: weekdayBarAccentColorDark ?? current.weekdayBarAccentColorDark,
-      timeAxisFontColorLight: timeAxisFontColorLight ?? current.timeAxisFontColorLight,
-      timeAxisFontColorDark: timeAxisFontColorDark ?? current.timeAxisFontColorDark,
-      linkCourseCardColors: linkCourseCardColors ?? current.linkCourseCardColors,
+      timetablePageBackgroundColor:
+          backgroundColor ?? current.timetablePageBackgroundColor,
+      timetableUnifiedCardColor:
+          unifiedCardColor ?? current.timetableUnifiedCardColor,
+      timetableUseUnifiedCardColor:
+          useUnifiedCardColor ?? current.timetableUseUnifiedCardColor,
+      appThemeMode: themeMode != null
+          ? AppThemeModeX.fromValue(themeMode)
+          : current.appThemeMode,
+      courseCardTitleColorLight:
+          courseCardTitleColorLight ?? current.courseCardTitleColorLight,
+      courseCardTitleColorDark:
+          courseCardTitleColorDark ?? current.courseCardTitleColorDark,
+      courseCardDetailColorLight:
+          courseCardDetailColorLight ?? current.courseCardDetailColorLight,
+      courseCardDetailColorDark:
+          courseCardDetailColorDark ?? current.courseCardDetailColorDark,
+      weekdayBarFontColorLight:
+          weekdayBarFontColorLight ?? current.weekdayBarFontColorLight,
+      weekdayBarFontColorDark:
+          weekdayBarFontColorDark ?? current.weekdayBarFontColorDark,
+      weekdayBarAccentColorLight:
+          weekdayBarAccentColorLight ?? current.weekdayBarAccentColorLight,
+      weekdayBarAccentColorDark:
+          weekdayBarAccentColorDark ?? current.weekdayBarAccentColorDark,
+      timeAxisFontColorLight:
+          timeAxisFontColorLight ?? current.timeAxisFontColorLight,
+      timeAxisFontColorDark:
+          timeAxisFontColorDark ?? current.timeAxisFontColorDark,
+      linkCourseCardColors:
+          linkCourseCardColors ?? current.linkCourseCardColors,
       timetableHideWeekends: hideWeekends ?? current.timetableHideWeekends,
       timetableCourseSpacingMode: spacingMode != null
           ? TimetableCourseSpacingMode.values.firstWhere(
@@ -1001,10 +1054,13 @@ class ThemeConfig {
   List<String> get previewColors {
     final colors = <String>[];
     if (seedColor != null) colors.add(seedColor!);
-    if (courseCardTitleColorLight != null) colors.add(courseCardTitleColorLight!);
-    if (courseCardDetailColorLight != null) colors.add(courseCardDetailColorLight!);
+    if (courseCardTitleColorLight != null)
+      colors.add(courseCardTitleColorLight!);
+    if (courseCardDetailColorLight != null)
+      colors.add(courseCardDetailColorLight!);
     if (weekdayBarFontColorLight != null) colors.add(weekdayBarFontColorLight!);
-    if (weekdayBarAccentColorLight != null) colors.add(weekdayBarAccentColorLight!);
+    if (weekdayBarAccentColorLight != null)
+      colors.add(weekdayBarAccentColorLight!);
     return colors.take(4).toList();
   }
 }
@@ -1019,6 +1075,11 @@ class TimetableSettings {
   static const String defaultWeekdayBarAccentColorDark = '#93C5FD';
   static const String defaultTimeAxisFontColorLight = '#757575';
   static const String defaultTimeAxisFontColorDark = '#FFFFFF';
+
+  static const double defaultFrostedSheetBlurSigma = 10.0;
+  static const double defaultFrostedSheetTintAlpha = 0.40;
+  static const double defaultFrostedSheetBarrierAlpha = 0.20;
+  static const bool defaultFrostedBlurEnabled = true;
 
   final List<SectionTime> sections;
   final String? activeTimeSchemeId;
@@ -1123,6 +1184,10 @@ class TimetableSettings {
   final String themeSeedColor;
   final ForuiTheme foruiTheme;
   final String timetablePageBackgroundColor;
+  final HomePageBackgroundFill homePageBackgroundFill;
+  final String? homePageBackgroundImagePath;
+  final String? homePageWallpaperPath;
+  final int homePageBackgroundScope;
   final bool timetableUseUnifiedCardColor;
   final String timetableUnifiedCardColor;
   final String appUpdateDownloadSource;
@@ -1144,6 +1209,14 @@ class TimetableSettings {
   final String timeAxisFontColorLight;
   final String timeAxisFontColorDark;
   final bool linkCourseCardColors; // 标题和详情颜色是否关联
+  final double frostedSheetBlurSigma;
+  final double frostedSheetTintAlpha;
+  final double frostedSheetBarrierAlpha;
+  final bool frostedBlurEnabled;
+  final bool homePageHeaderBlurEnabled;
+  final bool homePageWeekdayBarBlurEnabled;
+  final bool homePageTimeColumnBlurEnabled;
+  final bool homePageBackdropFollowsWeekPager;
   final List<SavedTheme> savedThemes; // 保存的主题列表
   final String? themeCheckpointName; // 当前主题来源名称（预设或保存的主题）
   final ThemeConfig? themeCheckpointConfig; // 应用主题时的配置快照
@@ -1259,6 +1332,10 @@ class TimetableSettings {
     this.themeSeedColor = '#2563EB',
     this.foruiTheme = ForuiTheme.blue,
     this.timetablePageBackgroundColor = '#F8FAFC',
+    this.homePageBackgroundFill = HomePageBackgroundFill.color,
+    this.homePageBackgroundImagePath,
+    this.homePageWallpaperPath,
+    this.homePageBackgroundScope = HomePageBackgroundScope.defaultValue,
     this.timetableUseUnifiedCardColor = false,
     this.timetableUnifiedCardColor = '#2563EB',
     this.appUpdateDownloadSource = 'mirror',
@@ -1280,6 +1357,14 @@ class TimetableSettings {
     this.timeAxisFontColorLight = defaultTimeAxisFontColorLight,
     this.timeAxisFontColorDark = defaultTimeAxisFontColorDark,
     this.linkCourseCardColors = true,
+    this.frostedSheetBlurSigma = defaultFrostedSheetBlurSigma,
+    this.frostedSheetTintAlpha = defaultFrostedSheetTintAlpha,
+    this.frostedSheetBarrierAlpha = defaultFrostedSheetBarrierAlpha,
+    this.frostedBlurEnabled = defaultFrostedBlurEnabled,
+    this.homePageHeaderBlurEnabled = false,
+    this.homePageWeekdayBarBlurEnabled = false,
+    this.homePageTimeColumnBlurEnabled = false,
+    this.homePageBackdropFollowsWeekPager = true,
     this.savedThemes = const [],
     this.themeCheckpointName,
     this.themeCheckpointConfig,
@@ -1402,6 +1487,10 @@ class TimetableSettings {
       themeSeedColor: '#2563EB',
       foruiTheme: ForuiTheme.blue,
       timetablePageBackgroundColor: '#F8FAFC',
+      homePageBackgroundFill: HomePageBackgroundFill.color,
+      homePageBackgroundImagePath: null,
+      homePageWallpaperPath: null,
+      homePageBackgroundScope: HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor: false,
       timetableUnifiedCardColor: '#2563EB',
       appUpdateDownloadSource: 'mirror',
@@ -1545,6 +1634,12 @@ class TimetableSettings {
       'themeSeedColor': themeSeedColor,
       'foruiTheme': foruiTheme.value,
       'timetablePageBackgroundColor': timetablePageBackgroundColor,
+      'homePageBackgroundFill': homePageBackgroundFill.value,
+      if (homePageBackgroundImagePath != null)
+        'homePageBackgroundImagePath': homePageBackgroundImagePath,
+      if (homePageWallpaperPath != null)
+        'homePageWallpaperPath': homePageWallpaperPath,
+      'homePageBackgroundScope': homePageBackgroundScope,
       'timetableUseUnifiedCardColor': timetableUseUnifiedCardColor,
       'timetableUnifiedCardColor': timetableUnifiedCardColor,
       'appUpdateDownloadSource': appUpdateDownloadSource,
@@ -1566,9 +1661,19 @@ class TimetableSettings {
       'timeAxisFontColorLight': timeAxisFontColorLight,
       'timeAxisFontColorDark': timeAxisFontColorDark,
       'linkCourseCardColors': linkCourseCardColors,
+      'frostedSheetBlurSigma': frostedSheetBlurSigma,
+      'frostedSheetTintAlpha': frostedSheetTintAlpha,
+      'frostedSheetBarrierAlpha': frostedSheetBarrierAlpha,
+      'frostedBlurEnabled': frostedBlurEnabled,
+      'homePageHeaderBlurEnabled': homePageHeaderBlurEnabled,
+      'homePageWeekdayBarBlurEnabled': homePageWeekdayBarBlurEnabled,
+      'homePageTimeColumnBlurEnabled': homePageTimeColumnBlurEnabled,
+      'homePageBackdropFollowsWeekPager': homePageBackdropFollowsWeekPager,
       'savedThemes': savedThemes.map((t) => t.toJson()).toList(),
-      if (themeCheckpointName != null) 'themeCheckpointName': themeCheckpointName,
-      if (themeCheckpointConfig != null) 'themeCheckpointConfig': themeCheckpointConfig!.toJson(),
+      if (themeCheckpointName != null)
+        'themeCheckpointName': themeCheckpointName,
+      if (themeCheckpointConfig != null)
+        'themeCheckpointConfig': themeCheckpointConfig!.toJson(),
     };
   }
 
@@ -1652,7 +1757,8 @@ class TimetableSettings {
       widgetCountdownLeadMinutes:
           (json['widgetCountdownLeadMinutes'] as num?)?.toInt() ?? 20,
       widgetCountdownTextStyle: LiveCountdownTextStyleX.fromValue(
-          json['widgetCountdownTextStyle'] as String?),
+        json['widgetCountdownTextStyle'] as String?,
+      ),
       appThemeMode: AppThemeModeX.fromValue(json['appThemeMode'] as String?),
       appFontMode: AppFontModeX.fromValue(json['appFontMode'] as String?),
       appLocaleTag: _normalizeAppLocaleTag(
@@ -1693,9 +1799,11 @@ class TimetableSettings {
       liveEnableBeforeClass: json['liveEnableBeforeClass'] as bool? ?? true,
       // Migrate: these two are controlled by a single UI switch.
       // If either is true, both should be true to avoid UI/logic mismatch.
-      liveEnableDuringClass: (json['liveEnableDuringClass'] as bool? ?? true) ||
+      liveEnableDuringClass:
+          (json['liveEnableDuringClass'] as bool? ?? true) ||
           (json['liveEnableBeforeEnd'] as bool? ?? true),
-      liveEnableBeforeEnd: (json['liveEnableDuringClass'] as bool? ?? true) ||
+      liveEnableBeforeEnd:
+          (json['liveEnableDuringClass'] as bool? ?? true) ||
           (json['liveEnableBeforeEnd'] as bool? ?? true),
       livePromoteDuringClass: json['livePromoteDuringClass'] as bool? ?? true,
       liveShowDuringClassNotification:
@@ -1832,6 +1940,15 @@ class TimetableSettings {
       foruiTheme: ForuiThemeX.fromValue(json['foruiTheme'] as String?),
       timetablePageBackgroundColor:
           json['timetablePageBackgroundColor'] as String? ?? '#F8FAFC',
+      homePageBackgroundFill: HomePageBackgroundFillX.fromValue(
+        json['homePageBackgroundFill'] as String?,
+      ),
+      homePageBackgroundImagePath:
+          json['homePageBackgroundImagePath'] as String?,
+      homePageWallpaperPath: json['homePageWallpaperPath'] as String?,
+      homePageBackgroundScope:
+          (json['homePageBackgroundScope'] as num?)?.toInt() ??
+          HomePageBackgroundScope.defaultValue,
       timetableUseUnifiedCardColor:
           json['timetableUseUnifiedCardColor'] as bool? ?? false,
       timetableUnifiedCardColor:
@@ -1850,36 +1967,67 @@ class TimetableSettings {
       appUpdateMirrorUrlPrefix: rawAppUpdateMirrorUrlPrefix,
       pgyerApiKey: json['pgyerApiKey'] as String? ?? '',
       pgyerAppKey: json['pgyerAppKey'] as String? ?? '',
-      holidayOverrideEnabled:
-          json['holidayOverrideEnabled'] as bool? ?? false,
+      holidayOverrideEnabled: json['holidayOverrideEnabled'] as bool? ?? false,
       courseCardTitleColorLight:
-          json['courseCardTitleColorLight'] as String? ?? defaultCourseCardTitleColor,
+          json['courseCardTitleColorLight'] as String? ??
+          defaultCourseCardTitleColor,
       courseCardTitleColorDark:
-          json['courseCardTitleColorDark'] as String? ?? defaultCourseCardTitleColor,
+          json['courseCardTitleColorDark'] as String? ??
+          defaultCourseCardTitleColor,
       courseCardDetailColorLight:
-          json['courseCardDetailColorLight'] as String? ?? defaultCourseCardDetailColor,
+          json['courseCardDetailColorLight'] as String? ??
+          defaultCourseCardDetailColor,
       courseCardDetailColorDark:
-          json['courseCardDetailColorDark'] as String? ?? defaultCourseCardDetailColor,
+          json['courseCardDetailColorDark'] as String? ??
+          defaultCourseCardDetailColor,
       weekdayBarFontColorLight:
-          json['weekdayBarFontColorLight'] as String? ?? defaultWeekdayBarFontColorLight,
+          json['weekdayBarFontColorLight'] as String? ??
+          defaultWeekdayBarFontColorLight,
       weekdayBarFontColorDark:
-          json['weekdayBarFontColorDark'] as String? ?? defaultWeekdayBarFontColorDark,
+          json['weekdayBarFontColorDark'] as String? ??
+          defaultWeekdayBarFontColorDark,
       weekdayBarAccentColorLight:
-          json['weekdayBarAccentColorLight'] as String? ?? defaultWeekdayBarAccentColorLight,
+          json['weekdayBarAccentColorLight'] as String? ??
+          defaultWeekdayBarAccentColorLight,
       weekdayBarAccentColorDark:
-          json['weekdayBarAccentColorDark'] as String? ?? defaultWeekdayBarAccentColorDark,
+          json['weekdayBarAccentColorDark'] as String? ??
+          defaultWeekdayBarAccentColorDark,
       timeAxisFontColorLight:
-          json['timeAxisFontColorLight'] as String? ?? defaultTimeAxisFontColorLight,
+          json['timeAxisFontColorLight'] as String? ??
+          defaultTimeAxisFontColorLight,
       timeAxisFontColorDark:
-          json['timeAxisFontColorDark'] as String? ?? defaultTimeAxisFontColorDark,
-      linkCourseCardColors:
-          json['linkCourseCardColors'] as bool? ?? true,
-      savedThemes: (json['savedThemes'] as List<dynamic>?)
-          ?.map((t) => SavedTheme.fromJson(t as Map<String, dynamic>))
-          .toList() ?? const [],
+          json['timeAxisFontColorDark'] as String? ??
+          defaultTimeAxisFontColorDark,
+      linkCourseCardColors: json['linkCourseCardColors'] as bool? ?? true,
+      frostedSheetBlurSigma:
+          (json['frostedSheetBlurSigma'] as num?)?.toDouble() ??
+          defaultFrostedSheetBlurSigma,
+      frostedSheetTintAlpha:
+          (json['frostedSheetTintAlpha'] as num?)?.toDouble() ??
+          defaultFrostedSheetTintAlpha,
+      frostedSheetBarrierAlpha:
+          (json['frostedSheetBarrierAlpha'] as num?)?.toDouble() ??
+          defaultFrostedSheetBarrierAlpha,
+      frostedBlurEnabled:
+          json['frostedBlurEnabled'] as bool? ?? defaultFrostedBlurEnabled,
+      homePageHeaderBlurEnabled:
+          json['homePageHeaderBlurEnabled'] as bool? ?? false,
+      homePageWeekdayBarBlurEnabled:
+          json['homePageWeekdayBarBlurEnabled'] as bool? ?? false,
+      homePageTimeColumnBlurEnabled:
+          json['homePageTimeColumnBlurEnabled'] as bool? ?? false,
+      homePageBackdropFollowsWeekPager:
+          json['homePageBackdropFollowsWeekPager'] as bool? ?? true,
+      savedThemes:
+          (json['savedThemes'] as List<dynamic>?)
+              ?.map((t) => SavedTheme.fromJson(t as Map<String, dynamic>))
+              .toList() ??
+          const [],
       themeCheckpointName: json['themeCheckpointName'] as String?,
       themeCheckpointConfig: json['themeCheckpointConfig'] != null
-          ? ThemeConfig.fromJson(json['themeCheckpointConfig'] as Map<String, dynamic>)
+          ? ThemeConfig.fromJson(
+              json['themeCheckpointConfig'] as Map<String, dynamic>,
+            )
           : null,
     );
   }
@@ -2000,6 +2148,12 @@ class TimetableSettings {
     String? themeSeedColor,
     ForuiTheme? foruiTheme,
     String? timetablePageBackgroundColor,
+    HomePageBackgroundFill? homePageBackgroundFill,
+    String? homePageBackgroundImagePath,
+    bool clearHomePageBackgroundImagePath = false,
+    String? homePageWallpaperPath,
+    bool clearHomePageWallpaperPath = false,
+    int? homePageBackgroundScope,
     bool? timetableUseUnifiedCardColor,
     String? timetableUnifiedCardColor,
     String? appUpdateDownloadSource,
@@ -2021,6 +2175,14 @@ class TimetableSettings {
     String? timeAxisFontColorLight,
     String? timeAxisFontColorDark,
     bool? linkCourseCardColors,
+    double? frostedSheetBlurSigma,
+    double? frostedSheetTintAlpha,
+    double? frostedSheetBarrierAlpha,
+    bool? frostedBlurEnabled,
+    bool? homePageHeaderBlurEnabled,
+    bool? homePageWeekdayBarBlurEnabled,
+    bool? homePageTimeColumnBlurEnabled,
+    bool? homePageBackdropFollowsWeekPager,
     List<SavedTheme>? savedThemes,
     String? themeCheckpointName,
     ThemeConfig? themeCheckpointConfig,
@@ -2079,8 +2241,10 @@ class TimetableSettings {
       widgetHeightAdjustment:
           widgetHeightAdjustment ?? this.widgetHeightAdjustment,
       widgetCornerRadius: widgetCornerRadius ?? this.widgetCornerRadius,
-      widgetCountdownLeadMinutes: widgetCountdownLeadMinutes ?? this.widgetCountdownLeadMinutes,
-      widgetCountdownTextStyle: widgetCountdownTextStyle ?? this.widgetCountdownTextStyle,
+      widgetCountdownLeadMinutes:
+          widgetCountdownLeadMinutes ?? this.widgetCountdownLeadMinutes,
+      widgetCountdownTextStyle:
+          widgetCountdownTextStyle ?? this.widgetCountdownTextStyle,
       appThemeMode: appThemeMode ?? this.appThemeMode,
       appFontMode: appFontMode ?? this.appFontMode,
       appLocaleTag: _normalizeAppLocaleTag(appLocaleTag ?? this.appLocaleTag),
@@ -2234,6 +2398,16 @@ class TimetableSettings {
       foruiTheme: foruiTheme ?? this.foruiTheme,
       timetablePageBackgroundColor:
           timetablePageBackgroundColor ?? this.timetablePageBackgroundColor,
+      homePageBackgroundFill:
+          homePageBackgroundFill ?? this.homePageBackgroundFill,
+      homePageBackgroundImagePath: clearHomePageBackgroundImagePath
+          ? null
+          : homePageBackgroundImagePath ?? this.homePageBackgroundImagePath,
+      homePageWallpaperPath: clearHomePageWallpaperPath
+          ? null
+          : homePageWallpaperPath ?? this.homePageWallpaperPath,
+      homePageBackgroundScope:
+          homePageBackgroundScope ?? this.homePageBackgroundScope,
       timetableUseUnifiedCardColor:
           timetableUseUnifiedCardColor ?? this.timetableUseUnifiedCardColor,
       timetableUnifiedCardColor:
@@ -2272,11 +2446,30 @@ class TimetableSettings {
           timeAxisFontColorLight ?? this.timeAxisFontColorLight,
       timeAxisFontColorDark:
           timeAxisFontColorDark ?? this.timeAxisFontColorDark,
-      linkCourseCardColors:
-          linkCourseCardColors ?? this.linkCourseCardColors,
+      linkCourseCardColors: linkCourseCardColors ?? this.linkCourseCardColors,
+      frostedSheetBlurSigma:
+          frostedSheetBlurSigma ?? this.frostedSheetBlurSigma,
+      frostedSheetTintAlpha:
+          frostedSheetTintAlpha ?? this.frostedSheetTintAlpha,
+      frostedSheetBarrierAlpha:
+          frostedSheetBarrierAlpha ?? this.frostedSheetBarrierAlpha,
+      frostedBlurEnabled: frostedBlurEnabled ?? this.frostedBlurEnabled,
+      homePageHeaderBlurEnabled:
+          homePageHeaderBlurEnabled ?? this.homePageHeaderBlurEnabled,
+      homePageWeekdayBarBlurEnabled:
+          homePageWeekdayBarBlurEnabled ?? this.homePageWeekdayBarBlurEnabled,
+      homePageTimeColumnBlurEnabled:
+          homePageTimeColumnBlurEnabled ?? this.homePageTimeColumnBlurEnabled,
+      homePageBackdropFollowsWeekPager:
+          homePageBackdropFollowsWeekPager ??
+          this.homePageBackdropFollowsWeekPager,
       savedThemes: savedThemes ?? this.savedThemes,
-      themeCheckpointName: clearThemeCheckpoint ? null : (themeCheckpointName ?? this.themeCheckpointName),
-      themeCheckpointConfig: clearThemeCheckpoint ? null : (themeCheckpointConfig ?? this.themeCheckpointConfig),
+      themeCheckpointName: clearThemeCheckpoint
+          ? null
+          : (themeCheckpointName ?? this.themeCheckpointName),
+      themeCheckpointConfig: clearThemeCheckpoint
+          ? null
+          : (themeCheckpointConfig ?? this.themeCheckpointConfig),
     );
   }
 
@@ -2287,14 +2480,14 @@ class TimetableSettings {
     if (themeCheckpointConfig == null) return false;
     final currentConfig = ThemeConfig.fromSettings(this);
     final checkpoint = themeCheckpointConfig!;
-    
+
     // 只比较检查点中非 null 的字段
     bool differs(String? Function(ThemeConfig c) getter) {
       final checkpointVal = getter(checkpoint);
       if (checkpointVal == null) return false; // 检查点未设置的字段不比较
       return getter(currentConfig) != checkpointVal;
     }
-    
+
     return differs((c) => c.seedColor) ||
         differs((c) => c.backgroundColor) ||
         differs((c) => c.unifiedCardColor) ||

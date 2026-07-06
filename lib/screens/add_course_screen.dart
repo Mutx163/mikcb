@@ -1437,221 +1437,227 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 childPad: false,
                 child: Material(
                   type: MaterialType.transparency,
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: ListView(
-                          padding: const EdgeInsets.all(16),
-                          children: [
-                            _buildWeekModeTileGroup(
-                              tempMode: tempMode,
-                              l10n: l10n,
-                              onSelect: (nextMode) {
-                                setDialogState(() {
-                                  if (nextMode == _WeekSelectionMode.custom &&
-                                      tempCustomWeeks.isEmpty) {
-                                    tempCustomWeeks = buildTempWeeksFromRange()
-                                        .toSet();
-                                    if (tempCustomWeeks.isEmpty) {
-                                      tempCustomWeeks = {tempStartWeek};
-                                    }
-                                  }
-                                  if (nextMode == _WeekSelectionMode.range &&
-                                      tempCustomWeeks.isNotEmpty) {
-                                    final sorted = tempCustomWeeks.toList()
-                                      ..sort();
-                                    tempStartWeek = sorted.first;
-                                    tempEndWeek = sorted.last;
-                                    tempIsOddWeek = false;
-                                    tempIsEvenWeek = false;
-                                  }
-                                  tempMode = nextMode;
-                                });
-                              },
-                            ),
-                            const SizedBox(height: 12),
-                            if (tempMode == _WeekSelectionMode.range) ...[
-                              _buildResponsiveFieldPair(
-                                spacing: 8,
-                                leading: _buildCompactPickerField(
-                                  label: l10n.startWeekLabel,
-                                  value: l10n.weekLabel(tempStartWeek),
-                                  onPress: () => _pickFromSelectSheet(
-                                    title: l10n.startWeekLabel,
-                                    items: {
-                                      for (final week in availableWeeks)
-                                        l10n.weekLabel(week): week,
-                                    },
-                                    currentValue: tempStartWeek,
-                                    onSelected: (value) {
-                                      setDialogState(() {
-                                        tempStartWeek = value;
-                                        if (tempEndWeek < tempStartWeek) {
-                                          tempEndWeek = tempStartWeek;
-                                        }
-                                      });
-                                    },
-                                  ),
-                                ),
-                                trailing: _buildCompactPickerField(
-                                  label: l10n.endWeekLabel,
-                                  value: l10n.weekLabel(tempEndWeek),
-                                  onPress: () => _pickFromSelectSheet(
-                                    title: l10n.endWeekLabel,
-                                    items: {
-                                      for (final week in availableWeeks.where(
-                                        (w) => w >= tempStartWeek,
-                                      ))
-                                        l10n.weekLabel(week): week,
-                                    },
-                                    currentValue: tempEndWeek,
-                                    onSelected: (value) {
-                                      setDialogState(() => tempEndWeek = value);
-                                    },
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              _buildWeekParityTileGroup(
+                  child: HyperosBlurredBodyInset(
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              _buildWeekModeTileGroup(
+                                tempMode: tempMode,
                                 l10n: l10n,
-                                isAllWeeks: !tempIsOddWeek && !tempIsEvenWeek,
-                                isOddWeek: tempIsOddWeek,
-                                isEvenWeek: tempIsEvenWeek,
-                                onSelectAll: () {
+                                onSelect: (nextMode) {
                                   setDialogState(() {
-                                    tempIsOddWeek = false;
-                                    tempIsEvenWeek = false;
+                                    if (nextMode == _WeekSelectionMode.custom &&
+                                        tempCustomWeeks.isEmpty) {
+                                      tempCustomWeeks =
+                                          buildTempWeeksFromRange().toSet();
+                                      if (tempCustomWeeks.isEmpty) {
+                                        tempCustomWeeks = {tempStartWeek};
+                                      }
+                                    }
+                                    if (nextMode == _WeekSelectionMode.range &&
+                                        tempCustomWeeks.isNotEmpty) {
+                                      final sorted = tempCustomWeeks.toList()
+                                        ..sort();
+                                      tempStartWeek = sorted.first;
+                                      tempEndWeek = sorted.last;
+                                      tempIsOddWeek = false;
+                                      tempIsEvenWeek = false;
+                                    }
+                                    tempMode = nextMode;
                                   });
-                                },
-                                onSelectOdd: () {
-                                  setDialogState(() {
-                                    tempIsOddWeek = true;
-                                    tempIsEvenWeek = false;
-                                  });
-                                },
-                                onSelectEven: () {
-                                  setDialogState(() {
-                                    tempIsOddWeek = false;
-                                    tempIsEvenWeek = true;
-                                  });
-                                },
-                              ),
-                            ] else ...[
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final width = constraints.maxWidth;
-                                  final crossAxisCount = width < 340
-                                      ? 4
-                                      : width < 420
-                                      ? 5
-                                      : 6;
-                                  return GridView.builder(
-                                    shrinkWrap: true,
-                                    physics:
-                                        const NeverScrollableScrollPhysics(),
-                                    itemCount: availableWeeks.length,
-                                    gridDelegate:
-                                        SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: crossAxisCount,
-                                          mainAxisSpacing: 8,
-                                          crossAxisSpacing: 8,
-                                          mainAxisExtent: 44,
-                                        ),
-                                    itemBuilder: (context, i) {
-                                      final week = availableWeeks[i];
-                                      final isSelected = tempCustomWeeks
-                                          .contains(week);
-                                      return _buildWeekGridTile(
-                                        week: week,
-                                        isSelected: isSelected,
-                                        onPress: () {
-                                          setDialogState(() {
-                                            if (isSelected) {
-                                              if (tempCustomWeeks.length > 1) {
-                                                tempCustomWeeks.remove(week);
-                                              }
-                                            } else {
-                                              tempCustomWeeks.add(week);
-                                            }
-                                          });
-                                        },
-                                      );
-                                    },
-                                  );
                                 },
                               ),
                               const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  ActionChip(
-                                    label: Text(l10n.selectAllAction),
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        tempCustomWeeks = availableWeeks
-                                            .toSet();
-                                      });
-                                    },
+                              if (tempMode == _WeekSelectionMode.range) ...[
+                                _buildResponsiveFieldPair(
+                                  spacing: 8,
+                                  leading: _buildCompactPickerField(
+                                    label: l10n.startWeekLabel,
+                                    value: l10n.weekLabel(tempStartWeek),
+                                    onPress: () => _pickFromSelectSheet(
+                                      title: l10n.startWeekLabel,
+                                      items: {
+                                        for (final week in availableWeeks)
+                                          l10n.weekLabel(week): week,
+                                      },
+                                      currentValue: tempStartWeek,
+                                      onSelected: (value) {
+                                        setDialogState(() {
+                                          tempStartWeek = value;
+                                          if (tempEndWeek < tempStartWeek) {
+                                            tempEndWeek = tempStartWeek;
+                                          }
+                                        });
+                                      },
+                                    ),
                                   ),
-                                  ActionChip(
-                                    label: Text(l10n.selectOddWeeksAction),
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        tempCustomWeeks = availableWeeks
-                                            .where((week) => week.isOdd)
-                                            .toSet();
-                                      });
-                                    },
+                                  trailing: _buildCompactPickerField(
+                                    label: l10n.endWeekLabel,
+                                    value: l10n.weekLabel(tempEndWeek),
+                                    onPress: () => _pickFromSelectSheet(
+                                      title: l10n.endWeekLabel,
+                                      items: {
+                                        for (final week in availableWeeks.where(
+                                          (w) => w >= tempStartWeek,
+                                        ))
+                                          l10n.weekLabel(week): week,
+                                      },
+                                      currentValue: tempEndWeek,
+                                      onSelected: (value) {
+                                        setDialogState(
+                                          () => tempEndWeek = value,
+                                        );
+                                      },
+                                    ),
                                   ),
-                                  ActionChip(
-                                    label: Text(l10n.selectEvenWeeksAction),
-                                    onPressed: () {
-                                      setDialogState(() {
-                                        tempCustomWeeks = availableWeeks
-                                            .where((week) => week.isEven)
-                                            .toSet();
-                                      });
-                                    },
-                                  ),
-                                ],
+                                ),
+                                const SizedBox(height: 8),
+                                _buildWeekParityTileGroup(
+                                  l10n: l10n,
+                                  isAllWeeks: !tempIsOddWeek && !tempIsEvenWeek,
+                                  isOddWeek: tempIsOddWeek,
+                                  isEvenWeek: tempIsEvenWeek,
+                                  onSelectAll: () {
+                                    setDialogState(() {
+                                      tempIsOddWeek = false;
+                                      tempIsEvenWeek = false;
+                                    });
+                                  },
+                                  onSelectOdd: () {
+                                    setDialogState(() {
+                                      tempIsOddWeek = true;
+                                      tempIsEvenWeek = false;
+                                    });
+                                  },
+                                  onSelectEven: () {
+                                    setDialogState(() {
+                                      tempIsOddWeek = false;
+                                      tempIsEvenWeek = true;
+                                    });
+                                  },
+                                ),
+                              ] else ...[
+                                LayoutBuilder(
+                                  builder: (context, constraints) {
+                                    final width = constraints.maxWidth;
+                                    final crossAxisCount = width < 340
+                                        ? 4
+                                        : width < 420
+                                        ? 5
+                                        : 6;
+                                    return GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: availableWeeks.length,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount: crossAxisCount,
+                                            mainAxisSpacing: 8,
+                                            crossAxisSpacing: 8,
+                                            mainAxisExtent: 44,
+                                          ),
+                                      itemBuilder: (context, i) {
+                                        final week = availableWeeks[i];
+                                        final isSelected = tempCustomWeeks
+                                            .contains(week);
+                                        return _buildWeekGridTile(
+                                          week: week,
+                                          isSelected: isSelected,
+                                          onPress: () {
+                                            setDialogState(() {
+                                              if (isSelected) {
+                                                if (tempCustomWeeks.length >
+                                                    1) {
+                                                  tempCustomWeeks.remove(week);
+                                                }
+                                              } else {
+                                                tempCustomWeeks.add(week);
+                                              }
+                                            });
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children: [
+                                    ActionChip(
+                                      label: Text(l10n.selectAllAction),
+                                      onPressed: () {
+                                        setDialogState(() {
+                                          tempCustomWeeks = availableWeeks
+                                              .toSet();
+                                        });
+                                      },
+                                    ),
+                                    ActionChip(
+                                      label: Text(l10n.selectOddWeeksAction),
+                                      onPressed: () {
+                                        setDialogState(() {
+                                          tempCustomWeeks = availableWeeks
+                                              .where((week) => week.isOdd)
+                                              .toSet();
+                                        });
+                                      },
+                                    ),
+                                    ActionChip(
+                                      label: Text(l10n.selectEvenWeeksAction),
+                                      onPressed: () {
+                                        setDialogState(() {
+                                          tempCustomWeeks = availableWeeks
+                                              .where((week) => week.isEven)
+                                              .toSet();
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              Text(
+                                l10n.selectedWeeksSummary(
+                                  selectedWeeks.length,
+                                  _formatWeekList(selectedWeeks),
+                                ),
+                                style: context.theme.typography.body.sm,
                               ),
                             ],
-                            const SizedBox(height: 12),
-                            Text(
-                              l10n.selectedWeeksSummary(
-                                selectedWeeks.length,
-                                _formatWeekList(selectedWeeks),
-                              ),
-                              style: context.theme.typography.body.sm,
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: HyperosButton(
-                                label: l10n.cancelAction,
-                                variant: HyperosButtonVariant.secondary,
-                                expand: true,
-                                onPressed: () => Navigator.pop(context, false),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: HyperosButton(
+                                  label: l10n.cancelAction,
+                                  variant: HyperosButtonVariant.secondary,
+                                  expand: true,
+                                  onPressed: () =>
+                                      Navigator.pop(context, false),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: HyperosButton(
-                                label: l10n.confirmAction,
-                                expand: true,
-                                onPressed: () => Navigator.pop(context, true),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: HyperosButton(
+                                  label: l10n.confirmAction,
+                                  expand: true,
+                                  onPressed: () => Navigator.pop(context, true),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

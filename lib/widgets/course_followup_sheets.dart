@@ -32,7 +32,7 @@ Future<CourseDeleteMode?> showCourseDeleteModeSheet(
   required bool canDeleteOccurrence,
   required int week,
 }) {
-  return showHyperosSheet<CourseDeleteMode>(
+  return showHomeHyperosSheet<CourseDeleteMode>(
     context: context,
     builder: (sheetContext) => _CourseDeleteModeSheetBody(
       canDeleteOccurrence: canDeleteOccurrence,
@@ -46,7 +46,7 @@ Future<CourseSuspendMode?> showCourseSuspendModeSheet(
   required bool isSuspendedThisWeek,
   required bool hasAnySuspended,
 }) {
-  return showHyperosSheet<CourseSuspendMode>(
+  return showHomeHyperosSheet<CourseSuspendMode>(
     context: context,
     builder: (sheetContext) => _CourseSuspendModeSheetBody(
       isSuspendedThisWeek: isSuspendedThisWeek,
@@ -64,7 +64,7 @@ Future<CourseRescheduleDraft?> showCourseRescheduleSheet(
   required List<SectionTime> sectionTimes,
   required List<String> locationSuggestions,
 }) {
-  return showHyperosSheet<CourseRescheduleDraft>(
+  return showHomeHyperosSheet<CourseRescheduleDraft>(
     context: context,
     builder: (sheetContext) => _CourseRescheduleSheetBody(
       course: course,
@@ -82,7 +82,7 @@ Future<bool> showDeleteCourseConfirmDialog(
   required String title,
   required String message,
 }) {
-  return showHyperosSheet<bool>(
+  return showHomeHyperosSheet<bool>(
     context: context,
     builder: (ctx) =>
         _DeleteCourseConfirmSheetBody(title: title, message: message),
@@ -722,6 +722,7 @@ class _RescheduleSheetScaffold extends StatelessWidget {
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
     return HyperosSheetFrame(
+      frosted: true,
       maxHeight: maxHeight,
       padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
       child: LayoutBuilder(
@@ -829,6 +830,7 @@ class _FollowupSheetContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return HyperosSheetFrame(
+      frosted: true,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       child: child,
     );

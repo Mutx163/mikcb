@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
+import '../logging/app_debug_log.dart';
 import 'package:http/http.dart' as http;
 
 /// 蒲公英 API 配置
@@ -9,10 +9,7 @@ class PgyerApiConfig {
   final String apiKey;
   final String appKey;
 
-  const PgyerApiConfig({
-    required this.apiKey,
-    required this.appKey,
-  });
+  const PgyerApiConfig({required this.apiKey, required this.appKey});
 
   bool get isValid => apiKey.isNotEmpty && appKey.isNotEmpty;
 }
@@ -25,58 +22,53 @@ class PgyerApiService {
   final http.Client _client;
   final PgyerApiConfig? _config;
 
-  PgyerApiService({
-    http.Client? client,
-    PgyerApiConfig? config,
-  })  : _client = client ?? http.Client(),
-        _config = config;
+  PgyerApiService({http.Client? client, PgyerApiConfig? config})
+    : _client = client ?? http.Client(),
+      _config = config;
 
   /// 检测应用更新
   /// 返回 null 表示调用失败或未配置，应降级到 GitHub API
   Future<PgyerAppInfo?> checkForUpdate() async {
     final config = _config;
     if (config == null || !config.isValid) {
-      debugPrint('[PgyerApi] 未配置 API Key，跳过');
+      appDebugLog('PgyerApi', '未配置 API Key，跳过');
       return null;
     }
 
     try {
-      debugPrint('[PgyerApi] 开始检测更新...');
+      appDebugLog('PgyerApi', '开始检测更新…');
       final response = await _client
           .post(
             Uri.parse('$_baseUrl/app/check'),
             headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            body: {
-              '_api_key': config.apiKey,
-              'appKey': config.appKey,
-            },
+            body: {'_api_key': config.apiKey, 'appKey': config.appKey},
           )
           .timeout(_timeout);
 
       if (response.statusCode != 200) {
-        debugPrint('[PgyerApi] 请求失败: ${response.statusCode}');
+        appDebugLog('PgyerApi', '请求失败：${response.statusCode}');
         return null;
       }
 
       final json = jsonDecode(utf8.decode(response.bodyBytes));
       if (json['code'] != 0) {
-        debugPrint('[PgyerApi] API 错误: ${json['message']}');
+        appDebugLog('PgyerApi', 'API 错误：${json['message']}');
         return null;
       }
 
       final data = json['data'] as Map<String, dynamic>?;
       if (data == null) {
-        debugPrint('[PgyerApi] 返回数据为空');
+        appDebugLog('PgyerApi', '返回数据为空');
         return null;
       }
 
-      debugPrint('[PgyerApi] 检测成功: ${data['buildVersion']}');
+      appDebugLog('PgyerApi', '检测成功：${data['buildVersion']}');
       return PgyerAppInfo.fromMap(data);
     } on TimeoutException {
-      debugPrint('[PgyerApi] 请求超时');
+      appDebugLog('PgyerApi', '请求超时');
       return null;
     } catch (e) {
-      debugPrint('[PgyerApi] 异常: $e');
+      appDebugLog('PgyerApi', '异常：$e');
       return null;
     }
   }

@@ -141,19 +141,21 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
-        child: _loading
-            ? const Center(child: HyperosCircularProgress())
-            : ListView.builder(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+        child: HyperosBlurredBodyInset(
+          child: _loading
+              ? const Center(child: HyperosCircularProgress())
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: _entries.length,
+                  itemBuilder: (context, index) {
+                    final entry = _entries[index];
+                    return _ChangelogCard(entry: entry);
+                  },
                 ),
-                itemCount: _entries.length,
-                itemBuilder: (context, index) {
-                  final entry = _entries[index];
-                  return _ChangelogCard(entry: entry);
-                },
-              ),
+        ),
       ),
     );
   }

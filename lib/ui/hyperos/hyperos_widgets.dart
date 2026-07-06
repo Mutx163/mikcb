@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../services/android_animation_scale_service.dart';
+import 'hyperos_controls.dart';
 import 'hyperos_miuix_spec.dart';
 import 'hyperos_switch.dart';
 import 'hyperos_theme.dart';
@@ -117,18 +118,21 @@ class _HyperosUpDownChevronPainter extends CustomPainter {
 
     final w = size.width;
     final midY = size.height / 2;
-    const gap = 1.0;
-    const chevronHalfHeight = 3.5;
+    final halfGap = HyperosMiuixDropdown.arrowChevronGap / 2;
+    final chevronHalfHeight =
+        (size.height - HyperosMiuixDropdown.arrowChevronGap) / 2 - strokeWidth;
 
     // Top chevron points up (^); bottom chevron points down (v).
+    final upBaseline = midY - halfGap;
+    final downBaseline = midY + halfGap;
     final up = Path()
-      ..moveTo(0, midY - gap)
-      ..lineTo(w / 2, midY - gap - chevronHalfHeight)
-      ..lineTo(w, midY - gap);
+      ..moveTo(0, upBaseline)
+      ..lineTo(w / 2, upBaseline - chevronHalfHeight)
+      ..lineTo(w, upBaseline);
     final down = Path()
-      ..moveTo(0, midY + gap)
-      ..lineTo(w / 2, midY + gap + chevronHalfHeight)
-      ..lineTo(w, midY + gap);
+      ..moveTo(0, downBaseline)
+      ..lineTo(w / 2, downBaseline + chevronHalfHeight)
+      ..lineTo(w, downBaseline);
 
     canvas.drawPath(up, paint);
     canvas.drawPath(down, paint);
@@ -231,13 +235,20 @@ Widget _hyperosListRowShell({
   required Widget child,
   double? minHeight,
 }) {
-  return SizedBox(
-    height: minHeight ?? HyperosTokens.listRowMinHeight,
-    child: Padding(
-      padding: padding,
-      child: Align(alignment: Alignment.centerLeft, child: child),
-    ),
+  final targetHeight = minHeight ?? HyperosTokens.listRowMinHeight;
+  final padded = Padding(
+    padding: padding,
+    child: Align(alignment: Alignment.centerLeft, child: child),
   );
+  // Two-line rows use min height so subtitle ellipsis survives narrow widths
+  // (e.g. HyperosPageRoute shared-axis transition) without bottom overflow.
+  if (minHeight != null && minHeight > HyperosTokens.listRowMinHeight) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(minHeight: targetHeight),
+      child: padded,
+    );
+  }
+  return SizedBox(height: targetHeight, child: padded);
 }
 
 /// White rounded card grouping list rows.
@@ -248,20 +259,24 @@ class HyperosListGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: HyperosColors.card(context),
-      shape: HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < children.length; i++)
-            HyperosListTileScope(
-              isFirst: i == 0,
-              isLast: i == children.length - 1,
-              child: children[i],
-            ),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: HyperosColors.card(context),
+        shape: HyperosTheme.cardShape(),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < children.length; i++)
+              HyperosListTileScope(
+                isFirst: i == 0,
+                isLast: i == children.length - 1,
+                child: children[i],
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -285,7 +300,9 @@ class HyperosSectionLabel extends StatelessWidget {
   }
 }
 
-/// Helper text below a [HyperosListGroup].
+/// Footnote below a [HyperosListGroup] (Miuix preference category helper).
+///
+/// Order: [HyperosSectionLabel] → [HyperosListGroup] → [HyperosSectionDescription].
 class HyperosSectionDescription extends StatelessWidget {
   const HyperosSectionDescription({super.key, required this.text});
 
@@ -295,7 +312,54 @@ class HyperosSectionDescription extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(left: HyperosTokens.sectionLabelInset, top: 8),
-      child: Text(text, style: HyperosTypography.sectionDescription(context)),
+      child: Text(
+        text,
+        style: HyperosTypography.sectionDescription(context),
+        softWrap: true,
+      ),
+    );
+  }
+}
+
+/// HyperOS settings block: section title, multiline remark, then a card body.
+///
+/// Use for select rows ([HyperosListGroup]) or control cards below the remark.
+class HyperosSettingsBlock extends StatelessWidget {
+  const HyperosSettingsBlock({
+    super.key,
+    required this.title,
+    this.description,
+    required this.child,
+    this.gapBeforeChild = 0,
+  });
+
+  final String title;
+  final String? description;
+  final Widget child;
+  final double gapBeforeChild;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HyperosSectionLabel(text: title),
+        if (description != null && description!.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: HyperosTokens.sectionLabelInset,
+              right: HyperosTokens.sectionLabelInset,
+            ),
+            child: Text(
+              description!,
+              style: HyperosTypography.sectionDescription(context),
+              softWrap: true,
+            ),
+          ),
+        SizedBox(height: gapBeforeChild),
+        child,
+      ],
     );
   }
 }
@@ -506,6 +570,26 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
       return Material(color: bg, child: widget.child);
     }
 
+    final cardScope = HyperosControlCardScope.maybeOf(context);
+    final cardRowScope = HyperosControlCardRowScope.maybeOf(context);
+    final clipHighlightBottom =
+        _showHighlight && cardScope != null && (cardRowScope?.isLast ?? true);
+
+    Widget highlighted = ColoredBox(
+      color: _showHighlight ? highlight : bg,
+      child: SizedBox(width: double.infinity, child: widget.child),
+    );
+
+    if (clipHighlightBottom) {
+      highlighted = ClipRRect(
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(cardScope.cornerRadius),
+          bottomRight: Radius.circular(cardScope.cornerRadius),
+        ),
+        child: highlighted,
+      );
+    }
+
     return Material(
       color: bg,
       child: Listener(
@@ -518,14 +602,28 @@ class _HyperosPressableRowState extends State<HyperosPressableRow> {
           onTapCancel: _handleTapCancel,
           onTap: widget.onTap != null ? _handleTap : null,
           onLongPress: widget.onLongPress != null ? _handleLongPress : null,
-          child: ColoredBox(
-            color: _showHighlight ? highlight : bg,
-            child: SizedBox(width: double.infinity, child: widget.child),
-          ),
+          child: highlighted,
         ),
       ),
     );
   }
+}
+
+Widget _hyperosTrailingDetails(BuildContext context, String details) {
+  // Non-flex trailing value: only [Expanded] title may flex so chevron stays
+  // pinned to the row's right edge (Miuix ArrowPreference pattern).
+  return ConstrainedBox(
+    constraints: const BoxConstraints(
+      maxWidth: HyperosMiuixDropdown.maxItemTextWidth,
+    ),
+    child: Text(
+      details,
+      style: HyperosTypography.listDetail(context),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.end,
+    ),
+  );
 }
 
 /// Navigation row: colored icon badge, title, optional detail, chevron.
@@ -571,11 +669,13 @@ class HyperosListTile extends StatelessWidget {
                     ? primaryText
                     : primaryText.withValues(alpha: 0.45),
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           if (details != null) ...[
             const SizedBox(width: 6),
-            Text(details!, style: HyperosTypography.listDetail(context)),
+            _hyperosTrailingDetails(context, details!),
             SizedBox(width: HyperosTokens.detailChevronGap),
           ] else
             SizedBox(width: HyperosTokens.titleChevronGap),
@@ -657,10 +757,20 @@ class HyperosSwitchTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: titleStyle),
+                Text(
+                  title,
+                  style: titleStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: subtitleStyle),
+                  Text(
+                    subtitle!,
+                    style: subtitleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ],
             ),
@@ -932,18 +1042,21 @@ class HyperosCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final resolvedPadding = padding ?? HyperosTokens.rowPaddingUniform;
 
-    return Material(
-      color: HyperosColors.card(context),
-      shape: strip ? HyperosTheme.stripShape() : HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
-      child: strip
-          ? ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: HyperosTokens.listRowMinHeight,
-              ),
-              child: Padding(padding: resolvedPadding, child: child),
-            )
-          : Padding(padding: resolvedPadding, child: child),
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: HyperosColors.card(context),
+        shape: strip ? HyperosTheme.stripShape() : HyperosTheme.cardShape(),
+        clipBehavior: Clip.antiAlias,
+        child: strip
+            ? ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minHeight: HyperosTokens.listRowMinHeight,
+                ),
+                child: Padding(padding: resolvedPadding, child: child),
+              )
+            : Padding(padding: resolvedPadding, child: child),
+      ),
     );
   }
 }
@@ -1067,17 +1180,27 @@ class HyperosNavTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: titleStyle),
+                Text(
+                  title,
+                  style: titleStyle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 if (subtitle != null) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: subtitleStyle),
+                  Text(
+                    subtitle!,
+                    style: subtitleStyle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ],
             ),
           ),
           if (details != null) ...[
             const SizedBox(width: 6),
-            Text(details!, style: HyperosTypography.listDetail(context)),
+            _hyperosTrailingDetails(context, details!),
             SizedBox(width: HyperosTokens.detailChevronGap),
           ] else
             SizedBox(width: HyperosTokens.titleChevronGap),

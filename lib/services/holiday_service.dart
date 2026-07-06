@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../logging/app_debug_log.dart';
 import '../models/holiday_entry.dart';
 import 'user_data_sync_hooks.dart';
 
@@ -57,11 +58,13 @@ class HolidayService {
   /// Update process logs (most recent first, capped at 50).
   final List<HolidayLogEntry> logs = [];
 
-  void _log(String message) {
+  void _log(String message, {bool verbose = false}) {
     final entry = HolidayLogEntry(DateTime.now(), message);
     logs.insert(0, entry);
     if (logs.length > 50) logs.removeLast();
-    debugPrint('[HolidayService] $message');
+    if (kDebugMode && !verbose) {
+      appDebugLog('HolidayService', message);
+    }
   }
 
   /// 获取指定年份的节假日数据
@@ -72,7 +75,7 @@ class HolidayService {
     // 1. 内存缓存
     final cached = _memoryCache[year];
     if (cached != null) {
-      _log('$year年：命中内存缓存（${cached.entries.length} 条），后台刷新中…');
+      _log('$year年：命中内存缓存（${cached.entries.length} 条），后台刷新中…', verbose: true);
       _backgroundRefresh(year);
       return cached;
     }
@@ -81,7 +84,10 @@ class HolidayService {
     final localCached = await _loadFromLocalCache(year);
     if (localCached != null) {
       _memoryCache[year] = localCached;
-      _log('$year年：命中本地缓存（${localCached.entries.length} 条），后台刷新中…');
+      _log(
+        '$year年：命中本地缓存（${localCached.entries.length} 条），后台刷新中…',
+        verbose: true,
+      );
       _backgroundRefresh(year);
       return localCached;
     }
@@ -112,7 +118,10 @@ class HolidayService {
         if (remote != null && remote.entries.isNotEmpty) {
           _memoryCache[year] = remote;
           unawaited(_saveToLocalCache(year, remote));
-          _log('$year年：后台更新成功（${remote.entries.length} 条），已覆盖缓存');
+          _log(
+            '$year年：后台更新成功（${remote.entries.length} 条），已覆盖缓存',
+            verbose: true,
+          );
         } else {
           _log('$year年：后台更新未获取到新数据');
         }
@@ -161,7 +170,7 @@ class HolidayService {
   Future<HolidayData?> _fetchFromXiaoai(int year) async {
     try {
       final uri = Uri.parse('$_remoteHolidayBaseUrl?year=$year');
-      _log('正在请求 $uri …');
+      _log('正在请求 $uri …', verbose: true);
       final response = await _client
           .get(
             uri,
@@ -182,7 +191,7 @@ class HolidayService {
         return null;
       }
       final list = json['data'] as List<dynamic>;
-      _log('主 API 返回 ${list.length} 条原始数据，正在解析…');
+      _log('主 API 返回 ${list.length} 条原始数据，正在解析…', verbose: true);
       final entries = _convertApiEntries(list, year);
       if (entries.isEmpty) {
         _log('解析后无有效条目，跳过');
@@ -199,7 +208,7 @@ class HolidayService {
   Future<HolidayData?> _fetchFromAilcc(int year) async {
     try {
       final uri = Uri.parse('$_fallbackHolidayBaseUrl/$year');
-      _log('正在请求 $uri …');
+      _log('正在请求 $uri …', verbose: true);
       final response = await _client
           .get(
             uri,
@@ -220,7 +229,7 @@ class HolidayService {
         return null;
       }
       final holidayMap = json['holiday'] as Map<String, dynamic>;
-      _log('备用 API 返回 ${holidayMap.length} 条原始数据，正在解析…');
+      _log('备用 API 返回 ${holidayMap.length} 条原始数据，正在解析…', verbose: true);
       final entries = _convertAilccEntries(holidayMap, year);
       if (entries.isEmpty) {
         _log('解析后无有效条目，跳过');

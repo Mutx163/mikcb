@@ -3,13 +3,15 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+import '../hyperos_theme.dart';
+
 /// Captures a downsampled snapshot from a [RepaintBoundary].
 abstract final class FrostedCapture {
   /// Capture scale for the header backdrop strip (higher = sharper frost).
   static const headerPixelRatio = 0.72;
 
   /// Extra logical px sampled below the header for blur kernel bleed.
-  static const headerStripBleed = 36.0;
+  static const headerStripBleed = 18.0;
 
   /// Visible header height (status bar + bar), without blur-kernel bleed.
   static double headerVisibleHeightLogical(BuildContext context) {
@@ -46,6 +48,38 @@ abstract final class FrostedCapture {
     }
   }
 
+  /// Like [fromBoundary] but composites onto an opaque page background first.
+  static Future<ui.Image?> fromBoundaryOpaque(
+    GlobalKey boundaryKey, {
+    double pixelRatio = headerPixelRatio,
+  }) async {
+    final snapshot = await fromBoundary(boundaryKey, pixelRatio: pixelRatio);
+    if (snapshot == null) {
+      return null;
+    }
+    final context = boundaryKey.currentContext;
+    if (context == null) {
+      return snapshot;
+    }
+
+    final fillColor = HyperosColors.scaffoldBackground(context);
+    final width = snapshot.width;
+    final height = snapshot.height;
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final bounds = ui.Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble());
+    canvas.drawRect(bounds, ui.Paint()..color = fillColor);
+    canvas.drawImage(snapshot, ui.Offset.zero, ui.Paint());
+    snapshot.dispose();
+
+    final picture = recorder.endRecording();
+    try {
+      return await picture.toImage(width, height);
+    } finally {
+      picture.dispose();
+    }
+  }
+
   /// Crops the header strip from [snapshot] taken at [captureScrollPixels].
   ///
   /// [scrollOffsetLogical] = currentScroll - captureScroll; shifts the crop
@@ -59,6 +93,7 @@ abstract final class FrostedCapture {
     double? visibleHeightLogical,
     double scrollOffsetLogical = 0,
     double pixelRatio = headerPixelRatio,
+    bool paintBackground = true,
   }) async {
     final stripHeight =
         stripHeightLogical ??
@@ -77,10 +112,6 @@ abstract final class FrostedCapture {
     final cropHeight = (stripHeight * pixelRatio).ceil().clamp(
       1,
       snapshot.height,
-    );
-    final displayHeight = (visibleHeight * pixelRatio).ceil().clamp(
-      1,
-      cropHeight,
     );
     final cropWidth = snapshot.width;
 
@@ -102,20 +133,48 @@ abstract final class FrostedCapture {
       cropWidth.toDouble(),
       cropHeight.toDouble(),
     );
+    // Opaque fill before compositing: transparent [toImage] pixels blur to black
+    // halos and blow out light content when alpha is mishandled downstream.
+    if (paintBackground) {
+      final fillColor = context != null
+          ? HyperosColors.scaffoldBackground(context)
+          : const Color(0xFFF5F5F5);
+      canvas.drawRect(dst, ui.Paint()..color = fillColor);
+    }
     canvas.drawImageRect(snapshot, src, dst, ui.Paint());
 
     final picture = recorder.endRecording();
-    late final ui.Image strip;
     try {
-      strip = await picture.toImage(cropWidth, cropHeight);
+      return await picture.toImage(cropWidth, cropHeight);
     } finally {
       picture.dispose();
     }
+  }
 
-    if (displayHeight >= cropHeight) {
-      return strip;
+  /// Crops [source] to the visible header height (drops blur-kernel bleed below).
+  ///
+  /// When [disposeSource] is true, [source] is disposed after pixels are copied
+  /// (only when a new image is created). Callers that still need [source] for
+  /// blur must pass `disposeSource: false`.
+  static Future<ui.Image?> cropTopToVisible(
+    ui.Image source, {
+    required double visibleHeightLogical,
+    double pixelRatio = headerPixelRatio,
+    bool disposeSource = false,
+  }) async {
+    final displayHeight = (visibleHeightLogical * pixelRatio).ceil().clamp(
+      1,
+      source.height,
+    );
+    if (displayHeight >= source.height) {
+      return source;
     }
-    return _cropTop(strip, displayHeight, cropWidth);
+    return _cropTop(
+      source,
+      displayHeight,
+      source.width,
+      disposeSource: disposeSource,
+    );
   }
 
   /// Captures viewport-top strip (fresh [toImage] + crop at offset 0).
@@ -136,26 +195,38 @@ abstract final class FrostedCapture {
       return null;
     }
 
-    final strip = await cropHeaderStripFromSnapshot(
+    final stripWithBleed = await cropHeaderStripFromSnapshot(
       snapshot,
+      context: context,
       stripHeightLogical: stripHeightLogical,
       visibleHeightLogical: visibleHeightLogical,
       pixelRatio: pixelRatio,
     );
     snapshot.dispose();
-    return strip;
+    if (stripWithBleed == null) {
+      return null;
+    }
+    return cropTopToVisible(
+      stripWithBleed,
+      visibleHeightLogical: visibleHeightLogical,
+      pixelRatio: pixelRatio,
+      disposeSource: true,
+    );
   }
 
   static Future<ui.Image?> _cropTop(
     ui.Image source,
     int heightPx,
-    int widthPx,
-  ) async {
+    int widthPx, {
+    bool disposeSource = false,
+  }) async {
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
     final src = ui.Rect.fromLTWH(0, 0, widthPx.toDouble(), heightPx.toDouble());
     canvas.drawImageRect(source, src, src, ui.Paint());
-    source.dispose();
+    if (disposeSource) {
+      source.dispose();
+    }
     final picture = recorder.endRecording();
     try {
       return await picture.toImage(widthPx, heightPx);

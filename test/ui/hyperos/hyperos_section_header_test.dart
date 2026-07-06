@@ -32,6 +32,42 @@ void main() {
       expect(HyperosTheme.cardShape(), isA<RoundedSuperellipseBorder>());
     });
 
+    testWidgets(
+      'list group spans list width when child is intrinsically narrow',
+      (tester) async {
+        const listWidth = 360.0;
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.binding.setSurfaceSize(const Size(listWidth, 640));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ListView(
+                children: [
+                  HyperosListGroup(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Wrap(
+                          children: List.generate(
+                            6,
+                            (_) => const SizedBox(width: 42, height: 42),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        final groupRect = tester.getRect(find.byType(HyperosListGroup));
+        expect(groupRect.width, listWidth);
+      },
+    );
+
     test('strip card uses stadium shape token', () {
       expect(HyperosTheme.stripShape(), isA<StadiumBorder>());
     });
@@ -46,7 +82,14 @@ void main() {
       );
 
       final rowBox = tester.renderObject<RenderBox>(
-        find.ancestor(of: find.text('已下载的应用'), matching: find.byType(SizedBox)),
+        find.descendant(
+          of: find.byType(HyperosNavTile),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.height == HyperosTokens.listRowMinHeight,
+          ),
+        ),
       );
       expect(rowBox.size.height, HyperosTokens.listRowMinHeight);
     });

@@ -123,6 +123,14 @@ flutter {
     source = "../.."
 }
 
+// Work around flutter/flutter#187553: merge*JniLibFolders may stay UP-TO-DATE while
+// Flutter jniLibs changed, packaging a stale libapp.so into flavor APKs.
+tasks.configureEach { task ->
+    if (task.name.startsWith("merge") && task.name.endsWith("JniLibFolders")) {
+        task.outputs.upToDateWhen { false }
+    }
+}
+
 dependencies {
     implementation 'com.umeng.umsdk:common:9.6.3'
     implementation 'com.umeng.umsdk:asms:1.8.0'

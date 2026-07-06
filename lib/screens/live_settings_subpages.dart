@@ -124,7 +124,6 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
       child: HyperosListView(
         children: [
           HyperosSectionLabel(text: l10n.liveReminderSwitchesTitle),
-          HyperosSectionDescription(text: l10n.liveReminderSwitchesSubtitle),
           HyperosListGroup(
             children: [
               HyperosSwitchTile(
@@ -150,6 +149,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
             ],
           ),
+          HyperosSectionDescription(text: l10n.liveReminderSwitchesSubtitle),
           if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd) ...[
             const HyperosSectionGap(),
             HyperosControlCard(
@@ -174,7 +174,6 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
           ],
           const HyperosSectionGap(),
           HyperosSectionLabel(text: l10n.liveDisplayModeTitle),
-          HyperosSectionDescription(text: l10n.liveDisplayModeSubtitle),
           HyperosListGroup(
             children: [
               HyperosSwitchTile(
@@ -199,6 +198,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
               ),
             ],
           ),
+          HyperosSectionDescription(text: l10n.liveDisplayModeSubtitle),
           const HyperosSectionGap(),
           HyperosControlCard(
             title: l10n.liveTimeThresholdTitle,
@@ -354,7 +354,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
     final display = _display;
     final sectionCards = <Widget>[
       HyperosSectionLabel(text: l10n.liveDisplayContentTitle),
-      HyperosSectionDescription(text: l10n.liveDisplayContentSubtitle),
       HyperosListGroup(
         children: [
           HyperosSwitchTile(
@@ -398,9 +397,11 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
         ],
       ),
+      HyperosSectionDescription(text: l10n.liveDisplayContentSubtitle),
       if (display.showCountdown) ...[
         const HyperosSectionGap(),
         HyperosControlCard(
+          edgeToEdge: true,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -415,9 +416,17 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     _updateDisplay(display.copyWith(countdownTextStyle: value)),
               ),
               const SizedBox(height: 4),
-              Text(
-                l10n.countdownFormatHelp,
-                style: HyperosTypography.listDetail(context),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  0,
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  HyperosControlCardScope.defaultBodyBottomInset,
+                ),
+                child: Text(
+                  l10n.countdownFormatHelp,
+                  style: HyperosTypography.listDetail(context),
+                ),
               ),
             ],
           ),
@@ -443,7 +452,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
       ],
       const HyperosSectionGap(),
       HyperosSectionLabel(text: l10n.liveIslandVisualTitle),
-      HyperosSectionDescription(text: l10n.liveIslandVisualSubtitle),
       HyperosListGroup(
         children: [
           HyperosSwitchTile(
@@ -456,6 +464,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
         ],
       ),
+      HyperosSectionDescription(text: l10n.liveIslandVisualSubtitle),
       if (display.enableMiuiIslandLabelImage) ...[
         const HyperosSectionGap(),
         HyperosControlCard(
@@ -732,7 +741,6 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         children: [
           if (widget.forDuringEnd) ...[
             HyperosSectionLabel(text: l10n.liveDisplayConfigModeTitle),
-            HyperosSectionDescription(text: l10n.liveDisplayConfigModeSubtitle),
             HyperosListGroup(
               children: [
                 HyperosSwitchTile(
@@ -744,16 +752,23 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 ),
               ],
             ),
+            HyperosSectionDescription(text: l10n.liveDisplayConfigModeSubtitle),
             const HyperosSectionGap(),
           ],
-          IgnorePointer(
-            ignoring: _followBeforeClass,
-            child: AnimatedOpacity(
-              duration: const Duration(milliseconds: 180),
-              opacity: _followBeforeClass ? 0.5 : 1,
-              child: Column(children: sectionCards),
-            ),
-          ),
+          if (_followBeforeClass)
+            IgnorePointer(
+              ignoring: true,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 180),
+                opacity: 0.5,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: sectionCards,
+                ),
+              ),
+            )
+          else
+            ...sectionCards,
         ],
       ),
     );
@@ -951,7 +966,6 @@ class _LiveKeepAliveSettingsScreenState
       child: HyperosListView(
         children: [
           HyperosSectionLabel(text: l10n.liveKeepAliveOptionsTitle),
-          HyperosSectionDescription(text: l10n.liveKeepAliveOptionsSubtitle),
           HyperosListGroup(
             children: [
               HyperosSwitchTile(
@@ -976,6 +990,7 @@ class _LiveKeepAliveSettingsScreenState
               ),
             ],
           ),
+          HyperosSectionDescription(text: l10n.liveKeepAliveOptionsSubtitle),
         ],
       ),
     );

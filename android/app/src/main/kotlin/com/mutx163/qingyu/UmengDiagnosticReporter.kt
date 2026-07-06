@@ -67,7 +67,7 @@ object UmengDiagnosticReporter {
             }.trim()
             appendToLocalFile(context, payload)
         } catch (error: Exception) {
-            Log.w(TAG, "Failed to persist local diagnostic event", error)
+            Log.w(TAG, DiagnosticLogMessages.LOG_PERSIST_DIAGNOSTIC_EVENT_FAILED, error)
         }
     }
 
@@ -128,7 +128,7 @@ object UmengDiagnosticReporter {
 
             appendToLocalFile(context, payload)
         } catch (error: Exception) {
-            Log.w(TAG, "Failed to persist local diagnostic log", error)
+            Log.w(TAG, DiagnosticLogMessages.LOG_PERSIST_DIAGNOSTIC_LOG_FAILED, error)
         }
     }
 
@@ -143,7 +143,7 @@ object UmengDiagnosticReporter {
                 payload = buildString {
                     appendLine("level=$LEVEL_INFO")
                     appendLine("category=diagnostics_enabled")
-                    appendLine("message=Live diagnostics logging enabled")
+                    appendLine("message=${DiagnosticLogMessages.LIVE_DIAGNOSTICS_ENABLED}")
                 }.trim()
             )
         }
@@ -161,7 +161,7 @@ object UmengDiagnosticReporter {
                     payload = buildString {
                         appendLine("level=$LEVEL_INFO")
                         appendLine("category=diagnostics_bootstrap")
-                        appendLine("message=Export requested before any explicit diagnostic events were recorded")
+                        appendLine("message=${DiagnosticLogMessages.EXPORT_BEFORE_EVENTS}")
                     }.trim()
                 )
             }
@@ -237,7 +237,7 @@ object UmengDiagnosticReporter {
                 payload = buildString {
                     appendLine("level=$LEVEL_INFO")
                     appendLine("category=diagnostics_cleared")
-                    appendLine("message=Live diagnostics log cleared and restarted")
+                    appendLine("message=${DiagnosticLogMessages.DIAGNOSTICS_CLEARED}")
                 }.trim()
             )
             true

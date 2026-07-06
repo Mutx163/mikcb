@@ -23,15 +23,6 @@ class FeedbackScreen extends StatelessWidget {
       title: Text(l10n.feedbackTitle),
       child: HyperosListView(
         children: [
-          HyperosSectionDescription(text: l10n.feedbackIntro),
-          Padding(
-            padding: const EdgeInsets.only(left: 4, top: 8),
-            child: Text(
-              l10n.feedbackIssueHint,
-              style: HyperosTypography.listDetail(context),
-            ),
-          ),
-          const HyperosSectionGap(),
           HyperosListGroup(
             children: [
               _FeedbackChannelTile(

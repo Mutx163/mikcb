@@ -10,7 +10,9 @@ import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import 'logging/app_log_messages.dart';
 import 'models/timetable_settings.dart';
 import 'providers/timetable_provider.dart';
 import 'screens/course_import_screen.dart';
@@ -114,6 +116,34 @@ ThemeData _appThemeData(FThemeData forui, {String? fontFamily}) {
   );
 }
 
+String _bootSwitcherLabel(PackageInfo packageInfo) {
+  if (packageInfo.packageName.endsWith('.profile')) {
+    return '轻屿课表性能版';
+  }
+  if (packageInfo.packageName.endsWith('.debug')) {
+    return '轻屿课表调试版';
+  }
+  final label = packageInfo.appName.trim();
+  return label.isNotEmpty ? label : '轻屿课表';
+}
+
+String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
+  if (kReleaseMode) {
+    return l10n.appTitle;
+  }
+  if (packageInfo.packageName.endsWith('.profile')) {
+    return l10n.appTitleProfile;
+  }
+  if (packageInfo.packageName.endsWith('.debug')) {
+    return l10n.appTitleDebug;
+  }
+  final label = packageInfo.appName.trim();
+  if (label.isNotEmpty) {
+    return label;
+  }
+  return l10n.appTitle;
+}
+
 Future<void> main() async {
   runZonedGuarded(
     () {
@@ -161,13 +191,9 @@ Future<void> main() async {
       };
 
       unawaited(() async {
-        await BundledAssets.warmUp();
-        await AndroidAnimationScaleService.ensureInitialized();
-        if (!kReleaseMode) {
-          registerHyperosLayoutDebugTuning();
-          await loadDebugTuningPreferencesIfNeeded();
-        }
-        runApp(const MyApp());
+        final packageInfo = await PackageInfo.fromPlatform();
+        runApp(MyApp(packageInfo: packageInfo));
+        unawaited(_warmUpAfterFirstFrame(packageInfo));
       }());
     },
     (error, stackTrace) {
@@ -190,8 +216,35 @@ Future<void> main() async {
   );
 }
 
+Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
+  try {
+    await Future.wait([
+      BundledAssets.warmUp(),
+      AndroidAnimationScaleService.ensureInitialized(),
+    ]);
+    if (!kReleaseMode) {
+      registerHyperosLayoutDebugTuning();
+      await loadDebugTuningPreferencesIfNeeded();
+    }
+    await SystemChrome.setApplicationSwitcherDescription(
+      ApplicationSwitcherDescription(label: _bootSwitcherLabel(packageInfo)),
+    );
+  } catch (error, stackTrace) {
+    unawaited(
+      AppLogService.instance.error(
+        'startup_warmup_failed',
+        error.toString(),
+        error: error,
+        stackTrace: stackTrace,
+      ),
+    );
+  }
+}
+
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, required this.packageInfo});
+
+  final PackageInfo packageInfo;
 
   @override
   Widget build(BuildContext context) {
@@ -230,9 +283,10 @@ class MyApp extends StatelessWidget {
 
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                onGenerateTitle: (context) => kReleaseMode
-                    ? AppLocalizations.of(context)!.appTitle
-                    : AppLocalizations.of(context)!.appTitleDebug,
+                onGenerateTitle: (context) => _windowTitleForPackage(
+                  packageInfo,
+                  AppLocalizations.of(context)!,
+                ),
                 localizationsDelegates: const [
                   AppLocalizations.delegate,
                   GlobalMaterialLocalizations.delegate,
@@ -248,14 +302,20 @@ class MyApp extends StatelessWidget {
                 builder: (context, child) {
                   final isDark =
                       Theme.of(context).brightness == Brightness.dark;
-                  return FTheme(
-                    data: isDark ? foruiDark : foruiLight,
-                    child: FTooltipGroup(
-                      child: ScaffoldMessenger(
-                        child: Scaffold(
-                          backgroundColor: Colors.transparent,
-                          resizeToAvoidBottomInset: false,
-                          body: DebugTuningOverlayHost(child: child!),
+                  final frostedAppearance = FrostedAppearance.fromSettings(
+                    context.watch<TimetableProvider>().settings,
+                  );
+                  return FrostedAppearanceScope(
+                    appearance: frostedAppearance,
+                    child: FTheme(
+                      data: isDark ? foruiDark : foruiLight,
+                      child: FTooltipGroup(
+                        child: ScaffoldMessenger(
+                          child: Scaffold(
+                            backgroundColor: Colors.transparent,
+                            resizeToAvoidBottomInset: false,
+                            body: DebugTuningOverlayHost(child: child!),
+                          ),
                         ),
                       ),
                     ),
@@ -315,7 +375,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     unawaited(
       AppLogService.instance.info(
         'startup_flow_started',
-        'Startup flow handling started',
+        AppLogMessages.startupFlowStarted,
       ),
     );
 
@@ -391,7 +451,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         unawaited(
           AppLogService.instance.info(
             'startup_flow_completed',
-            'Startup flow completed without onboarding screens',
+            AppLogMessages.startupFlowCompletedNoOnboarding,
           ),
         );
         setState(() {
@@ -430,7 +490,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       unawaited(
         AppLogService.instance.info(
           'startup_flow_completed',
-          'Startup flow completed after guide/onboarding',
+          AppLogMessages.startupFlowCompletedAfterGuide,
         ),
       );
       setState(() {
@@ -441,7 +501,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       unawaited(
         AppLogService.instance.error(
           'startup_flow_failed',
-          'Startup flow failed, entering degraded mode',
+          AppLogMessages.startupFlowFailed,
           error: e,
           stackTrace: stackTrace,
         ),
@@ -700,7 +760,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   @override
   Widget build(BuildContext context) {
     if (_isBootstrapping) {
-      return const Scaffold();
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     return const TimetableScreen();
   }
@@ -714,7 +774,7 @@ class _AppLifecycleLogObserver with WidgetsBindingObserver {
     unawaited(
       AppLogService.instance.info(
         'app_lifecycle_state_changed',
-        'App lifecycle changed',
+        AppLogMessages.appLifecycleChanged,
         extras: {'state': state.name},
       ),
     );
@@ -739,7 +799,7 @@ class _AppRouteLogObserver extends NavigatorObserver {
     unawaited(
       AppLogService.instance.info(
         'route_replaced',
-        'Navigator route replaced',
+        AppLogMessages.navigatorRouteReplaced,
         extras: {
           'route': _describeRoute(newRoute),
           'previousRoute': _describeRoute(oldRoute),
@@ -757,7 +817,7 @@ class _AppRouteLogObserver extends NavigatorObserver {
     unawaited(
       AppLogService.instance.debug(
         category,
-        'Navigator route changed',
+        AppLogMessages.navigatorRouteChanged,
         extras: {
           'route': _describeRoute(route),
           'previousRoute': _describeRoute(previousRoute),

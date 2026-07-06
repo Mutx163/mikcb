@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 
 import 'hyperos_miuix_spec.dart';
@@ -47,6 +48,23 @@ abstract final class HyperosColors {
         ? _colors(context).secondary
         : HyperosTokens.pressed;
   }
+
+  /// Miuix preference category caption (e.g. 预设主题 / 权限管控).
+  static Color sectionLabel(BuildContext context) {
+    return _brightness(context) == Brightness.dark
+        ? HyperosMiuixDarkColors.onSurfaceVariantActions
+        : HyperosTokens.sectionLabelColor;
+  }
+
+  /// Status bar icons/background aligned to a solid page or header color.
+  static SystemUiOverlayStyle systemOverlayForBackground(Color background) {
+    final light = background.computeLuminance() > 0.5;
+    return SystemUiOverlayStyle(
+      statusBarColor: background,
+      statusBarIconBrightness: light ? Brightness.dark : Brightness.light,
+      statusBarBrightness: light ? Brightness.light : Brightness.dark,
+    );
+  }
 }
 
 abstract final class HyperosTypography {
@@ -67,16 +85,13 @@ abstract final class HyperosTypography {
     );
   }
 
-  /// Miuix preference category caption — light tertiary text (e.g. 权限管控).
+  /// Miuix preference category caption above list groups (e.g. 预设主题).
   static TextStyle sectionLabel(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextStyle(
       fontSize: HyperosTokens.sectionLabelSize,
       fontWeight: FontWeight.w400,
       height: 1.3,
-      color: isDark
-          ? HyperosMiuixDarkColors.onSurfaceVariantActions
-          : HyperosTokens.sectionLabelColor,
+      color: HyperosColors.sectionLabel(context),
     );
   }
 

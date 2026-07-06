@@ -9,11 +9,11 @@ class KeepAliveAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         KeepAliveAccessibilityStatus.markServiceConnected(true)
-        Log.i("KeepAliveAccessibility", "Accessibility keep-alive service connected")
+        Log.i("KeepAliveAccessibility", DiagnosticLogMessages.LOG_KEEP_ALIVE_CONNECTED)
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "keep_alive_accessibility_connected",
-            message = "Accessibility keep-alive service connected",
+            message = DiagnosticLogMessages.KEEP_ALIVE_ACCESSIBILITY_CONNECTED,
         )
         // Trigger an immediate widget refresh and ensure the WorkManager
         // periodic backup is scheduled, so widgets stay updated even when
@@ -23,7 +23,7 @@ class KeepAliveAccessibilityService : AccessibilityService() {
             HomeWidgetStorage.rescheduleRefresh(applicationContext)
             WidgetRefreshWorker.ensureScheduled(applicationContext)
         } catch (e: Exception) {
-            Log.w("KeepAliveAccessibility", "Failed to refresh widget on connect", e)
+            Log.w("KeepAliveAccessibility", DiagnosticLogMessages.LOG_KEEP_ALIVE_REFRESH_WIDGET_FAILED, e)
         }
     }
 
@@ -32,7 +32,7 @@ class KeepAliveAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Log.i("KeepAliveAccessibility", "Accessibility keep-alive service interrupted")
+        Log.i("KeepAliveAccessibility", DiagnosticLogMessages.LOG_KEEP_ALIVE_INTERRUPTED)
     }
 
     override fun onUnbind(intent: Intent?): Boolean {

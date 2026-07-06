@@ -2,6 +2,7 @@
   "@@locale": "zh_HK",
   "appTitle": "輕嶼課表",
   "appTitleDebug": "輕嶼課表偵錯版",
+  "appTitleProfile": "輕嶼課表效能版",
   "appearanceTitle": "外觀與配色",
   "previewTitle": "預覽",
   "timetableBackgroundPreview": "課表背景",
@@ -44,6 +45,91 @@
   },
   "dataTransferEntryTitle": "資料備份與遷移",
   "dataTransferEntrySubtitle": "匯出完整課表檔案，給別人直接匯入使用",
+  "cloudSyncEntryTitle": "雲端同步（WEBDAV）",
+  "cloudSyncEntrySubtitle": "透過堅果雲等多裝置同步課表與匯入資料",
+  "cloudSyncTitle": "雲端同步",
+  "cloudSyncIntroTitle": "多裝置同步",
+  "cloudSyncIntroSubtitle": "設定堅果雲 WEBDAV 後，可在手機、平板之間自動同步課表、倉庫帳號與相關設定。",
+  "cloudSyncSettingsSectionTitle": "同步設定",
+  "cloudSyncSettingsSectionSubtitle": "可切換手動或自動同步。",
+  "cloudSyncEnabledTitle": "啟用雲端同步",
+  "cloudSyncEnabledSubtitle": "關閉後不會上傳或下載雲端快照",
+  "cloudSyncProviderTitle": "服務提供商",
+  "cloudSyncProviderJianguoyun": "堅果雲",
+  "cloudSyncProviderCustom": "自訂 WEBDAV",
+  "cloudSyncModeTitle": "同步方式",
+  "cloudSyncModeAuto": "自動同步",
+  "cloudSyncModeManual": "手動同步",
+  "cloudSyncAccountTitle": "帳號設定",
+  "cloudSyncAccountSubtitle": "請使用堅果雲應用程式專用密碼，而不是登入密碼。快照會包含倉庫記住的學校帳號。",
+  "cloudSyncUsernameLabel": "電郵 / 用戶名稱",
+  "cloudSyncUsernameHint": "堅果雲註冊電郵",
+  "cloudSyncPasswordLabel": "應用程式專用密碼",
+  "cloudSyncPasswordHint": "在堅果雲帳戶安全選項中產生",
+  "cloudSyncPasswordStoredHint": "已儲存密碼；留空表示繼續使用已儲存的密碼。",
+  "cloudSyncAdvancedTitle": "進階設定",
+  "cloudSyncBaseUrlLabel": "WEBDAV 網址",
+  "cloudSyncRemoteFolderLabel": "遠端目錄",
+  "cloudSyncStatusTitle": "同步狀態",
+  "cloudSyncLastSyncedLabel": "上次同步",
+  "cloudSyncLastErrorLabel": "最近錯誤",
+  "cloudSyncLastSyncedAt": "上次同步：{time}",
+  "@cloudSyncLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncSyncing": "正在同步…",
+  "cloudSyncLastError": "最近錯誤：{message}",
+  "@cloudSyncLastError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncHelpTitle": "如何取得堅果雲應用程式密碼",
+  "cloudSyncHelpBody": "開啟堅果雲網頁或客戶端 → 帳戶資料 → 安全選項 → 新增應用程式密碼。WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ 。",
+  "cloudSyncTestConnection": "測試連線",
+  "cloudSyncSyncNow": "立即同步",
+  "cloudSyncTestSuccess": "WEBDAV 連線成功",
+  "cloudSyncTestFailed": "WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網絡",
+  "cloudSyncResultUploaded": "已上傳到雲端",
+  "cloudSyncResultDownloaded": "已從雲端還原",
+  "cloudSyncResultUpToDate": "本機與雲端已一致",
+  "cloudSyncResultCancelled": "已取消同步",
+  "cloudSyncResultFailed": "同步失敗：{message}",
+  "@cloudSyncResultFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncConflictTitle": "偵測到同步衝突",
+  "cloudSyncConflictBody": "本機和雲端都有新的修改。請選擇保留哪一邊的資料。",
+  "cloudSyncUseRemoteAction": "使用雲端",
+  "cloudSyncKeepLocalAction": "保留本機",
+  "cloudSyncAccountSectionTitle": "雲端帳號",
+  "cloudSyncNotConnectedHint": "連接堅果雲後，可在多裝置間同步課表與匯入資料。",
+  "cloudSyncConnectAccount": "連接堅果雲",
+  "cloudSyncConnectedAs": "已連接：{email}",
+  "@cloudSyncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncDisconnect": "中斷連線",
+  "cloudSyncDisconnectTitle": "中斷雲端同步帳號",
+  "cloudSyncDisconnectBody": "中斷後將清除本機儲存的 WEBDAV 憑證，課表資料仍保留在本機。是否繼續？",
+  "cloudSyncLoginSheetTitle": "連接堅果雲",
+  "cloudSyncLoginSheetSubtitle": "請使用應用程式專用密碼，不要使用堅果雲登入密碼。",
+  "cloudSyncConfirmConnect": "確認連接",
+  "cloudSyncConnectSuccess": "帳號連接成功",
   "lanEditEntryTitle": "局域網編輯",
   "lanEditEntrySubtitle": "在電腦瀏覽器中編輯當前課表",
   "lanEditTitle": "局域網編輯",
@@ -1333,8 +1419,20 @@
     }
   },
   "liveDisplaySummaryStageText": "階段文字",
-  "liveDisplaySummaryLeftLabelImage": "左側圖示",
+  "liveDisplaySummaryLeftLabelImage": "圖示",
   "liveDisplaySummaryMinimal": "最簡顯示",
+  "liveDisplaySummaryCountdownShort": "倒數",
+  "liveDisplaySummaryMore": "{first}等{count}項",
+  "@liveDisplaySummaryMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "guideHyperOsChip": "HyperOS 3.0.300+",
   "guideStatusTitle": "目前狀態",
   "guideStatusNotificationPermission": "通知權限",

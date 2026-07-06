@@ -58,10 +58,17 @@ void main() {
 
     expect(find.text('Appearance settings'), findsOneWidget);
     expect(find.text('Dark mode'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    // Subpages default to overlay layout for BackdropFilter header blur.
     expect(
       find.byWidgetPredicate(
         (widget) =>
-            widget is HyperosBlurredHeaderScope && widget.contentTopInset == 0,
+            widget is HyperosBlurredHeaderScope &&
+            widget.contentTopInset > 0 &&
+            widget.blurEnabled,
       ),
       findsOneWidget,
     );
@@ -134,7 +141,87 @@ void main() {
     expect(find.text('Item 0'), findsOneWidget);
   });
 
-  testWidgets('subpage enables header blur after settle delay', (
+  testWidgets('settings home preserves scroll after popping subpage', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: Builder(
+          builder: (context) {
+            return HyperosSubpage(
+              overlayHeader: true,
+              onBack: () {},
+              title: const Text('Settings'),
+              child: HyperosListView(
+                pageStorageKey: const PageStorageKey<String>(
+                  'timetable-settings-main',
+                ),
+                itemCount: 40,
+                itemBuilder: (context, index) => HyperosListTile(
+                  icon: Icons.settings_outlined,
+                  title: 'Item $index',
+                  onTap: index == 25
+                      ? () {
+                          HyperosNavigation.push(
+                            context,
+                            builder: (_) => HyperosSubpage(
+                              onBack: () => Navigator.pop(context),
+                              title: const Text('Sub settings'),
+                              child: HyperosListView(
+                                children: const [
+                                  HyperosListTile(
+                                    icon: Icons.dark_mode_outlined,
+                                    title: 'Sub item',
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                      : null,
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final homeScrollable = find.descendant(
+      of: find.byType(HyperosListView).first,
+      matching: find.byType(Scrollable),
+    );
+    await tester.scrollUntilVisible(
+      find.text('Item 25'),
+      120,
+      scrollable: homeScrollable,
+    );
+    await tester.pumpAndSettle();
+
+    final pixelsBefore = tester
+        .state<ScrollableState>(homeScrollable)
+        .position
+        .pixels;
+    expect(pixelsBefore, greaterThan(100));
+
+    await tapListTileBelowOverlayHeader(tester, 'Item 25');
+    await tester.pumpAndSettle();
+    expect(find.text('Sub item'), findsOneWidget);
+
+    Navigator.of(tester.element(find.text('Sub item'))).pop();
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+
+    final pixelsAfter = tester
+        .state<ScrollableState>(homeScrollable)
+        .position
+        .pixels;
+    expect(pixelsAfter, closeTo(pixelsBefore, 1));
+  });
+
+  testWidgets('subpage enables backdrop blur after settle on overlay layout', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -169,16 +256,6 @@ void main() {
     await tapListTileBelowOverlayHeader(tester, 'Appearance');
     await tester.pumpAndSettle();
 
-    expect(
-      find.byWidgetPredicate(
-        (widget) =>
-            widget is HyperosBlurredHeaderScope &&
-            widget.contentTopInset == 0 &&
-            !widget.blurEnabled,
-      ),
-      findsOneWidget,
-    );
-
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pump();
 
@@ -186,8 +263,61 @@ void main() {
       find.byWidgetPredicate(
         (widget) =>
             widget is HyperosBlurredHeaderScope &&
-            widget.contentTopInset == 0 &&
+            widget.contentTopInset > 0 &&
             widget.blurEnabled,
+      ),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('modal bottom sheet keeps header backdrop blur on subpage', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          overlayHeader: true,
+          onBack: () {},
+          title: const Text('Appearance'),
+          child: HyperosListView(
+            children: [
+              HyperosSelectTile<String>(
+                label: 'Theme preset',
+                items: const {
+                  'Blue': 'blue',
+                  'Green': 'green',
+                  'Orange': 'orange',
+                  'Red': 'red',
+                  'Violet': 'violet',
+                  'Yellow': 'yellow',
+                  'Rose': 'rose',
+                  'Slate': 'slate',
+                },
+                value: 'blue',
+                onChanged: (_) {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is HyperosBlurredHeaderScope && widget.blurEnabled,
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Theme preset'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byWidgetPredicate(
+        (widget) => widget is HyperosBlurredHeaderScope && widget.blurEnabled,
       ),
       findsOneWidget,
     );

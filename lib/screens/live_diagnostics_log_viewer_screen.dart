@@ -6,6 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
+import '../logging/app_log_messages.dart';
 import '../utils/app_toast.dart';
 
 enum DiagnosticsLogViewMode { structured, raw }
@@ -110,11 +111,13 @@ class _LiveDiagnosticsLogViewerScreenState
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
       suffixes: _buildHeaderActions(l10n),
-      child: _loading
-          ? const Center(child: HyperosCircularProgress())
-          : _loadError != null
-          ? _buildLoadError(context, l10n)
-          : _buildBody(context, l10n),
+      child: HyperosBlurredBodyInset(
+        child: _loading
+            ? const Center(child: HyperosCircularProgress())
+            : _loadError != null
+            ? _buildLoadError(context, l10n)
+            : _buildBody(context, l10n),
+      ),
     );
   }
 
@@ -676,7 +679,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                             ),
                           if (entry.category.isNotEmpty)
                             Text(
-                              entry.category,
+                              categoryDisplayLabel(entry.category),
                               style: typo.sm.copyWith(
                                 color: colors.mutedForeground,
                                 fontWeight: FontWeight.w600,
@@ -1085,18 +1088,8 @@ String _prettyKey(String key, AppLocalizations l10n) {
     case 'level':
     case 'severity':
       return l10n.diagnosticsLevelLabel;
-    case 'throwable':
-      return 'Throwable';
-    case 'extras':
-      return 'Extras';
-    case 'context':
-      return 'Context';
-    case 'truncated':
-      return 'Truncated';
-    case 'truncatedHint':
-      return 'Truncation hint';
     default:
-      return key;
+      return fieldDisplayLabel(key);
   }
 }
 

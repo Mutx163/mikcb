@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../logging/app_debug_log.dart';
+import '../logging/app_log_messages.dart';
 import 'app_log_service.dart';
 import 'umeng_analytics_service.dart';
 
@@ -28,17 +30,17 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await AppLogService.instance.error(
         'miui_live_initialize_failed',
-        'Failed to initialize MIUI live activities channel',
+        AppLogMessages.miuiLiveInitializeFailed,
         error: e,
         stackTrace: stackTrace,
       );
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_flutter_initialize_failed',
-        'Failed to initialize MIUI live activities channel',
+        AppLogMessages.miuiLiveInitializeFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to initialize: $e');
+      appDebugLog('MiuiLive', '初始化失败：$e');
     }
   }
 
@@ -87,11 +89,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_open_promoted_settings_failed',
-          'Failed to open promoted settings',
+          AppLogMessages.miuiLiveOpenPromotedSettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to open settings: $e');
+      appDebugLog('MiuiLive', '打开设置失败：$e');
     }
   }
 
@@ -102,11 +104,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_open_notification_settings_failed',
-          'Failed to open notification settings',
+          AppLogMessages.miuiLiveOpenNotificationSettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to open notification settings: $e');
+      appDebugLog('MiuiLive', '打开通知设置失败：$e');
     }
   }
 
@@ -117,11 +119,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_open_autostart_settings_failed',
-          'Failed to open auto-start settings',
+          AppLogMessages.miuiLiveOpenAutostartSettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to open auto-start settings: $e');
+      appDebugLog('MiuiLive', '打开自启动设置失败：$e');
     }
   }
 
@@ -132,11 +134,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_open_battery_settings_failed',
-          'Failed to open battery optimization settings',
+          AppLogMessages.miuiLiveOpenBatterySettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to open battery optimization settings: $e');
+      appDebugLog('MiuiLive', '打开电池优化设置失败：$e');
     }
   }
 
@@ -147,11 +149,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_open_accessibility_settings_failed',
-          'Failed to open accessibility settings',
+          AppLogMessages.miuiLiveOpenAccessibilitySettingsFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to open accessibility settings: $e');
+      appDebugLog('MiuiLive', '打开无障碍设置失败：$e');
     }
   }
 
@@ -185,11 +187,11 @@ class MiuiLiveActivitiesService {
       unawaited(
         AppLogService.instance.warn(
           'miui_live_hide_from_recents_failed',
-          'Failed to update hide-from-recents',
+          AppLogMessages.miuiLiveHideFromRecentsFailed,
           extras: {'error': '$e', 'value': value},
         ),
       );
-      debugPrint('Failed to update hide-from-recents: $e');
+      appDebugLog('MiuiLive', '更新从最近任务隐藏失败：$e');
     }
   }
 
@@ -331,11 +333,11 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_start_failed',
-        'Failed to start live update from Flutter',
+        AppLogMessages.liveUpdateStartFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to start live update: $e');
+      appDebugLog('MiuiLive', '启动超级岛失败：$e');
     }
   }
 
@@ -345,11 +347,11 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_stop_failed',
-        'Failed to stop live update from Flutter',
+        AppLogMessages.liveUpdateStopFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to stop: $e');
+      appDebugLog('MiuiLive', '停止超级岛失败：$e');
     }
   }
 
@@ -361,11 +363,11 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_debug_status_failed',
-        'Failed to fetch native live update debug status',
+        AppLogMessages.liveUpdateDebugStatusFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to fetch live update debug status: $e');
+      appDebugLog('MiuiLive', '获取超级岛调试状态失败：$e');
       return {
         'summary': {
           'serviceRunning': false,
@@ -516,25 +518,26 @@ class MiuiLiveActivitiesService {
       await _channel.invokeMethod('syncScheduleSnapshot', snapshotJson);
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_settings_synced',
-        'Flutter live update settings synced: '
-            'beforeClass=${settings.liveEnableBeforeClass}, '
-            'duringClass=${settings.liveEnableDuringClass}, '
-            'beforeEnd=${settings.liveEnableBeforeEnd}, '
-            'promote=${settings.livePromoteDuringClass}, '
-            'notification=${settings.liveShowDuringClassNotification}, '
-            'countdown=${settings.liveShowCountdown}, '
-            'courseName=${settings.liveShowCourseName}, '
-            'location=${settings.liveShowLocation}',
+        AppLogMessages.liveUpdateSettingsSynced(
+          beforeClass: settings.liveEnableBeforeClass,
+          duringClass: settings.liveEnableDuringClass,
+          beforeEnd: settings.liveEnableBeforeEnd,
+          promote: settings.livePromoteDuringClass,
+          notification: settings.liveShowDuringClassNotification,
+          countdown: settings.liveShowCountdown,
+          courseName: settings.liveShowCourseName,
+          location: settings.liveShowLocation,
+        ),
       );
       return true;
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_snapshot_sync_failed',
-        'Failed to sync live update schedule snapshot',
+        AppLogMessages.liveUpdateSnapshotSyncFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to sync schedule snapshot: $e');
+      appDebugLog('MiuiLive', '同步课表快照失败：$e');
       return false;
     }
   }
@@ -547,11 +550,11 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_snapshot_clear_failed',
-        'Failed to clear live update schedule snapshot',
+        AppLogMessages.liveUpdateSnapshotClearFailed,
         error: e,
         stackTrace: stackTrace,
       );
-      debugPrint('Failed to clear schedule snapshot: $e');
+      appDebugLog('MiuiLive', '清空课表快照失败：$e');
       return false;
     }
   }

@@ -33,7 +33,7 @@ class UmengApplication : Application() {
                     return false
                 }
 
-                Log.i("UmengApplication", "Initializing Umeng analytics")
+                Log.i("UmengApplication", DiagnosticLogMessages.LOG_INIT_UMENG_ANALYTICS)
                 UMConfigure.init(
                     context.applicationContext,
                     BuildConfig.UMENG_APP_KEY,

@@ -71,21 +71,23 @@ class _TimeSchemeManagementScreenState
               onPress: () => _createScheme(context),
             ),
           ],
-          child: ListView.separated(
-            padding: HyperosTokens.listPadding,
-            itemCount: schemes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final scheme = schemes[index];
-              final isActive = scheme.id == activeSchemeId;
-              final usage = _buildUsageSummary(provider, scheme.id);
-              return _buildSchemeCard(
-                context,
-                scheme: scheme,
-                usage: usage,
-                isActive: isActive,
-              );
-            },
+          child: HyperosBlurredBodyInset(
+            child: ListView.separated(
+              padding: HyperosTokens.listPadding,
+              itemCount: schemes.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final scheme = schemes[index];
+                final isActive = scheme.id == activeSchemeId;
+                final usage = _buildUsageSummary(provider, scheme.id);
+                return _buildSchemeCard(
+                  context,
+                  scheme: scheme,
+                  usage: usage,
+                  isActive: isActive,
+                );
+              },
+            ),
           ),
         );
       },
@@ -633,169 +635,175 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
           onPress: _save,
         ),
       ],
-      child: ListView(
-        padding: HyperosTokens.listPadding,
-        children: [
-          HyperosControlCard(
-            title: l10n.timeSchemeNameLabel,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: l10n.timeSchemeNameLabel,
+      child: HyperosBlurredBodyInset(
+        child: ListView(
+          padding: HyperosTokens.listPadding,
+          children: [
+            HyperosControlCard(
+              title: l10n.timeSchemeNameLabel,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _nameController,
+                    decoration: InputDecoration(
+                      border: const OutlineInputBorder(),
+                      labelText: l10n.timeSchemeNameLabel,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (isActive)
-                      _TimeSchemeBadge(
-                        text: l10n.currentInUse,
-                        icon: Icons.check_circle_outline_rounded,
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (isActive)
+                        _TimeSchemeBadge(
+                          text: l10n.currentInUse,
+                          icon: Icons.check_circle_outline_rounded,
+                        ),
+                      _TimeSchemeInfoChip(
+                        label: l10n.profileCountLabel,
+                        value: l10n.profileCountValue(usage.profileCount),
                       ),
-                    _TimeSchemeInfoChip(
-                      label: l10n.profileCountLabel,
-                      value: l10n.profileCountValue(usage.profileCount),
-                    ),
-                    _TimeSchemeInfoChip(
-                      label: l10n.courseCountLabel,
-                      value: l10n.courseSectionCountValue(usage.courseCount),
-                    ),
-                    _TimeSchemeInfoChip(
-                      label: l10n.overrideTimeSchemeLabel,
-                      value: l10n.courseSectionCountValue(
-                        usage.overrideCourseCount,
+                      _TimeSchemeInfoChip(
+                        label: l10n.courseCountLabel,
+                        value: l10n.courseSectionCountValue(usage.courseCount),
                       ),
+                      _TimeSchemeInfoChip(
+                        label: l10n.overrideTimeSchemeLabel,
+                        value: l10n.courseSectionCountValue(
+                          usage.overrideCourseCount,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (isActive || usage.courseCount > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      isActive && usage.courseCount > 0
+                          ? l10n.timeSchemeEditorActiveAndCoursesHint
+                          : isActive
+                          ? l10n.timeSchemeEditorActiveHint
+                          : l10n.timeSchemeEditorOverrideHint,
+                      style: theme.typography.body.xs,
                     ),
                   ],
-                ),
-                if (isActive || usage.courseCount > 0) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    isActive && usage.courseCount > 0
-                        ? l10n.timeSchemeEditorActiveAndCoursesHint
-                        : isActive
-                        ? l10n.timeSchemeEditorActiveHint
-                        : l10n.timeSchemeEditorOverrideHint,
-                    style: theme.typography.body.xs,
-                  ),
+                  if (usage.previewText != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      usage.previewText!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.typography.body.xs,
+                    ),
+                  ],
                 ],
-                if (usage.previewText != null) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    usage.previewText!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.typography.body.xs,
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-          const HyperosSectionGap(),
-          HyperosControlCard(
-            title: l10n.sectionTimesTitle,
-            subtitle: l10n.sectionTimesSubtitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    HyperosButton(
-                      label: l10n.quickGenerateAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _openQuickGenerate,
-                    ),
-                    HyperosButton(
-                      label: l10n.addSectionAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _sections.length >= 20 ? null : _addSection,
-                    ),
-                    HyperosButton(
-                      label: l10n.removeLastSectionAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _sections.length <= 1 ? null : _removeSection,
-                    ),
-                    HyperosButton(
-                      label: l10n.resetDefaultAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _resetSections,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ...List.generate(_sections.length, (index) {
-                  final section = _sections[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: theme.colors.muted,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: theme.colors.border),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: theme.colors.primary.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${index + 1}',
-                            style: theme.typography.body.sm.copyWith(
-                              color: theme.colors.primary,
-                              fontWeight: FontWeight.w700,
+            const HyperosSectionGap(),
+            HyperosControlCard(
+              title: l10n.sectionTimesTitle,
+              subtitle: l10n.sectionTimesSubtitle,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      HyperosButton(
+                        label: l10n.quickGenerateAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _openQuickGenerate,
+                      ),
+                      HyperosButton(
+                        label: l10n.addSectionAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _sections.length >= 20 ? null : _addSection,
+                      ),
+                      HyperosButton(
+                        label: l10n.removeLastSectionAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _sections.length <= 1
+                            ? null
+                            : _removeSection,
+                      ),
+                      HyperosButton(
+                        label: l10n.resetDefaultAction,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: _resetSections,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...List.generate(_sections.length, (index) {
+                    final section = _sections[index];
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colors.muted,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: theme.colors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: theme.colors.primary.withValues(
+                                alpha: 0.10,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '${index + 1}',
+                              style: theme.typography.body.sm.copyWith(
+                                color: theme.colors.primary,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                l10n.sectionLabel(index + 1),
-                                style: theme.typography.body.sm.copyWith(
-                                  fontWeight: FontWeight.w700,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  l10n.sectionLabel(index + 1),
+                                  style: theme.typography.body.sm.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '${section.startTime} - ${section.endTime}',
-                                style: theme.typography.body.sm.copyWith(
-                                  color: theme.colors.mutedForeground,
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${section.startTime} - ${section.endTime}',
+                                  style: theme.typography.body.sm.copyWith(
+                                    color: theme.colors.mutedForeground,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                        IconButton(
-                          tooltip: l10n.editTimeAction,
-                          onPressed: () => _editSectionTime(index),
-                          icon: const Icon(Icons.edit_outlined),
-                        ),
-                      ],
-                    ),
-                  );
-                }),
-              ],
+                          IconButton(
+                            tooltip: l10n.editTimeAction,
+                            onPressed: () => _editSectionTime(index),
+                            icon: const Icon(Icons.edit_outlined),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -26,14 +26,14 @@ class AchievementBadge extends StatelessWidget {
             ? null
             : Border.all(color: theme.colors.border.withValues(alpha: 0.5)),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             achievement.icon,
-            size: 24,
+            size: 22,
             color: achievement.isUnlocked
                 ? theme.colors.primary
                 : theme.colors.mutedForeground,
@@ -50,14 +50,14 @@ class AchievementBadge extends StatelessWidget {
                   : theme.colors.mutedForeground,
             ),
           ),
-          if (!achievement.isUnlocked) ...[
-            const SizedBox(height: 2),
-            Icon(
-              Icons.lock_outline_rounded,
-              size: 12,
-              color: theme.colors.mutedForeground.withValues(alpha: 0.5),
-            ),
-          ],
+          const SizedBox(height: 2),
+          Icon(
+            Icons.lock_outline_rounded,
+            size: 12,
+            color: achievement.isUnlocked
+                ? Colors.transparent
+                : theme.colors.mutedForeground.withValues(alpha: 0.5),
+          ),
         ],
       ),
     );
@@ -95,9 +95,9 @@ class AchievementGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 4,
-        mainAxisSpacing: 10,
-        crossAxisSpacing: 10,
-        childAspectRatio: 0.85,
+        mainAxisSpacing: 8,
+        crossAxisSpacing: 8,
+        childAspectRatio: 1.12,
       ),
       itemCount: achievements.length,
       itemBuilder: (context, index) {

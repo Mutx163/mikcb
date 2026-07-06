@@ -12,13 +12,13 @@ brand=Xiaomi
 time=1744166400000
 level=error
 category=render_failed
-message=Render failed
+message=渲染失败
 stackTrace=
   line 1
 
 time=1744166500000
 category=debug_snapshot
-message=Snapshot payload captured
+message=已捕获快照负载
 extras=
   step=refresh
 ''';
@@ -47,31 +47,31 @@ extras=
     await tester.pumpAndSettle();
 
     expect(find.text('正在记录应用日志'), findsOneWidget);
-    expect(find.text('Render failed'), findsOneWidget);
+    expect(find.text('渲染失败'), findsOneWidget);
     await tester.scrollUntilVisible(
-      find.text('Snapshot payload captured'),
+      find.text('已捕获快照负载'),
       48,
       scrollable: find.ancestor(
-        of: find.text('Render failed'),
+        of: find.text('渲染失败'),
         matching: find.byType(Scrollable),
       ),
     );
-    expect(find.text('Snapshot payload captured'), findsOneWidget);
+    expect(find.text('已捕获快照负载'), findsOneWidget);
     expect(find.text('显示 2 / 2 条日志'), findsOneWidget);
 
     await tester.tap(find.text('错误 1'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Render failed'), findsOneWidget);
-    expect(find.text('Snapshot payload captured'), findsNothing);
+    expect(find.text('渲染失败'), findsOneWidget);
+    expect(find.text('已捕获快照负载'), findsNothing);
     expect(find.text('显示 1 / 2 条日志'), findsOneWidget);
 
     await tester.tap(find.text('原文'));
     await tester.pumpAndSettle();
 
     expect(find.text('原文视图会跟随当前等级筛选，只显示对应日志块。'), findsOneWidget);
-    expect(find.textContaining('Render failed'), findsOneWidget);
-    expect(find.textContaining('Snapshot payload captured'), findsNothing);
+    expect(find.textContaining('渲染失败'), findsOneWidget);
+    expect(find.textContaining('已捕获快照负载'), findsNothing);
 
     await tester.tap(find.bySemanticsLabel('导出日志'));
     await tester.pumpAndSettle();

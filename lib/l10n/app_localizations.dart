@@ -116,6 +116,12 @@ abstract class AppLocalizations {
   /// **'轻屿课表调试版'**
   String get appTitleDebug;
 
+  /// No description provided for @appTitleProfile.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表性能版'**
+  String get appTitleProfile;
+
   /// No description provided for @appearanceTitle.
   ///
   /// In zh, this message translates to:
@@ -245,7 +251,7 @@ abstract class AppLocalizations {
   /// No description provided for @appearanceEntrySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'主题色、课表背景、课程卡片颜色'**
+  /// **'主题色、背景图/壁纸、文字颜色与课程卡片颜色'**
   String get appearanceEntrySubtitle;
 
   /// No description provided for @layoutSectionEntryTitle.
@@ -4449,6 +4455,60 @@ abstract class AppLocalizations {
   /// **'影响顶部栏、强调色和全局主色调。'**
   String get themeSeedSectionSubtitle;
 
+  /// No description provided for @frostedSheetSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'弹窗磨砂玻璃'**
+  String get frostedSheetSectionTitle;
+
+  /// No description provided for @frostedSheetSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调节首页弹出面板的高斯模糊强度与磨砂亮度。滑块越靠右，白色磨砂层越明显。'**
+  String get frostedSheetSectionSubtitle;
+
+  /// No description provided for @frostedBlurEnabledTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'高斯模糊'**
+  String get frostedBlurEnabledTitle;
+
+  /// No description provided for @frostedBlurEnabledSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'关闭后，弹窗、首页模糊区域与「回本周」按钮仅保留半透明底色，不再采样模糊。'**
+  String get frostedBlurEnabledSubtitle;
+
+  /// No description provided for @frostedSheetPreviewOpenAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开弹窗预览'**
+  String get frostedSheetPreviewOpenAction;
+
+  /// No description provided for @frostedSheetPreviewDemoTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'弹窗预览'**
+  String get frostedSheetPreviewDemoTitle;
+
+  /// No description provided for @frostedSheetPreviewDemoSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'与首页右上角菜单相同的磨砂玻璃效果。'**
+  String get frostedSheetPreviewDemoSubtitle;
+
+  /// No description provided for @frostedSheetBlurLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊强度'**
+  String get frostedSheetBlurLabel;
+
+  /// No description provided for @frostedSheetTintLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'磨砂亮度'**
+  String get frostedSheetTintLabel;
+
   /// No description provided for @timetableBackgroundColorSectionTitle.
   ///
   /// In zh, this message translates to:
@@ -4458,8 +4518,170 @@ abstract class AppLocalizations {
   /// No description provided for @timetableBackgroundColorSectionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只作用于课表页面的大背景。'**
+  /// **'纯色模式下作用于已选显示区域；可与背景图搭配使用。'**
   String get timetableBackgroundColorSectionSubtitle;
+
+  /// No description provided for @homePageBackgroundFillLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景填充'**
+  String get homePageBackgroundFillLabel;
+
+  /// No description provided for @homePageBackgroundFillColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯色'**
+  String get homePageBackgroundFillColor;
+
+  /// No description provided for @homePageBackgroundFillImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'图片'**
+  String get homePageBackgroundFillImage;
+
+  /// No description provided for @homePageBackgroundImageTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景图'**
+  String get homePageBackgroundImageTitle;
+
+  /// No description provided for @homePageBackgroundImageSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'在「图片」模式下，作用于下方勾选的显示区域。'**
+  String get homePageBackgroundImageSubtitle;
+
+  /// No description provided for @homePageWallpaperTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景图片'**
+  String get homePageWallpaperTitle;
+
+  /// No description provided for @homePageWallpaperSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'全屏铺底一张图；勾选下方区域决定透出范围，未勾选区域仍显示课表背景色。'**
+  String get homePageWallpaperSubtitle;
+
+  /// No description provided for @homePageBackdropFollowsWeekPagerTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景随周次滑动'**
+  String get homePageBackdropFollowsWeekPagerTitle;
+
+  /// No description provided for @homePageBackdropFollowsWeekPagerSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'左右切换周次时，背景图与课表页面一起移动。'**
+  String get homePageBackdropFollowsWeekPagerSubtitle;
+
+  /// No description provided for @homePageBackgroundScopeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'背景显示区域'**
+  String get homePageBackgroundScopeTitle;
+
+  /// No description provided for @homePageBackgroundScopeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'从上到下依次控制各区域是否透出背景图；未勾选区域仍显示课表背景色。'**
+  String get homePageBackgroundScopeSubtitle;
+
+  /// No description provided for @homePageBackgroundScopeStatusBar.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态栏'**
+  String get homePageBackgroundScopeStatusBar;
+
+  /// No description provided for @homePageBackgroundScopeTimetable.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表区域'**
+  String get homePageBackgroundScopeTimetable;
+
+  /// No description provided for @homePageBackgroundScopeWeekdayBar.
+  ///
+  /// In zh, this message translates to:
+  /// **'信息栏'**
+  String get homePageBackgroundScopeWeekdayBar;
+
+  /// No description provided for @homePageBackgroundScopeHeader.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶栏'**
+  String get homePageBackgroundScopeHeader;
+
+  /// No description provided for @homePageHeaderBlurTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶栏高斯模糊'**
+  String get homePageHeaderBlurTitle;
+
+  /// No description provided for @homePageHeaderBlurSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊标题栏（轻屿课表）区域；勾选「状态栏」时一并模糊状态栏。'**
+  String get homePageHeaderBlurSubtitle;
+
+  /// No description provided for @homePageWeekdayBarBlurTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'信息栏高斯模糊'**
+  String get homePageWeekdayBarBlurTitle;
+
+  /// No description provided for @homePageWeekdayBarBlurSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊周次与星期信息栏，透出下方背景图。'**
+  String get homePageWeekdayBarBlurSubtitle;
+
+  /// No description provided for @homePageTimeColumnBlurTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间栏高斯模糊'**
+  String get homePageTimeColumnBlurTitle;
+
+  /// No description provided for @homePageTimeColumnBlurSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊左侧节次/时间列，透出下方背景图。'**
+  String get homePageTimeColumnBlurSubtitle;
+
+  /// No description provided for @homePageRegionBlurSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'需配合背景图使用；模糊强度跟随「弹窗磨砂玻璃」设置。'**
+  String get homePageRegionBlurSectionSubtitle;
+
+  /// No description provided for @homePagePickImageAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择图片'**
+  String get homePagePickImageAction;
+
+  /// No description provided for @homePageClearImageAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'清除图片'**
+  String get homePageClearImageAction;
+
+  /// No description provided for @homePageImageNotSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'未选择'**
+  String get homePageImageNotSelected;
+
+  /// No description provided for @appearanceTextColorsSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'文字颜色'**
+  String get appearanceTextColorsSectionTitle;
+
+  /// No description provided for @appearanceTextColorsSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义课程卡片、星期栏与时间轴文字颜色。'**
+  String get appearanceTextColorsSectionSubtitle;
 
   /// No description provided for @defaultTimetablePreviewName.
   ///
@@ -4512,7 +4734,7 @@ abstract class AppLocalizations {
   /// No description provided for @liveDisplaySummaryLeftLabelImage.
   ///
   /// In zh, this message translates to:
-  /// **'左侧图标'**
+  /// **'图标'**
   String get liveDisplaySummaryLeftLabelImage;
 
   /// No description provided for @liveDisplaySummaryMinimal.
@@ -4520,6 +4742,18 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'最简显示'**
   String get liveDisplaySummaryMinimal;
+
+  /// No description provided for @liveDisplaySummaryCountdownShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'倒计时'**
+  String get liveDisplaySummaryCountdownShort;
+
+  /// No description provided for @liveDisplaySummaryMore.
+  ///
+  /// In zh, this message translates to:
+  /// **'{first}等{count}项'**
+  String liveDisplaySummaryMore(String first, int count);
 
   /// No description provided for @guideHyperOsChip.
   ///

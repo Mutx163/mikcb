@@ -4,6 +4,7 @@ import 'dart:io';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../logging/app_log_messages.dart';
 import 'lan_edit_audit_log.dart';
 import 'lan_edit_host.dart';
 import 'lan_edit_network_utils.dart';
@@ -16,10 +17,7 @@ class LanEditApiHandlers {
   final LanEditHost host;
   final LanEditSession session;
 
-  LanEditApiHandlers({
-    required this.host,
-    required this.session,
-  });
+  LanEditApiHandlers({required this.host, required this.session});
 
   Future<void> handle(HttpRequest request) async {
     try {
@@ -155,7 +153,7 @@ class LanEditApiHandlers {
     if (session.isExpired) {
       lanEditAuditInfo(
         'lan_edit_auth_failed',
-        'LAN edit auth failed',
+        AppLogMessages.lanEditAuthFailed,
         extras: {'reason': 'session_expired', 'clientIp': clientIp},
       );
       await _writeError(request, 401, 'session_expired', 'Session expired');
@@ -164,7 +162,7 @@ class LanEditApiHandlers {
     if (session.isPinRateLimited(clientIp)) {
       lanEditAuditInfo(
         'lan_edit_auth_failed',
-        'LAN edit auth failed',
+        AppLogMessages.lanEditAuthFailed,
         extras: {'reason': 'rate_limited', 'clientIp': clientIp},
       );
       await _writeError(request, 429, 'rate_limited', 'Too many PIN attempts');
@@ -176,7 +174,7 @@ class LanEditApiHandlers {
     if (!session.verifyPin(pin, clientIp)) {
       lanEditAuditInfo(
         'lan_edit_auth_failed',
-        'LAN edit auth failed',
+        AppLogMessages.lanEditAuthFailed,
         extras: {'reason': 'invalid_pin', 'clientIp': clientIp},
       );
       await _writeError(request, 401, 'invalid_pin', 'Invalid PIN');
@@ -206,11 +204,8 @@ class LanEditApiHandlers {
       final created = await host.createCourse(draft);
       lanEditAuditInfo(
         'lan_edit_course_created',
-        'LAN edit course created',
-        extras: {
-          'courseId': created.id,
-          'courseName': created.name,
-        },
+        AppLogMessages.lanEditCourseCreated,
+        extras: {'courseId': created.id, 'courseName': created.name},
       );
       await _writeJson(request, 201, created.toJson());
     } on ArgumentError catch (error) {
@@ -258,11 +253,8 @@ class LanEditApiHandlers {
       await host.updateCourse(updated);
       lanEditAuditInfo(
         'lan_edit_course_updated',
-        'LAN edit course updated',
-        extras: {
-          'courseId': updated.id,
-          'courseName': updated.name,
-        },
+        AppLogMessages.lanEditCourseUpdated,
+        extras: {'courseId': updated.id, 'courseName': updated.name},
       );
       await _writeJson(request, 200, updated.toJson());
     } on ArgumentError catch (error) {
@@ -288,11 +280,8 @@ class LanEditApiHandlers {
       await host.deleteCourse(courseId);
       lanEditAuditInfo(
         'lan_edit_course_deleted',
-        'LAN edit course deleted',
-        extras: {
-          'courseId': courseId,
-          'courseName': existing.name,
-        },
+        AppLogMessages.lanEditCourseDeleted,
+        extras: {'courseId': courseId, 'courseName': existing.name},
       );
       await _writeJson(request, 200, {'deleted': true, 'id': courseId});
     } on ArgumentError catch (error) {
@@ -314,12 +303,7 @@ class LanEditApiHandlers {
       final originalName = body['originalName']?.toString();
       final rawSlots = body['slots'];
       if (rawSlots is! List || rawSlots.isEmpty) {
-        await _writeError(
-          request,
-          400,
-          'invalid_request',
-          '至少需要保留一个上课时间段',
-        );
+        await _writeError(request, 400, 'invalid_request', '至少需要保留一个上课时间段');
         return;
       }
 
@@ -327,12 +311,19 @@ class LanEditApiHandlers {
       final slots = <Course>[];
       for (final item in rawSlots) {
         if (item is! Map) {
-          await _writeError(request, 400, 'invalid_request', 'Invalid slot entry');
+          await _writeError(
+            request,
+            400,
+            'invalid_request',
+            'Invalid slot entry',
+          );
           return;
         }
         final slotMap = Map<String, dynamic>.from(item);
         final courseName =
-            (slotMap['name'] as String?)?.trim() ?? originalName?.trim() ?? '课程';
+            (slotMap['name'] as String?)?.trim() ??
+            originalName?.trim() ??
+            '课程';
         LanEditProviderHost.applyWeekExpressionFields(
           slotMap,
           courseName: courseName,
@@ -359,7 +350,7 @@ class LanEditApiHandlers {
       );
       lanEditAuditInfo(
         'lan_edit_course_group_saved',
-        'LAN edit course group saved',
+        AppLogMessages.lanEditCourseGroupSaved,
         extras: {
           'originalName': originalName,
           'courseName': saved.first.name,
@@ -399,7 +390,7 @@ class LanEditApiHandlers {
       final count = await host.importMergeBackupJson(body);
       lanEditAuditInfo(
         'lan_edit_merge_imported',
-        'LAN edit merge backup imported',
+        AppLogMessages.lanEditMergeImported,
         extras: {'mergedCourseCount': count},
       );
       await _writeJson(request, 200, {'mergedCount': count});
@@ -421,7 +412,7 @@ class LanEditApiHandlers {
       final deletedCount = await host.deleteCoursesBatch(ids);
       lanEditAuditInfo(
         'lan_edit_courses_batch_deleted',
-        'LAN edit courses batch deleted',
+        AppLogMessages.lanEditCoursesBatchDeleted,
         extras: {'deletedCount': deletedCount, 'requested': ids.length},
       );
       await _writeJson(request, 200, {'deletedCount': deletedCount});
@@ -456,7 +447,7 @@ class LanEditApiHandlers {
       await host.setCurrentWeek(week);
       lanEditAuditInfo(
         'lan_edit_current_week_set',
-        'LAN edit current week set',
+        AppLogMessages.lanEditCurrentWeekSet,
         extras: {'currentWeek': week},
       );
       await _writeJson(request, 200, {'currentWeek': host.currentWeek});
@@ -485,12 +476,7 @@ class LanEditApiHandlers {
       try {
         bytes = base64Decode(encoded);
       } on FormatException {
-        await _writeError(
-          request,
-          400,
-          'invalid_request',
-          'contentBase64 无效',
-        );
+        await _writeError(request, 400, 'invalid_request', 'contentBase64 无效');
         return;
       }
       final service = SpreadsheetImportService();
@@ -513,7 +499,7 @@ class LanEditApiHandlers {
       );
       lanEditAuditInfo(
         'lan_edit_spreadsheet_imported',
-        'LAN edit spreadsheet imported',
+        AppLogMessages.lanEditSpreadsheetImported,
         extras: {
           'importedCount': count,
           'replaceExisting': replaceExisting,
@@ -526,12 +512,7 @@ class LanEditApiHandlers {
         'format': result.format,
       });
     } on FormatException catch (error) {
-      await _writeError(
-        request,
-        400,
-        'invalid_request',
-        error.message,
-      );
+      await _writeError(request, 400, 'invalid_request', error.message);
     }
   }
 
@@ -552,17 +533,9 @@ class LanEditApiHandlers {
         semesterWeekCount: host.semesterWeekCount,
         warnings: warnings,
       );
-      await _writeJson(request, 200, {
-        'weeks': weeks,
-        'warnings': warnings,
-      });
+      await _writeJson(request, 200, {'weeks': weeks, 'warnings': warnings});
     } on FormatException catch (error) {
-      await _writeError(
-        request,
-        400,
-        'invalid_request',
-        error.message,
-      );
+      await _writeError(request, 400, 'invalid_request', error.message);
     }
   }
 
@@ -571,7 +544,7 @@ class LanEditApiHandlers {
     if (session.isExpired) {
       lanEditAuditInfo(
         'lan_edit_auth_failed',
-        'LAN edit auth failed',
+        AppLogMessages.lanEditAuthFailed,
         extras: {'reason': 'session_expired', 'clientIp': clientIp},
       );
       await _writeError(request, 401, 'session_expired', 'Session expired');
@@ -582,9 +555,11 @@ class LanEditApiHandlers {
     if (!session.verifyTokenForRequest(token, clientIp)) {
       lanEditAuditInfo(
         'lan_edit_auth_failed',
-        'LAN edit auth failed',
+        AppLogMessages.lanEditAuthFailed,
         extras: {
-          'reason': token == null || token.isEmpty ? 'missing_token' : 'invalid_token',
+          'reason': token == null || token.isEmpty
+              ? 'missing_token'
+              : 'invalid_token',
           'clientIp': clientIp,
         },
       );
@@ -621,7 +596,11 @@ class LanEditApiHandlers {
     return utf8.decodeStream(request);
   }
 
-  Future<void> _writeJson(HttpRequest request, int statusCode, Object body) async {
+  Future<void> _writeJson(
+    HttpRequest request,
+    int statusCode,
+    Object body,
+  ) async {
     try {
       request.response.statusCode = statusCode;
       if (statusCode != 204) {
@@ -641,10 +620,7 @@ class LanEditApiHandlers {
     String error,
     String message,
   ) async {
-    await _writeJson(request, statusCode, {
-      'error': error,
-      'message': message,
-    });
+    await _writeJson(request, statusCode, {'error': error, 'message': message});
   }
 
   _CourseBuildContext _courseContext() {
@@ -660,9 +636,8 @@ class LanEditApiHandlers {
     return _CourseBuildContext(
       sections: rawSections
           .map(
-            (item) => SectionTime.fromJson(
-              Map<String, dynamic>.from(item as Map),
-            ),
+            (item) =>
+                SectionTime.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList(),
       semesterWeekCount: meta['semesterWeekCount'] as int? ?? 20,

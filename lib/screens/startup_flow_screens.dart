@@ -37,7 +37,7 @@ class _PackageMigrationGuideScreenState
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
-        child: SafeArea(
+        child: HyperosBlurredBodyInset(
           child: Column(
             children: [
               Expanded(

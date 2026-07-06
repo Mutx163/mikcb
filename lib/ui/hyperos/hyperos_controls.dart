@@ -5,18 +5,29 @@ import 'hyperos_miuix_spec.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 
-/// Marks descendants inside [HyperosControlCard] so full-bleed rows (e.g.
-/// [HyperosSelectTile]) can extend their press highlight to the card edge.
+/// Marks descendants inside [HyperosControlCard].
+///
+/// The card body is edge-to-edge; interactive rows apply [HyperosTokens.rowPaddingUniform]
+/// themselves. Non-row blocks should wrap in [HyperosControlCardInset].
 class HyperosControlCardScope extends InheritedWidget {
   const HyperosControlCardScope({
     super.key,
-    required this.horizontalPadding,
+    required this.hasHeader,
+    required this.bodyBottomInset,
+    required this.cornerRadius,
     required super.child,
   });
 
   static const defaultHorizontalPadding = 16.0;
 
-  final double horizontalPadding;
+  /// Extra bottom inset absorbed by the last full-bleed row (replaces outer card
+  /// padding so press highlight can reach the card's rounded bottom edge).
+  static const defaultBodyBottomInset = 12.0;
+
+  /// Whether [HyperosControlCard] rendered a title/subtitle block above [child].
+  final bool hasHeader;
+  final double bodyBottomInset;
+  final double cornerRadius;
 
   static HyperosControlCardScope? maybeOf(BuildContext context) {
     return context
@@ -25,7 +36,83 @@ class HyperosControlCardScope extends InheritedWidget {
 
   @override
   bool updateShouldNotify(HyperosControlCardScope oldWidget) {
-    return horizontalPadding != oldWidget.horizontalPadding;
+    return hasHeader != oldWidget.hasHeader ||
+        bodyBottomInset != oldWidget.bodyBottomInset ||
+        cornerRadius != oldWidget.cornerRadius;
+  }
+}
+
+/// Positions a full-bleed row inside [HyperosControlCard] (first/last padding).
+class HyperosControlCardRowScope extends InheritedWidget {
+  const HyperosControlCardRowScope({
+    super.key,
+    required this.isFirst,
+    required this.isLast,
+    required super.child,
+  });
+
+  final bool isFirst;
+  final bool isLast;
+
+  static HyperosControlCardRowScope? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<HyperosControlCardRowScope>();
+  }
+
+  @override
+  bool updateShouldNotify(HyperosControlCardRowScope oldWidget) {
+    return isFirst != oldWidget.isFirst || isLast != oldWidget.isLast;
+  }
+}
+
+/// Stacks multiple full-bleed rows inside one [HyperosControlCard].
+class HyperosControlCardRows extends StatelessWidget {
+  const HyperosControlCardRows({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < children.length; i++)
+          HyperosControlCardRowScope(
+            isFirst: i == 0,
+            isLast: i == children.length - 1,
+            child: children[i],
+          ),
+      ],
+    );
+  }
+}
+
+/// Horizontal inset for non-row content inside [HyperosControlCard] (color chips,
+/// button groups, accordions, helper text).
+class HyperosControlCardInset extends StatelessWidget {
+  const HyperosControlCardInset({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scope = HyperosControlCardScope.maybeOf(context);
+    if (scope != null && !scope.hasHeader) {
+      // Headerless [HyperosControlCard] already applies [HyperosControlCard.headerlessBodyPadding].
+      return child;
+    }
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        HyperosControlCardScope.defaultHorizontalPadding,
+        scope == null ? HyperosControlCardScope.defaultHorizontalPadding : 0,
+        HyperosControlCardScope.defaultHorizontalPadding,
+        scope?.bodyBottomInset ??
+            HyperosControlCardScope.defaultBodyBottomInset,
+      ),
+      child: child,
+    );
   }
 }
 
@@ -38,6 +125,7 @@ class HyperosControlCard extends StatelessWidget {
     this.subtitle,
     this.plainTitle = false,
     this.strip = false,
+    this.edgeToEdge = false,
     required this.child,
   });
 
@@ -45,9 +133,20 @@ class HyperosControlCard extends StatelessWidget {
   final String? subtitle;
   final bool plainTitle;
 
+  /// When true the card body stays edge-to-edge (e.g. [HyperosSelectTile] rows).
+  /// Headerless cards with only inset content default to [headerlessBodyPadding].
+  final bool edgeToEdge;
+
   /// Stadium outline for child-only status rows (e.g. connected account strip).
   final bool strip;
   final Widget child;
+
+  static const headerlessBodyPadding = EdgeInsets.fromLTRB(
+    HyperosControlCardScope.defaultHorizontalPadding,
+    HyperosControlCardScope.defaultHorizontalPadding,
+    HyperosControlCardScope.defaultHorizontalPadding,
+    HyperosControlCardScope.defaultBodyBottomInset,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -55,51 +154,69 @@ class HyperosControlCard extends StatelessWidget {
         (title != null && title!.isNotEmpty) || (subtitle != null);
     final useStrip = strip && !hasHeader;
 
-    return Material(
-      color: HyperosColors.card(context),
-      shape: useStrip ? HyperosTheme.stripShape() : HyperosTheme.cardShape(),
-      clipBehavior: Clip.antiAlias,
-      child: HyperosControlCardScope(
-        horizontalPadding: useStrip
-            ? HyperosMiuixSpec.settingsRowPadding.left
-            : HyperosControlCardScope.defaultHorizontalPadding,
-        child: Padding(
-          padding: useStrip
-              ? HyperosTokens.rowPaddingUniform
-              : const EdgeInsets.fromLTRB(16, 16, 16, 12),
+    Widget body = child;
+    if (!hasHeader && !edgeToEdge) {
+      body = Padding(padding: headerlessBodyPadding, child: child);
+    }
+
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: HyperosColors.card(context),
+        shape: useStrip ? HyperosTheme.stripShape() : HyperosTheme.cardShape(),
+        clipBehavior: Clip.antiAlias,
+        child: HyperosControlCardScope(
+          hasHeader: hasHeader,
+          bodyBottomInset: useStrip
+              ? 0
+              : HyperosControlCardScope.defaultBodyBottomInset,
+          cornerRadius: HyperosTokens.cardRadius,
           child: useStrip
-              ? ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    minHeight: HyperosTokens.listRowMinHeight,
+              ? Padding(
+                  padding: HyperosTokens.rowPaddingUniform,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minHeight: HyperosTokens.listRowMinHeight,
+                    ),
+                    child: Align(alignment: Alignment.centerLeft, child: child),
                   ),
-                  child: Align(alignment: Alignment.centerLeft, child: child),
                 )
               : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (hasHeader) ...[
-                      if (title != null && title!.isNotEmpty)
-                        Text(
-                          title!,
-                          style: TextStyle(
-                            fontSize: HyperosMiuixTypography.body2,
-                            fontWeight: plainTitle
-                                ? FontWeight.w400
-                                : FontWeight.w600,
-                            color: HyperosColors.primaryText(context),
-                          ),
+                    if (hasHeader)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (title != null && title!.isNotEmpty)
+                              Text(
+                                title!,
+                                style: TextStyle(
+                                  fontSize: HyperosMiuixTypography.body2,
+                                  fontWeight: plainTitle
+                                      ? FontWeight.w400
+                                      : FontWeight.w600,
+                                  color: HyperosColors.primaryText(context),
+                                ),
+                              ),
+                            if (subtitle != null) ...[
+                              if (title != null && title!.isNotEmpty)
+                                const SizedBox(height: 2),
+                              Text(
+                                subtitle!,
+                                style: HyperosTypography.sectionDescription(
+                                  context,
+                                ),
+                                softWrap: true,
+                              ),
+                            ],
+                          ],
                         ),
-                      if (subtitle != null) ...[
-                        if (title != null && title!.isNotEmpty)
-                          const SizedBox(height: 2),
-                        Text(
-                          subtitle!,
-                          style: HyperosTypography.sectionDescription(context),
-                        ),
-                      ],
-                      const SizedBox(height: 12),
-                    ],
-                    child,
+                      ),
+                    if (hasHeader) const SizedBox(height: 12),
+                    body,
                   ],
                 ),
         ),
@@ -204,25 +321,30 @@ class HyperosSliderTile extends StatelessWidget {
     final labelStyle = HyperosTypography.listDetail(context);
     final titleStyle = HyperosTypography.listTitle(context);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(child: Text(title, style: titleStyle)),
-            if (valueLabel != null) Text(valueLabel!, style: labelStyle),
-          ],
-        ),
-        const SizedBox(height: 8),
-        HyperosSlider(
-          value: value,
-          onChanged: onChanged,
-          min: min,
-          max: max,
-          divisions: divisions,
-          enabled: enabled,
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: HyperosControlCardScope.defaultHorizontalPadding,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text(title, style: titleStyle)),
+              if (valueLabel != null) Text(valueLabel!, style: labelStyle),
+            ],
+          ),
+          const SizedBox(height: 8),
+          HyperosSlider(
+            value: value,
+            onChanged: onChanged,
+            min: min,
+            max: max,
+            divisions: divisions,
+            enabled: enabled,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -49,7 +49,7 @@ object KeepAliveAccessibilityStatus {
                     resolvedComponentId == expectedComponentId
             }
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to inspect enabled accessibility services", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_INSPECT_ACCESSIBILITY_SERVICES_FAILED, e)
             false
         }
     }
@@ -62,7 +62,7 @@ object KeepAliveAccessibilityStatus {
                 0,
             ) == 1
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to read accessibility master switch", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_READ_ACCESSIBILITY_SWITCH_FAILED, e)
             false
         }
         if (!accessibilityEnabled) {

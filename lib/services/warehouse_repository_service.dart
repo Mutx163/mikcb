@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../logging/app_debug_log.dart';
 import '../models/warehouse_repository_models.dart';
 import '../models/timetable_settings.dart';
 import '../utils/async_utils.dart';
@@ -35,10 +36,10 @@ class WarehouseRepositoryService {
   final http.Client _client;
 
   WarehouseRepositoryService({http.Client? client})
-      : _client = client ?? http.Client();
+    : _client = client ?? http.Client();
 
   static void _log(String message) {
-    debugPrint('[WarehouseService] ${formatLogTimestamp()} $message');
+    appDebugLog('WarehouseService', '${formatLogTimestamp()} $message');
   }
 
   Future<WarehouseRootIndex> fetchRootIndex(
@@ -97,7 +98,9 @@ class WarehouseRepositoryService {
             description: item['description'] ?? '',
           ),
         )
-        .where((item) => item.adapterId.isNotEmpty && item.assetJsPath.isNotEmpty)
+        .where(
+          (item) => item.adapterId.isNotEmpty && item.assetJsPath.isNotEmpty,
+        )
         .toList(growable: false);
     if (adapters.isEmpty) {
       throw WarehouseRepositoryException('未读取到 ${school.name} 的适配器信息');
@@ -112,16 +115,12 @@ class WarehouseRepositoryService {
     WarehouseFetchOptions? options,
   }) async {
     final path = 'resources/${school.resourceFolder}/${adapter.assetJsPath}';
-    return _fetchText(
-      source.buildRawFileUri(path),
-      options: options,
-    );
+    return _fetchText(source.buildRawFileUri(path), options: options);
   }
-  Future<String> _fetchText(
-    Uri uri, {
-    WarehouseFetchOptions? options,
-  }) async {
-    final effectiveOptions = options ??
+
+  Future<String> _fetchText(Uri uri, {WarehouseFetchOptions? options}) async {
+    final effectiveOptions =
+        options ??
         const WarehouseFetchOptions(
           downloadSource: AppUpdateDownloadSource.mirror,
           mirrorPreset: AppUpdateMirrorPreset.ghfast,
@@ -155,8 +154,11 @@ class WarehouseRepositoryService {
 
     final lastError = result.errors.isNotEmpty ? result.errors.last : null;
     final candidatesCount = candidates.length;
-    throw _buildFetchError(effectiveOptions, lastError,
-        candidatesCount: candidatesCount);
+    throw _buildFetchError(
+      effectiveOptions,
+      lastError,
+      candidatesCount: candidatesCount,
+    );
   }
 
   WarehouseRepositoryException _buildFetchError(
@@ -168,8 +170,8 @@ class WarehouseRepositoryService {
         options.downloadSource == AppUpdateDownloadSource.mirror;
     final prefix = usingMirror
         ? '暂时无法读取适配仓。'
-            '已尝试 $candidatesCount 个镜像线路均失败。'
-            '请检查网络，或到"版本更新"里切到其他镜像线路后重试。'
+              '已尝试 $candidatesCount 个镜像线路均失败。'
+              '请检查网络，或到"版本更新"里切到其他镜像线路后重试。'
         : '暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在"版本更新"里切到国内镜像后重试。';
     final suffix = lastError == null ? '' : ' 原始错误：$lastError';
     return WarehouseRepositoryException('$prefix$suffix');

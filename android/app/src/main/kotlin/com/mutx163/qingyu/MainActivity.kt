@@ -514,8 +514,8 @@ class MainActivity : FlutterActivity() {
                             result.success(true)
                         } catch (e: Exception) {
                             val tag = when (e) {
-                                is SecurityException -> "LAN edit foreground start denied"
-                                else -> "LAN edit foreground start failed"
+                                is SecurityException -> DiagnosticLogMessages.LOG_LAN_FOREGROUND_START_DENIED
+                                else -> DiagnosticLogMessages.LOG_LAN_FOREGROUND_START_FAILED
                             }
                             Log.e("MainActivity", tag, e)
                             result.error(
@@ -575,7 +575,7 @@ class MainActivity : FlutterActivity() {
         pendingExternalImport = pending
         Log.d(
             "MainActivity",
-            "External import queued kind=$kind file=$fileName bytes=${bytes.size}",
+            "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_QUEUED} kind=$kind file=$fileName bytes=${bytes.size}",
         )
         notifyExternalImportReceived()
     }
@@ -619,7 +619,7 @@ class MainActivity : FlutterActivity() {
                     }
                 }
             } catch (e: Exception) {
-                Log.w("MainActivity", "Failed to resolve import display name for $uri", e)
+                Log.w("MainActivity", "${DiagnosticLogMessages.LOG_RESOLVE_IMPORT_DISPLAY_NAME_FAILED}：$uri", e)
             }
         }
         return uri.lastPathSegment?.substringAfterLast('/').orEmpty().ifBlank { "import" }
@@ -629,7 +629,7 @@ class MainActivity : FlutterActivity() {
         return try {
             contentResolver.openInputStream(uri)?.use { stream -> stream.readBytes() }
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to read import bytes from URI: $uri", e)
+            Log.e("MainActivity", "${DiagnosticLogMessages.LOG_READ_IMPORT_BYTES_FAILED}：$uri", e)
             null
         }
     }
@@ -698,7 +698,7 @@ class MainActivity : FlutterActivity() {
             target.outputStream().use { output -> output.write(bytes) }
             target
         } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to cache external import file", e)
+            Log.e("MainActivity", DiagnosticLogMessages.LOG_CACHE_EXTERNAL_IMPORT_FAILED, e)
             null
         }
     }
@@ -869,7 +869,7 @@ class MainActivity : FlutterActivity() {
                 }
             )
         } catch (e: Exception) {
-            Log.w("MainActivity", "Failed to open notification settings", e)
+            Log.w("MainActivity", DiagnosticLogMessages.LOG_OPEN_NOTIFICATION_SETTINGS_FAILED, e)
             openAppDetailsSettings()
         }
     }
@@ -1043,7 +1043,7 @@ class MainActivity : FlutterActivity() {
                 }
             )
         } catch (e: Exception) {
-            Log.w("MainActivity", "Failed to open app details settings", e)
+            Log.w("MainActivity", DiagnosticLogMessages.LOG_OPEN_APP_DETAILS_FAILED, e)
         }
     }
 
@@ -1131,7 +1131,7 @@ class MainActivity : FlutterActivity() {
             packageInfo.requestedPermissions
                 ?.contains(POST_PROMOTED_NOTIFICATIONS_PERMISSION) == true
         } catch (e: Exception) {
-            Log.w("MainActivity", "Failed to inspect promoted notification permission", e)
+            Log.w("MainActivity", DiagnosticLogMessages.LOG_INSPECT_PROMOTED_PERMISSION_FAILED, e)
             false
         }
     }
@@ -1159,7 +1159,7 @@ class MainActivity : FlutterActivity() {
             UmengDiagnosticReporter.record(
                 context = applicationContext,
                 category = "live_update_start_requested",
-                message = "Flutter requested live update start",
+                message = DiagnosticLogMessages.LIVE_UPDATE_START_REQUESTED,
                 extras = mapOf(
                     "stage" to data["stage"],
                     "hasCurrentCourse" to (data["currentCourse"] != null),
@@ -1176,7 +1176,7 @@ class MainActivity : FlutterActivity() {
             UmengDiagnosticReporter.report(
                 context = applicationContext,
                 category = "live_update_start_failed",
-                message = "Failed to start live update service from Flutter method channel",
+                message = DiagnosticLogMessages.LIVE_UPDATE_START_FAILED_CHANNEL,
                 throwable = e,
                 dedupeKey = "live_update_start_failed",
             )
@@ -1188,7 +1188,7 @@ class MainActivity : FlutterActivity() {
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_stop_requested",
-            message = "Flutter requested live update stop",
+            message = DiagnosticLogMessages.LIVE_UPDATE_STOP_REQUESTED,
         )
         LiveUpdateScheduler.cancelPendingTriggers(applicationContext)
         stopService(Intent(this, LiveUpdateService::class.java))
@@ -1249,7 +1249,7 @@ class MainActivity : FlutterActivity() {
                 task.setExcludeFromRecents(hidden)
             }
         } catch (e: Exception) {
-            Log.w("MainActivity", "Failed to update recents visibility", e)
+            Log.w("MainActivity", DiagnosticLogMessages.LOG_UPDATE_RECENTS_VISIBILITY_FAILED, e)
         }
     }
 
@@ -1520,7 +1520,7 @@ class LiveUpdateService : Service() {
                 packageInfo.requestedPermissions
                     ?.contains(POST_PROMOTED_NOTIFICATIONS_PERMISSION) == true
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to inspect promoted notification permission", e)
+                Log.w(TAG, DiagnosticLogMessages.LOG_INSPECT_PROMOTED_PERMISSION_FAILED, e)
                 false
             }
         }
@@ -1633,7 +1633,7 @@ class LiveUpdateService : Service() {
                 UmengDiagnosticReporter.record(
                     context = applicationContext,
                     category = "live_update_service_missing_payload",
-                    message = "Live update service restarted without complete payload",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_MISSING_PAYLOAD,
                     extras = mapOf(
                         "intentIsNull" to (intent == null),
                         "hasCourseName" to (!intent?.getStringExtra("courseName").isNullOrBlank()),
@@ -1736,7 +1736,7 @@ class LiveUpdateService : Service() {
             UmengDiagnosticReporter.record(
                 context = applicationContext,
                 category = "live_update_service_started",
-                message = "Live update service started",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_STARTED,
                 extras = mapOf(
                     "courseName" to courseName,
                     "stage" to activityStage,
@@ -1769,7 +1769,7 @@ class LiveUpdateService : Service() {
             UmengDiagnosticReporter.report(
                 context = applicationContext,
                 category = "live_update_service_start_failed",
-                message = "Failed to initialize live update service payload or notification",
+                message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_START_FAILED,
                 throwable = e,
                 dedupeKey = "live_update_service_start_failed",
                 extras = mapOf(
@@ -1819,7 +1819,7 @@ class LiveUpdateService : Service() {
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_task_removed",
-            message = "Task removed while live update service was active",
+            message = DiagnosticLogMessages.LIVE_UPDATE_TASK_REMOVED,
             extras = mapOf(
                 "courseName" to courseName,
                 "stage" to activityStage,
@@ -1838,7 +1838,7 @@ class LiveUpdateService : Service() {
             UmengDiagnosticReporter.record(
                 context = applicationContext,
                 category = "live_update_task_removed_resumed",
-                message = "Task removed but current live update was resumed immediately",
+                message = DiagnosticLogMessages.LIVE_UPDATE_TASK_REMOVED_RESUMED,
                 extras = mapOf(
                     "courseName" to courseName,
                     "stage" to activityStage,
@@ -1963,7 +1963,7 @@ class LiveUpdateService : Service() {
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_before_class_quick_action",
-            message = "Before-class quick action invoked",
+            message = DiagnosticLogMessages.LIVE_UPDATE_BEFORE_CLASS_QUICK_ACTION,
             extras = mapOf(
                 "action" to if (enableDoNotDisturb) "do_not_disturb" else "silent",
                 "applied" to applied,
@@ -1981,7 +1981,7 @@ class LiveUpdateService : Service() {
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_status_bar_dismissed",
-            message = "User dismissed during-class status bar notification",
+            message = DiagnosticLogMessages.LIVE_UPDATE_STATUS_BAR_DISMISSED,
             extras = mapOf(
                 "courseName" to courseName,
                 "stage" to activityStage,
@@ -2006,11 +2006,11 @@ class LiveUpdateService : Service() {
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
             true
         } catch (e: SecurityException) {
-            Log.w(TAG, "Failed to enable silent mode directly", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
             openSoundSettings()
             false
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to enable silent mode", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_FAILED, e)
             openSoundSettings()
             false
         }
@@ -2028,11 +2028,11 @@ class LiveUpdateService : Service() {
             manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
             true
         } catch (e: SecurityException) {
-            Log.w(TAG, "Failed to enable do-not-disturb directly", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)
             openNotificationPolicyAccessSettings()
             false
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to enable do-not-disturb", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_FAILED, e)
             openNotificationPolicyAccessSettings()
             false
         }
@@ -2052,7 +2052,7 @@ class LiveUpdateService : Service() {
         try {
             startActivity(intent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to open settings intent", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_OPEN_SETTINGS_INTENT_FAILED, e)
             try {
                 startActivity(
                     Intent(Settings.ACTION_SETTINGS).apply {
@@ -2060,7 +2060,7 @@ class LiveUpdateService : Service() {
                     }
                 )
             } catch (fallbackError: Exception) {
-                Log.w(TAG, "Failed to open fallback settings", fallbackError)
+                Log.w(TAG, DiagnosticLogMessages.LOG_OPEN_FALLBACK_SETTINGS_FAILED, fallbackError)
             }
         }
     }
@@ -2548,7 +2548,7 @@ class LiveUpdateService : Service() {
                 put("param_v2", paramV2)
             }.toString()
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to build miui.focus.param", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_BUILD_MIUI_FOCUS_PARAM_FAILED, e)
             null
         }
     }
@@ -2754,7 +2754,7 @@ class LiveUpdateService : Service() {
             canvas.restore()
             Icon.createWithBitmap(bitmap)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to build rounded launcher icon", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_BUILD_ROUNDED_LAUNCHER_ICON_FAILED, e)
             null
         }
     }
@@ -3215,7 +3215,7 @@ class LiveUpdateService : Service() {
                 UmengDiagnosticReporter.record(
                     context = applicationContext,
                     category = "live_update_not_promoted",
-                    message = "Live update notification was built but not promoted",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_NOT_PROMOTED,
                     extras = mapOf(
                         "courseName" to courseName,
                         "stage" to stage,
@@ -3227,7 +3227,7 @@ class LiveUpdateService : Service() {
                 UmengDiagnosticReporter.report(
                     context = applicationContext,
                     category = "live_update_promoted_not_shown",
-                    message = "Live update could not be promoted as expected",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_PROMOTED_NOT_SHOWN,
                     dedupeKey = "live_update_promoted_not_shown:${courseName}:${activityStage}",
                     extras = mapOf(
                         "courseName" to courseName,
@@ -3255,7 +3255,7 @@ class LiveUpdateService : Service() {
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_service_stopped",
-            message = "Live update service stopped and notification removed",
+            message = DiagnosticLogMessages.LIVE_UPDATE_SERVICE_STOPPED,
             extras = mapOf(
                 "courseName" to courseName,
                 "stage" to activityStage,

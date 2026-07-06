@@ -2,6 +2,7 @@
   "@@locale": "ja",
   "appTitle": "軽屿時間割",
   "appTitleDebug": "軽屿時間割 デバッグ版",
+  "appTitleProfile": "軽屿時間割 プロファイル版",
   "appearanceTitle": "外観と配色",
   "previewTitle": "プレビュー",
   "timetableBackgroundPreview": "時間割背景",
@@ -44,6 +45,91 @@
   },
   "dataTransferEntryTitle": "データバックアップと移行",
   "dataTransferEntrySubtitle": "時間割ファイルをエクスポートして、他の人が直接インポート可能",
+  "cloudSyncEntryTitle": "クラウド同期（WEBDAV）",
+  "cloudSyncEntrySubtitle": "Jianguoyun などで時間割とインポートデータを複数端末同期",
+  "cloudSyncTitle": "クラウド同期",
+  "cloudSyncIntroTitle": "複数端末同期",
+  "cloudSyncIntroSubtitle": "Jianguoyun WEBDAV を設定すると、スマホやタブレット間で時間割、倉庫アカウント、関連設定を自動同期できます。",
+  "cloudSyncSettingsSectionTitle": "同期設定",
+  "cloudSyncSettingsSectionSubtitle": "手動または自動同期を切り替えられます。",
+  "cloudSyncEnabledTitle": "クラウド同期を有効にする",
+  "cloudSyncEnabledSubtitle": "オフにすると、スナップショットのアップロード・ダウンロードは行われません",
+  "cloudSyncProviderTitle": "サービスプロバイダ",
+  "cloudSyncProviderJianguoyun": "Jianguoyun",
+  "cloudSyncProviderCustom": "カスタム WEBDAV",
+  "cloudSyncModeTitle": "同期方式",
+  "cloudSyncModeAuto": "自動同期",
+  "cloudSyncModeManual": "手動同期",
+  "cloudSyncAccountTitle": "アカウント設定",
+  "cloudSyncAccountSubtitle": "Jianguoyun のアプリ専用パスワードを使用してください（ログインパスワードではありません）。スナップショットには倉庫に保存された学校アカウントも含まれます。",
+  "cloudSyncUsernameLabel": "メール / ユーザー名",
+  "cloudSyncUsernameHint": "Jianguoyun 登録メール",
+  "cloudSyncPasswordLabel": "アプリ専用パスワード",
+  "cloudSyncPasswordHint": "Jianguoyun アカウントのセキュリティ設定で生成",
+  "cloudSyncPasswordStoredHint": "パスワードを保存済み。空欄のままにすると保存済みのパスワードを使用します。",
+  "cloudSyncAdvancedTitle": "詳細設定",
+  "cloudSyncBaseUrlLabel": "WEBDAV URL",
+  "cloudSyncRemoteFolderLabel": "リモートフォルダ",
+  "cloudSyncStatusTitle": "同期状態",
+  "cloudSyncLastSyncedLabel": "最終同期",
+  "cloudSyncLastErrorLabel": "最新のエラー",
+  "cloudSyncLastSyncedAt": "最終同期：{time}",
+  "@cloudSyncLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncSyncing": "同期中…",
+  "cloudSyncLastError": "最新のエラー：{message}",
+  "@cloudSyncLastError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncHelpTitle": "Jianguoyun アプリパスワードの取得方法",
+  "cloudSyncHelpBody": "Jianguoyun ウェブまたはクライアント → アカウント情報 → セキュリティ → アプリパスワードを追加。WEBDAV URL デフォルト：https://dav.jianguoyun.com/dav/",
+  "cloudSyncTestConnection": "接続テスト",
+  "cloudSyncSyncNow": "今すぐ同期",
+  "cloudSyncTestSuccess": "WEBDAV 接続成功",
+  "cloudSyncTestFailed": "WEBDAV 接続に失敗しました。アカウント、アプリパスワード、ネットワークを確認してください",
+  "cloudSyncResultUploaded": "クラウドにアップロードしました",
+  "cloudSyncResultDownloaded": "クラウドから復元しました",
+  "cloudSyncResultUpToDate": "ローカルとクラウドは一致しています",
+  "cloudSyncResultCancelled": "同期をキャンセルしました",
+  "cloudSyncResultFailed": "同期に失敗しました：{message}",
+  "@cloudSyncResultFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncConflictTitle": "同期の競合が検出されました",
+  "cloudSyncConflictBody": "この端末とクラウドの両方に新しい変更があります。どちらのデータを保持するか選択してください。",
+  "cloudSyncUseRemoteAction": "クラウドを使用",
+  "cloudSyncKeepLocalAction": "ローカルを保持",
+  "cloudSyncAccountSectionTitle": "クラウドアカウント",
+  "cloudSyncNotConnectedHint": "Jianguoyun に接続すると、複数端末間で時間割とインポートデータを同期できます。",
+  "cloudSyncConnectAccount": "Jianguoyun に接続",
+  "cloudSyncConnectedAs": "接続済み：{email}",
+  "@cloudSyncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncDisconnect": "接続を解除",
+  "cloudSyncDisconnectTitle": "クラウド同期アカウントの切断",
+  "cloudSyncDisconnectBody": "切断すると、この端末に保存された WEBDAV 認証情報が削除されます。時間割データは端末に残ります。続行しますか？",
+  "cloudSyncLoginSheetTitle": "Jianguoyun に接続",
+  "cloudSyncLoginSheetSubtitle": "アプリ専用パスワードを使用してください（Jianguoyun ログインパスワードではありません）。",
+  "cloudSyncConfirmConnect": "接続を確認",
+  "cloudSyncConnectSuccess": "アカウント接続成功",
   "lanEditEntryTitle": "LAN編集",
   "lanEditEntrySubtitle": "PCブラウザから現在の時間割を編集",
   "lanEditTitle": "LAN編集",
@@ -1334,8 +1420,20 @@
     }
   },
   "liveDisplaySummaryStageText": "ステージテキスト",
-  "liveDisplaySummaryLeftLabelImage": "左側アイコン",
+  "liveDisplaySummaryLeftLabelImage": "アイコン",
   "liveDisplaySummaryMinimal": "最小表示",
+  "liveDisplaySummaryCountdownShort": "カウントダウン",
+  "liveDisplaySummaryMore": "{first}ほか{count}項目",
+  "@liveDisplaySummaryMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "guideHyperOsChip": "HyperOS 3.0.300+",
   "guideStatusTitle": "現在のステータス",
   "guideStatusNotificationPermission": "通知権限",

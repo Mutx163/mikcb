@@ -2,6 +2,7 @@
   "@@locale": "ko",
   "appTitle": "경屿 시간표",
   "appTitleDebug": "경屿 시간표 디버그판",
+  "appTitleProfile": "경屿 시간표 프로필판",
   "appearanceTitle": "외관 및 색상",
   "previewTitle": "미리보기",
   "timetableBackgroundPreview": "시간표 배경",
@@ -44,6 +45,91 @@
   },
   "dataTransferEntryTitle": "데이터 백업 및 마이그레이션",
   "dataTransferEntrySubtitle": "시간표 파일을 내보내 다른 사람이 바로 가져올 수 있습니다",
+  "cloudSyncEntryTitle": "클라우드 동기화 (WEBDAV)",
+  "cloudSyncEntrySubtitle": "Jianguoyun 등으로 여러 기기에서 시간표와 가져온 데이터 동기화",
+  "cloudSyncTitle": "클라우드 동기화",
+  "cloudSyncIntroTitle": "다중 기기 동기화",
+  "cloudSyncIntroSubtitle": "Jianguoyun WEBDAV를 설정하면 휴대폰, 태블릿 간 시간표, 창고 계정 및 관련 설정을 자동으로 동기화할 수 있습니다.",
+  "cloudSyncSettingsSectionTitle": "동기화 설정",
+  "cloudSyncSettingsSectionSubtitle": "수동 또는 자동 동기화를 전환할 수 있습니다.",
+  "cloudSyncEnabledTitle": "클라우드 동기화 사용",
+  "cloudSyncEnabledSubtitle": "끄면 스냅샷을 업로드하거나 다운로드하지 않습니다",
+  "cloudSyncProviderTitle": "서비스 제공자",
+  "cloudSyncProviderJianguoyun": "Jianguoyun",
+  "cloudSyncProviderCustom": "사용자 지정 WEBDAV",
+  "cloudSyncModeTitle": "동기화 방식",
+  "cloudSyncModeAuto": "자동 동기화",
+  "cloudSyncModeManual": "수동 동기화",
+  "cloudSyncAccountTitle": "계정 설정",
+  "cloudSyncAccountSubtitle": "Jianguoyun 앱 전용 비밀번호를 사용하세요 (로그인 비밀번호 아님). 스냅샷에는 창고에 저장된 학교 계정도 포함됩니다.",
+  "cloudSyncUsernameLabel": "이메일 / 사용자명",
+  "cloudSyncUsernameHint": "Jianguoyun 가입 이메일",
+  "cloudSyncPasswordLabel": "앱 전용 비밀번호",
+  "cloudSyncPasswordHint": "Jianguoyun 계정 보안 설정에서 생성",
+  "cloudSyncPasswordStoredHint": "비밀번호 저장됨. 비워 두면 저장된 비밀번호를 계속 사용합니다.",
+  "cloudSyncAdvancedTitle": "고급 설정",
+  "cloudSyncBaseUrlLabel": "WEBDAV 주소",
+  "cloudSyncRemoteFolderLabel": "원격 폴더",
+  "cloudSyncStatusTitle": "동기화 상태",
+  "cloudSyncLastSyncedLabel": "마지막 동기화",
+  "cloudSyncLastErrorLabel": "최근 오류",
+  "cloudSyncLastSyncedAt": "마지막 동기화: {time}",
+  "@cloudSyncLastSyncedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncSyncing": "동기화 중…",
+  "cloudSyncLastError": "최근 오류: {message}",
+  "@cloudSyncLastError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncHelpTitle": "Jianguoyun 앱 비밀번호 받는 방법",
+  "cloudSyncHelpBody": "Jianguoyun 웹 또는 클라이언트 → 계정 정보 → 보안 → 앱 비밀번호 추가. WEBDAV 주소 기본값: https://dav.jianguoyun.com/dav/",
+  "cloudSyncTestConnection": "연결 테스트",
+  "cloudSyncSyncNow": "지금 동기화",
+  "cloudSyncTestSuccess": "WEBDAV 연결 성공",
+  "cloudSyncTestFailed": "WEBDAV 연결 실패. 계정, 앱 비밀번호, 네트워크를 확인하세요",
+  "cloudSyncResultUploaded": "클라우드에 업로드됨",
+  "cloudSyncResultDownloaded": "클라우드에서 복원됨",
+  "cloudSyncResultUpToDate": "로컬과 클라우드가 일치함",
+  "cloudSyncResultCancelled": "동기화 취소됨",
+  "cloudSyncResultFailed": "동기화 실패: {message}",
+  "@cloudSyncResultFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncConflictTitle": "동기화 충돌 감지",
+  "cloudSyncConflictBody": "이 기기와 클라우드 모두 새 변경 사항이 있습니다. 유지할 데이터를 선택하세요.",
+  "cloudSyncUseRemoteAction": "클라우드 사용",
+  "cloudSyncKeepLocalAction": "로컬 유지",
+  "cloudSyncAccountSectionTitle": "클라우드 계정",
+  "cloudSyncNotConnectedHint": "Jianguoyun에 연결하면 여러 기기에서 시간표와 가져온 데이터를 동기화할 수 있습니다.",
+  "cloudSyncConnectAccount": "Jianguoyun 연결",
+  "cloudSyncConnectedAs": "연결됨: {email}",
+  "@cloudSyncConnectedAs": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "cloudSyncDisconnect": "연결 해제",
+  "cloudSyncDisconnectTitle": "클라우드 동기화 계정 연결 해제",
+  "cloudSyncDisconnectBody": "연결 해제 시 이 기기에 저장된 WEBDAV 자격 증명이 삭제됩니다. 시간표 데이터는 기기에 남습니다. 계속하시겠습니까?",
+  "cloudSyncLoginSheetTitle": "Jianguoyun 연결",
+  "cloudSyncLoginSheetSubtitle": "앱 전용 비밀번호를 사용하세요 (Jianguoyun 로그인 비밀번호 아님).",
+  "cloudSyncConfirmConnect": "연결 확인",
+  "cloudSyncConnectSuccess": "계정 연결 성공",
   "aboutSupportSectionTitle": "앱 정보 및 지원",
   "lanEditEntryTitle": "LAN 편집",
   "lanEditEntrySubtitle": "PC 브라우저에서 현재 시간표 편집",
@@ -1334,8 +1420,20 @@
     }
   },
   "liveDisplaySummaryStageText": "스테이지 텍스트",
-  "liveDisplaySummaryLeftLabelImage": "왼쪽 아이콘",
+  "liveDisplaySummaryLeftLabelImage": "아이콘",
   "liveDisplaySummaryMinimal": "최소 표시",
+  "liveDisplaySummaryCountdownShort": "카운트다운",
+  "liveDisplaySummaryMore": "{first} 외 {count}개",
+  "@liveDisplaySummaryMore": {
+    "placeholders": {
+      "first": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "guideHyperOsChip": "HyperOS 3.0.300+",
   "guideStatusTitle": "현재 상태",
   "guideStatusNotificationPermission": "알림 권한",

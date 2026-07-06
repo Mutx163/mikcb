@@ -491,5 +491,31 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('subtitle row does not overflow when width is narrow', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 220,
+              child: HyperosListGroup(
+                children: [
+                  HyperosSwitchTile(
+                    title: '课中状态提醒',
+                    subtitle: '下课前尝试切到超级岛 / 重点提醒',
+                    value: true,
+                    onChanged: (_) {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+    });
   });
 }

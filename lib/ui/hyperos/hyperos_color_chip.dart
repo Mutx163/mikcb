@@ -81,6 +81,7 @@ class HyperosColorChipGroup extends StatelessWidget {
     required this.onSelected,
     this.spacing = 12,
     this.runSpacing = 12,
+    this.distributeHorizontally = true,
   });
 
   final List<Color> colors;
@@ -89,9 +90,13 @@ class HyperosColorChipGroup extends StatelessWidget {
   final double spacing;
   final double runSpacing;
 
+  /// When true, each row spreads chips so left/right edge gaps match (Miuix card pickers).
+  final bool distributeHorizontally;
+
   @override
   Widget build(BuildContext context) {
-    return Wrap(
+    return _hyperosColorChipWrap(
+      distributeHorizontally: distributeHorizontally,
       spacing: spacing,
       runSpacing: runSpacing,
       children: [
@@ -116,6 +121,7 @@ class HyperosHexColorChipGroup extends StatelessWidget {
     required this.colorParser,
     this.spacing = 12,
     this.runSpacing = 12,
+    this.distributeHorizontally = true,
   });
 
   final List<String> colorHexes;
@@ -124,10 +130,12 @@ class HyperosHexColorChipGroup extends StatelessWidget {
   final Color Function(String hex) colorParser;
   final double spacing;
   final double runSpacing;
+  final bool distributeHorizontally;
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
+    return _hyperosColorChipWrap(
+      distributeHorizontally: distributeHorizontally,
       spacing: spacing,
       runSpacing: runSpacing,
       children: [
@@ -140,4 +148,31 @@ class HyperosHexColorChipGroup extends StatelessWidget {
       ],
     );
   }
+}
+
+Widget _hyperosColorChipWrap({
+  required bool distributeHorizontally,
+  required double spacing,
+  required double runSpacing,
+  required List<Widget> children,
+}) {
+  final wrap = Wrap(
+    alignment: distributeHorizontally
+        ? WrapAlignment.spaceBetween
+        : WrapAlignment.start,
+    runAlignment: WrapAlignment.start,
+    spacing: spacing,
+    runSpacing: runSpacing,
+    children: children,
+  );
+
+  if (!distributeHorizontally) {
+    return wrap;
+  }
+
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      return SizedBox(width: constraints.maxWidth, child: wrap);
+    },
+  );
 }

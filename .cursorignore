@@ -1,0 +1,21 @@
+﻿# Build & tooling caches
+build/
+.dart_tool/
+.gradle/
+android/.gradle/
+android/app/build/
+coverage/
+.pub-cache/
+.omx/
+
+# Large / generated artifacts
+*.heapsnapshot
+*.hprof
+.firecrawl/
+
+# Local agent & IDE config (not needed for AI context)
+.claude/
+.trellis/
+.codex/
+.pi/
+reviews/

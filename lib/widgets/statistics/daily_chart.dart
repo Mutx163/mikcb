@@ -48,9 +48,9 @@ class DailyChart extends StatelessWidget {
 
     return HyperosCard(
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
+        padding: const EdgeInsets.fromLTRB(8, 12, 12, 4),
         child: SizedBox(
-          height: 200,
+          height: 168,
           child: BarChart(
             BarChartData(
               alignment: BarChartAlignment.spaceAround,

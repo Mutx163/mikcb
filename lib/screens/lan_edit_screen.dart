@@ -165,18 +165,20 @@ class _LanEditScreenState extends State<LanEditScreen>
         children: [
           HyperosControlCard(
             subtitle: l10n.lanEditIntro,
-            child: isRunning
-                ? HyperosButton(
-                    label: l10n.lanEditStop,
-                    variant: HyperosButtonVariant.secondary,
-                    loading: _isStopping,
-                    onPressed: _isStopping ? null : _stopServer,
-                  )
-                : HyperosButton(
-                    label: l10n.lanEditStart,
-                    loading: _isStarting,
-                    onPressed: _isStarting ? null : _startServer,
-                  ),
+            child: HyperosControlCardInset(
+              child: isRunning
+                  ? HyperosButton(
+                      label: l10n.lanEditStop,
+                      variant: HyperosButtonVariant.secondary,
+                      loading: _isStopping,
+                      onPressed: _isStopping ? null : _stopServer,
+                    )
+                  : HyperosButton(
+                      label: l10n.lanEditStart,
+                      loading: _isStarting,
+                      onPressed: _isStarting ? null : _startServer,
+                    ),
+            ),
           ),
           if (isRunning && session != null) ...[
             const HyperosSectionGap(),

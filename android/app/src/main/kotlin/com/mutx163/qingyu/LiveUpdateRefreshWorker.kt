@@ -29,13 +29,13 @@ class LiveUpdateRefreshWorker(
             // Android 12+ restricts starting foreground services from the
             // background.  Fall back to reschedule-only (schedules the next
             // alarm without trying to start the service immediately).
-            Log.w(TAG, "Foreground service start blocked, falling back to schedule-only", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_FGS_START_BLOCKED, e)
             try {
                 LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = false)
             } catch (_: Exception) {}
             Result.success()
         } catch (e: Exception) {
-            Log.w(TAG, "Live update refresh worker failed", e)
+            Log.w(TAG, DiagnosticLogMessages.LOG_LIVE_UPDATE_REFRESH_WORKER_FAILED, e)
             Result.retry()
         }
     }

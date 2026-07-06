@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+import '../logging/app_debug_log.dart';
+import '../logging/app_log_messages.dart';
 import 'app_log_service.dart';
 import 'home_widget_snapshot_service.dart';
 
@@ -26,8 +28,9 @@ enum HomeWidgetPinRequestResult {
 }
 
 class HomeWidgetService {
-  static const MethodChannel _channel =
-      MethodChannel('com.mutx163.qingyu/home_widget');
+  static const MethodChannel _channel = MethodChannel(
+    'com.mutx163.qingyu/home_widget',
+  );
 
   static final HomeWidgetService _instance = HomeWidgetService._internal();
   factory HomeWidgetService() => _instance;
@@ -38,8 +41,9 @@ class HomeWidgetService {
       return false;
     }
     try {
-      final supported =
-          await _channel.invokeMethod<bool>('canRequestPinWidget');
+      final supported = await _channel.invokeMethod<bool>(
+        'canRequestPinWidget',
+      );
       return supported ?? false;
     } on MissingPluginException {
       if (kDebugMode) {
@@ -49,11 +53,11 @@ class HomeWidgetService {
       unawaited(
         AppLogService.instance.warn(
           'home_widget_pin_support_failed',
-          'Failed to check pin widget support',
+          AppLogMessages.homeWidgetPinSupportFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to check pin widget support: $e');
+      appDebugLog('HomeWidget', '检查固定支持失败：$e');
     }
     return false;
   }
@@ -65,10 +69,9 @@ class HomeWidgetService {
       return HomeWidgetPinRequestResult.unsupported;
     }
     try {
-      final status = await _channel.invokeMethod<String>(
-        'requestPinWidget',
-        {'widgetType': target.value},
-      );
+      final status = await _channel.invokeMethod<String>('requestPinWidget', {
+        'widgetType': target.value,
+      });
       return switch (status) {
         'requested' => HomeWidgetPinRequestResult.requested,
         'unsupported' => HomeWidgetPinRequestResult.unsupported,
@@ -83,21 +86,18 @@ class HomeWidgetService {
       unawaited(
         AppLogService.instance.warn(
           'home_widget_pin_request_failed',
-          'Failed to request pin widget',
+          AppLogMessages.homeWidgetPinRequestFailed,
           extras: {'error': '$e', 'target': target.value},
         ),
       );
-      debugPrint('Failed to request pin widget: $e');
+      appDebugLog('HomeWidget', '请求固定小组件失败：$e');
     }
     return HomeWidgetPinRequestResult.failed;
   }
 
   Future<bool> syncSnapshot(HomeWidgetSnapshot snapshot) async {
     try {
-      await _channel.invokeMethod(
-        'syncSnapshot',
-        snapshot.toJson(),
-      );
+      await _channel.invokeMethod('syncSnapshot', snapshot.toJson());
       return true;
     } on MissingPluginException {
       if (kDebugMode) {
@@ -107,11 +107,11 @@ class HomeWidgetService {
       unawaited(
         AppLogService.instance.warn(
           'home_widget_sync_failed',
-          'Failed to sync home widget snapshot',
+          AppLogMessages.homeWidgetSyncFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to sync home widget snapshot: $e');
+      appDebugLog('HomeWidget', '同步快照失败：$e');
     }
     return false;
   }
@@ -128,21 +128,20 @@ class HomeWidgetService {
       unawaited(
         AppLogService.instance.warn(
           'home_widget_clear_failed',
-          'Failed to clear home widget snapshot',
+          AppLogMessages.homeWidgetClearFailed,
           extras: {'error': '$e'},
         ),
       );
-      debugPrint('Failed to clear home widget snapshot: $e');
+      appDebugLog('HomeWidget', '清空快照失败：$e');
     }
     return false;
   }
 
   Future<void> scheduleRefresh(List<int> triggerAtMillis) async {
     try {
-      await _channel.invokeMethod(
-        'scheduleRefresh',
-        {'triggerAtMillis': triggerAtMillis},
-      );
+      await _channel.invokeMethod('scheduleRefresh', {
+        'triggerAtMillis': triggerAtMillis,
+      });
     } on MissingPluginException {
       if (kDebugMode) {
         return;
@@ -151,11 +150,11 @@ class HomeWidgetService {
       unawaited(
         AppLogService.instance.warn(
           'home_widget_schedule_failed',
-          'Failed to schedule home widget refresh',
+          AppLogMessages.homeWidgetScheduleFailed,
           extras: {'error': '$e', 'count': triggerAtMillis.length},
         ),
       );
-      debugPrint('Failed to schedule home widget refresh: $e');
+      appDebugLog('HomeWidget', '调度刷新失败：$e');
     }
   }
 }

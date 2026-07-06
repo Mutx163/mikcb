@@ -38,7 +38,7 @@ class ExamListScreen extends StatelessWidget {
         color: HyperosColors.scaffoldBackground(context),
         child: exams.isEmpty
             ? _buildEmptyState(context, l10n)
-            : ListView(
+            : HyperosListView(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 8,

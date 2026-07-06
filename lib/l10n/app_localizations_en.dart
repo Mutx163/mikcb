@@ -15,6 +15,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitleDebug => 'Qingyu Timetable Debug';
 
   @override
+  String get appTitleProfile => 'Qingyu Timetable Profile';
+
+  @override
   String get appearanceTitle => 'Appearance';
 
   @override
@@ -2557,12 +2560,133 @@ class AppLocalizationsEn extends AppLocalizations {
       'Affects the top bar, accent color, and global primary tone.';
 
   @override
+  String get frostedSheetSectionTitle => 'Sheet frosted glass';
+
+  @override
+  String get frostedSheetSectionSubtitle =>
+      'Adjust home popup blur and milky frosted brightness. Further right = brighter white glass.';
+
+  @override
+  String get frostedBlurEnabledTitle => 'Gaussian blur';
+
+  @override
+  String get frostedBlurEnabledSubtitle =>
+      'When off, sheets and home frosted areas keep tint only, without backdrop blur.';
+
+  @override
+  String get frostedSheetPreviewOpenAction => 'Open sheet preview';
+
+  @override
+  String get frostedSheetPreviewDemoTitle => 'Sheet preview';
+
+  @override
+  String get frostedSheetPreviewDemoSubtitle =>
+      'Same frosted glass as the home top-right menu.';
+
+  @override
+  String get frostedSheetBlurLabel => 'Blur strength';
+
+  @override
+  String get frostedSheetTintLabel => 'Frost brightness';
+
+  @override
   String get timetableBackgroundColorSectionTitle =>
       'Timetable background color';
 
   @override
   String get timetableBackgroundColorSectionSubtitle =>
-      'Only affects the large background of the timetable page.';
+      'Used in solid-color mode for the selected display regions; can pair with a background image.';
+
+  @override
+  String get homePageBackgroundFillLabel => 'Background fill';
+
+  @override
+  String get homePageBackgroundFillColor => 'Solid color';
+
+  @override
+  String get homePageBackgroundFillImage => 'Image';
+
+  @override
+  String get homePageBackgroundImageTitle => 'Background image';
+
+  @override
+  String get homePageBackgroundImageSubtitle =>
+      'In image mode, applies to the display regions selected below.';
+
+  @override
+  String get homePageWallpaperTitle => 'Background image';
+
+  @override
+  String get homePageWallpaperSubtitle =>
+      'One full-screen image. Checked regions below show it through; others use the page color.';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerTitle =>
+      'Background follows week swipe';
+
+  @override
+  String get homePageBackdropFollowsWeekPagerSubtitle =>
+      'When swiping between weeks, the background image moves with the timetable page.';
+
+  @override
+  String get homePageBackgroundScopeTitle => 'Background display area';
+
+  @override
+  String get homePageBackgroundScopeSubtitle =>
+      'Top to bottom: choose which regions show the image; others use the page color.';
+
+  @override
+  String get homePageBackgroundScopeStatusBar => 'Status bar';
+
+  @override
+  String get homePageBackgroundScopeTimetable => 'Timetable area';
+
+  @override
+  String get homePageBackgroundScopeWeekdayBar => 'Info bar';
+
+  @override
+  String get homePageBackgroundScopeHeader => 'Top bar';
+
+  @override
+  String get homePageHeaderBlurTitle => 'Top bar blur';
+
+  @override
+  String get homePageHeaderBlurSubtitle =>
+      'Frost the title row; includes the status bar when that scope is enabled.';
+
+  @override
+  String get homePageWeekdayBarBlurTitle => 'Info bar blur';
+
+  @override
+  String get homePageWeekdayBarBlurSubtitle =>
+      'Frost the week and weekday row over the background image.';
+
+  @override
+  String get homePageTimeColumnBlurTitle => 'Time column blur';
+
+  @override
+  String get homePageTimeColumnBlurSubtitle =>
+      'Frost the left section/time column over the background image.';
+
+  @override
+  String get homePageRegionBlurSectionSubtitle =>
+      'Works with a background image. Blur strength follows sheet frosted-glass settings.';
+
+  @override
+  String get homePagePickImageAction => 'Choose image';
+
+  @override
+  String get homePageClearImageAction => 'Clear image';
+
+  @override
+  String get homePageImageNotSelected => 'Not selected';
+
+  @override
+  String get appearanceTextColorsSectionTitle => 'Text colors';
+
+  @override
+  String get appearanceTextColorsSectionSubtitle =>
+      'Customize course card, weekday bar, and time axis text colors.';
 
   @override
   String get defaultTimetablePreviewName => 'Default timetable';
@@ -2591,10 +2715,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get liveDisplaySummaryStageText => 'Stage text';
 
   @override
-  String get liveDisplaySummaryLeftLabelImage => 'Left label image';
+  String get liveDisplaySummaryLeftLabelImage => 'Icon';
 
   @override
   String get liveDisplaySummaryMinimal => 'Minimal display';
+
+  @override
+  String get liveDisplaySummaryCountdownShort => 'Countdown';
+
+  @override
+  String liveDisplaySummaryMore(String first, int count) {
+    return '$first, $count items';
+  }
 
   @override
   String get guideHyperOsChip => 'HyperOS 3.0.300+';

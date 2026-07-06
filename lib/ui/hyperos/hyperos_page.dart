@@ -12,8 +12,6 @@ import 'hyperos_overlay_header.dart';
 import 'hyperos_theme.dart';
 import 'hyperos_tokens.dart';
 import 'hyperos_widgets.dart';
-import 'frosted/frosted_header_controller.dart';
-import '../../../services/frosted_blur_service.dart';
 
 /// Root settings page without a back button (HyperOS settings home pattern).
 class HyperosRootPage extends StatelessWidget {
@@ -24,6 +22,7 @@ class HyperosRootPage extends StatelessWidget {
     this.suffixes,
     this.childPad = false,
     this.backgroundColor,
+    this.headerDecoration,
     this.headerStyle,
     this.resizeToAvoidBottomInset = true,
     this.overlayHeader = true,
@@ -34,6 +33,7 @@ class HyperosRootPage extends StatelessWidget {
   final List<Widget>? suffixes;
   final bool childPad;
   final Color? backgroundColor;
+  final BoxDecoration? headerDecoration;
   final FHeaderStyleDelta? headerStyle;
   final bool resizeToAvoidBottomInset;
 
@@ -46,6 +46,7 @@ class HyperosRootPage extends StatelessWidget {
     return _HyperosBlurredPage(
       childPad: childPad,
       backgroundColor: backgroundColor,
+      headerDecoration: headerDecoration,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       overlayHeader: overlayHeader,
       header: FHeader(
@@ -60,9 +61,8 @@ class HyperosRootPage extends StatelessWidget {
 
 /// Wraps [FScaffold] + blurred top bar.
 ///
-/// Product scope: only the settings home uses [overlayHeader] `true` for
-/// scroll-under blur. Sub-routes default to `false` (scaffold header slot).
-/// See `.trellis/spec/flutter/hyperos-blurred-header.md`.
+/// [HyperosSubpage] defaults to overlay layout so [BackdropFilter] can sample
+/// scrollable content under the header (settings home and sub-routes).
 class HyperosSubpage extends StatelessWidget {
   const HyperosSubpage({
     super.key,
@@ -72,7 +72,7 @@ class HyperosSubpage extends StatelessWidget {
     this.prefixes,
     this.suffixes,
     this.childPad = false,
-    this.overlayHeader = false,
+    this.overlayHeader = true,
   });
 
   final Widget title;
@@ -82,8 +82,8 @@ class HyperosSubpage extends StatelessWidget {
   final List<Widget>? suffixes;
   final bool childPad;
 
-  /// When true, the header floats above scrollable content (settings home only).
-  /// Sub-routes default to false to avoid overlay + heavy [ListView] on push.
+  /// When true, the header floats above scrollable content for live backdrop blur.
+  /// Set false only when the body must not scroll under the bar.
   final bool overlayHeader;
 
   @override
@@ -109,6 +109,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     required this.child,
     required this.childPad,
     this.backgroundColor,
+    this.headerDecoration,
     this.resizeToAvoidBottomInset = true,
     this.overlayHeader = true,
   });
@@ -117,6 +118,7 @@ class _HyperosBlurredPage extends StatefulWidget {
   final Widget child;
   final bool childPad;
   final Color? backgroundColor;
+  final BoxDecoration? headerDecoration;
   final bool resizeToAvoidBottomInset;
   final bool overlayHeader;
 
@@ -127,53 +129,28 @@ class _HyperosBlurredPage extends StatefulWidget {
 class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
   static const _blurSettleDelay = Duration(milliseconds: 350);
 
-  final _captureBoundaryKey = GlobalKey();
-  late final FrostedHeaderController _frostedController;
-
   bool _blurSettled = false;
-  bool _frostedProbed = false;
   Timer? _blurSettleTimer;
   Animation<double>? _routeAnimation;
   Animation<double>? _secondaryRouteAnimation;
   VoidCallback? _routeAnimationListener;
   AnimationStatusListener? _routeAnimationStatusListener;
+  bool? _diagLastTransitioning;
+  bool? _diagLastIsCurrent;
 
   @override
   void initState() {
     super.initState();
-    _frostedController = FrostedHeaderController()
-      ..attach(boundaryKey: _captureBoundaryKey);
-    _frostedController.addListener(_onFrostedImageChanged);
-    unawaited(_probeFrostedBlur());
   }
 
-  Future<void> _probeFrostedBlur() async {
-    await FrostedBlurService.probeNativeSupport();
-    if (mounted) {
-      setState(() => _frostedProbed = true);
-      _syncFrostedCapture();
-    }
-  }
+  /// Whether this page uses the overlay (stacked header) layout structure.
+  bool get _useOverlayLayout => widget.overlayHeader;
 
-  void _onFrostedImageChanged() {
-    if (mounted) {
-      setState(() {});
-    }
-  }
+  /// Live backdrop blur on overlay-header pages (see [_blurReady] for gates).
+  bool get _liveBlurActive => widget.overlayHeader;
 
-  void _syncFrostedCapture() {
-    if (!_frostedProbed) {
-      return;
-    }
-    final enabled = _cfhReady && HyperosBlurredHeader.liveBlurSupported;
-    _frostedController.captureEnabled = enabled;
-    if (enabled) {
-      _frostedController.scheduleRefresh(source: 'blur_sync');
-    }
-  }
-
-  /// Overlay scroll-under blur only while this route is the visible top route.
-  bool get _effectiveOverlay => widget.overlayHeader && _isRouteCurrent;
+  /// [BackdropFilter] enabled after route settle on overlay pages.
+  bool get _backdropBlurEnabled => _liveBlurActive && _blurReady;
 
   double get _animationValue => _routeAnimation?.value ?? 1.0;
 
@@ -187,11 +164,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     isRouteCurrent: _isRouteCurrent,
   );
 
-  /// CFH capture/blur gate after route settle (platform-agnostic).
-  bool get _cfhReady =>
-      _isRouteCurrent && !_isRouteTransitioning && _blurSettled;
-
-  bool get _blurEnabled => HyperosBlurredHeader.liveBlurSupported && _cfhReady;
+  /// Backdrop blur gate after route settle. Modal overlays (sheet / dialog) keep
+  /// blur on the page below; only full-page slide transitions pause it.
+  bool get _blurReady => !_isRouteTransitioning && _blurSettled;
 
   @override
   void didChangeDependencies() {
@@ -205,6 +180,8 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     _detachRouteListeners();
     _routeAnimation = animation;
     _secondaryRouteAnimation = secondary;
+    _diagLastTransitioning = null;
+    _diagLastIsCurrent = null;
 
     void sync() => _syncRouteTransitioning();
     _routeAnimationListener = sync;
@@ -236,7 +213,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   void _scheduleBlurSettle() {
     _cancelBlurSettle();
-    if (!_isRouteCurrent || _isRouteTransitioning) {
+    if (_isRouteTransitioning) {
       if (_blurSettled && mounted) {
         setState(() => _blurSettled = false);
       } else {
@@ -245,12 +222,39 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       return;
     }
     _blurSettleTimer = Timer(_blurSettleDelay, () {
-      if (!mounted || !_isRouteCurrent || _isRouteTransitioning) {
+      if (!mounted || _isRouteTransitioning) {
         return;
       }
       HyperosHeaderDiag.log('blur_settle', {'blurSettled': true});
       setState(() => _blurSettled = true);
-      _syncFrostedCapture();
+    });
+  }
+
+  void _maybeLogRouteTransition({
+    required bool transitioning,
+    required bool isCurrent,
+  }) {
+    if (_diagLastTransitioning == transitioning &&
+        _diagLastIsCurrent == isCurrent) {
+      return;
+    }
+    _diagLastTransitioning = transitioning;
+    _diagLastIsCurrent = isCurrent;
+
+    // Background routes only matter when transition edges change.
+    if (!isCurrent && transitioning) {
+      return;
+    }
+
+    HyperosHeaderDiag.log('route_transition', {
+      'isRouteTransitioning': transitioning,
+      'isRouteCurrent': isCurrent,
+      if (isCurrent) ...{
+        'liveBlurActive': _liveBlurActive,
+        'useOverlayLayout': _useOverlayLayout,
+      },
+      'animationValue': _animationValue,
+      'secondaryAnimationValue': _secondaryAnimationValue,
     });
   }
 
@@ -260,54 +264,32 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
     if (transitioning) {
       _cancelBlurSettle();
-      if (_blurSettled && isCurrent && mounted) {
+      if (_blurSettled && mounted) {
         setState(() => _blurSettled = false);
       } else {
         _blurSettled = false;
       }
       if (isCurrent && mounted) {
-        HyperosHeaderDiag.log('route_transition', {
-          'isRouteTransitioning': true,
-          'isRouteCurrent': true,
-          'effectiveOverlay': _effectiveOverlay,
-          'animationValue': _animationValue,
-          'secondaryAnimationValue': _secondaryAnimationValue,
-        });
+        _maybeLogRouteTransition(transitioning: true, isCurrent: true);
         setState(() {});
       } else {
-        HyperosHeaderDiag.log('route_transition', {
-          'isRouteTransitioning': true,
-          'isRouteCurrent': false,
-          'skippedRebuild': true,
-          'animationValue': _animationValue,
-          'secondaryAnimationValue': _secondaryAnimationValue,
-        });
+        _maybeLogRouteTransition(transitioning: true, isCurrent: false);
       }
       return;
     }
 
     if (!isCurrent) {
-      HyperosHeaderDiag.log('route_transition', {
-        'isRouteTransitioning': false,
-        'isRouteCurrent': false,
-        'skippedRebuild': true,
-        'animationValue': _animationValue,
-        'secondaryAnimationValue': _secondaryAnimationValue,
-      });
+      _maybeLogRouteTransition(transitioning: false, isCurrent: false);
+      if (!_blurSettled) {
+        _scheduleBlurSettle();
+      }
       return;
     }
 
-    HyperosHeaderDiag.log('route_transition', {
-      'isRouteTransitioning': false,
-      'isRouteCurrent': true,
-      'effectiveOverlay': _effectiveOverlay,
-      'animationValue': _animationValue,
-      'secondaryAnimationValue': _secondaryAnimationValue,
-    });
+    _maybeLogRouteTransition(transitioning: false, isCurrent: true);
     _scheduleBlurSettle();
     if (mounted) {
       setState(() {});
-      _syncFrostedCapture();
     }
   }
 
@@ -328,68 +310,51 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
 
   @override
   void dispose() {
-    _frostedController.removeListener(_onFrostedImageChanged);
-    _frostedController.dispose();
     _cancelBlurSettle();
     _detachRouteListeners();
     super.dispose();
   }
 
-  Widget _buildFrostedHeaderShell(Widget header) {
-    return HyperosBlurredHeaderShell(
-      blurredImage: _frostedController.blurredImage,
-      child: header,
-    );
+  Widget _buildHeaderShell(Widget header, Color pageBackground) {
+    if (!widget.overlayHeader) {
+      // Stacked headers (e.g. timetable home) use a solid bar; frosted tint
+      // is based on HyperosColors.scaffoldBackground and mismatches custom
+      // page backgrounds in the status-bar inset above FHeader SafeArea.
+      final headerDecoration = widget.headerDecoration;
+      if (headerDecoration != null) {
+        return DecoratedBox(decoration: headerDecoration, child: header);
+      }
+      return ColoredBox(color: pageBackground, child: header);
+    }
+    return HyperosBlurredHeaderShell(child: header);
   }
 
-  Widget _buildCapturableBody({
-    required Color pageBackground,
-    required Widget child,
-  }) {
-    return RepaintBoundary(
-      key: _captureBoundaryKey,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (notification) {
-          _frostedController.onScrollNotification(notification);
-          return false;
-        },
-        child: Material(
-          type: MaterialType.transparency,
-          color: pageBackground,
-          child: child,
-        ),
-      ),
+  Widget _buildBody({required Color pageBackground, required Widget child}) {
+    return Material(
+      type: MaterialType.transparency,
+      color: pageBackground,
+      child: child,
     );
   }
 
   Widget _buildScaffoldHeaderLayout(Color pageBackground) {
-    final blurredHeader = _buildFrostedHeaderShell(widget.header);
-    HyperosHeaderDiag.log('page_build', {
-      'layoutMode': 'scaffold_header',
-      'liveBlurSupported': HyperosBlurredHeader.liveBlurSupported,
-      'isRouteCurrent': _isRouteCurrent,
-      'effectiveOverlay': _effectiveOverlay,
-      'isRouteTransitioning': _isRouteTransitioning,
-      'blurSettled': _blurSettled,
-      'animationValue': _animationValue,
-      'secondaryAnimationValue': _secondaryAnimationValue,
-      'blurEnabled': _blurEnabled,
-    });
+    final blurredHeader = _buildHeaderShell(widget.header, pageBackground);
     final header = HyperosBlurredHeaderScope(
       contentTopInset: 0,
-      blurEnabled: _cfhReady,
-      frostedController: _frostedController,
+      blurEnabled: _backdropBlurEnabled,
       child: blurredHeader,
     );
     return FScaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
-      scaffoldStyle: FScaffoldStyleDelta.delta(backgroundColor: pageBackground),
+      scaffoldStyle: FScaffoldStyleDelta.delta(
+        backgroundColor: pageBackground,
+        systemOverlayStyle: HyperosColors.systemOverlayForBackground(
+          pageBackground,
+        ),
+      ),
       header: header,
       childPad: widget.childPad,
-      child: _buildCapturableBody(
-        pageBackground: pageBackground,
-        child: widget.child,
-      ),
+      child: _buildBody(pageBackground: pageBackground, child: widget.child),
     );
   }
 
@@ -398,25 +363,12 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
     final pageBackground =
         widget.backgroundColor ?? HyperosColors.scaffoldBackground(context);
 
-    if (!_effectiveOverlay) {
+    if (!_useOverlayLayout) {
       return _buildScaffoldHeaderLayout(pageBackground);
     }
 
-    final blurredHeader = _buildFrostedHeaderShell(widget.header);
+    final blurredHeader = _buildHeaderShell(widget.header, pageBackground);
     final headerInset = HyperosBlurredHeader.contentTopInset(context);
-
-    HyperosHeaderDiag.log('page_build', {
-      'layoutMode': 'overlay_blur',
-      'liveBlurSupported': HyperosBlurredHeader.liveBlurSupported,
-      'isRouteCurrent': _isRouteCurrent,
-      'effectiveOverlay': _effectiveOverlay,
-      'isRouteTransitioning': _isRouteTransitioning,
-      'blurSettled': _blurSettled,
-      'animationValue': _animationValue,
-      'secondaryAnimationValue': _secondaryAnimationValue,
-      'blurEnabled': _blurEnabled,
-      'headerInset': headerInset,
-    });
 
     return FScaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
@@ -424,14 +376,13 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage> {
       childPad: widget.childPad,
       child: HyperosBlurredHeaderScope(
         contentTopInset: headerInset,
-        blurEnabled: _cfhReady,
-        frostedController: _frostedController,
+        blurEnabled: _backdropBlurEnabled,
         child: Stack(
           fit: StackFit.expand,
           clipBehavior: Clip.hardEdge,
           children: [
             Positioned.fill(
-              child: _buildCapturableBody(
+              child: _buildBody(
                 pageBackground: pageBackground,
                 child: widget.child,
               ),
@@ -498,6 +449,8 @@ class HyperosListView extends StatefulWidget {
     this.itemCount,
     this.itemBuilder,
     this.padding,
+    this.includeHeaderInset = true,
+    this.pageStorageKey,
   }) : assert(
          (children != null) ^ (itemCount != null && itemBuilder != null),
          'Provide either children or itemCount+itemBuilder',
@@ -507,6 +460,13 @@ class HyperosListView extends StatefulWidget {
   final int? itemCount;
   final IndexedWidgetBuilder? itemBuilder;
   final EdgeInsetsGeometry? padding;
+
+  /// When false, skip overlay-header top inset (e.g. a fixed preview above the
+  /// list already clears the frosted bar via [HyperosBlurredBodyInset]).
+  final bool includeHeaderInset;
+
+  /// Restores scroll offset when the list is rebuilt (e.g. after route pop).
+  final PageStorageKey<String>? pageStorageKey;
 
   @override
   State<HyperosListView> createState() => _HyperosListViewState();
@@ -534,9 +494,6 @@ class _HyperosListViewState extends State<HyperosListView> {
   }
 
   bool _handleScroll(ScrollNotification notification) {
-    HyperosBlurredHeaderScope.frostedControllerOf(
-      context,
-    )?.onScrollNotification(notification);
     if (notification is ScrollStartNotification) {
       _setScrollState(() => _pressHighlightGeneration++);
     }
@@ -553,11 +510,23 @@ class _HyperosListViewState extends State<HyperosListView> {
   }
 
   EdgeInsets _resolveListPadding(BuildContext context) {
-    // Overlay scroll-under: list must start at y=0 so content passes under the
-    // frosted header. [HyperosBlurredHeaderScope.contentTopInset] is only for
-    // [HyperosBlurredBodyInset], not list top padding.
-    return (widget.padding ?? HyperosTokens.listPadding).resolve(
+    final base = (widget.padding ?? HyperosTokens.listPadding).resolve(
       Directionality.of(context),
+    );
+    // Initial content sits below the overlay header; scrolling still passes
+    // rows under the frosted bar once this padding scrolls away.
+    if (!widget.includeHeaderInset) {
+      return base;
+    }
+    final headerInset = HyperosBlurredHeaderScope.insetOf(context);
+    if (headerInset <= 0) {
+      return base;
+    }
+    return EdgeInsets.fromLTRB(
+      base.left,
+      base.top + headerInset,
+      base.right,
+      base.bottom,
     );
   }
 
@@ -568,12 +537,15 @@ class _HyperosListViewState extends State<HyperosListView> {
     final resolvedItemBuilder =
         widget.itemBuilder ?? (context, index) => children![index];
 
+    final listKey = widget.pageStorageKey ?? _pageStorageKeyFromRoute(context);
+
     return HyperosListScrollScope(
       isUserScrolling: _isUserScrolling,
       pressHighlightGeneration: _pressHighlightGeneration,
       child: NotificationListener<ScrollNotification>(
         onNotification: _handleScroll,
         child: ListView.builder(
+          key: listKey,
           physics: const HyperosOverscrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
@@ -584,6 +556,14 @@ class _HyperosListViewState extends State<HyperosListView> {
       ),
     );
   }
+
+  PageStorageKey<String>? _pageStorageKeyFromRoute(BuildContext context) {
+    final name = ModalRoute.of(context)?.settings.name;
+    if (name == null || name.isEmpty) {
+      return null;
+    }
+    return PageStorageKey<String>('hyperos-list-$name');
+  }
 }
 
 /// Gray rounded bottom sheet container (no title row).
@@ -593,14 +573,51 @@ class HyperosSheetFrame extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.fromLTRB(16, 16, 16, 16),
     this.maxHeight,
+    this.frosted = false,
   });
 
   final Widget child;
   final EdgeInsetsGeometry padding;
   final double? maxHeight;
 
+  /// When true, samples the page behind the sheet with [BackdropFilter] blur
+  /// and a translucent tint (same frosted stack as [HyperosBlurredHeader]).
+  final bool frosted;
+
   @override
   Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.vertical(
+      top: Radius.circular(HyperosTokens.cardRadius),
+    );
+    final content = SafeArea(
+      top: false,
+      child: Padding(padding: padding, child: child),
+    );
+
+    if (frosted) {
+      final useBlur = HyperosBlurredHeader.backdropBlurEnabled(context);
+      final tint = HyperosBlurredHeader.sheetTintColor(
+        context,
+        withBlur: useBlur,
+      );
+
+      return ClipRRect(
+        borderRadius: borderRadius,
+        child: Container(
+          width: double.infinity,
+          constraints: maxHeight != null
+              ? BoxConstraints(maxHeight: maxHeight!)
+              : null,
+          child: FrostedHeaderBackground(
+            blurEnabled: useBlur,
+            blurSigma: HyperosBlurredHeader.blurSigmaOf(context),
+            tint: tint,
+            child: content,
+          ),
+        ),
+      );
+    }
+
     return Container(
       width: double.infinity,
       constraints: maxHeight != null
@@ -608,14 +625,9 @@ class HyperosSheetFrame extends StatelessWidget {
           : null,
       decoration: BoxDecoration(
         color: HyperosColors.scaffoldBackground(context),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(HyperosTokens.cardRadius),
-        ),
+        borderRadius: borderRadius,
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(padding: padding, child: child),
-      ),
+      child: content,
     );
   }
 }
@@ -628,16 +640,19 @@ class HyperosSheet extends StatelessWidget {
     required this.child,
     this.description,
     this.padding = const EdgeInsets.fromLTRB(16, 16, 16, 16),
+    this.frosted = false,
   });
 
   final String? title;
   final Widget child;
   final String? description;
   final EdgeInsetsGeometry padding;
+  final bool frosted;
 
   @override
   Widget build(BuildContext context) {
     return HyperosSheetFrame(
+      frosted: frosted,
       padding: padding,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -665,6 +680,7 @@ Future<T?> showHyperosSheet<T>({
   bool isDismissible = true,
   bool enableDrag = true,
   bool useRootNavigator = false,
+  Color? barrierColor,
 }) {
   return showModalBottomSheet<T>(
     context: context,
@@ -673,7 +689,7 @@ Future<T?> showHyperosSheet<T>({
     enableDrag: enableDrag,
     useRootNavigator: useRootNavigator,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.32),
+    barrierColor: barrierColor ?? Colors.black.withValues(alpha: 0.32),
     builder: (sheetContext) {
       return Padding(
         padding: EdgeInsets.only(
@@ -682,5 +698,28 @@ Future<T?> showHyperosSheet<T>({
         child: builder(sheetContext),
       );
     },
+  );
+}
+
+/// Home timetable bottom sheets: frosted panel + lighter modal barrier.
+Future<T?> showHomeHyperosSheet<T>({
+  required BuildContext context,
+  required WidgetBuilder builder,
+  bool isDismissible = true,
+  bool enableDrag = true,
+  bool useRootNavigator = false,
+  Color? barrierColor,
+}) {
+  return showHyperosSheet<T>(
+    context: context,
+    builder: builder,
+    isDismissible: isDismissible,
+    enableDrag: enableDrag,
+    useRootNavigator: useRootNavigator,
+    barrierColor:
+        barrierColor ??
+        Colors.black.withValues(
+          alpha: HyperosBlurredHeader.sheetBarrierAlphaOf(context),
+        ),
   );
 }

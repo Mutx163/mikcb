@@ -6,6 +6,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../logging/app_log_messages.dart';
 import '../models/timetable_settings.dart';
 
 class AppLogService {
@@ -41,7 +42,7 @@ class AppLogService {
     _initialized = true;
     await info(
       'app_logger_initialized',
-      'App log service initialized',
+      AppLogMessages.appLoggerInitialized,
       extras: {
         'platform': defaultTargetPlatform.name,
         'version': _packageInfo?.version ?? '',
@@ -58,7 +59,7 @@ class AppLogService {
     if (value) {
       await info(
         'privacy_consent_updated',
-        'Privacy consent updated',
+        AppLogMessages.privacyConsentUpdated,
         extras: {'accepted': value},
         force: true,
       );
@@ -72,8 +73,8 @@ class AppLogService {
       await info(
         'app_log_recording_enabled',
         previous
-            ? 'App log recording remains enabled'
-            : 'App log recording enabled',
+            ? AppLogMessages.appLogRecordingRemainsEnabled
+            : AppLogMessages.appLogRecordingEnabled,
         extras: {'previous': previous},
         force: true,
       );
@@ -85,56 +86,52 @@ class AppLogService {
     String message, {
     Map<String, Object?> extras = const {},
     bool force = false,
-  }) =>
-      log(
-        level: 'verbose',
-        category: category,
-        message: message,
-        extras: extras,
-        force: force,
-      );
+  }) => log(
+    level: 'verbose',
+    category: category,
+    message: message,
+    extras: extras,
+    force: force,
+  );
 
   Future<void> debug(
     String category,
     String message, {
     Map<String, Object?> extras = const {},
     bool force = false,
-  }) =>
-      log(
-        level: 'debug',
-        category: category,
-        message: message,
-        extras: extras,
-        force: force,
-      );
+  }) => log(
+    level: 'debug',
+    category: category,
+    message: message,
+    extras: extras,
+    force: force,
+  );
 
   Future<void> info(
     String category,
     String message, {
     Map<String, Object?> extras = const {},
     bool force = false,
-  }) =>
-      log(
-        level: 'info',
-        category: category,
-        message: message,
-        extras: extras,
-        force: force,
-      );
+  }) => log(
+    level: 'info',
+    category: category,
+    message: message,
+    extras: extras,
+    force: force,
+  );
 
   Future<void> warn(
     String category,
     String message, {
     Map<String, Object?> extras = const {},
     bool force = false,
-  }) =>
-      log(
-        level: 'warn',
-        category: category,
-        message: message,
-        extras: extras,
-        force: force,
-      );
+  }) => log(
+    level: 'warn',
+    category: category,
+    message: message,
+    extras: extras,
+    force: force,
+  );
 
   Future<void> error(
     String category,
@@ -143,16 +140,15 @@ class AppLogService {
     StackTrace? stackTrace,
     Map<String, Object?> extras = const {},
     bool force = false,
-  }) =>
-      log(
-        level: 'error',
-        category: category,
-        message: message,
-        error: error,
-        stackTrace: stackTrace,
-        extras: extras,
-        force: force,
-      );
+  }) => log(
+    level: 'error',
+    category: category,
+    message: message,
+    error: error,
+    stackTrace: stackTrace,
+    extras: extras,
+    force: force,
+  );
 
   Future<void> log({
     required String level,
@@ -208,9 +204,7 @@ class AppLogService {
     return '$header\n$body'.trim();
   }
 
-  Future<String> readMergedLogsText({
-    String? nativeRawLog,
-  }) async {
+  Future<String> readMergedLogsText({String? nativeRawLog}) async {
     final appText = await readAppLogsText();
     final appBody = _extractBody(appText);
     final nativeBody = _extractBody(nativeRawLog ?? '');
@@ -222,8 +216,10 @@ class AppLogService {
     if (nativeBody.isNotEmpty) {
       sections.add(_injectSourceIntoSections(nativeBody, source: 'native'));
     }
-    final mergedBody =
-        sections.where((item) => item.trim().isNotEmpty).join('\n\n').trim();
+    final mergedBody = sections
+        .where((item) => item.trim().isNotEmpty)
+        .join('\n\n')
+        .trim();
     final header = _buildHeader();
     if (mergedBody.isEmpty) {
       return header;
@@ -231,9 +227,7 @@ class AppLogService {
     return '$header\n$mergedBody'.trim();
   }
 
-  Future<String?> exportMergedLogsFile({
-    String? nativeRawLog,
-  }) async {
+  Future<String?> exportMergedLogsFile({String? nativeRawLog}) async {
     final text = await readMergedLogsText(nativeRawLog: nativeRawLog);
     final exportDir = await getTemporaryDirectory();
     final file = File(
@@ -265,8 +259,9 @@ class AppLogService {
       return TimetableSettings.defaults().liveEnableLocalDiagnostics;
     }
     try {
-      return TimetableSettings.fromJsonString(settingsJson)
-          .liveEnableLocalDiagnostics;
+      return TimetableSettings.fromJsonString(
+        settingsJson,
+      ).liveEnableLocalDiagnostics;
     } catch (_) {
       return TimetableSettings.defaults().liveEnableLocalDiagnostics;
     }
@@ -356,8 +351,9 @@ class AppLogService {
     if (normalized.isEmpty) {
       return '';
     }
-    final parts = normalized
-        .split(RegExp(r'\n----\n|\r\n----\r\n|\n----\r\n|\r\n----\n'));
+    final parts = normalized.split(
+      RegExp(r'\n----\n|\r\n----\r\n|\n----\r\n|\r\n----\n'),
+    );
     if (parts.length <= 1) {
       return normalized;
     }
@@ -370,17 +366,20 @@ class AppLogService {
         .map((item) => item.trim())
         .where((item) => item.isNotEmpty)
         .map((section) {
-      if (RegExp(r'(^|\n)source=').hasMatch(section)) {
-        return section;
-      }
-      final lines = section.split(RegExp(r'\r?\n'));
-      final insertIndex = lines.indexWhere((line) => line.startsWith('time='));
-      if (insertIndex != -1) {
-        lines.insert(insertIndex + 1, 'source=$source');
-        return lines.join('\n');
-      }
-      return 'source=$source\n$section';
-    }).toList(growable: false);
+          if (RegExp(r'(^|\n)source=').hasMatch(section)) {
+            return section;
+          }
+          final lines = section.split(RegExp(r'\r?\n'));
+          final insertIndex = lines.indexWhere(
+            (line) => line.startsWith('time='),
+          );
+          if (insertIndex != -1) {
+            lines.insert(insertIndex + 1, 'source=$source');
+            return lines.join('\n');
+          }
+          return 'source=$source\n$section';
+        })
+        .toList(growable: false);
     return sections.join('\n\n');
   }
 }

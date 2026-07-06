@@ -15,7 +15,7 @@ Future<String?> showProfileQuickSwitchSheet(
   required String? activeProfileId,
   required ProfileQuickSwitchManageHandler onManageTimetables,
 }) {
-  return showHyperosSheet<String>(
+  return showHomeHyperosSheet<String>(
     context: context,
     builder: (sheetContext) => _ProfileQuickSwitchSheet(
       profiles: profiles,
@@ -49,6 +49,7 @@ class _ProfileQuickSwitchSheet extends StatelessWidget {
         : l10n.switchTimetableSubtitleCurrent(activeProfile.name);
 
     return HyperosSheet(
+      frosted: true,
       title: l10n.switchTimetableTitle,
       description: subtitle,
       child: Column(
