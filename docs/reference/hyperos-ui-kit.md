@@ -25,8 +25,7 @@ lib/ui/hyperos/
   hyperos_layout_tuning.dart # 调试面板可调布局（默认 = Miuix）
 ```
 
-兼容层：`lib/widgets/settings_section_widgets.dart` **已删除**（2026-07）；请直接使用 `lib/ui/hyperos/hyperos.dart`。  
-仍被 **课程/考试/日程表单页** 引用；新代码请直接 `import '../ui/hyperos/hyperos.dart'`。
+兼容层：`lib/widgets/settings_section_widgets.dart` **已删除**（2026-07）；请直接使用 `lib/ui/hyperos/hyperos.dart`。
 
 ---
 
@@ -158,7 +157,8 @@ await HyperosNavigation.push(
 | `HyperosBlurredHeaderShell` 等 | 模糊顶栏（Android 默认 tint-only） | ✅ |
 | `HyperosShowcaseScreen` | 非 Release 视觉验收页 | ✅ |
 
-统一对话框入口：`lib/widgets/app_dialogs.dart`（`showAppConfirmDialog` / `showAppTextInputDialog` / `showAppTripleActionDialog` 等）。**全 app 用户可见 Forui 组件（`FCard` / `FButton` / `FTextField` / `FAccordion` 等）已清零**（2026-07）；页壳底层仍用 `FScaffold` / `FHeader`。
+统一对话框入口：`lib/widgets/app_dialogs.dart`（`showAppConfirmDialog` / `showAppTextInputDialog` / `showAppTripleActionDialog` 等）。  
+Toast 入口：`lib/utils/app_toast.dart` → [app-toast.md](./app-toast.md)。
 
 ## 3. 界面迁移状态
 
