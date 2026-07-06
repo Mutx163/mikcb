@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
@@ -18,7 +19,7 @@ class NatureRatio extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final hasData = stats.totalCount > 0;
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: hasData

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -22,21 +23,19 @@ class ExamListScreen extends StatelessWidget {
     final pastExams = exams.where((e) => e.isExpired).toList()
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.examListTitle),
-        suffixes: [
-          FHeaderAction(
-            icon: const Icon(Icons.add_rounded),
-            semanticsLabel: l10n.addExam,
-            onPress: () => _navigateToAddExam(context),
-          ),
-        ],
-      ),
-      childPad: false,
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.examListTitle),
+      suffixes: [
+        FHeaderAction(
+          icon: const Icon(Icons.add_rounded),
+          semanticsLabel: l10n.addExam,
+          onPress: () => _navigateToAddExam(context),
+        ),
+      ],
       child: Material(
         type: MaterialType.transparency,
+        color: HyperosColors.scaffoldBackground(context),
         child: exams.isEmpty
             ? _buildEmptyState(context, l10n)
             : ListView(
@@ -83,31 +82,12 @@ class ExamListScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
-    final theme = context.theme;
-
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.school_outlined,
-            size: 64,
-            color: theme.colors.mutedForeground,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.noExams,
-            style: theme.typography.body.md.copyWith(
-              color: theme.colors.mutedForeground,
-            ),
-          ),
-          const SizedBox(height: 24),
-          FButton(
-            onPress: () => _navigateToAddExam(context),
-            prefix: const Icon(Icons.add),
-            child: Text(l10n.addExam),
-          ),
-        ],
+    return HyperosEmptyState(
+      icon: Icons.school_outlined,
+      title: l10n.noExams,
+      action: HyperosButton(
+        label: l10n.addExam,
+        onPressed: () => _navigateToAddExam(context),
       ),
     );
   }
@@ -124,7 +104,7 @@ class ExamListScreen extends StatelessWidget {
         ? l10n.examToday
         : l10n.daysUntilExam(daysUntil);
 
-    return FCard.raw(
+    return HyperosCard(
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -182,7 +162,8 @@ class ExamListScreen extends StatelessWidget {
         ),
         confirmDismiss: (_) => _confirmDelete(context, exam, l10n),
         onDismissed: (_) => provider.deleteExam(exam.id),
-        child: FCard.raw(
+        child: HyperosCard(
+          padding: EdgeInsets.zero,
           child: InkWell(
             borderRadius: BorderRadius.circular(12),
             onTap: () => _navigateToEditExam(context, exam),
@@ -327,31 +308,20 @@ class ExamListScreen extends StatelessWidget {
     Exam exam,
     AppLocalizations l10n,
   ) {
-    return showFDialog<bool>(
+    return showHyperosConfirmDialog(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.deleteExam),
-        body: Text(l10n.deleteExamConfirm(exam.name)),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+      title: l10n.deleteExam,
+      message: l10n.deleteExamConfirm(exam.name),
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAction,
+      destructive: true,
     );
   }
 
   void _navigateToAddExam(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      HyperosPageRoute(
         settings: const RouteSettings(name: '/exams/add'),
         builder: (_) => const AddExamScreen(),
       ),
@@ -361,7 +331,7 @@ class ExamListScreen extends StatelessWidget {
   void _navigateToEditExam(BuildContext context, Exam exam) {
     Navigator.push(
       context,
-      MaterialPageRoute(
+      HyperosPageRoute(
         settings: const RouteSettings(name: '/exams/edit'),
         builder: (_) => AddExamScreen(exam: exam),
       ),

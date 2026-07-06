@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// Tappable row that opens [showCourseFieldPickerSheet].
 class CourseFieldPickerTile extends StatelessWidget {
@@ -21,25 +22,11 @@ class CourseFieldPickerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = context.theme;
-
-    return FTile(
-      prefix: Icon(icon),
-      title: Text(label),
-      details: Text(
-        value,
-        style: theme.typography.body.sm.copyWith(
-          fontWeight: isPlaceholder ? FontWeight.normal : FontWeight.w600,
-          color: isPlaceholder ? theme.colors.mutedForeground : null,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      suffix: Icon(
-        Icons.chevron_right_rounded,
-        color: theme.colors.mutedForeground,
-      ),
-      onPress: onPress,
+    return HyperosListTile(
+      icon: icon,
+      title: label,
+      details: isPlaceholder ? null : value,
+      onTap: onPress,
     );
   }
 }
@@ -60,12 +47,8 @@ Future<void> showCourseFieldPickerSheet(
     onConfirmed?.call();
   }
 
-  return showFSheet<void>(
+  return showHyperosSheet<void>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseFieldPickerSheetBody(
       title: title,
       suggestions: suggestions,
@@ -108,20 +91,22 @@ class _CourseFieldPickerSheetBody extends StatelessWidget {
           actions: Row(
             children: [
               Expanded(
-                child: FButton(
-                  variant: FButtonVariant.secondary,
-                  onPress: () => Navigator.of(context).pop(),
-                  child: Text(l10n.cancelAction),
+                child: HyperosButton(
+                  label: l10n.cancelAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: FButton(
-                  onPress: () {
+                child: HyperosButton(
+                  label: l10n.saveAction,
+                  expand: true,
+                  onPressed: () {
                     onConfirmed();
                     Navigator.of(context).pop();
                   },
-                  child: Text(l10n.saveAction),
                 ),
               ),
             ],
@@ -130,28 +115,33 @@ class _CourseFieldPickerSheetBody extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                title,
-                style: context.theme.typography.body.lg.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Text(title, style: HyperosTypography.sheetTitle(context)),
               const SizedBox(height: 12),
-              FTextField(
-                control: FTextFieldControl.managed(controller: controller),
-                hint: l10n.manualInputLabel,
-                prefixBuilder: (context, style, variants) =>
-                    const Icon(Icons.search),
-                suffixBuilder: controller.text.isNotEmpty
-                    ? (context, style, variants) => IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: controller.clear,
-                      )
-                    : null,
-                onSubmit: (_) {
-                  onConfirmed();
-                  Navigator.of(context).pop();
-                },
+              Row(
+                children: [
+                  Icon(
+                    Icons.search,
+                    size: 20,
+                    color: context.theme.colors.mutedForeground,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: HyperosTextField(
+                      controller: controller,
+                      hint: l10n.manualInputLabel,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) {
+                        onConfirmed();
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                  ),
+                  if (controller.text.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: controller.clear,
+                    ),
+                ],
               ),
               if (filtered.isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -260,40 +250,29 @@ class PickerSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                child: Stack(
-                  children: [
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.only(
-                        bottom: _footerHeight + _footerGap,
-                      ),
-                      child: child,
-                    ),
-                    Positioned(left: 0, right: 0, bottom: 0, child: actions),
-                  ],
+    return HyperosSheetFrame(
+      maxHeight: maxHeight,
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    bottom: _footerHeight + _footerGap,
+                  ),
+                  child: child,
                 ),
-              );
-            },
-          ),
-        ),
+                Positioned(left: 0, right: 0, bottom: 0, child: actions),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

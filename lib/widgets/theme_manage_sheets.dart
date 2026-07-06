@@ -7,6 +7,8 @@ import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
+import '../ui/hyperos/hyperos.dart';
+import '../widgets/app_dialogs.dart';
 
 String themeConfigModeLabel(BuildContext context, String? mode) {
   final l10n = AppLocalizations.of(context)!;
@@ -46,53 +48,25 @@ Future<bool> showThemeDeleteConfirmDialog(
   required String name,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showFDialog<bool>(
+  return showHyperosConfirmDialog(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(l10n.confirmDeleteTitle),
-      body: Text(l10n.themeDeleteConfirmMessage(name)),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.of(ctx).pop(false),
-          child: Text(l10n.cancelAction),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () => Navigator.of(ctx).pop(true),
-          child: Text(l10n.deleteAction),
-        ),
-      ],
-    ),
+    title: l10n.confirmDeleteTitle,
+    message: l10n.themeDeleteConfirmMessage(name),
+    cancelLabel: l10n.cancelAction,
+    confirmLabel: l10n.deleteAction,
+    destructive: true,
   ).then((value) => value ?? false);
 }
 
 Future<bool?> showThemeUnsavedChangesDialog(BuildContext context) {
   final l10n = AppLocalizations.of(context)!;
-  return showFDialog<bool>(
-    context: context,
-    builder: (ctx, style, animation) => FDialog(
-      image: const Icon(Icons.save_outlined),
-      title: Text(l10n.themeUnsavedChangesTitle),
-      body: Text(l10n.themeUnsavedChangesMessage),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.of(ctx).pop(null),
-          child: Text(l10n.cancelAction),
-        ),
-        FButton(
-          variant: FButtonVariant.secondary,
-          onPress: () => Navigator.of(ctx).pop(false),
-          child: Text(l10n.themeSaveCurrent),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () => Navigator.of(ctx).pop(true),
-          child: Text(l10n.themeDiscardAndApply),
-        ),
-      ],
-    ),
+  return showAppTripleActionDialog(
+    context,
+    title: l10n.themeUnsavedChangesTitle,
+    message: l10n.themeUnsavedChangesMessage,
+    cancelLabel: l10n.cancelAction,
+    secondaryLabel: l10n.themeSaveCurrent,
+    primaryLabel: l10n.themeDiscardAndApply,
   );
 }
 
@@ -105,70 +79,38 @@ Future<void> showSavedThemeActionSheet(
 }) {
   final l10n = AppLocalizations.of(context)!;
   final colors = context.theme.colors;
-  final typo = context.theme.typography.body;
 
-  return showFSheet<void>(
+  return showHyperosSheet<void>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    builder: (sheetContext) => Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                theme.name,
-                style: typo.sm.copyWith(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-              FTileGroup(
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  FTile(
-                    prefix: const Icon(Icons.drive_file_rename_outline),
-                    title: Text(l10n.themeRename),
-                    onPress: () {
-                      Navigator.of(sheetContext).pop();
-                      onRename();
-                    },
-                  ),
-                  FTile(
-                    prefix: const Icon(Icons.copy_all_outlined),
-                    title: Text(l10n.themeDuplicate),
-                    onPress: () {
-                      Navigator.of(sheetContext).pop();
-                      onDuplicate();
-                    },
-                  ),
-                  FTile(
-                    prefix: Icon(
-                      Icons.delete_outline,
-                      color: colors.destructive,
-                    ),
-                    title: Text(
-                      l10n.themeDelete,
-                      style: TextStyle(color: colors.destructive),
-                    ),
-                    onPress: () async {
-                      Navigator.of(sheetContext).pop();
-                      await onDelete();
-                    },
-                  ),
-                ],
-              ),
-            ],
+    builder: (sheetContext) => HyperosSheet(
+      title: theme.name,
+      child: HyperosChoiceGroup(
+        children: [
+          HyperosChoiceTile(
+            prefix: const Icon(Icons.drive_file_rename_outline),
+            title: l10n.themeRename,
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              onRename();
+            },
           ),
-        ),
+          HyperosChoiceTile(
+            prefix: const Icon(Icons.copy_all_outlined),
+            title: l10n.themeDuplicate,
+            onTap: () {
+              Navigator.of(sheetContext).pop();
+              onDuplicate();
+            },
+          ),
+          HyperosChoiceTile(
+            prefix: Icon(Icons.delete_outline, color: colors.destructive),
+            title: l10n.themeDelete,
+            onTap: () async {
+              Navigator.of(sheetContext).pop();
+              await onDelete();
+            },
+          ),
+        ],
       ),
     ),
   );
@@ -181,82 +123,57 @@ Future<void> showSavedThemePreviewSheet(
   required Future<bool> Function() onApply,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  final colors = context.theme.colors;
-  final typo = context.theme.typography.body;
   final seedHex =
       config.seedColor ??
       (config.previewColors.isNotEmpty ? config.previewColors.first : null);
 
-  return showFSheet<void>(
+  return showHyperosSheet<void>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    builder: (sheetContext) => Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(name, style: typo.sm.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              FCard.raw(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ThemePreviewSwatches(colors: config.previewColors),
-                      if (config.themeMode != null || seedHex != null) ...[
-                        const SizedBox(height: 16),
-                        if (config.themeMode != null)
-                          _ThemePreviewInfoRow(
-                            label: l10n.themeModeLabel,
-                            value: themeConfigModeLabel(
-                              sheetContext,
-                              config.themeMode,
-                            ),
-                          ),
-                        if (seedHex != null) ...[
-                          if (config.themeMode != null)
-                            const SizedBox(height: 8),
-                          _ThemePreviewInfoRow(
-                            label: l10n.themeSeedSectionTitle,
-                            value: seedHex,
-                            leading: ThemeColorDot(hex: seedHex, size: 16),
-                          ),
-                        ],
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FButton(
-                  variant: FButtonVariant.primary,
-                  onPress: () async {
-                    final applied = await onApply();
-                    if (applied && sheetContext.mounted) {
-                      Navigator.of(sheetContext).pop();
-                    }
-                  },
-                  prefix: const Icon(Icons.palette_outlined, size: 18),
-                  child: Text(l10n.themeApply),
-                ),
-              ),
-            ],
+    builder: (sheetContext) => HyperosSheet(
+      title: name,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          HyperosCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ThemePreviewSwatches(colors: config.previewColors),
+                if (config.themeMode != null || seedHex != null) ...[
+                  const SizedBox(height: 16),
+                  if (config.themeMode != null)
+                    _ThemePreviewInfoRow(
+                      label: l10n.themeModeLabel,
+                      value: themeConfigModeLabel(
+                        sheetContext,
+                        config.themeMode,
+                      ),
+                    ),
+                  if (seedHex != null) ...[
+                    if (config.themeMode != null) const SizedBox(height: 8),
+                    _ThemePreviewInfoRow(
+                      label: l10n.themeSeedSectionTitle,
+                      value: seedHex,
+                      leading: ThemeColorDot(hex: seedHex, size: 16),
+                    ),
+                  ],
+                ],
+              ],
+            ),
           ),
-        ),
+          const SizedBox(height: 16),
+          HyperosButton(
+            label: l10n.themeApply,
+            expand: true,
+            onPressed: () async {
+              final applied = await onApply();
+              if (applied && sheetContext.mounted) {
+                Navigator.of(sheetContext).pop();
+              }
+            },
+          ),
+        ],
       ),
     ),
   );
@@ -379,40 +296,24 @@ Future<void> showThemeNameDialog(
   required String title,
   required String initialName,
   required void Function(String name) onSubmit,
-}) {
+}) async {
   final l10n = AppLocalizations.of(context)!;
   final controller = TextEditingController(text: initialName);
-
-  return showFDialog<void>(
-    context: context,
-    builder: (dialogContext, style, animation) => FDialog(
-      title: Text(title),
-      body: FTextField(
-        control: FTextFieldControl.managed(controller: controller),
-        hint: l10n.themeNameHint,
-        autofocus: true,
-      ),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.of(dialogContext).pop(),
-          child: Text(l10n.cancelAction),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () {
-            final name = controller.text.trim();
-            if (name.isEmpty) {
-              return;
-            }
-            onSubmit(name);
-            Navigator.of(dialogContext).pop();
-          },
-          child: Text(l10n.saveAction),
-        ),
-      ],
+  final name = await showAppTextInputDialog(
+    context,
+    title: title,
+    body: HyperosTextField(
+      controller: controller,
+      hint: l10n.themeNameHint,
+      autofocus: true,
     ),
+    readValue: () => controller.text,
+    validate: (value) => value.isNotEmpty,
   );
+  controller.dispose();
+  if (name != null) {
+    onSubmit(name);
+  }
 }
 
 bool isSavedThemeSelected(TimetableSettings settings, SavedTheme theme) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 enum HomeTopMenuAction {
   update,
@@ -18,11 +19,8 @@ Future<HomeTopMenuAction?> showHomeTopMenuSheet(
   BuildContext context, {
   required bool hasAvailableUpdate,
 }) {
-  return showFSheet<HomeTopMenuAction>(
+  return showHyperosSheet<HomeTopMenuAction>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
     builder: (sheetContext) =>
         _HomeTopMenuSheet(hasAvailableUpdate: hasAvailableUpdate),
   );
@@ -36,7 +34,6 @@ class _HomeTopMenuSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.theme.colors;
     final colorScheme = Theme.of(context).colorScheme;
     final itemWidth = ((MediaQuery.sizeOf(context).width - 32 - 30) / 4).clamp(
       72.0,
@@ -62,71 +59,55 @@ class _HomeTopMenuSheet extends StatelessWidget {
       );
     }
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  tile(
-                    icon: Icons.system_update_alt_rounded,
-                    title: l10n.homeMenuUpdateTitle,
-                    action: HomeTopMenuAction.update,
-                    badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
-                    accentColor: hasAvailableUpdate
-                        ? colorScheme.primary
-                        : null,
-                  ),
-                  tile(
-                    icon: Icons.dashboard_customize_rounded,
-                    title: l10n.homeMenuOverviewTitle,
-                    action: HomeTopMenuAction.overview,
-                  ),
-                  tile(
-                    icon: Icons.bar_chart_rounded,
-                    title: l10n.homeMenuStatisticsTitle,
-                    action: HomeTopMenuAction.statistics,
-                  ),
-                  tile(
-                    icon: Icons.add_circle_outline_rounded,
-                    title: l10n.homeMenuAddCourseTitle,
-                    action: HomeTopMenuAction.addCourse,
-                  ),
-                  tile(
-                    icon: Icons.school_outlined,
-                    title: l10n.examListTitle,
-                    action: HomeTopMenuAction.exams,
-                  ),
-                  tile(
-                    icon: Icons.file_upload_outlined,
-                    title: l10n.homeMenuImportTitle,
-                    action: HomeTopMenuAction.importCourses,
-                  ),
-                  tile(
-                    icon: Icons.tune_rounded,
-                    title: l10n.homeMenuSettingsTitle,
-                    action: HomeTopMenuAction.settings,
-                  ),
-                  tile(
-                    icon: Icons.favorite_border_rounded,
-                    title: l10n.homeMenuCoffeeTitle,
-                    action: HomeTopMenuAction.support,
-                  ),
-                ],
-              ),
-            ],
-          ),
+    return HyperosSheetFrame(
+      child: SingleChildScrollView(
+        child: Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            tile(
+              icon: Icons.system_update_alt_rounded,
+              title: l10n.homeMenuUpdateTitle,
+              action: HomeTopMenuAction.update,
+              badgeText: hasAvailableUpdate ? l10n.updateLabel : null,
+              accentColor: hasAvailableUpdate ? colorScheme.primary : null,
+            ),
+            tile(
+              icon: Icons.dashboard_customize_rounded,
+              title: l10n.homeMenuOverviewTitle,
+              action: HomeTopMenuAction.overview,
+            ),
+            tile(
+              icon: Icons.bar_chart_rounded,
+              title: l10n.homeMenuStatisticsTitle,
+              action: HomeTopMenuAction.statistics,
+            ),
+            tile(
+              icon: Icons.add_circle_outline_rounded,
+              title: l10n.homeMenuAddCourseTitle,
+              action: HomeTopMenuAction.addCourse,
+            ),
+            tile(
+              icon: Icons.school_outlined,
+              title: l10n.examListTitle,
+              action: HomeTopMenuAction.exams,
+            ),
+            tile(
+              icon: Icons.file_upload_outlined,
+              title: l10n.homeMenuImportTitle,
+              action: HomeTopMenuAction.importCourses,
+            ),
+            tile(
+              icon: Icons.tune_rounded,
+              title: l10n.homeMenuSettingsTitle,
+              action: HomeTopMenuAction.settings,
+            ),
+            tile(
+              icon: Icons.favorite_border_rounded,
+              title: l10n.homeMenuCoffeeTitle,
+              action: HomeTopMenuAction.support,
+            ),
+          ],
         ),
       ),
     );
@@ -155,70 +136,43 @@ class _HomeMenuActionTile extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final highlightColor = accentColor ?? colorScheme.primary;
 
-    return FCard.raw(
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 46,
-                      height: 46,
-                      decoration: BoxDecoration(
-                        color: highlightColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      alignment: Alignment.center,
-                      child: Icon(icon, color: highlightColor, size: 24),
-                    ),
-                    if ((badgeText ?? '').isNotEmpty)
-                      Positioned(
-                        right: -6,
-                        top: -4,
-                        child: FBadge(
-                          variant: FBadgeVariant.primary,
-                          style: FBadgeStyleDelta.delta(
-                            contentStyle: FBadgeContentStyleDelta.delta(
-                              padding: EdgeInsetsGeometryDelta.value(
-                                const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 1,
-                                ),
-                              ),
-                              labelTextStyle: TextStyleDelta.delta(
-                                fontSize: typo.body.xs3.fontSize,
-                                fontWeight: FontWeight.w500,
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                          child: Text(badgeText!),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 7),
-                Text(
-                  title,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: typo.body.xs2.copyWith(
-                    fontWeight: FontWeight.w400,
-                    height: 1.15,
-                    color: colors.foreground,
+    return HyperosCard(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              HyperosBadge(
+                label: badgeText,
+                show: (badgeText ?? '').isNotEmpty,
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: highlightColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, color: highlightColor, size: 24),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                title,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: typo.body.xs2.copyWith(
+                  fontWeight: FontWeight.w400,
+                  height: 1.15,
+                  color: colors.foreground,
+                ),
+              ),
+            ],
           ),
         ),
       ),

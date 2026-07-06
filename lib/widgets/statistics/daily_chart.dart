@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
@@ -45,7 +46,7 @@ class DailyChart extends StatelessWidget {
       l10n.weekdayShortSunday,
     ];
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(8, 16, 16, 8),
         child: SizedBox(

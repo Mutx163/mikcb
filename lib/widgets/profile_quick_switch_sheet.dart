@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../models/timetable_profile.dart';
-import '../services/bundled_assets.dart';
-import 'bundled_asset_image.dart';
 
 typedef ProfileQuickSwitchManageHandler =
     void Function(BuildContext sheetContext);
@@ -16,11 +15,8 @@ Future<String?> showProfileQuickSwitchSheet(
   required String? activeProfileId,
   required ProfileQuickSwitchManageHandler onManageTimetables,
 }) {
-  return showFSheet<String>(
+  return showHyperosSheet<String>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
     builder: (sheetContext) => _ProfileQuickSwitchSheet(
       profiles: profiles,
       activeProfileId: activeProfileId,
@@ -43,9 +39,6 @@ class _ProfileQuickSwitchSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
-    final colorScheme = Theme.of(context).colorScheme;
     final activeIndex = profiles.indexWhere(
       (profile) => profile.id == activeProfileId,
     );
@@ -55,94 +48,41 @@ class _ProfileQuickSwitchSheet extends StatelessWidget {
         ? l10n.switchTimetableSubtitleEmpty
         : l10n.switchTimetableSubtitleCurrent(activeProfile.name);
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return HyperosSheet(
+      title: l10n.switchTimetableTitle,
+      description: subtitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          HyperosChoiceGroup(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: colorScheme.primary.withValues(alpha: 0.12),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: BundledAssetImage(
-                      assetPath: BundledAssets.launcherIcon,
-                      width: 44,
-                      height: 44,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.switchTimetableTitle,
-                          style: typo.body.sm.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          subtitle,
-                          style: typo.body.xs2.copyWith(
-                            color: colors.mutedForeground,
-                            height: 1.35,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              FTileGroup(
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  for (final profile in profiles)
-                    _profileQuickSwitchTile(
-                      context: context,
-                      profile: profile,
-                      isActive: profile.id == activeProfileId,
-                      onTap: () => Navigator.of(context).pop(profile.id),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Builder(
-                builder: (buttonContext) {
-                  return FButton(
-                    variant: FButtonVariant.secondary,
-                    onPress: () => onManageTimetables(buttonContext),
-                    prefix: const Icon(Icons.view_week_rounded, size: 18),
-                    child: Text(l10n.timetableManagement),
-                  );
-                },
-              ),
+              for (final profile in profiles)
+                _profileQuickSwitchTile(
+                  context: context,
+                  profile: profile,
+                  isActive: profile.id == activeProfileId,
+                  onTap: () => Navigator.of(context).pop(profile.id),
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: 12),
+          Builder(
+            builder: (buttonContext) {
+              return HyperosButton(
+                label: l10n.timetableManagement,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: () => onManageTimetables(buttonContext),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
 }
 
-FTile _profileQuickSwitchTile({
+Widget _profileQuickSwitchTile({
   required BuildContext context,
   required TimetableProfile profile,
   required bool isActive,
@@ -153,7 +93,7 @@ FTile _profileQuickSwitchTile({
   final colorScheme = Theme.of(context).colorScheme;
   final accentColor = isActive ? colorScheme.primary : colors.mutedForeground;
 
-  return FTile(
+  return HyperosChoiceTile(
     prefix: Container(
       width: 36,
       height: 36,
@@ -168,11 +108,27 @@ FTile _profileQuickSwitchTile({
         size: 20,
       ),
     ),
-    title: Text(profile.name),
+    title: profile.name,
     subtitle: Text(l10n.courseCountSummary(profile.courses.length)),
-    suffix: isActive
-        ? FBadge(variant: FBadgeVariant.primary, child: Text(l10n.currentBadge))
+    trailing: isActive
+        ? Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              l10n.currentBadge,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.primary,
+              ),
+            ),
+          )
         : const Icon(Icons.chevron_right_rounded),
-    onPress: onTap,
+    selected: isActive,
+    highlightSelectedText: true,
+    onTap: onTap,
   );
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/statistics_models.dart';
 
@@ -19,7 +20,7 @@ class OverviewSection extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

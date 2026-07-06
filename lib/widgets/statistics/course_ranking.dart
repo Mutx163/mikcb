@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../../models/course.dart';
 import '../../models/statistics_models.dart';
@@ -17,7 +18,7 @@ class CourseRanking extends StatelessWidget {
     final theme = context.theme;
 
     if (courseRanking.isEmpty) {
-      return FCard.raw(
+      return HyperosCard(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 24),
           child: Center(
@@ -32,7 +33,7 @@ class CourseRanking extends StatelessWidget {
       );
     }
 
-    return FCard.raw(
+    return HyperosCard(
       child: Column(
         children: List.generate(courseRanking.length, (index) {
           final stat = courseRanking[index];

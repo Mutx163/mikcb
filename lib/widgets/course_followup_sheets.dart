@@ -5,6 +5,7 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import 'course_field_picker_sheet.dart';
+import '../ui/hyperos/hyperos.dart';
 
 enum CourseDeleteMode { course, occurrence }
 
@@ -31,12 +32,8 @@ Future<CourseDeleteMode?> showCourseDeleteModeSheet(
   required bool canDeleteOccurrence,
   required int week,
 }) {
-  return showFSheet<CourseDeleteMode>(
+  return showHyperosSheet<CourseDeleteMode>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseDeleteModeSheetBody(
       canDeleteOccurrence: canDeleteOccurrence,
       week: week,
@@ -49,12 +46,8 @@ Future<CourseSuspendMode?> showCourseSuspendModeSheet(
   required bool isSuspendedThisWeek,
   required bool hasAnySuspended,
 }) {
-  return showFSheet<CourseSuspendMode>(
+  return showHyperosSheet<CourseSuspendMode>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseSuspendModeSheetBody(
       isSuspendedThisWeek: isSuspendedThisWeek,
       hasAnySuspended: hasAnySuspended,
@@ -71,12 +64,8 @@ Future<CourseRescheduleDraft?> showCourseRescheduleSheet(
   required List<SectionTime> sectionTimes,
   required List<String> locationSuggestions,
 }) {
-  return showFSheet<CourseRescheduleDraft>(
+  return showHyperosSheet<CourseRescheduleDraft>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseRescheduleSheetBody(
       course: course,
       sourceWeek: sourceWeek,
@@ -93,12 +82,8 @@ Future<bool> showDeleteCourseConfirmDialog(
   required String title,
   required String message,
 }) {
-  return showFSheet<bool>(
+  return showHyperosSheet<bool>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (ctx) =>
         _DeleteCourseConfirmSheetBody(title: title, message: message),
   ).then((value) => value ?? false);
@@ -267,17 +252,20 @@ class _DeleteCourseConfirmSheetBody extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: FButton(
-                  variant: FButtonVariant.outline,
-                  onPress: () => Navigator.of(context).pop(false),
-                  child: Text(l10n.cancelAction),
+                child: HyperosButton(
+                  label: l10n.cancelAction,
+                  variant: HyperosButtonVariant.secondary,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(false),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FButton(
-                  onPress: () => Navigator.of(context).pop(true),
-                  child: Text(l10n.deleteAction),
+                child: HyperosButton(
+                  label: l10n.deleteAction,
+                  variant: HyperosButtonVariant.destructive,
+                  expand: true,
+                  onPressed: () => Navigator.of(context).pop(true),
                 ),
               ),
             ],
@@ -418,6 +406,71 @@ class _CourseRescheduleSheetBodyState
     );
   }
 
+  Widget _buildCompactSelectField({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final theme = context.theme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: theme.colors.border),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: theme.typography.body.sm,
+                    children: [
+                      TextSpan(
+                        text: '$label ',
+                        style: TextStyle(color: theme.colors.mutedForeground),
+                      ),
+                      TextSpan(text: value),
+                    ],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 16,
+                color: theme.colors.mutedForeground,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickInt({
+    required String title,
+    required Map<String, int> items,
+    required int current,
+    required ValueChanged<int> onSelected,
+  }) async {
+    final selected = await showHyperosSelectSheet<int>(
+      context: context,
+      title: title,
+      items: items,
+      currentValue: current,
+    );
+    if (!mounted || selected == null || selected == current) {
+      return;
+    }
+    onSelected(selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
@@ -455,16 +508,19 @@ class _CourseRescheduleSheetBodyState
       actions: Row(
         children: [
           Expanded(
-            child: FButton(
-              variant: FButtonVariant.secondary,
-              onPress: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancelAction),
+            child: HyperosButton(
+              label: l10n.cancelAction,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: FButton(
-              onPress: _hasChanges
+            child: HyperosButton(
+              label: l10n.confirmRescheduleAction,
+              expand: true,
+              onPressed: _hasChanges
                   ? () {
                       Navigator.of(context).pop(
                         CourseRescheduleDraft(
@@ -477,7 +533,6 @@ class _CourseRescheduleSheetBodyState
                       );
                     }
                   : null,
-              child: Text(l10n.confirmRescheduleAction),
             ),
           ),
         ],
@@ -525,18 +580,17 @@ class _CourseRescheduleSheetBodyState
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FSelect<int>(
-                  hint: l10n.rescheduleTargetWeekLabel,
-                  items: {
-                    for (final week in _availableWeeks)
-                      l10n.weekLabel(week): week,
-                  },
-                  control: FSelectControl.lifted(
-                    value: _targetWeek,
-                    onChange: (value) {
-                      if (value == null) return;
-                      setState(() => _targetWeek = value);
+                child: _buildCompactSelectField(
+                  label: l10n.rescheduleTargetWeekLabel,
+                  value: l10n.weekLabel(_targetWeek),
+                  onTap: () => _pickInt(
+                    title: l10n.rescheduleTargetWeekLabel,
+                    items: {
+                      for (final week in _availableWeeks)
+                        l10n.weekLabel(week): week,
                     },
+                    current: _targetWeek,
+                    onSelected: (value) => setState(() => _targetWeek = value),
                   ),
                 ),
               ),
@@ -569,16 +623,17 @@ class _CourseRescheduleSheetBodyState
           Row(
             children: [
               Expanded(
-                child: FSelect<int>(
-                  hint: l10n.startSectionLabel,
-                  items: {
-                    for (final section in _sectionNumbers)
-                      l10n.sectionLabel(section): section,
-                  },
-                  control: FSelectControl.lifted(
-                    value: _targetStartSection,
-                    onChange: (value) {
-                      if (value == null) return;
+                child: _buildCompactSelectField(
+                  label: l10n.startSectionLabel,
+                  value: l10n.sectionLabel(_targetStartSection),
+                  onTap: () => _pickInt(
+                    title: l10n.startSectionLabel,
+                    items: {
+                      for (final section in _sectionNumbers)
+                        l10n.sectionLabel(section): section,
+                    },
+                    current: _targetStartSection,
+                    onSelected: (value) {
                       setState(() {
                         _targetStartSection = value;
                         if (_targetEndSection < _targetStartSection) {
@@ -591,18 +646,19 @@ class _CourseRescheduleSheetBodyState
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FSelect<int>(
-                  hint: l10n.endSectionLabel,
-                  items: {
-                    for (final section in _sectionNumbers.where(
-                      (value) => value >= _targetStartSection,
-                    ))
-                      l10n.sectionLabel(section): section,
-                  },
-                  control: FSelectControl.lifted(
-                    value: _targetEndSection,
-                    onChange: (value) {
-                      if (value == null) return;
+                child: _buildCompactSelectField(
+                  label: l10n.endSectionLabel,
+                  value: l10n.sectionLabel(_targetEndSection),
+                  onTap: () => _pickInt(
+                    title: l10n.endSectionLabel,
+                    items: {
+                      for (final section in _sectionNumbers.where(
+                        (value) => value >= _targetStartSection,
+                      ))
+                        l10n.sectionLabel(section): section,
+                    },
+                    current: _targetEndSection,
+                    onSelected: (value) {
                       setState(() => _targetEndSection = value);
                     },
                   ),
@@ -662,40 +718,29 @@ class _RescheduleSheetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
 
-    return Container(
-      width: double.infinity,
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: constraints.maxHeight),
-                child: Stack(
-                  children: [
-                    SingleChildScrollView(
-                      padding: const EdgeInsets.only(
-                        bottom: _footerHeight + _footerGap,
-                      ),
-                      child: child,
-                    ),
-                    Positioned(left: 0, right: 0, bottom: 0, child: actions),
-                  ],
+    return HyperosSheetFrame(
+      maxHeight: maxHeight,
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 12 + bottomInset),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: constraints.maxHeight),
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.only(
+                    bottom: _footerHeight + _footerGap,
+                  ),
+                  child: child,
                 ),
-              );
-            },
-          ),
-        ),
+                Positioned(left: 0, right: 0, bottom: 0, child: actions),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -714,16 +759,10 @@ class _RescheduleStepButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-
-    return FButton.icon(
-      variant: FButtonVariant.secondary,
-      onPress: enabled ? onPress : null,
-      child: Icon(
-        icon,
-        size: 18,
-        color: enabled ? colors.foreground : colors.mutedForeground,
-      ),
+    return HyperosIconButton(
+      icon: icon,
+      iconSize: 18,
+      onPressed: enabled ? onPress : null,
     );
   }
 }
@@ -789,21 +828,9 @@ class _FollowupSheetContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: child,
-        ),
-      ),
+    return HyperosSheetFrame(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: child,
     );
   }
 }
@@ -954,10 +981,11 @@ class _FollowupCancelButton extends StatelessWidget {
 
     return SizedBox(
       width: double.infinity,
-      child: FButton(
-        variant: FButtonVariant.secondary,
-        onPress: onPress,
-        child: Text(l10n.cancelAction),
+      child: HyperosButton(
+        label: l10n.cancelAction,
+        variant: HyperosButtonVariant.secondary,
+        expand: true,
+        onPressed: onPress,
       ),
     );
   }

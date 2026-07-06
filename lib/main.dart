@@ -26,7 +26,10 @@ import 'services/app_migration_service.dart';
 import 'services/storage_service.dart';
 import 'services/user_data_sync_hooks.dart';
 import 'services/webdav_sync_coordinator.dart';
+import 'services/android_animation_scale_service.dart';
 import 'services/umeng_analytics_service.dart';
+import 'ui/debug/debug.dart';
+import 'ui/hyperos/hyperos.dart';
 
 ThemeMode _themeModeFromSettings(AppThemeMode mode) {
   return switch (mode) {
@@ -79,17 +82,35 @@ FThemeData _foruiThemeData(ForuiTheme theme, Brightness brightness) {
     ForuiTheme.violet => FThemes.violet,
     ForuiTheme.yellow => FThemes.yellow,
   };
-  return brightness == Brightness.dark ? pair.dark.touch : pair.light.touch;
+  final base = brightness == Brightness.dark
+      ? pair.dark.touch
+      : pair.light.touch;
+  return base.copyWith(
+    headerStyles: FVariantsDelta.delta([
+      FVariantOperation.all(
+        FHeaderStyleDelta.delta(
+          titleTextStyle: TextStyleDelta.delta(
+            fontSize: 20,
+            fontWeight: FontWeight.w400,
+            height: 1.2,
+          ),
+        ),
+      ),
+    ]),
+  );
 }
 
 ThemeData _appThemeData(FThemeData forui, {String? fontFamily}) {
   final material = forui.toApproximateMaterialTheme();
+  final themed = material.copyWith(
+    pageTransitionsTheme: HyperosNavigation.pageTransitionsTheme,
+  );
   if (fontFamily == null || fontFamily.isEmpty) {
-    return material;
+    return themed;
   }
-  return material.copyWith(
-    textTheme: material.textTheme.apply(fontFamily: fontFamily),
-    primaryTextTheme: material.primaryTextTheme.apply(fontFamily: fontFamily),
+  return themed.copyWith(
+    textTheme: themed.textTheme.apply(fontFamily: fontFamily),
+    primaryTextTheme: themed.primaryTextTheme.apply(fontFamily: fontFamily),
   );
 }
 
@@ -141,6 +162,11 @@ Future<void> main() async {
 
       unawaited(() async {
         await BundledAssets.warmUp();
+        await AndroidAnimationScaleService.ensureInitialized();
+        if (!kReleaseMode) {
+          registerHyperosLayoutDebugTuning();
+          await loadDebugTuningPreferencesIfNeeded();
+        }
         runApp(const MyApp());
       }());
     },
@@ -224,14 +250,12 @@ class MyApp extends StatelessWidget {
                       Theme.of(context).brightness == Brightness.dark;
                   return FTheme(
                     data: isDark ? foruiDark : foruiLight,
-                    child: FToaster(
-                      child: FTooltipGroup(
-                        child: ScaffoldMessenger(
-                          child: Scaffold(
-                            backgroundColor: Colors.transparent,
-                            resizeToAvoidBottomInset: false,
-                            body: child!,
-                          ),
+                    child: FTooltipGroup(
+                      child: ScaffoldMessenger(
+                        child: Scaffold(
+                          backgroundColor: Colors.transparent,
+                          resizeToAvoidBottomInset: false,
+                          body: DebugTuningOverlayHost(child: child!),
                         ),
                       ),
                     ),
@@ -278,6 +302,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      unawaited(AndroidAnimationScaleService.refresh());
       unawaited(_cloudSyncCoordinator.maybePullRemote());
     }
   }
@@ -334,7 +359,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
       if (shouldShowMigrationGuide) {
         final action = await Navigator.of(context).push<MigrationFlowAction>(
-          MaterialPageRoute(
+          HyperosPageRoute(
             builder: (_) =>
                 PackageMigrationGuideScreen(legacyPackageName: legacyPackage),
             fullscreenDialog: true,
@@ -435,7 +460,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     required bool markGuideSeenAfterExit,
   }) async {
     final action = await Navigator.of(context).push<GuideAction>(
-      MaterialPageRoute(
+      HyperosPageRoute(
         settings: const RouteSettings(name: '/user-guide'),
         builder: (_) => UserGuideScreen(
           requirePrivacyConsent: requirePrivacyConsent,
@@ -482,31 +507,27 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     final provider = context.read<TimetableProvider>();
     final importMode =
         forcedMode ??
-        await showFDialog<_BackupImportMode>(
+        await showHyperosDialog<_BackupImportMode>(
           context: context,
-          builder: (ctx, style, animation) => FDialog(
-            title: Text(l10n.selectImportModeTitle),
-            body: Text(l10n.selectImportModeMessage),
-            actions: [
-              FButton(
-                variant: FButtonVariant.ghost,
-                onPress: () => Navigator.pop(ctx),
-                child: Text(l10n.cancelAction),
-              ),
-              FButton(
-                variant: FButtonVariant.primary,
-                onPress: () =>
-                    Navigator.pop(ctx, _BackupImportMode.replaceCurrent),
-                child: Text(l10n.replaceCurrentTimetable),
-              ),
-              FButton(
-                variant: FButtonVariant.secondary,
-                onPress: () =>
-                    Navigator.pop(ctx, _BackupImportMode.importAsNew),
-                child: Text(l10n.importAsNewTimetable),
-              ),
-            ],
-          ),
+          title: l10n.selectImportModeTitle,
+          message: l10n.selectImportModeMessage,
+          actions: [
+            HyperosDialogAction(
+              label: l10n.cancelAction,
+              onPressed: () => Navigator.pop(context),
+            ),
+            HyperosDialogAction(
+              label: l10n.replaceCurrentTimetable,
+              isPrimary: true,
+              onPressed: () =>
+                  Navigator.pop(context, _BackupImportMode.replaceCurrent),
+            ),
+            HyperosDialogAction(
+              label: l10n.importAsNewTimetable,
+              onPressed: () =>
+                  Navigator.pop(context, _BackupImportMode.importAsNew),
+            ),
+          ],
         );
 
     if (importMode == null || !mounted) {
@@ -573,7 +594,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
 
   Future<bool> _runCourseImportFlow() async {
     final imported = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
+      HyperosPageRoute(
         settings: const RouteSettings(name: '/courses/import'),
         builder: (_) => const CourseImportScreen(),
       ),
@@ -603,7 +624,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           final icsContent = payload['textContent'] as String?;
           if (icsContent != null && icsContent.isNotEmpty) {
             await Navigator.of(context).push(
-              MaterialPageRoute(
+              HyperosPageRoute(
                 settings: const RouteSettings(
                   name: '/courses/import/ics-external',
                 ),
@@ -622,7 +643,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           final fileName = payload['fileName'] as String?;
           if (filePath != null && filePath.isNotEmpty) {
             await Navigator.of(context).push(
-              MaterialPageRoute(
+              HyperosPageRoute(
                 settings: const RouteSettings(
                   name: '/courses/import/spreadsheet-external',
                 ),
@@ -666,7 +687,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
         return;
       }
       await navigator.push(
-        MaterialPageRoute(
+        HyperosPageRoute(
           settings: const RouteSettings(name: '/settings/lan-edit'),
           builder: (_) => const LanEditScreen(),
         ),

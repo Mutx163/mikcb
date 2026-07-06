@@ -51,7 +51,10 @@ extras=
     await tester.scrollUntilVisible(
       find.text('Snapshot payload captured'),
       48,
-      scrollable: find.byType(Scrollable).last,
+      scrollable: find.ancestor(
+        of: find.text('Render failed'),
+        matching: find.byType(Scrollable),
+      ),
     );
     expect(find.text('Snapshot payload captured'), findsOneWidget);
     expect(find.text('显示 2 / 2 条日志'), findsOneWidget);

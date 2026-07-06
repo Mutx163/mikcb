@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../utils/app_toast.dart';
 import '../services/app_migration_service.dart';
@@ -31,8 +31,9 @@ class _PackageMigrationGuideScreenState
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return FScaffold(
-      header: FHeader.nested(prefixes: [], title: Text(l10n.migrationTitle)),
+    return HyperosSubpage(
+      prefixes: const [],
+      title: Text(l10n.migrationTitle),
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
@@ -136,46 +137,36 @@ class _PackageMigrationGuideScreenState
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: FButton(
-                        variant: FButtonVariant.primary,
-                        onPress: _isOpeningOldApp ? null : _openLegacyApp,
-                        prefix: _isOpeningOldApp
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.open_in_new_rounded),
-                        child: Text(
-                          _isOpeningOldApp
-                              ? l10n.openingOldApp
-                              : l10n.openOldAppForBackup,
-                        ),
+                      child: HyperosButton(
+                        label: _isOpeningOldApp
+                            ? l10n.openingOldApp
+                            : l10n.openOldAppForBackup,
+                        expand: true,
+                        loading: _isOpeningOldApp,
+                        onPressed: _isOpeningOldApp ? null : _openLegacyApp,
                       ),
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      child: FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: () => Navigator.pop(
+                      child: HyperosButton(
+                        label: l10n.backupDoneGoImport,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () => Navigator.pop(
                           context,
                           MigrationFlowAction.restoreBackup,
                         ),
-                        prefix: const Icon(Icons.download_rounded),
-                        child: Text(l10n.backupDoneGoImport),
                       ),
                     ),
                     const SizedBox(height: 12),
                     Align(
                       alignment: Alignment.center,
-                      child: FButton(
-                        variant: FButtonVariant.ghost,
-                        onPress: () =>
+                      child: HyperosButton(
+                        label: l10n.startFreshWithoutMigration,
+                        variant: HyperosButtonVariant.secondary,
+                        onPressed: () =>
                             Navigator.pop(context, MigrationFlowAction.skip),
-                        child: Text(l10n.startFreshWithoutMigration),
                       ),
                     ),
                   ],

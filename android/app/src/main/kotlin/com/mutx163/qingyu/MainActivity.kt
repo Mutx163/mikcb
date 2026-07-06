@@ -59,6 +59,7 @@ import kotlin.math.ceil
 class MainActivity : FlutterActivity() {
     companion object {
         private const val METHOD_CHANNEL = "com.mutx163.qingyu/miui_live"
+        private const val SYSTEM_UI_CHANNEL = "com.mutx163.qingyu/system_ui"
         private const val UMENG_CHANNEL = "com.mutx163.qingyu/umeng_analytics"
         private const val HOME_WIDGET_CHANNEL = "com.mutx163.qingyu/home_widget"
         private const val SUPPORT_CHANNEL = "com.mutx163.qingyu/support"
@@ -72,6 +73,7 @@ class MainActivity : FlutterActivity() {
             "android.permission.POST_PROMOTED_NOTIFICATIONS"
         private const val ICS_CHANNEL = "com.mutx163.qingyu/ics_import"
         private const val LAN_EDIT_CHANNEL = "com.mutx163.qingyu/lan_edit"
+        private const val FROSTED_BLUR_CHANNEL = "com.mutx163.qingyu/frosted_blur"
     }
 
     private var notificationManager: NotificationManager? = null
@@ -111,6 +113,90 @@ class MainActivity : FlutterActivity() {
 
         notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannels()
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, SYSTEM_UI_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "getTransitionAnimationScale" -> {
+                        val scale = Settings.Global.getFloat(
+                            contentResolver,
+                            Settings.Global.TRANSITION_ANIMATION_SCALE,
+                            1.0f,
+                        )
+                        result.success(scale.toDouble())
+                    }
+                    "getDisplayCornerRadiusDp" -> {
+                        result.success(readDisplayCornerRadiusDp())
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, FROSTED_BLUR_CHANNEL)
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "isSupported" -> result.success(FrostedBlur.isSupported())
+                    "blurPng" -> {
+                        val bytes = call.argument<ByteArray>("bytes")
+                        val radius = (call.argument<Double>("radius") ?: 16.0).toFloat()
+                        if (bytes == null) {
+                            result.error("INVALID_ARGUMENTS", "Missing PNG bytes", null)
+                            return@setMethodCallHandler
+                        }
+                        Thread {
+                            try {
+                                val blurred = FrostedBlur.blurPng(bytes, radius)
+                                runOnUiThread {
+                                    if (blurred == null) {
+                                        result.error(
+                                            "BLUR_FAILED",
+                                            "Native blur returned null",
+                                            null,
+                                        )
+                                    } else {
+                                        result.success(blurred)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                runOnUiThread {
+                                    result.error("BLUR_FAILED", e.message, null)
+                                }
+                            }
+                        }.start()
+                    }
+                    "blurRgba" -> {
+                        val bytes = call.argument<ByteArray>("bytes")
+                        val width = call.argument<Int>("width") ?: 0
+                        val height = call.argument<Int>("height") ?: 0
+                        val radius = (call.argument<Double>("radius") ?: 16.0).toFloat()
+                        if (bytes == null || width <= 0 || height <= 0) {
+                            result.error("INVALID_ARGUMENTS", "Missing RGBA payload", null)
+                            return@setMethodCallHandler
+                        }
+                        Thread {
+                            try {
+                                val blurred = FrostedBlur.blurRgba(bytes, width, height, radius)
+                                runOnUiThread {
+                                    if (blurred == null) {
+                                        result.error(
+                                            "BLUR_FAILED",
+                                            "Native RGBA blur returned null",
+                                            null,
+                                        )
+                                    } else {
+                                        result.success(blurred)
+                                    }
+                                }
+                            } catch (e: Exception) {
+                                runOnUiThread {
+                                    result.error("BLUR_FAILED", e.message, null)
+                                }
+                            }
+                        }.start()
+                    }
+                    else -> result.notImplemented()
+                }
+            }
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL)
             .also { flutterChannel = it }
@@ -1263,6 +1349,18 @@ class MainActivity : FlutterActivity() {
 
     private fun isKeepAliveAccessibilityEnabled(): Boolean {
         return KeepAliveAccessibilityStatus.isEnabled(this)
+    }
+
+    private fun readDisplayCornerRadiusDp(): Double {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val insets = window.decorView.rootWindowInsets
+            val corner = insets?.getRoundedCorner(android.view.RoundedCorner.POSITION_TOP_LEFT)
+            val radiusPx = corner?.radius ?: 0
+            if (radiusPx > 0) {
+                return radiusPx.toDouble() / resources.displayMetrics.density.toDouble()
+            }
+        }
+        return 28.0
     }
 }
 

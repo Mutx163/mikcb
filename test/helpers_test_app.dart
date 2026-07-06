@@ -21,13 +21,11 @@ class TestApp extends StatelessWidget {
       builder: (context, child) {
         return FTheme(
           data: FThemes.zinc.light.touch,
-          child: FToaster(
-            child: ScaffoldMessenger(
-              child: Scaffold(
-                backgroundColor: Colors.transparent,
-                resizeToAvoidBottomInset: false,
-                body: child ?? const SizedBox.shrink(),
-              ),
+          child: ScaffoldMessenger(
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              resizeToAvoidBottomInset: false,
+              body: child ?? const SizedBox.shrink(),
             ),
           ),
         );
@@ -36,4 +34,3 @@ class TestApp extends StatelessWidget {
     );
   }
 }
-

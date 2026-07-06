@@ -8,6 +8,7 @@ import '../providers/timetable_provider.dart';
 import '../services/bundled_assets.dart';
 import '../services/support_creator_service.dart';
 import '../utils/app_toast.dart';
+import '../ui/hyperos/hyperos.dart';
 import '../widgets/bundled_asset_image.dart';
 
 enum _SupportMethod { wechat, alipay }
@@ -61,11 +62,9 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     final colors = context.theme.colors;
     final typo = context.theme.typography;
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.supportHeroTitle),
-      ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.supportHeroTitle),
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
@@ -100,40 +99,16 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
       children: [
         Text(l10n.supportMethodTitle, style: _emphasisBodyStyle(typo, colors)),
         const SizedBox(height: 8),
-        Row(
-          children: [
-            Expanded(
-              child: FButton(
-                variant: isWechat
-                    ? FButtonVariant.primary
-                    : FButtonVariant.outline,
-                onPress: () =>
-                    setState(() => _selectedMethod = _SupportMethod.wechat),
-                prefix: Icon(
-                  Icons.chat_bubble_rounded,
-                  size: 18,
-                  color: isWechat ? null : const Color(0xFF10B981),
-                ),
-                child: Text(l10n.wechatLabel),
-              ),
-            ),
-            const SizedBox(width: _paymentColumnGap),
-            Expanded(
-              child: FButton(
-                variant: !isWechat
-                    ? FButtonVariant.primary
-                    : FButtonVariant.outline,
-                onPress: () =>
-                    setState(() => _selectedMethod = _SupportMethod.alipay),
-                prefix: Icon(
-                  Icons.account_balance_wallet_rounded,
-                  size: 18,
-                  color: !isWechat ? null : const Color(0xFF0EA5E9),
-                ),
-                child: Text(l10n.alipayLabel),
-              ),
-            ),
-          ],
+        HyperosSegmentedControl(
+          tabs: [l10n.wechatLabel, l10n.alipayLabel],
+          selectedIndex: isWechat ? 0 : 1,
+          onChanged: (index) {
+            setState(() {
+              _selectedMethod = index == 0
+                  ? _SupportMethod.wechat
+                  : _SupportMethod.alipay;
+            });
+          },
         ),
       ],
     );
@@ -226,14 +201,12 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    FBadge(
-                      variant: FBadgeVariant.secondary,
-                      child: Text(
-                        l10n.supportRunningBadge,
-                        style: _mutedStyle(typo, colors).copyWith(
-                          color: const Color(0xFF047857),
-                          fontWeight: FontWeight.w600,
-                        ),
+                    HyperosTag(
+                      label: l10n.supportRunningBadge,
+                      backgroundColor: const Color(0xFFD1FAE5),
+                      textStyle: _mutedStyle(typo, colors).copyWith(
+                        color: const Color(0xFF047857),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -302,7 +275,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         : l10n.supportAlipayHint;
     final accent = isWechat ? const Color(0xFF10B981) : const Color(0xFF0EA5E9);
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: _sectionPadding,
         child: Column(
@@ -424,31 +397,27 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: () => _saveQrToGallery(
+                      HyperosButton(
+                        label: l10n.supportSaveShort,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () => _saveQrToGallery(
                           assetPath: assetPath,
                           fileName: fileName,
                         ),
-                        prefix: const Icon(Icons.download_rounded, size: 16),
-                        child: Text(l10n.supportSaveShort),
                       ),
                       const SizedBox(height: 8),
-                      FButton(
-                        variant: FButtonVariant.outline,
-                        onPress: () {
+                      HyperosButton(
+                        label: l10n.supportConfirmedShort,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () {
                           showAppToast(
                             context,
                             message: l10n.supportCompleteThanks,
                             kind: AppToastKind.success,
                           );
                         },
-                        prefix: const Icon(
-                          Icons.favorite_border_rounded,
-                          size: 16,
-                          color: Color(0xFFE11D48),
-                        ),
-                        child: Text(l10n.supportConfirmedShort),
                       ),
                       const SizedBox(height: 8),
                       Text(helperText, style: _mutedStyle(typo, colors)),
@@ -481,7 +450,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
           children: [
             Text(l10n.donorListTitle, style: _sectionTitleStyle(typo, colors)),
             const SizedBox(height: 16),
-            const Center(child: FProgress()),
+            const Center(child: HyperosCircularProgress()),
           ],
         ),
       );
@@ -499,11 +468,10 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
             const SizedBox(height: 8),
             Text(l10n.donorListLoadFailed, style: _mutedStyle(typo, colors)),
             const SizedBox(height: 16),
-            FButton(
-              variant: FButtonVariant.secondary,
-              onPress: _reloadDonors,
-              prefix: const Icon(Icons.refresh_rounded, size: 18),
-              child: Text(l10n.reloadAction),
+            HyperosButton(
+              label: l10n.reloadAction,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: _reloadDonors,
             ),
           ],
         ),
@@ -521,7 +489,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
     required FTypography typo,
     required Widget child,
   }) {
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(padding: _donorSectionPadding, child: child),
     );
   }
@@ -561,10 +529,11 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
               ],
             ),
           ),
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: _reloadDonors,
-            child: const Icon(Icons.refresh_rounded, size: 20),
+          HyperosIconButton(
+            icon: Icons.refresh_rounded,
+            iconSize: 20,
+            tooltip: l10n.reloadAction,
+            onPressed: _reloadDonors,
           ),
         ],
       );
@@ -578,11 +547,10 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         );
       }
 
-      return FTileGroup(
-        physics: const NeverScrollableScrollPhysics(),
+      return HyperosChoiceGroup(
         children: [
           for (final donor in donors)
-            FTile(
+            HyperosChoiceTile(
               prefix: Container(
                 width: 32,
                 height: 32,
@@ -597,7 +565,7 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                   color: colors.primary,
                 ),
               ),
-              title: Text(donor.name, style: _emphasisBodyStyle(typo, colors)),
+              title: donor.name,
               subtitle: Text(
                 [
                   if ((donor.date ?? '').isNotEmpty) donor.date!,
@@ -605,21 +573,29 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
                 ].join('\n'),
                 style: _mutedStyle(typo, colors),
               ),
-              suffix: (donor.amount ?? '').isNotEmpty
-                  ? FBadge(
-                      variant: FBadgeVariant.secondary,
+              trailing: (donor.amount ?? '').isNotEmpty
+                  ? Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colors.secondary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
                       child: Text(
                         donor.amount!,
                         style: _emphasisBodyStyle(typo, colors),
                       ),
                     )
                   : null,
+              onTap: null,
             ),
         ],
       );
     }
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: _donorSectionPadding,
         child: Column(
@@ -675,70 +651,62 @@ class _SupportCreatorScreenState extends State<SupportCreatorScreen> {
         ? l10n.scanQrWechatTitle
         : l10n.scanQrAlipayTitle;
 
-    showFDialog<void>(
+    final colors = context.theme.colors;
+    showHyperosDialog<void>(
       context: context,
-      builder: (dialogContext, style, animation) {
-        final colors = dialogContext.theme.colors;
-        return FDialog(
-          title: Text(dialogTitle),
-          body: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
+      title: dialogTitle,
+      body: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: colors.muted.withValues(alpha: 0.25),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: colors.border),
+            ),
+            padding: const EdgeInsets.all(12),
+            child: AspectRatio(
+              aspectRatio: 1,
+              child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: colors.muted.withValues(alpha: 0.25),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.border),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.all(12),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: BundledAssetImage(
-                        assetPath: assetPath,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: BundledAssetImage(
+                    assetPath: assetPath,
+                    fit: BoxFit.contain,
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.scanQrSubtitle,
-                textAlign: TextAlign.center,
-                style: dialogContext.theme.typography.body.xs.copyWith(
-                  color: colors.mutedForeground,
-                  height: 1.4,
-                ),
-              ),
-            ],
+            ),
           ),
-          actions: [
-            FButton(
-              variant: FButtonVariant.secondary,
-              onPress: () {
-                Navigator.pop(dialogContext);
-                _saveQrToGallery(assetPath: assetPath, fileName: fileName);
-              },
-              prefix: const Icon(Icons.download_rounded, size: 16),
-              child: Text(l10n.saveToGallery),
+          const SizedBox(height: 8),
+          Text(
+            l10n.scanQrSubtitle,
+            textAlign: TextAlign.center,
+            style: context.theme.typography.body.xs.copyWith(
+              color: colors.mutedForeground,
+              height: 1.4,
             ),
-            FButton(
-              variant: FButtonVariant.primary,
-              onPress: () => Navigator.pop(dialogContext),
-              child: Text(
-                MaterialLocalizations.of(dialogContext).closeButtonLabel,
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.saveToGallery,
+          onPressed: () {
+            Navigator.pop(context);
+            _saveQrToGallery(assetPath: assetPath, fileName: fileName);
+          },
+        ),
+        HyperosDialogAction(
+          label: MaterialLocalizations.of(context).closeButtonLabel,
+          isPrimary: true,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 

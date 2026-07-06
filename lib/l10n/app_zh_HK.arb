@@ -347,6 +347,7 @@
   "welcomeTitle": "歡迎使用",
   "welcomeAppName": "輕嶼課表",
   "welcomeSubtitle": "你可以先開始使用，也可以直接匯入課程或從備份還原。",
+  "thirdPartyDisclaimer": "特此聲明：本應用由第三方開發者獨立開發，僅用於學習研究用途，不屬於小米官方軟件，與小米科技有限責任公司無任何隸屬、合作或授權關係。如涉及內容侵權，請權利方聯繫作者，我們將第一時間下架並刪除相關內容。",
   "startUsingTitle": "開始使用",
   "startUsingSubtitle": "直接進入軟件，並繼續完成首次使用說明",
   "importTimetableTitle": "匯入課表",

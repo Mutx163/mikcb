@@ -817,6 +817,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get welcomeSubtitle => '你可以先开始使用，也可以直接导入课程或从备份恢复。';
 
   @override
+  String get thirdPartyDisclaimer =>
+      '特此声明：本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，与小米科技有限责任公司无任何隶属、合作或授权关系。如涉及内容侵权，请权利方联系作者，我们将第一时间下架并删除相关内容。';
+
+  @override
   String get startUsingTitle => '开始使用';
 
   @override
@@ -5875,6 +5879,10 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get welcomeSubtitle => '你可以先開始使用，也可以直接匯入課程或從備份還原。';
+
+  @override
+  String get thirdPartyDisclaimer =>
+      '特此聲明：本應用由第三方開發者獨立開發，僅用於學習研究用途，不屬於小米官方軟件，與小米科技有限責任公司無任何隸屬、合作或授權關係。如涉及內容侵權，請權利方聯繫作者，我們將第一時間下架並刪除相關內容。';
 
   @override
   String get startUsingTitle => '開始使用';
@@ -10936,6 +10944,10 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get welcomeSubtitle => '你可以先開始使用，也可以直接匯入課程或從備份還原。';
+
+  @override
+  String get thirdPartyDisclaimer =>
+      '特此聲明：本應用由第三方開發者獨立開發，僅用於學習研究用途，不屬於小米官方軟件，與小米科技有限責任公司無任何隸屬、合作或授權關係。如涉及內容侵權，請權利方聯繫作者，我們將第一時間下架並刪除相關內容。';
 
   @override
   String get startUsingTitle => '開始使用';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
@@ -7,7 +8,7 @@ import '../models/time_scheme.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
-import '../widgets/settings_section_widgets.dart';
+import '../widgets/app_dialogs.dart';
 
 class TimeSchemeManagementScreen extends StatefulWidget {
   final String? initialEditSchemeId;
@@ -60,39 +61,31 @@ class _TimeSchemeManagementScreenState
         final schemes = provider.timeSchemes;
         final activeSchemeId = provider.activeTimeScheme?.id;
 
-        return FScaffold(
-          header: FHeader.nested(
-            prefixes: [
-              FHeaderAction.back(onPress: () => Navigator.pop(context)),
-            ],
-            title: Text(l10n.timeSchemeTitle),
-            suffixes: [
-              FHeaderAction(
-                icon: const Icon(Icons.add_rounded),
-                semanticsLabel: l10n.newSchemeTooltip,
-                onPress: () => _createScheme(context),
-              ),
-            ],
-          ),
-          childPad: false,
-          child: Material(
-            type: MaterialType.transparency,
-            child: ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: schemes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, index) {
-                final scheme = schemes[index];
-                final isActive = scheme.id == activeSchemeId;
-                final usage = _buildUsageSummary(provider, scheme.id);
-                return _buildSchemeCard(
-                  context,
-                  scheme: scheme,
-                  usage: usage,
-                  isActive: isActive,
-                );
-              },
+        return HyperosSubpage(
+          onBack: () => Navigator.pop(context),
+          title: Text(l10n.timeSchemeTitle),
+          suffixes: [
+            FHeaderAction(
+              icon: const Icon(Icons.add_rounded),
+              semanticsLabel: l10n.newSchemeTooltip,
+              onPress: () => _createScheme(context),
             ),
+          ],
+          child: ListView.separated(
+            padding: HyperosTokens.listPadding,
+            itemCount: schemes.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final scheme = schemes[index];
+              final isActive = scheme.id == activeSchemeId;
+              final usage = _buildUsageSummary(provider, scheme.id);
+              return _buildSchemeCard(
+                context,
+                scheme: scheme,
+                usage: usage,
+                isActive: isActive,
+              );
+            },
           ),
         );
       },
@@ -107,7 +100,10 @@ class _TimeSchemeManagementScreenState
   }) {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
-    return FCard.raw(
+    return Material(
+      color: HyperosColors.card(context),
+      shape: HyperosTheme.cardShape(),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: isActive ? null : () => _applyScheme(context, scheme),
         child: Padding(
@@ -251,22 +247,22 @@ class _TimeSchemeManagementScreenState
               Row(
                 children: [
                   Expanded(
-                    child: FButton(
-                      variant: FButtonVariant.secondary,
-                      onPress: isActive
-                          ? () {}
+                    child: HyperosButton(
+                      label: isActive
+                          ? l10n.usingNow
+                          : l10n.applyToCurrentTimetable,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: isActive
+                          ? null
                           : () => _applyScheme(context, scheme),
-                      child: Text(
-                        isActive ? l10n.usingNow : l10n.applyToCurrentTimetable,
-                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  FButton(
-                    variant: FButtonVariant.ghost,
-                    onPress: () => _openEditor(scheme.id),
-                    prefix: const Icon(Icons.edit_outlined),
-                    child: Text(l10n.editSectionsAction),
+                  HyperosButton(
+                    label: l10n.editSectionsAction,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: () => _openEditor(scheme.id),
                   ),
                 ],
               ),
@@ -280,7 +276,7 @@ class _TimeSchemeManagementScreenState
   Future<void> _openEditor(String schemeId) async {
     await Navigator.push(
       context,
-      MaterialPageRoute(
+      HyperosPageRoute(
         builder: (_) => _TimeSchemeEditorScreen(schemeId: schemeId),
       ),
     );
@@ -289,31 +285,18 @@ class _TimeSchemeManagementScreenState
   Future<void> _createScheme(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController();
-    final name = await showFDialog<String>(
-      context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.createTimeSchemeTitle),
-        body: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(
-            labelText: l10n.timeSchemeNameLabel,
-            hintText: l10n.timeSchemeNameHint,
-          ),
-        ),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(l10n.createAction),
-          ),
-        ],
+    final name = await showAppTextInputDialog(
+      context,
+      title: l10n.createTimeSchemeTitle,
+      body: HyperosTextField(
+        controller: controller,
+        label: l10n.timeSchemeNameLabel,
+        hint: l10n.timeSchemeNameHint,
+        autofocus: true,
       ),
+      confirmLabel: l10n.createAction,
+      readValue: () => controller.text,
+      validate: (value) => value.isNotEmpty,
     );
     controller.dispose();
 
@@ -333,28 +316,16 @@ class _TimeSchemeManagementScreenState
   Future<void> _renameScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
     final controller = TextEditingController(text: scheme.name);
-    final name = await showFDialog<String>(
-      context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.renameTimeSchemeTitle),
-        body: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: InputDecoration(labelText: l10n.timeSchemeNameLabel),
-        ),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, controller.text.trim()),
-            child: Text(l10n.saveAction),
-          ),
-        ],
+    final name = await showAppTextInputDialog(
+      context,
+      title: l10n.renameTimeSchemeTitle,
+      body: HyperosTextField(
+        controller: controller,
+        label: l10n.timeSchemeNameLabel,
+        autofocus: true,
       ),
+      readValue: () => controller.text,
+      validate: (value) => value.isNotEmpty,
     );
     controller.dispose();
 
@@ -378,24 +349,13 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _deleteScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showFDialog<bool>(
+    final confirmed = await showHyperosConfirmDialog(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.deleteTimeSchemeTitle),
-        body: Text(l10n.deleteTimeSchemeMessage(scheme.name)),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+      title: l10n.deleteTimeSchemeTitle,
+      message: l10n.deleteTimeSchemeMessage(scheme.name),
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAction,
+      destructive: true,
     );
 
     if (!context.mounted || confirmed != true) {
@@ -485,112 +445,107 @@ class _TimeSchemeManagementScreenState
     final l10n = AppLocalizations.of(context)!;
     final directCourseReferences = usage.directCourseReferences;
     final overrideReferences = usage.overrideReferences;
-    await showFDialog<void>(
+    final theme = context.theme;
+    await showHyperosDialog<void>(
       context: context,
-      builder: (ctx, style, animation) {
-        final theme = context.theme;
-        return FDialog(
-          title: Text(l10n.timeSchemeUsageTitle(scheme.name)),
-          body: SizedBox(
-            width: double.maxFinite,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
+      title: l10n.timeSchemeUsageTitle(scheme.name),
+      body: SizedBox(
+        width: double.maxFinite,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                l10n.timeSchemeUsageIntro,
+                style: theme.typography.body.xs.copyWith(
+                  color: theme.colors.mutedForeground,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  Text(
-                    l10n.timeSchemeUsageIntro,
-                    style: theme.typography.body.xs.copyWith(
-                      color: theme.colors.mutedForeground,
+                  _TimeSchemeInfoChip(
+                    label: l10n.profileCountLabel,
+                    value: l10n.profileCountValue(usage.profileCount),
+                  ),
+                  _TimeSchemeInfoChip(
+                    label: l10n.courseCountLabel,
+                    value: l10n.courseSectionCountValue(usage.courseCount),
+                  ),
+                  _TimeSchemeInfoChip(
+                    label: l10n.overrideTimeSchemeLabel,
+                    value: l10n.courseSectionCountValue(
+                      usage.overrideCourseCount,
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _TimeSchemeInfoChip(
-                        label: l10n.profileCountLabel,
-                        value: l10n.profileCountValue(usage.profileCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.courseCountLabel,
-                        value: l10n.courseSectionCountValue(usage.courseCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.overrideTimeSchemeLabel,
-                        value: l10n.courseSectionCountValue(
-                          usage.overrideCourseCount,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _UsageSection(
-                    title: l10n.directlyBoundProfilesTitle,
-                    subtitle: usage.profileCount == 0
-                        ? l10n.directlyBoundProfilesEmpty
-                        : l10n.directlyBoundProfilesSubtitle,
-                    items: usage.profileNames
-                        .map((name) => _UsageLine(primary: name))
-                        .toList(growable: false),
-                    emptyText: l10n.directlyBoundProfilesEmpty,
-                  ),
-                  const SizedBox(height: 12),
-                  _UsageSection(
-                    title: l10n.followMainSchemeCoursesTitle,
-                    subtitle: directCourseReferences.isEmpty
-                        ? l10n.followMainSchemeCoursesEmpty
-                        : l10n.followMainSchemeCoursesSubtitle,
-                    items: directCourseReferences
-                        .map(
-                          (reference) => _UsageLine(
-                            primary:
-                                '${reference.profileName} · ${reference.course.name}',
-                            secondary: l10n.weekdaySectionRange(
-                              _weekdayLabel(l10n, reference.course.dayOfWeek),
-                              reference.course.startSection,
-                              reference.course.endSection,
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                    emptyText: l10n.followMainSchemeCoursesEmpty,
-                  ),
-                  const SizedBox(height: 12),
-                  _UsageSection(
-                    title: l10n.overrideSchemeCoursesTitle,
-                    subtitle: overrideReferences.isEmpty
-                        ? l10n.overrideSchemeCoursesEmpty
-                        : l10n.overrideSchemeCoursesSubtitle,
-                    items: overrideReferences
-                        .map(
-                          (reference) => _UsageLine(
-                            primary:
-                                '${reference.profileName} · ${reference.course.name}',
-                            secondary: l10n.weekdaySectionRange(
-                              _weekdayLabel(l10n, reference.course.dayOfWeek),
-                              reference.course.startSection,
-                              reference.course.endSection,
-                            ),
-                          ),
-                        )
-                        .toList(growable: false),
-                    emptyText: l10n.overrideSchemeCoursesEmpty,
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 16),
+              _UsageSection(
+                title: l10n.directlyBoundProfilesTitle,
+                subtitle: usage.profileCount == 0
+                    ? l10n.directlyBoundProfilesEmpty
+                    : l10n.directlyBoundProfilesSubtitle,
+                items: usage.profileNames
+                    .map((name) => _UsageLine(primary: name))
+                    .toList(growable: false),
+                emptyText: l10n.directlyBoundProfilesEmpty,
+              ),
+              const SizedBox(height: 12),
+              _UsageSection(
+                title: l10n.followMainSchemeCoursesTitle,
+                subtitle: directCourseReferences.isEmpty
+                    ? l10n.followMainSchemeCoursesEmpty
+                    : l10n.followMainSchemeCoursesSubtitle,
+                items: directCourseReferences
+                    .map(
+                      (reference) => _UsageLine(
+                        primary:
+                            '${reference.profileName} · ${reference.course.name}',
+                        secondary: l10n.weekdaySectionRange(
+                          _weekdayLabel(l10n, reference.course.dayOfWeek),
+                          reference.course.startSection,
+                          reference.course.endSection,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                emptyText: l10n.followMainSchemeCoursesEmpty,
+              ),
+              const SizedBox(height: 12),
+              _UsageSection(
+                title: l10n.overrideSchemeCoursesTitle,
+                subtitle: overrideReferences.isEmpty
+                    ? l10n.overrideSchemeCoursesEmpty
+                    : l10n.overrideSchemeCoursesSubtitle,
+                items: overrideReferences
+                    .map(
+                      (reference) => _UsageLine(
+                        primary:
+                            '${reference.profileName} · ${reference.course.name}',
+                        secondary: l10n.weekdaySectionRange(
+                          _weekdayLabel(l10n, reference.course.dayOfWeek),
+                          reference.course.startSection,
+                          reference.course.endSection,
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
+                emptyText: l10n.overrideSchemeCoursesEmpty,
+              ),
+            ],
           ),
-          actions: [
-            FButton(
-              variant: FButtonVariant.ghost,
-              onPress: () => Navigator.pop(ctx),
-              child: Text(l10n.closeAction),
-            ),
-          ],
-        );
-      },
+        ),
+      ),
+      actions: [
+        HyperosDialogAction(
+          label: l10n.closeAction,
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 
@@ -668,191 +623,179 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final usage = _buildUsageSummary(provider, widget.schemeId);
     final theme = context.theme;
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.editTimeSchemeTitle),
-        suffixes: [
-          FHeaderAction(
-            icon: const Icon(Icons.check_rounded),
-            semanticsLabel: l10n.saveAction,
-            onPress: _save,
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.editTimeSchemeTitle),
+      suffixes: [
+        FHeaderAction(
+          icon: const Icon(Icons.check_rounded),
+          semanticsLabel: l10n.saveAction,
+          onPress: _save,
+        ),
+      ],
+      child: ListView(
+        padding: HyperosTokens.listPadding,
+        children: [
+          HyperosControlCard(
+            title: l10n.timeSchemeNameLabel,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: _nameController,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    labelText: l10n.timeSchemeNameLabel,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (isActive)
+                      _TimeSchemeBadge(
+                        text: l10n.currentInUse,
+                        icon: Icons.check_circle_outline_rounded,
+                      ),
+                    _TimeSchemeInfoChip(
+                      label: l10n.profileCountLabel,
+                      value: l10n.profileCountValue(usage.profileCount),
+                    ),
+                    _TimeSchemeInfoChip(
+                      label: l10n.courseCountLabel,
+                      value: l10n.courseSectionCountValue(usage.courseCount),
+                    ),
+                    _TimeSchemeInfoChip(
+                      label: l10n.overrideTimeSchemeLabel,
+                      value: l10n.courseSectionCountValue(
+                        usage.overrideCourseCount,
+                      ),
+                    ),
+                  ],
+                ),
+                if (isActive || usage.courseCount > 0) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    isActive && usage.courseCount > 0
+                        ? l10n.timeSchemeEditorActiveAndCoursesHint
+                        : isActive
+                        ? l10n.timeSchemeEditorActiveHint
+                        : l10n.timeSchemeEditorOverrideHint,
+                    style: theme.typography.body.xs,
+                  ),
+                ],
+                if (usage.previewText != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    usage.previewText!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.typography.body.xs,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            title: l10n.sectionTimesTitle,
+            subtitle: l10n.sectionTimesSubtitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    HyperosButton(
+                      label: l10n.quickGenerateAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _openQuickGenerate,
+                    ),
+                    HyperosButton(
+                      label: l10n.addSectionAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _sections.length >= 20 ? null : _addSection,
+                    ),
+                    HyperosButton(
+                      label: l10n.removeLastSectionAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _sections.length <= 1 ? null : _removeSection,
+                    ),
+                    HyperosButton(
+                      label: l10n.resetDefaultAction,
+                      variant: HyperosButtonVariant.secondary,
+                      onPressed: _resetSections,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                ...List.generate(_sections.length, (index) {
+                  final section = _sections[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.colors.muted,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: theme.colors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: theme.colors.primary.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            '${index + 1}',
+                            style: theme.typography.body.sm.copyWith(
+                              color: theme.colors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                l10n.sectionLabel(index + 1),
+                                style: theme.typography.body.sm.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '${section.startTime} - ${section.endTime}',
+                                style: theme.typography.body.sm.copyWith(
+                                  color: theme.colors.mutedForeground,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          tooltip: l10n.editTimeAction,
+                          onPressed: () => _editSectionTime(index),
+                          icon: const Icon(Icons.edit_outlined),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         ],
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            SettingsSectionCard(
-              title: l10n.timeSchemeNameLabel,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      border: const OutlineInputBorder(),
-                      labelText: l10n.timeSchemeNameLabel,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (isActive)
-                        _TimeSchemeBadge(
-                          text: l10n.currentInUse,
-                          icon: Icons.check_circle_outline_rounded,
-                        ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.profileCountLabel,
-                        value: l10n.profileCountValue(usage.profileCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.courseCountLabel,
-                        value: l10n.courseSectionCountValue(usage.courseCount),
-                      ),
-                      _TimeSchemeInfoChip(
-                        label: l10n.overrideTimeSchemeLabel,
-                        value: l10n.courseSectionCountValue(
-                          usage.overrideCourseCount,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (isActive || usage.courseCount > 0) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      isActive && usage.courseCount > 0
-                          ? l10n.timeSchemeEditorActiveAndCoursesHint
-                          : isActive
-                          ? l10n.timeSchemeEditorActiveHint
-                          : l10n.timeSchemeEditorOverrideHint,
-                      style: theme.typography.body.xs,
-                    ),
-                  ],
-                  if (usage.previewText != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      usage.previewText!,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.typography.body.xs,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            SettingsSectionCard(
-              title: l10n.sectionTimesTitle,
-              subtitle: l10n.sectionTimesSubtitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: _openQuickGenerate,
-                        prefix: const Icon(Icons.auto_fix_high_rounded),
-                        child: Text(l10n.quickGenerateAction),
-                      ),
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: _sections.length >= 20 ? () {} : _addSection,
-                        prefix: const Icon(Icons.add),
-                        child: Text(l10n.addSectionAction),
-                      ),
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: _sections.length <= 1 ? () {} : _removeSection,
-                        prefix: const Icon(Icons.remove),
-                        child: Text(l10n.removeLastSectionAction),
-                      ),
-                      FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: _resetSections,
-                        prefix: const Icon(Icons.restart_alt),
-                        child: Text(l10n.resetDefaultAction),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...List.generate(_sections.length, (index) {
-                    final section = _sections[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.colors.muted,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: theme.colors.border),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color: theme.colors.primary.withValues(
-                                alpha: 0.10,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              '${index + 1}',
-                              style: theme.typography.body.sm.copyWith(
-                                color: theme.colors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  l10n.sectionLabel(index + 1),
-                                  style: theme.typography.body.sm.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  '${section.startTime} - ${section.endTime}',
-                                  style: theme.typography.body.sm.copyWith(
-                                    color: theme.colors.mutedForeground,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: l10n.editTimeAction,
-                            onPressed: () => _editSectionTime(index),
-                            icon: const Icon(Icons.edit_outlined),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -994,9 +937,9 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   }
 
   Future<void> _openQuickGenerate() async {
-    final preset = await showFDialog<_QuickGeneratePreset>(
+    final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
-      builder: (ctx, style, animation) =>
+      builder: (ctx) =>
           _QuickGenerateDialog(initialPreset: _lastQuickGeneratePreset),
     );
     if (preset == null || !mounted) {
@@ -1360,8 +1303,8 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final theme = context.theme;
-    return FDialog(
-      title: Text(l10n.quickGenerateTimeSchemeTitle),
+    return HyperosDialog(
+      title: l10n.quickGenerateTimeSchemeTitle,
       body: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1443,26 +1386,24 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
             ..._buildBreakOverrideRows(),
             Align(
               alignment: Alignment.centerLeft,
-              child: FButton(
-                variant: FButtonVariant.ghost,
-                onPress: _addBreakOverride,
-                prefix: const Icon(Icons.add_rounded),
-                child: Text(l10n.addBreakRuleAction),
+              child: HyperosButton(
+                label: l10n.addBreakRuleAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: _addBreakOverride,
               ),
             ),
           ],
         ),
       ),
       actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.pop(context),
-          child: Text(l10n.cancelAction),
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context),
         ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: _submit,
-          child: Text(l10n.generateAction),
+        HyperosDialogAction(
+          label: l10n.generateAction,
+          isPrimary: true,
+          onPressed: _submit,
         ),
       ],
     );
@@ -1492,11 +1433,11 @@ class _QuickGenerateDialogState extends State<_QuickGenerateDialog> {
     required String value,
     required VoidCallback onTap,
   }) {
-    return FTile(
-      title: Text(label),
-      details: Text(value),
-      suffix: const Icon(Icons.schedule_outlined),
-      onPress: onTap,
+    return HyperosListTile(
+      icon: Icons.schedule_outlined,
+      title: label,
+      details: value,
+      onTap: onTap,
     );
   }
 

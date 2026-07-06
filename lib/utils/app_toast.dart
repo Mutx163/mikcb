@@ -1,17 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 enum AppToastKind { info, success, warning, error }
 
 const Duration _defaultToastDuration = Duration(seconds: 4);
 const Duration _actionToastDuration = Duration(seconds: 8);
-
-FToastVariant _variantForKind(AppToastKind kind) {
-  return switch (kind) {
-    AppToastKind.error => FToastVariant.destructive,
-    _ => FToastVariant.primary,
-  };
-}
 
 IconData _defaultIconForKind(AppToastKind kind) {
   return switch (kind) {
@@ -19,6 +12,20 @@ IconData _defaultIconForKind(AppToastKind kind) {
     AppToastKind.warning => Icons.warning_amber_rounded,
     AppToastKind.error => Icons.error_outline_rounded,
     AppToastKind.info => Icons.info_outline_rounded,
+  };
+}
+
+Color _iconColorForKind(BuildContext context, AppToastKind kind) {
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  return switch (kind) {
+    AppToastKind.success =>
+      isDark ? HyperosMiuixDarkColors.primary : const Color(0xFF047857),
+    AppToastKind.warning =>
+      isDark ? HyperosMiuixDarkColors.error : const Color(0xFFB45309),
+    AppToastKind.error =>
+      isDark ? HyperosMiuixDarkColors.error : HyperosMiuixLightColors.error,
+    AppToastKind.info =>
+      isDark ? HyperosMiuixDarkColors.primary : HyperosMiuixLightColors.primary,
   };
 }
 
@@ -39,7 +46,7 @@ void showAppLightTip(
   );
 }
 
-/// Shows a transient Forui toast. Requires [FToaster] above this context.
+/// Shows a transient HyperOS snackbar.
 void showAppToast(
   BuildContext context, {
   required String message,
@@ -48,17 +55,17 @@ void showAppToast(
   Duration? duration = _defaultToastDuration,
   IconData? icon,
 }) {
-  showFToast(
-    context: context,
-    variant: _variantForKind(kind),
-    icon: Icon(icon ?? _defaultIconForKind(kind), size: 18),
-    title: Text(message),
-    description: description == null ? null : Text(description),
-    duration: duration,
+  showHyperosRichSnackBar(
+    context,
+    message: message,
+    description: description,
+    icon: icon ?? _defaultIconForKind(kind),
+    iconColor: _iconColorForKind(context, kind),
+    duration: duration ?? _defaultToastDuration,
   );
 }
 
-/// Shows a toast with a trailing action button (e.g. undo, switch source).
+/// Shows a snackbar with a trailing action button (e.g. undo, switch source).
 void showAppToastWithAction(
   BuildContext context, {
   required String message,
@@ -68,22 +75,17 @@ void showAppToastWithAction(
   AppToastKind kind = AppToastKind.info,
   Duration duration = _actionToastDuration,
 }) {
-  showFToast(
-    context: context,
-    variant: _variantForKind(kind),
-    icon: Icon(_defaultIconForKind(kind), size: 18),
-    title: Text(message),
-    description: description == null ? null : Text(description),
+  showHyperosRichSnackBar(
+    context,
+    message: message,
+    description: description,
+    icon: _defaultIconForKind(kind),
+    iconColor: _iconColorForKind(context, kind),
     duration: duration,
-    suffixBuilder: (ctx, entry) => IntrinsicHeight(
-      child: FButton(
-        variant: FButtonVariant.secondary,
-        onPress: () {
-          onAction();
-          entry.dismiss();
-        },
-        child: Text(actionLabel),
-      ),
-    ),
+    actionLabel: actionLabel,
+    onAction: () {
+      onAction();
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    },
   );
 }

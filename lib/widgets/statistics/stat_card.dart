@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 /// 统计概览卡片
 class StatCard extends StatelessWidget {
@@ -21,7 +22,7 @@ class StatCard extends StatelessWidget {
     final theme = context.theme;
     final accentColor = color ?? theme.colors.primary;
 
-    return FCard.raw(
+    return HyperosCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         child: Column(

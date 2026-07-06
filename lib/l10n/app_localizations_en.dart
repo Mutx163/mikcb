@@ -872,6 +872,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'You can start using the app right away, or import courses / restore a backup first.';
 
   @override
+  String get thirdPartyDisclaimer =>
+      'Disclaimer: This app is independently developed by a third-party developer for learning and research purposes only. It is not official Xiaomi software and has no affiliation, partnership, or authorization relationship with Xiaomi Technology Co., Ltd. If you believe any content infringes your rights, please contact the author. We will promptly remove the relevant content upon notification.';
+
+  @override
   String get startUsingTitle => 'Start Using';
 
   @override

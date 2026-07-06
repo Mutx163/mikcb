@@ -13,7 +13,7 @@ import '../widgets/about_info_sheet.dart';
 import '../widgets/course_color_picker_sheet.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../widgets/course_template_picker_sheet.dart';
-import '../widgets/settings_section_widgets.dart';
+import '../ui/hyperos/hyperos.dart';
 import '../widgets/time_scheme_picker_sheet.dart';
 
 enum _WeekSelectionMode { range, custom }
@@ -246,37 +246,31 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final provider = context.watch<TimetableProvider>();
     final settings = provider.settings;
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(_resolveTitle()),
-        suffixes: [
-          if (widget.courseGroup != null)
-            FHeaderAction(
-              icon: const Icon(Icons.delete_outline_rounded),
-              semanticsLabel: l10n.deleteCourseTitle,
-              onPress: _confirmDeleteGroup,
-            )
-          else if (widget.course != null)
-            FHeaderAction(
-              icon: const Icon(Icons.delete_outline_rounded),
-              semanticsLabel: l10n.deleteCourseTitle,
-              onPress: _confirmDeleteCourse,
-            ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(_resolveTitle()),
+      suffixes: [
+        if (widget.courseGroup != null)
           FHeaderAction(
-            icon: const Icon(Icons.check_rounded),
-            semanticsLabel: l10n.saveAction,
-            onPress: () => _saveCourse(provider, settings),
+            icon: const Icon(Icons.delete_outline_rounded),
+            semanticsLabel: l10n.deleteCourseTitle,
+            onPress: _confirmDeleteGroup,
+          )
+        else if (widget.course != null)
+          FHeaderAction(
+            icon: const Icon(Icons.delete_outline_rounded),
+            semanticsLabel: l10n.deleteCourseTitle,
+            onPress: _confirmDeleteCourse,
           ),
-        ],
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Form(
-          key: _formKey,
-          child: _buildGroupEditingBody(provider, settings),
+        FHeaderAction(
+          icon: const Icon(Icons.check_rounded),
+          semanticsLabel: l10n.saveAction,
+          onPress: () => _saveCourse(provider, settings),
         ),
+      ],
+      child: Form(
+        key: _formKey,
+        child: _buildGroupEditingBody(provider, settings),
       ),
     );
   }
@@ -288,24 +282,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     }
 
     final l10n = AppLocalizations.of(context)!;
-    final confirmed = await showFDialog<bool>(
+    final confirmed = await showHyperosConfirmDialog(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.deleteCourseTitle),
-        body: Text(l10n.confirmDeleteCourseMessage(course.name)),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+      title: l10n.deleteCourseTitle,
+      message: l10n.confirmDeleteCourseMessage(course.name),
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAction,
+      destructive: true,
     );
 
     if (confirmed != true || !mounted) {
@@ -372,25 +355,30 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required VoidCallback onPress,
     bool isPlaceholder = false,
   }) {
-    final theme = context.theme;
-    return FTile(
-      prefix: Icon(icon),
-      title: Text(label),
-      details: Text(
-        value,
-        style: theme.typography.body.sm.copyWith(
-          fontWeight: isPlaceholder ? FontWeight.normal : FontWeight.w600,
-          color: isPlaceholder ? theme.colors.mutedForeground : null,
-        ),
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-      ),
-      suffix: Icon(
-        Icons.chevron_right_rounded,
-        color: theme.colors.mutedForeground,
-      ),
-      onPress: onPress,
+    return HyperosListTile(
+      icon: icon,
+      title: label,
+      details: isPlaceholder ? null : value,
+      onTap: onPress,
     );
+  }
+
+  Future<void> _pickFromSelectSheet({
+    required String title,
+    required Map<String, int> items,
+    required int currentValue,
+    required ValueChanged<int> onSelected,
+  }) async {
+    final selected = await showHyperosSelectSheet<int>(
+      context: context,
+      title: title,
+      items: items,
+      currentValue: currentValue,
+    );
+    if (!mounted || selected == null || selected == currentValue) {
+      return;
+    }
+    onSelected(selected);
   }
 
   Widget _buildGroupEditingBody(
@@ -398,11 +386,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableSettings settings,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    return ListView(
-      padding: const EdgeInsets.all(16),
+    return HyperosListView(
       children: [
         _buildGroupSharedInfoSection(provider, l10n),
-        const SizedBox(height: 12),
+        const HyperosSectionGap(),
         _buildScheduleEntriesSection(provider, settings, l10n),
         const SizedBox(height: 24),
       ],
@@ -415,7 +402,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   ) {
     final typo = context.theme.typography.body;
     final colors = context.theme.colors;
-    return SettingsSectionCard(
+    return HyperosControlCard(
+      plainTitle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -448,43 +436,48 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             ),
           ),
           ..._withSpacing([
-            FTextFormField(
-              control: FTextFieldControl.managed(controller: _nameController),
-              label: Text(l10n.courseNameLabel),
-              description: Text(l10n.courseNameHelper),
-              textInputAction: TextInputAction.next,
+            FormField<String>(
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
                   return l10n.pleaseEnterCourseName;
                 }
                 return null;
               },
-              suffixBuilder: widget.course == null
-                  ? (context, style, variants) => IconButton(
-                      tooltip: l10n.reuseExistingCourseLabel,
-                      icon: const Icon(Icons.auto_awesome_motion_rounded),
-                      onPressed: () => _showCourseTemplateSheet(provider),
-                    )
-                  : null,
+              builder: (field) {
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: HyperosTextField(
+                        controller: _nameController,
+                        label: l10n.courseNameLabel,
+                        helper: field.hasError
+                            ? field.errorText
+                            : l10n.courseNameHelper,
+                        textInputAction: TextInputAction.next,
+                        onChanged: field.didChange,
+                      ),
+                    ),
+                    if (widget.course == null)
+                      IconButton(
+                        tooltip: l10n.reuseExistingCourseLabel,
+                        icon: const Icon(Icons.auto_awesome_motion_rounded),
+                        onPressed: () => _showCourseTemplateSheet(provider),
+                      ),
+                  ],
+                );
+              },
             ),
             _buildShortNameField(l10n),
-            FSelect<CourseNature>(
-              label: Text(l10n.courseNatureLabel),
-              hint: l10n.courseNatureLabel,
+            HyperosSelectTile<CourseNature>(
+              label: l10n.courseNatureLabel,
               items: {for (final item in CourseNature.values) item.label: item},
-              control: FSelectControl.lifted(
-                value: _courseNature,
-                onChange: (value) {
-                  if (value == null) return;
-                  setState(() => _courseNature = value);
-                },
-              ),
+              value: _courseNature,
+              onChanged: (value) => setState(() => _courseNature = value),
             ),
-            FTextFormField.multiline(
-              control: FTextFieldControl.managed(
-                controller: _descriptionController,
-              ),
-              label: Text(l10n.courseDescriptionOptional),
+            HyperosTextField(
+              controller: _descriptionController,
+              label: l10n.courseDescriptionOptional,
               minLines: 2,
               maxLines: 4,
             ),
@@ -500,11 +493,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   }
 
   void _showSharedInfoHintSheet(AppLocalizations l10n) {
-    showFSheet<void>(
+    showHyperosSheet<void>(
       context: context,
-      side: FLayout.btt,
-      useSafeArea: true,
-      draggable: true,
       builder: (_) => AboutInfoSheetBody(
         title: l10n.sharedInfoTitle,
         items: [
@@ -629,19 +619,16 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: FTextFormField(
-                control: FTextFieldControl.managed(
-                  controller: _shortNameController,
-                ),
+              child: HyperosTextField(
+                controller: _shortNameController,
                 textInputAction: TextInputAction.next,
               ),
             ),
             const SizedBox(width: 8),
-            FButton(
-              variant: FButtonVariant.outline,
-              size: FButtonSizeVariant.sm,
-              onPress: _autofillShortNameFromCourseName,
-              child: Text(l10n.courseShortNameAutoFillAction),
+            HyperosButton(
+              label: l10n.courseShortNameAutoFillAction,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: _autofillShortNameFromCourseName,
             ),
           ],
         ),
@@ -660,11 +647,12 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     AppLocalizations l10n,
   ) {
     final hasMultipleEntries = _scheduleEntries.length > 1;
-    return SettingsSectionCard(
+    return HyperosControlCard(
       title: hasMultipleEntries
           ? l10n.scheduleEntryTitle(1).replaceFirst(RegExp(r'\s?1$'), '')
           : l10n.scheduleEntrySingleTitle,
       subtitle: l10n.scheduleEntryCardSubtitle,
+      plainTitle: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -840,28 +828,27 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required _ScheduleEntryData entry,
     required AppLocalizations l10n,
   }) {
-    final weekdaySelect = FSelect<int>(
-      label: Text(l10n.weekdayLabel),
-      hint: l10n.weekdayLabel,
-      size: FTextFieldSizeVariant.sm,
-      items: {for (var i = 0; i < weekDays.length; i++) weekDays[i]: i + 1},
-      control: FSelectControl.lifted(
-        value: entry.dayOfWeek,
-        onChange: (value) {
-          if (value == null) return;
-          setState(() => entry.dayOfWeek = value);
-        },
+    final weekdayItems = {
+      for (var i = 0; i < weekDays.length; i++) weekDays[i]: i + 1,
+    };
+    final weekdaySelect = _buildCompactPickerField(
+      label: l10n.weekdayLabel,
+      value: weekDays[entry.dayOfWeek - 1],
+      onPress: () => _pickFromSelectSheet(
+        title: l10n.weekdayLabel,
+        items: weekdayItems,
+        currentValue: entry.dayOfWeek,
+        onSelected: (value) => setState(() => entry.dayOfWeek = value),
       ),
     );
-    final startSelect = FSelect<int>(
-      label: Text(l10n.startSectionLabel),
-      hint: l10n.startSectionLabel,
-      size: FTextFieldSizeVariant.sm,
-      items: _sectionSelectItems(sectionNumbers, l10n),
-      control: FSelectControl.lifted(
-        value: entry.startSection,
-        onChange: (value) {
-          if (value == null) return;
+    final startSelect = _buildCompactPickerField(
+      label: l10n.startSectionLabel,
+      value: l10n.scheduleSectionNumberLabel(entry.startSection),
+      onPress: () => _pickFromSelectSheet(
+        title: l10n.startSectionLabel,
+        items: _sectionSelectItems(sectionNumbers, l10n),
+        currentValue: entry.startSection,
+        onSelected: (value) {
           setState(() {
             entry.startSection = value;
             if (entry.endSection < entry.startSection) {
@@ -871,20 +858,17 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
         },
       ),
     );
-    final endSelect = FSelect<int>(
-      label: Text(l10n.endSectionLabel),
-      hint: l10n.endSectionLabel,
-      size: FTextFieldSizeVariant.sm,
-      items: _sectionSelectItems(
-        sectionNumbers.where((s) => s >= entry.startSection),
-        l10n,
-      ),
-      control: FSelectControl.lifted(
-        value: entry.endSection,
-        onChange: (value) {
-          if (value == null) return;
-          setState(() => entry.endSection = value);
-        },
+    final endSelect = _buildCompactPickerField(
+      label: l10n.endSectionLabel,
+      value: l10n.scheduleSectionNumberLabel(entry.endSection),
+      onPress: () => _pickFromSelectSheet(
+        title: l10n.endSectionLabel,
+        items: _sectionSelectItems(
+          sectionNumbers.where((s) => s >= entry.startSection),
+          l10n,
+        ),
+        currentValue: entry.endSection,
+        onSelected: (value) => setState(() => entry.endSection = value),
       ),
     );
 
@@ -1108,11 +1092,11 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   Widget _buildAddScheduleEntryButton(AppLocalizations l10n) {
     return SizedBox(
       width: double.infinity,
-      child: FButton(
-        variant: FButtonVariant.secondary,
-        onPress: _addScheduleEntry,
-        prefix: const Icon(Icons.add_rounded),
-        child: Text(l10n.addScheduleEntryAction),
+      child: HyperosButton(
+        label: l10n.addScheduleEntryAction,
+        variant: HyperosButtonVariant.secondary,
+        expand: true,
+        onPressed: _addScheduleEntry,
       ),
     );
   }
@@ -1153,24 +1137,13 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   Future<void> _confirmDeleteGroup() async {
     final l10n = AppLocalizations.of(context)!;
     final name = widget.courseGroup!.name;
-    final confirmed = await showFDialog<bool>(
+    final confirmed = await showHyperosConfirmDialog(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.deleteCourseTitle),
-        body: Text(l10n.confirmDeleteCourseMessage(name)),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx, false),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+      title: l10n.deleteCourseTitle,
+      message: l10n.confirmDeleteCourseMessage(name),
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAction,
+      destructive: true,
     );
 
     if (confirmed != true || !mounted) return;
@@ -1369,25 +1342,21 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required AppLocalizations l10n,
     required ValueChanged<_WeekSelectionMode> onSelect,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return FTileGroup(
-      physics: const NeverScrollableScrollPhysics(),
+    return HyperosChoiceGroup(
       children: [
-        FTile(
+        HyperosChoiceTile(
           prefix: const Icon(Icons.linear_scale_rounded),
-          title: Text(l10n.rangeWeeksLabel),
-          suffix: tempMode == _WeekSelectionMode.range
-              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
-              : null,
-          onPress: () => onSelect(_WeekSelectionMode.range),
+          title: l10n.rangeWeeksLabel,
+          selected: tempMode == _WeekSelectionMode.range,
+          highlightSelectedText: true,
+          onTap: () => onSelect(_WeekSelectionMode.range),
         ),
-        FTile(
+        HyperosChoiceTile(
           prefix: const Icon(Icons.apps_rounded),
-          title: Text(l10n.customWeeksLabel),
-          suffix: tempMode == _WeekSelectionMode.custom
-              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
-              : null,
-          onPress: () => onSelect(_WeekSelectionMode.custom),
+          title: l10n.customWeeksLabel,
+          selected: tempMode == _WeekSelectionMode.custom,
+          highlightSelectedText: true,
+          onTap: () => onSelect(_WeekSelectionMode.custom),
         ),
       ],
     );
@@ -1402,30 +1371,25 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     required VoidCallback onSelectOdd,
     required VoidCallback onSelectEven,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return FTileGroup(
-      physics: const NeverScrollableScrollPhysics(),
+    return HyperosChoiceGroup(
       children: [
-        FTile(
-          title: Text(l10n.allWeeksFilter),
-          suffix: isAllWeeks
-              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
-              : null,
-          onPress: onSelectAll,
+        HyperosChoiceTile(
+          title: l10n.allWeeksFilter,
+          selected: isAllWeeks,
+          highlightSelectedText: true,
+          onTap: onSelectAll,
         ),
-        FTile(
-          title: Text(l10n.oddWeeksFilter),
-          suffix: isOddWeek
-              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
-              : null,
-          onPress: onSelectOdd,
+        HyperosChoiceTile(
+          title: l10n.oddWeeksFilter,
+          selected: isOddWeek,
+          highlightSelectedText: true,
+          onTap: onSelectOdd,
         ),
-        FTile(
-          title: Text(l10n.evenWeeksFilter),
-          suffix: isEvenWeek
-              ? Icon(Icons.check_rounded, color: colorScheme.primary, size: 20)
-              : null,
-          onPress: onSelectEven,
+        HyperosChoiceTile(
+          title: l10n.evenWeeksFilter,
+          selected: isEvenWeek,
+          highlightSelectedText: true,
+          onTap: onSelectEven,
         ),
       ],
     );
@@ -1467,15 +1431,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                 : (tempCustomWeeks.toList()..sort());
 
             return Dialog.fullscreen(
-              child: FScaffold(
-                header: FHeader.nested(
-                  prefixes: [
-                    FHeaderAction.back(
-                      onPress: () => Navigator.pop(context, false),
-                    ),
-                  ],
-                  title: Text(l10n.weekPickerTitle),
-                ),
+              child: HyperosSubpage(
+                onBack: () => Navigator.pop(context, false),
+                title: Text(l10n.weekPickerTitle),
                 childPad: false,
                 child: Material(
                   type: MaterialType.transparency,
@@ -1514,16 +1472,18 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                             const SizedBox(height: 12),
                             if (tempMode == _WeekSelectionMode.range) ...[
                               _buildResponsiveFieldPair(
-                                leading: FSelect<int>(
-                                  hint: l10n.startWeekLabel,
-                                  items: {
-                                    for (final week in availableWeeks)
-                                      l10n.weekLabel(week): week,
-                                  },
-                                  control: FSelectControl.lifted(
-                                    value: tempStartWeek,
-                                    onChange: (value) {
-                                      if (value == null) return;
+                                spacing: 8,
+                                leading: _buildCompactPickerField(
+                                  label: l10n.startWeekLabel,
+                                  value: l10n.weekLabel(tempStartWeek),
+                                  onPress: () => _pickFromSelectSheet(
+                                    title: l10n.startWeekLabel,
+                                    items: {
+                                      for (final week in availableWeeks)
+                                        l10n.weekLabel(week): week,
+                                    },
+                                    currentValue: tempStartWeek,
+                                    onSelected: (value) {
                                       setDialogState(() {
                                         tempStartWeek = value;
                                         if (tempEndWeek < tempStartWeek) {
@@ -1533,18 +1493,19 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                                     },
                                   ),
                                 ),
-                                trailing: FSelect<int>(
-                                  hint: l10n.endWeekLabel,
-                                  items: {
-                                    for (final week in availableWeeks.where(
-                                      (w) => w >= tempStartWeek,
-                                    ))
-                                      l10n.weekLabel(week): week,
-                                  },
-                                  control: FSelectControl.lifted(
-                                    value: tempEndWeek,
-                                    onChange: (value) {
-                                      if (value == null) return;
+                                trailing: _buildCompactPickerField(
+                                  label: l10n.endWeekLabel,
+                                  value: l10n.weekLabel(tempEndWeek),
+                                  onPress: () => _pickFromSelectSheet(
+                                    title: l10n.endWeekLabel,
+                                    items: {
+                                      for (final week in availableWeeks.where(
+                                        (w) => w >= tempStartWeek,
+                                      ))
+                                        l10n.weekLabel(week): week,
+                                    },
+                                    currentValue: tempEndWeek,
+                                    onSelected: (value) {
                                       setDialogState(() => tempEndWeek = value);
                                     },
                                   ),
@@ -1672,18 +1633,19 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
                         child: Row(
                           children: [
                             Expanded(
-                              child: FButton(
-                                variant: FButtonVariant.secondary,
-                                onPress: () => Navigator.pop(context, false),
-                                child: Text(l10n.cancelAction),
+                              child: HyperosButton(
+                                label: l10n.cancelAction,
+                                variant: HyperosButtonVariant.secondary,
+                                expand: true,
+                                onPressed: () => Navigator.pop(context, false),
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
-                              child: FButton(
-                                variant: FButtonVariant.primary,
-                                onPress: () => Navigator.pop(context, true),
-                                child: Text(l10n.confirmAction),
+                              child: HyperosButton(
+                                label: l10n.confirmAction,
+                                expand: true,
+                                onPressed: () => Navigator.pop(context, true),
                               ),
                             ),
                           ],

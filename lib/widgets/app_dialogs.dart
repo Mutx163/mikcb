@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 Future<bool?> showAppConfirmDialog(
   BuildContext context, {
@@ -8,27 +8,16 @@ Future<bool?> showAppConfirmDialog(
   required String message,
   String? cancelLabel,
   String? confirmLabel,
-  FButtonVariant confirmVariant = FButtonVariant.primary,
+  bool destructiveConfirm = false,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showFDialog<bool>(
+  return showHyperosConfirmDialog(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(title),
-      body: Text(message),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.pop(ctx, false),
-          child: Text(cancelLabel ?? l10n.cancelAction),
-        ),
-        FButton(
-          variant: confirmVariant,
-          onPress: () => Navigator.pop(ctx, true),
-          child: Text(confirmLabel ?? l10n.confirmImportAction),
-        ),
-      ],
-    ),
+    title: title,
+    message: message,
+    cancelLabel: cancelLabel ?? l10n.cancelAction,
+    confirmLabel: confirmLabel ?? l10n.confirmImportAction,
+    destructive: destructiveConfirm,
   );
 }
 
@@ -38,27 +27,25 @@ Future<bool?> showAppConfirmDialogWithBody(
   required Widget body,
   String? cancelLabel,
   String? confirmLabel,
-  FButtonVariant confirmVariant = FButtonVariant.primary,
+  bool destructiveConfirm = false,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showFDialog<bool>(
+  return showHyperosDialog<bool>(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(title),
-      body: body,
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.pop(ctx, false),
-          child: Text(cancelLabel ?? l10n.cancelAction),
-        ),
-        FButton(
-          variant: confirmVariant,
-          onPress: () => Navigator.pop(ctx, true),
-          child: Text(confirmLabel ?? l10n.confirmImportAction),
-        ),
-      ],
-    ),
+    title: title,
+    body: body,
+    actions: [
+      HyperosDialogAction(
+        label: cancelLabel ?? l10n.cancelAction,
+        onPressed: () => Navigator.pop(context, false),
+      ),
+      HyperosDialogAction(
+        label: confirmLabel ?? l10n.confirmImportAction,
+        isPrimary: !destructiveConfirm,
+        isDestructive: destructiveConfirm,
+        onPressed: () => Navigator.pop(context, true),
+      ),
+    ],
   );
 }
 
@@ -71,29 +58,25 @@ Future<bool?> showAppTripleActionDialog(
   required String secondaryLabel,
   required String primaryLabel,
 }) {
-  return showFDialog<bool>(
+  return showHyperosDialog<bool>(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(title),
-      body: Text(message),
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.pop(ctx),
-          child: Text(cancelLabel),
-        ),
-        FButton(
-          variant: FButtonVariant.secondary,
-          onPress: () => Navigator.pop(ctx, false),
-          child: Text(secondaryLabel),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () => Navigator.pop(ctx, true),
-          child: Text(primaryLabel),
-        ),
-      ],
-    ),
+    title: title,
+    message: message,
+    actions: [
+      HyperosDialogAction(
+        label: cancelLabel,
+        onPressed: () => Navigator.pop(context),
+      ),
+      HyperosDialogAction(
+        label: secondaryLabel,
+        onPressed: () => Navigator.pop(context, false),
+      ),
+      HyperosDialogAction(
+        label: primaryLabel,
+        isPrimary: true,
+        onPressed: () => Navigator.pop(context, true),
+      ),
+    ],
   );
 }
 
@@ -105,32 +88,31 @@ Future<String?> showAppTextInputDialog(
   String? confirmLabel,
   required String Function() readValue,
   bool Function(String value)? validate,
+  bool useRootNavigator = false,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showFDialog<String>(
+  return showHyperosDialog<String>(
     context: context,
-    builder: (ctx, style, animation) => FDialog(
-      title: Text(title),
-      body: body,
-      actions: [
-        FButton(
-          variant: FButtonVariant.ghost,
-          onPress: () => Navigator.pop(ctx),
-          child: Text(cancelLabel ?? l10n.cancelAction),
-        ),
-        FButton(
-          variant: FButtonVariant.primary,
-          onPress: () {
-            final value = readValue().trim();
-            if (validate != null && !validate(value)) {
-              return;
-            }
-            Navigator.pop(ctx, value);
-          },
-          child: Text(confirmLabel ?? l10n.saveAction),
-        ),
-      ],
-    ),
+    title: title,
+    body: body,
+    useRootNavigator: useRootNavigator,
+    actions: [
+      HyperosDialogAction(
+        label: cancelLabel ?? l10n.cancelAction,
+        onPressed: () => Navigator.pop(context),
+      ),
+      HyperosDialogAction(
+        label: confirmLabel ?? l10n.saveAction,
+        isPrimary: true,
+        onPressed: () {
+          final value = readValue().trim();
+          if (validate != null && !validate(value)) {
+            return;
+          }
+          Navigator.pop(context, value);
+        },
+      ),
+    ],
   );
 }
 
@@ -148,43 +130,41 @@ Future<int?> showAppSingleChoiceDialog(
     options.isEmpty ? 0 : options.length - 1,
   );
 
-  return showFDialog<int>(
+  return showDialog<int>(
     context: context,
-    builder: (ctx, style, animation) => StatefulBuilder(
-      builder: (context, setState) {
-        return FDialog(
-          title: Text(title),
-          body: FTileGroup(
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              for (var i = 0; i < options.length; i++)
-                FTile(
-                  title: Text(options[i]),
-                  suffix: selectedIndex == i
-                      ? Icon(
-                          Icons.check_rounded,
-                          color: Theme.of(context).colorScheme.primary,
-                          size: 20,
-                        )
-                      : null,
-                  onPress: () => setState(() => selectedIndex = i),
-                ),
+    barrierColor: Theme.of(context).brightness == Brightness.dark
+        ? HyperosMiuixDarkColors.windowDimming
+        : HyperosMiuixLightColors.windowDimming,
+    builder: (ctx) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return HyperosDialog(
+            title: title,
+            body: HyperosChoiceGroup(
+              children: [
+                for (var i = 0; i < options.length; i++)
+                  HyperosChoiceTile(
+                    title: options[i],
+                    selected: selectedIndex == i,
+                    highlightSelectedText: true,
+                    onTap: () => setState(() => selectedIndex = i),
+                  ),
+              ],
+            ),
+            actions: [
+              HyperosDialogAction(
+                label: cancelLabel ?? l10n.cancelAction,
+                onPressed: () => Navigator.pop(ctx),
+              ),
+              HyperosDialogAction(
+                label: confirmLabel ?? l10n.saveAction,
+                isPrimary: true,
+                onPressed: () => Navigator.pop(ctx, selectedIndex),
+              ),
             ],
-          ),
-          actions: [
-            FButton(
-              variant: FButtonVariant.ghost,
-              onPress: () => Navigator.pop(ctx),
-              child: Text(cancelLabel ?? l10n.cancelAction),
-            ),
-            FButton(
-              variant: FButtonVariant.primary,
-              onPress: () => Navigator.pop(ctx, selectedIndex),
-              child: Text(confirmLabel ?? l10n.saveAction),
-            ),
-          ],
-        );
-      },
-    ),
+          );
+        },
+      );
+    },
   );
 }

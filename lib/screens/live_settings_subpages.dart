@@ -13,7 +13,7 @@ import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
 import '../utils/hex_color.dart';
 import '../utils/app_toast.dart';
-import '../widgets/settings_section_widgets.dart';
+import '../ui/hyperos/hyperos.dart';
 
 const String _expandedIconDir = 'miui_expanded_icons';
 const String _labelLogoDir = 'miui_label_logos';
@@ -118,210 +118,155 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
       l10n,
       _draft.liveTimeCorrectionSeconds,
     );
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.liveReminderTimingTitle),
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            FTileGroup(
-              label: Text(l10n.liveReminderSwitchesTitle),
-              description: Text(l10n.liveReminderSwitchesSubtitle),
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SettingSwitchTile(
-                  title: Text(l10n.beforeClassReminderTitle),
-                  subtitle: Text(
-                    l10n.beforeClassReminderSubtitle(
-                      _draft.liveShowBeforeClassMinutes,
-                    ),
-                  ),
-                  value: _draft.liveEnableBeforeClass,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveEnableBeforeClass: value),
-                  ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.liveReminderTimingTitle),
+      child: HyperosListView(
+        children: [
+          HyperosSectionLabel(text: l10n.liveReminderSwitchesTitle),
+          HyperosSectionDescription(text: l10n.liveReminderSwitchesSubtitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.beforeClassReminderTitle,
+                subtitle: l10n.beforeClassReminderSubtitle(
+                  _draft.liveShowBeforeClassMinutes,
                 ),
-                SettingSwitchTile(
-                  title: Text(l10n.duringClassReminderTitle),
-                  subtitle: Text(l10n.duringClassReminderSubtitle),
-                  value:
-                      _draft.liveEnableDuringClass ||
-                      _draft.liveEnableBeforeEnd,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(
-                      liveEnableDuringClass: value,
-                      liveEnableBeforeEnd: value,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd) ...[
-              const SizedBox(height: 12),
-              SettingsSectionCard(
-                title: l10n.liveClassReminderLeadTitle,
-                subtitle: _buildLiveClassReminderLeadSummary(l10n, _draft),
-                child: FSelect<int>(
-                  hint: l10n.liveClassReminderLeadTitle,
-                  items: {
-                    l10n.liveClassReminderLeadOptionImmediate: 0,
-                    l10n.liveClassReminderLeadOptionMinutes(5): 5,
-                    l10n.liveClassReminderLeadOptionMinutes(10): 10,
-                    l10n.liveClassReminderLeadOptionMinutes(15): 15,
-                    l10n.liveClassReminderLeadOptionMinutes(20): 20,
-                    l10n.liveClassReminderLeadOptionMinutes(30): 30,
-                  },
-                  control: FSelectControl.lifted(
-                    value: _draft.liveClassReminderStartMinutes,
-                    onChange: (value) {
-                      if (value == null) return;
-                      _updateDraft(
-                        _draft.copyWith(liveClassReminderStartMinutes: value),
-                      );
-                    },
+                value: _draft.liveEnableBeforeClass,
+                onChanged: (value) =>
+                    _updateDraft(_draft.copyWith(liveEnableBeforeClass: value)),
+              ),
+              HyperosSwitchTile(
+                title: l10n.duringClassReminderTitle,
+                subtitle: l10n.duringClassReminderSubtitle,
+                value:
+                    _draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(
+                    liveEnableDuringClass: value,
+                    liveEnableBeforeEnd: value,
                   ),
                 ),
               ),
             ],
-            const SizedBox(height: 12),
-            FTileGroup(
-              label: Text(l10n.liveDisplayModeTitle),
-              description: Text(l10n.liveDisplayModeSubtitle),
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SettingSwitchTile(
-                  title: Text(l10n.duringClassStatusNotificationTitle),
-                  subtitle: Text(
-                    _draft.liveClassReminderStartMinutes == 0
-                        ? l10n.duringClassStatusNotificationImmediate
-                        : _draft.livePromoteDuringClass
-                        ? l10n.duringClassStatusNotificationBeforeEnd
-                        : l10n.duringClassStatusNotificationPersistent,
-                  ),
-                  value: _draft.liveShowDuringClassNotification,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(liveShowDuringClassNotification: value),
-                  ),
+          ),
+          if (_draft.liveEnableDuringClass || _draft.liveEnableBeforeEnd) ...[
+            const HyperosSectionGap(),
+            HyperosControlCard(
+              title: l10n.liveClassReminderLeadTitle,
+              subtitle: _buildLiveClassReminderLeadSummary(l10n, _draft),
+              child: HyperosSelectTile<int>(
+                label: l10n.liveClassReminderLeadTitle,
+                items: {
+                  l10n.liveClassReminderLeadOptionImmediate: 0,
+                  l10n.liveClassReminderLeadOptionMinutes(5): 5,
+                  l10n.liveClassReminderLeadOptionMinutes(10): 10,
+                  l10n.liveClassReminderLeadOptionMinutes(15): 15,
+                  l10n.liveClassReminderLeadOptionMinutes(20): 20,
+                  l10n.liveClassReminderLeadOptionMinutes(30): 30,
+                },
+                value: _draft.liveClassReminderStartMinutes,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveClassReminderStartMinutes: value),
                 ),
-                SettingSwitchTile(
-                  title: Text(l10n.enableIslandDisplayTitle),
-                  subtitle: Text(l10n.enableIslandDisplaySubtitle),
-                  value: _draft.livePromoteDuringClass,
-                  onChanged: (value) => _updateDraft(
-                    _draft.copyWith(livePromoteDuringClass: value),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            SettingsSectionCard(
-              title: l10n.liveTimeThresholdTitle,
-              subtitle: l10n.liveTimeThresholdSubtitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FSelect<int>(
-                    hint: l10n.beforeClassPopupLabel,
-                    items: {
-                      for (final value in _beforeClassMinutesOptions)
-                        l10n.beforeClassMinutesOption(value): value,
-                    },
-                    control: FSelectControl.lifted(
-                      value: _draft.liveShowBeforeClassMinutes,
-                      onChange: (value) {
-                        if (value == null) return;
-                        _updateDraft(
-                          _draft.copyWith(liveShowBeforeClassMinutes: value),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  FSelect<int>(
-                    hint: l10n.beforeEndSecondsLabel,
-                    items: {
-                      for (final value in _endSecondsOptions)
-                        l10n.beforeEndSecondsOption(value): value,
-                    },
-                    control: FSelectControl.lifted(
-                      value: _draft.liveEndSecondsCountdownThreshold,
-                      onChange: (value) {
-                        if (value == null) return;
-                        _updateDraft(
-                          _draft.copyWith(
-                            liveEndSecondsCountdownThreshold: value,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.timeCorrectionLabel(timeCorrectionText),
-                    style: context.theme.typography.body.sm,
-                  ),
-                  FSlider(
-                    tooltipControls: kSettingsSliderTooltipControls,
-                    control: FSliderControl.managedDiscrete(
-                      initial: FSliderValue(
-                        max:
-                            ((_draft.liveTimeCorrectionSeconds -
-                                        _timeCorrectionMin) /
-                                    (_timeCorrectionMax - _timeCorrectionMin))
-                                .clamp(0.0, 1.0),
-                      ),
-                      onChange: (sv) => _updateDraft(
-                        _draft.copyWith(
-                          liveTimeCorrectionSeconds:
-                              (_timeCorrectionMin +
-                                      sv.max *
-                                          (_timeCorrectionMax -
-                                              _timeCorrectionMin))
-                                  .round(),
-                        ),
-                        debounce: true,
-                      ),
-                    ),
-                    marks: [
-                      for (var i = 0; i <= 60; i++) FSliderMark(value: i / 60),
-                    ],
-                  ),
-                  Text(
-                    l10n.timeCorrectionHelp,
-                    style: context.theme.typography.body.xs2,
-                  ),
-                  const SizedBox(height: 12),
-                  FSelect<LiveDuringClassTimeDisplayMode>(
-                    hint: l10n.duringEndTimeDisplayLabel,
-                    items: {
-                      for (final value in LiveDuringClassTimeDisplayMode.values)
-                        value.label: value,
-                    },
-                    control: FSelectControl.lifted(
-                      value: _draft.liveDuringEndTimeDisplayMode,
-                      onChange: (value) {
-                        if (value == null) return;
-                        _updateDraft(
-                          _draft.copyWith(liveDuringEndTimeDisplayMode: value),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.duringEndTimeDisplayHelp,
-                    style: context.theme.typography.body.xs2,
-                  ),
-                ],
               ),
             ),
           ],
-        ),
+          const HyperosSectionGap(),
+          HyperosSectionLabel(text: l10n.liveDisplayModeTitle),
+          HyperosSectionDescription(text: l10n.liveDisplayModeSubtitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.duringClassStatusNotificationTitle,
+                subtitle: _draft.liveClassReminderStartMinutes == 0
+                    ? l10n.duringClassStatusNotificationImmediate
+                    : _draft.livePromoteDuringClass
+                    ? l10n.duringClassStatusNotificationBeforeEnd
+                    : l10n.duringClassStatusNotificationPersistent,
+                value: _draft.liveShowDuringClassNotification,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(liveShowDuringClassNotification: value),
+                ),
+              ),
+              HyperosSwitchTile(
+                title: l10n.enableIslandDisplayTitle,
+                subtitle: l10n.enableIslandDisplaySubtitle,
+                value: _draft.livePromoteDuringClass,
+                onChanged: (value) => _updateDraft(
+                  _draft.copyWith(livePromoteDuringClass: value),
+                ),
+              ),
+            ],
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            title: l10n.liveTimeThresholdTitle,
+            subtitle: l10n.liveTimeThresholdSubtitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                HyperosSelectTile<int>(
+                  label: l10n.beforeClassPopupLabel,
+                  items: {
+                    for (final value in _beforeClassMinutesOptions)
+                      l10n.beforeClassMinutesOption(value): value,
+                  },
+                  value: _draft.liveShowBeforeClassMinutes,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveShowBeforeClassMinutes: value),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                HyperosSelectTile<int>(
+                  label: l10n.beforeEndSecondsLabel,
+                  items: {
+                    for (final value in _endSecondsOptions)
+                      l10n.beforeEndSecondsOption(value): value,
+                  },
+                  value: _draft.liveEndSecondsCountdownThreshold,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveEndSecondsCountdownThreshold: value),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                HyperosSliderTile(
+                  title: l10n.timeCorrectionLabel(timeCorrectionText),
+                  value: _draft.liveTimeCorrectionSeconds.toDouble(),
+                  min: _timeCorrectionMin,
+                  max: _timeCorrectionMax,
+                  divisions: (_timeCorrectionMax - _timeCorrectionMin).round(),
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveTimeCorrectionSeconds: value.round()),
+                    debounce: true,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.timeCorrectionHelp,
+                  style: HyperosTypography.listDetail(context),
+                ),
+                const SizedBox(height: 12),
+                HyperosSelectTile<LiveDuringClassTimeDisplayMode>(
+                  label: l10n.duringEndTimeDisplayLabel,
+                  items: {
+                    for (final value in LiveDuringClassTimeDisplayMode.values)
+                      value.label: value,
+                  },
+                  value: _draft.liveDuringEndTimeDisplayMode,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveDuringEndTimeDisplayMode: value),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.duringEndTimeDisplayHelp,
+                  style: HyperosTypography.listDetail(context),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -407,47 +352,46 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final display = _display;
-    final sectionCards = [
-      FTileGroup(
-        label: Text(l10n.liveDisplayContentTitle),
-        description: Text(l10n.liveDisplayContentSubtitle),
-        physics: const NeverScrollableScrollPhysics(),
+    final sectionCards = <Widget>[
+      HyperosSectionLabel(text: l10n.liveDisplayContentTitle),
+      HyperosSectionDescription(text: l10n.liveDisplayContentSubtitle),
+      HyperosListGroup(
         children: [
-          SettingSwitchTile(
-            title: Text(l10n.showCourseNameTitle),
+          HyperosSwitchTile(
+            title: l10n.showCourseNameTitle,
             value: display.showCourseName,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showCourseName: value)),
           ),
-          SettingSwitchTile(
-            title: Text(l10n.preferShortNameTitle),
-            subtitle: Text(l10n.preferShortNameSubtitle),
+          HyperosSwitchTile(
+            title: l10n.preferShortNameTitle,
+            subtitle: l10n.preferShortNameSubtitle,
             value: display.useShortName,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(useShortName: value)),
           ),
-          SettingSwitchTile(
-            title: Text(l10n.showLocationTitle),
+          HyperosSwitchTile(
+            title: l10n.showLocationTitle,
             value: display.showLocation,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showLocation: value)),
           ),
-          SettingSwitchTile(
-            title: Text(l10n.showCountdownTitle),
+          HyperosSwitchTile(
+            title: l10n.showCountdownTitle,
             value: display.showCountdown,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showCountdown: value)),
           ),
-          SettingSwitchTile(
-            title: Text(l10n.showStageTextTitle),
-            subtitle: Text(l10n.showStageTextSubtitle),
+          HyperosSwitchTile(
+            title: l10n.showStageTextTitle,
+            subtitle: l10n.showStageTextSubtitle,
             value: display.showStageText,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(showStageText: value)),
           ),
-          SettingSwitchTile(
-            title: Text(l10n.hidePrefixTextTitle),
-            subtitle: Text(l10n.hidePrefixTextSubtitle),
+          HyperosSwitchTile(
+            title: l10n.hidePrefixTextTitle,
+            subtitle: l10n.hidePrefixTextSubtitle,
             value: display.hidePrefixText,
             onChanged: (value) =>
                 _updateDisplay(display.copyWith(hidePrefixText: value)),
@@ -455,66 +399,56 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         ],
       ),
       if (display.showCountdown) ...[
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FSelect<LiveCountdownTextStyle>(
-                hint: l10n.countdownFormatLabel,
+              HyperosSelectTile<LiveCountdownTextStyle>(
+                label: l10n.countdownFormatLabel,
                 items: {
                   for (final value in LiveCountdownTextStyle.values)
                     value.label: value,
                 },
-                control: FSelectControl.lifted(
-                  value: display.countdownTextStyle,
-                  onChange: (value) {
-                    if (value == null) return;
-                    _updateDisplay(display.copyWith(countdownTextStyle: value));
-                  },
-                ),
+                value: display.countdownTextStyle,
+                onChanged: (value) =>
+                    _updateDisplay(display.copyWith(countdownTextStyle: value)),
               ),
               const SizedBox(height: 4),
               Text(
                 l10n.countdownFormatHelp,
-                style: context.theme.typography.body.xs2,
+                style: HyperosTypography.listDetail(context),
               ),
             ],
           ),
         ),
       ],
       if (!widget.forDuringEnd) ...[
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           title: l10n.beforeClassQuickActionTitle,
           subtitle: l10n.beforeClassQuickActionSubtitle,
-          child: FSelect<LiveBeforeClassQuickAction>(
-            hint: l10n.beforeClassQuickActionTitle,
+          child: HyperosSelectTile<LiveBeforeClassQuickAction>(
+            label: l10n.beforeClassQuickActionTitle,
             items: {
               for (final value in LiveBeforeClassQuickAction.values)
                 value.label: value,
             },
-            control: FSelectControl.lifted(
-              value: _draft.liveBeforeClassQuickAction,
-              onChange: (value) {
-                if (value == null) return;
-                _updateDraft(
-                  _draft.copyWith(liveBeforeClassQuickAction: value),
-                );
-              },
+            value: _draft.liveBeforeClassQuickAction,
+            onChanged: (value) => _updateDraft(
+              _draft.copyWith(liveBeforeClassQuickAction: value),
             ),
           ),
         ),
       ],
-      const SizedBox(height: 12),
-      FTileGroup(
-        label: Text(l10n.liveIslandVisualTitle),
-        description: Text(l10n.liveIslandVisualSubtitle),
-        physics: const NeverScrollableScrollPhysics(),
+      const HyperosSectionGap(),
+      HyperosSectionLabel(text: l10n.liveIslandVisualTitle),
+      HyperosSectionDescription(text: l10n.liveIslandVisualSubtitle),
+      HyperosListGroup(
         children: [
-          SettingSwitchTile(
-            title: Text(l10n.liveMiuiLabelImageTitle),
-            subtitle: Text(l10n.liveMiuiLabelImageSubtitle),
+          HyperosSwitchTile(
+            title: l10n.liveMiuiLabelImageTitle,
+            subtitle: l10n.liveMiuiLabelImageSubtitle,
             value: display.enableMiuiIslandLabelImage,
             onChanged: (value) => _updateDisplay(
               display.copyWith(enableMiuiIslandLabelImage: value),
@@ -523,42 +457,32 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         ],
       ),
       if (display.enableMiuiIslandLabelImage) ...[
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              FSelect<MiuiIslandLabelContent>(
-                hint: l10n.liveMiuiLabelContentLabel,
+              HyperosSelectTile<MiuiIslandLabelContent>(
+                label: l10n.liveMiuiLabelContentLabel,
                 items: {
                   for (final value in MiuiIslandLabelContent.values)
                     value.label: value,
                 },
-                control: FSelectControl.lifted(
-                  value: display.miuiIslandLabelContent,
-                  onChange: (value) {
-                    if (value == null) return;
-                    _updateDisplay(
-                      display.copyWith(miuiIslandLabelContent: value),
-                    );
-                  },
+                value: display.miuiIslandLabelContent,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelContent: value),
                 ),
               ),
               const SizedBox(height: 12),
-              FSelect<MiuiIslandLabelStyle>(
-                hint: l10n.liveMiuiLabelStyleLabel,
+              HyperosSelectTile<MiuiIslandLabelStyle>(
+                label: l10n.liveMiuiLabelStyleLabel,
                 items: {
                   for (final value in MiuiIslandLabelStyle.values)
                     value.label: value,
                 },
-                control: FSelectControl.lifted(
-                  value: display.miuiIslandLabelStyle,
-                  onChange: (value) {
-                    if (value == null) return;
-                    _updateDisplay(
-                      display.copyWith(miuiIslandLabelStyle: value),
-                    );
-                  },
+                value: display.miuiIslandLabelStyle,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelStyle: value),
                 ),
               ),
               if (display.miuiIslandLabelStyle ==
@@ -566,35 +490,30 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 const SizedBox(height: 12),
                 Text(
                   l10n.liveMiuiLabelLogoTitle,
-                  style: context.theme.typography.body.sm.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: HyperosTypography.listTitle(context),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   l10n.liveMiuiLabelLogoSubtitle,
-                  style: context.theme.typography.body.xs2,
+                  style: HyperosTypography.listDetail(context),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
                     Expanded(
-                      child: FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: () => _pickLabelLogoImage(display),
-                        prefix: const Icon(Icons.image_outlined),
-                        child: Text(
-                          display.miuiIslandLabelLogoPath == null
-                              ? l10n.selectImageAction
-                              : l10n.replaceImageAction,
-                        ),
+                      child: HyperosButton(
+                        label: display.miuiIslandLabelLogoPath == null
+                            ? l10n.selectImageAction
+                            : l10n.replaceImageAction,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () => _pickLabelLogoImage(display),
                       ),
                     ),
                     if (display.miuiIslandLabelLogoPath != null) ...[
                       const SizedBox(width: 12),
-                      FButton.icon(
-                        variant: FButtonVariant.outline,
-                        onPress: () async {
+                      IconButton(
+                        onPressed: () async {
                           await _deleteManagedImageArtifacts(
                             directoryName: _labelLogoDir,
                             filePrefix: widget.forDuringEnd
@@ -608,7 +527,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                             clearLabelLogoPath: true,
                           );
                         },
-                        child: const Icon(Icons.delete_outline),
+                        icon: const Icon(Icons.delete_outline),
                       ),
                     ],
                   ],
@@ -620,147 +539,90 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                     imageCornerRadius: display.miuiIslandLabelLogoCornerRadius,
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    l10n.liveMiuiLabelLogoCornerRadiusLabel(
+                  HyperosSliderTile(
+                    title: l10n.liveMiuiLabelLogoCornerRadiusLabel(
                       display.miuiIslandLabelLogoCornerRadius.toStringAsFixed(
                         0,
                       ),
                     ),
-                    style: context.theme.typography.body.sm,
-                  ),
-                  FSlider(
-                    tooltipControls: kSettingsSliderTooltipControls,
-                    control: FSliderControl.managedDiscrete(
-                      initial: FSliderValue(
-                        max:
-                            (display.miuiIslandLabelLogoCornerRadius.clamp(
-                                      0.0,
-                                      12.0,
-                                    ) /
-                                    12)
-                                .clamp(0.0, 1.0),
-                      ),
-                      onChange: (sv) => _updateDisplay(
-                        display.copyWith(
-                          miuiIslandLabelLogoCornerRadius: sv.max * 12,
-                        ),
-                        debounce: true,
-                      ),
+                    value: display.miuiIslandLabelLogoCornerRadius.clamp(
+                      0.0,
+                      12.0,
                     ),
-                    marks: [
-                      for (var i = 0; i <= 12; i++) FSliderMark(value: i / 12),
-                    ],
+                    min: 0,
+                    max: 12,
+                    divisions: 12,
+                    onChanged: (value) => _updateDisplay(
+                      display.copyWith(miuiIslandLabelLogoCornerRadius: value),
+                      debounce: true,
+                    ),
                   ),
                 ],
                 const SizedBox(height: 12),
               ],
-              const SizedBox(height: 12),
-              Text(
-                l10n.liveMiuiLabelFontSizeLabel(
+              HyperosSliderTile(
+                title: l10n.liveMiuiLabelFontSizeLabel(
                   display.miuiIslandLabelFontSize.toStringAsFixed(0),
                 ),
-                style: context.theme.typography.body.sm,
-              ),
-              FSlider(
-                tooltipControls: kSettingsSliderTooltipControls,
-                control: FSliderControl.managedDiscrete(
-                  initial: FSliderValue(
-                    max: ((display.miuiIslandLabelFontSize - 1) / 31).clamp(
-                      0.0,
-                      1.0,
-                    ),
-                  ),
-                  onChange: (sv) => _updateDisplay(
-                    display.copyWith(miuiIslandLabelFontSize: 1 + sv.max * 31),
-                    debounce: true,
-                  ),
+                value: display.miuiIslandLabelFontSize,
+                min: 1,
+                max: 32,
+                divisions: 31,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelFontSize: value),
+                  debounce: true,
                 ),
-                marks: [
-                  for (var i = 0; i <= 31; i++) FSliderMark(value: i / 31),
-                ],
               ),
               const SizedBox(height: 12),
-              Text(
-                l10n.liveMiuiLabelOffsetXLabel(
+              HyperosSliderTile(
+                title: l10n.liveMiuiLabelOffsetXLabel(
                   display.miuiIslandLabelOffsetX.toStringAsFixed(1),
                 ),
-                style: context.theme.typography.body.sm,
-              ),
-              FSlider(
-                tooltipControls: kSettingsSliderTooltipControls,
-                control: FSliderControl.managedDiscrete(
-                  initial: FSliderValue(
-                    max:
-                        ((display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0) + 2) /
-                                4)
-                            .clamp(0.0, 1.0),
-                  ),
-                  onChange: (sv) => _updateDisplay(
-                    display.copyWith(miuiIslandLabelOffsetX: -2 + sv.max * 4),
-                    debounce: true,
-                  ),
+                value: display.miuiIslandLabelOffsetX.clamp(-2.0, 2.0),
+                min: -2,
+                max: 2,
+                divisions: 40,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelOffsetX: value),
+                  debounce: true,
                 ),
-                marks: [
-                  for (var i = 0; i <= 40; i++) FSliderMark(value: i / 40),
-                ],
               ),
               const SizedBox(height: 12),
-              Text(
-                l10n.liveMiuiLabelOffsetYLabel(
+              HyperosSliderTile(
+                title: l10n.liveMiuiLabelOffsetYLabel(
                   display.miuiIslandLabelOffsetY.toStringAsFixed(1),
                 ),
-                style: context.theme.typography.body.sm,
-              ),
-              FSlider(
-                tooltipControls: kSettingsSliderTooltipControls,
-                control: FSliderControl.managedDiscrete(
-                  initial: FSliderValue(
-                    max:
-                        ((display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0) + 2) /
-                                4)
-                            .clamp(0.0, 1.0),
-                  ),
-                  onChange: (sv) => _updateDisplay(
-                    display.copyWith(miuiIslandLabelOffsetY: -2 + sv.max * 4),
-                    debounce: true,
-                  ),
+                value: display.miuiIslandLabelOffsetY.clamp(-2.0, 2.0),
+                min: -2,
+                max: 2,
+                divisions: 40,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelOffsetY: value),
+                  debounce: true,
                 ),
-                marks: [
-                  for (var i = 0; i <= 40; i++) FSliderMark(value: i / 40),
-                ],
               ),
               const SizedBox(height: 12),
-              FSelect<MiuiIslandLabelFontWeight>(
-                hint: l10n.liveMiuiLabelFontWeightLabel,
+              HyperosSelectTile<MiuiIslandLabelFontWeight>(
+                label: l10n.liveMiuiLabelFontWeightLabel,
                 items: {
                   for (final value in MiuiIslandLabelFontWeight.values)
                     value.label: value,
                 },
-                control: FSelectControl.lifted(
-                  value: display.miuiIslandLabelFontWeight,
-                  onChange: (value) {
-                    if (value == null) return;
-                    _updateDisplay(
-                      display.copyWith(miuiIslandLabelFontWeight: value),
-                    );
-                  },
+                value: display.miuiIslandLabelFontWeight,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelFontWeight: value),
                 ),
               ),
               const SizedBox(height: 12),
-              FSelect<MiuiIslandLabelRenderQuality>(
-                hint: l10n.liveMiuiLabelRenderQualityLabel,
+              HyperosSelectTile<MiuiIslandLabelRenderQuality>(
+                label: l10n.liveMiuiLabelRenderQualityLabel,
                 items: {
                   for (final value in MiuiIslandLabelRenderQuality.values)
                     value.label: value,
                 },
-                control: FSelectControl.lifted(
-                  value: display.miuiIslandLabelRenderQuality,
-                  onChange: (value) {
-                    if (value == null) return;
-                    _updateDisplay(
-                      display.copyWith(miuiIslandLabelRenderQuality: value),
-                    );
-                  },
+                value: display.miuiIslandLabelRenderQuality,
+                onChanged: (value) => _updateDisplay(
+                  display.copyWith(miuiIslandLabelRenderQuality: value),
                 ),
               ),
               const SizedBox(height: 12),
@@ -783,42 +645,39 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
           ),
         ),
       ],
-      const SizedBox(height: 12),
-      SettingsSectionCard(
+      const HyperosSectionGap(),
+      HyperosControlCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            FSelect<MiuiIslandExpandedIconMode>(
-              hint: l10n.liveMiuiExpandedIconLabel,
+            HyperosSelectTile<MiuiIslandExpandedIconMode>(
+              label: l10n.liveMiuiExpandedIconLabel,
               items: {
                 for (final value in MiuiIslandExpandedIconMode.values)
                   value.label: value,
               },
-              control: FSelectControl.lifted(
-                value: display.miuiIslandExpandedIconMode,
-                onChange: (value) {
-                  if (value == null) return;
-                  () async {
-                    if (value != MiuiIslandExpandedIconMode.customImage) {
-                      await _deleteManagedImageArtifacts(
-                        directoryName: _expandedIconDir,
-                        filePrefix: widget.forDuringEnd
-                            ? 'during_end_expanded_icon'
-                            : 'before_class_expanded_icon',
-                      );
-                    }
-                    _updateDisplay(
-                      display.copyWith(
-                        miuiIslandExpandedIconMode: value,
-                        clearMiuiIslandExpandedIconPath:
-                            value != MiuiIslandExpandedIconMode.customImage,
-                      ),
-                      clearExpandedIconPath:
-                          value != MiuiIslandExpandedIconMode.customImage,
+              value: display.miuiIslandExpandedIconMode,
+              onChanged: (value) {
+                () async {
+                  if (value != MiuiIslandExpandedIconMode.customImage) {
+                    await _deleteManagedImageArtifacts(
+                      directoryName: _expandedIconDir,
+                      filePrefix: widget.forDuringEnd
+                          ? 'during_end_expanded_icon'
+                          : 'before_class_expanded_icon',
                     );
-                  }();
-                },
-              ),
+                  }
+                  _updateDisplay(
+                    display.copyWith(
+                      miuiIslandExpandedIconMode: value,
+                      clearMiuiIslandExpandedIconPath:
+                          value != MiuiIslandExpandedIconMode.customImage,
+                    ),
+                    clearExpandedIconPath:
+                        value != MiuiIslandExpandedIconMode.customImage,
+                  );
+                }();
+              },
             ),
             if (display.miuiIslandExpandedIconMode ==
                 MiuiIslandExpandedIconMode.customImage) ...[
@@ -826,22 +685,19 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: FButton(
-                      variant: FButtonVariant.secondary,
-                      onPress: () => _pickExpandedIconImage(display),
-                      prefix: const Icon(Icons.image_outlined),
-                      child: Text(
-                        display.miuiIslandExpandedIconPath == null
-                            ? l10n.selectImageAction
-                            : l10n.replaceImageAction,
-                      ),
+                    child: HyperosButton(
+                      label: display.miuiIslandExpandedIconPath == null
+                          ? l10n.selectImageAction
+                          : l10n.replaceImageAction,
+                      variant: HyperosButtonVariant.secondary,
+                      expand: true,
+                      onPressed: () => _pickExpandedIconImage(display),
                     ),
                   ),
                   if (display.miuiIslandExpandedIconPath != null) ...[
                     const SizedBox(width: 12),
-                    FButton.icon(
-                      variant: FButtonVariant.outline,
-                      onPress: () async {
+                    IconButton(
+                      onPressed: () async {
                         await _deleteManagedImageArtifacts(
                           directoryName: _expandedIconDir,
                           filePrefix: widget.forDuringEnd
@@ -855,7 +711,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                           clearExpandedIconPath: true,
                         );
                       },
-                      child: const Icon(Icons.delete_outline),
+                      icon: const Icon(Icons.delete_outline),
                     ),
                   ],
                 ],
@@ -869,44 +725,36 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
         ),
       ),
     ];
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(widget.title),
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (widget.forDuringEnd) ...[
-              FTileGroup(
-                label: Text(l10n.liveDisplayConfigModeTitle),
-                description: Text(l10n.liveDisplayConfigModeSubtitle),
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  SettingSwitchTile(
-                    title: Text(l10n.followBeforeClassDisplayTitle),
-                    value: _draft.liveDuringEndFollowBeforeClass,
-                    onChanged: (value) => _updateDraft(
-                      _draft.copyWith(liveDuringEndFollowBeforeClass: value),
-                    ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(widget.title),
+      child: HyperosListView(
+        children: [
+          if (widget.forDuringEnd) ...[
+            HyperosSectionLabel(text: l10n.liveDisplayConfigModeTitle),
+            HyperosSectionDescription(text: l10n.liveDisplayConfigModeSubtitle),
+            HyperosListGroup(
+              children: [
+                HyperosSwitchTile(
+                  title: l10n.followBeforeClassDisplayTitle,
+                  value: _draft.liveDuringEndFollowBeforeClass,
+                  onChanged: (value) => _updateDraft(
+                    _draft.copyWith(liveDuringEndFollowBeforeClass: value),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            IgnorePointer(
-              ignoring: _followBeforeClass,
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: _followBeforeClass ? 0.5 : 1,
-                child: Column(children: sectionCards),
-              ),
+                ),
+              ],
             ),
+            const HyperosSectionGap(),
           ],
-        ),
+          IgnorePointer(
+            ignoring: _followBeforeClass,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 180),
+              opacity: _followBeforeClass ? 0.5 : 1,
+              child: Column(children: sectionCards),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1097,64 +945,38 @@ class _LiveKeepAliveSettingsScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.liveKeepAliveTitle),
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            FTileGroup(
-              label: Text(l10n.liveKeepAliveOptionsTitle),
-              description: Text(l10n.liveKeepAliveOptionsSubtitle),
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                SettingSwitchTile(
-                  title: Text(l10n.hideFromRecentsTitle),
-                  subtitle: Text(l10n.hideFromRecentsSubtitle),
-                  value: _draft.liveHideFromRecents,
-                  onChanged: (value) async {
-                    final provider = context.read<TimetableProvider>();
-                    final message = await provider.updateTimetableSettings(
-                      _draft.copyWith(liveHideFromRecents: value),
-                    );
-                    if (!context.mounted) return;
-                    if (message != null) {
-                      showAppToast(context, message: message);
-                    }
-                    setState(() => _draft = provider.settings);
-                  },
-                ),
-                FTile(
-                  prefix: Icon(
-                    _enabled
-                        ? Icons.check_circle_rounded
-                        : Icons.accessibility_new_rounded,
-                    color: _enabled
-                        ? context.theme.colors.primary
-                        : context.theme.colors.mutedForeground,
-                  ),
-                  title: Text(l10n.keepAliveServiceTitle),
-                  subtitle: Text(
-                    _enabled
-                        ? l10n.keepAliveServiceEnabledSubtitle
-                        : l10n.keepAliveServiceDisabledSubtitle,
-                  ),
-                  suffix: FButton(
-                    variant: FButtonVariant.secondary,
-                    onPress: _openSettings,
-                    child: Text(l10n.goEnableAction),
-                  ),
-                  onPress: _openSettings,
-                ),
-              ],
-            ),
-          ],
-        ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.liveKeepAliveTitle),
+      child: HyperosListView(
+        children: [
+          HyperosSectionLabel(text: l10n.liveKeepAliveOptionsTitle),
+          HyperosSectionDescription(text: l10n.liveKeepAliveOptionsSubtitle),
+          HyperosListGroup(
+            children: [
+              HyperosSwitchTile(
+                title: l10n.hideFromRecentsTitle,
+                subtitle: l10n.hideFromRecentsSubtitle,
+                value: _draft.liveHideFromRecents,
+                onChanged: (value) async {
+                  final provider = context.read<TimetableProvider>();
+                  final message = await provider.updateTimetableSettings(
+                    _draft.copyWith(liveHideFromRecents: value),
+                  );
+                  if (!context.mounted) return;
+                  if (message != null) {
+                    showAppToast(context, message: message);
+                  }
+                  setState(() => _draft = provider.settings);
+                },
+              ),
+              _LiveKeepAliveServiceTile(
+                enabled: _enabled,
+                onOpenSettings: _openSettings,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -1179,6 +1001,79 @@ class _LiveKeepAliveSettingsScreenState
     setState(() {
       _enabled = enabled;
     });
+  }
+}
+
+class _LiveKeepAliveServiceTile extends StatelessWidget {
+  const _LiveKeepAliveServiceTile({
+    required this.enabled,
+    required this.onOpenSettings,
+  });
+
+  final bool enabled;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+    final iconAccent = enabled
+        ? HyperosIconColors.green
+        : HyperosIconColors.orange;
+
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: HyperosTokens.listRowMinHeight,
+      ),
+      child: Padding(
+        padding: HyperosTokens.rowPaddingUniform,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            HyperosIconBadge(
+              icon: enabled
+                  ? Icons.check_circle_rounded
+                  : Icons.accessibility_new_rounded,
+              accent: iconAccent,
+            ),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    l10n.keepAliveServiceTitle,
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    enabled
+                        ? l10n.keepAliveServiceEnabledSubtitle
+                        : l10n.keepAliveServiceDisabledSubtitle,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            HyperosButton(
+              label: l10n.goEnableAction,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: onOpenSettings,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return HyperosPressableRow(
+      onTap: onOpenSettings,
+      backgroundColor: cardColor,
+      highlightColor: highlightColor,
+      child: row,
+    );
   }
 }
 

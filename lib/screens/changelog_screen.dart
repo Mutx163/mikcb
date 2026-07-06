@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
 
 class ChangelogScreen extends StatefulWidget {
@@ -134,16 +135,14 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: const Text('更新日志'),
-      ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: const Text('更新日志'),
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
         child: _loading
-            ? const Center(child: FProgress())
+            ? const Center(child: HyperosCircularProgress())
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -186,7 +185,8 @@ class _ChangelogCardState extends State<_ChangelogCard> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: FCard.raw(
+      child: HyperosCard(
+        padding: EdgeInsets.zero,
         child: Material(
           type: MaterialType.transparency,
           child: InkWell(

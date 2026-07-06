@@ -835,6 +835,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get welcomeSubtitle => '바로 시작하거나 수업을 가져오거나 백업에서 복원할 수 있습니다.';
 
   @override
+  String get thirdPartyDisclaimer =>
+      '声明：본 앱은 제3자 개발자가 독립적으로 개발하였으며, 학습 및 연구 목적으로만 사용됩니다. Xiaomi(小米) 공식 소프트웨어가 아니며 Xiaomi Technology Co., Ltd.(小米科技有限責任公司)와 어떠한 종속, 협력 또는 승인 관계도 없습니다. 콘텐츠 침해가 있는 경우 권리자께서 작성자에게 연락해 주시면 즉시 관련 콘텐츠를下架 및 삭제하겠습니다.';
+
+  @override
   String get startUsingTitle => '시작하기';
 
   @override

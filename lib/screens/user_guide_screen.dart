@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
@@ -8,7 +9,6 @@ import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
 import '../services/miui_live_activities_service.dart';
-import '../widgets/settings_section_widgets.dart';
 import 'course_overview_screen.dart';
 import 'timetable_settings_screen.dart';
 
@@ -198,46 +198,41 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
     return PopScope(
       canPop: !widget.requirePrivacyConsent,
-      child: FScaffold(
-        header: FHeader.nested(
-          prefixes: widget.requirePrivacyConsent
-              ? const []
-              : [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-          title: Text(
-            widget.requirePrivacyConsent
-                ? l10n.firstUseGuideTitle
-                : l10n.guideAndPermissionsTitle,
+      child: HyperosSubpage(
+        onBack: widget.requirePrivacyConsent
+            ? null
+            : () => Navigator.pop(context),
+        prefixes: widget.requirePrivacyConsent ? const [] : null,
+        suffixes: [
+          FHeaderAction(
+            icon: const Icon(Icons.refresh),
+            semanticsLabel: l10n.refreshStatusTooltip,
+            onPress: () => _refreshStatus(),
           ),
-          suffixes: [
-            FHeaderAction(
-              icon: const Icon(Icons.refresh),
-              semanticsLabel: l10n.refreshStatusTooltip,
-              onPress: () => _refreshStatus(),
-            ),
-          ],
+        ],
+        title: Text(
+          widget.requirePrivacyConsent
+              ? l10n.firstUseGuideTitle
+              : l10n.guideAndPermissionsTitle,
         ),
-        childPad: false,
-        child: Material(
-          type: MaterialType.transparency,
-          child: Column(
-            children: [
-              _buildProgressBar(l10n),
-              Expanded(
-                child: PageView(
-                  controller: _pageController,
-                  physics: const ClampingScrollPhysics(),
-                  onPageChanged: _onPageChanged,
-                  children: [
-                    _buildWelcomePage(l10n),
-                    _buildPrivacyPage(l10n),
-                    _buildPermissionsPage(l10n),
-                    _buildTipsPage(l10n),
-                  ],
-                ),
+        child: Column(
+          children: [
+            _buildProgressBar(l10n),
+            Expanded(
+              child: PageView(
+                controller: _pageController,
+                physics: const ClampingScrollPhysics(),
+                onPageChanged: _onPageChanged,
+                children: [
+                  _buildWelcomePage(l10n),
+                  _buildPrivacyPage(l10n),
+                  _buildPermissionsPage(l10n),
+                  _buildTipsPage(l10n),
+                ],
               ),
-              _buildBottomBar(l10n),
-            ],
-          ),
+            ),
+            _buildBottomBar(l10n),
+          ],
         ),
       ),
     );
@@ -274,7 +269,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ],
           ),
           const SizedBox(height: 8),
-          FDeterminateProgress(value: (_currentPage + 1) / _totalPages),
+          HyperosLinearProgress(value: (_currentPage + 1) / _totalPages),
         ],
       ),
     );
@@ -291,20 +286,17 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     final provider = context.read<TimetableProvider?>();
     if (provider == null) return const SizedBox.shrink();
 
-    return SettingsSectionCard(
+    return HyperosControlCard(
       title: l10n.languageSectionTitle,
       subtitle: l10n.languageSectionSubtitle,
-      child: FSelect<String>(
-        hint: l10n.languageModeLabel,
+      child: HyperosSelectTile<String>(
+        label: l10n.languageModeLabel,
         items: buildLocaleMenuMap(context),
-        control: FSelectControl.lifted(
-          value: normalizeLocaleTagForDropdown(provider.settings.appLocaleTag),
-          onChange: (value) {
-            if (value == null) return;
-            final next = provider.settings.copyWith(appLocaleTag: value);
-            provider.updateTimetableSettings(next);
-          },
-        ),
+        value: normalizeLocaleTagForDropdown(provider.settings.appLocaleTag),
+        onChanged: (value) {
+          final next = provider.settings.copyWith(appLocaleTag: value);
+          provider.updateTimetableSettings(next);
+        },
       ),
     );
   }
@@ -316,56 +308,55 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        FCard.raw(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.welcomeAppName,
-                  style: typo.lg.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  l10n.welcomeSubtitle,
-                  style: typo.sm.copyWith(color: colors.mutedForeground),
-                ),
-              ],
-            ),
+        HyperosCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.welcomeAppName,
+                style: typo.lg.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                l10n.welcomeSubtitle,
+                style: typo.sm.copyWith(color: colors.mutedForeground),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const HyperosSectionGap(),
         _buildLanguageSelector(l10n),
-        const SizedBox(height: 12),
-        FTileGroup(
-          label: Text(l10n.welcomeTitle),
-          physics: const NeverScrollableScrollPhysics(),
+        const HyperosSectionGap(),
+        HyperosSectionLabel(text: l10n.welcomeTitle),
+        HyperosListGroup(
           children: [
-            FTile(
-              prefix: _GuideIconBadge(icon: Icons.rocket_launch_rounded),
-              title: Text(l10n.startUsingTitle),
-              subtitle: Text(l10n.startUsingSubtitle),
-              suffix: const Icon(Icons.chevron_right_rounded),
-              onPress: _goNext,
+            _GuideActionTile(
+              icon: Icons.rocket_launch_rounded,
+              title: l10n.startUsingTitle,
+              subtitle: l10n.startUsingSubtitle,
+              onTap: _goNext,
             ),
             if (widget.onImportCourses != null)
-              FTile(
-                prefix: _GuideIconBadge(icon: Icons.file_upload_outlined),
-                title: Text(l10n.importTimetableTitle),
-                subtitle: Text(l10n.importTimetableSubtitle),
-                suffix: const Icon(Icons.chevron_right_rounded),
-                onPress: () => _runWelcomeAction(widget.onImportCourses!),
+              _GuideActionTile(
+                icon: Icons.file_upload_outlined,
+                title: l10n.importTimetableTitle,
+                subtitle: l10n.importTimetableSubtitle,
+                onTap: () => _runWelcomeAction(widget.onImportCourses!),
               ),
             if (widget.onRestoreBackup != null)
-              FTile(
-                prefix: _GuideIconBadge(icon: Icons.restore_page_rounded),
-                title: Text(l10n.restoreBackupTitle),
-                subtitle: Text(l10n.restoreBackupSubtitle),
-                suffix: const Icon(Icons.chevron_right_rounded),
-                onPress: () => _runWelcomeAction(widget.onRestoreBackup!),
+              _GuideActionTile(
+                icon: Icons.restore_page_rounded,
+                title: l10n.restoreBackupTitle,
+                subtitle: l10n.restoreBackupSubtitle,
+                onTap: () => _runWelcomeAction(widget.onRestoreBackup!),
               ),
           ],
+        ),
+        const HyperosSectionGap(),
+        Text(
+          l10n.thirdPartyDisclaimer,
+          style: typo.xs2.copyWith(color: colors.mutedForeground),
         ),
       ],
     );
@@ -387,23 +378,31 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        FTileGroup(
-          physics: const NeverScrollableScrollPhysics(),
+        HyperosListGroup(
           children: [
-            FTile(
-              prefix: _GuideIconBadge(icon: Icons.school_rounded, filled: true),
-              title: Text(
-                widget.requirePrivacyConsent
-                    ? l10n.guidePrivacyReadBeforeUse
-                    : l10n.guidePrivacyViewOnly,
+            Padding(
+              padding: HyperosTokens.rowPaddingUniform,
+              child: Row(
+                children: [
+                  _GuideIconBadge(icon: Icons.school_rounded, filled: true),
+                  const SizedBox(width: HyperosTokens.rowContentGap),
+                  Expanded(
+                    child: Text(
+                      widget.requirePrivacyConsent
+                          ? l10n.guidePrivacyReadBeforeUse
+                          : l10n.guidePrivacyViewOnly,
+                      style: HyperosTypography.listTitle(context),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const HyperosSectionGap(),
         _buildLanguageSelector(l10n),
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           title: l10n.guidePrivacySectionTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,8 +417,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           title: l10n.guideRiskTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,8 +431,8 @@ class _UserGuideScreenState extends State<UserGuideScreen>
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        SettingsSectionCard(
+        const HyperosSectionGap(),
+        HyperosControlCard(
           subtitle: helperText,
           child: Text(
             l10n.guideUmengPrivacyLink,
@@ -443,13 +442,11 @@ class _UserGuideScreenState extends State<UserGuideScreen>
           ),
         ),
         if (widget.requirePrivacyConsent) ...[
-          const SizedBox(height: 12),
-          FCheckbox(
-            leadingLabel: true,
-            label: Text(l10n.guidePrivacyConsentLabel),
-            semanticsLabel: l10n.guidePrivacyConsentLabel,
+          const HyperosSectionGap(),
+          HyperosCheckboxTile(
+            title: l10n.guidePrivacyConsentLabel,
             value: _privacyChecked,
-            onChange: (value) {
+            onChanged: (value) {
               setState(() {
                 _privacyChecked = value;
               });
@@ -462,7 +459,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
 
   Widget _buildPermissionsPage(AppLocalizations l10n) {
     if (_isLoading) {
-      return const Center(child: FCircularProgress());
+      return const Center(child: HyperosCircularProgress());
     }
 
     final items = _buildPermissionItems(l10n);
@@ -477,50 +474,41 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
-        FTileGroup(
-          label: Text(l10n.guidePermissionsHeader),
-          description: Text(l10n.guidePermissionsSubtitle),
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            FTile.raw(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '$readyCount / ${countableItems.length} 已完成',
-                            style: context.theme.typography.body.sm.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        FButton(
-                          variant: FButtonVariant.secondary,
-                          onPress: _refreshStatus,
-                          prefix: const Icon(Icons.refresh, size: 18),
-                          child: Text(l10n.refreshStatusTooltip),
-                        ),
-                      ],
+        HyperosSectionLabel(text: l10n.guidePermissionsHeader),
+        HyperosSectionDescription(text: l10n.guidePermissionsSubtitle),
+        const SizedBox(height: 8),
+        HyperosControlCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '$readyCount / ${countableItems.length} 已完成',
+                      style: context.theme.typography.body.sm.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    const SizedBox(height: 10),
-                    FDeterminateProgress(value: progress),
-                  ],
-                ),
+                  ),
+                  HyperosButton(
+                    label: l10n.refreshStatusTooltip,
+                    variant: HyperosButtonVariant.secondary,
+                    onPressed: _refreshStatus,
+                  ),
+                ],
               ),
-            ),
-          ],
+              const SizedBox(height: 10),
+              HyperosLinearProgress(value: progress),
+            ],
+          ),
         ),
-        const SizedBox(height: 12),
-        FTileGroup(
-          physics: const NeverScrollableScrollPhysics(),
+        const HyperosSectionGap(),
+        HyperosListGroup(
           children: [for (final item in items) _buildPermissionTile(item)],
         ),
-        const SizedBox(height: 12),
-        FAlert(
+        const HyperosSectionGap(),
+        HyperosHintBanner(
           icon: const Icon(Icons.lightbulb_outline_rounded, size: 18),
           title: Text(l10n.guidePermissionsFooterHint),
         ),
@@ -577,30 +565,19 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     ];
   }
 
-  FTile _buildPermissionTile(_PermissionItem item) {
+  Widget _buildPermissionTile(_PermissionItem item) {
     final colors = context.theme.colors;
     final enabled = item.enabled == true;
     final statusLabel = enabled ? item.enabledLabel : item.disabledLabel;
 
-    return FTile(
-      prefix: Icon(item.icon, color: colors.primary),
-      title: Text(item.title),
-      suffix: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FBadge(
-            variant: enabled ? FBadgeVariant.secondary : FBadgeVariant.outline,
-            child: Text(statusLabel),
-          ),
-          const SizedBox(width: 8),
-          Icon(
-            enabled ? Icons.check_circle_rounded : Icons.chevron_right_rounded,
-            size: 20,
-            color: enabled ? colors.primary : colors.mutedForeground,
-          ),
-        ],
-      ),
-      onPress: item.onTap,
+    return _GuidePermissionTile(
+      icon: item.icon,
+      title: item.title,
+      statusLabel: statusLabel,
+      enabled: enabled,
+      onTap: item.onTap,
+      enabledColor: colors.primary,
+      disabledColor: colors.mutedForeground,
     );
   }
 
@@ -611,27 +588,18 @@ class _UserGuideScreenState extends State<UserGuideScreen>
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       children: [
+        HyperosSectionLabel(text: l10n.guideTipsHeader),
         Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.guideTipsHeader,
-                style: typo.md.copyWith(fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.guideTipsSubtitle,
-                style: typo.sm.copyWith(color: colors.mutedForeground),
-              ),
-            ],
+          padding: const EdgeInsets.only(left: 4, top: 4, bottom: 8),
+          child: Text(
+            l10n.guideTipsSubtitle,
+            style: typo.sm.copyWith(color: colors.mutedForeground),
           ),
         ),
-        SettingsSectionCard(
-          child: FAccordion(
-            children: [
-              FAccordionItem(
+        HyperosControlCard(
+          child: HyperosAccordion(
+            items: [
+              HyperosAccordionItem(
                 title: Row(
                   children: [
                     Icon(Icons.edit_note_rounded, color: colors.primary),
@@ -661,12 +629,14 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                     const SizedBox(height: 12),
                     SizedBox(
                       width: double.infinity,
-                      child: FButton(
-                        variant: FButtonVariant.secondary,
-                        onPress: () {
+                      child: HyperosButton(
+                        label: l10n.guideSetCourseShortNameAction,
+                        variant: HyperosButtonVariant.secondary,
+                        expand: true,
+                        onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            HyperosPageRoute(
                               settings: const RouteSettings(
                                 name: '/courses/overview',
                               ),
@@ -674,14 +644,12 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                             ),
                           );
                         },
-                        prefix: const Icon(Icons.edit_outlined, size: 18),
-                        child: Text(l10n.guideSetCourseShortNameAction),
                       ),
                     ),
                   ],
                 ),
               ),
-              FAccordionItem(
+              HyperosAccordionItem(
                 title: Row(
                   children: [
                     Icon(Icons.import_export_rounded, color: colors.primary),
@@ -709,7 +677,7 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                   ],
                 ),
               ),
-              FAccordionItem(
+              HyperosAccordionItem(
                 title: Row(
                   children: [
                     Icon(Icons.tips_and_updates_rounded, color: colors.primary),
@@ -797,36 +765,31 @@ class _UserGuideScreenState extends State<UserGuideScreen>
         child: Row(
           children: [
             if (isPrivacyPage)
-              FButton(
-                variant: FButtonVariant.ghost,
-                onPress: _exitWithoutConsent,
-                child: Text(l10n.exitAppAction),
+              HyperosButton(
+                label: l10n.exitAppAction,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: _exitWithoutConsent,
               )
             else if (showPrev)
-              FButton(
-                variant: FButtonVariant.ghost,
-                onPress: _goPrev,
-                prefix: const Icon(Icons.arrow_back_rounded, size: 18),
-                child: Text(l10n.guidePrevButton),
+              HyperosButton(
+                label: l10n.guidePrevButton,
+                variant: HyperosButtonVariant.secondary,
+                onPressed: _goPrev,
               )
             else
               const Spacer(),
             const Spacer(),
             if (!isLastPage)
-              FButton(
-                onPress: canGoNext ? _goNext : null,
-                suffix: const Icon(Icons.arrow_forward_rounded, size: 18),
-                child: Text(l10n.guideNextButton),
+              HyperosButton(
+                label: l10n.guideNextButton,
+                onPressed: canGoNext ? _goNext : null,
               )
             else
-              FButton(
-                onPress: _finishGuide,
-                suffix: const Icon(Icons.check_rounded, size: 18),
-                child: Text(
-                  widget.requirePrivacyConsent
-                      ? l10n.agreeAndStartAction
-                      : l10n.startUsingAction,
-                ),
+              HyperosButton(
+                label: widget.requirePrivacyConsent
+                    ? l10n.agreeAndStartAction
+                    : l10n.startUsingAction,
+                onPressed: _finishGuide,
               ),
           ],
         ),
@@ -876,6 +839,148 @@ class _GuideIconBadge extends StatelessWidget {
         size: 20,
         color: filled ? colors.primaryForeground : colors.primary,
       ),
+    );
+  }
+}
+
+EdgeInsets _guideRowPadding(BuildContext context) {
+  final scope = HyperosListTileScope.maybeOf(context);
+  return HyperosTokens.rowPadding(
+    isFirst: scope?.isFirst ?? true,
+    isLast: scope?.isLast ?? true,
+  );
+}
+
+class _GuideActionTile extends StatelessWidget {
+  const _GuideActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: HyperosTokens.listRowMinHeight,
+      ),
+      child: Padding(
+        padding: _guideRowPadding(context),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            _GuideIconBadge(icon: icon),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: HyperosTypography.listTitle(context)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, style: HyperosTypography.listDetail(context)),
+                ],
+              ),
+            ),
+            SizedBox(width: HyperosTokens.titleChevronGap),
+            const HyperosChevron(),
+          ],
+        ),
+      ),
+    );
+
+    return HyperosPressableRow(
+      onTap: onTap,
+      backgroundColor: cardColor,
+      highlightColor: highlightColor,
+      child: row,
+    );
+  }
+}
+
+class _GuidePermissionTile extends StatelessWidget {
+  const _GuidePermissionTile({
+    required this.icon,
+    required this.title,
+    required this.statusLabel,
+    required this.enabled,
+    required this.enabledColor,
+    required this.disabledColor,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String statusLabel;
+  final bool enabled;
+  final Color enabledColor;
+  final Color disabledColor;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
+
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: HyperosTokens.listRowMinHeight,
+      ),
+      child: Padding(
+        padding: _guideRowPadding(context),
+        child: Row(
+          children: [
+            Icon(icon, color: enabledColor),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Expanded(
+              child: Text(title, style: HyperosTypography.listTitle(context)),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: enabled
+                    ? enabledColor.withValues(alpha: 0.12)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+                border: enabled
+                    ? null
+                    : Border.all(color: disabledColor.withValues(alpha: 0.35)),
+              ),
+              child: Text(
+                statusLabel,
+                style: HyperosTypography.listDetail(context).copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: enabled ? enabledColor : disabledColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              enabled
+                  ? Icons.check_circle_rounded
+                  : Icons.chevron_right_rounded,
+              size: 20,
+              color: enabled ? enabledColor : disabledColor,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return HyperosPressableRow(
+      onTap: onTap,
+      backgroundColor: cardColor,
+      highlightColor: highlightColor,
+      child: row,
     );
   }
 }

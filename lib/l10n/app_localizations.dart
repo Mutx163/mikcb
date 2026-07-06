@@ -1592,6 +1592,12 @@ abstract class AppLocalizations {
   /// **'你可以先开始使用，也可以直接导入课程或从备份恢复。'**
   String get welcomeSubtitle;
 
+  /// No description provided for @thirdPartyDisclaimer.
+  ///
+  /// In zh, this message translates to:
+  /// **'特此声明：本应用由第三方开发者独立开发，仅用于学习研究用途，不属于小米官方软件，与小米科技有限责任公司无任何隶属、合作或授权关系。如涉及内容侵权，请权利方联系作者，我们将第一时间下架并删除相关内容。'**
+  String get thirdPartyDisclaimer;
+
   /// No description provided for @startUsingTitle.
   ///
   /// In zh, this message translates to:

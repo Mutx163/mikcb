@@ -13,6 +13,7 @@ import '../widgets/statistics/data_story_card.dart';
 import '../widgets/statistics/daily_chart.dart';
 import '../widgets/statistics/nature_ratio.dart';
 import '../widgets/statistics/course_ranking.dart';
+import '../ui/hyperos/hyperos.dart';
 
 /// 课程统计页面（账单式）
 class CourseStatisticsScreen extends StatefulWidget {
@@ -54,39 +55,31 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
 
         final hasData = courses.isNotEmpty;
 
-        return FScaffold(
-          header: FHeader.nested(
-            prefixes: [
-              FHeaderAction.back(onPress: () => Navigator.pop(context)),
-            ],
-            title: Text(l10n.statisticsTitle),
-            suffixes: hasData
-                ? [
-                    FHeaderAction(
-                      icon: const Icon(Icons.share_rounded),
-                      semanticsLabel: l10n.statisticsShareLabel,
-                      onPress: () => StatisticsShareService.shareWidgetAsImage(
-                        context: context,
-                        repaintBoundaryKey: _shareKey,
-                        title: l10n.statisticsShareTitle,
-                      ),
+        return HyperosSubpage(
+          onBack: () => Navigator.pop(context),
+          title: Text(l10n.statisticsTitle),
+          suffixes: hasData
+              ? [
+                  FHeaderAction(
+                    icon: const Icon(Icons.share_rounded),
+                    semanticsLabel: l10n.statisticsShareLabel,
+                    onPress: () => StatisticsShareService.shareWidgetAsImage(
+                      context: context,
+                      repaintBoundaryKey: _shareKey,
+                      title: l10n.statisticsShareTitle,
                     ),
-                  ]
-                : const [],
-          ),
-          childPad: false,
-          child: Material(
-            type: MaterialType.transparency,
-            child: hasData
-                ? _buildContent(
-                    context,
-                    semesterStats,
-                    achievements,
-                    stories,
-                    l10n,
-                  )
-                : _buildEmptyState(context, l10n),
-          ),
+                  ),
+                ]
+              : const [],
+          child: hasData
+              ? _buildContent(
+                  context,
+                  semesterStats,
+                  achievements,
+                  stories,
+                  l10n,
+                )
+              : _buildEmptyState(context, l10n),
         );
       },
     );
@@ -99,36 +92,34 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
     List<DataStory> stories,
     AppLocalizations l10n,
   ) {
-    final theme = context.theme;
-
     return RepaintBoundary(
       key: _shareKey,
       child: Container(
-        color: theme.colors.background,
-        child: ListView(
+        color: HyperosColors.scaffoldBackground(context),
+        child: HyperosListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
             OverviewSection(stats: semesterStats),
             const SizedBox(height: 24),
-            _buildSectionTitle(l10n.statisticsAchievementsTitle),
+            HyperosSectionLabel(text: l10n.statisticsAchievementsTitle),
             const SizedBox(height: 12),
             AchievementGrid(achievements: achievements),
             const SizedBox(height: 24),
             if (stories.isNotEmpty) ...[
-              _buildSectionTitle(l10n.statisticsStoriesTitle),
+              HyperosSectionLabel(text: l10n.statisticsStoriesTitle),
               const SizedBox(height: 12),
               DataStoryList(stories: stories),
               const SizedBox(height: 24),
             ],
-            _buildSectionTitle(l10n.statisticsDailyDistribution),
+            HyperosSectionLabel(text: l10n.statisticsDailyDistribution),
             const SizedBox(height: 12),
             DailyChart(dailyAverages: semesterStats.dailyAverages),
             const SizedBox(height: 24),
-            _buildSectionTitle(l10n.statisticsNatureRatio),
+            HyperosSectionLabel(text: l10n.statisticsNatureRatio),
             const SizedBox(height: 12),
             NatureRatio(stats: semesterStats.natureStats),
             const SizedBox(height: 24),
-            _buildSectionTitle(l10n.statisticsRankingTitle),
+            HyperosSectionLabel(text: l10n.statisticsRankingTitle),
             const SizedBox(height: 12),
             CourseRanking(courseRanking: semesterStats.courseRanking),
           ],
@@ -138,51 +129,12 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
-    final theme = context.theme;
-
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              size: 64,
-              color: theme.colors.mutedForeground.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.statisticsNoData,
-              style: theme.typography.body.md.copyWith(
-                color: theme.colors.mutedForeground,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.statisticsNoDataHint,
-              style: theme.typography.body.sm.copyWith(
-                color: theme.colors.mutedForeground.withValues(alpha: 0.7),
-              ),
-            ),
-          ],
-        ),
+      child: HyperosEmptyState(
+        icon: Icons.analytics_outlined,
+        title: l10n.statisticsNoData,
+        subtitle: l10n.statisticsNoDataHint,
       ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Builder(
-      builder: (context) {
-        final theme = context.theme;
-        return Text(
-          title,
-          style: theme.typography.body.sm.copyWith(
-            fontWeight: FontWeight.w700,
-            color: theme.colors.mutedForeground,
-          ),
-        );
-      },
     );
   }
 }

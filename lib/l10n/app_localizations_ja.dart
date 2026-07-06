@@ -829,6 +829,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get welcomeSubtitle => 'そのまま使い始めることも、授業をインポートしたりバックアップから復元することもできます。';
 
   @override
+  String get thirdPartyDisclaimer =>
+      '声明：本アプリは第三者開発者が独立して開発したものであり、学習・研究目的のみに使用されます。Xiaomi（小米）公式ソフトウェアではなく、Xiaomi Technology Co., Ltd.（小米科技有限責任公司）とは一切の隶属、協力、授权関係がありません。コンテンツの侵权がある場合は、権利者より作者までご連絡ください。確認次第、速やかに下架・削除いたします。';
+
+  @override
   String get startUsingTitle => '使い始める';
 
   @override

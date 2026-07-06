@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
+import '../ui/hyperos/hyperos.dart';
 
 /// Bottom sheet for picking an existing course group (reuse template / link exam).
 Future<Course?> showCourseTemplatePickerSheet(
@@ -18,12 +18,8 @@ Future<Course?> showCourseTemplatePickerSheet(
     return Future.value(null);
   }
 
-  return showFSheet<Course>(
+  return showHyperosSheet<Course>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => _CourseTemplatePickerSheetBody(
       title: title,
       subtitle: subtitle,
@@ -49,76 +45,50 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
-    final colorScheme = Theme.of(context).colorScheme;
-    final sheetBackground = colorScheme.surface;
     final maxListHeight = MediaQuery.sizeOf(context).height * 0.52;
-    final descriptionStyle = typo.body.xs.copyWith(
-      color: colors.mutedForeground,
-      height: 1.4,
-    );
 
-    return Material(
-      color: sheetBackground,
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: sheetBackground,
-          border: Border(top: BorderSide(color: colors.border)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: maxListHeight),
-                  child: SingleChildScrollView(
-                    child: FTileGroup(
-                      label: Text(title),
-                      description: subtitle == null
-                          ? null
-                          : Text(
-                              subtitle!,
-                              maxLines: null,
-                              overflow: TextOverflow.clip,
-                              style: descriptionStyle,
-                            ),
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: [
-                        for (final group in courseGroups)
-                          _buildCourseTile(
-                            context,
-                            group: group,
-                            isSelected: group.courses.any(
-                              (course) => course.id == selectedCourseId,
-                            ),
-                            onPress: () =>
-                                Navigator.pop(context, group.courses.first),
-                          ),
-                      ],
+    return HyperosSheet(
+      title: title,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (subtitle != null) ...[
+            HyperosSectionDescription(text: subtitle!),
+            const SizedBox(height: 12),
+          ],
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxListHeight),
+            child: SingleChildScrollView(
+              child: HyperosChoiceGroup(
+                children: [
+                  for (final group in courseGroups)
+                    _buildCourseTile(
+                      context,
+                      group: group,
+                      isSelected: group.courses.any(
+                        (course) => course.id == selectedCourseId,
+                      ),
+                      onPress: () =>
+                          Navigator.pop(context, group.courses.first),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                FButton(
-                  variant: FButtonVariant.secondary,
-                  onPress: () => Navigator.pop(context),
-                  child: Text(l10n.cancelAction),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 12),
+          HyperosButton(
+            label: l10n.cancelAction,
+            variant: HyperosButtonVariant.secondary,
+            expand: true,
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
       ),
     );
   }
 
-  FTile _buildCourseTile(
+  Widget _buildCourseTile(
     BuildContext context, {
     required CourseGroup group,
     required bool isSelected,
@@ -130,7 +100,7 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
       fallback: Theme.of(context).colorScheme.primary,
     );
 
-    return FTile(
+    return HyperosChoiceTile(
       prefix: Container(
         width: 36,
         height: 36,
@@ -145,18 +115,20 @@ class _CourseTemplatePickerSheetBody extends StatelessWidget {
           decoration: BoxDecoration(color: courseColor, shape: BoxShape.circle),
         ),
       ),
-      title: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-      details: group.teacher.isNotEmpty
+      title: group.name,
+      subtitle: group.teacher.isNotEmpty
           ? Text(group.teacher, maxLines: 1, overflow: TextOverflow.ellipsis)
           : null,
-      suffix: isSelected
-          ? Icon(Icons.check_rounded, color: courseColor, size: 20)
+      trailing: isSelected
+          ? null
           : Icon(
               Icons.chevron_right_rounded,
-              color: context.theme.colors.mutedForeground,
+              color: HyperosColors.secondaryText(context),
               size: 20,
             ),
-      onPress: onPress,
+      selected: isSelected,
+      highlightSelectedText: true,
+      onTap: onPress,
     );
   }
 }

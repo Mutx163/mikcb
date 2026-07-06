@@ -33,7 +33,8 @@
             android:screenOrientation="portrait"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:enableOnBackInvokedCallback="false">
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
@@ -249,8 +250,10 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Live backdrop blur requires Impeller. See .trellis/spec/flutter/hyperos-blurred-header.md.
+             Set false to restore v1.1.5-a Vulkan crash workaround (tint-only headers). -->
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
-            android:value="false" />
+            android:value="true" />
     </application>
 </manifest>

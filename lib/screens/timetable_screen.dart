@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'dart:math' as math;
 
 import 'package:animations/animations.dart';
@@ -173,63 +174,60 @@ class _TimetableScreenState extends State<TimetableScreen>
                 colorScheme.surface,
               );
         final headerTitleStyle = foruiTheme.typography.display.xl.copyWith(
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w400,
           height: 1.1,
           color: foruiTheme.colors.foreground,
         );
         const headerHorizontalInset = 8.0;
         const headerTopInset = 0.0;
         const headerBottomInset = 2.0;
-        return FScaffold(
+        return HyperosRootPage(
+          overlayHeader: false,
           resizeToAvoidBottomInset: false,
-          scaffoldStyle: FScaffoldStyleDelta.delta(
-            backgroundColor: backgroundColor,
-          ),
-          header: FHeader(
-            style: FHeaderStyleDelta.delta(
-              decoration: DecorationDelta.boxDelta(color: backgroundColor),
-              titleTextStyle: TextStyleDelta.value(headerTitleStyle),
-              padding: EdgeInsetsGeometryDelta.value(
-                const EdgeInsets.fromLTRB(
-                  headerHorizontalInset,
-                  headerTopInset,
-                  headerHorizontalInset,
-                  headerBottomInset,
-                ),
+          backgroundColor: backgroundColor,
+          headerStyle: FHeaderStyleDelta.delta(
+            decoration: DecorationDelta.boxDelta(color: backgroundColor),
+            titleTextStyle: TextStyleDelta.value(headerTitleStyle),
+            padding: EdgeInsetsGeometryDelta.value(
+              const EdgeInsets.fromLTRB(
+                headerHorizontalInset,
+                headerTopInset,
+                headerHorizontalInset,
+                headerBottomInset,
               ),
-              constraints: const BoxConstraints(minHeight: 44),
             ),
-            title: _buildProfileSwitcherTrigger(provider),
-            suffixes: [
-              FHeaderAction(
-                icon: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    const Icon(Icons.more_vert_rounded),
-                    if (_hasAvailableUpdate)
-                      Positioned(
-                        right: -1,
-                        top: -1,
-                        child: Container(
-                          width: 9,
-                          height: 9,
-                          decoration: BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: backgroundColor,
-                              width: 1.5,
-                            ),
+            constraints: const BoxConstraints(minHeight: 44),
+          ),
+          title: _buildProfileSwitcherTrigger(provider),
+          suffixes: [
+            FHeaderAction(
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.more_vert_rounded),
+                  if (_hasAvailableUpdate)
+                    Positioned(
+                      right: -1,
+                      top: -1,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: backgroundColor,
+                            width: 1.5,
                           ),
                         ),
                       ),
-                  ],
-                ),
-                semanticsLabel: l10n.moreTooltip,
-                onPress: _showTopActionsSheet,
+                    ),
+                ],
               ),
-            ],
-          ),
+              semanticsLabel: l10n.moreTooltip,
+              onPress: _showTopActionsSheet,
+            ),
+          ],
           childPad: false,
           child: Material(
             type: MaterialType.transparency,
@@ -3839,7 +3837,7 @@ class _TimetableScreenState extends State<TimetableScreen>
     final group = provider.courseGroupForCourse(course);
     Navigator.push(
       context,
-      MaterialPageRoute(
+      HyperosPageRoute(
         settings: const RouteSettings(name: '/course/edit'),
         builder: (context) =>
             AddCourseScreen(courseGroup: group, initialCourse: course),
@@ -3868,96 +3866,55 @@ class _TimetableScreenState extends State<TimetableScreen>
     final initialDayOfWeek = _isDayView && _selectedDayOfWeek != null
         ? _selectedDayOfWeek!
         : DateTime.now().weekday;
-    await showFSheet<void>(
+    await showHyperosSheet<void>(
       context: context,
-      side: FLayout.btt,
-      useSafeArea: true,
-      draggable: true,
       builder: (sheetContext) {
-        final colors = sheetContext.theme.colors;
-        final typo = sheetContext.theme.typography;
-        final sheetBackground = Theme.of(sheetContext).colorScheme.surface;
         final itemWidth =
             ((MediaQuery.sizeOf(sheetContext).width - 32 - 24) / 3).clamp(
               96.0,
               120.0,
             );
 
-        return Material(
-          color: sheetBackground,
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: sheetBackground,
-              border: Border(top: BorderSide(color: colors.border)),
-            ),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FTileGroup(
-                      label: Text(l10n.addCourseSheetTitle),
-                      description: Text(
-                        l10n.addCourseSheetSubtitle,
-                        maxLines: null,
-                        overflow: TextOverflow.clip,
-                        style: typo.body.xs.copyWith(
-                          color: colors.mutedForeground,
-                          height: 1.45,
-                        ),
-                      ),
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: const [],
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        SizedBox(
-                          width: itemWidth,
-                          child: _HomeActionPageButton(
-                            sheetRoute: ModalRoute.of(sheetContext),
-                            icon: Icons.view_week_rounded,
-                            title: l10n.addCourseTitle,
-                            pageBuilder: (_) => AddCourseScreen(
-                              initialWeek: _visibleWeek,
-                              initialDayOfWeek: initialDayOfWeek,
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: itemWidth,
-                          child: _HomeActionPageButton(
-                            sheetRoute: ModalRoute.of(sheetContext),
-                            icon: Icons.event_note_rounded,
-                            title: l10n.addScheduleAction,
-                            pageBuilder: (_) => AddScheduleItemScreen(
-                              initialDate: _resolveAddScheduleInitialDate(
-                                provider,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(
-                          width: itemWidth,
-                          child: _HomeActionPageButton(
-                            sheetRoute: ModalRoute.of(sheetContext),
-                            icon: Icons.school_outlined,
-                            title: l10n.addExam,
-                            pageBuilder: (_) => const AddExamScreen(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
+        return HyperosSheet(
+          title: l10n.addCourseSheetTitle,
+          description: l10n.addCourseSheetSubtitle,
+          child: Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              SizedBox(
+                width: itemWidth,
+                child: _HomeActionPageButton(
+                  sheetRoute: ModalRoute.of(sheetContext),
+                  icon: Icons.view_week_rounded,
+                  title: l10n.addCourseTitle,
+                  pageBuilder: (_) => AddCourseScreen(
+                    initialWeek: _visibleWeek,
+                    initialDayOfWeek: initialDayOfWeek,
+                  ),
                 ),
               ),
-            ),
+              SizedBox(
+                width: itemWidth,
+                child: _HomeActionPageButton(
+                  sheetRoute: ModalRoute.of(sheetContext),
+                  icon: Icons.event_note_rounded,
+                  title: l10n.addScheduleAction,
+                  pageBuilder: (_) => AddScheduleItemScreen(
+                    initialDate: _resolveAddScheduleInitialDate(provider),
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: itemWidth,
+                child: _HomeActionPageButton(
+                  sheetRoute: ModalRoute.of(sheetContext),
+                  icon: Icons.school_outlined,
+                  title: l10n.addExam,
+                  pageBuilder: (_) => const AddExamScreen(),
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -4325,7 +4282,7 @@ class _TimetableScreenState extends State<TimetableScreen>
   Future<void> _openTopMenuPage(Widget page) {
     return Navigator.of(
       context,
-    ).push<void>(MaterialPageRoute<void>(builder: (_) => page));
+    ).push<void>(HyperosPageRoute<void>(builder: (_) => page));
   }
 
   Future<void> _openTopMenuUpdatePage() async {
@@ -4334,7 +4291,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       return;
     }
     await Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(
+      HyperosPageRoute<void>(
         builder: (_) => AboutUpdateScreen(packageInfo: packageInfo),
       ),
     );
@@ -4558,42 +4515,40 @@ class _HomeActionButtonBody extends StatelessWidget {
         ? colorScheme.primary
         : colorScheme.onSurfaceVariant;
 
-    return FCard.raw(
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          overlayColor: const WidgetStatePropertyAll(Colors.transparent),
-          splashFactory: NoSplash.splashFactory,
-          onTap: enabled ? onTap : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: highlightColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Icon(icon, color: highlightColor),
+    return HyperosCard(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        overlayColor: const WidgetStatePropertyAll(Colors.transparent),
+        splashFactory: NoSplash.splashFactory,
+        onTap: enabled ? onTap : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: highlightColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  title,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                    color: enabled ? null : colors.mutedForeground,
-                  ),
+                child: Icon(icon, color: highlightColor),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                title,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                  color: enabled ? null : colors.mutedForeground,
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

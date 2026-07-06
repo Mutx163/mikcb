@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 import '../providers/timetable_provider.dart';
 import '../services/data_transfer_service.dart';
 import '../utils/app_toast.dart';
-import '../widgets/settings_section_widgets.dart';
+import '../ui/hyperos/hyperos.dart';
 
 class DataTransferScreen extends StatefulWidget {
   const DataTransferScreen({super.key});
@@ -29,113 +29,88 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     final activeProfileName =
         provider.activeProfile?.name ?? l10n.timetableAppName;
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(l10n.dataTransferTitle),
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            SettingsSectionCard(
-              title: l10n.fullExportTitle,
-              subtitle: l10n.fullExportSubtitle,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  FButton(
-                    variant: FButtonVariant.primary,
-                    onPress: _isExporting ? null : _exportCurrentProfile,
-                    prefix: _isExporting
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.ios_share_rounded),
-                    child: Text(
-                      _isExporting
-                          ? '${l10n.fullExportTitle}...'
-                          : l10n.exportCurrentTimetable,
-                    ),
-                  ),
-                  FButton(
-                    variant: FButtonVariant.secondary,
-                    onPress: _isExporting ? null : _exportFullData,
-                    prefix: const Icon(Icons.storage_rounded),
-                    child: Text(l10n.exportAllData),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            SettingsSectionCard(
-              title: l10n.fullImportTitle,
-              subtitle: l10n.fullImportSubtitle,
-              child: FButton(
-                variant: FButtonVariant.secondary,
-                onPress: _isImporting ? null : _confirmAndImport,
-                prefix: _isImporting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_rounded),
-                child: Text(
-                  _isImporting
-                      ? '${l10n.fullImportTitle}...'
-                      : l10n.chooseFileAndImport,
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(l10n.dataTransferTitle),
+      child: HyperosListView(
+        children: [
+          HyperosControlCard(
+            title: l10n.fullExportTitle,
+            subtitle: l10n.fullExportSubtitle,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                HyperosButton(
+                  label: _isExporting
+                      ? '${l10n.fullExportTitle}...'
+                      : l10n.exportCurrentTimetable,
+                  loading: _isExporting,
+                  onPressed: _isExporting ? null : _exportCurrentProfile,
                 ),
-              ),
+                HyperosButton(
+                  label: l10n.exportAllData,
+                  variant: HyperosButtonVariant.secondary,
+                  onPressed: _isExporting ? null : _exportFullData,
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            SettingsSectionCard(
-              title: l10n.transferOverviewTitle,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildBullet(
-                    context,
-                    l10n.courseCountBullet(provider.courses.length),
-                  ),
-                  _buildBullet(
-                    context,
-                    l10n.currentTimetableBullet(activeProfileName),
-                  ),
-                  _buildBullet(
-                    context,
-                    l10n.allTimetablesBullet(provider.profiles.length),
-                  ),
-                  _buildBullet(
-                    context,
-                    l10n.timeSchemeCountBullet(provider.timeSchemes.length),
-                  ),
-                  _buildBullet(
-                    context,
-                    l10n.currentWeekBullet(provider.currentWeek),
-                  ),
-                  _buildBullet(
-                    context,
-                    provider.settings.semesterStartDate == null
-                        ? l10n.semesterStartUnsetBullet
-                        : l10n.semesterStartBullet(
-                            _formatDate(provider.settings.semesterStartDate!),
-                          ),
-                  ),
-                  _buildBullet(
-                    context,
-                    l10n.fileExtensionBullet(DataTransferService.fileExtension),
-                  ),
-                ],
-              ),
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            title: l10n.fullImportTitle,
+            subtitle: l10n.fullImportSubtitle,
+            child: HyperosButton(
+              label: _isImporting
+                  ? '${l10n.fullImportTitle}...'
+                  : l10n.chooseFileAndImport,
+              variant: HyperosButtonVariant.secondary,
+              loading: _isImporting,
+              onPressed: _isImporting ? null : _confirmAndImport,
             ),
-          ],
-        ),
+          ),
+          const HyperosSectionGap(),
+          HyperosControlCard(
+            title: l10n.transferOverviewTitle,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildBullet(
+                  context,
+                  l10n.courseCountBullet(provider.courses.length),
+                ),
+                _buildBullet(
+                  context,
+                  l10n.currentTimetableBullet(activeProfileName),
+                ),
+                _buildBullet(
+                  context,
+                  l10n.allTimetablesBullet(provider.profiles.length),
+                ),
+                _buildBullet(
+                  context,
+                  l10n.timeSchemeCountBullet(provider.timeSchemes.length),
+                ),
+                _buildBullet(
+                  context,
+                  l10n.currentWeekBullet(provider.currentWeek),
+                ),
+                _buildBullet(
+                  context,
+                  provider.settings.semesterStartDate == null
+                      ? l10n.semesterStartUnsetBullet
+                      : l10n.semesterStartBullet(
+                          _formatDate(provider.settings.semesterStartDate!),
+                        ),
+                ),
+                _buildBullet(
+                  context,
+                  l10n.fileExtensionBullet(DataTransferService.fileExtension),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -206,29 +181,27 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<void> _confirmAndImport() async {
     final l10n = AppLocalizations.of(context)!;
-    final importMode = await showFDialog<_BackupImportMode>(
+    final importMode = await showHyperosDialog<_BackupImportMode>(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.selectImportModeTitle),
-        body: Text(l10n.selectImportModeMessage),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.pop(ctx),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.pop(ctx, _BackupImportMode.replaceCurrent),
-            child: Text(l10n.replaceCurrentTimetable),
-          ),
-          FButton(
-            variant: FButtonVariant.secondary,
-            onPress: () => Navigator.pop(ctx, _BackupImportMode.importAsNew),
-            child: Text(l10n.importAsNewTimetable),
-          ),
-        ],
-      ),
+      title: l10n.selectImportModeTitle,
+      message: l10n.selectImportModeMessage,
+      actions: [
+        HyperosDialogAction(
+          label: l10n.cancelAction,
+          onPressed: () => Navigator.pop(context),
+        ),
+        HyperosDialogAction(
+          label: l10n.replaceCurrentTimetable,
+          isPrimary: true,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.replaceCurrent),
+        ),
+        HyperosDialogAction(
+          label: l10n.importAsNewTimetable,
+          onPressed: () =>
+              Navigator.pop(context, _BackupImportMode.importAsNew),
+        ),
+      ],
     );
 
     if (importMode == null || !mounted) {

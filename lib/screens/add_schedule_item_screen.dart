@@ -9,7 +9,7 @@ import '../models/schedule_item.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/app_toast.dart';
 import '../utils/hex_color.dart';
-import '../widgets/settings_section_widgets.dart';
+import '../ui/hyperos/hyperos.dart';
 
 class AddScheduleItemScreen extends StatefulWidget {
   final ScheduleItem? scheduleItem;
@@ -106,89 +106,81 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(
-          _isEditing ? l10n.editScheduleTitle : l10n.addScheduleTitle,
-        ),
-        suffixes: [
-          if (_isEditing)
-            FHeaderAction(
-              icon: const Icon(Icons.delete_outline_rounded),
-              semanticsLabel: l10n.deleteAction,
-              onPress: _confirmDelete,
-            ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(_isEditing ? l10n.editScheduleTitle : l10n.addScheduleTitle),
+      suffixes: [
+        if (_isEditing)
           FHeaderAction(
-            icon: const Icon(Icons.check_rounded),
-            semanticsLabel: l10n.saveAction,
-            onPress: _save,
+            icon: const Icon(Icons.delete_outline_rounded),
+            semanticsLabel: l10n.deleteAction,
+            onPress: _confirmDelete,
           ),
-        ],
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.all(_pagePadding),
-            children: [
-              SettingsSectionCard(
-                title: l10n.scheduleInfoSectionTitle,
-                plainTitle: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _withSpacing([
-                    FTextFormField(
-                      control: FTextFieldControl.managed(
+        FHeaderAction(
+          icon: const Icon(Icons.check_rounded),
+          semanticsLabel: l10n.saveAction,
+          onPress: _save,
+        ),
+      ],
+      child: Form(
+        key: _formKey,
+        child: HyperosListView(
+          padding: const EdgeInsets.all(_pagePadding),
+          children: [
+            HyperosControlCard(
+              title: l10n.scheduleInfoSectionTitle,
+              plainTitle: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _withSpacing([
+                  FormField<String>(
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return l10n.scheduleTitleRequired;
+                      }
+                      return null;
+                    },
+                    builder: (field) {
+                      return HyperosTextField(
                         controller: _titleController,
-                      ),
-                      label: Text(l10n.scheduleTitleLabel),
-                      hint: l10n.scheduleTitleHint,
-                      textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return l10n.scheduleTitleRequired;
-                        }
-                        return null;
-                      },
-                    ),
-                    FTextFormField(
-                      control: FTextFieldControl.managed(
-                        controller: _locationController,
-                      ),
-                      label: Text(l10n.scheduleLocationLabel),
-                      hint: l10n.scheduleLocationHint,
-                      textInputAction: TextInputAction.next,
-                    ),
-                    FTextFormField.multiline(
-                      control: FTextFieldControl.managed(
-                        controller: _noteController,
-                      ),
-                      label: Text(l10n.scheduleNoteLabel),
-                      hint: l10n.scheduleNoteHint,
-                      minLines: 1,
-                      maxLines: 3,
-                    ),
-                  ]),
-                ),
+                        label: l10n.scheduleTitleLabel,
+                        hint: l10n.scheduleTitleHint,
+                        helper: field.errorText,
+                        textInputAction: TextInputAction.next,
+                        onChanged: field.didChange,
+                      );
+                    },
+                  ),
+                  HyperosTextField(
+                    controller: _locationController,
+                    label: l10n.scheduleLocationLabel,
+                    hint: l10n.scheduleLocationHint,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  HyperosTextField(
+                    controller: _noteController,
+                    label: l10n.scheduleNoteLabel,
+                    hint: l10n.scheduleNoteHint,
+                    minLines: 1,
+                    maxLines: 3,
+                  ),
+                ]),
               ),
-              const SizedBox(height: _sectionSpacing),
-              SettingsSectionCard(
-                title: l10n.scheduleTimeSectionTitle,
-                plainTitle: true,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: _withSpacing([
-                    _buildStartEndTimeLayout(l10n),
-                    _buildScheduleRangeHint(),
-                    _buildColorSection(l10n),
-                  ]),
-                ),
+            ),
+            const SizedBox(height: _sectionSpacing),
+            HyperosControlCard(
+              title: l10n.scheduleTimeSectionTitle,
+              plainTitle: true,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: _withSpacing([
+                  _buildStartEndTimeLayout(l10n),
+                  _buildScheduleRangeHint(),
+                  _buildColorSection(l10n),
+                ]),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -275,18 +267,10 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
     required IconData icon,
     required VoidCallback onPress,
   }) {
-    final theme = context.theme;
-    final valueStyle = theme.typography.body.sm.copyWith(
-      fontWeight: FontWeight.w600,
-    );
-    return FTile(
+    return HyperosChoiceTile(
       prefix: Icon(icon, size: 18),
-      title: FittedBox(
-        fit: BoxFit.scaleDown,
-        alignment: Alignment.centerLeft,
-        child: Text(value, style: valueStyle, maxLines: 1, softWrap: false),
-      ),
-      onPress: onPress,
+      title: value,
+      onTap: onPress,
     );
   }
 
@@ -515,24 +499,13 @@ class _AddScheduleItemScreenState extends State<AddScheduleItemScreen> {
 
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final confirmed = await showFDialog<bool>(
+    final confirmed = await showHyperosConfirmDialog(
       context: context,
-      builder: (ctx, style, animation) => FDialog(
-        title: Text(l10n.deleteScheduleTitle),
-        body: Text(l10n.deleteScheduleMessage(scheduleItem.title)),
-        actions: [
-          FButton(
-            variant: FButtonVariant.ghost,
-            onPress: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.cancelAction),
-          ),
-          FButton(
-            variant: FButtonVariant.primary,
-            onPress: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.deleteAction),
-          ),
-        ],
-      ),
+      title: l10n.deleteScheduleTitle,
+      message: l10n.deleteScheduleMessage(scheduleItem.title),
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.deleteAction,
+      destructive: true,
     );
 
     if (confirmed != true) {

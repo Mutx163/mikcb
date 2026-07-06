@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../utils/app_toast.dart';
-import '../widgets/settings_section_widgets.dart';
 
 enum DiagnosticsLogViewMode { structured, raw }
 
@@ -106,21 +106,15 @@ class _LiveDiagnosticsLogViewerScreenState
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    return FScaffold(
-      header: FHeader.nested(
-        prefixes: [FHeaderAction.back(onPress: () => Navigator.pop(context))],
-        title: Text(widget.title),
-        suffixes: _buildHeaderActions(l10n),
-      ),
-      childPad: false,
-      child: Material(
-        type: MaterialType.transparency,
-        child: _loading
-            ? const Center(child: FProgress())
-            : _loadError != null
-            ? _buildLoadError(context, l10n)
-            : _buildBody(context, l10n),
-      ),
+    return HyperosSubpage(
+      onBack: () => Navigator.pop(context),
+      title: Text(widget.title),
+      suffixes: _buildHeaderActions(l10n),
+      child: _loading
+          ? const Center(child: HyperosCircularProgress())
+          : _loadError != null
+          ? _buildLoadError(context, l10n)
+          : _buildBody(context, l10n),
     );
   }
 
@@ -171,9 +165,6 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   Widget _buildLoadError(BuildContext context, AppLocalizations l10n) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
-
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -183,24 +174,25 @@ class _LiveDiagnosticsLogViewerScreenState
             Icon(
               Icons.error_outline_rounded,
               size: 40,
-              color: colors.destructive,
+              color: HyperosTokens.error,
             ),
             const SizedBox(height: 12),
             Text(
               l10n.diagnosticsEmptyTitle,
-              style: typo.lg.copyWith(fontWeight: FontWeight.w600),
+              style: HyperosTypography.sectionLabel(context),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
               _loadError!,
-              style: typo.sm.copyWith(color: colors.mutedForeground),
+              style: HyperosTypography.listDetail(context),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            FButton.icon(
-              onPress: _loadLogs,
-              child: const Icon(Icons.refresh_rounded),
+            HyperosButton(
+              label: l10n.liveTestingRefreshAction,
+              variant: HyperosButtonVariant.secondary,
+              onPressed: _loadLogs,
             ),
           ],
         ),
@@ -237,24 +229,20 @@ class _LiveDiagnosticsLogViewerScreenState
     _DiagnosticsParsedLog parsed,
   ) {
     final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
-    final typo = context.theme.typography.body;
 
-    return SettingsSectionCard(
+    return HyperosControlCard(
       subtitle: l10n.diagnosticsLogIntro,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_recordingEnabled != null) ...[
-            FTileGroup(
-              physics: const NeverScrollableScrollPhysics(),
+            HyperosListGroup(
               children: [
-                SettingSwitchTile(
-                  title: Text(l10n.aboutRecordDiagnosticsTitle),
-                  subtitle: Text(
-                    _recordingEnabled!
-                        ? l10n.appLogsRecordingEnabled
-                        : l10n.appLogsRecordingDisabled,
-                  ),
+                HyperosSwitchTile(
+                  title: l10n.aboutRecordDiagnosticsTitle,
+                  subtitle: _recordingEnabled!
+                      ? l10n.appLogsRecordingEnabled
+                      : l10n.appLogsRecordingDisabled,
                   value: _recordingEnabled!,
                   onChanged: widget.onRecordingChanged == null
                       ? null
@@ -272,32 +260,30 @@ class _LiveDiagnosticsLogViewerScreenState
           Row(
             children: [
               Expanded(
-                child: FButton(
+                child: HyperosButton(
+                  label: l10n.diagnosticsStructuredTab,
                   variant: _viewMode == DiagnosticsLogViewMode.structured
-                      ? FButtonVariant.primary
-                      : FButtonVariant.outline,
-                  onPress: () {
+                      ? HyperosButtonVariant.primary
+                      : HyperosButtonVariant.secondary,
+                  onPressed: () {
                     setState(() {
                       _viewMode = DiagnosticsLogViewMode.structured;
                     });
                   },
-                  prefix: const Icon(Icons.view_agenda_outlined, size: 18),
-                  child: Text(l10n.diagnosticsStructuredTab),
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: FButton(
+                child: HyperosButton(
+                  label: l10n.diagnosticsRawTab,
                   variant: _viewMode == DiagnosticsLogViewMode.raw
-                      ? FButtonVariant.primary
-                      : FButtonVariant.outline,
-                  onPress: () {
+                      ? HyperosButtonVariant.primary
+                      : HyperosButtonVariant.secondary,
+                  onPressed: () {
                     setState(() {
                       _viewMode = DiagnosticsLogViewMode.raw;
                     });
                   },
-                  prefix: const Icon(Icons.code_rounded, size: 18),
-                  child: Text(l10n.diagnosticsRawTab),
                 ),
               ),
             ],
@@ -312,7 +298,6 @@ class _LiveDiagnosticsLogViewerScreenState
                     label:
                         '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
                     selected: _selectedLevel == level,
-                    color: _levelColor(context, level),
                     onPress: () {
                       setState(() {
                         _selectedLevel = level;
@@ -331,18 +316,14 @@ class _LiveDiagnosticsLogViewerScreenState
               filteredEntries.length,
               parsed.entries.length,
             ),
-            style: typo.xs2.copyWith(
-              color: context.theme.colors.mutedForeground,
-            ),
+            style: HyperosTypography.listDetail(context),
           ),
           if (_viewMode == DiagnosticsLogViewMode.raw &&
               _selectedLevel != DiagnosticsLogLevel.all) ...[
             const SizedBox(height: 4),
             Text(
               l10n.diagnosticsRawFilteredHint,
-              style: typo.xs2.copyWith(
-                color: context.theme.colors.mutedForeground,
-              ),
+              style: HyperosTypography.listDetail(context),
             ),
           ],
         ],
@@ -475,16 +456,19 @@ class _LiveDiagnosticsLogViewerScreenState
       filteredEntries,
       _selectedLevel,
     );
-    final typo = context.theme.typography.body;
-
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
-      child: FCard.raw(
+      child: Material(
+        color: HyperosColors.card(context),
+        shape: HyperosTheme.cardShape(),
+        clipBehavior: Clip.antiAlias,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: SelectableText(
             rawText,
-            style: typo.xs2.copyWith(fontFamily: 'monospace', height: 1.45),
+            style: HyperosTypography.listDetail(
+              context,
+            ).copyWith(fontFamily: 'monospace', height: 1.45),
           ),
         ),
       ),
@@ -552,28 +536,22 @@ class _LiveDiagnosticsLogViewerScreenState
 class _LevelFilterButton extends StatelessWidget {
   final String label;
   final bool selected;
-  final Color color;
   final VoidCallback onPress;
 
   const _LevelFilterButton({
     required this.label,
     required this.selected,
-    required this.color,
     required this.onPress,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FButton(
-      variant: selected ? FButtonVariant.secondary : FButtonVariant.outline,
-      onPress: onPress,
-      child: Text(
-        label,
-        style: TextStyle(
-          color: selected ? color : context.theme.colors.foreground,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+    return HyperosButton(
+      label: label,
+      variant: selected
+          ? HyperosButtonVariant.primary
+          : HyperosButtonVariant.secondary,
+      onPressed: onPress,
     );
   }
 }
@@ -586,20 +564,16 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final typo = context.theme.typography.body;
-    final colors = context.theme.colors;
-
-    return SettingsSectionCard(
+    return HyperosControlCard(
       title: parsed.title,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             l10n.diagnosticsDeviceInfoTitle,
-            style: typo.sm.copyWith(
-              fontWeight: FontWeight.w600,
-              color: colors.mutedForeground,
-            ),
+            style: HyperosTypography.listTitle(
+              context,
+            ).copyWith(color: HyperosColors.secondaryText(context)),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -614,7 +588,7 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: colors.secondary.withValues(alpha: 0.35),
+                      color: HyperosColors.rowHighlight(context),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Column(
@@ -623,15 +597,16 @@ class _DiagnosticsHeaderCard extends StatelessWidget {
                       children: [
                         Text(
                           _prettyKey(item.key, l10n),
-                          style: typo.xs2.copyWith(
-                            color: colors.mutedForeground,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: HyperosTypography.listDetail(
+                            context,
+                          ).copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         SelectableText(
                           _inlineValue(item.value),
-                          style: typo.xs2.copyWith(height: 1.35),
+                          style: HyperosTypography.listDetail(
+                            context,
+                          ).copyWith(height: 1.35),
                         ),
                       ],
                     ),
@@ -658,7 +633,10 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
     final levelColor = _levelColor(context, entry.level);
     final details = entry.detailEntries.toList(growable: false);
 
-    return FCard.raw(
+    return Material(
+      color: HyperosColors.card(context),
+      shape: HyperosTheme.cardShape(),
+      clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -690,14 +668,11 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                         runSpacing: 8,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          FBadge(
-                            variant: FBadgeVariant.secondary,
-                            child: Text(_levelLabel(l10n, entry.level)),
-                          ),
+                          HyperosTag(label: _levelLabel(l10n, entry.level)),
                           if (entry.isLevelInferred)
-                            FBadge(
-                              variant: FBadgeVariant.outline,
-                              child: Text(l10n.diagnosticsLevelInferred),
+                            HyperosTag(
+                              label: l10n.diagnosticsLevelInferred,
+                              outlined: true,
                             ),
                           if (entry.category.isNotEmpty)
                             Text(

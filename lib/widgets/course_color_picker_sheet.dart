@@ -1,6 +1,7 @@
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../utils/hex_color.dart';
@@ -21,12 +22,8 @@ Future<String?> showCourseColorPickerSheet(
   BuildContext context, {
   required String initialColorHex,
 }) {
-  return showFSheet<String>(
+  return showHyperosSheet<String>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (_) =>
         _CourseColorPickerSheetBody(initialColorHex: initialColorHex),
   );
@@ -65,18 +62,20 @@ class _CourseColorPickerSheetBodyState
       actions: Row(
         children: [
           Expanded(
-            child: FButton(
-              variant: FButtonVariant.secondary,
-              onPress: () => Navigator.of(context).pop(),
-              child: Text(l10n.cancelAction),
+            child: HyperosButton(
+              label: l10n.cancelAction,
+              variant: HyperosButtonVariant.secondary,
+              expand: true,
+              onPressed: () => Navigator.of(context).pop(),
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: FButton(
-              onPress: () =>
+            child: HyperosButton(
+              label: l10n.useThisColor,
+              expand: true,
+              onPressed: () =>
                   Navigator.of(context).pop(colorToHex(_pickerColor)),
-              child: Text(l10n.useThisColor),
             ),
           ),
         ],
@@ -87,7 +86,7 @@ class _CourseColorPickerSheetBodyState
         children: [
           Text(
             l10n.colorPaletteTitle,
-            style: typo.lg.copyWith(fontWeight: FontWeight.w600),
+            style: HyperosTypography.sheetTitle(context),
           ),
           const SizedBox(height: 12),
           Container(

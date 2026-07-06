@@ -8,6 +8,7 @@ import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
+import '../ui/hyperos/hyperos.dart';
 
 typedef CourseActionHandler = void Function(Course course);
 
@@ -22,12 +23,8 @@ Future<void> showCourseActionSheet(
   required CourseActionHandler onDelete,
   required CourseActionHandler onSuspend,
 }) {
-  return showFSheet<void>(
+  return showHyperosSheet<void>(
     context: context,
-    side: FLayout.btt,
-    useSafeArea: true,
-    draggable: true,
-    mainAxisMaxRatio: null,
     builder: (sheetContext) => CourseActionSheetBody(
       previewCourses: previewCourses,
       week: week,
@@ -64,37 +61,29 @@ class CourseActionSheetBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = context.theme.colors;
 
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: colors.background,
-        border: Border(top: BorderSide(color: colors.border)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (var index = 0; index < previewCourses.length; index++) ...[
-                _CourseActionSheetContent(
-                  course: previewCourses[index],
-                  week: week,
-                  hasConflict: hasConflicts,
-                  onEdit: onEdit,
-                  onReschedule: onReschedule,
-                  onDelete: onDelete,
-                  onSuspend: onSuspend,
-                ),
-                if (index != previewCourses.length - 1) ...[
-                  const SizedBox(height: 20),
-                  Divider(color: colors.border, height: 1),
-                  const SizedBox(height: 20),
-                ],
+    return HyperosSheetFrame(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var index = 0; index < previewCourses.length; index++) ...[
+              _CourseActionSheetContent(
+                course: previewCourses[index],
+                week: week,
+                hasConflict: hasConflicts,
+                onEdit: onEdit,
+                onReschedule: onReschedule,
+                onDelete: onDelete,
+                onSuspend: onSuspend,
+              ),
+              if (index != previewCourses.length - 1) ...[
+                const SizedBox(height: 20),
+                Divider(color: colors.border, height: 1),
+                const SizedBox(height: 20),
               ],
             ],
-          ),
+          ],
         ),
       ),
     );
@@ -280,55 +269,48 @@ class _CourseActionSheetContent extends StatelessWidget {
         const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
-          child: FButton(
-            onPress: () => _closeSheetThen(context, () => onEdit(course)),
-            child: Text(l10n.courseActionEditPrimary),
+          child: HyperosButton(
+            label: l10n.courseActionEditPrimary,
+            expand: true,
+            onPressed: () => _closeSheetThen(context, () => onEdit(course)),
           ),
         ),
         const SizedBox(height: 10),
         Row(
           children: [
             Expanded(
-              child: FButton(
+              child: HyperosButton(
                 key: ValueKey('course-action-reschedule-${course.id}'),
-                variant: FButtonVariant.outline,
-                onPress: canReschedule
+                label: l10n.courseActionRescheduleSecondary,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: canReschedule
                     ? () => _closeSheetThen(context, () => onReschedule(course))
                     : null,
-                child: Text(
-                  l10n.courseActionRescheduleSecondary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: FButton(
+              child: HyperosButton(
                 key: ValueKey('course-action-suspend-${course.id}'),
-                variant: FButtonVariant.outline,
-                onPress: () =>
+                label: isSuspended
+                    ? l10n.courseActionUnsuspend
+                    : l10n.courseActionSuspendSecondary,
+                variant: HyperosButtonVariant.secondary,
+                expand: true,
+                onPressed: () =>
                     _closeSheetThen(context, () => onSuspend(course)),
-                child: Text(
-                  isSuspended
-                      ? l10n.courseActionUnsuspend
-                      : l10n.courseActionSuspendSecondary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: FButton(
+              child: HyperosButton(
                 key: ValueKey('course-action-delete-${course.id}'),
-                variant: FButtonVariant.outline,
-                onPress: () => _closeSheetThen(context, () => onDelete(course)),
-                child: Text(
-                  l10n.courseActionDeleteSecondary,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                label: l10n.courseActionDeleteSecondary,
+                variant: HyperosButtonVariant.destructive,
+                expand: true,
+                onPressed: () =>
+                    _closeSheetThen(context, () => onDelete(course)),
               ),
             ),
           ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'warehouse_macro_replayer.dart';
 
@@ -179,19 +179,14 @@ class PlaybackOverlay extends StatelessWidget {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          FButton(
-                            variant: FButtonVariant.outline,
-                            onPress: onCancel,
-                            child: const Text('取消导入'),
+                          HyperosButton(
+                            label: '取消导入',
+                            variant: HyperosButtonVariant.secondary,
+                            onPressed: onCancel,
                           ),
-                          FButton(
-                            variant: FButtonVariant.primary,
-                            onPress: onContinueAfterPause,
-                            prefix: const Icon(
-                              Icons.play_arrow_rounded,
-                              size: 18,
-                            ),
-                            child: const Text('继续'),
+                          HyperosButton(
+                            label: '继续',
+                            onPressed: onContinueAfterPause,
                           ),
                         ],
                       ),
@@ -299,12 +294,7 @@ class PlaybackOverlay extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    FButton(
-                      variant: FButtonVariant.primary,
-                      onPress: onDismiss,
-                      prefix: const Icon(Icons.check_rounded, size: 18),
-                      child: const Text('完成'),
-                    ),
+                    HyperosButton(label: '完成', onPressed: onDismiss),
                   ],
                 ),
               ),
@@ -368,18 +358,13 @@ class PlaybackOverlay extends StatelessWidget {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        FButton(
-                          variant: FButtonVariant.outline,
-                          onPress: onDismiss,
-                          child: const Text('关闭'),
+                        HyperosButton(
+                          label: '关闭',
+                          variant: HyperosButtonVariant.secondary,
+                          onPressed: onDismiss,
                         ),
                         if (onRetry != null)
-                          FButton(
-                            variant: FButtonVariant.primary,
-                            onPress: onRetry,
-                            prefix: const Icon(Icons.refresh_rounded, size: 18),
-                            child: const Text('重试'),
-                          ),
+                          HyperosButton(label: '重试', onPressed: onRetry),
                       ],
                     ),
                   ],
@@ -404,11 +389,10 @@ class MacroIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     if (!hasMacro) {
-      return FButton(
-        variant: FButtonVariant.outline,
-        onPress: null,
-        prefix: const Icon(Icons.radio_button_unchecked_rounded, size: 16),
-        child: const Text('录制'),
+      return HyperosButton(
+        label: '录制',
+        variant: HyperosButtonVariant.secondary,
+        onPressed: null,
       );
     }
 
