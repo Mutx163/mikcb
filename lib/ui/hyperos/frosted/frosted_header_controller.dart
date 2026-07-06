@@ -63,7 +63,7 @@ class FrostedHeaderController extends ChangeNotifier {
   double _captureScrollPixels = 0;
   bool _pendingUpdate = false;
   int _blurGeneration = 0;
-  final Set<int> _releasedImageTokens = <int>{};
+  final Set<ui.Image> _pendingRelease = {};
   _BackdropRequest? _queuedBackdrop;
   bool _backdropDrainRunning = false;
 
@@ -577,16 +577,21 @@ class FrostedHeaderController extends ChangeNotifier {
   }
 
   /// Drop [ui.Image] after the current frame so [RawImage] is not painting it.
+  ///
+  /// A per-frame strong-reference set prevents disposing the same image twice
+  /// while it is still referenced, and is cleared each frame so disposed images
+  /// can be GC'd (unlike [identityHashCode] bookkeeping, which could leak after
+  /// the hash was reused by a newly allocated image).
   void _releaseImage(ui.Image? image) {
     if (image == null) {
       return;
     }
-    final token = identityHashCode(image);
-    if (!_releasedImageTokens.add(token)) {
+    if (!_pendingRelease.add(image)) {
       return;
     }
     SchedulerBinding.instance.addPostFrameCallback((_) {
       image.dispose();
+      _pendingRelease.remove(image);
     });
   }
 

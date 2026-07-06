@@ -30,6 +30,7 @@ import 'services/user_data_sync_hooks.dart';
 import 'services/webdav_sync_coordinator.dart';
 import 'services/android_animation_scale_service.dart';
 import 'services/umeng_analytics_service.dart';
+import 'services/frosted_blur_service.dart';
 import 'ui/debug/debug.dart';
 import 'ui/hyperos/hyperos.dart';
 
@@ -221,6 +222,7 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
     await Future.wait([
       BundledAssets.warmUp(),
       AndroidAnimationScaleService.ensureInitialized(),
+      FrostedBlurService.probeNativeSupport(),
     ]);
     if (!kReleaseMode) {
       registerHyperosLayoutDebugTuning();

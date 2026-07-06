@@ -131,12 +131,12 @@ abstract final class FrostedBlurService {
         tileMode: ui.TileMode.clamp,
       );
     canvas.drawImage(source, ui.Offset.zero, paint);
-    if (disposeSource) {
-      source.dispose();
-    }
     final picture = recorder.endRecording();
     final blurred = await picture.toImage(width, height);
     picture.dispose();
+    if (disposeSource) {
+      source.dispose();
+    }
     return blurred;
   }
 }
