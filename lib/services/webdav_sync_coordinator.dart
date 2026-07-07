@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
+import 'cloud_backup_index_service.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_service.dart';
 
@@ -104,6 +105,47 @@ class WebdavSyncCoordinator extends ChangeNotifier {
         lastSyncedAt: config.lastSyncedAt,
       ),
     );
+  }
+
+  Future<List<CloudBackupEntry>> fetchBackupList() {
+    return _syncService.fetchBackupList();
+  }
+
+  Future<WebdavSyncResult> restoreBackup(
+    String entryId, {
+    bool uploadAsCurrent = true,
+  }) async {
+    final provider = _provider;
+    if (provider == null) {
+      return const WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: 'provider_not_ready',
+      );
+    }
+
+    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+    try {
+      final result = await _syncService.restoreFromBackup(
+        provider: provider,
+        entryId: entryId,
+        uploadAsCurrent: uploadAsCurrent,
+      );
+      _applyResult(result);
+      return result;
+    } finally {
+      _setStatus(_status.copyWith(isSyncing: false));
+    }
+  }
+
+  Future<WebdavSyncResult> deleteBackup(String entryId) async {
+    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+    try {
+      final result = await _syncService.deleteBackup(entryId: entryId);
+      _applyResult(result);
+      return result;
+    } finally {
+      _setStatus(_status.copyWith(isSyncing: false));
+    }
   }
 
   Future<void> _scheduleUploadDebounced() async {

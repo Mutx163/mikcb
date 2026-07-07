@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:webdav_plus/webdav_plus.dart';
 
 import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
+import 'cloud_backup_index_service.dart';
 import 'webdav_client_service.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_credentials_store.dart';
@@ -18,6 +21,9 @@ enum WebdavSyncResultKind {
   conflictResolvedRemote,
   cancelled,
   failed,
+  backupCreated,
+  backupRestored,
+  backupDeleted,
 }
 
 class WebdavSyncResult {
@@ -36,16 +42,20 @@ class WebdavSyncService {
     WebdavSyncConfigStore? configStore,
     WebdavSyncCredentialsStore? credentialsStore,
     WebdavClientService? clientService,
+    CloudBackupIndexService? backupIndexService,
   }) : _snapshotService = snapshotService ?? AppSyncSnapshotService(),
        _configStore = configStore ?? const WebdavSyncConfigStore(),
        _credentialsStore =
            credentialsStore ?? const WebdavSyncCredentialsStore(),
-       _clientService = clientService ?? const WebdavClientService();
+       _clientService = clientService ?? const WebdavClientService(),
+       _backupIndexService =
+           backupIndexService ?? const CloudBackupIndexService();
 
   final AppSyncSnapshotService _snapshotService;
   final WebdavSyncConfigStore _configStore;
   final WebdavSyncCredentialsStore _credentialsStore;
   final WebdavClientService _clientService;
+  final CloudBackupIndexService _backupIndexService;
 
   WebdavSyncConflictHandler? conflictHandler;
 
@@ -92,9 +102,26 @@ class WebdavSyncService {
     );
   }
 
+  Future<String> resolveDeviceLabel() async {
+    final stored = await _credentialsStore.readDeviceLabel();
+    if (stored != null && stored.isNotEmpty) {
+      return stored;
+    }
+    try {
+      final hostname = Platform.localHostname.trim();
+      if (hostname.isNotEmpty) {
+        return hostname;
+      }
+    } catch (_) {}
+    return '';
+  }
+
   Future<WebdavSyncResult> uploadSnapshot({
     required TimetableProvider provider,
     WebdavSyncConfig? configOverride,
+    CloudBackupSource backupSource = CloudBackupSource.auto,
+    bool writeHistory = true,
+    bool updateSyncTimestamps = true,
   }) async {
     final config = configOverride ?? await _configStore.load();
     if (!config.enabled) {
@@ -111,6 +138,7 @@ class WebdavSyncService {
 
     try {
       final deviceId = await _credentialsStore.getOrCreateDeviceId();
+      final deviceLabel = await resolveDeviceLabel();
       final snapshot = await _snapshotService.collectSnapshot(
         provider: provider,
         deviceId: deviceId,
@@ -118,6 +146,7 @@ class WebdavSyncService {
       final snapshotJson = _snapshotService.buildSnapshotJsonFromSnapshot(
         snapshot,
       );
+      final snapshotBytes = Uint8List.fromList(utf8.encode(snapshotJson));
       final packageInfo = await PackageInfo.fromPlatform();
       final meta = _snapshotService.buildMetaFromSnapshot(
         snapshot,
@@ -132,7 +161,7 @@ class WebdavSyncService {
       await _clientService.putBytes(
         client: client,
         remotePath: config.snapshotRemotePath,
-        bytes: Uint8List.fromList(utf8.encode(snapshotJson)),
+        bytes: snapshotBytes,
       );
       await _clientService.putBytes(
         client: client,
@@ -142,14 +171,185 @@ class WebdavSyncService {
         ),
       );
 
+      if (writeHistory) {
+        final skipHistory =
+            backupSource == CloudBackupSource.auto &&
+            config.lastUploadedLocalHash == snapshot.contentSha256;
+        if (!skipHistory) {
+          await _writeBackupHistory(
+            client: client,
+            config: config,
+            snapshotBytes: snapshotBytes,
+            snapshot: snapshot,
+            deviceId: deviceId,
+            deviceLabel: deviceLabel,
+            appVersion: packageInfo.version,
+            source: backupSource,
+          );
+        } else {
+          await _refreshBackupCurrentMarker(
+            client: client,
+            config: config,
+            currentContentSha256: snapshot.contentSha256,
+          );
+        }
+      }
+
+      if (updateSyncTimestamps) {
+        await _configStore.save(
+          config.copyWith(
+            lastSyncedAt: DateTime.now(),
+            lastAppliedRemoteHash: snapshot.contentSha256,
+            lastUploadedLocalHash: snapshot.contentSha256,
+          ),
+        );
+      }
+
+      return const WebdavSyncResult(kind: WebdavSyncResultKind.uploaded);
+    } catch (error) {
+      return WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: error.toString(),
+      );
+    }
+  }
+
+  Future<List<CloudBackupEntry>> fetchBackupList({
+    WebdavSyncConfig? configOverride,
+  }) async {
+    final config = configOverride ?? await _configStore.load();
+    final params = await buildConnectionParams(config);
+    if (params == null) {
+      return const [];
+    }
+
+    try {
+      final client = _clientService.createClient(params);
+      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final sorted = [...index.entries]
+        ..sort((a, b) => b.exportedAt.compareTo(a.exportedAt));
+      return sorted;
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  Future<WebdavSyncResult> restoreFromBackup({
+    required TimetableProvider provider,
+    required String entryId,
+    bool uploadAsCurrent = true,
+  }) async {
+    final config = await _configStore.load();
+    final params = await buildConnectionParams(config);
+    if (params == null) {
+      return const WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: 'missing_credentials',
+      );
+    }
+
+    try {
+      final client = _clientService.createClient(params);
+      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final entry = index.entries.firstWhere(
+        (item) => item.id == entryId,
+        orElse: () => throw StateError('backup_not_found'),
+      );
+
+      final bytes = await _clientService.getBytes(
+        client: client,
+        remotePath: config.historyBackupRemotePath(entry.fileName),
+      );
+      if (bytes == null || bytes.isEmpty) {
+        return const WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: 'missing_backup_snapshot',
+        );
+      }
+
+      final content = utf8.decode(bytes);
+      final error = await _snapshotService.applySnapshotJson(
+        provider: provider,
+        content: content,
+      );
+      if (error != null) {
+        return WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: error,
+        );
+      }
+
       await _configStore.save(
         config.copyWith(
-          lastSyncedAt: DateTime.now(),
-          lastAppliedRemoteHash: snapshot.contentSha256,
-          lastUploadedLocalHash: snapshot.contentSha256,
+          lastAppliedRemoteHash: entry.contentSha256,
+          lastUploadedLocalHash: entry.contentSha256,
         ),
       );
-      return const WebdavSyncResult(kind: WebdavSyncResultKind.uploaded);
+
+      if (uploadAsCurrent) {
+        final uploadResult = await uploadSnapshot(
+          provider: provider,
+          configOverride: config.copyWith(
+            lastAppliedRemoteHash: entry.contentSha256,
+            lastUploadedLocalHash: entry.contentSha256,
+          ),
+          backupSource: CloudBackupSource.auto,
+          writeHistory: false,
+        );
+        if (uploadResult.kind == WebdavSyncResultKind.failed) {
+          return uploadResult;
+        }
+      }
+
+      return const WebdavSyncResult(kind: WebdavSyncResultKind.backupRestored);
+    } catch (error) {
+      return WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: error.toString(),
+      );
+    }
+  }
+
+  Future<WebdavSyncResult> deleteBackup({required String entryId}) async {
+    final config = await _configStore.load();
+    final params = await buildConnectionParams(config);
+    if (params == null) {
+      return const WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: 'missing_credentials',
+      );
+    }
+
+    try {
+      final client = _clientService.createClient(params);
+      final index = await _loadRemoteBackupIndex(client: client, config: config);
+      final entry = index.entries.firstWhere(
+        (item) => item.id == entryId,
+        orElse: () => throw StateError('backup_not_found'),
+      );
+      if (entry.isCurrent) {
+        return const WebdavSyncResult(
+          kind: WebdavSyncResultKind.failed,
+          message: 'cannot_delete_current_backup',
+        );
+      }
+
+      await _clientService.deleteRemoteFile(
+        client: client,
+        remotePath: config.historyBackupRemotePath(entry.fileName),
+      );
+
+      final nextIndex = _backupIndexService.removeEntry(
+        index: index,
+        entryId: entryId,
+      );
+      await _saveRemoteBackupIndex(
+        client: client,
+        config: config,
+        index: nextIndex,
+      );
+
+      return const WebdavSyncResult(kind: WebdavSyncResultKind.backupDeleted);
     } catch (error) {
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
@@ -281,5 +481,183 @@ class WebdavSyncService {
     }
 
     return uploadSnapshot(provider: provider, configOverride: config);
+  }
+
+  Future<void> _writeBackupHistory({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+    required Uint8List snapshotBytes,
+    required AppSyncSnapshot snapshot,
+    required String deviceId,
+    required String deviceLabel,
+    required String appVersion,
+    required CloudBackupSource source,
+    bool allowDuplicateHash = false,
+  }) async {
+    await _clientService.ensureRemoteFolder(
+      client: client,
+      remoteFolder: config.historyRemoteFolder,
+    );
+
+    final backupId = CloudBackupIndexService.buildBackupId(
+      exportedAt: snapshot.exportedAt,
+      contentSha256: snapshot.contentSha256,
+    );
+    final fileName = CloudBackupIndexService.buildBackupFileName(backupId);
+    final snapshotJson = utf8.decode(snapshotBytes);
+
+    await _clientService.putBytes(
+      client: client,
+      remotePath: config.historyBackupRemotePath(fileName),
+      bytes: snapshotBytes,
+    );
+
+    var index = await _loadRemoteBackupIndex(client: client, config: config);
+    final entry = CloudBackupEntry(
+      id: backupId,
+      fileName: fileName,
+      exportedAt: snapshot.exportedAt,
+      contentSha256: snapshot.contentSha256,
+      deviceId: deviceId,
+      deviceLabel: deviceLabel,
+      appVersion: appVersion,
+      source: source,
+      profileCount: CloudBackupIndexService.countProfilesInSnapshotJson(
+        snapshotJson,
+      ),
+      courseCount: CloudBackupIndexService.countCoursesInSnapshotJson(
+        snapshotJson,
+      ),
+    );
+
+    index = _backupIndexService.addEntry(
+      index: index,
+      entry: entry,
+      currentContentSha256: snapshot.contentSha256,
+      allowDuplicateHash: allowDuplicateHash,
+    );
+
+    final pruned = _backupIndexService.prune(
+      index: index,
+      maxBackupCount: config.maxBackupCount,
+      maxBackupAgeDays: config.maxBackupAgeDays,
+      manualBackupProtected: config.manualBackupProtected,
+      now: DateTime.now(),
+    );
+
+    for (final removed in pruned.removedEntries) {
+      try {
+        await _clientService.deleteRemoteFile(
+          client: client,
+          remotePath: config.historyBackupRemotePath(removed.fileName),
+        );
+      } catch (_) {}
+    }
+
+    await _saveRemoteBackupIndex(
+      client: client,
+      config: config,
+      index: pruned.index,
+    );
+  }
+
+  Future<void> _refreshBackupCurrentMarker({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+    required String currentContentSha256,
+  }) async {
+    final index = await _loadRemoteBackupIndex(client: client, config: config);
+    if (index.entries.isEmpty) {
+      return;
+    }
+    final nextIndex = _backupIndexService.markCurrent(
+      index: index,
+      currentContentSha256: currentContentSha256,
+    );
+    await _saveRemoteBackupIndex(
+      client: client,
+      config: config,
+      index: nextIndex,
+    );
+  }
+
+  Future<CloudBackupIndex> _loadRemoteBackupIndex({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+  }) async {
+    final indexBytes = await _clientService.getBytes(
+      client: client,
+      remotePath: config.historyIndexRemotePath,
+    );
+    if (indexBytes != null && indexBytes.isNotEmpty) {
+      return _backupIndexService.decodeIndex(utf8.decode(indexBytes));
+    }
+
+    final fileNames = await _clientService.listHistoryBackupFiles(
+      client: client,
+      historyRemoteFolder: config.historyRemoteFolder,
+    );
+    if (fileNames.isEmpty) {
+      return const CloudBackupIndex();
+    }
+
+    final remoteMeta = await _clientService.getRemoteMeta(
+      client: client,
+      remotePath: config.metaRemotePath,
+    );
+    final currentHash = remoteMeta?.contentSha256 ?? '';
+    final entries = <CloudBackupEntry>[];
+
+    for (final fileName in fileNames) {
+      final bytes = await _clientService.getBytes(
+        client: client,
+        remotePath: config.historyBackupRemotePath(fileName),
+      );
+      if (bytes == null || bytes.isEmpty) {
+        continue;
+      }
+      try {
+        final content = utf8.decode(bytes);
+        final parsed = _snapshotService.parseSnapshotJson(content);
+        final id = fileName.endsWith('.mikcb')
+            ? fileName.substring(0, fileName.length - '.mikcb'.length)
+            : fileName;
+        entries.add(
+          CloudBackupEntry(
+            id: id,
+            fileName: fileName,
+            exportedAt: parsed.exportedAt,
+            contentSha256: parsed.contentSha256,
+            deviceId: parsed.deviceId,
+            deviceLabel: '',
+            source: CloudBackupSource.auto,
+            profileCount: CloudBackupIndexService.countProfilesInSnapshotJson(
+              content,
+            ),
+            courseCount: CloudBackupIndexService.countCoursesInSnapshotJson(
+              content,
+            ),
+            isCurrent: parsed.contentSha256 == currentHash,
+          ),
+        );
+      } catch (_) {}
+    }
+
+    entries.sort((a, b) => b.exportedAt.compareTo(a.exportedAt));
+    return CloudBackupIndex(entries: entries);
+  }
+
+  Future<void> _saveRemoteBackupIndex({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+    required CloudBackupIndex index,
+  }) async {
+    await _clientService.putBytes(
+      client: client,
+      remotePath: config.historyIndexRemotePath,
+      bytes: Uint8List.fromList(
+        utf8.encode(_backupIndexService.encodeIndex(index)),
+      ),
+    );
   }
 }

@@ -163,11 +163,16 @@ class DataStoryList extends StatelessWidget {
     }
 
     return HyperosControlCard(
+      edgeToEdge: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
           for (var index = 0; index < stories.length; index++) ...[
-            if (index > 0) const HyperosInsetDivider(indent: 16),
+            if (index > 0)
+              HyperosInsetDivider(
+                indent: HyperosTokens.listTileDividerIndent,
+              ),
             DataStoryCard(
               story: stories[index],
               isFirst: index == 0,

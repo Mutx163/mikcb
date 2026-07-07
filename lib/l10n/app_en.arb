@@ -94,6 +94,7 @@
   "cloudSyncHelpBody": "Open Jianguoyun → Account → Security → Add app password. Default WEBDAV URL: https://dav.jianguoyun.com/dav/",
   "cloudSyncTestConnection": "Test connection",
   "cloudSyncSyncNow": "Sync now",
+  "cloudSyncSyncNowSubtitle": "Keep timetables aligned across devices: pull cloud updates, then upload local changes",
   "cloudSyncTestSuccess": "WEBDAV connection succeeded",
   "cloudSyncTestFailed": "WEBDAV connection failed. Check account, app password, and network.",
   "cloudSyncResultUploaded": "Uploaded to cloud",
@@ -130,6 +131,68 @@
   "cloudSyncLoginSheetSubtitle": "Use an app-specific password, not your Jianguoyun login password.",
   "cloudSyncConfirmConnect": "Connect",
   "cloudSyncConnectSuccess": "Account connected",
+  "cloudBackupSectionTitle": "Version history",
+  "cloudBackupSectionSubtitle": "Saved automatically when you sync. Tap to restore a version.",
+  "cloudBackupCurrentLabel": "Current version",
+  "cloudBackupCurrentBadge": "Current",
+  "cloudBackupCreateNow": "Back up now",
+  "cloudBackupViewAll": "View all versions",
+  "cloudBackupEmpty": "No versions yet. They are saved automatically when you sync.",
+  "cloudBackupSourceAuto": "Auto backup",
+  "cloudBackupSourceManual": "Manual backup",
+  "cloudBackupDefaultDeviceLabel": "This device",
+  "cloudBackupDeviceLabelTitle": "Device name",
+  "cloudBackupDeviceLabelHint": "Shown in backup list, e.g. My phone",
+  "cloudBackupSummary": "{profileCount} timetables · {courseCount} courses",
+  "@cloudBackupSummary": {
+    "placeholders": {
+      "profileCount": { "type": "int" },
+      "courseCount": { "type": "int" }
+    }
+  },
+  "cloudBackupRestoreTitle": "Restore this backup",
+  "cloudBackupRestoreBody": "Restore the timetable from {time}. Unsynced local changes will be lost. Continue?",
+  "@cloudBackupRestoreBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupRestoreAction": "Restore",
+  "cloudBackupRestoreSuccess": "Backup restored",
+  "cloudBackupRestoreFailed": "Restore failed: {message}",
+  "@cloudBackupRestoreFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteTitle": "Delete this backup",
+  "cloudBackupDeleteBody": "Delete the cloud backup from {time}? This cannot be undone.",
+  "@cloudBackupDeleteBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteSuccess": "Backup deleted",
+  "cloudBackupDeleteFailed": "Delete failed: {message}",
+  "@cloudBackupDeleteFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupCreateSuccess": "Backup saved to cloud",
+  "cloudBackupCreateFailed": "Backup failed: {message}",
+  "@cloudBackupCreateFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupUploadAsCurrentTitle": "Set as current cloud version",
+  "cloudBackupUploadAsCurrentBody": "Upload this backup as the current cloud version? Recommended to avoid sync conflicts.",
+  "cloudBackupUploadAsCurrentYes": "Set as current",
+  "cloudBackupUploadAsCurrentNo": "Local only",
+  "cloudBackupDetailDevice": "Device",
+  "cloudBackupDetailSource": "Source",
+  "cloudBackupDetailSummary": "Contents",
   "lanEditEntryTitle": "LAN editing",
   "lanEditEntrySubtitle": "Edit the current timetable from a desktop browser",
   "lanEditTitle": "LAN editing",

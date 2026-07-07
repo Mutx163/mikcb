@@ -19,61 +19,62 @@ class OverviewSection extends StatelessWidget {
     }
 
     return HyperosControlCard(
-      child: HyperosControlCardInset(
-        child: Column(
-          children: [
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.menu_book_rounded,
-                      accent: HyperosIconColors.blue,
-                      value: '${stats.totalCourses}',
-                      label: l10n.statisticsSemesterLabelCourses,
-                    ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _MetricCell(
+                    icon: Icons.menu_book_rounded,
+                    accent: HyperosIconColors.blue,
+                    value: '${stats.totalCourses}',
+                    label: l10n.statisticsSemesterLabelCourses,
                   ),
-                  const _VerticalDivider(),
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.schedule_rounded,
-                      accent: HyperosIconColors.teal,
-                      value: '${stats.totalSections}',
-                      label: l10n.statisticsSemesterLabelSections,
-                    ),
+                ),
+                const _VerticalDivider(),
+                Expanded(
+                  child: _MetricCell(
+                    icon: Icons.schedule_rounded,
+                    accent: HyperosIconColors.teal,
+                    value: '${stats.totalSections}',
+                    label: l10n.statisticsSemesterLabelSections,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Divider(height: 1, color: HyperosTokens.divider),
-            ),
-            IntrinsicHeight(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.calendar_today_rounded,
-                      accent: HyperosIconColors.indigo,
-                      value: '${stats.totalWeeks}',
-                      label: l10n.statisticsSemesterLabelWeeks,
-                    ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Divider(height: 1, color: HyperosTokens.divider),
+          ),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _MetricCell(
+                    icon: Icons.calendar_today_rounded,
+                    accent: HyperosIconColors.indigo,
+                    value: '${stats.totalWeeks}',
+                    label: l10n.statisticsSemesterLabelWeeks,
                   ),
-                  const _VerticalDivider(),
-                  Expanded(
-                    child: _MetricCell(
-                      icon: Icons.local_fire_department_rounded,
-                      accent: HyperosIconColors.orange,
-                      value: '${stats.longestStreak}',
-                      label: l10n.statisticsSemesterLabelDayStreak,
-                    ),
+                ),
+                const _VerticalDivider(),
+                Expanded(
+                  child: _MetricCell(
+                    icon: Icons.local_fire_department_rounded,
+                    accent: HyperosIconColors.orange,
+                    value: '${stats.longestStreak}',
+                    label: l10n.statisticsSemesterLabelDayStreak,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -98,7 +99,7 @@ class _MetricCell extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         HyperosIconBadge(icon: icon, accent: accent),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
           value,
           style: HyperosTypography.listTitle(context).copyWith(

@@ -250,6 +250,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get cloudSyncSyncNow => 'Sync now';
 
   @override
+  String get cloudSyncSyncNowSubtitle =>
+      'Keep timetables aligned across devices: pull cloud updates, then upload local changes';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV connection succeeded';
 
   @override
@@ -323,6 +327,115 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cloudSyncConnectSuccess => 'Account connected';
+
+  @override
+  String get cloudBackupSectionTitle => 'Version history';
+
+  @override
+  String get cloudBackupSectionSubtitle =>
+      'Saved automatically when you sync. Tap to restore a version.';
+
+  @override
+  String get cloudBackupCurrentLabel => 'Current version';
+
+  @override
+  String get cloudBackupCurrentBadge => 'Current';
+
+  @override
+  String get cloudBackupCreateNow => 'Back up now';
+
+  @override
+  String get cloudBackupViewAll => 'View all versions';
+
+  @override
+  String get cloudBackupEmpty =>
+      'No versions yet. They are saved automatically when you sync.';
+
+  @override
+  String get cloudBackupSourceAuto => 'Auto backup';
+
+  @override
+  String get cloudBackupSourceManual => 'Manual backup';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => 'This device';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => 'Device name';
+
+  @override
+  String get cloudBackupDeviceLabelHint =>
+      'Shown in backup list, e.g. My phone';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '$profileCount timetables · $courseCount courses';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => 'Restore this backup';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return 'Restore the timetable from $time. Unsynced local changes will be lost. Continue?';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => 'Restore';
+
+  @override
+  String get cloudBackupRestoreSuccess => 'Backup restored';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return 'Restore failed: $message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => 'Delete this backup';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return 'Delete the cloud backup from $time? This cannot be undone.';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => 'Backup deleted';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return 'Delete failed: $message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => 'Backup saved to cloud';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return 'Backup failed: $message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => 'Set as current cloud version';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      'Upload this backup as the current cloud version? Recommended to avoid sync conflicts.';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => 'Set as current';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => 'Local only';
+
+  @override
+  String get cloudBackupDetailDevice => 'Device';
+
+  @override
+  String get cloudBackupDetailSource => 'Source';
+
+  @override
+  String get cloudBackupDetailSummary => 'Contents';
 
   @override
   String get lanEditEntryTitle => 'LAN editing';

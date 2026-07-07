@@ -94,6 +94,7 @@
   "cloudSyncHelpBody": "Jianguoyun ウェブまたはクライアント → アカウント情報 → セキュリティ → アプリパスワードを追加。WEBDAV URL デフォルト：https://dav.jianguoyun.com/dav/",
   "cloudSyncTestConnection": "接続テスト",
   "cloudSyncSyncNow": "今すぐ同期",
+  "cloudSyncSyncNowSubtitle": "他の端末と時間割を揃えます：クラウドを取得してから端末の変更をアップロード",
   "cloudSyncTestSuccess": "WEBDAV 接続成功",
   "cloudSyncTestFailed": "WEBDAV 接続に失敗しました。アカウント、アプリパスワード、ネットワークを確認してください",
   "cloudSyncResultUploaded": "クラウドにアップロードしました",
@@ -130,6 +131,68 @@
   "cloudSyncLoginSheetSubtitle": "アプリ専用パスワードを使用してください（Jianguoyun ログインパスワードではありません）。",
   "cloudSyncConfirmConnect": "接続を確認",
   "cloudSyncConnectSuccess": "アカウント接続成功",
+  "cloudBackupSectionTitle": "履歴バージョン",
+  "cloudBackupSectionSubtitle": "同期時に自動保存。タップしてこのバージョンに復元できます",
+  "cloudBackupCurrentLabel": "現在のバージョン",
+  "cloudBackupCurrentBadge": "現在",
+  "cloudBackupCreateNow": "今すぐバックアップ",
+  "cloudBackupViewAll": "すべての履歴を表示",
+  "cloudBackupEmpty": "履歴はまだありません。同期すると自動保存されます",
+  "cloudBackupSourceAuto": "自動バックアップ",
+  "cloudBackupSourceManual": "手動バックアップ",
+  "cloudBackupDefaultDeviceLabel": "この端末",
+  "cloudBackupDeviceLabelTitle": "デバイス名",
+  "cloudBackupDeviceLabelHint": "バックアップ一覧に表示されます（例：私のスマホ）",
+  "cloudBackupSummary": "時間割 {profileCount} 件 · 授業 {courseCount} 件",
+  "@cloudBackupSummary": {
+    "placeholders": {
+      "profileCount": { "type": "int" },
+      "courseCount": { "type": "int" }
+    }
+  },
+  "cloudBackupRestoreTitle": "このバックアップに復元",
+  "cloudBackupRestoreBody": "{time} の時間割に復元します。未同期のローカル変更は失われます。続行しますか？",
+  "@cloudBackupRestoreBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupRestoreAction": "復元",
+  "cloudBackupRestoreSuccess": "バックアップを復元しました",
+  "cloudBackupRestoreFailed": "復元に失敗しました：{message}",
+  "@cloudBackupRestoreFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteTitle": "このバックアップを削除",
+  "cloudBackupDeleteBody": "{time} のクラウドバックアップを削除しますか？元に戻せません。",
+  "@cloudBackupDeleteBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteSuccess": "バックアップを削除しました",
+  "cloudBackupDeleteFailed": "削除に失敗しました：{message}",
+  "@cloudBackupDeleteFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupCreateSuccess": "バックアップをクラウドに保存しました",
+  "cloudBackupCreateFailed": "バックアップに失敗しました：{message}",
+  "@cloudBackupCreateFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupUploadAsCurrentTitle": "現在のクラウド版に設定",
+  "cloudBackupUploadAsCurrentBody": "このバックアップを現在のクラウド版にしますか？同期の競合を避けるために推奨します。",
+  "cloudBackupUploadAsCurrentYes": "現在の版に設定",
+  "cloudBackupUploadAsCurrentNo": "ローカルのみ復元",
+  "cloudBackupDetailDevice": "デバイス",
+  "cloudBackupDetailSource": "種類",
+  "cloudBackupDetailSummary": "内容",
   "lanEditEntryTitle": "LAN編集",
   "lanEditEntrySubtitle": "PCブラウザから現在の時間割を編集",
   "lanEditTitle": "LAN編集",

@@ -13,6 +13,10 @@ class WebdavSyncConfig {
   static const String defaultRemoteFolder = '/Apps/qingyu-sync/';
   static const String snapshotFileName = 'snapshot.mikcb';
   static const String metaFileName = 'snapshot.meta.json';
+  static const String historyFolderName = 'history';
+  static const String historyIndexFileName = 'index.json';
+  static const int defaultMaxBackupCount = 15;
+  static const int defaultMaxBackupAgeDays = 30;
 
   final bool enabled;
   final WebdavSyncProvider provider;
@@ -23,6 +27,9 @@ class WebdavSyncConfig {
   final DateTime? lastSyncedAt;
   final String? lastAppliedRemoteHash;
   final String? lastUploadedLocalHash;
+  final int maxBackupCount;
+  final int maxBackupAgeDays;
+  final bool manualBackupProtected;
 
   const WebdavSyncConfig({
     this.enabled = false,
@@ -34,6 +41,9 @@ class WebdavSyncConfig {
     this.lastSyncedAt,
     this.lastAppliedRemoteHash,
     this.lastUploadedLocalHash,
+    this.maxBackupCount = defaultMaxBackupCount,
+    this.maxBackupAgeDays = defaultMaxBackupAgeDays,
+    this.manualBackupProtected = true,
   });
 
   String get normalizedRemoteFolder {
@@ -54,6 +64,15 @@ class WebdavSyncConfig {
 
   String get metaRemotePath => '$normalizedRemoteFolder$metaFileName';
 
+  String get historyRemoteFolder =>
+      '$normalizedRemoteFolder$historyFolderName/';
+
+  String get historyIndexRemotePath =>
+      '$historyRemoteFolder$historyIndexFileName';
+
+  String historyBackupRemotePath(String fileName) =>
+      '$historyRemoteFolder$fileName';
+
   WebdavSyncConfig copyWith({
     bool? enabled,
     WebdavSyncProvider? provider,
@@ -64,6 +83,9 @@ class WebdavSyncConfig {
     DateTime? lastSyncedAt,
     String? lastAppliedRemoteHash,
     String? lastUploadedLocalHash,
+    int? maxBackupCount,
+    int? maxBackupAgeDays,
+    bool? manualBackupProtected,
     bool clearLastSyncedAt = false,
     bool clearLastAppliedRemoteHash = false,
     bool clearLastUploadedLocalHash = false,
@@ -84,6 +106,10 @@ class WebdavSyncConfig {
       lastUploadedLocalHash: clearLastUploadedLocalHash
           ? null
           : (lastUploadedLocalHash ?? this.lastUploadedLocalHash),
+      maxBackupCount: maxBackupCount ?? this.maxBackupCount,
+      maxBackupAgeDays: maxBackupAgeDays ?? this.maxBackupAgeDays,
+      manualBackupProtected:
+          manualBackupProtected ?? this.manualBackupProtected,
     );
   }
 
@@ -97,6 +123,9 @@ class WebdavSyncConfig {
     'lastSyncedAt': lastSyncedAt?.toIso8601String(),
     'lastAppliedRemoteHash': lastAppliedRemoteHash,
     'lastUploadedLocalHash': lastUploadedLocalHash,
+    'maxBackupCount': maxBackupCount,
+    'maxBackupAgeDays': maxBackupAgeDays,
+    'manualBackupProtected': manualBackupProtected,
   };
 
   factory WebdavSyncConfig.fromJson(Map<String, dynamic> json) {
@@ -116,6 +145,11 @@ class WebdavSyncConfig {
       lastSyncedAt: DateTime.tryParse(json['lastSyncedAt'] as String? ?? ''),
       lastAppliedRemoteHash: json['lastAppliedRemoteHash'] as String?,
       lastUploadedLocalHash: json['lastUploadedLocalHash'] as String?,
+      maxBackupCount:
+          (json['maxBackupCount'] as num?)?.toInt() ?? defaultMaxBackupCount,
+      maxBackupAgeDays:
+          (json['maxBackupAgeDays'] as num?)?.toInt() ?? defaultMaxBackupAgeDays,
+      manualBackupProtected: json['manualBackupProtected'] as bool? ?? true,
     );
   }
 }

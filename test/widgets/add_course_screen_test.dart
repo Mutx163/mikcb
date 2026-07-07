@@ -244,4 +244,31 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('saving new course from header check succeeds', (tester) async {
+    final provider = TimetableProvider(
+      autoInitialize: false,
+      enableLiveActivitySync: false,
+    );
+    await provider.initialize();
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider.value(
+        value: provider,
+        child: const TestApp(home: AddCourseScreen()),
+      ),
+    );
+    await _pumpScreen(tester);
+
+    await tester.enterText(find.byType(TextField).first, '高等数学');
+    await _pumpScreen(tester);
+
+    await tester.tap(find.bySemanticsLabel('保存'));
+    await _pumpScreen(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('课程添加成功'), findsOneWidget);
+    expect(provider.courses, hasLength(1));
+    expect(provider.courses.first.name, '高等数学');
+  });
 }

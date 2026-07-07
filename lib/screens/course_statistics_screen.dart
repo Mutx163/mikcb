@@ -94,40 +94,37 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
   ) {
     return RepaintBoundary(
       key: _shareKey,
-      child: Container(
-        color: HyperosColors.scaffoldBackground(context),
-        child: HyperosListView(
-          children: [
-            OverviewSection(stats: semesterStats),
+      child: HyperosListView(
+        children: [
+          OverviewSection(stats: semesterStats),
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.statisticsAchievementsTitle,
+            child: AchievementGrid(achievements: achievements),
+          ),
+          if (stories.isNotEmpty) ...[
             const HyperosSectionGap(),
             HyperosSettingsBlock(
-              title: l10n.statisticsAchievementsTitle,
-              child: AchievementGrid(achievements: achievements),
-            ),
-            if (stories.isNotEmpty) ...[
-              const HyperosSectionGap(),
-              HyperosSettingsBlock(
-                title: l10n.statisticsStoriesTitle,
-                child: DataStoryList(stories: stories),
-              ),
-            ],
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: l10n.statisticsDailyDistribution,
-              child: DailyChart(dailyAverages: semesterStats.dailyAverages),
-            ),
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: l10n.statisticsNatureRatio,
-              child: NatureRatio(stats: semesterStats.natureStats),
-            ),
-            const HyperosSectionGap(),
-            HyperosSettingsBlock(
-              title: l10n.statisticsRankingTitle,
-              child: CourseRanking(courseRanking: semesterStats.courseRanking),
+              title: l10n.statisticsStoriesTitle,
+              child: DataStoryList(stories: stories),
             ),
           ],
-        ),
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.statisticsDailyDistribution,
+            child: DailyChart(dailyAverages: semesterStats.dailyAverages),
+          ),
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.statisticsNatureRatio,
+            child: NatureRatio(stats: semesterStats.natureStats),
+          ),
+          const HyperosSectionGap(),
+          HyperosSettingsBlock(
+            title: l10n.statisticsRankingTitle,
+            child: CourseRanking(courseRanking: semesterStats.courseRanking),
+          ),
+        ],
       ),
     );
   }

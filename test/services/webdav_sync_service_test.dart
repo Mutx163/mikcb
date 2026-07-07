@@ -8,6 +8,12 @@ void main() {
     expect(config.normalizedRemoteFolder, '/Apps/qingyu-sync/');
     expect(config.snapshotRemotePath, '/Apps/qingyu-sync/snapshot.mikcb');
     expect(config.metaRemotePath, '/Apps/qingyu-sync/snapshot.meta.json');
+    expect(config.historyRemoteFolder, '/Apps/qingyu-sync/history/');
+    expect(config.historyIndexRemotePath, '/Apps/qingyu-sync/history/index.json');
+    expect(
+      config.historyBackupRemotePath('20260707-183045-abcdef12.mikcb'),
+      '/Apps/qingyu-sync/history/20260707-183045-abcdef12.mikcb',
+    );
   });
 
   test('sync conflict auto resolver keeps local when newer', () {

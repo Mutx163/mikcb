@@ -10,58 +10,87 @@ class AchievementBadge extends StatelessWidget {
 
   const AchievementBadge({super.key, required this.achievement});
 
+  static const _medalSize = 36.0;
+  static const _medalRadius = 12.0;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final name = _achievementName(l10n, achievement.id);
     final accent = _achievementAccent(achievement.id);
+    final unlocked = achievement.isUnlocked;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: achievement.isUnlocked
-            ? accent.withValues(alpha: 0.12)
-            : HyperosColors.secondaryText(context).withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(14),
-        border: achievement.isUnlocked
-            ? null
-            : Border.all(color: HyperosTokens.divider),
-      ),
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            achievement.icon,
-            size: 22,
-            color: achievement.isUnlocked
-                ? accent
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: _medalSize,
+              height: _medalSize,
+              decoration: BoxDecoration(
+                color: unlocked
+                    ? accent
+                    : HyperosColors.secondaryText(context)
+                        .withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(_medalRadius),
+                border: unlocked
+                    ? null
+                    : Border.all(
+                        color: HyperosTokens.divider,
+                        width: 0.5,
+                      ),
+              ),
+              alignment: Alignment.center,
+              child: Icon(
+                achievement.icon,
+                size: 20,
+                color: unlocked
+                    ? Colors.white
+                    : HyperosColors.secondaryText(context)
+                        .withValues(alpha: 0.55),
+              ),
+            ),
+            if (!unlocked)
+              Positioned(
+                right: -3,
+                bottom: -3,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: BoxDecoration(
+                    color: HyperosColors.card(context),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: HyperosTokens.divider),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.lock_rounded,
+                    size: 10,
+                    color: HyperosColors.secondaryText(context),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: HyperosTypography.listDetail(context).copyWith(
+            fontSize: HyperosMiuixTypography.footnote2,
+            fontWeight: FontWeight.w600,
+            height: 1.1,
+            color: unlocked
+                ? HyperosColors.primaryText(context)
                 : HyperosColors.secondaryText(context),
           ),
-          const SizedBox(height: 4),
-          Text(
-            name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-            style: HyperosTypography.listDetail(context).copyWith(
-              fontSize: HyperosMiuixTypography.footnote2,
-              fontWeight: FontWeight.w700,
-              color: achievement.isUnlocked
-                  ? HyperosColors.primaryText(context)
-                  : HyperosColors.secondaryText(context),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Icon(
-            Icons.lock_outline_rounded,
-            size: 12,
-            color: achievement.isUnlocked
-                ? Colors.transparent
-                : HyperosColors.secondaryText(context).withValues(alpha: 0.5),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -100,6 +129,10 @@ class AchievementGrid extends StatelessWidget {
 
   const AchievementGrid({super.key, required this.achievements});
 
+  static const _columns = 4;
+  static const _columnSpacing = 8.0;
+  static const _rowSpacing = 12.0;
+
   @override
   Widget build(BuildContext context) {
     if (achievements.isEmpty) {
@@ -107,21 +140,24 @@ class AchievementGrid extends StatelessWidget {
     }
 
     return HyperosControlCard(
-      child: HyperosControlCardInset(
-        child: GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 1.12,
-          ),
-          itemCount: achievements.length,
-          itemBuilder: (context, index) {
-            return AchievementBadge(achievement: achievements[index]);
-          },
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth =
+              (constraints.maxWidth - _columnSpacing * (_columns - 1)) /
+              _columns;
+
+          return Wrap(
+            spacing: _columnSpacing,
+            runSpacing: _rowSpacing,
+            children: [
+              for (final achievement in achievements)
+                SizedBox(
+                  width: itemWidth,
+                  child: AchievementBadge(achievement: achievement),
+                ),
+            ],
+          );
+        },
       ),
     );
   }

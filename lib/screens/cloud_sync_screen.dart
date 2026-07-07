@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../services/app_sync_snapshot_service.dart';
+import '../services/cloud_backup_index_service.dart';
 import '../services/webdav_sync_config.dart';
 import '../services/webdav_sync_coordinator.dart';
 import '../services/webdav_sync_credentials_store.dart';
@@ -12,7 +13,8 @@ import '../utils/app_toast.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/course_field_picker_sheet.dart';
 import '../ui/hyperos/hyperos.dart';
-
+import 'cloud_backup_list_screen.dart';
+import 'cloud_backup_ui_helpers.dart';
 Widget _buttonLoadingPrefix() {
   return const SizedBox(
     width: 16,
@@ -31,12 +33,15 @@ class CloudSyncScreen extends StatefulWidget {
 class _CloudSyncScreenState extends State<CloudSyncScreen> {
   final _baseUrlController = TextEditingController();
   final _remoteFolderController = TextEditingController();
+  final _deviceLabelController = TextEditingController();
   final _credentialsStore = const WebdavSyncCredentialsStore();
 
   WebdavSyncConfig _config = const WebdavSyncConfig();
   bool _loading = true;
   bool _syncing = false;
+  bool _loadingBackups = false;
   String? _storedPassword;
+  List<CloudBackupEntry> _backupEntries = const [];
 
   WebdavSyncCoordinator get _coordinator => WebdavSyncCoordinator.instance();
 
@@ -55,12 +60,44 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   void dispose() {
     _baseUrlController.dispose();
     _remoteFolderController.dispose();
+    _deviceLabelController.dispose();
     super.dispose();
   }
+
+  Future<void> _loadBackups() async {
+    if (!_isAccountConnected || !_config.enabled) {
+      return;
+    }
+    setState(() {
+      _loadingBackups = true;
+    });
+    final entries = await _coordinator.fetchBackupList();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _backupEntries = entries;
+      _loadingBackups = false;
+    });
+  }
+
+  static String formatBackupDateTime(DateTime value) =>
+      CloudBackupUiHelpers.formatBackupDateTime(value);
+
+  static String resolveBackupDeviceLabel(
+    BuildContext context,
+    String deviceLabel,
+  ) => CloudBackupUiHelpers.resolveBackupDeviceLabel(context, deviceLabel);
+
+  static String buildBackupSubtitle(
+    BuildContext context,
+    CloudBackupEntry entry,
+  ) => CloudBackupUiHelpers.buildBackupSubtitle(context, entry);
 
   Future<void> _loadConfig() async {
     final config = await _coordinator.syncService.loadConfig();
     final password = await _credentialsStore.readPassword();
+    final deviceLabel = await _credentialsStore.readDeviceLabel();
     if (!mounted) {
       return;
     }
@@ -69,9 +106,11 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       _storedPassword = password;
       _baseUrlController.text = config.baseUrl;
       _remoteFolderController.text = config.remoteFolder;
+      _deviceLabelController.text = deviceLabel ?? '';
       _loading = false;
     });
     await _coordinator.refreshStatus();
+    await _loadBackups();
   }
 
   Future<void> _saveConfig(WebdavSyncConfig nextConfig) async {
@@ -131,6 +170,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     }
 
     await _credentialsStore.writePassword(result.password);
+    final deviceLabel = await _coordinator.syncService.resolveDeviceLabel();
+    if (deviceLabel.isNotEmpty) {
+      await _credentialsStore.writeDeviceLabel(deviceLabel);
+    }
     final nextConfig = _config.copyWith(
       username: result.username,
       enabled: true,
@@ -138,6 +181,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     await _saveConfig(nextConfig);
     setState(() {
       _storedPassword = result.password;
+      _deviceLabelController.text = deviceLabel;
     });
     if (!mounted) {
       return;
@@ -163,6 +207,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     }
 
     await _credentialsStore.deletePassword();
+    await _credentialsStore.deleteDeviceLabel();
     final nextConfig = _config.copyWith(
       username: '',
       enabled: false,
@@ -176,7 +221,110 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     }
     setState(() {
       _storedPassword = null;
+      _deviceLabelController.clear();
+      _backupEntries = const [];
     });
+  }
+
+  Future<void> _saveDeviceLabel() async {
+    final label = _deviceLabelController.text.trim();
+    if (label.isEmpty) {
+      await _credentialsStore.deleteDeviceLabel();
+    } else {
+      await _credentialsStore.writeDeviceLabel(label);
+    }
+  }
+
+  Future<void> _openBackupDetail(CloudBackupEntry entry) async {
+    final action = await showCloudBackupDetailSheet(
+      context: context,
+      entry: entry,
+      deviceLabel: resolveBackupDeviceLabel(context, entry.deviceLabel),
+      formattedTime: formatBackupDateTime(entry.exportedAt),
+    );
+    if (!mounted || action == null) {
+      return;
+    }
+
+    final l10n = AppLocalizations.of(context)!;
+    switch (action) {
+      case CloudBackupDetailAction.restore:
+        final confirmed = await showAppConfirmDialog(
+          context,
+          title: l10n.cloudBackupRestoreTitle,
+          message: l10n.cloudBackupRestoreBody(
+            formatBackupDateTime(entry.exportedAt),
+          ),
+          confirmLabel: l10n.cloudBackupRestoreAction,
+        );
+        if (confirmed != true || !mounted) {
+          return;
+        }
+        final uploadAsCurrent = await showAppConfirmDialog(
+          context,
+          title: l10n.cloudBackupUploadAsCurrentTitle,
+          message: l10n.cloudBackupUploadAsCurrentBody,
+          confirmLabel: l10n.cloudBackupUploadAsCurrentYes,
+          cancelLabel: l10n.cloudBackupUploadAsCurrentNo,
+        );
+        final result = await _coordinator.restoreBackup(
+          entry.id,
+          uploadAsCurrent: uploadAsCurrent == true,
+        );
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: result.kind == WebdavSyncResultKind.backupRestored
+              ? l10n.cloudBackupRestoreSuccess
+              : l10n.cloudBackupRestoreFailed(result.message ?? ''),
+          kind: result.kind == WebdavSyncResultKind.backupRestored
+              ? AppToastKind.success
+              : AppToastKind.error,
+        );
+        if (result.kind == WebdavSyncResultKind.backupRestored) {
+          await _loadBackups();
+        }
+      case CloudBackupDetailAction.delete:
+        final confirmed = await showAppConfirmDialog(
+          context,
+          title: l10n.cloudBackupDeleteTitle,
+          message: l10n.cloudBackupDeleteBody(
+            formatBackupDateTime(entry.exportedAt),
+          ),
+          confirmLabel: l10n.deleteAction,
+          destructiveConfirm: true,
+        );
+        if (confirmed != true || !mounted) {
+          return;
+        }
+        final result = await _coordinator.deleteBackup(entry.id);
+        if (!mounted) {
+          return;
+        }
+        showAppToast(
+          context,
+          message: result.kind == WebdavSyncResultKind.backupDeleted
+              ? l10n.cloudBackupDeleteSuccess
+              : l10n.cloudBackupDeleteFailed(result.message ?? ''),
+          kind: result.kind == WebdavSyncResultKind.backupDeleted
+              ? AppToastKind.success
+              : AppToastKind.error,
+        );
+        if (result.kind == WebdavSyncResultKind.backupDeleted) {
+          await _loadBackups();
+        }
+    }
+  }
+
+  Future<void> _openAllBackups() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const CloudBackupListScreen()),
+    );
+    if (mounted) {
+      await _loadBackups();
+    }
   }
 
   Future<void> _syncNow() async {
@@ -209,6 +357,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
             ? AppToastKind.error
             : AppToastKind.success,
       );
+      if (result.kind == WebdavSyncResultKind.uploaded ||
+          result.kind == WebdavSyncResultKind.downloaded) {
+        await _loadBackups();
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -324,6 +476,13 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                   label: l10n.cloudSyncRemoteFolderLabel,
                   onSubmitted: (_) => _saveAdvancedFields(),
                 ),
+                const SizedBox(height: 12),
+                HyperosTextField(
+                  controller: _deviceLabelController,
+                  label: l10n.cloudBackupDeviceLabelTitle,
+                  hint: l10n.cloudBackupDeviceLabelHint,
+                  onSubmitted: (_) => _saveDeviceLabel(),
+                ),
               ],
             ),
           ),
@@ -380,6 +539,81 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget _buildBackupSection(AppLocalizations l10n) {
+    final previewEntries = _backupEntries.take(3).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HyperosSectionLabel(text: l10n.cloudBackupSectionTitle),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            l10n.cloudBackupSectionSubtitle,
+            style: HyperosTypography.sectionDescription(context),
+          ),
+        ),
+        if (_loadingBackups)
+          const HyperosControlCard(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Center(child: HyperosCircularProgress()),
+            ),
+          )
+        else if (previewEntries.isEmpty)
+          HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: Text(
+                l10n.cloudBackupEmpty,
+                style: HyperosTypography.listDetail(context),
+              ),
+            ),
+          )
+        else
+          HyperosListGroup(
+            children: [
+              for (final entry in previewEntries)
+                HyperosNavTile(
+                  title: entry.isCurrent
+                      ? l10n.cloudBackupCurrentLabel
+                      : formatBackupDateTime(entry.exportedAt),
+                  subtitle: buildBackupSubtitle(context, entry),
+                  details: entry.isCurrent ? l10n.cloudBackupCurrentBadge : null,
+                  onTap: () => _openBackupDetail(entry),
+                ),
+              if (_backupEntries.length > 3)
+                HyperosNavTile(
+                  title: l10n.cloudBackupViewAll,
+                  onTap: _openAllBackups,
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSyncNowSection(AppLocalizations l10n) {
+    return HyperosControlCard(
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.cloudSyncSyncNowSubtitle,
+              style: HyperosTypography.listDetail(context),
+            ),
+            const SizedBox(height: 12),
+            HyperosButton(
+              label: l10n.cloudSyncSyncNow,
+              loading: _syncing,
+              onPressed: _syncing || !_config.enabled ? null : _syncNow,
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -517,15 +751,9 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 const HyperosSectionGap(),
                 _buildStatusSection(l10n, status),
                 const HyperosSectionGap(),
-                HyperosControlCard(
-                  child: HyperosControlCardInset(
-                    child: HyperosButton(
-                      label: l10n.cloudSyncSyncNow,
-                      loading: _syncing,
-                      onPressed: _syncing || !_config.enabled ? null : _syncNow,
-                    ),
-                  ),
-                ),
+                if (_config.enabled) _buildSyncNowSection(l10n),
+                if (_config.enabled) const HyperosSectionGap(),
+                if (_config.enabled) _buildBackupSection(l10n),
               ],
               const HyperosSectionGap(),
               _buildHelpBanner(l10n),

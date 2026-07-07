@@ -239,6 +239,10 @@ class AppLocalizationsJa extends AppLocalizations {
   String get cloudSyncSyncNow => '今すぐ同期';
 
   @override
+  String get cloudSyncSyncNowSubtitle =>
+      '他の端末と時間割を揃えます：クラウドを取得してから端末の変更をアップロード';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV 接続成功';
 
   @override
@@ -312,6 +316,112 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get cloudSyncConnectSuccess => 'アカウント接続成功';
+
+  @override
+  String get cloudBackupSectionTitle => '履歴バージョン';
+
+  @override
+  String get cloudBackupSectionSubtitle => '同期時に自動保存。タップしてこのバージョンに復元できます';
+
+  @override
+  String get cloudBackupCurrentLabel => '現在のバージョン';
+
+  @override
+  String get cloudBackupCurrentBadge => '現在';
+
+  @override
+  String get cloudBackupCreateNow => '今すぐバックアップ';
+
+  @override
+  String get cloudBackupViewAll => 'すべての履歴を表示';
+
+  @override
+  String get cloudBackupEmpty => '履歴はまだありません。同期すると自動保存されます';
+
+  @override
+  String get cloudBackupSourceAuto => '自動バックアップ';
+
+  @override
+  String get cloudBackupSourceManual => '手動バックアップ';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => 'この端末';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => 'デバイス名';
+
+  @override
+  String get cloudBackupDeviceLabelHint => 'バックアップ一覧に表示されます（例：私のスマホ）';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '時間割 $profileCount 件 · 授業 $courseCount 件';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => 'このバックアップに復元';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return '$time の時間割に復元します。未同期のローカル変更は失われます。続行しますか？';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => '復元';
+
+  @override
+  String get cloudBackupRestoreSuccess => 'バックアップを復元しました';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return '復元に失敗しました：$message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => 'このバックアップを削除';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return '$time のクラウドバックアップを削除しますか？元に戻せません。';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => 'バックアップを削除しました';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return '削除に失敗しました：$message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => 'バックアップをクラウドに保存しました';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return 'バックアップに失敗しました：$message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => '現在のクラウド版に設定';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      'このバックアップを現在のクラウド版にしますか？同期の競合を避けるために推奨します。';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => '現在の版に設定';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => 'ローカルのみ復元';
+
+  @override
+  String get cloudBackupDetailDevice => 'デバイス';
+
+  @override
+  String get cloudBackupDetailSource => '種類';
+
+  @override
+  String get cloudBackupDetailSummary => '内容';
 
   @override
   String get lanEditEntryTitle => 'LAN編集';

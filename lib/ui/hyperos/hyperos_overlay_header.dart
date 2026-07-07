@@ -74,19 +74,23 @@ class HyperosOverlayNestedHeader extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [prefixRow, suffixRow],
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: DefaultTextStyle.merge(
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        softWrap: false,
-                        style: resolved.titleTextStyle,
-                        textAlign: TextAlign.center,
-                        textHeightBehavior: const TextHeightBehavior(
-                          applyHeightToFirstAscent: false,
-                          applyHeightToLastDescent: false,
+                    // Title is decorative; must not steal taps from prefix/suffix
+                    // actions in the Row below (fixes save/back dead zones).
+                    IgnorePointer(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: DefaultTextStyle.merge(
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          softWrap: false,
+                          style: resolved.titleTextStyle,
+                          textAlign: TextAlign.center,
+                          textHeightBehavior: const TextHeightBehavior(
+                            applyHeightToFirstAscent: false,
+                            applyHeightToLastDescent: false,
+                          ),
+                          child: title,
                         ),
-                        child: title,
                       ),
                     ),
                   ],

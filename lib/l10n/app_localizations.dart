@@ -335,7 +335,7 @@ abstract class AppLocalizations {
   /// No description provided for @cloudSyncEntryTitle.
   ///
   /// In zh, this message translates to:
-  /// **'云同步（WEBDAV）'**
+  /// **'云同步'**
   String get cloudSyncEntryTitle;
 
   /// No description provided for @cloudSyncEntrySubtitle.
@@ -542,6 +542,12 @@ abstract class AppLocalizations {
   /// **'立即同步'**
   String get cloudSyncSyncNow;
 
+  /// No description provided for @cloudSyncSyncNowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'与其他设备对齐课表：先拉取云端更新，再上传本机修改'**
+  String get cloudSyncSyncNowSubtitle;
+
   /// No description provided for @cloudSyncTestSuccess.
   ///
   /// In zh, this message translates to:
@@ -673,6 +679,192 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'账号连接成功'**
   String get cloudSyncConnectSuccess;
+
+  /// No description provided for @cloudBackupSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'可恢复版本'**
+  String get cloudBackupSectionTitle;
+
+  /// No description provided for @cloudBackupSectionSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'每次同步都会自动保留可恢复版本'**
+  String get cloudBackupSectionSubtitle;
+
+  /// No description provided for @cloudBackupCurrentLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前版本'**
+  String get cloudBackupCurrentLabel;
+
+  /// No description provided for @cloudBackupCurrentBadge.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前'**
+  String get cloudBackupCurrentBadge;
+
+  /// No description provided for @cloudBackupCreateNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即备份'**
+  String get cloudBackupCreateNow;
+
+  /// No description provided for @cloudBackupViewAll.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看全部可恢复版本'**
+  String get cloudBackupViewAll;
+
+  /// No description provided for @cloudBackupEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无可恢复版本，同步后会自动生成'**
+  String get cloudBackupEmpty;
+
+  /// No description provided for @cloudBackupSourceAuto.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动备份'**
+  String get cloudBackupSourceAuto;
+
+  /// No description provided for @cloudBackupSourceManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动备份'**
+  String get cloudBackupSourceManual;
+
+  /// No description provided for @cloudBackupDefaultDeviceLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'本机'**
+  String get cloudBackupDefaultDeviceLabel;
+
+  /// No description provided for @cloudBackupDeviceLabelTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备名称'**
+  String get cloudBackupDeviceLabelTitle;
+
+  /// No description provided for @cloudBackupDeviceLabelHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'在备份列表中显示，例如「我的手机」'**
+  String get cloudBackupDeviceLabelHint;
+
+  /// No description provided for @cloudBackupSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'{profileCount} 个课表 · {courseCount} 门课程'**
+  String cloudBackupSummary(int profileCount, int courseCount);
+
+  /// No description provided for @cloudBackupRestoreTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复到此备份'**
+  String get cloudBackupRestoreTitle;
+
+  /// No description provided for @cloudBackupRestoreBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'将恢复到 {time} 的课表，本地未同步的修改会丢失。是否继续？'**
+  String cloudBackupRestoreBody(String time);
+
+  /// No description provided for @cloudBackupRestoreAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复'**
+  String get cloudBackupRestoreAction;
+
+  /// No description provided for @cloudBackupRestoreSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已恢复到此备份'**
+  String get cloudBackupRestoreSuccess;
+
+  /// No description provided for @cloudBackupRestoreFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'恢复失败：{message}'**
+  String cloudBackupRestoreFailed(String message);
+
+  /// No description provided for @cloudBackupDeleteTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除此备份'**
+  String get cloudBackupDeleteTitle;
+
+  /// No description provided for @cloudBackupDeleteBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'确定删除 {time} 的云端备份吗？此操作不可撤销。'**
+  String cloudBackupDeleteBody(String time);
+
+  /// No description provided for @cloudBackupDeleteSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份已删除'**
+  String get cloudBackupDeleteSuccess;
+
+  /// No description provided for @cloudBackupDeleteFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除失败：{message}'**
+  String cloudBackupDeleteFailed(String message);
+
+  /// No description provided for @cloudBackupCreateSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份已保存到云端'**
+  String get cloudBackupCreateSuccess;
+
+  /// No description provided for @cloudBackupCreateFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份失败：{message}'**
+  String cloudBackupCreateFailed(String message);
+
+  /// No description provided for @cloudBackupUploadAsCurrentTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'设为当前云端版本'**
+  String get cloudBackupUploadAsCurrentTitle;
+
+  /// No description provided for @cloudBackupUploadAsCurrentBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突。'**
+  String get cloudBackupUploadAsCurrentBody;
+
+  /// No description provided for @cloudBackupUploadAsCurrentYes.
+  ///
+  /// In zh, this message translates to:
+  /// **'设为当前版本'**
+  String get cloudBackupUploadAsCurrentYes;
+
+  /// No description provided for @cloudBackupUploadAsCurrentNo.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅恢复本地'**
+  String get cloudBackupUploadAsCurrentNo;
+
+  /// No description provided for @cloudBackupDetailDevice.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备'**
+  String get cloudBackupDetailDevice;
+
+  /// No description provided for @cloudBackupDetailSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源'**
+  String get cloudBackupDetailSource;
+
+  /// No description provided for @cloudBackupDetailSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'内容'**
+  String get cloudBackupDetailSummary;
 
   /// No description provided for @lanEditEntryTitle.
   ///

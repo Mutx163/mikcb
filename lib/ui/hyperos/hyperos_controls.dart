@@ -184,6 +184,7 @@ class HyperosControlCard extends StatelessWidget {
                 )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     if (hasHeader)
                       Padding(

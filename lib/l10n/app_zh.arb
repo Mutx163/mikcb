@@ -45,7 +45,7 @@
   },
   "dataTransferEntryTitle": "数据备份与迁移",
   "dataTransferEntrySubtitle": "导出完整课表文件，给别人直接导入使用",
-  "cloudSyncEntryTitle": "云同步（WEBDAV）",
+  "cloudSyncEntryTitle": "云同步",
   "cloudSyncEntrySubtitle": "通过坚果云等多设备同步课表与导入数据",
   "cloudSyncTitle": "云同步",
   "cloudSyncIntroTitle": "多设备同步",
@@ -94,6 +94,7 @@
   "cloudSyncHelpBody": "打开坚果云网页或客户端 → 账户信息 → 安全选项 → 添加应用密码。WEBDAV 地址默认为 https://dav.jianguoyun.com/dav/ 。",
   "cloudSyncTestConnection": "测试连接",
   "cloudSyncSyncNow": "立即同步",
+  "cloudSyncSyncNowSubtitle": "与其他设备对齐课表：先拉取云端更新，再上传本机修改",
   "cloudSyncTestSuccess": "WEBDAV 连接成功",
   "cloudSyncTestFailed": "WEBDAV 连接失败，请检查账号、应用密码和网络",
   "cloudSyncResultUploaded": "已上传到云端",
@@ -130,6 +131,68 @@
   "cloudSyncLoginSheetSubtitle": "请使用应用专用密码，不要使用坚果云登录密码。",
   "cloudSyncConfirmConnect": "确认连接",
   "cloudSyncConnectSuccess": "账号连接成功",
+  "cloudBackupSectionTitle": "可恢复版本",
+  "cloudBackupSectionSubtitle": "每次同步都会自动保留可恢复版本",
+  "cloudBackupCurrentLabel": "当前版本",
+  "cloudBackupCurrentBadge": "当前",
+  "cloudBackupCreateNow": "立即备份",
+  "cloudBackupViewAll": "查看全部可恢复版本",
+  "cloudBackupEmpty": "暂无可恢复版本，同步后会自动生成",
+  "cloudBackupSourceAuto": "自动备份",
+  "cloudBackupSourceManual": "手动备份",
+  "cloudBackupDefaultDeviceLabel": "本机",
+  "cloudBackupDeviceLabelTitle": "设备名称",
+  "cloudBackupDeviceLabelHint": "在备份列表中显示，例如「我的手机」",
+  "cloudBackupSummary": "{profileCount} 个课表 · {courseCount} 门课程",
+  "@cloudBackupSummary": {
+    "placeholders": {
+      "profileCount": { "type": "int" },
+      "courseCount": { "type": "int" }
+    }
+  },
+  "cloudBackupRestoreTitle": "恢复到此备份",
+  "cloudBackupRestoreBody": "将恢复到 {time} 的课表，本地未同步的修改会丢失。是否继续？",
+  "@cloudBackupRestoreBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupRestoreAction": "恢复",
+  "cloudBackupRestoreSuccess": "已恢复到此备份",
+  "cloudBackupRestoreFailed": "恢复失败：{message}",
+  "@cloudBackupRestoreFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteTitle": "删除此备份",
+  "cloudBackupDeleteBody": "确定删除 {time} 的云端备份吗？此操作不可撤销。",
+  "@cloudBackupDeleteBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteSuccess": "备份已删除",
+  "cloudBackupDeleteFailed": "删除失败：{message}",
+  "@cloudBackupDeleteFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupCreateSuccess": "备份已保存到云端",
+  "cloudBackupCreateFailed": "备份失败：{message}",
+  "@cloudBackupCreateFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupUploadAsCurrentTitle": "设为当前云端版本",
+  "cloudBackupUploadAsCurrentBody": "是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突。",
+  "cloudBackupUploadAsCurrentYes": "设为当前版本",
+  "cloudBackupUploadAsCurrentNo": "仅恢复本地",
+  "cloudBackupDetailDevice": "设备",
+  "cloudBackupDetailSource": "来源",
+  "cloudBackupDetailSummary": "内容",
   "lanEditEntryTitle": "局域网编辑",
   "lanEditEntrySubtitle": "在电脑浏览器中编辑当前课表",
   "lanEditTitle": "局域网编辑",

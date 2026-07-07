@@ -94,6 +94,7 @@
   "cloudSyncHelpBody": "開啟堅果雲網頁或客戶端 → 帳戶資料 → 安全選項 → 新增應用程式密碼。WEBDAV 網址預設為 https://dav.jianguoyun.com/dav/ 。",
   "cloudSyncTestConnection": "測試連線",
   "cloudSyncSyncNow": "立即同步",
+  "cloudSyncSyncNowSubtitle": "與其他設備對齊課表：先拉取雲端更新，再上傳本地修改",
   "cloudSyncTestSuccess": "WEBDAV 連線成功",
   "cloudSyncTestFailed": "WEBDAV 連線失敗，請檢查帳號、應用程式密碼和網絡",
   "cloudSyncResultUploaded": "已上傳到雲端",
@@ -130,6 +131,68 @@
   "cloudSyncLoginSheetSubtitle": "請使用應用程式專用密碼，不要使用堅果雲登入密碼。",
   "cloudSyncConfirmConnect": "確認連接",
   "cloudSyncConnectSuccess": "帳號連接成功",
+  "cloudBackupSectionTitle": "可恢復版本",
+  "cloudBackupSectionSubtitle": "每次同步都會自動保留可恢復版本",
+  "cloudBackupCurrentLabel": "當前版本",
+  "cloudBackupCurrentBadge": "當前",
+  "cloudBackupCreateNow": "立即備份",
+  "cloudBackupViewAll": "查看全部可恢復版本",
+  "cloudBackupEmpty": "暫無可恢復版本，同步後會自動生成",
+  "cloudBackupSourceAuto": "自動備份",
+  "cloudBackupSourceManual": "手動備份",
+  "cloudBackupDefaultDeviceLabel": "本機",
+  "cloudBackupDeviceLabelTitle": "裝置名稱",
+  "cloudBackupDeviceLabelHint": "在備份列表中顯示，例如「我的手機」",
+  "cloudBackupSummary": "{profileCount} 個課表 · {courseCount} 門課程",
+  "@cloudBackupSummary": {
+    "placeholders": {
+      "profileCount": { "type": "int" },
+      "courseCount": { "type": "int" }
+    }
+  },
+  "cloudBackupRestoreTitle": "恢復到此備份",
+  "cloudBackupRestoreBody": "將恢復到 {time} 的課表，本地未同步的修改會丟失。是否繼續？",
+  "@cloudBackupRestoreBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupRestoreAction": "恢復",
+  "cloudBackupRestoreSuccess": "已恢復到此備份",
+  "cloudBackupRestoreFailed": "恢復失敗：{message}",
+  "@cloudBackupRestoreFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteTitle": "刪除此備份",
+  "cloudBackupDeleteBody": "確定刪除 {time} 的雲端備份嗎？此操作不可撤銷。",
+  "@cloudBackupDeleteBody": {
+    "placeholders": {
+      "time": { "type": "String" }
+    }
+  },
+  "cloudBackupDeleteSuccess": "備份已刪除",
+  "cloudBackupDeleteFailed": "刪除失敗：{message}",
+  "@cloudBackupDeleteFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupCreateSuccess": "備份已保存到雲端",
+  "cloudBackupCreateFailed": "備份失敗：{message}",
+  "@cloudBackupCreateFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "cloudBackupUploadAsCurrentTitle": "設為當前雲端版本",
+  "cloudBackupUploadAsCurrentBody": "是否將此備份設為當前雲端版本？建議開啟，可避免其他設備同步衝突。",
+  "cloudBackupUploadAsCurrentYes": "設為當前版本",
+  "cloudBackupUploadAsCurrentNo": "僅恢復本地",
+  "cloudBackupDetailDevice": "設備",
+  "cloudBackupDetailSource": "來源",
+  "cloudBackupDetailSummary": "內容",
   "lanEditEntryTitle": "局域網編輯",
   "lanEditEntrySubtitle": "在電腦瀏覽器中編輯當前課表",
   "lanEditTitle": "局域網編輯",

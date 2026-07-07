@@ -225,7 +225,11 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
       await loadDebugTuningPreferencesIfNeeded();
     }
     await SystemChrome.setApplicationSwitcherDescription(
-      ApplicationSwitcherDescription(label: _bootSwitcherLabel(packageInfo)),
+      ApplicationSwitcherDescription(
+        label: _bootSwitcherLabel(packageInfo),
+        // Android 14+ rejects null primaryColor in the platform channel envelope.
+        primaryColor: HyperosMiuixLightColors.primary.toARGB32(),
+      ),
     );
   } catch (error, stackTrace) {
     unawaited(

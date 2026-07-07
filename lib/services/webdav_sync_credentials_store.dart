@@ -1,9 +1,11 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 
 class WebdavSyncCredentialsStore {
   static const String _passwordKey = 'webdav_sync_password';
   static const String _deviceIdKey = 'webdav_sync_device_id';
+  static const String _deviceLabelKey = 'webdav_sync_device_label';
 
   const WebdavSyncCredentialsStore({
     FlutterSecureStorage storage = _defaultStorage,
@@ -28,5 +30,24 @@ class WebdavSyncCredentialsStore {
     final deviceId = const Uuid().v4();
     await _storage.write(key: _deviceIdKey, value: deviceId);
     return deviceId;
+  }
+
+  Future<String?> readDeviceLabel() async {
+    final prefs = await SharedPreferences.getInstance();
+    final label = prefs.getString(_deviceLabelKey);
+    if (label == null || label.trim().isEmpty) {
+      return null;
+    }
+    return label.trim();
+  }
+
+  Future<void> writeDeviceLabel(String label) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_deviceLabelKey, label.trim());
+  }
+
+  Future<void> deleteDeviceLabel() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_deviceLabelKey);
   }
 }

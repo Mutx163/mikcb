@@ -125,7 +125,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get dataTransferEntrySubtitle => '导出完整课表文件，给别人直接导入使用';
 
   @override
-  String get cloudSyncEntryTitle => '云同步（WEBDAV）';
+  String get cloudSyncEntryTitle => '云同步';
 
   @override
   String get cloudSyncEntrySubtitle => '通过坚果云等多设备同步课表与导入数据';
@@ -236,6 +236,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get cloudSyncSyncNow => '立即同步';
 
   @override
+  String get cloudSyncSyncNowSubtitle => '与其他设备对齐课表：先拉取云端更新，再上传本机修改';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV 连接成功';
 
   @override
@@ -305,6 +308,112 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cloudSyncConnectSuccess => '账号连接成功';
+
+  @override
+  String get cloudBackupSectionTitle => '可恢复版本';
+
+  @override
+  String get cloudBackupSectionSubtitle => '每次同步都会自动保留可恢复版本';
+
+  @override
+  String get cloudBackupCurrentLabel => '当前版本';
+
+  @override
+  String get cloudBackupCurrentBadge => '当前';
+
+  @override
+  String get cloudBackupCreateNow => '立即备份';
+
+  @override
+  String get cloudBackupViewAll => '查看全部可恢复版本';
+
+  @override
+  String get cloudBackupEmpty => '暂无可恢复版本，同步后会自动生成';
+
+  @override
+  String get cloudBackupSourceAuto => '自动备份';
+
+  @override
+  String get cloudBackupSourceManual => '手动备份';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => '本机';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => '设备名称';
+
+  @override
+  String get cloudBackupDeviceLabelHint => '在备份列表中显示，例如「我的手机」';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '$profileCount 个课表 · $courseCount 门课程';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => '恢复到此备份';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return '将恢复到 $time 的课表，本地未同步的修改会丢失。是否继续？';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => '恢复';
+
+  @override
+  String get cloudBackupRestoreSuccess => '已恢复到此备份';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return '恢复失败：$message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => '删除此备份';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return '确定删除 $time 的云端备份吗？此操作不可撤销。';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => '备份已删除';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return '删除失败：$message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => '备份已保存到云端';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return '备份失败：$message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => '设为当前云端版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      '是否将此备份设为当前云端版本？建议开启，可避免其他设备同步冲突。';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => '设为当前版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => '仅恢复本地';
+
+  @override
+  String get cloudBackupDetailDevice => '设备';
+
+  @override
+  String get cloudBackupDetailSource => '来源';
+
+  @override
+  String get cloudBackupDetailSummary => '内容';
 
   @override
   String get lanEditEntryTitle => '局域网编辑';
@@ -5697,6 +5806,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get cloudSyncSyncNow => '立即同步';
 
   @override
+  String get cloudSyncSyncNowSubtitle => '與其他設備對齊課表：先拉取雲端更新，再上傳本地修改';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
 
   @override
@@ -5766,6 +5878,112 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get cloudSyncConnectSuccess => '帳號連接成功';
+
+  @override
+  String get cloudBackupSectionTitle => '可恢復版本';
+
+  @override
+  String get cloudBackupSectionSubtitle => '每次同步都會自動保留可恢復版本';
+
+  @override
+  String get cloudBackupCurrentLabel => '當前版本';
+
+  @override
+  String get cloudBackupCurrentBadge => '當前';
+
+  @override
+  String get cloudBackupCreateNow => '立即備份';
+
+  @override
+  String get cloudBackupViewAll => '查看全部可恢復版本';
+
+  @override
+  String get cloudBackupEmpty => '暫無可恢復版本，同步後會自動生成';
+
+  @override
+  String get cloudBackupSourceAuto => '自動備份';
+
+  @override
+  String get cloudBackupSourceManual => '手動備份';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => '本機';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => '裝置名稱';
+
+  @override
+  String get cloudBackupDeviceLabelHint => '在備份列表中顯示，例如「我的手機」';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '$profileCount 個課表 · $courseCount 門課程';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => '恢復到此備份';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return '將恢復到 $time 的課表，本地未同步的修改會丟失。是否繼續？';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => '恢復';
+
+  @override
+  String get cloudBackupRestoreSuccess => '已恢復到此備份';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return '恢復失敗：$message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => '刪除此備份';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return '確定刪除 $time 的雲端備份嗎？此操作不可撤銷。';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => '備份已刪除';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return '刪除失敗：$message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => '備份已保存到雲端';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return '備份失敗：$message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => '設為當前雲端版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      '是否將此備份設為當前雲端版本？建議開啟，可避免其他設備同步衝突。';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => '設為當前版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => '僅恢復本地';
+
+  @override
+  String get cloudBackupDetailDevice => '設備';
+
+  @override
+  String get cloudBackupDetailSource => '來源';
+
+  @override
+  String get cloudBackupDetailSummary => '內容';
 
   @override
   String get lanEditEntryTitle => '局域網編輯';
@@ -11046,6 +11264,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get cloudSyncSyncNow => '立即同步';
 
   @override
+  String get cloudSyncSyncNowSubtitle => '與其他裝置對齊課表：先拉取雲端更新，再上傳本機修改';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV 連線成功';
 
   @override
@@ -11115,6 +11336,112 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get cloudSyncConnectSuccess => '帳號連接成功';
+
+  @override
+  String get cloudBackupSectionTitle => '可恢復版本';
+
+  @override
+  String get cloudBackupSectionSubtitle => '每次同步都會自動保留可恢復版本';
+
+  @override
+  String get cloudBackupCurrentLabel => '目前版本';
+
+  @override
+  String get cloudBackupCurrentBadge => '目前';
+
+  @override
+  String get cloudBackupCreateNow => '立即備份';
+
+  @override
+  String get cloudBackupViewAll => '查看全部可恢復版本';
+
+  @override
+  String get cloudBackupEmpty => '暫無可恢復版本，同步後會自動生成';
+
+  @override
+  String get cloudBackupSourceAuto => '自動備份';
+
+  @override
+  String get cloudBackupSourceManual => '手動備份';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => '本機';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => '裝置名稱';
+
+  @override
+  String get cloudBackupDeviceLabelHint => '在備份列表中顯示，例如「我的手機」';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '$profileCount 個課表 · $courseCount 門課程';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => '恢復到此備份';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return '將恢復到 $time 的課表，本機未同步的修改會遺失。是否繼續？';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => '恢復';
+
+  @override
+  String get cloudBackupRestoreSuccess => '已恢復到此備份';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return '恢復失敗：$message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => '刪除此備份';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return '確定刪除 $time 的雲端備份嗎？此操作不可撤銷。';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => '備份已刪除';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return '刪除失敗：$message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => '備份已儲存到雲端';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return '備份失敗：$message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => '設為目前雲端版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      '是否將此備份設為目前雲端版本？建議開啟，可避免其他裝置同步衝突。';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => '設為目前版本';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => '僅恢復本機';
+
+  @override
+  String get cloudBackupDetailDevice => '裝置';
+
+  @override
+  String get cloudBackupDetailSource => '來源';
+
+  @override
+  String get cloudBackupDetailSummary => '內容';
 
   @override
   String get lanEditEntryTitle => '區域網路編輯';

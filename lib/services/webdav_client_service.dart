@@ -85,4 +85,27 @@ class WebdavClientService {
     }
     return AppSyncSnapshotMeta.fromJson(Map<String, dynamic>.from(decoded));
   }
+
+  Future<void> deleteRemoteFile({
+    required WebdavClient client,
+    required String remotePath,
+  }) async {
+    await client.delete(remotePath);
+  }
+
+  Future<List<String>> listHistoryBackupFiles({
+    required WebdavClient client,
+    required String historyRemoteFolder,
+  }) async {
+    try {
+      final resources = await client.list(historyRemoteFolder);
+      return resources
+          .where((resource) => !resource.isDirectory)
+          .map((resource) => resource.href.pathSegments.last)
+          .where((name) => name.endsWith('.mikcb'))
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
 }

@@ -961,14 +961,10 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.viewInsetsOf(context).bottom,
-          ),
-          child: SafeArea(
-            top: false,
-            child: HyperosBlurredBodyInset(
-              child: Column(
+        child: SafeArea(
+          top: false,
+          child: HyperosBlurredBodyInset(
+            child: Column(
                 children: [
                   Expanded(
                     child: HyperosListView(
@@ -1107,7 +1103,6 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
             ),
           ),
         ),
-      ),
     );
   }
 

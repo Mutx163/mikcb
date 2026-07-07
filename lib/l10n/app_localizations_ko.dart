@@ -240,6 +240,10 @@ class AppLocalizationsKo extends AppLocalizations {
   String get cloudSyncSyncNow => '지금 동기화';
 
   @override
+  String get cloudSyncSyncNowSubtitle =>
+      '다른 기기와 시간표를 맞춥니다: 클라우드에서 받은 뒤 기기 변경을 업로드';
+
+  @override
   String get cloudSyncTestSuccess => 'WEBDAV 연결 성공';
 
   @override
@@ -312,6 +316,112 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get cloudSyncConnectSuccess => '계정 연결 성공';
+
+  @override
+  String get cloudBackupSectionTitle => '버전 기록';
+
+  @override
+  String get cloudBackupSectionSubtitle => '동기화할 때 자동 저장됩니다. 탭하여 해당 버전으로 복원';
+
+  @override
+  String get cloudBackupCurrentLabel => '현재 버전';
+
+  @override
+  String get cloudBackupCurrentBadge => '현재';
+
+  @override
+  String get cloudBackupCreateNow => '지금 백업';
+
+  @override
+  String get cloudBackupViewAll => '모든 버전 보기';
+
+  @override
+  String get cloudBackupEmpty => '아직 버전 기록이 없습니다. 동기화하면 자동 저장됩니다';
+
+  @override
+  String get cloudBackupSourceAuto => '자동 백업';
+
+  @override
+  String get cloudBackupSourceManual => '수동 백업';
+
+  @override
+  String get cloudBackupDefaultDeviceLabel => '이 기기';
+
+  @override
+  String get cloudBackupDeviceLabelTitle => '기기 이름';
+
+  @override
+  String get cloudBackupDeviceLabelHint => '백업 목록에 표시됩니다. 예: 내 휴대폰';
+
+  @override
+  String cloudBackupSummary(int profileCount, int courseCount) {
+    return '시간표 $profileCount개 · 강의 $courseCount개';
+  }
+
+  @override
+  String get cloudBackupRestoreTitle => '이 백업으로 복원';
+
+  @override
+  String cloudBackupRestoreBody(String time) {
+    return '$time 시간표로 복원합니다. 동기화되지 않은 로컬 변경은 사라집니다. 계속할까요?';
+  }
+
+  @override
+  String get cloudBackupRestoreAction => '복원';
+
+  @override
+  String get cloudBackupRestoreSuccess => '백업을 복원했습니다';
+
+  @override
+  String cloudBackupRestoreFailed(String message) {
+    return '복원 실패: $message';
+  }
+
+  @override
+  String get cloudBackupDeleteTitle => '이 백업 삭제';
+
+  @override
+  String cloudBackupDeleteBody(String time) {
+    return '$time 클라우드 백업을 삭제할까요? 되돌릴 수 없습니다.';
+  }
+
+  @override
+  String get cloudBackupDeleteSuccess => '백업을 삭제했습니다';
+
+  @override
+  String cloudBackupDeleteFailed(String message) {
+    return '삭제 실패: $message';
+  }
+
+  @override
+  String get cloudBackupCreateSuccess => '백업을 클라우드에 저장했습니다';
+
+  @override
+  String cloudBackupCreateFailed(String message) {
+    return '백업 실패: $message';
+  }
+
+  @override
+  String get cloudBackupUploadAsCurrentTitle => '현재 클라우드 버전으로 설정';
+
+  @override
+  String get cloudBackupUploadAsCurrentBody =>
+      '이 백업을 현재 클라우드 버전으로 업로드할까요? 동기화 충돌을 줄이려면 권장합니다.';
+
+  @override
+  String get cloudBackupUploadAsCurrentYes => '현재 버전으로 설정';
+
+  @override
+  String get cloudBackupUploadAsCurrentNo => '로컬만 복원';
+
+  @override
+  String get cloudBackupDetailDevice => '기기';
+
+  @override
+  String get cloudBackupDetailSource => '유형';
+
+  @override
+  String get cloudBackupDetailSummary => '내용';
 
   @override
   String get lanEditEntryTitle => 'LAN 편집';

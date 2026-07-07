@@ -438,7 +438,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
           ..._withSpacing([
             FormField<String>(
               validator: (value) {
-                if (value == null || value.trim().isEmpty) {
+                final name = (value ?? _nameController.text).trim();
+                if (name.isEmpty) {
                   return l10n.pleaseEnterCourseName;
                 }
                 return null;
@@ -1685,13 +1686,23 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableSettings settings,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-
     FocusScope.of(context).unfocus();
     await Future<void>.delayed(const Duration(milliseconds: 16));
 
+    final trimmedName = _nameController.text.trim();
+    if (trimmedName.isEmpty) {
+      _formKey.currentState?.validate();
+      showAppToast(
+        context,
+        message: l10n.pleaseEnterCourseName,
+        kind: AppToastKind.warning,
+      );
+      return;
+    }
+
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     await _saveGroup(provider, settings, l10n);
   }
 
@@ -1700,7 +1711,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     TimetableSettings settings,
     AppLocalizations l10n,
   ) async {
-    final name = _nameController.text;
+    final name = _nameController.text.trim();
     final shortName = _shortNameController.text.isEmpty
         ? null
         : _shortNameController.text;
