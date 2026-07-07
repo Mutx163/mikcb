@@ -269,9 +269,9 @@ class MacroRecordingConverter {
         password = value;
       }
     }
-    return {
-      if (username != null) 'username': username,
-      if (password != null) 'password': password,
-    };
+    final result = <String, String>{};
+    if (username != null) result['username'] = username;
+    if (password != null) result['password'] = password;
+    return result;
   }
 }

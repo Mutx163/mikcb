@@ -75,7 +75,7 @@ class _TimeSchemeManagementScreenState
             child: ListView.separated(
               padding: HyperosTokens.listPadding,
               itemCount: schemes.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 final scheme = schemes[index];
                 final isActive = scheme.id == activeSchemeId;
