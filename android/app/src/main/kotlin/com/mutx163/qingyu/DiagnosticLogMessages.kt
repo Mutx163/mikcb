@@ -15,6 +15,8 @@ object DiagnosticLogMessages {
     const val LIVE_UPDATE_RESCHEDULE_HOLIDAY = "因节假日覆盖跳过超级岛重调度"
     const val LIVE_UPDATE_RESCHEDULE_ACTIVE = "重调度发现活跃课程并立即启动"
     const val LIVE_UPDATE_RESCHEDULE_SCHEDULED = "已调度下一次超级岛触发"
+    const val LIVE_UPDATE_SEMESTER_START_MISSING = "未设置学期开始日期，后台闹钟不会触发超级岛"
+    const val LIVE_UPDATE_STOPPED_NO_ACTIVE_SELECTION = "当前无应显示课程，已停止超级岛服务"
     const val LIVE_UPDATE_SNAPSHOT_PARSE_FAILED = "解析超级岛课表快照失败"
     const val LIVE_UPDATE_SNAPSHOT_INVALIDATED = "应用版本变更后已作废过期快照"
     const val LIVE_UPDATE_PAYLOAD_SELECTED = "调度器已为原生服务选定超级岛负载"

@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_keep_alive_label">輕嶼課表後台保活服務</string>
+    <string name="accessibility_keep_alive_description">輕嶼課表用於提升超級島與提醒在後台場景下穩定性的輔助服務，不會讀取頁面內容或執行自動操作。</string>
+
+    <string name="app_display_name">輕嶼課表</string>
+    <string name="pictures_folder_name">輕嶼課表</string>
+    <string name="payment_qr_description">輕嶼課表收款碼</string>
+
+    <string name="notification_channel_live_update_name">課程表即時更新</string>
+    <string name="notification_channel_live_update_desc">顯示當前課程進度</string>
+
+    <string name="notification_course_reminder_title">課程提醒: %1$s</string>
+    <string name="notification_preparing_reminder">正在準備課程提醒</string>
+    <string name="action_enable_silent">開啟靜音</string>
+    <string name="action_enable_dnd">開啟免打擾</string>
+    <string name="action_close">關閉</string>
+
+    <string name="prefix_until_class_start">距上課</string>
+    <string name="prefix_until_class_end">距下課</string>
+    <string name="stage_in_class">上課中</string>
+    <string name="stage_before_class">即將上課</string>
+    <string name="stage_before_end">下課提醒</string>
+
+    <string name="title_before_class">即將上課: %1$s</string>
+    <string name="title_before_end">下課提醒: %1$s</string>
+
+    <string name="label_class_start_time">上課時間: %1$s</string>
+    <string name="label_class_end_time">下課時間: %1$s</string>
+    <string name="label_location">地點: %1$s</string>
+
+    <string name="detail_short_name">簡稱: %1$s</string>
+    <string name="detail_next_milestone">下一節點: %1$s</string>
+    <string name="detail_final_dismiss">整節下課: %1$s</string>
+    <string name="detail_status">狀態: %1$s</string>
+    <string name="detail_time">時間: %1$s</string>
+    <string name="detail_teacher">教師: %1$s</string>
+    <string name="detail_next_course">下一節: %1$s</string>
+    <string name="detail_note">備註: %1$s</string>
+
+    <string name="remaining_until_class_start">距上課%1$s</string>
+    <string name="remaining_until_class_end">距下課%1$s</string>
+    <string name="final_dismiss_with_time">整節下課 %1$s</string>
+
+    <string name="milestone_recent_end">最近下課</string>
+    <string name="milestone_next_start">下節上課</string>
+
+    <string name="debug_service_not_running">原生即時服務未運行</string>
+    <string name="debug_status_running">運行中</string>
+    <string name="debug_status_not_running">未運行</string>
+    <string name="debug_island_ready">已滿足上島條件</string>
+    <string name="debug_island_not_ready">未滿足上島條件</string>
+    <string name="debug_foreground_not_started">前台即時通知尚未啟動</string>
+    <string name="debug_stage_not_displayable">當前不在可展示階段</string>
+    <string name="debug_status_bar_only">當前處於僅狀態欄提醒階段，不會上島</string>
+    <string name="debug_during_class_normal_notification">課中階段已配置為普通通知，不會上島</string>
+    <string name="debug_promote_not_requested">當前階段未請求提升顯示</string>
+    <string name="debug_os_not_supported">當前系統版本不支援提升通知上島</string>
+    <string name="debug_notification_permission_off">通知權限未開啟</string>
+    <string name="debug_promoted_permission_not_declared">應用未聲明提升通知權限</string>
+    <string name="debug_system_denied_promoted">系統未允許提升通知</string>
+    <string name="debug_notification_not_promotable">當前通知不滿足系統提升特徵</string>
+
+    <string name="stop_service_start_failed">即時服務啟動失敗</string>
+    <string name="stop_service_destroyed">原生即時服務已銷毀</string>
+    <string name="stop_status_bar_dismissed">課中狀態欄提醒已手動關閉</string>
+    <string name="stop_reminder_ended">即時提醒已結束並移除通知</string>
+</resources>

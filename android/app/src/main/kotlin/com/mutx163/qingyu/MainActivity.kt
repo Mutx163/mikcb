@@ -1090,7 +1090,7 @@ class MainActivity : FlutterActivity() {
                 put(MediaStore.Images.Media.MIME_TYPE, mimeType)
                 put(
                     MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_PICTURES}/轻屿课表"
+                    "${Environment.DIRECTORY_PICTURES}/${getString(R.string.pictures_folder_name)}"
                 )
                 put(MediaStore.Images.Media.IS_PENDING, 1)
             }
@@ -1118,7 +1118,7 @@ class MainActivity : FlutterActivity() {
             resolver,
             bitmap,
             safeFileName,
-            "轻屿课表收款码"
+            getString(R.string.payment_qr_description)
         )
         return inserted?.takeIf { it.isNotBlank() }
     }
@@ -1152,10 +1152,10 @@ class MainActivity : FlutterActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "课程表实时更新",
+                getString(R.string.notification_channel_live_update_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "显示当前课程进度"
+                description = getString(R.string.notification_channel_live_update_desc)
             }
             notificationManager?.createNotificationChannel(channel)
         }
@@ -1405,15 +1405,15 @@ class LiveUpdateService : Service() {
         private var lastDebugUpdatedAtMillis = 0L
 
         @Volatile
-        private var lastStopReason: String? = "原生实时服务未运行"
+        private var lastStopReason: String? = null
 
         fun buildDebugStatus(context: Context): Map<String, Any?> {
             val snapshot = lastDebugSnapshot
             val summary = copyStringKeyMap(snapshot["summary"]).apply {
                 this["serviceRunning"] = isServiceRunning
                 this["statusText"] = when {
-                    isServiceRunning -> this["statusText"] ?: "运行中"
-                    else -> "未运行"
+                    isServiceRunning -> this["statusText"] ?: context.getString(R.string.debug_status_running)
+                    else -> context.getString(R.string.debug_status_not_running)
                 }
                 this["isExpectedToShowIsland"] =
                     (this["isExpectedToShowIsland"] as? Boolean == true) && isServiceRunning
@@ -1423,7 +1423,7 @@ class LiveUpdateService : Service() {
                     if (isServiceRunning) {
                         this["notIslandReason"] ?: ""
                     } else {
-                        lastStopReason ?: "原生实时服务未运行"
+                        lastStopReason ?: context.getString(R.string.debug_service_not_running)
                     }
             }
 
@@ -1774,7 +1774,7 @@ class LiveUpdateService : Service() {
             startTicker()
             START_STICKY
         } catch (e: Exception) {
-            markServiceStopped("实时服务启动失败")
+            markServiceStopped(getString(R.string.stop_service_start_failed))
             UmengDiagnosticReporter.report(
                 context = applicationContext,
                 category = "live_update_service_start_failed",
@@ -1803,7 +1803,7 @@ class LiveUpdateService : Service() {
     override fun onDestroy() {
         stopTicker()
         if (isServiceRunning) {
-            markServiceStopped("原生实时服务已销毁")
+            markServiceStopped(getString(R.string.stop_service_destroyed))
         }
         if (hasStartedForeground) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -1871,8 +1871,8 @@ class LiveUpdateService : Service() {
 
         val bootstrapTitle = intent?.getStringExtra("courseName")
             ?.takeIf { it.isNotBlank() }
-            ?.let { "课程提醒: $it" }
-            ?: "轻屿课表"
+            ?.let { getString(R.string.notification_course_reminder_title, it) }
+            ?: getString(R.string.app_display_name)
         startForeground(
             NOTIFICATION_ID,
             buildBootstrapNotification(bootstrapTitle)
@@ -1888,10 +1888,10 @@ class LiveUpdateService : Service() {
         val manager = getSystemService(NotificationManager::class.java) ?: return
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "课程表实时更新",
+            getString(R.string.notification_channel_live_update_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "显示当前课程进度"
+            description = getString(R.string.notification_channel_live_update_desc)
         }
         manager.createNotificationChannel(channel)
     }
@@ -1905,7 +1905,7 @@ class LiveUpdateService : Service() {
 
         return builder
             .setContentTitle(title)
-            .setContentText("正在准备课程提醒")
+            .setContentText(getString(R.string.notification_preparing_reminder))
             .setSmallIcon(R.drawable.ic_course)
             .setOngoing(true)
             .setAutoCancel(false)
@@ -1928,8 +1928,8 @@ class LiveUpdateService : Service() {
 
     private fun buildBeforeClassQuickAction(): Notification.Action? {
         val (action, label) = when (beforeClassQuickAction) {
-            "silent" -> ACTION_ENABLE_SILENT_MODE to "打开静音"
-            "do_not_disturb" -> ACTION_ENABLE_DO_NOT_DISTURB to "打开免打扰"
+            "silent" -> ACTION_ENABLE_SILENT_MODE to getString(R.string.action_enable_silent)
+            "do_not_disturb" -> ACTION_ENABLE_DO_NOT_DISTURB to getString(R.string.action_enable_dnd)
             else -> return null
         }
         val pendingIntent = PendingIntent.getService(
@@ -1959,7 +1959,7 @@ class LiveUpdateService : Service() {
         )
         return Notification.Action.Builder(
             Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
-            "关闭",
+            getString(R.string.action_close),
             pendingIntent,
         ).build()
     }
@@ -2003,7 +2003,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun dismissStatusBarStage() {
-        markServiceStopped("课中状态栏提醒已手动关闭")
+        markServiceStopped(getString(R.string.stop_status_bar_dismissed))
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_status_bar_dismissed",
@@ -2094,6 +2094,12 @@ class LiveUpdateService : Service() {
             override fun run() {
                 val now = System.currentTimeMillis()
                 BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
+                if (!LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)) {
+                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
+                        stopAndRemoveNotification()
+                    }
+                    return
+                }
                 val stage = resolveStage(now)
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
@@ -2172,8 +2178,8 @@ class LiveUpdateService : Service() {
         val stage = resolveStage(now)
         val timeUntilEnd = endAtMillis - now
 
-        val prefixTextStart = if (hidePrefixText) "" else "距上课"
-        val prefixTextEnd = if (hidePrefixText) "" else "距下课"
+        val prefixTextStart = if (hidePrefixText) "" else getString(R.string.prefix_until_class_start)
+        val prefixTextEnd = if (hidePrefixText) "" else getString(R.string.prefix_until_class_end)
 
         return if (!showCountdown) {
             ""
@@ -2193,7 +2199,7 @@ class LiveUpdateService : Service() {
                     )}"
                 }
                 "duringClass",
-                "duringClassStatusBar" -> "上课中"
+                "duringClassStatusBar" -> getString(R.string.stage_in_class)
                 else -> ""
             }
         }
@@ -2573,7 +2579,7 @@ class LiveUpdateService : Service() {
         val islandContentText = when (stage) {
             "beforeClass" -> remainingTextForIsland(stage, startAtMillis, endAtMillis)
             "beforeEnd" -> remainingTextForIsland(stage, startAtMillis, endAtMillis)
-            else -> classProgress?.compactDisplayText ?: "上课中"
+            else -> classProgress?.compactDisplayText ?: getString(R.string.stage_in_class)
         }
 
         val bigIslandArea = JSONObject().apply {
@@ -2656,13 +2662,21 @@ class LiveUpdateService : Service() {
         return when (stage) {
             "beforeClass" -> {
                 val remaining = startAtMillis - now
-                if (remaining > 0) "距上课${formatCountdownDuration(remaining)}" else "即将上课"
+                if (remaining > 0) {
+                    getString(R.string.remaining_until_class_start, formatCountdownDuration(remaining))
+                } else {
+                    getString(R.string.stage_before_class)
+                }
             }
             "beforeEnd" -> {
                 val remaining = endAtMillis - now
-                if (remaining > 0) "距下课${formatCountdownDuration(remaining)}" else "下课提醒"
+                if (remaining > 0) {
+                    getString(R.string.remaining_until_class_end, formatCountdownDuration(remaining))
+                } else {
+                    getString(R.string.stage_before_end)
+                }
             }
-            else -> "上课中"
+            else -> getString(R.string.stage_in_class)
         }
     }
 
@@ -2797,9 +2811,9 @@ class LiveUpdateService : Service() {
         val miuiIslandLabelBitmap = resolveIslandLabelBitmap(miuiIslandLabelText)
 
         val stageTitle = when (stage) {
-            "beforeClass" -> "即将上课"
-            "beforeEnd" -> "下课提醒"
-            else -> "上课中"
+            "beforeClass" -> getString(R.string.stage_before_class)
+            "beforeEnd" -> getString(R.string.stage_before_end)
+            else -> getString(R.string.stage_in_class)
         }
         val visibleStatusText = when {
             !showCountdown && showStageText -> stageTitle
@@ -2807,8 +2821,8 @@ class LiveUpdateService : Service() {
             else -> remainingText.ifBlank { stageTitle }
         }
         val title = when (stage) {
-            "beforeClass" -> "即将上课: $shortCourseName"
-            "beforeEnd" -> "下课提醒: $shortCourseName"
+            "beforeClass" -> getString(R.string.title_before_class, shortCourseName)
+            "beforeEnd" -> getString(R.string.title_before_end, shortCourseName)
             else -> shortCourseName
         }
         val shortNameLabel = shortCourseNameRaw.takeIf { it.isNotBlank() && it != courseName }
@@ -2819,13 +2833,13 @@ class LiveUpdateService : Service() {
         }
         val subText = if (isUpcoming) {
             listOf(
-                timeRangeText.takeIf { it.isNotBlank() }?.let { "上课时间: $it" },
-                visibleLocation.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+                timeRangeText.takeIf { it.isNotBlank() }?.let { getString(R.string.label_class_start_time, it) },
+                visibleLocation.takeIf { it.isNotBlank() }?.let { getString(R.string.label_location, it) }
             ).filterNotNull().joinToString("  ·  ")
         } else if (isEndingSoon) {
             listOf(
-                timeRangeText.takeIf { it.isNotBlank() }?.let { "下课时间: $it" },
-                visibleLocation.takeIf { it.isNotBlank() }?.let { "地点: $it" }
+                timeRangeText.takeIf { it.isNotBlank() }?.let { getString(R.string.label_class_end_time, it) },
+                visibleLocation.takeIf { it.isNotBlank() }?.let { getString(R.string.label_location, it) }
             ).filterNotNull().joinToString("  ·  ")
         } else {
             ""
@@ -2864,20 +2878,26 @@ class LiveUpdateService : Service() {
 
         val expandedDetailText = buildString {
             append(stageTitle)
-            if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
+            if (shortNameLabel != null) {
+                append("\n").append(getString(R.string.detail_short_name, shortNameLabel))
+            }
             if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
                 if (classProgress.nextMilestoneDisplayText != null) {
-                    append("\n下一节点: ").append(classProgress.nextMilestoneDisplayText)
+                    append("\n").append(
+                        getString(R.string.detail_next_milestone, classProgress.nextMilestoneDisplayText)
+                    )
                 }
-                append("\n整节下课: ").append(classProgress.finalDismissDisplayText)
+                append("\n").append(
+                    getString(R.string.detail_final_dismiss, classProgress.finalDismissDisplayText)
+                )
             } else if (detailStatusText != null) {
-                append("\n状态: ").append(detailStatusText)
+                append("\n").append(getString(R.string.detail_status, detailStatusText))
             }
-            if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (location.isNotBlank()) append("\n地点: ").append(location)
-            if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
-            if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
-            if (note.isNotBlank()) append("\n备注: ").append(note)
+            if (timeRangeText.isNotBlank()) append("\n").append(getString(R.string.detail_time, timeRangeText))
+            if (location.isNotBlank()) append("\n").append(getString(R.string.label_location, location))
+            if (teacher.isNotBlank()) append("\n").append(getString(R.string.detail_teacher, teacher))
+            if (nextName.isNotBlank()) append("\n").append(getString(R.string.detail_next_course, nextName))
+            if (note.isNotBlank()) append("\n").append(getString(R.string.detail_note, note))
         }
 
         val promotedContentText = if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
@@ -2896,19 +2916,19 @@ class LiveUpdateService : Service() {
         val promotedExpandedDetailText = buildString {
             if ((isDuringClass || isEndingSoon) && classProgress != null && showCountdown) {
                 if (classProgress.nextMilestoneDisplayText != null) {
-                    append("下一节点: ").append(classProgress.nextMilestoneDisplayText)
+                    append(getString(R.string.detail_next_milestone, classProgress.nextMilestoneDisplayText))
                     append("\n")
                 }
-                append("整节下课: ").append(classProgress.finalDismissDisplayText)
+                append(getString(R.string.detail_final_dismiss, classProgress.finalDismissDisplayText))
             } else if (detailStatusText != null) {
-                append("状态: ").append(detailStatusText)
+                append(getString(R.string.detail_status, detailStatusText))
             }
-            if (timeRangeText.isNotBlank()) append("\n时间: ").append(timeRangeText)
-            if (location.isNotBlank()) append("\n地点: ").append(location)
-            if (teacher.isNotBlank()) append("\n教师: ").append(teacher)
-            if (shortNameLabel != null) append("\n简称: ").append(shortNameLabel)
-            if (nextName.isNotBlank()) append("\n下一节: ").append(nextName)
-            if (note.isNotBlank()) append("\n备注: ").append(note)
+            if (timeRangeText.isNotBlank()) append("\n").append(getString(R.string.detail_time, timeRangeText))
+            if (location.isNotBlank()) append("\n").append(getString(R.string.label_location, location))
+            if (teacher.isNotBlank()) append("\n").append(getString(R.string.detail_teacher, teacher))
+            if (shortNameLabel != null) append("\n").append(getString(R.string.detail_short_name, shortNameLabel))
+            if (nextName.isNotBlank()) append("\n").append(getString(R.string.detail_next_course, nextName))
+            if (note.isNotBlank()) append("\n").append(getString(R.string.detail_note, note))
         }
 
         val contentText = if (!showStandardNotification) {
@@ -3107,17 +3127,17 @@ class LiveUpdateService : Service() {
         val isActuallyPromotable =
             shouldPromote && !isDuringClassStatusBar && canPostPromoted && hasPromotableCharacteristics == true
         val notIslandReason = when {
-            !hasStartedForeground -> "前台实时通知尚未启动"
-            stage == null -> "当前不在可展示阶段"
-            isDuringClassStatusBar -> "当前处于仅状态栏提醒阶段，不会上岛"
+            !hasStartedForeground -> getString(R.string.debug_foreground_not_started)
+            stage == null -> getString(R.string.debug_stage_not_displayable)
+            isDuringClassStatusBar -> getString(R.string.debug_status_bar_only)
             !shouldPromote && isDuringClass && !promoteDuringClass ->
-                "课中阶段已配置为普通通知，不会上岛"
-            !shouldPromote -> "当前阶段未请求提升显示"
-            Build.VERSION.SDK_INT < 36 -> "当前系统版本不支持提升通知上岛"
-            !hasNotificationPermissionCompat(this) -> "通知权限未开启"
-            !isPromotedPermissionDeclaredCompat(this) -> "应用未声明提升通知权限"
-            !canPostPromoted -> "系统未允许提升通知"
-            hasPromotableCharacteristics == false -> "当前通知不满足系统提升特征"
+                getString(R.string.debug_during_class_normal_notification)
+            !shouldPromote -> getString(R.string.debug_promote_not_requested)
+            Build.VERSION.SDK_INT < 36 -> getString(R.string.debug_os_not_supported)
+            !hasNotificationPermissionCompat(this) -> getString(R.string.debug_notification_permission_off)
+            !isPromotedPermissionDeclaredCompat(this) -> getString(R.string.debug_promoted_permission_not_declared)
+            !canPostPromoted -> getString(R.string.debug_system_denied_promoted)
+            hasPromotableCharacteristics == false -> getString(R.string.debug_notification_not_promotable)
             else -> ""
         }
 
@@ -3129,7 +3149,11 @@ class LiveUpdateService : Service() {
                     "resolvedStage" to stage,
                     "isExpectedToShowIsland" to shouldPromote,
                     "isActuallyPromotable" to isActuallyPromotable,
-                    "statusText" to if (isActuallyPromotable) "已满足上岛条件" else "未满足上岛条件",
+                    "statusText" to if (isActuallyPromotable) {
+                        getString(R.string.debug_island_ready)
+                    } else {
+                        getString(R.string.debug_island_not_ready)
+                    },
                     "notIslandReason" to notIslandReason,
                 ),
                 "service" to linkedMapOf(
@@ -3252,7 +3276,7 @@ class LiveUpdateService : Service() {
 
     private fun stopAndRemoveNotification() {
         restoreBeforeClassQuickActionIfClassEnded()
-        markServiceStopped("实时提醒已结束并移除通知")
+        markServiceStopped(getString(R.string.stop_reminder_ended))
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "live_update_service_stopped",
@@ -3340,7 +3364,7 @@ class LiveUpdateService : Service() {
             } else {
                 null
             }
-        val finalDismissDisplayText = "整节下课 $finalDismissRemainingText"
+        val finalDismissDisplayText = getString(R.string.final_dismiss_with_time, finalDismissRemainingText)
         val compactDisplayText = if (duringClassTimeDisplayMode == "total") {
             finalDismissDisplayText
         } else {

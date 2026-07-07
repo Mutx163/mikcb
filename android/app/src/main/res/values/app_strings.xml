@@ -1,4 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="accessibility_keep_alive_label">轻屿课表后台保活服务</string>
     <string name="accessibility_keep_alive_description">轻屿课表用于提升超级岛与提醒在后台场景下稳定性的辅助服务，不会读取页面内容或执行自动操作。</string>
+
+    <string name="app_display_name">轻屿课表</string>
+    <string name="pictures_folder_name">轻屿课表</string>
+    <string name="payment_qr_description">轻屿课表收款码</string>
+
+    <!-- Notification channels -->
+    <string name="notification_channel_live_update_name">课程表实时更新</string>
+    <string name="notification_channel_live_update_desc">显示当前课程进度</string>
+
+    <!-- Live update / super island -->
+    <string name="notification_course_reminder_title">课程提醒: %1$s</string>
+    <string name="notification_preparing_reminder">正在准备课程提醒</string>
+    <string name="action_enable_silent">打开静音</string>
+    <string name="action_enable_dnd">打开免打扰</string>
+    <string name="action_close">关闭</string>
+
+    <string name="prefix_until_class_start">距上课</string>
+    <string name="prefix_until_class_end">距下课</string>
+    <string name="stage_in_class">上课中</string>
+    <string name="stage_before_class">即将上课</string>
+    <string name="stage_before_end">下课提醒</string>
+
+    <string name="title_before_class">即将上课: %1$s</string>
+    <string name="title_before_end">下课提醒: %1$s</string>
+
+    <string name="label_class_start_time">上课时间: %1$s</string>
+    <string name="label_class_end_time">下课时间: %1$s</string>
+    <string name="label_location">地点: %1$s</string>
+
+    <string name="detail_short_name">简称: %1$s</string>
+    <string name="detail_next_milestone">下一节点: %1$s</string>
+    <string name="detail_final_dismiss">整节下课: %1$s</string>
+    <string name="detail_status">状态: %1$s</string>
+    <string name="detail_time">时间: %1$s</string>
+    <string name="detail_teacher">教师: %1$s</string>
+    <string name="detail_next_course">下一节: %1$s</string>
+    <string name="detail_note">备注: %1$s</string>
+
+    <string name="remaining_until_class_start">距上课%1$s</string>
+    <string name="remaining_until_class_end">距下课%1$s</string>
+    <string name="final_dismiss_with_time">整节下课 %1$s</string>
+
+    <string name="milestone_recent_end">最近下课</string>
+    <string name="milestone_next_start">下节上课</string>
+
+    <!-- Debug / status (shown in app diagnostics UI) -->
+    <string name="debug_service_not_running">原生实时服务未运行</string>
+    <string name="debug_status_running">运行中</string>
+    <string name="debug_status_not_running">未运行</string>
+    <string name="debug_island_ready">已满足上岛条件</string>
+    <string name="debug_island_not_ready">未满足上岛条件</string>
+    <string name="debug_foreground_not_started">前台实时通知尚未启动</string>
+    <string name="debug_stage_not_displayable">当前不在可展示阶段</string>
+    <string name="debug_status_bar_only">当前处于仅状态栏提醒阶段，不会上岛</string>
+    <string name="debug_during_class_normal_notification">课中阶段已配置为普通通知，不会上岛</string>
+    <string name="debug_promote_not_requested">当前阶段未请求提升显示</string>
+    <string name="debug_os_not_supported">当前系统版本不支持提升通知上岛</string>
+    <string name="debug_notification_permission_off">通知权限未开启</string>
+    <string name="debug_promoted_permission_not_declared">应用未声明提升通知权限</string>
+    <string name="debug_system_denied_promoted">系统未允许提升通知</string>
+    <string name="debug_notification_not_promotable">当前通知不满足系统提升特征</string>
+
+    <string name="stop_service_start_failed">实时服务启动失败</string>
+    <string name="stop_service_destroyed">原生实时服务已销毁</string>
+    <string name="stop_status_bar_dismissed">课中状态栏提醒已手动关闭</string>
+    <string name="stop_reminder_ended">实时提醒已结束并移除通知</string>
 </resources>

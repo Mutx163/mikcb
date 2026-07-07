@@ -7,6 +7,8 @@ import 'package:flutter/services.dart';
 import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/holiday_log_localizer.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -266,7 +268,10 @@ class TimetableSettingsScreen extends StatelessWidget {
                         icon: Icons.widgets_outlined,
                         iconAccent: HyperosIconColors.green,
                         title: l10n.homeWidgetEntryTitle,
-                        details: settings.widgetBackgroundStyle.label,
+                        details: widgetBackgroundStyleLabel(
+                          l10n,
+                          settings.widgetBackgroundStyle,
+                        ),
                         onTap: openHomeWidgetSettings,
                       ),
                       HyperosListTile(
@@ -621,7 +626,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
               subtitle: l10n.displayModeSubtitle,
               items: {
                 for (final v in AppThemeMode.values)
-                  _themeModeLabel(context, v): v,
+                  appThemeModeLabel(l10n, v): v,
               },
               value: _draft.appThemeMode,
               onChanged: (value) {
@@ -679,7 +684,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   subtitle: l10n.homeTitleSectionSubtitle,
                   items: {
                     for (final v in HomeTitleStyle.values)
-                      _homeTitleStyleLabel(context, v): v,
+                      homeTitleStyleLabel(l10n, v): v,
                   },
                   value: _draft.homeTitleStyle,
                   onChanged: (value) {
@@ -696,7 +701,7 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
                   _HomeTitleStylePreview(style: _draft.homeTitleStyle),
                   const SizedBox(height: 8),
                   Text(
-                    _homeTitleStyleDescription(context, _draft.homeTitleStyle),
+                    homeTitleStyleDescription(l10n, _draft.homeTitleStyle),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -1131,15 +1136,6 @@ class _AppearanceSettingsScreenState extends State<_AppearanceSettingsScreen> {
   }
 }
 
-String _themeModeLabel(BuildContext context, AppThemeMode mode) {
-  final l10n = AppLocalizations.of(context)!;
-  return switch (mode) {
-    AppThemeMode.system => l10n.themeModeSystem,
-    AppThemeMode.light => l10n.themeModeLight,
-    AppThemeMode.dark => l10n.themeModeDark,
-  };
-}
-
 String _fontModeLabel(BuildContext context, AppFontMode mode) {
   final l10n = AppLocalizations.of(context)!;
   return switch (mode) {
@@ -1190,34 +1186,6 @@ String normalizeLocaleTagForDropdown(String tag) {
     return languageCode;
   }
   return '';
-}
-
-String _homeTitleStyleLabel(BuildContext context, HomeTitleStyle style) {
-  final l10n = AppLocalizations.of(context)!;
-  return switch (style) {
-    HomeTitleStyle.classic => l10n.homeTitleStyleClassicLabel,
-    HomeTitleStyle.brand => l10n.homeTitleStyleBrandLabel,
-  };
-}
-
-String _homeTitleStyleDescription(BuildContext context, HomeTitleStyle style) {
-  final l10n = AppLocalizations.of(context)!;
-  return switch (style) {
-    HomeTitleStyle.classic => l10n.homeTitleStyleClassicDescription,
-    HomeTitleStyle.brand => l10n.homeTitleStyleBrandDescription,
-  };
-}
-
-String _widgetBackgroundStyleLabel(
-  BuildContext context,
-  WidgetBackgroundStyle style,
-) {
-  final l10n = AppLocalizations.of(context)!;
-  return switch (style) {
-    WidgetBackgroundStyle.glass => l10n.widgetBackgroundStyleGlass,
-    WidgetBackgroundStyle.solid => l10n.widgetBackgroundStyleSolid,
-    WidgetBackgroundStyle.gradient => l10n.widgetBackgroundStyleGradient,
-  };
 }
 
 String _homeWidgetTargetLabel(
@@ -2135,7 +2103,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           const HyperosSectionGap(),
         ],
       ),
-      _LiveTestingSection.islandStatus => Column(
+      _LiveTestingSection.islandStatus => Builder(
+        builder: (context) {
+          final semesterUnset =
+              context.watch<TimetableProvider>().settings.semesterStartDate ==
+              null;
+          return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           HyperosControlCard(
@@ -2145,6 +2118,16 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (semesterUnset) ...[
+                    Text(
+                      l10n.pleaseSetSemesterStartDate,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -2246,6 +2229,8 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
           ),
           const HyperosSectionGap(),
         ],
+          );
+        },
       ),
       _LiveTestingSection.debugEnvironment => Column(
         mainAxisSize: MainAxisSize.min,
@@ -2853,7 +2838,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           label: l10n.homeWidgetBackgroundStyleLabel,
           items: {
             for (final v in WidgetBackgroundStyle.values)
-              _widgetBackgroundStyleLabel(context, v): v,
+              widgetBackgroundStyleLabel(l10n, v): v,
           },
           value: _draft.widgetBackgroundStyle,
           onChanged: (value) {
@@ -2922,7 +2907,8 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
             HyperosSelectTile<LiveCountdownTextStyle>(
               label: l10n.widgetCountdownStyleTitle,
               items: {
-                for (final v in LiveCountdownTextStyle.values) v.label: v,
+                for (final v in LiveCountdownTextStyle.values)
+                  liveCountdownTextStyleLabel(l10n, v): v,
               },
               value: _draft.widgetCountdownTextStyle,
               onChanged: (value) {
@@ -3216,7 +3202,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             HyperosSelectTile<SectionTimeDisplayMode>(
               label: l10n.layoutTimeColumnDisplayLabel,
               items: {
-                for (final v in SectionTimeDisplayMode.values) v.label: v,
+                for (final v in SectionTimeDisplayMode.values)
+                  sectionTimeDisplayModeLabel(l10n, v): v,
               },
               value: _draft.timetableSectionTimeDisplayMode,
               onChanged: (value) {
@@ -3229,7 +3216,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             HyperosSelectTile<TimetableTimeColumnWidthMode>(
               label: l10n.layoutTimeColumnWidthLabel,
               items: {
-                for (final v in TimetableTimeColumnWidthMode.values) v.label: v,
+                for (final v in TimetableTimeColumnWidthMode.values)
+                  timetableTimeColumnWidthModeLabel(l10n, v): v,
               },
               value: _draft.timetableTimeColumnWidthMode,
               onChanged: (value) {
@@ -3434,7 +3422,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             HyperosSelectTile<CourseCardVerticalAlign>(
               label: l10n.layoutVerticalAlignLabel,
               items: {
-                for (final v in CourseCardVerticalAlign.values) v.label: v,
+                for (final v in CourseCardVerticalAlign.values)
+                  courseCardVerticalAlignLabel(l10n, v): v,
               },
               value: _draft.courseCardVerticalAlign,
               onChanged: (value) {
@@ -3445,7 +3434,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
             HyperosSelectTile<CourseCardHorizontalAlign>(
               label: l10n.layoutHorizontalAlignLabel,
               items: {
-                for (final v in CourseCardHorizontalAlign.values) v.label: v,
+                for (final v in CourseCardHorizontalAlign.values)
+                  courseCardHorizontalAlignLabel(l10n, v): v,
               },
               value: _draft.courseCardHorizontalAlign,
               onChanged: (value) {
@@ -4624,7 +4614,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
-                              log.message,
+                              HolidayLogLocalizer.localize(l10n, log.message),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Theme.of(

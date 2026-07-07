@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_keep_alive_label">경우 시간표 백그라운드 유지 서비스</string>
+    <string name="accessibility_keep_alive_description">슈퍼 아일랜드와 알림의 백그라운드 안정성을 높이는 보조 서비스입니다. 화면 내용을 읽거나 자동 조작하지 않습니다.</string>
+
+    <string name="app_display_name">경우 시간표</string>
+    <string name="pictures_folder_name">경우 시간표</string>
+    <string name="payment_qr_description">경우 시간표 결제 QR</string>
+
+    <string name="notification_channel_live_update_name">시간표 실시간 업데이트</string>
+    <string name="notification_channel_live_update_desc">현재 수업 진행 상황 표시</string>
+
+    <string name="notification_course_reminder_title">수업 알림: %1$s</string>
+    <string name="notification_preparing_reminder">수업 알림 준비 중</string>
+    <string name="action_enable_silent">무음</string>
+    <string name="action_enable_dnd">방해 금지</string>
+    <string name="action_close">닫기</string>
+
+    <string name="prefix_until_class_start">수업 시작까지 </string>
+    <string name="prefix_until_class_end">수업 종료까지 </string>
+    <string name="stage_in_class">수업 중</string>
+    <string name="stage_before_class">곧 수업 시작</string>
+    <string name="stage_before_end">곧 수업 종료</string>
+
+    <string name="title_before_class">곧 시작: %1$s</string>
+    <string name="title_before_end">곧 종료: %1$s</string>
+
+    <string name="label_class_start_time">시작 시간: %1$s</string>
+    <string name="label_class_end_time">종료 시간: %1$s</string>
+    <string name="label_location">장소: %1$s</string>
+
+    <string name="detail_short_name">약칭: %1$s</string>
+    <string name="detail_next_milestone">다음 구간: %1$s</string>
+    <string name="detail_final_dismiss">수업 종료: %1$s</string>
+    <string name="detail_status">상태: %1$s</string>
+    <string name="detail_time">시간: %1$s</string>
+    <string name="detail_teacher">교수: %1$s</string>
+    <string name="detail_next_course">다음 수업: %1$s</string>
+    <string name="detail_note">메모: %1$s</string>
+
+    <string name="remaining_until_class_start">수업 시작까지%1$s</string>
+    <string name="remaining_until_class_end">수업 종료까지%1$s</string>
+    <string name="final_dismiss_with_time">수업 종료 %1$s</string>
+
+    <string name="milestone_recent_end">최근 쉬는 시간</string>
+    <string name="milestone_next_start">다음 수업</string>
+
+    <string name="debug_service_not_running">네이티브 실시간 서비스 미실행</string>
+    <string name="debug_status_running">실행 중</string>
+    <string name="debug_status_not_running">미실행</string>
+    <string name="debug_island_ready">아일랜드 표시 조건 충족</string>
+    <string name="debug_island_not_ready">아일랜드 표시 조건 미충족</string>
+    <string name="debug_foreground_not_started">포그라운드 알림이 시작되지 않음</string>
+    <string name="debug_stage_not_displayable">현재 표시 가능한 단계가 아님</string>
+    <string name="debug_status_bar_only">상태 표시줄 전용 단계, 아일랜드에 표시되지 않음</string>
+    <string name="debug_during_class_normal_notification">수업 중 일반 알림으로 설정되어 아일랜드에 표시되지 않음</string>
+    <string name="debug_promote_not_requested">현재 단계에서 승격 표시가 요청되지 않음</string>
+    <string name="debug_os_not_supported">현재 OS 버전은 승격 알림 아일랜드 표시를 지원하지 않음</string>
+    <string name="debug_notification_permission_off">알림 권한이 꺼져 있음</string>
+    <string name="debug_promoted_permission_not_declared">승격 알림 권한이 선언되지 않음</string>
+    <string name="debug_system_denied_promoted">시스템이 승격 알림을 허용하지 않음</string>
+    <string name="debug_notification_not_promotable">알림이 승격 표시 조건을 충족하지 않음</string>
+
+    <string name="stop_service_start_failed">실시간 서비스 시작 실패</string>
+    <string name="stop_service_destroyed">네이티브 실시간 서비스가 종료됨</string>
+    <string name="stop_status_bar_dismissed">수업 중 상태 표시줄 알림을 수동으로 닫음</string>
+    <string name="stop_reminder_ended">실시간 알림이 종료되어 알림이 제거됨</string>
+</resources>

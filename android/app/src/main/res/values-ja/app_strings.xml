@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_keep_alive_label">軽屿時間割バックグラウンド維持サービス</string>
+    <string name="accessibility_keep_alive_description">スーパーアイランドとリマインダーの安定性を高める補助サービスです。画面内容の読み取りや自動操作は行いません。</string>
+
+    <string name="app_display_name">軽屿時間割</string>
+    <string name="pictures_folder_name">軽屿時間割</string>
+    <string name="payment_qr_description">軽屿時間割決済QR</string>
+
+    <string name="notification_channel_live_update_name">時間割リアルタイム更新</string>
+    <string name="notification_channel_live_update_desc">現在の授業進捗を表示</string>
+
+    <string name="notification_course_reminder_title">授業リマインダー: %1$s</string>
+    <string name="notification_preparing_reminder">授業リマインダーを準備中</string>
+    <string name="action_enable_silent">ミュート</string>
+    <string name="action_enable_dnd">おやすみモード</string>
+    <string name="action_close">閉じる</string>
+
+    <string name="prefix_until_class_start">授業開始まで</string>
+    <string name="prefix_until_class_end">授業終了まで</string>
+    <string name="stage_in_class">授業中</string>
+    <string name="stage_before_class">まもなく授業</string>
+    <string name="stage_before_end">終了間近</string>
+
+    <string name="title_before_class">まもなく授業: %1$s</string>
+    <string name="title_before_end">終了間近: %1$s</string>
+
+    <string name="label_class_start_time">開始時刻: %1$s</string>
+    <string name="label_class_end_time">終了時刻: %1$s</string>
+    <string name="label_location">場所: %1$s</string>
+
+    <string name="detail_short_name">略称: %1$s</string>
+    <string name="detail_next_milestone">次の節点: %1$s</string>
+    <string name="detail_final_dismiss">授業終了: %1$s</string>
+    <string name="detail_status">状態: %1$s</string>
+    <string name="detail_time">時間: %1$s</string>
+    <string name="detail_teacher">教員: %1$s</string>
+    <string name="detail_next_course">次の授業: %1$s</string>
+    <string name="detail_note">メモ: %1$s</string>
+
+    <string name="remaining_until_class_start">授業開始まで%1$s</string>
+    <string name="remaining_until_class_end">授業終了まで%1$s</string>
+    <string name="final_dismiss_with_time">授業終了 %1$s</string>
+
+    <string name="milestone_recent_end">直前の休み</string>
+    <string name="milestone_next_start">次の授業</string>
+
+    <string name="debug_service_not_running">ネイティブリアルタイムサービス未稼働</string>
+    <string name="debug_status_running">稼働中</string>
+    <string name="debug_status_not_running">未稼働</string>
+    <string name="debug_island_ready">アイランド表示条件を満たしています</string>
+    <string name="debug_island_not_ready">アイランド表示条件を満たしていません</string>
+    <string name="debug_foreground_not_started">フォアグラウンド通知が開始されていません</string>
+    <string name="debug_stage_not_displayable">現在は表示可能な段階ではありません</string>
+    <string name="debug_status_bar_only">ステータスバーのみの段階で、アイランドには表示されません</string>
+    <string name="debug_during_class_normal_notification">授業中は通常通知のため、アイランドには表示されません</string>
+    <string name="debug_promote_not_requested">現在の段階では昇格表示が要求されていません</string>
+    <string name="debug_os_not_supported">このOSバージョンは昇格通知のアイランド表示に対応していません</string>
+    <string name="debug_notification_permission_off">通知権限が有効になっていません</string>
+    <string name="debug_promoted_permission_not_declared">昇格通知権限が宣言されていません</string>
+    <string name="debug_system_denied_promoted">システムが昇格通知を許可していません</string>
+    <string name="debug_notification_not_promotable">通知が昇格表示の条件を満たしていません</string>
+
+    <string name="stop_service_start_failed">リアルタイムサービスの起動に失敗</string>
+    <string name="stop_service_destroyed">ネイティブリアルタイムサービスが破棄されました</string>
+    <string name="stop_status_bar_dismissed">授業中ステータスバー通知を手動で閉じました</string>
+    <string name="stop_reminder_ended">リアルタイムリマインダーが終了し通知を削除しました</string>
+</resources>

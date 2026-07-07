@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="accessibility_keep_alive_label">Qingyu Timetable keep-alive service</string>
+    <string name="accessibility_keep_alive_description">Auxiliary service to improve Super Island and reminder stability in the background. Does not read screen content or perform automated actions.</string>
+
+    <string name="app_display_name">Qingyu Timetable</string>
+    <string name="pictures_folder_name">Qingyu Timetable</string>
+    <string name="payment_qr_description">Qingyu Timetable payment QR</string>
+
+    <string name="notification_channel_live_update_name">Timetable live updates</string>
+    <string name="notification_channel_live_update_desc">Shows current class progress</string>
+
+    <string name="notification_course_reminder_title">Class reminder: %1$s</string>
+    <string name="notification_preparing_reminder">Preparing class reminder</string>
+    <string name="action_enable_silent">Mute</string>
+    <string name="action_enable_dnd">Do not disturb</string>
+    <string name="action_close">Close</string>
+
+    <string name="prefix_until_class_start">Starts in </string>
+    <string name="prefix_until_class_end">Ends in </string>
+    <string name="stage_in_class">In class</string>
+    <string name="stage_before_class">Class starting soon</string>
+    <string name="stage_before_end">Class ending soon</string>
+
+    <string name="title_before_class">Starting soon: %1$s</string>
+    <string name="title_before_end">Ending soon: %1$s</string>
+
+    <string name="label_class_start_time">Start time: %1$s</string>
+    <string name="label_class_end_time">End time: %1$s</string>
+    <string name="label_location">Location: %1$s</string>
+
+    <string name="detail_short_name">Short name: %1$s</string>
+    <string name="detail_next_milestone">Next milestone: %1$s</string>
+    <string name="detail_final_dismiss">Class ends: %1$s</string>
+    <string name="detail_status">Status: %1$s</string>
+    <string name="detail_time">Time: %1$s</string>
+    <string name="detail_teacher">Teacher: %1$s</string>
+    <string name="detail_next_course">Next: %1$s</string>
+    <string name="detail_note">Note: %1$s</string>
+
+    <string name="remaining_until_class_start">Starts in %1$s</string>
+    <string name="remaining_until_class_end">Ends in %1$s</string>
+    <string name="final_dismiss_with_time">Class ends %1$s</string>
+
+    <string name="milestone_recent_end">Recent break</string>
+    <string name="milestone_next_start">Next class</string>
+
+    <string name="debug_service_not_running">Native live service not running</string>
+    <string name="debug_status_running">Running</string>
+    <string name="debug_status_not_running">Not running</string>
+    <string name="debug_island_ready">Island requirements met</string>
+    <string name="debug_island_not_ready">Island requirements not met</string>
+    <string name="debug_foreground_not_started">Foreground live notification not started</string>
+    <string name="debug_stage_not_displayable">Not in a displayable stage</string>
+    <string name="debug_status_bar_only">Status bar only stage; will not show on island</string>
+    <string name="debug_during_class_normal_notification">In-class stage uses normal notification; will not show on island</string>
+    <string name="debug_promote_not_requested">Promotion not requested for current stage</string>
+    <string name="debug_os_not_supported">System version does not support promoted notifications on island</string>
+    <string name="debug_notification_permission_off">Notification permission not granted</string>
+    <string name="debug_promoted_permission_not_declared">App has not declared promoted notification permission</string>
+    <string name="debug_system_denied_promoted">System denied promoted notifications</string>
+    <string name="debug_notification_not_promotable">Notification does not meet promotion requirements</string>
+
+    <string name="stop_service_start_failed">Live service failed to start</string>
+    <string name="stop_service_destroyed">Native live service destroyed</string>
+    <string name="stop_status_bar_dismissed">In-class status bar reminder dismissed manually</string>
+    <string name="stop_reminder_ended">Live reminder ended and notification removed</string>
+</resources>

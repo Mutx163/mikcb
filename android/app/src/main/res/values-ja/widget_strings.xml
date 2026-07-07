@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_compact_name">今日の授業メイン 2×2</string>
+    <string name="widget_today_mini_list_name">今日の授業ミニリスト 2×2</string>
+    <string name="widget_today_medium_name">今日の授業概要 2×4</string>
+    <string name="widget_today_large_name">今日の授業リスト 4×4</string>
+
+    <string name="widget_today_courses">今日の授業</string>
+    <string name="widget_tomorrow_courses">明日の授業</string>
+    <string name="widget_no_course_today">今日は授業なし</string>
+    <string name="widget_sync_later">アプリを開いて同期</string>
+    <string name="widget_app_name">軽屿時間割</string>
+    <string name="widget_tap_to_open">タップしてアプリを開く</string>
+    <string name="widget_open_app_sync">アプリを開いて同期</string>
+
+    <string name="widget_status_ongoing">授業中</string>
+    <string name="widget_status_upcoming">次の授業</string>
+    <string name="widget_status_completed">今日は終了</string>
+    <string name="widget_status_holiday">今日は休日</string>
+    <string name="widget_status_no_course">今日は授業なし</string>
+
+    <string name="widget_on_holiday">休日中</string>
+    <string name="widget_today_ended">今日の授業は終了</string>
+    <string name="widget_no_courses_today">今日は授業がありません</string>
+    <string name="widget_rest_well">ゆっくり休んで</string>
+    <string name="widget_no_more_courses">これ以上授業はありません</string>
+    <string name="widget_take_a_break">自分の時間を</string>
+
+    <string name="widget_week_number">第%1$d週</string>
+    <string name="widget_week_with_count">第%1$d週 · %2$dコマ</string>
+    <string name="widget_week_holiday">第%1$d週 · 休日</string>
+    <string name="widget_week_tomorrow_count">第%1$d週 · 明日%2$dコマ</string>
+    <string name="widget_week_date">第%1$d週 · %2$s</string>
+    <string name="widget_week_date_count">第%1$d週 · %2$s · %3$dコマ</string>
+
+    <string name="widget_countdown_until_end">終了まで %1$s</string>
+    <string name="widget_countdown_until_start">開始まで %1$s</string>
+
+    <string name="widget_exam_day">試験日 %1$s%2$s%3$s</string>
+    <string name="widget_exam_countdown">%1$sまであと%2$d日%3$s%4$s</string>
+
+    <string name="widget_day_sun">日</string>
+    <string name="widget_day_mon">月</string>
+    <string name="widget_day_tue">火</string>
+    <string name="widget_day_wed">水</string>
+    <string name="widget_day_thu">木</string>
+    <string name="widget_day_fri">金</string>
+    <string name="widget_day_sat">土</string>
+
+    <string name="widget_footer_holiday">%1$s · %2$s</string>
+    <string name="widget_footer_tomorrow">%1$s · 明日 %2$d コマ</string>
+    <string name="widget_footer_today">%1$s · 今日 %2$d コマ</string>
+    <string name="widget_footer_week">%1$s · 第%2$d週</string>
+
+    <string name="widget_more_courses">あと %1$d コマ</string>
+    <string name="widget_today_list_title">今日の授業リスト</string>
+    <string name="widget_tomorrow_list_title">明日の授業リスト</string>
+    <string name="widget_snapshot_hint">アプリを開くと今日のスナップショットを生成します</string>
+    <string name="widget_no_schedule_today">今日は授業の予定がありません</string>
+    <string name="widget_today_ended_short">今日の授業は終了しました</string>
+</resources>

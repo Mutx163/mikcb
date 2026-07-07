@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_today_compact_name">Today main card 2×2</string>
+    <string name="widget_today_mini_list_name">Today mini list 2×2</string>
+    <string name="widget_today_medium_name">Today overview 2×4</string>
+    <string name="widget_today_large_name">Today course list 4×4</string>
+
+    <string name="widget_today_courses">Today</string>
+    <string name="widget_tomorrow_courses">Tomorrow</string>
+    <string name="widget_no_course_today">No classes today</string>
+    <string name="widget_sync_later">Open app to sync</string>
+    <string name="widget_app_name">Qingyu Timetable</string>
+    <string name="widget_tap_to_open">Tap to open app</string>
+    <string name="widget_open_app_sync">Open app to sync</string>
+
+    <string name="widget_status_ongoing">In class</string>
+    <string name="widget_status_upcoming">Next class</string>
+    <string name="widget_status_completed">Done for today</string>
+    <string name="widget_status_holiday">Holiday today</string>
+    <string name="widget_status_no_course">No classes today</string>
+
+    <string name="widget_on_holiday">On holiday</string>
+    <string name="widget_today_ended">Classes ended for today</string>
+    <string name="widget_no_courses_today">No classes today</string>
+    <string name="widget_rest_well">Enjoy your break</string>
+    <string name="widget_no_more_courses">No more classes</string>
+    <string name="widget_take_a_break">Take some time for yourself</string>
+
+    <string name="widget_week_number">Week %1$d</string>
+    <string name="widget_week_with_count">Week %1$d · %2$d classes</string>
+    <string name="widget_week_holiday">Week %1$d · Holiday</string>
+    <string name="widget_week_tomorrow_count">Week %1$d · %2$d tomorrow</string>
+    <string name="widget_week_date">Week %1$d · %2$s</string>
+    <string name="widget_week_date_count">Week %1$d · %2$s · %3$d classes</string>
+
+    <string name="widget_countdown_until_end">%1$s until class ends</string>
+    <string name="widget_countdown_until_start">%1$s until class starts</string>
+
+    <string name="widget_exam_day">Exam day %1$s%2$s%3$s</string>
+    <string name="widget_exam_countdown">%2$d days until %1$s%3$s%4$s</string>
+
+    <string name="widget_day_sun">Sun</string>
+    <string name="widget_day_mon">Mon</string>
+    <string name="widget_day_tue">Tue</string>
+    <string name="widget_day_wed">Wed</string>
+    <string name="widget_day_thu">Thu</string>
+    <string name="widget_day_fri">Fri</string>
+    <string name="widget_day_sat">Sat</string>
+
+    <string name="widget_footer_holiday">%1$s · %2$s</string>
+    <string name="widget_footer_tomorrow">%1$s · %2$d tomorrow</string>
+    <string name="widget_footer_today">%1$s · %2$d today</string>
+    <string name="widget_footer_week">%1$s · Week %2$d</string>
+
+    <string name="widget_more_courses">%1$d more</string>
+    <string name="widget_today_list_title">Today\'s classes</string>
+    <string name="widget_tomorrow_list_title">Tomorrow\'s classes</string>
+    <string name="widget_snapshot_hint">Open the app to generate today\'s snapshot</string>
+    <string name="widget_no_schedule_today">No classes scheduled today</string>
+    <string name="widget_today_ended_short">Today\'s classes have ended</string>
+</resources>
