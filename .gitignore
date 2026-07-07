@@ -70,6 +70,7 @@ app.*.map.json
 # 临时文件
 nul
 pi.ico
+stderr.txt
 
 # 审查输出
 reviews/

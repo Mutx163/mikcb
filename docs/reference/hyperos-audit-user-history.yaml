@@ -1,0 +1,321 @@
+# 用户历史 UI 修改要求 — 从对话记录提炼
+# Agent 审计时必须逐条核对；能自动化的已映射到 hyperos-audit-checklist.yaml rules
+# 来源：agent-transcripts 2026-07-05 ~ 2026-07-07 澎湃/HyperOS/Forui 相关会话
+
+version: 1
+sourceNote: "对话中用户明确要求过的样式/交互；合规做法以 lib/ui/hyperos 与 hyperos-ui-kit.md 为准"
+
+groups:
+  - id: typography-titles
+    label: 字体与标题（用户多次强调）
+    items:
+      - id: hist-no-section-bold
+        userAsk: "开学日期/外观与配置等标题不要加粗；所有标题字号在 UI 库统一"
+        compliant: "HyperosSectionLabel + HyperosTypography.sectionLabel/listTitle，FontWeight.w400"
+        auditRule: no-font-bold
+        pages: [timetable-settings, user-guide]
+      - id: hist-details-not-bold
+        userAsk: "备份与迁移「可迁移内容」右边字不要加粗"
+        compliant: "details 走 HyperosTypography.listDetail，w400"
+        auditRule: no-font-w600
+        pages: [data-transfer]
+      - id: hist-nested-header
+        userAsk: "顶栏标题字号加大；箭头加大加长；不要粗体"
+        compliant: "HyperosSubpage nestedHeader 20sp w400；HyperosChevron 标准尺寸"
+        auditRule: null
+        manual: true
+        pages: [all HyperosSubpage]
+      - id: hist-preset-theme-caption
+        userAsk: "主题管理「预设主题」小黑字才是标准 section 样式"
+        compliant: "HyperosSectionLabel，勿手写 TextStyle"
+        auditRule: no-raw-textstyle-fontsize
+        pages: [timetable-settings]
+
+  - id: chevron-padding
+    label: 箭头与左右对称（用户反复修）
+    items:
+      - id: hist-chevron-symmetric
+        userAsk: "右箭头距卡片右缘 = 左文字距左缘；不要右边五六个字空隙"
+        compliant: "HyperosListTile 用 chevronRowPadding；details 在 chevron 左"
+        auditRule: null
+        manual: true
+        verify: "对比 HyperosShowcaseScreen 导航行"
+      - id: hist-updown-chevron-gap
+        userAsk: "上下箭头行：箭头上下预留半字空间"
+        compliant: "Hyperos 数字选择/步进 tile 用 HyperosNumberPicker 规范"
+        manual: true
+      - id: hist-chevron-standard
+        userAsk: "返回箭头不要自画四根线；用 UI 库标准 HyperosChevron"
+        compliant: "lib/ui/hyperos 内 HyperosChevron，勿页面内 CustomPaint"
+        pattern: 'CustomPaint|Path\(\).*chevron'
+        severity: warn
+        pages: [lib/ui/hyperos only should have chevron paint]
+
+  - id: section-layout
+    label: Section / 卡片结构
+    items:
+      - id: hist-section-not-centered
+        userAsk: "假期状态覆盖 section label 跑到中间"
+        compliant: "HyperosSectionLabel 左对齐 sectionLabelInset=16"
+        auditRule: null
+        manual: true
+        pages: [live-settings-subpages]
+      - id: hist-no-duplicate-title
+        userAsk: "冲突课程透明度写了两个一样标题"
+        compliant: "HyperosSliderTile 勿 title+slider 重复；仅一处标题"
+        manual: true
+      - id: hist-card-inner-full-width
+        userAsk: "大卡片包弹出组件时，内容应延伸到卡片边缘"
+        compliant: "HyperosListGroup 内 tile 满宽；勿 Column 居中缩进"
+        manual: true
+        pages: [timetable_settings appearance]
+      - id: hist-switch-subtitle-wrap
+        userAsk: "支持跟随系统等备注应 multiline 换行，不要一行省略"
+        compliant: "HyperosSwitchTile subtitle 允许多行；勿 maxLines:1"
+        pattern: 'HyperosSwitchTile[\s\S]{0,400}maxLines:\s*1'
+        severity: warn
+      - id: hist-no-trailing-check-closed
+        userAsk: "关联课程未开弹窗时右边不要打勾"
+        compliant: "HyperosListTile 仅 chevron；选中态只在弹窗/choice 内"
+        pattern: 'HyperosListTile[\s\S]{0,300}(Icons\.check|HyperosSelectedCheckmark|trailing:)'
+        severity: warn
+        pages: [add-exam]
+
+  - id: slider-scrollbar
+    label: 滑条与滚动条
+    items:
+      - id: hist-slider-no-ticks
+        userAsk: "所有拉动横条去掉轨道打点"
+        compliant: "HyperosSlider / HyperosSliderTile，无 tick mark"
+        auditRule: no-raw-slider
+        verifyFile: lib/ui/hyperos/hyperos_controls.dart
+      - id: hist-scrollbar-padding
+        userAsk: "滚动横条左右空间应与其他元素一致 16dp"
+        compliant: "Scrollbar 与 HyperosListView listPadding 对齐"
+        manual: true
+
+  - id: colors-text
+    label: 文字颜色（用户讨厌乱用灰字）
+    items:
+      - id: hist-body-black-not-grey
+        userAsk: "更新日志/说明全部黑色不要灰字；已是最新版不要加粗"
+        compliant: "正文 HyperosColors.primaryText；次要 HyperosColors.secondaryText 仅 details"
+        auditRule: no-material-colors
+        pages: [about, changelog]
+      - id: hist-theme-settings-black-title
+        userAsk: "外观配色顶部「设置」标题用黑色"
+        compliant: "HyperosTypography.title + primaryText"
+        manual: true
+
+  - id: cfh-blur
+    label: 高斯模糊 / CFH（大量对话）
+    items:
+      - id: hist-cfh-defaults
+        userAsk: "模糊强度默认 15、亮度 70%；所有顶栏统一"
+        compliant: "外观设置默认值 + FrostedHeaderController 配置"
+        verifyFile: lib/ui/hyperos/hyperos_blurred_header.dart
+        manual: true
+      - id: hist-cfh-restore-on-pop
+        userAsk: "二级页返回后首页/设置页模糊消失"
+        compliant: "hyperos-blurred-header spec：route 返回后 re-capture"
+        auditRule: null
+        manual: true
+        spec: .trellis/spec/flutter/hyperos-blurred-header.md
+      - id: hist-cfh-delay
+        userAsk: "进二级页快速上滑时模糊几秒后才出现"
+        compliant: "CFH blurSettleDelay；转场期间 captureEnabled=false"
+        manual: true
+      - id: hist-dialog-blur
+        userAsk: "首页所有弹窗加高斯模糊；弹窗要看得出与背景区分"
+        compliant: "showHyperosSheet/Dialog +  dimming/scrim"
+        manual: true
+        pages: [timetable_screen sheets]
+
+  - id: dialogs-sheets
+    label: 弹窗 / Sheet / 提示
+    items:
+      - id: hist-no-snackbar
+        userAsk: "所有提示用好看的新版 UI，不要 SnackBar"
+        compliant: "showAppToast / showHyperosRichSnackBar"
+        auditRule: no-snackbar
+      - id: hist-select-sheet-not-cycle
+        userAsk: "云同步等选择应弹出列表，不是点一下变一下"
+        compliant: "HyperosSelectTile + showHyperosSelectSheet"
+        manual: true
+        pages: [cloud-sync]
+      - id: hist-week-picker-hyperos
+        userAsk: "选周弹窗用澎湃组件；回到本周大按钮；选中项主题色蓝"
+        compliant: "HyperosSheet + HyperosChoiceGroup/HyperosButton primary 满宽"
+        manual: true
+        pages: [timetable]
+        files: [lib/widgets/semester_week_count_picker_sheet.dart]
+      - id: hist-dialog-no-autofocus
+        userAsk: "关联课程弹窗关闭后不要自动打开备注输入法"
+        compliant: "关闭 picker 时 unfocus；勿 requestFocus 到备注"
+        manual: true
+        pages: [add-exam]
+      - id: hist-markdown-no-line-scroll
+        userAsk: "更新日志每行不能单独上下滑动"
+        compliant: "MarkdownBody 整页滚动；禁 SelectableText 逐行"
+        auditRule: no-selectable-text
+        pages: [about, changelog]
+
+  - id: empty-keyboard-scroll
+    label: 空状态 / 键盘 / 滚动
+    items:
+      - id: hist-empty-safe-area
+        userAsk: "考试空状态文字顶到状态栏"
+        compliant: "HyperosEmptyState + SafeArea / HyperosSubpage padding"
+        manual: true
+        pages: [exam-list]
+      - id: hist-keyboard-layout
+        userAsk: "云同步输入账号弹键盘后页面布局奇怪"
+        compliant: "resizeToAvoidBottomInset + 可滚动 HyperosListView"
+        manual: true
+        pages: [cloud-sync]
+      - id: hist-scroll-restore
+        userAsk: "课表设置进二级再返回滚动位置跑到顶部"
+        compliant: "保持 ScrollController 或使用 PageStorageKey"
+        manual: true
+        pages: [timetable-settings]
+      - id: hist-overscroll-lock
+        userAsk: "统计页快速上下拉有时锁死"
+        compliant: "HyperosOverscrollPhysics 深度越界后可反向拖回"
+        verifyTest: test/ui/hyperos/hyperos_overscroll_test.dart
+        pages: [course-statistics]
+
+  - id: import-flows
+    label: 课程导入（4 子流程）
+    items:
+      - id: hist-import-four-subflows
+        userAsk: "导入页含 4 个子页都要澎湃 UI"
+        compliant: "统一 HyperosSubpage + HyperosButton + HyperosListGroup"
+        manual: true
+        pages: [course-import]
+        subflows:
+          - 教务/WebView 登录
+          - 表格/文件导入
+          - 快捷宏/识图
+          - 预览确认
+      - id: hist-import-buttons-visible
+        userAsk: "识图导入按钮与背景同色不像按钮"
+        compliant: "HyperosButton primary/secondary，勿 TextButton 同色底"
+        auditRule: null
+        manual: true
+        pages: [course-import]
+      - id: hist-import-padding
+        userAsk: "表格导入等子页左右 padding 与其他标准页一致"
+        compliant: "HyperosListView listPadding 16dp；勿额外嵌套 Padding"
+        manual: true
+        pages: [course-import]
+
+  - id: exam-form
+    label: 考试 / 表单页
+    items:
+      - id: hist-exam-row-spacing
+        userAsk: "考试日期/开始/结束时间行间距不一致"
+        compliant: "统一 HyperosListGroup 行高；HyperosDateTile 间距"
+        manual: true
+        pages: [add-exam]
+      - id: hist-exam-reminder-padding
+        userAsk: "提醒设置左右空隙与其他标准行不一致"
+        compliant: "HyperosSwitchTile 用 rowPadding，勿额外 Padding"
+        manual: true
+        pages: [add-exam]
+
+  - id: about-update-ui
+    label: 关于/更新页（用户逐像素修过）
+    items:
+      - id: hist-about-layout
+        userAsk: "更新卡片在顶部；检测中灰底文字；版本对比去竖线对称"
+        compliant: "about_screen 更新区专用布局；版本号左右列对称"
+        manual: true
+        pages: [about]
+      - id: hist-about-logo-not-check
+        userAsk: "已是最新版显示 logo 不要打勾图标"
+        compliant: "用 AppIcon 替代 Icons.check_circle"
+        manual: true
+        pages: [about]
+      - id: hist-release-notes-indent
+        userAsk: "更新说明新增/优化条目要有合适缩进"
+        compliant: "release notes markdown 列表样式统一"
+        manual: true
+        pages: [about, changelog]
+      - id: hist-about-scroll-under-header
+        userAsk: "版本更新页内容插进顶栏模糊区；页面不能上下滑"
+        compliant: "HyperosSubpage + HyperosListView；内容在 header 下方"
+        manual: true
+        pages: [about]
+      - id: hist-checking-no-spinner
+        userAsk: "检测更新不要转圈；灰色界面显示正在检测更新..."
+        compliant: "检测态用 HyperosEmptyState/占位文案，非 CircularProgressIndicator 居中"
+        manual: true
+        pages: [about]
+
+  - id: appearance-theme
+    label: 外观与配色（用户多次修）
+    items:
+      - id: hist-theme-popup-card
+        userAsk: "主题设置弹窗行应单独大卡片包裹；跟随系统备注在 title 下 multiline"
+        compliant: "HyperosControlCard + HyperosSwitchTile subtitle 多行"
+        auditRule: switch-subtitle-single-line
+        manual: true
+        pages: [timetable-settings]
+      - id: hist-theme-popup-press-highlight
+        userAsk: "浮窗点按高亮左边有箭头右边缺一块"
+        compliant: "HyperosListGroup 内 tile 满宽；按压缩放与 card 圆角对齐"
+        manual: true
+        pages: [timetable-settings]
+      - id: hist-cfh-popup-blur-vanish
+        userAsk: "点预设主题弹窗时顶部高斯模糊消失"
+        compliant: "弹窗期间 CFH 保持 capture；见 hyperos-blurred-header spec"
+        manual: true
+        spec: .trellis/spec/flutter/hyperos-blurred-header.md
+        pages: [timetable-settings]
+      - id: hist-cfh-scroll-realtime
+        userAsk: "滚动过程中模糊关闭/不跟手；要标准化模糊一直存在"
+        compliant: "CFH scroll-linked blur；滚动中不禁用 blur"
+        manual: true
+        pages: [all]
+
+  - id: import-extra
+    label: 导入页额外要求
+    items:
+      - id: hist-import-remove-desc
+        userAsk: "选择导入方式下面那句话去掉"
+        compliant: "HyperosSectionLabel 下勿多余 HyperosSectionDescription"
+        manual: true
+        pages: [course-import]
+      - id: hist-import-bold-align
+        userAsk: "导入 4 子页加粗/对齐/描述文字灰体是否符合规范"
+        compliant: "全 w400；details 用 secondaryText；左对齐 HyperosSectionLabel"
+        auditRule: no-font-bold
+        pages: [course-import]
+
+  - id: live-diagnostics
+    label: Live 诊断页
+    items:
+      - id: hist-live-text-scrollable
+        userAsk: "环境与权限里的字可以按住滑动，导致页面滚动卡住"
+        compliant: "诊断文案用普通 Text；禁 SelectableText/独立滚动"
+        auditRule: no-selectable-text
+        pages: [live-diagnostics-log-viewer, live-settings-subpages]
+
+  - id: layout-periods
+    label: 布局与节次
+    items:
+      - id: hist-layout-dual-scroll
+        userAsk: "上方预览与下方编辑区各滑各的"
+        compliant: "两区域独立 ScrollView；HyperosSubpage 不抢手势"
+        manual: true
+        pages: [timetable-settings]
+
+  - id: overscroll-global
+    label: 全局 overscroll 物理
+    items:
+      - id: hist-overscroll-all-pages
+        userAsk: "上下滑动系统应套用到所有页面；深度越界后不能锁死"
+        compliant: "HyperosListView 默认 HyperosOverscrollPhysics"
+        auditRule: prefer-hyperos-list-view
+        verifyTest: test/ui/hyperos/hyperos_overscroll_test.dart
+        pages: [all HyperosSubpage]

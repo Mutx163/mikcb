@@ -3977,6 +3977,93 @@ class AppLocalizationsJa extends AppLocalizations {
   String get webLoginImport => 'Webログインインポート';
 
   @override
+  String get fillUrlThenRecord => 'URL入力後に録画';
+
+  @override
+  String get recordImportAction => '録画インポート';
+
+  @override
+  String get quickImportAction => 'クイックインポート';
+
+  @override
+  String get quickImportTooltip => 'クイックインポート';
+
+  @override
+  String get selectQuickImportTitle => 'クイックインポートを選択';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount ステップ';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return 'クイックインポート - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => '保存済みのクイックインポート記録がありません';
+
+  @override
+  String get noValidWarehouseLoginUrl => '有効な教務ログインURLが見つかりません';
+
+  @override
+  String get noMacroRecordFound => '録画記録が見つかりません。先に録画を完了してください';
+
+  @override
+  String get quickImportPlayingTitle => '自動インポート中…';
+
+  @override
+  String get quickImportExecutingScriptTitle => '再生完了、インポートスクリプトを実行中…';
+
+  @override
+  String get quickImportManualInputTitle => '手動操作が必要';
+
+  @override
+  String get quickImportManualInputHint => '必要な手動操作を完了してから「続行」をタップしてください。';
+
+  @override
+  String get quickImportCancelImportAction => 'インポートをキャンセル';
+
+  @override
+  String get quickImportContinueAction => '続行';
+
+  @override
+  String get quickImportFinishedTitle => 'インポート完了';
+
+  @override
+  String get quickImportDismissAction => '完了';
+
+  @override
+  String get quickImportRetryAction => '再試行';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return 'ステップ $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => 'キャンセル';
+
+  @override
+  String get quickImportUnknownError => '不明なエラーが発生しました';
+
+  @override
+  String get recentSchoolLabel => '最近使用';
+
+  @override
+  String get warehouseSchoolTapHint => 'タップしてアダプタを選びインポート';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => 'アダプタ一覧を読み込めません';
+
+  @override
+  String get stopRecordingTooltip => '録画停止';
+
+  @override
+  String get startRecordingTooltip => '操作を録画';
+
+  @override
   String get savedImportUrlHint => '教務URLを保存済み。次回直接インポート可能';
 
   @override

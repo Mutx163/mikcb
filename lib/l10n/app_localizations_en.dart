@@ -4165,6 +4165,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get webLoginImport => 'Web login import';
 
   @override
+  String get fillUrlThenRecord => 'Enter URL before recording';
+
+  @override
+  String get recordImportAction => 'Record import';
+
+  @override
+  String get quickImportAction => 'Quick import';
+
+  @override
+  String get quickImportTooltip => 'Quick import';
+
+  @override
+  String get selectQuickImportTitle => 'Choose quick import';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount steps';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return 'Quick import - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => 'No saved quick-import records yet';
+
+  @override
+  String get noValidWarehouseLoginUrl =>
+      'No valid academic-system login URL found';
+
+  @override
+  String get noMacroRecordFound =>
+      'No recording found. Complete a recording first.';
+
+  @override
+  String get quickImportPlayingTitle => 'Auto-importing…';
+
+  @override
+  String get quickImportExecutingScriptTitle =>
+      'Playback finished. Running import script…';
+
+  @override
+  String get quickImportManualInputTitle => 'Manual action required';
+
+  @override
+  String get quickImportManualInputHint =>
+      'Complete the required manual step, then tap Continue.';
+
+  @override
+  String get quickImportCancelImportAction => 'Cancel import';
+
+  @override
+  String get quickImportContinueAction => 'Continue';
+
+  @override
+  String get quickImportFinishedTitle => 'Import complete';
+
+  @override
+  String get quickImportDismissAction => 'Done';
+
+  @override
+  String get quickImportRetryAction => 'Retry';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return 'Step $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => 'Cancel';
+
+  @override
+  String get quickImportUnknownError => 'An unknown error occurred';
+
+  @override
+  String get recentSchoolLabel => 'Recently used';
+
+  @override
+  String get warehouseSchoolTapHint => 'Tap to choose an adapter and import';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => 'Could not load adapter list';
+
+  @override
+  String get stopRecordingTooltip => 'Stop recording';
+
+  @override
+  String get startRecordingTooltip => 'Record actions';
+
+  @override
   String get savedImportUrlHint =>
       'Academic-system URL saved. You can import directly next time.';
 

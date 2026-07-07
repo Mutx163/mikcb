@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/models/warehouse_macro_models.dart';
 import 'package:university_timetable/widgets/warehouse_macro_replayer.dart';
 import 'package:university_timetable/widgets/warehouse_playback_overlay.dart';
+
+import '../helpers_test_app.dart';
 
 ReplayProgress _progress({
   ReplayStepStatus status = ReplayStepStatus.running,
@@ -30,21 +31,16 @@ Future<void> _pumpOverlay(
   VoidCallback? onRetry,
 }) async {
   await tester.pumpWidget(
-    MaterialApp(
-      home: FTheme(
-        data: FThemes.zinc.light.touch,
-        child: Scaffold(
-          body: PlaybackOverlay(
-            progress: progress ?? _progress(),
-            state: state,
-            schoolName: '测试学校',
-            adapterName: '测试教务',
-            onCancel: onCancel,
-            onContinueAfterPause: onContinueAfterPause,
-            onDismiss: onDismiss,
-            onRetry: onRetry,
-          ),
-        ),
+    TestApp(
+      home: PlaybackOverlay(
+        progress: progress ?? _progress(),
+        state: state,
+        schoolName: '测试学校',
+        adapterName: '测试教务',
+        onCancel: onCancel,
+        onContinueAfterPause: onContinueAfterPause,
+        onDismiss: onDismiss,
+        onRetry: onRetry,
       ),
     ),
   );
@@ -90,20 +86,11 @@ void main() {
     expect(find.text('导入完成'), findsNothing);
   });
 
-  testWidgets('finished overlay shows dismiss action', (tester) async {
-    var dismissed = false;
+  testWidgets('finished state no longer renders centered overlay', (
+    tester,
+  ) async {
+    await _pumpOverlay(tester, state: PlaybackUiState.finished);
 
-    await _pumpOverlay(
-      tester,
-      state: PlaybackUiState.finished,
-      onDismiss: () => dismissed = true,
-    );
-
-    expect(find.text('导入完成'), findsOneWidget);
-    await tester.tap(find.text('完成'));
-    await tester.pump();
-
-    expect(dismissed, isTrue);
-    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('导入完成'), findsNothing);
   });
 }

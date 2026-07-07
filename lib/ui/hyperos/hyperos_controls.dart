@@ -379,6 +379,7 @@ class HyperosButton extends StatelessWidget {
     this.loading = false,
     this.expand = false,
     this.dense = false,
+    this.fitLabel = false,
   });
 
   final String label;
@@ -389,6 +390,9 @@ class HyperosButton extends StatelessWidget {
 
   /// Tighter padding and scaled label for grid / chip-like layouts.
   final bool dense;
+
+  /// Scale label down to fit one line inside narrow buttons (e.g. side-by-side).
+  final bool fitLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -456,7 +460,7 @@ class HyperosButton extends StatelessWidget {
               color: enabled ? fg : disabledFg,
             ),
           )
-        : dense
+        : (dense || fitLabel)
         ? FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(

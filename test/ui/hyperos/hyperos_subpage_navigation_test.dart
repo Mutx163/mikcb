@@ -509,6 +509,45 @@ void main() {
       isFalse,
     );
   });
+
+  testWidgets('HyperosSubpage headerExtension shares frosted header shell', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      TestApp(
+        home: HyperosSubpage(
+          onBack: () {},
+          title: const Text('Schools'),
+          headerExtension: const HyperosBlurredHeaderExtension(
+            child: SizedBox(height: 48, child: Text('Search')),
+          ),
+          child: HyperosListView(
+            children: const [
+              HyperosListTile(
+                icon: Icons.school_outlined,
+                title: 'Example school',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await pumpBlurSettleFrames(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(HyperosBlurredHeaderExtension), findsOneWidget);
+    expect(find.byType(HyperosBlurredHeaderShell), findsOneWidget);
+
+    final scope = tester.widget<HyperosBlurredHeaderScope>(
+      find.byType(HyperosBlurredHeaderScope),
+    );
+    expect(
+      scope.contentTopInset,
+      greaterThan(HyperosBlurredHeader.contentTopInset(
+        tester.element(find.byType(HyperosSubpage)),
+      )),
+    );
+  });
 }
 
 class _AppearanceStub extends StatelessWidget {

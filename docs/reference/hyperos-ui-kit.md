@@ -162,6 +162,11 @@ Toast 入口：`lib/utils/app_toast.dart` → [app-toast.md](./app-toast.md)。
 
 ## 3. 界面迁移状态
 
+> **2026-07 起：** 迁移进度不再在本节手工维护。  
+> **唯一真相来源：** [`hyperos-page-compliance.json`](./hyperos-page-compliance.json) + `python tool/hyperos_audit.py`（见 [`hyperos-page-compliance.md`](./hyperos-page-compliance.md)）。
+
+下列表格为 **历史快照**，仅供对照组件选型；发版 / PR 请以 audit 流水线输出为准。
+
 图例：**✅ 已用 HyperOS** · **🟡 部分** · **❌ 仍 Forui 旧样式**
 
 ### 3.1 课表设置链路（`timetable_settings_screen.dart`）

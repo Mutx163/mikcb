@@ -3903,6 +3903,93 @@ class AppLocalizationsZh extends AppLocalizations {
   String get webLoginImport => '网页登录导入';
 
   @override
+  String get fillUrlThenRecord => '填写网址后录制';
+
+  @override
+  String get recordImportAction => '录制导入';
+
+  @override
+  String get quickImportAction => '⚡ 快捷导入';
+
+  @override
+  String get quickImportTooltip => '快捷导入';
+
+  @override
+  String get selectQuickImportTitle => '选择快捷导入';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount 步';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return '快捷导入 - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => '暂无已保存的快捷导入记录';
+
+  @override
+  String get noValidWarehouseLoginUrl => '未找到有效的教务登录地址';
+
+  @override
+  String get noMacroRecordFound => '未找到录制记录，请先完成一次录制';
+
+  @override
+  String get quickImportPlayingTitle => '自动导入中…';
+
+  @override
+  String get quickImportExecutingScriptTitle => '回放完成，正在执行导入脚本…';
+
+  @override
+  String get quickImportManualInputTitle => '需要手动操作';
+
+  @override
+  String get quickImportManualInputHint => '请完成当前需要的手动操作。完成后点击继续。';
+
+  @override
+  String get quickImportCancelImportAction => '取消导入';
+
+  @override
+  String get quickImportContinueAction => '继续';
+
+  @override
+  String get quickImportFinishedTitle => '导入完成';
+
+  @override
+  String get quickImportDismissAction => '完成';
+
+  @override
+  String get quickImportRetryAction => '重试';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return '步骤 $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => '取消';
+
+  @override
+  String get quickImportUnknownError => '发生未知错误';
+
+  @override
+  String get recentSchoolLabel => '最近使用';
+
+  @override
+  String get warehouseSchoolTapHint => '点击进入，选择适配器导入';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => '暂时无法读取适配器列表';
+
+  @override
+  String get stopRecordingTooltip => '停止录制';
+
+  @override
+  String get startRecordingTooltip => '录制操作';
+
+  @override
   String get savedImportUrlHint => '已保存教务网址，下次可直接导入';
 
   @override
@@ -9165,6 +9252,93 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get webLoginImport => '網頁登入匯入';
 
   @override
+  String get fillUrlThenRecord => '填寫網址後錄製';
+
+  @override
+  String get recordImportAction => '錄製匯入';
+
+  @override
+  String get quickImportAction => '⚡ 快捷匯入';
+
+  @override
+  String get quickImportTooltip => '快捷匯入';
+
+  @override
+  String get selectQuickImportTitle => '選擇快捷匯入';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount 步';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return '快捷匯入 - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => '暫無已保存的快捷匯入記錄';
+
+  @override
+  String get noValidWarehouseLoginUrl => '未找到有效的教務登入網址';
+
+  @override
+  String get noMacroRecordFound => '未找到錄製記錄，請先完成一次錄製';
+
+  @override
+  String get quickImportPlayingTitle => '自動匯入中…';
+
+  @override
+  String get quickImportExecutingScriptTitle => '回放完成，正在執行匯入腳本…';
+
+  @override
+  String get quickImportManualInputTitle => '需要手動操作';
+
+  @override
+  String get quickImportManualInputHint => '請完成當前需要的手動操作。完成後點擊繼續。';
+
+  @override
+  String get quickImportCancelImportAction => '取消匯入';
+
+  @override
+  String get quickImportContinueAction => '繼續';
+
+  @override
+  String get quickImportFinishedTitle => '匯入完成';
+
+  @override
+  String get quickImportDismissAction => '完成';
+
+  @override
+  String get quickImportRetryAction => '重試';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return '步驟 $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => '取消';
+
+  @override
+  String get quickImportUnknownError => '發生未知錯誤';
+
+  @override
+  String get recentSchoolLabel => '最近使用';
+
+  @override
+  String get warehouseSchoolTapHint => '點擊進入，選擇適配器匯入';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
+
+  @override
+  String get stopRecordingTooltip => '停止錄製';
+
+  @override
+  String get startRecordingTooltip => '錄製操作';
+
+  @override
   String get savedImportUrlHint => '已保存教務網址，下次可直接匯入';
 
   @override
@@ -14425,6 +14599,93 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get webLoginImport => '網頁登入匯入';
+
+  @override
+  String get fillUrlThenRecord => '填寫網址後錄製';
+
+  @override
+  String get recordImportAction => '錄製匯入';
+
+  @override
+  String get quickImportAction => '⚡ 快捷匯入';
+
+  @override
+  String get quickImportTooltip => '快捷匯入';
+
+  @override
+  String get selectQuickImportTitle => '選擇快捷匯入';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount 步';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return '快捷匯入 - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => '暫無已保存的快捷匯入記錄';
+
+  @override
+  String get noValidWarehouseLoginUrl => '未找到有效的教務登入網址';
+
+  @override
+  String get noMacroRecordFound => '未找到錄製記錄，請先完成一次錄製';
+
+  @override
+  String get quickImportPlayingTitle => '自動匯入中…';
+
+  @override
+  String get quickImportExecutingScriptTitle => '回放完成，正在執行匯入腳本…';
+
+  @override
+  String get quickImportManualInputTitle => '需要手動操作';
+
+  @override
+  String get quickImportManualInputHint => '請完成當前需要的手動操作。完成後點擊繼續。';
+
+  @override
+  String get quickImportCancelImportAction => '取消匯入';
+
+  @override
+  String get quickImportContinueAction => '繼續';
+
+  @override
+  String get quickImportFinishedTitle => '匯入完成';
+
+  @override
+  String get quickImportDismissAction => '完成';
+
+  @override
+  String get quickImportRetryAction => '重試';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return '步驟 $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => '取消';
+
+  @override
+  String get quickImportUnknownError => '發生未知錯誤';
+
+  @override
+  String get recentSchoolLabel => '最近使用';
+
+  @override
+  String get warehouseSchoolTapHint => '點擊進入，選擇適配器匯入';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => '暫時無法讀取適配器列表';
+
+  @override
+  String get stopRecordingTooltip => '停止錄製';
+
+  @override
+  String get startRecordingTooltip => '錄製操作';
 
   @override
   String get savedImportUrlHint => '已保存教務網址，下次可直接匯入';

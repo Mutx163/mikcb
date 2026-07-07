@@ -2033,8 +2033,8 @@ class LiveUpdateService : Service() {
         }
     }
 
-    private fun restoreBeforeClassQuickActionIfNeeded(reason: String) {
-        BeforeClassQuickActionRestore.restoreIfPending(this, reason)
+    private fun restoreBeforeClassQuickActionIfClassEnded() {
+        BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
     }
 
     private fun openNotificationPolicyAccessSettings() {
@@ -2093,6 +2093,7 @@ class LiveUpdateService : Service() {
         ticker = object : Runnable {
             override fun run() {
                 val now = System.currentTimeMillis()
+                BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
                 val stage = resolveStage(now)
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
@@ -2120,8 +2121,6 @@ class LiveUpdateService : Service() {
                     return
                 }
                 lastTickerStage = stage
-
-                BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
                     if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
@@ -3252,7 +3251,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun stopAndRemoveNotification() {
-        restoreBeforeClassQuickActionIfNeeded("service_stop")
+        restoreBeforeClassQuickActionIfClassEnded()
         markServiceStopped("实时提醒已结束并移除通知")
         UmengDiagnosticReporter.record(
             context = applicationContext,

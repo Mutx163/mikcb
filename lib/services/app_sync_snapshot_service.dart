@@ -384,3 +384,20 @@ SyncConflictChoice resolveSyncConflictAutomatically(SyncConflictInfo info) {
       ? SyncConflictChoice.keepRemote
       : SyncConflictChoice.keepLocal;
 }
+
+bool webdavPullHasSyncConflict({
+  required String? lastUploadedLocalHash,
+  required String? lastAppliedRemoteHash,
+  required String localContentSha256,
+  required String remoteContentSha256,
+}) {
+  final localChangedSinceSync = lastUploadedLocalHash != null &&
+      localContentSha256 != lastUploadedLocalHash;
+  final remoteChangedSinceSync = lastAppliedRemoteHash != null &&
+      remoteContentSha256 != lastAppliedRemoteHash;
+  final divergedOnFirstSync = lastUploadedLocalHash == null &&
+      lastAppliedRemoteHash == null &&
+      localContentSha256 != remoteContentSha256;
+  return (localChangedSinceSync && remoteChangedSinceSync) ||
+      divergedOnFirstSync;
+}

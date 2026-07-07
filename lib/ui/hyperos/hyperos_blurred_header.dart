@@ -92,6 +92,18 @@ abstract final class HyperosBlurredHeader {
     return safeTop + minHeaderHeight + headerPaddingBottom;
   }
 
+  /// Default vertical size for a single-line [HyperosBlurredHeaderExtension]
+  /// row (padding + ~48dp field) before the overlay header is measured.
+  static const defaultExtensionHeight = 68.0;
+
+  /// Body inset when a [HyperosBlurredHeaderExtension] is pinned under the bar.
+  static double contentTopInsetWithExtension(
+    BuildContext context, {
+    double extensionHeight = defaultExtensionHeight,
+  }) {
+    return contentTopInset(context) + extensionHeight;
+  }
+
   /// Miuix collapsed top bar content height (excluding status bar).
   static const contentHeight = HyperosMiuixTopAppBar.collapsedHeight;
 
@@ -223,6 +235,26 @@ class HyperosBlurredHeaderShell extends StatelessWidget {
       tint: tint,
       child: child,
     );
+  }
+}
+
+/// Pads widgets pinned directly under the frosted title row inside the same
+/// [HyperosBlurredHeaderShell] (search bars, segmented filters, etc.).
+class HyperosBlurredHeaderExtension extends StatelessWidget {
+  const HyperosBlurredHeaderExtension({
+    super.key,
+    required this.child,
+    this.padding = defaultPadding,
+  });
+
+  static const defaultPadding = EdgeInsets.fromLTRB(16, 8, 16, 12);
+
+  final Widget child;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(padding: padding, child: child);
   }
 }
 

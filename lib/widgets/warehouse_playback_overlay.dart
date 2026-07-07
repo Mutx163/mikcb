@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'warehouse_macro_replayer.dart';
@@ -28,165 +29,145 @@ class PlaybackOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
     switch (state) {
       case PlaybackUiState.hidden:
         return const SizedBox.shrink();
       case PlaybackUiState.playing:
-        return _buildPlayingOverlay(context, theme, colorScheme);
+        return _buildPlayingOverlay(context);
       case PlaybackUiState.pausedForInput:
-        return _buildPausedOverlay(context, theme, colorScheme);
+        return _buildPausedOverlay(context);
       case PlaybackUiState.executingImport:
-        return _buildExecutingImportOverlay(context, theme, colorScheme);
+        return _buildExecutingImportOverlay(context);
       case PlaybackUiState.finished:
-        return _buildFinishedOverlay(context, theme, colorScheme);
+        return const SizedBox.shrink();
       case PlaybackUiState.error:
-        return _buildErrorOverlay(context, theme, colorScheme);
+        return _buildErrorOverlay(context);
     }
   }
 
-  Widget _buildPlayingOverlay(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      color: Colors.black54,
-      child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Colors.white,
-              ),
+  Widget _buildScrim({required Widget child}) {
+    return ColoredBox(
+      color: Colors.black.withValues(alpha: 0.54),
+      child: SafeArea(child: child),
+    );
+  }
+
+  TextStyle _onScrimTitleStyle(BuildContext context) {
+    return HyperosTypography.listTitle(context).copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w700,
+    );
+  }
+
+  TextStyle _onScrimBodyStyle(BuildContext context) {
+    return HyperosTypography.listDetail(context).copyWith(
+      color: Colors.white70,
+    );
+  }
+
+  Widget _buildPlayingOverlay(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final subtitle = _schoolAdapterLine();
+
+    return _buildScrim(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const HyperosCircularProgress(size: 48, strokeWidth: 3),
+          const SizedBox(height: 24),
+          Text(l10n.quickImportPlayingTitle, style: _onScrimTitleStyle(context)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(subtitle, style: _onScrimBodyStyle(context)),
+          ],
+          const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: HyperosLinearProgress(
+              value: progress.progress,
+              minHeight: 6,
             ),
-            const SizedBox(height: 24),
-            Text(
-              '自动导入中…',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+            child: Text(
+              l10n.quickImportPlaybackStepProgress(
+                progress.currentStepIndex + 1,
+                progress.totalSteps,
               ),
+              style: _onScrimBodyStyle(context),
             ),
-            if (schoolName != null || adapterName != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${schoolName ?? ""} · ${adapterName ?? ""}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress.progress,
-                minHeight: 6,
-                backgroundColor: Colors.white24,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-              child: Text(
-                '步骤 ${progress.currentStepIndex + 1} / ${progress.totalSteps}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white60,
-                ),
-              ),
-            ),
+          ),
+          if (progress.statusLabel.isNotEmpty)
             Text(
               progress.statusLabel,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: Colors.white70,
+              style: _onScrimBodyStyle(context).copyWith(
                 fontStyle: FontStyle.italic,
               ),
             ),
-            const SizedBox(height: 32),
-            OutlinedButton.icon(
-              onPressed: onCancel,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.white,
-                side: const BorderSide(color: Colors.white38),
-              ),
-              icon: const Icon(Icons.stop_rounded, size: 18),
-              label: const Text('取消'),
-            ),
-          ],
-        ),
+          const SizedBox(height: 32),
+          HyperosButton(
+            label: l10n.quickImportCancelPlaybackAction,
+            variant: HyperosButtonVariant.secondary,
+            onPressed: onCancel,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildPausedOverlay(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
+  Widget _buildPausedOverlay(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Stack(
       children: [
-        IgnorePointer(child: Container(color: Colors.black26)),
+        IgnorePointer(
+          child: ColoredBox(color: Colors.black.withValues(alpha: 0.26)),
+        ),
         SafeArea(
           child: Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              child: Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+              child: HyperosControlCard(
+                child: HyperosControlCardInset(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: const Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.amber,
-                          size: 26,
-                        ),
+                      const HyperosIconBadge(
+                        icon: Icons.warning_amber_rounded,
+                        accent: HyperosIconColors.orange,
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        '需要手动操作',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
+                        l10n.quickImportManualInputTitle,
+                        style: HyperosTypography.listTitle(context),
+                        textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        progress.pauseReason ?? '请完成当前需要的手动操作。完成后点击继续。',
+                        progress.pauseReason ?? l10n.quickImportManualInputHint,
                         textAlign: TextAlign.center,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
+                        style: HyperosTypography.listDetail(context),
                       ),
                       const SizedBox(height: 16),
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          HyperosButton(
-                            label: '取消导入',
-                            variant: HyperosButtonVariant.secondary,
-                            onPressed: onCancel,
+                          Expanded(
+                            child: HyperosButton(
+                              label: l10n.quickImportCancelImportAction,
+                              variant: HyperosButtonVariant.secondary,
+                              expand: true,
+                              onPressed: onCancel,
+                            ),
                           ),
-                          HyperosButton(
-                            label: '继续',
-                            onPressed: onContinueAfterPause,
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: HyperosButton(
+                              label: l10n.quickImportContinueAction,
+                              expand: true,
+                              onPressed: onContinueAfterPause,
+                            ),
                           ),
                         ],
                       ),
@@ -201,180 +182,95 @@ class PlaybackOverlay extends StatelessWidget {
     );
   }
 
-  Widget _buildExecutingImportOverlay(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      color: Colors.black54,
-      child: SafeArea(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const SizedBox(
-              width: 48,
-              height: 48,
-              child: CircularProgressIndicator(
-                strokeWidth: 3,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              '回放完成，正在执行导入脚本…',
-              style: theme.textTheme.titleMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (schoolName != null || adapterName != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${schoolName ?? ""} · ${adapterName ?? ""}',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: Colors.white70,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _buildExecutingImportOverlay(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final subtitle = _schoolAdapterLine();
 
-  Widget _buildFinishedOverlay(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      color: Colors.black54,
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.check_circle_rounded,
-                        color: colorScheme.primary,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '导入完成',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    if (schoolName != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        '$schoolName · $adapterName',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 20),
-                    HyperosButton(label: '完成', onPressed: onDismiss),
-                  ],
-                ),
-              ),
-            ),
+    return _buildScrim(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const HyperosCircularProgress(size: 48, strokeWidth: 3),
+          const SizedBox(height: 24),
+          Text(
+            l10n.quickImportExecutingScriptTitle,
+            style: _onScrimTitleStyle(context),
+            textAlign: TextAlign.center,
           ),
-        ),
+          if (subtitle != null) ...[
+            const SizedBox(height: 6),
+            Text(subtitle, style: _onScrimBodyStyle(context)),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildErrorOverlay(
-    BuildContext context,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      color: Colors.black54,
-      child: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: colorScheme.error.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        Icons.error_outline_rounded,
-                        color: colorScheme.error,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      '导入失败',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      progress.errorMessage ?? '发生未知错误',
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        HyperosButton(
-                          label: '关闭',
+  Widget _buildErrorOverlay(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return _buildScrim(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: HyperosControlCard(
+            child: HyperosControlCardInset(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const HyperosIconBadge(
+                    icon: Icons.error_outline_rounded,
+                    accent: HyperosIconColors.red,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.importFailedStatus,
+                    style: HyperosTypography.listTitle(context),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    progress.errorMessage ?? l10n.quickImportUnknownError,
+                    textAlign: TextAlign.center,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: HyperosButton(
+                          label: l10n.closeAction,
                           variant: HyperosButtonVariant.secondary,
+                          expand: true,
                           onPressed: onDismiss,
                         ),
-                        if (onRetry != null)
-                          HyperosButton(label: '重试', onPressed: onRetry),
+                      ),
+                      if (onRetry != null) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: HyperosButton(
+                            label: l10n.quickImportRetryAction,
+                            expand: true,
+                            onPressed: onRetry,
+                          ),
+                        ),
                       ],
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
         ),
       ),
     );
+  }
+
+  String? _schoolAdapterLine() {
+    if (schoolName == null && adapterName == null) {
+      return null;
+    }
+    return '${schoolName ?? ''} · ${adapterName ?? ''}'.trim();
   }
 }
 
@@ -387,39 +283,17 @@ class MacroIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     if (!hasMacro) {
       return HyperosButton(
-        label: '录制',
+        label: AppLocalizations.of(context)!.startRecordingTooltip,
         variant: HyperosButtonVariant.secondary,
         onPressed: null,
       );
     }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.flash_on_rounded,
-            size: 14,
-            color: theme.colorScheme.primary,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label ?? '快捷导入',
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
+    return HyperosTag(
+      label: label ?? AppLocalizations.of(context)!.quickImportTooltip,
+      backgroundColor: HyperosTokens.accent.withValues(alpha: 0.12),
     );
   }
 }

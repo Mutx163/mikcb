@@ -2191,6 +2191,60 @@
   "saveDebugRecordAction": "保存调试记录",
   "fillUrlThenImport": "填写网址后导入",
   "webLoginImport": "网页登录导入",
+  "fillUrlThenRecord": "填写网址后录制",
+  "recordImportAction": "录制导入",
+  "quickImportAction": "⚡ 快捷导入",
+  "quickImportTooltip": "快捷导入",
+  "selectQuickImportTitle": "选择快捷导入",
+  "quickImportMacroSteps": "{adapterName} · {stepCount} 步",
+  "@quickImportMacroSteps": {
+    "placeholders": {
+      "adapterName": {
+        "type": "String"
+      },
+      "stepCount": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportTitle": "快捷导入 - {name}",
+  "@quickImportTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSavedQuickImportRecords": "暂无已保存的快捷导入记录",
+  "noValidWarehouseLoginUrl": "未找到有效的教务登录地址",
+  "noMacroRecordFound": "未找到录制记录，请先完成一次录制",
+  "quickImportPlayingTitle": "自动导入中…",
+  "quickImportExecutingScriptTitle": "回放完成，正在执行导入脚本…",
+  "quickImportManualInputTitle": "需要手动操作",
+  "quickImportManualInputHint": "请完成当前需要的手动操作。完成后点击继续。",
+  "quickImportCancelImportAction": "取消导入",
+  "quickImportContinueAction": "继续",
+  "quickImportFinishedTitle": "导入完成",
+  "quickImportDismissAction": "完成",
+  "quickImportRetryAction": "重试",
+  "quickImportPlaybackStepProgress": "步骤 {current} / {total}",
+  "@quickImportPlaybackStepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportCancelPlaybackAction": "取消",
+  "quickImportUnknownError": "发生未知错误",
+  "recentSchoolLabel": "最近使用",
+  "warehouseSchoolTapHint": "点击进入，选择适配器导入",
+  "warehouseAdaptersLoadFailedTitle": "暂时无法读取适配器列表",
+  "stopRecordingTooltip": "停止录制",
+  "startRecordingTooltip": "录制操作",
   "savedImportUrlHint": "已保存教务网址，下次可直接导入",
   "adapterIntroSubtitle": "可查看适配器信息、登录入口与脚本状态。",
   "schoolLabel": "学校",

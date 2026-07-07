@@ -21,4 +21,49 @@ void main() {
     );
     expect(choice, SyncConflictChoice.keepLocal);
   });
+
+  test('webdav first sync treats divergent snapshots as conflict', () {
+    expect(
+      webdavPullHasSyncConflict(
+        lastUploadedLocalHash: null,
+        lastAppliedRemoteHash: null,
+        localContentSha256: 'local-hash',
+        remoteContentSha256: 'remote-hash',
+      ),
+      isTrue,
+    );
+  });
+
+  test('webdav first sync skips conflict when snapshots match', () {
+    expect(
+      webdavPullHasSyncConflict(
+        lastUploadedLocalHash: null,
+        lastAppliedRemoteHash: null,
+        localContentSha256: 'same-hash',
+        remoteContentSha256: 'same-hash',
+      ),
+      isFalse,
+    );
+  });
+
+  test('webdav pull requires both sides changed after baseline exists', () {
+    expect(
+      webdavPullHasSyncConflict(
+        lastUploadedLocalHash: 'baseline',
+        lastAppliedRemoteHash: 'baseline',
+        localContentSha256: 'local-new',
+        remoteContentSha256: 'baseline',
+      ),
+      isFalse,
+    );
+    expect(
+      webdavPullHasSyncConflict(
+        lastUploadedLocalHash: 'baseline',
+        lastAppliedRemoteHash: 'baseline',
+        localContentSha256: 'local-new',
+        remoteContentSha256: 'remote-new',
+      ),
+      isTrue,
+    );
+  });
 }

@@ -2191,6 +2191,60 @@
   "saveDebugRecordAction": "Save debug record",
   "fillUrlThenImport": "Enter URL before importing",
   "webLoginImport": "Web login import",
+  "fillUrlThenRecord": "Enter URL before recording",
+  "recordImportAction": "Record import",
+  "quickImportAction": "Quick import",
+  "quickImportTooltip": "Quick import",
+  "selectQuickImportTitle": "Choose quick import",
+  "quickImportMacroSteps": "{adapterName} · {stepCount} steps",
+  "@quickImportMacroSteps": {
+    "placeholders": {
+      "adapterName": {
+        "type": "String"
+      },
+      "stepCount": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportTitle": "Quick import - {name}",
+  "@quickImportTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSavedQuickImportRecords": "No saved quick-import records yet",
+  "noValidWarehouseLoginUrl": "No valid academic-system login URL found",
+  "noMacroRecordFound": "No recording found. Complete a recording first.",
+  "quickImportPlayingTitle": "Auto-importing…",
+  "quickImportExecutingScriptTitle": "Playback finished. Running import script…",
+  "quickImportManualInputTitle": "Manual action required",
+  "quickImportManualInputHint": "Complete the required manual step, then tap Continue.",
+  "quickImportCancelImportAction": "Cancel import",
+  "quickImportContinueAction": "Continue",
+  "quickImportFinishedTitle": "Import complete",
+  "quickImportDismissAction": "Done",
+  "quickImportRetryAction": "Retry",
+  "quickImportPlaybackStepProgress": "Step {current} / {total}",
+  "@quickImportPlaybackStepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportCancelPlaybackAction": "Cancel",
+  "quickImportUnknownError": "An unknown error occurred",
+  "recentSchoolLabel": "Recently used",
+  "warehouseSchoolTapHint": "Tap to choose an adapter and import",
+  "warehouseAdaptersLoadFailedTitle": "Could not load adapter list",
+  "stopRecordingTooltip": "Stop recording",
+  "startRecordingTooltip": "Record actions",
   "savedImportUrlHint": "Academic-system URL saved. You can import directly next time.",
   "adapterIntroSubtitle": "You can view adapter info, the login entry, and script status here.",
   "schoolLabel": "School",

@@ -363,8 +363,12 @@ object LiveUpdateScheduler {
         reschedule(context, allowImmediateStart = true)
     }
 
-    fun handleSystemReschedule(context: Context) {
+    fun handleBootReschedule(context: Context) {
         BeforeClassQuickActionRestore.restoreOnBoot(context.applicationContext)
+        reschedule(context, allowImmediateStart = true)
+    }
+
+    fun handleTimeReschedule(context: Context) {
         reschedule(context, allowImmediateStart = true)
     }
 
@@ -1616,9 +1620,11 @@ class LiveUpdateReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         when (intent?.action) {
             Intent.ACTION_BOOT_COMPLETED,
-            Intent.ACTION_MY_PACKAGE_REPLACED,
+            Intent.ACTION_MY_PACKAGE_REPLACED ->
+                LiveUpdateScheduler.handleBootReschedule(context)
             Intent.ACTION_TIME_CHANGED,
-            Intent.ACTION_TIMEZONE_CHANGED -> LiveUpdateScheduler.handleSystemReschedule(context)
+            Intent.ACTION_TIMEZONE_CHANGED ->
+                LiveUpdateScheduler.handleTimeReschedule(context)
             LiveUpdateScheduler.ACTION_TRIGGER -> LiveUpdateScheduler.handleAlarm(context)
         }
     }

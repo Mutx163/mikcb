@@ -41,6 +41,22 @@ import 'feedback_screen.dart';
 
 enum _WarehouseImportMenuAction { feedback, customDebug }
 
+Widget _importListTitle(BuildContext context, String text) {
+  return Text(text, style: HyperosTypography.listTitle(context));
+}
+
+Widget _importCardHeading(BuildContext context, String text) {
+  return Text(text, style: HyperosTypography.title(context));
+}
+
+Widget _importListDetail(BuildContext context, String text) {
+  return Text(text, style: HyperosTypography.listDetail(context));
+}
+
+Widget _importLoadingCenter({double size = 32}) {
+  return Center(child: HyperosCircularProgress(size: size));
+}
+
 bool shouldPromptRememberedLoginAutofill({
   required bool hasPasswordField,
   required WarehouseRememberedLogin? rememberedLogin,
@@ -57,8 +73,6 @@ bool shouldPromptRememberedLoginAutofill({
 }
 
 Widget _buildImportMethodChoiceTile({
-  required ThemeData theme,
-  required ColorScheme colorScheme,
   required IconData icon,
   required String title,
   required String subtitle,
@@ -73,15 +87,10 @@ Widget _buildImportMethodChoiceTile({
       children: [
         Text(subtitle),
         const SizedBox(height: 4),
-        Text(
-          footer,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: colorScheme.onSurfaceVariant,
-          ),
-        ),
+        Text(footer),
       ],
     ),
-    trailing: const Icon(Icons.chevron_right_rounded, size: 18),
+    trailing: const HyperosChevron(),
     onTap: onTap,
   );
 }
@@ -131,8 +140,6 @@ class CourseImportScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.courseImportTitle),
@@ -140,35 +147,17 @@ class CourseImportScreen extends StatelessWidget {
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: HyperosListView(
+            includeHeaderInset: false,
             children: [
-              _ImportSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.chooseImportMethodTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.chooseImportMethodSubtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
+              HyperosSectionLabel(text: l10n.chooseImportMethodTitle),
+              HyperosSectionDescription(
+                text: l10n.chooseImportMethodSubtitle,
               ),
-              const SizedBox(height: 16),
+              const HyperosSectionGap(),
               HyperosChoiceGroup(
                 children: [
                   _buildImportMethodChoiceTile(
-                    theme: theme,
-                    colorScheme: colorScheme,
                     icon: Icons.event_note_rounded,
                     title: l10n.importMethodIcsTitle,
                     subtitle: l10n.importMethodIcsSubtitle,
@@ -179,8 +168,6 @@ class CourseImportScreen extends StatelessWidget {
                     ),
                   ),
                   _buildImportMethodChoiceTile(
-                    theme: theme,
-                    colorScheme: colorScheme,
                     icon: Icons.auto_awesome_rounded,
                     title: l10n.importMethodAiTitle,
                     subtitle: l10n.importMethodAiSubtitle,
@@ -191,8 +178,6 @@ class CourseImportScreen extends StatelessWidget {
                     ),
                   ),
                   _buildImportMethodChoiceTile(
-                    theme: theme,
-                    colorScheme: colorScheme,
                     icon: Icons.school_outlined,
                     title: l10n.importMethodWarehouseTitle,
                     subtitle: l10n.importMethodWarehouseSubtitle,
@@ -203,8 +188,6 @@ class CourseImportScreen extends StatelessWidget {
                     ),
                   ),
                   _buildImportMethodChoiceTile(
-                    theme: theme,
-                    colorScheme: colorScheme,
                     icon: Icons.table_chart_outlined,
                     title: l10n.importMethodSpreadsheetTitle,
                     subtitle: l10n.importMethodSpreadsheetSubtitle,
@@ -277,8 +260,8 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
           child: Column(
             children: [
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
+                child: HyperosListView(
+                  includeHeaderInset: false,
                   children: [
                     _ImportGuidePanel(
                       scenarioIntro: l10n.icsScenarioIntro,
@@ -490,8 +473,8 @@ class _SpreadsheetCourseImportScreenState
           child: Column(
             children: [
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
+                child: HyperosListView(
+                  includeHeaderInset: false,
                   children: [
                     _ImportGuidePanel(
                       scenarioIntro: l10n.spreadsheetScenarioIntro,
@@ -789,6 +772,150 @@ Future<void> _completeParsedCourseImport({
   }
 }
 
+List<String> _splitWorkflowArrowTitle(String title) {
+  return title
+      .split(RegExp(r'\s*(?:->|→)\s*'))
+      .map((step) => step.trim())
+      .where((step) => step.isNotEmpty)
+      .toList(growable: false);
+}
+
+class _AiWorkflowGuideCard extends StatelessWidget {
+  const _AiWorkflowGuideCard({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final steps = _splitWorkflowArrowTitle(l10n.aiWorkflowTitle);
+
+    return HyperosControlCard(
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const HyperosIconBadge(
+                  icon: Icons.auto_awesome_rounded,
+                  accent: HyperosIconColors.purple,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.importMethodAiTitle,
+                        style: HyperosTypography.listTitle(context),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        l10n.aiWorkflowSubtitle,
+                        style: HyperosTypography.listDetail(context),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (steps.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _AiWorkflowStepList(steps: steps),
+            ],
+            const SizedBox(height: 14),
+            const HyperosDivider(),
+            const SizedBox(height: 12),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.lightbulb_outline_rounded,
+                  size: 18,
+                  color: HyperosTokens.accent,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    l10n.aiExpertModeSuggestion,
+                    style: HyperosTypography.listDetail(context),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AiWorkflowStepList extends StatelessWidget {
+  const _AiWorkflowStepList({required this.steps});
+
+  final List<String> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = HyperosTokens.accent;
+
+    return Column(
+      children: [
+        for (var index = 0; index < steps.length; index++) ...[
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  '${index + 1}',
+                  style: HyperosTypography.listDetail(context).copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    steps[index],
+                    style: HyperosTypography.listTitle(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (index < steps.length - 1)
+            Padding(
+              padding: const EdgeInsets.only(left: 11, top: 4, bottom: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 2,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: HyperosTokens.divider,
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
 class AiImageCourseImportScreen extends StatefulWidget {
   const AiImageCourseImportScreen({super.key});
 
@@ -818,8 +945,16 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final previewSummary = _aiParsedResult == null
+        ? null
+        : l10n.aiPreviewSummary(
+            _aiParsedResult!.courses.length,
+            _aiParsedResult!.requiredSectionCount,
+            _aiParsedResult!.warnings.isEmpty
+                ? ''
+                : l10n.aiWarningCountSuffix(_aiParsedResult!.warnings.length),
+          );
+
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.aiImportTitle),
@@ -833,267 +968,68 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
           child: SafeArea(
             top: false,
             child: HyperosBlurredBodyInset(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final dense = constraints.maxHeight < 760;
-                  final ultraDense = constraints.maxHeight < 520;
-                  final double sectionGap;
-                  final double outerPadding;
-                  if (ultraDense) {
-                    sectionGap = 4.0;
-                    outerPadding = 10.0;
-                  } else if (dense) {
-                    sectionGap = 8.0;
-                    outerPadding = 12.0;
-                  } else {
-                    sectionGap = 12.0;
-                    outerPadding = 16.0;
-                  }
-                  final previewSummary = _aiParsedResult == null
-                      ? null
-                      : l10n.aiPreviewSummary(
-                          _aiParsedResult!.courses.length,
-                          _aiParsedResult!.requiredSectionCount,
-                          _aiParsedResult!.warnings.isEmpty
-                              ? ''
-                              : l10n.aiWarningCountSuffix(
-                                  _aiParsedResult!.warnings.length,
-                                ),
-                        );
-
-                  return Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      outerPadding,
-                      12,
-                      outerPadding,
-                      12,
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: HyperosListView(
+                      includeHeaderInset: false,
                       children: [
-                        _ImportSectionCard(
-                          padding: EdgeInsets.all(
-                            ultraDense
-                                ? 10
-                                : dense
-                                ? 14
-                                : 16,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: ultraDense
-                                    ? Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            l10n.aiWorkflowCompactTitle,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: theme.textTheme.titleSmall
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                          ),
-                                          const SizedBox(height: 2),
-                                          Text(
-                                            l10n.aiWorkflowCompactSubtitle,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                          ),
-                                        ],
-                                      )
-                                    : Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            l10n.aiWorkflowTitle,
-                                            style: theme.textTheme.titleMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w800,
-                                                ),
-                                          ),
-                                          SizedBox(height: dense ? 4 : 6),
-                                          Text(
-                                            l10n.aiWorkflowSubtitle,
-                                            style: theme.textTheme.bodySmall
-                                                ?.copyWith(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                  height: 1.35,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                              SizedBox(width: ultraDense ? 8 : 12),
-                              if (ultraDense)
+                        _AiWorkflowGuideCard(l10n: l10n),
+                        const HyperosSectionGap(),
+                        HyperosControlCard(
+                          child: HyperosControlCardInset(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                HyperosButton(
+                                  label: l10n.copyAddress,
+                                  expand: true,
+                                  onPressed: _copyAiPrompt,
+                                ),
+                                const SizedBox(height: 10),
                                 HyperosButton(
                                   label: l10n.aiPromptShortAction,
                                   variant: HyperosButtonVariant.secondary,
-                                  onPressed: _showPromptSheet,
-                                )
-                              else
-                                Icon(
-                                  Icons.auto_awesome_rounded,
-                                  size: dense ? 30 : 34,
-                                  color: colorScheme.primary,
-                                ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: sectionGap),
-                        if (ultraDense)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 2),
-                            child: Text(
-                              l10n.aiExpertModeSuggestion,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          )
-                        else
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              _CompactHintChip(
-                                icon: Icons.smart_toy_outlined,
-                                label: l10n.aiHintExpertMode,
-                              ),
-                              _CompactHintChip(
-                                icon: Icons.photo_library_outlined,
-                                label: l10n.aiHintSendScreenshot,
-                              ),
-                              _CompactHintChip(
-                                icon: Icons.content_copy_rounded,
-                                label: l10n.aiHintCopyJsonBack,
-                              ),
-                              _CompactHintChip(
-                                icon: Icons.event_available_rounded,
-                                label: l10n.aiHintPickSemesterAfterImport,
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: sectionGap),
-                        if (ultraDense)
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _CompactActionButton(
-                                  icon: Icons.copy_all_rounded,
-                                  label: l10n.copyAddress,
-                                  onPressed: _copyAiPrompt,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _CompactActionButton(
-                                  icon: Icons.article_outlined,
-                                  label: l10n.aiPromptShortAction,
+                                  expand: true,
                                   onPressed: _showPromptSheet,
                                 ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _CompactActionButton(
-                                  icon: Icons.content_paste_rounded,
+                                const SizedBox(height: 10),
+                                HyperosButton(
                                   label: l10n.pasteAction,
+                                  variant: HyperosButtonVariant.secondary,
+                                  expand: true,
                                   onPressed: _pasteFromClipboard,
                                 ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: _CompactActionButton(
-                                  icon: Icons.clear_rounded,
+                                const SizedBox(height: 10),
+                                HyperosButton(
                                   label: l10n.clearAction,
+                                  variant: HyperosButtonVariant.secondary,
+                                  expand: true,
                                   onPressed: _clearInput,
                                 ),
-                              ),
-                            ],
-                          )
-                        else
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              HyperosButton(
-                                label: l10n.copyAddress,
-                                variant: HyperosButtonVariant.secondary,
-                                onPressed: _copyAiPrompt,
-                              ),
-                              HyperosButton(
-                                label: l10n.aiPromptShortAction,
-                                variant: HyperosButtonVariant.secondary,
-                                onPressed: _showPromptSheet,
-                              ),
-                              HyperosButton(
-                                label: l10n.pasteAction,
-                                variant: HyperosButtonVariant.secondary,
-                                onPressed: _pasteFromClipboard,
-                              ),
-                              HyperosButton(
-                                label: l10n.clearAction,
-                                variant: HyperosButtonVariant.secondary,
-                                onPressed: _clearInput,
-                              ),
-                            ],
-                          ),
-                        SizedBox(height: sectionGap),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                ultraDense
-                                    ? l10n.jsonLabelShort
-                                    : l10n.aiPasteJsonTitle,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              ],
                             ),
-                            if (_aiParsedResult != null)
-                              _CompactStatusChip(
-                                label: l10n.aiCourseCountChip(
-                                  _aiParsedResult!.courses.length,
-                                ),
-                              ),
-                            if (_aiParseError != null)
-                              _CompactStatusChip(
-                                label: l10n.aiParseFailedChip,
-                                isError: true,
-                              ),
-                          ],
+                          ),
                         ),
-                        SizedBox(
-                          height: ultraDense
-                              ? 4
-                              : dense
-                              ? 6
-                              : 8,
-                        ),
-                        Expanded(
-                          child: _ImportSectionCard(
-                            padding: EdgeInsets.zero,
-                            child: TextField(
+                        const HyperosSectionGap(),
+                        HyperosControlCard(
+                          edgeToEdge: true,
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(
+                              HyperosControlCardScope.defaultHorizontalPadding,
+                              HyperosControlCardScope.defaultHorizontalPadding,
+                              HyperosControlCardScope.defaultHorizontalPadding,
+                              HyperosControlCardScope.defaultBodyBottomInset,
+                            ),
+                            child: HyperosTextField(
                               key: const ValueKey('ai_import_json_input'),
                               controller: _aiController,
                               focusNode: _aiFocusNode,
-                              expands: true,
-                              minLines: null,
-                              maxLines: null,
-                              textAlignVertical: TextAlignVertical.top,
+                              label: l10n.aiPasteJsonTitle,
+                              helper: l10n.aiPasteJsonHintLong,
+                              hint: l10n.aiPasteJsonHintShort,
+                              minLines: 8,
+                              maxLines: 999,
                               onChanged: (_) {
                                 if (_aiParsedResult != null ||
                                     _aiParseError != null) {
@@ -1103,77 +1039,70 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
                                   });
                                 }
                               },
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.all(
-                                  ultraDense ? 10 : 14,
+                            ),
+                          ),
+                        ),
+                        if (_aiParseError != null) ...[
+                          const SizedBox(height: 12),
+                          HyperosListGroup(
+                            children: [
+                              HyperosNavTile(
+                                title: l10n.aiParseFailedChip,
+                                subtitle: _aiParseError,
+                                onTap: () => _showMessageSheet(
+                                  title: l10n.aiParseErrorTitle,
+                                  content: _aiParseError!,
                                 ),
-                                hintText: ultraDense
-                                    ? l10n.aiPasteJsonHintShort
-                                    : l10n.aiPasteJsonHintLong,
                               ),
-                            ),
+                            ],
                           ),
-                        ),
-                        SizedBox(height: sectionGap),
-                        if (_aiParseError != null)
-                          _CompactNoticeCard(
-                            icon: Icons.error_outline_rounded,
-                            message: _aiParseError!,
-                            isError: true,
-                            actionLabel: l10n.detailAction,
-                            onAction: () => _showMessageSheet(
-                              title: l10n.aiParseErrorTitle,
-                              content: _aiParseError!,
-                            ),
-                          )
-                        else if (_aiParsedResult != null)
-                          _CompactNoticeCard(
-                            icon: Icons.check_circle_outline_rounded,
-                            message: previewSummary!,
-                            actionLabel: l10n.viewDetailsAction,
-                            onAction: () => _showPreviewSheet(_aiParsedResult!),
-                          )
-                        else if (!ultraDense)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Text(
-                              l10n.aiWorkflowFooter,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
+                        ] else if (_aiParsedResult != null) ...[
+                          const SizedBox(height: 12),
+                          HyperosListGroup(
+                            children: [
+                              HyperosNavTile(
+                                title: previewSummary!,
+                                subtitle: l10n.viewDetailsAction,
+                                onTap: () =>
+                                    _showPreviewSheet(_aiParsedResult!),
                               ),
-                            ),
+                            ],
                           ),
-                        SizedBox(height: sectionGap),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: HyperosButton(
-                                label: l10n.previewAction,
-                                variant: HyperosButtonVariant.secondary,
-                                expand: true,
-                                onPressed: _previewAiResult,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: HyperosButton(
-                                label: _isImporting
-                                    ? '${l10n.importReplaceExistingTitle}...'
-                                    : l10n.confirmImportAction,
-                                expand: true,
-                                loading: _isImporting,
-                                onPressed: _isImporting
-                                    ? null
-                                    : _importAiResult,
-                              ),
-                            ),
-                          ],
-                        ),
+                        ],
                       ],
                     ),
-                  );
-                },
+                  ),
+                  Material(
+                    color: HyperosColors.card(context),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: HyperosButton(
+                              label: l10n.previewAction,
+                              variant: HyperosButtonVariant.secondary,
+                              expand: true,
+                              onPressed: _previewAiResult,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: HyperosButton(
+                              label: _isImporting
+                                  ? '${l10n.importReplaceExistingTitle}...'
+                                  : l10n.confirmImportAction,
+                              expand: true,
+                              loading: _isImporting,
+                              onPressed:
+                                  _isImporting ? null : _importAiResult,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -1500,6 +1429,7 @@ class _WarehouseCourseImportScreenState
       WarehouseImportPreferencesService();
   final WarehouseMacroService _macroService = WarehouseMacroService();
   final TextEditingController _searchController = TextEditingController();
+  final GlobalKey _warehouseMoreMenuKey = GlobalKey();
   late Future<WarehouseRootIndex> _rootIndexFuture;
   List<String> _recentSchoolIds = const [];
   String _searchQuery = '';
@@ -1543,11 +1473,33 @@ class _WarehouseCourseImportScreenState
     }
   }
 
+  Future<void> _showWarehouseMoreMenu() async {
+    final l10n = AppLocalizations.of(context)!;
+    final action = await showHyperosListPopup<_WarehouseImportMenuAction>(
+      context: context,
+      position: hyperosPopupPositionBelow(context, _warehouseMoreMenuKey),
+      items: [
+        HyperosPopupMenuItem(
+          label: l10n.warehouseFeedbackMissingSchoolTitle,
+          value: _WarehouseImportMenuAction.feedback,
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.warehouseCustomDebugTitle,
+          value: _WarehouseImportMenuAction.customDebug,
+        ),
+      ],
+    );
+    if (action != null && mounted) {
+      await _handleMoreAction(action);
+    }
+  }
+
   Future<void> _handleQuickImport() async {
+    final l10n = AppLocalizations.of(context)!;
     final allEntries = await _macroService.getAllMacroEntries();
     if (!mounted) return;
     if (allEntries.isEmpty) {
-      _showLightTip(context, '暂无已保存的快捷导入记录');
+      _showLightTip(context, l10n.noSavedQuickImportRecords);
       return;
     }
     // 加载完整的宏记录（含学校名、适配器名）
@@ -1561,7 +1513,7 @@ class _WarehouseCourseImportScreenState
     }
     if (!mounted) return;
     if (records.isEmpty) {
-      _showLightTip(context, '暂无已保存的快捷导入记录');
+      _showLightTip(context, l10n.noSavedQuickImportRecords);
       return;
     }
     if (records.length == 1) {
@@ -1569,17 +1521,19 @@ class _WarehouseCourseImportScreenState
       return;
     }
     // 多个宏录制，弹窗选择
-    final l10n = AppLocalizations.of(context)!;
     final chosen = await showHyperosDialog<WarehouseMacroRecord>(
       context: context,
-      title: '选择快捷导入',
+      title: l10n.selectQuickImportTitle,
       body: HyperosChoiceGroup(
         children: [
           for (final record in records)
             HyperosChoiceTile(
               title: record.schoolName,
               subtitle: Text(
-                '${record.adapterName} · ${record.steps.length} 步',
+                l10n.quickImportMacroSteps(
+                  record.adapterName,
+                  record.steps.length,
+                ),
               ),
               trailing: const Icon(Icons.flash_on_rounded, size: 20),
               onTap: () => Navigator.pop(context, record),
@@ -1599,6 +1553,7 @@ class _WarehouseCourseImportScreenState
   }
 
   Future<void> _startQuickImport(WarehouseMacroRecord macro) async {
+    final l10n = AppLocalizations.of(context)!;
     final customUrl = await _preferencesService.getCustomImportUrl(
       macro.adapterId,
     );
@@ -1608,7 +1563,7 @@ class _WarehouseCourseImportScreenState
     );
     if (!mounted || initialUrl == null) {
       if (mounted) {
-        _showLightTip(context, '未找到有效的教务登录地址');
+        _showLightTip(context, l10n.noValidWarehouseLoginUrl);
       }
       return;
     }
@@ -1619,7 +1574,7 @@ class _WarehouseCourseImportScreenState
           name: '/courses/import/warehouse/quick-import-top',
         ),
         builder: (_) => WarehouseAdapterWebLoginScreen(
-          title: '快捷导入 - ${macro.schoolName}',
+          title: l10n.quickImportTitle(macro.schoolName),
           initialUrl: initialUrl,
           source: _defaultSource,
           school: WarehouseSchoolEntry(
@@ -1708,40 +1663,55 @@ class _WarehouseCourseImportScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.importMethodWarehouseTitle),
       suffixes: [
         FHeaderAction(
           icon: const Icon(Icons.flash_on_rounded),
-          semanticsLabel: '快捷导入',
+          semanticsLabel: l10n.quickImportTooltip,
           onPress: _handleQuickImport,
         ),
-        PopupMenuButton<_WarehouseImportMenuAction>(
-          tooltip: l10n.moreActionsTooltip,
-          onSelected: _handleMoreAction,
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: _WarehouseImportMenuAction.feedback,
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.campaign_outlined),
-                title: Text(l10n.warehouseFeedbackMissingSchoolTitle),
-              ),
-            ),
-            PopupMenuItem(
-              value: _WarehouseImportMenuAction.customDebug,
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.terminal_rounded),
-                title: Text(l10n.warehouseCustomDebugTitle),
-              ),
-            ),
-          ],
+        Builder(
+          key: _warehouseMoreMenuKey,
+          builder: (context) => FHeaderAction(
+            icon: const Icon(Icons.more_vert_rounded),
+            semanticsLabel: l10n.moreActionsTooltip,
+            onPress: _showWarehouseMoreMenu,
+          ),
         ),
       ],
+      headerExtension: HyperosBlurredHeaderExtension(
+        child: Row(
+          children: [
+            Expanded(
+              child: HyperosTextField(
+                controller: _searchController,
+                hint: l10n.searchSchoolHint,
+                textInputAction: TextInputAction.search,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+            ),
+            if (_searchQuery.trim().isNotEmpty) ...[
+              const SizedBox(width: 8),
+              HyperosIconButton(
+                icon: Icons.close_rounded,
+                tooltip: l10n.clearSearchTooltip,
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    _searchQuery = '';
+                  });
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
       childPad: false,
       child: Material(
         type: MaterialType.transparency,
@@ -1750,44 +1720,37 @@ class _WarehouseCourseImportScreenState
             future: _rootIndexFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return _importLoadingCenter();
               }
               if (snapshot.hasError) {
-                return ListView(
-                  padding: const EdgeInsets.all(16),
+                return HyperosListView(
+                  includeHeaderInset: false,
                   children: [
-                    _ImportSectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.warehouseRootLoadFailedTitle,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
+                    HyperosSectionLabel(
+                      text: l10n.warehouseRootLoadFailedTitle,
+                    ),
+                    HyperosControlCard(
+                      child: HyperosControlCardInset(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _importListDetail(context, '${snapshot.error}'),
+                            const SizedBox(height: 12),
+                            HyperosButton(
+                              label: l10n.reloadAction,
+                              variant: HyperosButtonVariant.secondary,
+                              onPressed: () {
+                                setState(() {
+                                  _rootIndexFuture = _repositoryService
+                                      .fetchRootIndex(
+                                        _defaultSource,
+                                        options: _currentFetchOptions(),
+                                      );
+                                });
+                              },
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${snapshot.error}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          HyperosButton(
-                            label: l10n.reloadAction,
-                            variant: HyperosButtonVariant.secondary,
-                            onPressed: () {
-                              setState(() {
-                                _rootIndexFuture = _repositoryService
-                                    .fetchRootIndex(
-                                      _defaultSource,
-                                      options: _currentFetchOptions(),
-                                    );
-                              });
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -1808,186 +1771,129 @@ class _WarehouseCourseImportScreenState
                 });
               final filteredSchools = _filterSchools(allSchools, _searchQuery);
               final beans = _schoolsToBeans(filteredSchools, _recentSchoolIds);
-              final indexTags = beans
-                  .map((bean) => bean.getSuspensionTag())
-                  .toSet()
+              final sections = _schoolsToSections(beans);
+              final indexTags = sections
+                  .map((section) => section.tag)
                   .toList(growable: false);
               final isSearching = _searchQuery.trim().isNotEmpty;
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                    child: TextField(
-                      controller: _searchController,
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: l10n.searchSchoolHint,
-                        prefixIcon: const Icon(Icons.search_rounded),
-                        suffixIcon: _searchQuery.trim().isEmpty
-                            ? null
-                            : IconButton(
-                                tooltip: l10n.clearSearchTooltip,
-                                onPressed: () {
-                                  _searchController.clear();
-                                  setState(() {
-                                    _searchQuery = '';
-                                  });
-                                },
-                                icon: const Icon(Icons.close_rounded),
-                              ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        isDense: true,
-                        filled: true,
-                        fillColor: context.theme.colors.muted,
-                      ),
+              if (sections.isEmpty) {
+                return Center(
+                  child: HyperosEmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: isSearching
+                        ? l10n.noMatchingSchools
+                        : l10n.noAvailableSchools,
+                    subtitle: isSearching
+                        ? l10n.searchSchoolSuggestion
+                        : null,
+                  ),
+                );
+              }
+              return AzListView(
+                data: sections,
+                itemCount: sections.length,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                indexBarData: isSearching ? const [] : indexTags,
+                indexBarOptions: IndexBarOptions(
+                  needRebuild: true,
+                  hapticFeedback: true,
+                  textStyle: HyperosTypography.listDetail(
+                    context,
+                  ).copyWith(
+                    fontSize: HyperosMiuixTypography.footnote2,
+                    color: HyperosColors.secondaryText(context),
+                  ),
+                  selectTextStyle: HyperosTypography.listDetail(
+                    context,
+                  ).copyWith(
+                    fontSize: HyperosMiuixTypography.footnote2,
+                    color: HyperosTokens.accent,
+                  ),
+                  selectItemDecoration: BoxDecoration(
+                    color: HyperosTokens.accent.withValues(
+                      alpha: 0.12,
                     ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  Expanded(
-                    child: beans.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(24),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.search_off_rounded,
-                                    size: 36,
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Text(
-                                    isSearching
-                                        ? l10n.noMatchingSchools
-                                        : l10n.noAvailableSchools,
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700),
-                                  ),
-                                  if (isSearching) ...[
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      l10n.searchSchoolSuggestion,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          )
-                        : AzListView(
-                            data: beans,
-                            itemCount: beans.length,
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            indexBarData: isSearching ? const [] : indexTags,
-                            indexBarOptions: IndexBarOptions(
-                              needRebuild: true,
-                              hapticFeedback: true,
-                              textStyle:
-                                  theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w700,
-                                  ) ??
-                                  const TextStyle(fontSize: 11),
-                              selectTextStyle:
-                                  theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w800,
-                                  ) ??
-                                  const TextStyle(fontSize: 11),
-                              selectItemDecoration: BoxDecoration(
-                                color: context.theme.colors.primary.withValues(
-                                  alpha: 0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              indexHintDecoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              indexHintTextStyle:
-                                  theme.textTheme.headlineMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.w800,
-                                  ) ??
-                                  const TextStyle(fontSize: 28),
-                            ),
-                            indexHintBuilder: (context, tag) => Container(
-                              width: 72,
-                              height: 72,
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: Text(
-                                tag,
-                                style: theme.textTheme.headlineMedium?.copyWith(
-                                  color: colorScheme.primary,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            itemBuilder: (context, index) {
-                              final bean = beans[index];
-                              final school = bean.school;
-                              return HyperosChoiceTile(
-                                prefix: _ImportInitialBadge(
-                                  label: school.initial,
-                                ),
-                                title: school.name,
-                                subtitle: Text(
-                                  bean.isRecent
-                                      ? '最近 · 资源目录：${school.resourceFolder}'
-                                      : '资源目录：${school.resourceFolder}',
-                                ),
-                                trailing: const Icon(
-                                  Icons.chevron_right_rounded,
-                                  size: 18,
-                                ),
-                                onTap: () async {
-                                  FocusManager.instance.primaryFocus?.unfocus();
-                                  final imported = await Navigator.of(context)
-                                      .push<bool>(
-                                        HyperosPageRoute(
-                                          settings: RouteSettings(
-                                            name:
-                                                '/courses/import/warehouse/${school.id}',
-                                          ),
-                                          builder: (_) =>
-                                              WarehouseSchoolAdaptersScreen(
-                                                source: _defaultSource,
-                                                school: school,
-                                                fetchOptions:
-                                                    _currentFetchOptions(),
-                                              ),
-                                        ),
-                                      );
-                                  if (imported == true && context.mounted) {
-                                    Navigator.of(context).pop(true);
-                                  }
-                                },
-                              );
-                            },
-                          ),
+                  indexHintDecoration: BoxDecoration(
+                    color: HyperosColors.card(context),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ],
+                  indexHintTextStyle: HyperosTypography.title(
+                    context,
+                  ).copyWith(color: HyperosTokens.accent),
+                ),
+                indexHintBuilder: (context, tag) => Container(
+                  width: 72,
+                  height: 72,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: HyperosColors.card(context),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    tag,
+                    style: HyperosTypography.title(
+                      context,
+                    ).copyWith(color: HyperosTokens.accent),
+                  ),
+                ),
+                itemBuilder: (context, index) {
+                  final section = sections[index];
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      HyperosChoiceGroup(
+                        children: [
+                          for (final bean in section.items)
+                            HyperosChoiceTile(
+                              prefix: _ImportInitialBadge(
+                                label: bean.school.initial,
+                              ),
+                              title: bean.school.name,
+                              subtitle: Text(
+                                bean.isRecent
+                                    ? l10n.recentSchoolLabel
+                                    : l10n.warehouseSchoolTapHint,
+                              ),
+                              trailing: const HyperosChevron(),
+                              onTap: () => _openWarehouseSchool(
+                                bean.school,
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (index < sections.length - 1)
+                        const HyperosSectionGap(),
+                    ],
+                  );
+                },
               );
             },
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _openWarehouseSchool(WarehouseSchoolEntry school) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    final imported = await Navigator.of(context).push<bool>(
+      HyperosPageRoute(
+        settings: RouteSettings(
+          name: '/courses/import/warehouse/${school.id}',
+        ),
+        builder: (_) => WarehouseSchoolAdaptersScreen(
+          source: _defaultSource,
+          school: school,
+          fetchOptions: _currentFetchOptions(),
+        ),
+      ),
+    );
+    if (imported == true && mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   List<WarehouseSchoolEntry> _filterSchools(
@@ -2123,8 +2029,6 @@ class _WarehouseCustomDebugRecordsScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(l10n.warehouseCustomDebugTitle),
@@ -2140,63 +2044,28 @@ class _WarehouseCustomDebugRecordsScreenState
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
           child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : ListView(
-                  padding: const EdgeInsets.all(16),
+              ? _importLoadingCenter()
+              : HyperosListView(
+                  includeHeaderInset: false,
                   children: [
-                    _ImportSectionCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.customDebugIntroTitle,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            l10n.customDebugIntroSubtitle,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          HyperosButton(
-                            label: l10n.addDebugRecordAction,
-                            onPressed: () => _openEditor(),
-                          ),
-                        ],
+                    HyperosControlCard(
+                      title: l10n.customDebugIntroTitle,
+                      subtitle: l10n.customDebugIntroSubtitle,
+                      child: HyperosControlCardInset(
+                        child: HyperosButton(
+                          label: l10n.addDebugRecordAction,
+                          onPressed: () => _openEditor(),
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const HyperosSectionGap(),
                     if (_records.isEmpty)
                       _ImportSectionCard(
                         padding: const EdgeInsets.all(20),
-                        child: Column(
-                          children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 36,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              l10n.noSavedDebugRecords,
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              l10n.noSavedDebugRecordsHint,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
+                        child: HyperosEmptyState(
+                          icon: Icons.inventory_2_outlined,
+                          title: l10n.noSavedDebugRecords,
+                          subtitle: l10n.noSavedDebugRecordsHint,
                         ),
                       )
                     else
@@ -2210,38 +2079,30 @@ class _WarehouseCustomDebugRecordsScreenState
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: Text(
+                                      child: _importListTitle(
+                                        context,
                                         record.name,
-                                        style: theme.textTheme.titleMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w800,
-                                            ),
                                       ),
                                     ),
-                                    Text(
+                                    _importListDetail(
+                                      context,
                                       _formatDebugRecordDateTime(
                                         record.updatedAt,
                                       ),
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   record.importUrl,
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: colorScheme.primary,
-                                  ),
+                                  style: HyperosTypography.listDetail(
+                                    context,
+                                  ).copyWith(color: HyperosTokens.accent),
                                 ),
                                 const SizedBox(height: 6),
-                                Text(
+                                _importListDetail(
+                                  context,
                                   l10n.debugScriptLength(record.script.length),
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
                                 ),
                                 const SizedBox(height: 14),
                                 Wrap(
@@ -2406,8 +2267,6 @@ class _WarehouseCustomDebugEditScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(
@@ -2424,61 +2283,33 @@ class _WarehouseCustomDebugEditScreenState
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: HyperosListView(
+            includeHeaderInset: false,
             children: [
-              _ImportSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.debugRecordFormula,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.debugRecordFormulaSubtitle,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
+              HyperosSectionLabel(text: l10n.debugRecordFormula),
+              HyperosSectionDescription(
+                text: l10n.debugRecordFormulaSubtitle,
               ),
-              const SizedBox(height: 16),
-              TextField(
+              const HyperosSectionGap(),
+              HyperosTextField(
                 controller: _nameController,
+                label: l10n.debugRecordNameLabel,
+                hint: l10n.debugRecordNameHint,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: l10n.debugRecordNameLabel,
-                  hintText: l10n.debugRecordNameHint,
-                  border: const OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: 12),
-              TextField(
+              HyperosTextField(
                 controller: _urlController,
+                label: l10n.importUrlLabel,
+                hint: 'https://...',
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.next,
-                decoration: InputDecoration(
-                  labelText: l10n.importUrlLabel,
-                  hintText: 'https://...',
-                  border: const OutlineInputBorder(),
-                ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      l10n.debugScriptLabel,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                    child: _importListTitle(context, l10n.debugScriptLabel),
                   ),
                   HyperosButton(
                     label: l10n.importFromFileAction,
@@ -2488,20 +2319,11 @@ class _WarehouseCustomDebugEditScreenState
                 ],
               ),
               const SizedBox(height: 8),
-              TextField(
+              HyperosTextField(
                 controller: _scriptController,
+                hint: l10n.debugScriptHint,
                 minLines: 14,
                 maxLines: 24,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  height: 1.45,
-                ),
-                decoration: InputDecoration(
-                  hintText: l10n.debugScriptHint,
-                  border: const OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
               ),
               const SizedBox(height: 16),
               HyperosButton(
@@ -2554,6 +2376,9 @@ class _WarehouseSchoolAdaptersScreenState
   final Map<String, bool> _macroCache = {};
   String? _macroCacheAdapterSignature;
   bool _macroCacheCheckInFlight = false;
+  final Map<String, String?> _customImportUrlCache = {};
+  String? _customImportUrlAdapterSignature;
+  bool _customImportUrlCheckInFlight = false;
 
   @override
   void initState() {
@@ -2567,8 +2392,7 @@ class _WarehouseSchoolAdaptersScreenState
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final l10n = AppLocalizations.of(context)!;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
       title: Text(widget.school.name),
@@ -2580,20 +2404,32 @@ class _WarehouseSchoolAdaptersScreenState
             future: _adaptersFuture,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
+                return _importLoadingCenter();
               }
               if (snapshot.hasError) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Text(
-                      '${snapshot.error}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
+                return HyperosListView(
+                  includeHeaderInset: false,
+                  children: [
+                    HyperosSectionLabel(
+                      text: l10n.warehouseAdaptersLoadFailedTitle,
                     ),
-                  ),
+                    HyperosControlCard(
+                      child: HyperosControlCardInset(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _importListDetail(context, '${snapshot.error}'),
+                            const SizedBox(height: 12),
+                            HyperosButton(
+                              label: l10n.reloadAction,
+                              variant: HyperosButtonVariant.secondary,
+                              onPressed: _reloadAdapters,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 );
               }
 
@@ -2601,8 +2437,9 @@ class _WarehouseSchoolAdaptersScreenState
                   snapshot.data?.adapters ?? const <WarehouseAdapterEntry>[];
               // 检查每个适配器是否有宏录制
               _scheduleMacroCacheCheck(adapters);
-              return ListView(
-                padding: const EdgeInsets.all(16),
+              _scheduleCustomImportUrlCacheCheck(adapters);
+              return HyperosListView(
+                includeHeaderInset: false,
                 children: [
                   HyperosListGroup(
                     children: [
@@ -2611,12 +2448,12 @@ class _WarehouseSchoolAdaptersScreenState
                           context: context,
                           adapter: adapter,
                           hasMacro: _macroCache[adapter.adapterId] ?? false,
-                          importButtonLabel: adapter.importUrl.isEmpty
-                              ? '填写网址后导入'
-                              : '网页登录导入',
-                          recordButtonLabel: adapter.importUrl.isEmpty
-                              ? '填写网址后录制'
-                              : '录制导入',
+                          importButtonLabel: _adapterHasImportUrl(adapter)
+                              ? l10n.webLoginImport
+                              : l10n.fillUrlThenImport,
+                          recordButtonLabel: _adapterHasImportUrl(adapter)
+                              ? l10n.recordImportAction
+                              : l10n.fillUrlThenRecord,
                           onImport: () => _openAdapterImport(adapter),
                           onRecord: () =>
                               _openAdapterImport(adapter, autoRecord: true),
@@ -2638,6 +2475,11 @@ class _WarehouseSchoolAdaptersScreenState
                             if (imported == true && context.mounted) {
                               Navigator.of(context).pop(true);
                             }
+                            if (context.mounted) {
+                              await _refreshCustomImportUrlCacheForAdapter(
+                                adapter.adapterId,
+                              );
+                            }
                           },
                           onQuickImport: () => _openQuickImport(adapter),
                         ),
@@ -2650,6 +2492,24 @@ class _WarehouseSchoolAdaptersScreenState
         ),
       ),
     );
+  }
+
+  void _reloadAdapters() {
+    setState(() {
+      _adaptersFuture = _repositoryService.fetchAdaptersIndex(
+        widget.source,
+        widget.school,
+        options: widget.fetchOptions,
+      );
+    });
+  }
+
+  bool _adapterHasImportUrl(WarehouseAdapterEntry adapter) {
+    return resolveWarehouseImportUrl(
+          customImportUrl: _customImportUrlCache[adapter.adapterId],
+          defaultUrl: adapter.importUrl,
+        ) !=
+        null;
   }
 
   Future<void> _openAdapterImport(
@@ -2677,9 +2537,82 @@ class _WarehouseSchoolAdaptersScreenState
     if (imported == true && mounted) {
       Navigator.of(context).pop(true);
     }
-    // 从导入/录制页面返回后刷新单适配器的宏缓存
+    // 从导入/录制页面返回后刷新单适配器的宏缓存与自定义网址
     if (mounted) {
       await _refreshMacroCacheForAdapter(adapter.adapterId);
+      await _refreshCustomImportUrlCacheForAdapter(adapter.adapterId);
+    }
+  }
+
+  void _scheduleCustomImportUrlCacheCheck(
+    List<WarehouseAdapterEntry> adapters,
+  ) {
+    final signature = _macroCacheSignatureForAdapters(adapters);
+    final hasAllValues = adapters.every(
+      (adapter) => _customImportUrlCache.containsKey(adapter.adapterId),
+    );
+    if (_customImportUrlCheckInFlight ||
+        (_customImportUrlAdapterSignature == signature && hasAllValues)) {
+      return;
+    }
+    _customImportUrlCheckInFlight = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _checkCustomImportUrlsForAdapters(adapters, signature);
+    });
+  }
+
+  Future<void> _checkCustomImportUrlsForAdapters(
+    List<WarehouseAdapterEntry> adapters,
+    String signature,
+  ) async {
+    final nextCache = <String, String?>{};
+    try {
+      for (final adapter in adapters) {
+        final custom = await _preferencesService.getCustomImportUrl(
+          adapter.adapterId,
+        );
+        if (!mounted) return;
+        nextCache[adapter.adapterId] = custom;
+      }
+    } catch (_) {
+      if (mounted) {
+        _customImportUrlCheckInFlight = false;
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    final changed =
+        _customImportUrlAdapterSignature != signature ||
+        _customImportUrlCache.length != nextCache.length ||
+        nextCache.entries.any(
+          (entry) => _customImportUrlCache[entry.key] != entry.value,
+        );
+    if (!changed) {
+      _customImportUrlAdapterSignature = signature;
+      _customImportUrlCheckInFlight = false;
+      return;
+    }
+
+    setState(() {
+      _customImportUrlCache
+        ..clear()
+        ..addAll(nextCache);
+      _customImportUrlAdapterSignature = signature;
+      _customImportUrlCheckInFlight = false;
+    });
+  }
+
+  Future<void> _refreshCustomImportUrlCacheForAdapter(String adapterId) async {
+    final custom = await _preferencesService.getCustomImportUrl(adapterId);
+    if (!mounted) return;
+    if (_customImportUrlCache[adapterId] != custom) {
+      setState(() {
+        _customImportUrlCache[adapterId] = custom;
+      });
     }
   }
 
@@ -2790,6 +2723,7 @@ class _WarehouseSchoolAdaptersScreenState
   }
 
   Future<void> _openQuickImport(WarehouseAdapterEntry adapter) async {
+    final l10n = AppLocalizations.of(context)!;
     final initialUrl = await _resolveAdapterImportUrl(adapter);
     if (!mounted || initialUrl == null) return;
 
@@ -2799,7 +2733,7 @@ class _WarehouseSchoolAdaptersScreenState
     );
     if (!mounted) return;
     if (macro == null) {
-      _showLightTip(context, '未找到录制记录，请先完成一次录制');
+      _showLightTip(context, l10n.noMacroRecordFound);
       return;
     }
 
@@ -2809,7 +2743,7 @@ class _WarehouseSchoolAdaptersScreenState
           name: '/courses/import/warehouse/quick-import',
         ),
         builder: (_) => WarehouseAdapterWebLoginScreen(
-          title: '快捷导入 - ${adapter.adapterName}',
+          title: l10n.quickImportTitle(adapter.adapterName),
           initialUrl: initialUrl,
           source: widget.source,
           school: widget.school,
@@ -2871,8 +2805,7 @@ class _WarehouseAdapterDetailScreenState
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final adapter = widget.adapter;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -2881,8 +2814,8 @@ class _WarehouseAdapterDetailScreenState
       child: Material(
         type: MaterialType.transparency,
         child: HyperosBlurredBodyInset(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
+          child: HyperosListView(
+            includeHeaderInset: false,
             children: [
               _WarehouseIntroCard(
                 title: adapter.adapterName,
@@ -2898,42 +2831,39 @@ class _WarehouseAdapterDetailScreenState
                     ? null
                     : adapter.description,
               ),
-              const SizedBox(height: 16),
-              _ImportSectionCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      l10n.adapterInfoTitle,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    _DetailLine(label: 'adapter_id', value: adapter.adapterId),
-                    _DetailLine(
-                      label: l10n.scriptPathLabel,
-                      value: adapter.assetJsPath,
-                    ),
-                    _DetailLine(
-                      label: l10n.loginEntryLabel,
-                      value: _effectiveImportUrl.isEmpty
-                          ? l10n.unsetConfigLabel
-                          : _effectiveImportUrl,
-                    ),
-                    if ((_customImportUrl ?? '').isNotEmpty)
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.adapterInfoTitle),
+              HyperosControlCard(
+                child: HyperosControlCardInset(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _DetailLine(label: 'adapter_id', value: adapter.adapterId),
                       _DetailLine(
-                        label: l10n.homeWidgetDescriptionTitle,
-                        value: l10n.adapterOverrideImportUrlHint,
+                        label: l10n.scriptPathLabel,
+                        value: adapter.assetJsPath,
                       ),
-                    _DetailLine(
-                      label: l10n.repositoryLabel,
-                      value: widget.source.repositoryUrl,
-                    ),
-                  ],
+                      _DetailLine(
+                        label: l10n.loginEntryLabel,
+                        value: _effectiveImportUrl.isEmpty
+                            ? l10n.unsetConfigLabel
+                            : _effectiveImportUrl,
+                      ),
+                      if ((_customImportUrl ?? '').isNotEmpty)
+                        _DetailLine(
+                          label: l10n.homeWidgetDescriptionTitle,
+                          value: l10n.adapterOverrideImportUrlHint,
+                        ),
+                      _DetailLine(
+                        label: l10n.repositoryLabel,
+                        value: widget.source.repositoryUrl,
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.scriptStatusTitle),
               FutureBuilder<String>(
                 future: _scriptFuture,
                 builder: (context, snapshot) {
@@ -2941,34 +2871,29 @@ class _WarehouseAdapterDetailScreenState
                       snapshot.connectionState == ConnectionState.done &&
                       !snapshot.hasError &&
                       (snapshot.data?.trim().isNotEmpty ?? false);
-                  return _ImportSectionCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.scriptStatusTitle,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        if (snapshot.connectionState == ConnectionState.waiting)
-                          const LinearProgressIndicator(minHeight: 3)
-                        else if (readable)
-                          Text(
-                            l10n.scriptLoadedLength(snapshot.data!.length),
-                            style: theme.textTheme.bodyMedium,
-                          )
-                        else
-                          Text(
-                            snapshot.hasError
-                                ? '${snapshot.error}'
-                                : l10n.scriptEmpty,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: colorScheme.error,
+                  return HyperosControlCard(
+                    child: HyperosControlCardInset(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (snapshot.connectionState == ConnectionState.waiting)
+                            const HyperosLinearProgress(minHeight: 3)
+                          else if (readable)
+                            _importListDetail(
+                              context,
+                              l10n.scriptLoadedLength(snapshot.data!.length),
+                            )
+                          else
+                            Text(
+                              snapshot.hasError
+                                  ? '${snapshot.error}'
+                                  : l10n.scriptEmpty,
+                              style: HyperosTypography.listDetail(
+                                context,
+                              ).copyWith(color: colorScheme.error),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   );
                 },
@@ -2981,32 +2906,30 @@ class _WarehouseAdapterDetailScreenState
                 expand: true,
                 onPressed: () => _openInAppLogin(),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
+              const HyperosSectionGap(),
+              HyperosSectionLabel(text: l10n.moreActionsTooltip),
+              HyperosListGroup(
                 children: [
-                  HyperosButton(
-                    label: l10n.openInSystemBrowserAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: _effectiveImportUrl.isEmpty
+                  HyperosNavTile(
+                    title: l10n.openInSystemBrowserAction,
+                    enabled: _effectiveImportUrl.isNotEmpty,
+                    onTap: _effectiveImportUrl.isEmpty
                         ? null
                         : () => _openImportUrl(_effectiveImportUrl),
                   ),
-                  HyperosButton(
-                    label: l10n.copyLoginAddressAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: _effectiveImportUrl.isEmpty
+                  HyperosNavTile(
+                    title: l10n.copyLoginAddressAction,
+                    enabled: _effectiveImportUrl.isNotEmpty,
+                    onTap: _effectiveImportUrl.isEmpty
                         ? null
                         : () => _copyText(
                             _effectiveImportUrl,
                             successMessage: l10n.copiedImportLoginUrl,
                           ),
                   ),
-                  HyperosButton(
-                    label: l10n.copyScriptAddressAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: () => _copyText(
+                  HyperosNavTile(
+                    title: l10n.copyScriptAddressAction,
+                    onTap: () => _copyText(
                       widget.source
                           .buildRawFileUri(
                             'resources/${widget.school.resourceFolder}/${adapter.assetJsPath}',
@@ -3015,20 +2938,18 @@ class _WarehouseAdapterDetailScreenState
                       successMessage: l10n.copiedScriptRawUrl,
                     ),
                   ),
-                  HyperosButton(
-                    label: (_customImportUrl ?? '').isEmpty
+                  HyperosNavTile(
+                    title: (_customImportUrl ?? '').isEmpty
                         ? l10n.customLoginAddressAction
                         : l10n.editCustomLoginAddressAction,
-                    variant: HyperosButtonVariant.secondary,
-                    onPressed: _editCustomImportUrl,
+                    onTap: _editCustomImportUrl,
                   ),
                   if ((_customImportUrl ?? '').isNotEmpty)
-                    HyperosButton(
-                      label: adapter.importUrl.isEmpty
+                    HyperosNavTile(
+                      title: adapter.importUrl.isEmpty
                           ? l10n.clearCustomLoginAddressAction
                           : l10n.restoreRepositoryAddressAction,
-                      variant: HyperosButtonVariant.secondary,
-                      onPressed: _clearCustomImportUrl,
+                      onTap: _clearCustomImportUrl,
                     ),
                 ],
               ),
@@ -3220,6 +3141,7 @@ class _WarehouseAdapterWebLoginScreenState
   late final WebViewController _controller;
   late final TextEditingController _addressController;
   final FocusNode _addressFocusNode = FocusNode();
+  final GlobalKey _webLoginMoreMenuKey = GlobalKey();
   int _loadingProgress = 0;
   String? _currentUrl;
   bool _isExecutingImport = false;
@@ -3256,6 +3178,7 @@ class _WarehouseAdapterWebLoginScreenState
     status: ReplayStepStatus.pending,
   );
   WarehouseMacroReplayer? _replayer;
+  bool _quickImportResultHandled = false;
 
   bool get _isUsingLocalDebugScript =>
       (widget.debugScriptOverride ?? '').trim().isNotEmpty;
@@ -3472,11 +3395,70 @@ class _WarehouseAdapterWebLoginScreenState
     }
   }
 
+  Future<void> _showWebLoginMoreMenu() async {
+    final l10n = AppLocalizations.of(context)!;
+    final value = await showHyperosListPopup<String>(
+      context: context,
+      position: hyperosPopupPositionBelow(context, _webLoginMoreMenuKey),
+      items: [
+        HyperosPopupMenuItem(
+          label: l10n.executeImportScriptAction,
+          value: 'execute',
+          enabled: !_isExecutingImport,
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.rememberCurrentInputTooltip,
+          value: 'remember',
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.fillRememberedTooltip,
+          value: 'fill',
+          enabled: _rememberedLogin != null,
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.clearRememberedTooltip,
+          value: 'clear',
+          enabled: _rememberedLogin != null,
+        ),
+        HyperosPopupMenuItem(
+          label: l10n.copyCurrentAddressTooltip,
+          value: 'copy',
+        ),
+      ],
+    );
+    if (!mounted || value == null) {
+      return;
+    }
+    switch (value) {
+      case 'execute':
+        _executeImportScript();
+        break;
+      case 'remember':
+        _rememberCurrentLogin();
+        break;
+      case 'fill':
+        _autofillRememberedLogin();
+        break;
+      case 'clear':
+        _clearRememberedLogin();
+        break;
+      case 'copy':
+        final url = _currentUrl ?? widget.initialUrl;
+        await Clipboard.setData(ClipboardData(text: url));
+        if (mounted) {
+          showAppToast(
+            context,
+            message: l10n.copiedCurrentAddress,
+            kind: AppToastKind.success,
+          );
+        }
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final effectiveDebugScriptName =
         (widget.debugScriptName?.trim().isNotEmpty ?? false)
         ? widget.debugScriptName!.trim()
@@ -3490,22 +3472,20 @@ class _WarehouseAdapterWebLoginScreenState
       onBack: () => Navigator.pop(context),
       title: Text(widget.title),
       suffixes: [
-        FHeaderAction(
-          icon: _macroRecordingState == MacroRecordingState.recording
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.red,
-                  ),
-                )
-              : const Icon(Icons.fiber_manual_record_rounded),
-          semanticsLabel: _macroRecordingState == MacroRecordingState.recording
-              ? '停止录制'
-              : '录制操作',
-          onPress: _isExecutingImport ? null : _toggleMacroRecording,
-        ),
+        if (widget.macroRecord == null)
+          FHeaderAction(
+            icon: _macroRecordingState == MacroRecordingState.recording
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: HyperosCircularProgress(size: 18, strokeWidth: 2),
+                  )
+                : const Icon(Icons.fiber_manual_record_rounded),
+            semanticsLabel: _macroRecordingState == MacroRecordingState.recording
+                ? l10n.stopRecordingTooltip
+                : l10n.startRecordingTooltip,
+            onPress: _isExecutingImport ? null : _toggleMacroRecording,
+          ),
         if (widget.macroRecord == null)
           FHeaderAction(
             icon: Icon(
@@ -3523,92 +3503,13 @@ class _WarehouseAdapterWebLoginScreenState
           semanticsLabel: l10n.reloadAction,
           onPress: _controller.reload,
         ),
-        PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert_rounded),
-          onSelected: (value) async {
-            switch (value) {
-              case 'execute':
-                _executeImportScript();
-                break;
-              case 'remember':
-                _rememberCurrentLogin();
-                break;
-              case 'fill':
-                _autofillRememberedLogin();
-                break;
-              case 'clear':
-                _clearRememberedLogin();
-                break;
-              case 'copy':
-                final url = _currentUrl ?? widget.initialUrl;
-                await Clipboard.setData(ClipboardData(text: url));
-                if (context.mounted) {
-                  showAppToast(
-                    context,
-                    message: l10n.copiedCurrentAddress,
-                    kind: AppToastKind.success,
-                  );
-                }
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'execute',
-              child: ListTile(
-                leading: _isExecutingImport
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.play_arrow_rounded),
-                title: Text(l10n.executeImportScriptAction),
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-                enabled: !_isExecutingImport,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'remember',
-              child: ListTile(
-                leading: const Icon(Icons.save_outlined),
-                title: Text(l10n.rememberCurrentInputTooltip),
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'fill',
-              child: ListTile(
-                leading: const Icon(Icons.password_rounded),
-                title: Text(l10n.fillRememberedTooltip),
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-                enabled: _rememberedLogin != null,
-              ),
-            ),
-            PopupMenuItem(
-              value: 'clear',
-              child: ListTile(
-                leading: const Icon(Icons.delete_outline_rounded),
-                title: Text(l10n.clearRememberedTooltip),
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-                enabled: _rememberedLogin != null,
-              ),
-            ),
-            const PopupMenuDivider(),
-            PopupMenuItem(
-              value: 'copy',
-              child: ListTile(
-                leading: const Icon(Icons.link_rounded),
-                title: Text(l10n.copyCurrentAddressTooltip),
-                contentPadding: EdgeInsets.zero,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
-          ],
+        Builder(
+          key: _webLoginMoreMenuKey,
+          builder: (context) => FHeaderAction(
+            icon: const Icon(Icons.more_vert_rounded),
+            semanticsLabel: l10n.moreActionsTooltip,
+            onPress: _showWebLoginMoreMenu,
+          ),
         ),
       ],
       childPad: false,
@@ -3622,7 +3523,7 @@ class _WarehouseAdapterWebLoginScreenState
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    color: context.theme.colors.muted,
+                    color: HyperosColors.card(context),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -3630,82 +3531,43 @@ class _WarehouseAdapterWebLoginScreenState
                         // 模式标识 + 提示文字（紧凑单行）
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: context.theme.colors.primary.withValues(
-                                  alpha: 0.12,
-                                ),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                _useDesktopMode ? '🖥️' : '📱',
-                                style: const TextStyle(fontSize: 11),
+                            HyperosTag(
+                              label: _useDesktopMode ? '🖥️' : '📱',
+                              backgroundColor: HyperosTokens.accent.withValues(
+                                alpha: 0.12,
                               ),
                             ),
-                            const SizedBox(width: 6),
+                            const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 _isUsingLocalDebugScript
                                     ? l10n.warehouseLoginHintLocalDebug
                                     : l10n.warehouseLoginHintImport,
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                ),
+                                style: HyperosTypography.listDetail(context),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (_isUsingLocalDebugScript)
-                              Container(
-                                margin: const EdgeInsets.only(left: 4),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 1,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                                child: Text(
-                                  effectiveDebugScriptName,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.onTertiaryContainer,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              HyperosTag(
+                                label: effectiveDebugScriptName,
+                                backgroundColor: HyperosTokens.accent.withValues(
+                                  alpha: 0.12,
                                 ),
                               ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         // URL 地址栏
                         Row(
                           children: [
                             Expanded(
-                              child: TextField(
+                              child: HyperosTextField(
                                 controller: _addressController,
                                 focusNode: _addressFocusNode,
+                                hint: l10n.webAddressHint,
                                 keyboardType: TextInputType.url,
                                 textInputAction: TextInputAction.go,
-                                decoration: InputDecoration(
-                                  isDense: true,
-                                  hintText: l10n.webAddressHint,
-                                  prefixIcon: const Icon(
-                                    Icons.language_rounded,
-                                    size: 18,
-                                  ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                ),
                                 onSubmitted: (_) => _loadAddressBarUrl(),
                               ),
                             ),
@@ -3734,9 +3596,8 @@ class _WarehouseAdapterWebLoginScreenState
                                           _rememberedLogin!.username,
                                         )
                                       : ''),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.primary,
-                              ),
+                              style: HyperosTypography.listDetail(context)
+                                  .copyWith(color: HyperosTokens.accent),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -3745,26 +3606,27 @@ class _WarehouseAdapterWebLoginScreenState
                     ),
                   ),
                   if (_loadingProgress < 100)
-                    LinearProgressIndicator(value: _loadingProgress / 100),
+                    HyperosLinearProgress(value: _loadingProgress / 100),
                   Expanded(child: WebViewWidget(controller: _controller)),
-                  SafeArea(
-                    top: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      child: HyperosButton(
-                        label: _isExecutingImport
-                            ? l10n.importingAction
-                            : (_isUsingLocalDebugScript
-                                  ? l10n.executeLocalDebugScriptAction
-                                  : l10n.executeImportScriptAction),
-                        expand: true,
-                        loading: _isExecutingImport,
-                        onPressed: _isExecutingImport
-                            ? null
-                            : _executeImportScript,
+                  if (_showImportScriptBar)
+                    SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        child: HyperosButton(
+                          label: _isExecutingImport
+                              ? l10n.importingAction
+                              : (_isUsingLocalDebugScript
+                                    ? l10n.executeLocalDebugScriptAction
+                                    : l10n.executeImportScriptAction),
+                          expand: true,
+                          loading: _isExecutingImport,
+                          onPressed: _isExecutingImport
+                              ? null
+                              : _executeImportScript,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
               Positioned.fill(
@@ -3923,6 +3785,9 @@ class _WarehouseAdapterWebLoginScreenState
 
   bool get _isMacroReplay => widget.macroRecord != null;
 
+  bool get _showImportScriptBar =>
+      !_isMacroReplay || _playbackState == PlaybackUiState.hidden;
+
   void _showMacroReplayImportError(String message) {
     if (kDebugMode) {
       _debugImportLog(
@@ -3967,8 +3832,44 @@ class _WarehouseAdapterWebLoginScreenState
     }
     if (!mounted) return;
     setState(() {
-      _playbackState = PlaybackUiState.finished;
+      _playbackState = PlaybackUiState.hidden;
+      _isExecutingImport = false;
     });
+    await _showQuickImportFinishedSheet();
+  }
+
+  Future<void> _showQuickImportFinishedSheet() async {
+    if (!mounted || _quickImportResultHandled) {
+      return;
+    }
+    _quickImportResultHandled = true;
+    final l10n = AppLocalizations.of(context)!;
+    final status = (_lastScriptStatus ?? '').trim();
+    final description = [
+      '${widget.school.name} · ${widget.adapter.adapterName}',
+      if (status.isNotEmpty) status,
+    ].join('\n');
+
+    await showHyperosSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (sheetContext) {
+        return HyperosSheet(
+          title: l10n.quickImportFinishedTitle,
+          description: description,
+          child: HyperosButton(
+            label: l10n.quickImportDismissAction,
+            expand: true,
+            onPressed: () => Navigator.pop(sheetContext),
+          ),
+        );
+      },
+    );
+
+    if (mounted) {
+      Navigator.of(context).pop(true);
+    }
   }
 
   Future<void> _executeImportScript() async {
@@ -4177,9 +4078,9 @@ class _WarehouseAdapterWebLoginScreenState
             });
             break;
           }
-          if (_playbackState == PlaybackUiState.finished) {
+          if (_quickImportResultHandled) {
             _debugImportLog(
-              'bridge complete ignored because macro replay already finished',
+              'bridge complete ignored because quick import result already shown',
             );
             break;
           }
@@ -5136,18 +5037,10 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   Future<void> _dismissPlaybackResult() async {
-    if (_playbackState == PlaybackUiState.finished) {
-      // 成功：返回到上一页
-      if (mounted) {
-        Navigator.of(context).pop(true);
-      }
-    } else {
-      // 失败：隐藏覆盖层，让用户手动操作
-      if (mounted) {
-        setState(() {
-          _playbackState = PlaybackUiState.hidden;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _playbackState = PlaybackUiState.hidden;
+      });
     }
   }
 
@@ -5185,22 +5078,19 @@ class _ImportInitialBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
     final text = label.trim().isEmpty ? '#' : label.trim();
     return Container(
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: colors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: HyperosTokens.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Text(
         text,
-        style: typo.body.sm.copyWith(
-          color: colors.primary,
-          fontWeight: FontWeight.w800,
+        style: HyperosTypography.listDetail(context).copyWith(
+          color: HyperosTokens.accent,
         ),
       ),
     );
@@ -5220,7 +5110,7 @@ class _ImportIconBadge extends StatelessWidget {
       height: 36,
       decoration: BoxDecoration(
         color: colors.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
       ),
       alignment: Alignment.center,
       child: Icon(icon, size: 18, color: colors.primary),
@@ -5263,50 +5153,39 @@ class _ImportGuidePanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _ImportSectionCard(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.applicableScenarioTitle,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(scenarioIntro),
-              const SizedBox(height: 14),
-              _GuideLine(title: l10n.stepLabel('1'), subtitle: step1Subtitle),
-              const SizedBox(height: 10),
-              _GuideLine(title: l10n.stepLabel('2'), subtitle: step2Subtitle),
-              const SizedBox(height: 10),
-              _GuideLine(title: l10n.stepLabel('3'), subtitle: step3Subtitle),
-            ],
+        HyperosControlCard(
+          title: l10n.applicableScenarioTitle,
+          subtitle: scenarioIntro,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _GuideLine(title: l10n.stepLabel('1'), subtitle: step1Subtitle),
+                const SizedBox(height: 10),
+                _GuideLine(title: l10n.stepLabel('2'), subtitle: step2Subtitle),
+                const SizedBox(height: 10),
+                _GuideLine(title: l10n.stepLabel('3'), subtitle: step3Subtitle),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        _ImportSectionCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.supportedFilesTitle,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(supportedFilesSuffix),
-              if (supportedFilesExtra != null) ...[
-                const SizedBox(height: 4),
-                Text(supportedFilesExtra!),
+        const HyperosSectionGap(),
+        HyperosControlCard(
+          title: l10n.supportedFilesTitle,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _importListDetail(context, supportedFilesSuffix),
+                if (supportedFilesExtra != null) ...[
+                  const SizedBox(height: 4),
+                  _importListDetail(context, supportedFilesExtra!),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],
@@ -5330,49 +5209,34 @@ class _WarehouseIntroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return _ImportSectionCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (subtitle.isNotEmpty)
-            Text(
-              subtitle,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          if ((markdown ?? '').trim().isNotEmpty) ...[
-            if (subtitle.isNotEmpty) const SizedBox(height: 8),
-            MarkdownBody(
-              data: markdown!,
-              styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                p: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.45,
+    return HyperosControlCard(
+      title: title,
+      subtitle: subtitle.isNotEmpty ? subtitle : null,
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if ((markdown ?? '').trim().isNotEmpty)
+              MarkdownBody(
+                data: markdown!,
+                styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
+                  p: HyperosTypography.sectionDescription(context),
                 ),
               ),
-            ),
+            if (chips.isNotEmpty) ...[
+              if ((markdown ?? '').trim().isNotEmpty) const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: chips
+                    .map((item) => HyperosTag(label: item))
+                    .toList(growable: false),
+              ),
+            ],
+            if ((markdown ?? '').trim().isEmpty && chips.isEmpty)
+              const SizedBox.shrink(),
           ],
-          if (chips.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: chips
-                  .map((item) => HyperosTag(label: item))
-                  .toList(growable: false),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
@@ -5401,30 +5265,23 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
-    final colors = context.theme.colors;
-    final typo = context.theme.typography;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          adapter.adapterName,
-          style: typo.body.lg.copyWith(fontWeight: FontWeight.w800),
-        ),
+        _importListTitle(context, adapter.adapterName),
         const SizedBox(height: 4),
-        Text(
-          '类别：${adapter.category} · 维护者：${adapter.maintainer}',
-          style: typo.body.sm.copyWith(color: colors.mutedForeground),
+        _importListDetail(
+          context,
+          '${l10n.categoryLabel}：${adapter.category} · ${l10n.maintainerLabel}：${adapter.maintainer}',
         ),
         if (adapter.description.trim().isNotEmpty) ...[
           const SizedBox(height: 12),
           MarkdownBody(
             data: adapter.description,
             styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-              p: theme.textTheme.bodyMedium?.copyWith(
-                color: colors.mutedForeground,
-                height: 1.4,
-              ),
+              p: HyperosTypography.sectionDescription(context),
             ),
           ),
         ],
@@ -5435,6 +5292,7 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
               child: HyperosButton(
                 label: importButtonLabel,
                 expand: true,
+                fitLabel: true,
                 onPressed: onImport,
               ),
             ),
@@ -5444,6 +5302,7 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
                 label: recordButtonLabel,
                 variant: HyperosButtonVariant.secondary,
                 expand: true,
+                fitLabel: true,
                 onPressed: onRecord,
               ),
             ),
@@ -5453,7 +5312,7 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: HyperosButton(
-            label: '查看详情',
+            label: l10n.viewDetailsAction,
             variant: HyperosButtonVariant.secondary,
             onPressed: onInfo,
           ),
@@ -5461,7 +5320,7 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
         if (hasMacro) ...[
           const SizedBox(height: 10),
           HyperosButton(
-            label: '⚡ 快捷导入',
+            label: l10n.quickImportAction,
             expand: true,
             onPressed: onQuickImport,
           ),
@@ -5469,6 +5328,16 @@ class _WarehouseAdapterTileBody extends StatelessWidget {
       ],
     );
   }
+}
+
+class _WarehouseSchoolSection extends ISuspensionBean {
+  _WarehouseSchoolSection({required this.tag, required this.items});
+
+  final String tag;
+  final List<_WarehouseSchoolBean> items;
+
+  @override
+  String getSuspensionTag() => tag;
 }
 
 class _WarehouseSchoolBean extends ISuspensionBean {
@@ -5516,6 +5385,33 @@ List<_WarehouseSchoolBean> _schoolsToBeans(
   return beans;
 }
 
+List<_WarehouseSchoolSection> _schoolsToSections(
+  List<_WarehouseSchoolBean> beans,
+) {
+  if (beans.isEmpty) {
+    return const [];
+  }
+
+  final sections = <_WarehouseSchoolSection>[];
+  var currentTag = beans.first.tag;
+  var currentItems = <_WarehouseSchoolBean>[];
+
+  for (final bean in beans) {
+    if (bean.tag != currentTag) {
+      sections.add(
+        _WarehouseSchoolSection(tag: currentTag, items: currentItems),
+      );
+      currentTag = bean.tag;
+      currentItems = [bean];
+    } else {
+      currentItems.add(bean);
+    }
+  }
+  sections.add(_WarehouseSchoolSection(tag: currentTag, items: currentItems));
+  SuspensionUtil.setShowSuspensionStatus(sections);
+  return sections;
+}
+
 class _DetailLine extends StatelessWidget {
   final String label;
   final String value;
@@ -5524,22 +5420,14 @@ class _DetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
+          _importListDetail(context, label),
           const SizedBox(height: 2),
-          Text(value, style: theme.textTheme.bodyMedium),
+          Text(value, style: HyperosTypography.listTitle(context)),
         ],
       ),
     );
@@ -5564,8 +5452,6 @@ class _GuideLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.theme.colors;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -5574,14 +5460,13 @@ class _GuideLine extends StatelessWidget {
           height: 28,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: colors.primary.withValues(alpha: 0.12),
+            color: HyperosTokens.accent.withValues(alpha: 0.12),
             shape: BoxShape.circle,
           ),
           child: Text(
             title.replaceAll('步骤 ', ''),
-            style: TextStyle(
-              color: colors.primary,
-              fontWeight: FontWeight.w800,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: HyperosTokens.accent,
             ),
           ),
         ),
@@ -5590,190 +5475,13 @@ class _GuideLine extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              _importListTitle(context, title),
               const SizedBox(height: 2),
-              Text(subtitle),
+              _importListDetail(context, subtitle),
             ],
           ),
         ),
       ],
-    );
-  }
-}
-
-class _CompactHintChip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _CompactHintChip({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.theme.colors;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colors.muted,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: colors.mutedForeground),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: colors.mutedForeground,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CompactActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  const _CompactActionButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CompactStatusChip extends StatelessWidget {
-  final String label;
-  final bool isError;
-
-  const _CompactStatusChip({required this.label, this.isError = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = context.theme.colors;
-    final backgroundColor = isError
-        ? colors.error.withValues(alpha: 0.12)
-        : colors.primary.withValues(alpha: 0.12);
-    final foregroundColor = isError ? colors.error : colors.primary;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelMedium?.copyWith(
-          color: foregroundColor,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-class _CompactNoticeCard extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-  final bool isError;
-
-  const _CompactNoticeCard({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-    this.isError = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final backgroundColor = isError
-        ? colorScheme.errorContainer.withValues(alpha: 0.92)
-        : colorScheme.surfaceContainerHigh;
-    final foregroundColor = isError
-        ? colorScheme.onErrorContainer
-        : colorScheme.onSurface;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Icon(icon, size: 18, color: foregroundColor),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: foregroundColor,
-                height: 1.35,
-              ),
-            ),
-          ),
-          if (actionLabel != null && onAction != null) ...[
-            const SizedBox(width: 8),
-            HyperosButton(
-              label: actionLabel!,
-              variant: HyperosButtonVariant.secondary,
-              onPressed: onAction,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -5786,70 +5494,54 @@ class _AiPreviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            l10n.aiPreviewTitle,
-            style: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w800,
+    return HyperosControlCard(
+      title: l10n.aiPreviewTitle,
+      child: HyperosControlCardInset(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _importListDetail(
+              context,
+              l10n.aiPreviewCourseCount(result.courses.length),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(l10n.aiPreviewCourseCount(result.courses.length)),
-          Text(l10n.aiPreviewMaxSection(result.requiredSectionCount)),
-          if (result.warnings.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              l10n.aiPreviewWarningsTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            _importListDetail(
+              context,
+              l10n.aiPreviewMaxSection(result.requiredSectionCount),
             ),
-            const SizedBox(height: 6),
-            ...result.warnings.map(
-              (warning) => Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• $warning'),
-              ),
-            ),
-          ],
-          if (result.courses.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              l10n.aiPreviewCoursesTitle,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            ...result.courses.take(6).map(_buildCoursePreviewLine),
-            if (result.courses.length > 6)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  l10n.aiPreviewRemainingCourses(result.courses.length - 6),
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+            if (result.warnings.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _importCardHeading(context, l10n.aiPreviewWarningsTitle),
+              const SizedBox(height: 6),
+              ...result.warnings.map(
+                (warning) => Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: _importListDetail(context, '• $warning'),
                 ),
               ),
+            ],
+            if (result.courses.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _importCardHeading(context, l10n.aiPreviewCoursesTitle),
+              const SizedBox(height: 6),
+              ...result.courses.take(6).map(
+                (course) => _buildCoursePreviewLine(context, course),
+              ),
+              if (result.courses.length > 6)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: _importListDetail(
+                    context,
+                    l10n.aiPreviewRemainingCourses(result.courses.length - 6),
+                  ),
+                ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildCoursePreviewLine(Course course) {
+  Widget _buildCoursePreviewLine(BuildContext context, Course course) {
     final weeks = course.customWeeks ?? const [];
     final weekText = weeks.isEmpty
         ? '未提供周次'
@@ -5858,7 +5550,8 @@ class _AiPreviewCard extends StatelessWidget {
         : '${weeks.first}-${weeks.last}（共 ${weeks.length} 周）';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
+      child: _importListDetail(
+        context,
         '周${_weekdayLabel(course.dayOfWeek)} 第${course.startSection}-${course.endSection}节  ${course.name}  ${course.location.isEmpty ? "未填写地点" : course.location}  周次：$weekText',
       ),
     );
@@ -5877,8 +5570,6 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
   return showHyperosSheet<_ImportSemesterConfig>(
     context: context,
     builder: (sheetContext) {
-      final theme = Theme.of(sheetContext);
-      final colorScheme = theme.colorScheme;
       var selectedSemesterStartDate = initialSemesterStartDate;
       var selectedFirstCourseWeek = initialFirstCourseWeek < 1
           ? 1
@@ -5886,6 +5577,9 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
           ? 20
           : initialFirstCourseWeek;
       var autoTrackWeekMapping = inferredFirstCourseDate != null;
+      final weekItems = {
+        for (var i = 1; i <= 20; i++) '校历第 $i 周': i,
+      };
 
       return StatefulBuilder(
         builder: (context, setModalState) {
@@ -5930,58 +5624,41 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                     style: HyperosTypography.sectionDescription(context),
                   ),
                   const SizedBox(height: 16),
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.event_outlined),
-                    title: const Text('开学日期'),
-                    subtitle: Text(
-                      '${_formatDate(selectedSemesterStartDate)} · 按这一天所在周作为校历第 1 周',
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: pickStartDate,
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButtonFormField<int>(
-                    initialValue: selectedFirstCourseWeek,
-                    decoration: const InputDecoration(
-                      labelText: '课表第 1 周对应校历第几周',
-                      border: OutlineInputBorder(),
-                      helperText: '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。',
-                    ),
-                    items: List.generate(20, (index) => index + 1)
-                        .map(
-                          (week) => DropdownMenuItem<int>(
-                            value: week,
-                            child: Text('校历第 $week 周'),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setModalState(() {
-                        selectedFirstCourseWeek = value;
-                        autoTrackWeekMapping = false;
-                      });
-                    },
+                  HyperosListGroup(
+                    children: [
+                      HyperosNavTile(
+                        title: '开学日期',
+                        subtitle:
+                            '${_formatDate(selectedSemesterStartDate)} · 按这一天所在周作为校历第 1 周',
+                        onTap: pickStartDate,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
+                  HyperosControlCard(
+                    edgeToEdge: true,
+                    child: HyperosSelectTile<int>(
+                      label: '课表第 1 周对应校历第几周',
+                      subtitle: '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。',
+                      items: weekItems,
+                      value: selectedFirstCourseWeek,
+                      useSheetForPopup: true,
+                      onChanged: (picked) {
+                        setModalState(() {
+                          selectedFirstCourseWeek = picked;
+                          autoTrackWeekMapping = false;
+                        });
+                      },
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  HyperosCard(
+                    padding: const EdgeInsets.all(12),
                     child: Text(
                       shiftedWeeks <= 0
                           ? '导入后会直接把课表第 1 周当作校历第 1 周。'
                           : '导入后会把所有课程周次整体顺延 $shiftedWeeks 周，让课表第 1 周落在校历第 $selectedFirstCourseWeek 周。',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
-                      ),
+                      style: HyperosTypography.sectionDescription(context),
                     ),
                   ),
                   const SizedBox(height: 16),

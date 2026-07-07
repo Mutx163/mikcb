@@ -66,6 +66,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash tool/verify_action_pins.sh
 
+      - name: Install HyperOS audit dependencies
+        run: pip install pyyaml
+
+      - name: HyperOS page compliance audit
+        run: python tool/hyperos_audit.py --strict
+
       - name: Analyze
         run: flutter analyze
 

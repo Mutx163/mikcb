@@ -7147,6 +7147,168 @@ abstract class AppLocalizations {
   /// **'网页登录导入'**
   String get webLoginImport;
 
+  /// No description provided for @fillUrlThenRecord.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写网址后录制'**
+  String get fillUrlThenRecord;
+
+  /// No description provided for @recordImportAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制导入'**
+  String get recordImportAction;
+
+  /// No description provided for @quickImportAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'⚡ 快捷导入'**
+  String get quickImportAction;
+
+  /// No description provided for @quickImportTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷导入'**
+  String get quickImportTooltip;
+
+  /// No description provided for @selectQuickImportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择快捷导入'**
+  String get selectQuickImportTitle;
+
+  /// No description provided for @quickImportMacroSteps.
+  ///
+  /// In zh, this message translates to:
+  /// **'{adapterName} · {stepCount} 步'**
+  String quickImportMacroSteps(String adapterName, int stepCount);
+
+  /// No description provided for @quickImportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷导入 - {name}'**
+  String quickImportTitle(String name);
+
+  /// No description provided for @noSavedQuickImportRecords.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂无已保存的快捷导入记录'**
+  String get noSavedQuickImportRecords;
+
+  /// No description provided for @noValidWarehouseLoginUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到有效的教务登录地址'**
+  String get noValidWarehouseLoginUrl;
+
+  /// No description provided for @noMacroRecordFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到录制记录，请先完成一次录制'**
+  String get noMacroRecordFound;
+
+  /// No description provided for @quickImportPlayingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动导入中…'**
+  String get quickImportPlayingTitle;
+
+  /// No description provided for @quickImportExecutingScriptTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'回放完成，正在执行导入脚本…'**
+  String get quickImportExecutingScriptTitle;
+
+  /// No description provided for @quickImportManualInputTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要手动操作'**
+  String get quickImportManualInputTitle;
+
+  /// No description provided for @quickImportManualInputHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请完成当前需要的手动操作。完成后点击继续。'**
+  String get quickImportManualInputHint;
+
+  /// No description provided for @quickImportCancelImportAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消导入'**
+  String get quickImportCancelImportAction;
+
+  /// No description provided for @quickImportContinueAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续'**
+  String get quickImportContinueAction;
+
+  /// No description provided for @quickImportFinishedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入完成'**
+  String get quickImportFinishedTitle;
+
+  /// No description provided for @quickImportDismissAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'完成'**
+  String get quickImportDismissAction;
+
+  /// No description provided for @quickImportRetryAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'重试'**
+  String get quickImportRetryAction;
+
+  /// No description provided for @quickImportPlaybackStepProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'步骤 {current} / {total}'**
+  String quickImportPlaybackStepProgress(int current, int total);
+
+  /// No description provided for @quickImportCancelPlaybackAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'取消'**
+  String get quickImportCancelPlaybackAction;
+
+  /// No description provided for @quickImportUnknownError.
+  ///
+  /// In zh, this message translates to:
+  /// **'发生未知错误'**
+  String get quickImportUnknownError;
+
+  /// No description provided for @recentSchoolLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近使用'**
+  String get recentSchoolLabel;
+
+  /// No description provided for @warehouseSchoolTapHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击进入，选择适配器导入'**
+  String get warehouseSchoolTapHint;
+
+  /// No description provided for @warehouseAdaptersLoadFailedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法读取适配器列表'**
+  String get warehouseAdaptersLoadFailedTitle;
+
+  /// No description provided for @stopRecordingTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'停止录制'**
+  String get stopRecordingTooltip;
+
+  /// No description provided for @startRecordingTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制操作'**
+  String get startRecordingTooltip;
+
   /// No description provided for @savedImportUrlHint.
   ///
   /// In zh, this message translates to:

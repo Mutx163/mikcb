@@ -21,19 +21,8 @@ internal object BeforeClassQuickActionRestore {
     fun enableSilentMode(context: Context, restoreAtMillis: Long): Boolean {
         val audioManager = context.getSystemService(AudioManager::class.java) ?: return false
         return try {
-            markPending(
-                context = context,
-                restoreAtMillis = restoreAtMillis,
-                appliedAction = ACTION_SILENT,
-            ) {
-                val prefs = prefs(context)
-                if (!prefs.getBoolean(KEY_PENDING, false)) {
-                    prefs.edit()
-                        .putInt(KEY_SAVED_RINGER_MODE, audioManager.ringerMode)
-                        .apply()
-                }
-            }
             audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+            markPending(context, restoreAtMillis, ACTION_SILENT)
             true
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
@@ -52,19 +41,8 @@ internal object BeforeClassQuickActionRestore {
             return false
         }
         return try {
-            markPending(
-                context = context,
-                restoreAtMillis = restoreAtMillis,
-                appliedAction = ACTION_DO_NOT_DISTURB,
-            ) {
-                val prefs = prefs(context)
-                if (!prefs.getBoolean(KEY_PENDING, false)) {
-                    prefs.edit()
-                        .putInt(KEY_SAVED_DND_FILTER, manager.currentInterruptionFilter)
-                        .apply()
-                }
-            }
             manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+            markPending(context, restoreAtMillis, ACTION_DO_NOT_DISTURB)
             true
         } catch (e: SecurityException) {
             Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)
@@ -100,11 +78,9 @@ internal object BeforeClassQuickActionRestore {
         }
 
         val appliedAction = prefs.getString(KEY_APPLIED_ACTION, "").orEmpty()
-        val restored = when (appliedAction) {
-            ACTION_SILENT -> restoreSilentMode(context, prefs)
-            ACTION_DO_NOT_DISTURB -> restoreDoNotDisturbMode(context, prefs)
-            else -> false
-        }
+        val silentRestored = restoreSilentMode(context, prefs)
+        val dndRestored = restoreDoNotDisturbMode(context, prefs)
+        val restored = silentRestored && dndRestored
         if (restored) {
             clearPending(context)
             UmengDiagnosticReporter.record(
@@ -142,6 +118,9 @@ internal object BeforeClassQuickActionRestore {
         context: Context,
         prefs: android.content.SharedPreferences,
     ): Boolean {
+        if (!prefs.contains(KEY_SAVED_DND_FILTER)) {
+            return true
+        }
         val manager = context.getSystemService(NotificationManager::class.java) ?: return false
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
             !manager.isNotificationPolicyAccessGranted
@@ -168,24 +147,38 @@ internal object BeforeClassQuickActionRestore {
         context: Context,
         restoreAtMillis: Long,
         appliedAction: String,
-        saveOriginalState: () -> Unit,
     ) {
         val prefs = prefs(context)
         val alreadyPending = prefs.getBoolean(KEY_PENDING, false)
+        val editor = prefs.edit()
         if (!alreadyPending) {
-            saveOriginalState()
-            prefs.edit()
-                .putBoolean(KEY_PENDING, true)
-                .putString(KEY_APPLIED_ACTION, appliedAction)
-                .apply()
+            saveOriginalStates(context, editor)
         }
         val effectiveRestoreAt = maxOf(
             prefs.getLong(KEY_RESTORE_AT_MILLIS, 0L),
             restoreAtMillis.coerceAtLeast(0L),
         )
-        prefs.edit()
+        editor
+            .putBoolean(KEY_PENDING, true)
+            .putString(KEY_APPLIED_ACTION, appliedAction)
             .putLong(KEY_RESTORE_AT_MILLIS, effectiveRestoreAt)
             .apply()
+    }
+
+    private fun saveOriginalStates(
+        context: Context,
+        editor: android.content.SharedPreferences.Editor,
+    ) {
+        context.getSystemService(AudioManager::class.java)?.let { audioManager ->
+            editor.putInt(KEY_SAVED_RINGER_MODE, audioManager.ringerMode)
+        }
+        val manager = context.getSystemService(NotificationManager::class.java) ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
+            !manager.isNotificationPolicyAccessGranted
+        ) {
+            return
+        }
+        editor.putInt(KEY_SAVED_DND_FILTER, manager.currentInterruptionFilter)
     }
 
     private fun isPending(context: Context): Boolean {

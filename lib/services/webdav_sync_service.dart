@@ -195,14 +195,12 @@ class WebdavSyncService {
         provider: provider,
         deviceId: deviceId,
       );
-      final localChangedSinceSync =
-          config.lastUploadedLocalHash != null &&
-          localSnapshot.contentSha256 != config.lastUploadedLocalHash;
-      final remoteChangedSinceSync =
-          config.lastAppliedRemoteHash != null &&
-          remoteMeta.contentSha256 != config.lastAppliedRemoteHash;
-
-      if (localChangedSinceSync && remoteChangedSinceSync) {
+      if (webdavPullHasSyncConflict(
+        lastUploadedLocalHash: config.lastUploadedLocalHash,
+        lastAppliedRemoteHash: config.lastAppliedRemoteHash,
+        localContentSha256: localSnapshot.contentSha256,
+        remoteContentSha256: remoteMeta.contentSha256,
+      )) {
         final conflict = SyncConflictInfo(
           localExportedAt: localSnapshot.exportedAt,
           remoteExportedAt: remoteMeta.exportedAt,

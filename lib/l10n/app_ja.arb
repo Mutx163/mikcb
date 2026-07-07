@@ -2145,6 +2145,60 @@
   "saveDebugRecordAction": "デバッグレコードを保存",
   "fillUrlThenImport": "URL入力後にインポート",
   "webLoginImport": "Webログインインポート",
+  "fillUrlThenRecord": "URL入力後に録画",
+  "recordImportAction": "録画インポート",
+  "quickImportAction": "クイックインポート",
+  "quickImportTooltip": "クイックインポート",
+  "selectQuickImportTitle": "クイックインポートを選択",
+  "quickImportMacroSteps": "{adapterName} · {stepCount} ステップ",
+  "@quickImportMacroSteps": {
+    "placeholders": {
+      "adapterName": {
+        "type": "String"
+      },
+      "stepCount": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportTitle": "クイックインポート - {name}",
+  "@quickImportTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noSavedQuickImportRecords": "保存済みのクイックインポート記録がありません",
+  "noValidWarehouseLoginUrl": "有効な教務ログインURLが見つかりません",
+  "noMacroRecordFound": "録画記録が見つかりません。先に録画を完了してください",
+  "quickImportPlayingTitle": "自動インポート中…",
+  "quickImportExecutingScriptTitle": "再生完了、インポートスクリプトを実行中…",
+  "quickImportManualInputTitle": "手動操作が必要",
+  "quickImportManualInputHint": "必要な手動操作を完了してから「続行」をタップしてください。",
+  "quickImportCancelImportAction": "インポートをキャンセル",
+  "quickImportContinueAction": "続行",
+  "quickImportFinishedTitle": "インポート完了",
+  "quickImportDismissAction": "完了",
+  "quickImportRetryAction": "再試行",
+  "quickImportPlaybackStepProgress": "ステップ {current} / {total}",
+  "@quickImportPlaybackStepProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "quickImportCancelPlaybackAction": "キャンセル",
+  "quickImportUnknownError": "不明なエラーが発生しました",
+  "recentSchoolLabel": "最近使用",
+  "warehouseSchoolTapHint": "タップしてアダプタを選びインポート",
+  "warehouseAdaptersLoadFailedTitle": "アダプタ一覧を読み込めません",
+  "stopRecordingTooltip": "録画停止",
+  "startRecordingTooltip": "操作を録画",
   "savedImportUrlHint": "教務URLを保存済み。次回直接インポート可能",
   "adapterIntroSubtitle": "アダプタ情報、ログインエントリとスクリプトステータスを確認可能。",
   "schoolLabel": "学校",

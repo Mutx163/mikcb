@@ -1,0 +1,226 @@
+{
+  "version": 1,
+  "description": "HyperOS 页面合规清单（唯一真相来源）。由 tool/hyperos_audit.py 扫描并可在 --sync-status 时回写 manualStatus。",
+  "rulesDoc": "docs/reference/hyperos-page-compliance.md",
+  "uiKitDoc": "docs/reference/hyperos-ui-kit.md",
+  "lastPipelineRun": null,
+  "pages": [
+    {
+      "id": "timetable",
+      "file": "lib/screens/timetable_screen.dart",
+      "label": "主课表",
+      "category": "home",
+      "expectedShell": "HyperosRootPage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "timetable-settings",
+      "file": "lib/screens/timetable_settings_screen.dart",
+      "label": "课表设置",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "含多个内嵌子页（外观/布局/Live 等）"
+    },
+    {
+      "id": "cloud-sync",
+      "file": "lib/screens/cloud_sync_screen.dart",
+      "label": "云同步",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "data-transfer",
+      "file": "lib/screens/data_transfer_screen.dart",
+      "label": "数据传输",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "lan-edit",
+      "file": "lib/screens/lan_edit_screen.dart",
+      "label": "局域网编辑",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "about",
+      "file": "lib/screens/about_screen.dart",
+      "label": "关于",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "changelog",
+      "file": "lib/screens/changelog_screen.dart",
+      "label": "更新日志",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "feedback",
+      "file": "lib/screens/feedback_screen.dart",
+      "label": "反馈",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "user-guide",
+      "file": "lib/screens/user_guide_screen.dart",
+      "label": "使用指南",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "timetable-profiles",
+      "file": "lib/screens/timetable_profiles_screen.dart",
+      "label": "课表管理",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "exam-list",
+      "file": "lib/screens/exam_list_screen.dart",
+      "label": "考试列表",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "course-overview",
+      "file": "lib/screens/course_overview_screen.dart",
+      "label": "课程总览",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "time-scheme-management",
+      "file": "lib/screens/time_scheme_management_screen.dart",
+      "label": "时间方案管理",
+      "category": "settings",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "time-scheme-bottom-sheet",
+      "file": "lib/screens/time_scheme_bottom_sheet.dart",
+      "label": "时间方案 Sheet",
+      "category": "sheet",
+      "expectedShell": "HyperosSheet",
+      "manualStatus": "pass",
+      "notes": "Bottom sheet 入口；使用 showHyperosSheet"
+    },
+    {
+      "id": "live-settings-subpages",
+      "file": "lib/screens/live_settings_subpages.dart",
+      "label": "超级岛子页群",
+      "category": "live",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "live-diagnostics-log-viewer",
+      "file": "lib/screens/live_diagnostics_log_viewer_screen.dart",
+      "label": "Live 诊断日志",
+      "category": "live",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "add-course",
+      "file": "lib/screens/add_course_screen.dart",
+      "label": "添加课程",
+      "category": "form",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "add-exam",
+      "file": "lib/screens/add_exam_screen.dart",
+      "label": "添加考试",
+      "category": "form",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "add-schedule-item",
+      "file": "lib/screens/add_schedule_item_screen.dart",
+      "label": "添加日程",
+      "category": "form",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "course-import",
+      "file": "lib/screens/course_import_screen.dart",
+      "label": "课程导入",
+      "category": "import",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": "含 4 个子流程页；静态 audit + 布局 token 已对齐"
+    },
+    {
+      "id": "course-statistics",
+      "file": "lib/screens/course_statistics_screen.dart",
+      "label": "课程统计",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "support-creator",
+      "file": "lib/screens/support_creator_screen.dart",
+      "label": "支持创作者",
+      "category": "feature",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "startup-flow",
+      "file": "lib/screens/startup_flow_screens.dart",
+      "label": "启动引导",
+      "category": "onboarding",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "notes": ""
+    },
+    {
+      "id": "hyperos-showcase",
+      "file": "lib/screens/hyperos_showcase_screen.dart",
+      "label": "澎湃 UI 组件库",
+      "category": "qa",
+      "expectedShell": "HyperosSubpage",
+      "manualStatus": "pass",
+      "allowLegacy": true,
+      "notes": "验收页；含 Material 演示属预期"
+    }
+  ]
+}

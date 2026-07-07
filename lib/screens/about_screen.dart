@@ -193,34 +193,13 @@ class _AboutScreenState extends State<AboutScreen> {
                     style: HyperosTypography.sectionDescription(context),
                   ),
                   const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    alignment: WrapAlignment.center,
-                    children: [
-                      _buildInfoChip(
-                        context,
-                        label: l10n.platformLabel,
-                        value: 'Android',
-                      ),
-                      _buildInfoChip(
-                        context,
-                        label: l10n.focusLabel,
-                        value: 'HyperOS',
-                      ),
-                      _buildInfoChip(
-                        context,
-                        label: l10n.updateLabel,
-                        value: settings.appUpdateIncludePrerelease
-                            ? l10n.prereleaseIncluded
-                            : l10n.stableOnly,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Divider(
-                    height: 1,
-                    color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+                  _buildHeroMetaStrip(
+                    context,
+                    platformValue: 'Android',
+                    focusValue: 'HyperOS',
+                    updateValue: settings.appUpdateIncludePrerelease
+                        ? l10n.prereleaseIncluded
+                        : l10n.stableOnly,
                   ),
                   const SizedBox(height: 16),
                   ThirdPartyDisclaimerContent(
@@ -480,25 +459,48 @@ class _AboutScreenState extends State<AboutScreen> {
     );
   }
 
-  Widget _buildInfoChip(
+  Widget _buildHeroMetaStrip(
     BuildContext context, {
-    required String label,
-    required String value,
+    required String platformValue,
+    required String focusValue,
+    required String updateValue,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    final l10n = AppLocalizations.of(context)!;
+    final colorScheme = Theme.of(context).colorScheme;
+    final insetColor = colorScheme.brightness == Brightness.dark
+        ? colorScheme.surfaceContainerHighest
+        : colorScheme.surfaceContainerLowest;
+
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: HyperosColors.rowHighlight(context),
-        borderRadius: BorderRadius.circular(14),
+        color: insetColor,
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(label, style: HyperosTypography.listDetail(context)),
-          const SizedBox(height: 2),
-          Text(value, style: HyperosTypography.listTitle(context)),
-        ],
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Expanded(
+              child: _AboutHeroMetaCell(
+                label: l10n.platformLabel,
+                value: platformValue,
+              ),
+            ),
+            const _AboutHeroMetaDivider(),
+            Expanded(
+              child: _AboutHeroMetaCell(
+                label: l10n.focusLabel,
+                value: focusValue,
+              ),
+            ),
+            const _AboutHeroMetaDivider(),
+            Expanded(
+              child: _AboutHeroMetaCell(
+                label: l10n.updateLabel,
+                value: updateValue,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -2523,6 +2525,61 @@ EdgeInsets _aboutRowPadding(BuildContext context) {
     isFirst: scope?.isFirst ?? true,
     isLast: scope?.isLast ?? true,
   );
+}
+
+class _AboutHeroMetaCell extends StatelessWidget {
+  const _AboutHeroMetaCell({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: HyperosTypography.listDetail(context),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: HyperosTypography.listDetail(context).copyWith(
+              color: Color.lerp(
+                HyperosColors.secondaryText(context),
+                HyperosColors.primaryText(context),
+                0.25,
+              ),
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutHeroMetaDivider extends StatelessWidget {
+  const _AboutHeroMetaDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    return VerticalDivider(
+      width: 1,
+      thickness: 1,
+      color: HyperosTokens.divider,
+    );
+  }
 }
 
 class _AboutEntryTile extends StatelessWidget {

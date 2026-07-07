@@ -4004,6 +4004,93 @@ class AppLocalizationsKo extends AppLocalizations {
   String get webLoginImport => '웹 로그인 가져오기';
 
   @override
+  String get fillUrlThenRecord => 'URL 입력 후 녹화';
+
+  @override
+  String get recordImportAction => '녹화 가져오기';
+
+  @override
+  String get quickImportAction => '빠른 가져오기';
+
+  @override
+  String get quickImportTooltip => '빠른 가져오기';
+
+  @override
+  String get selectQuickImportTitle => '빠른 가져오기 선택';
+
+  @override
+  String quickImportMacroSteps(String adapterName, int stepCount) {
+    return '$adapterName · $stepCount단계';
+  }
+
+  @override
+  String quickImportTitle(String name) {
+    return '빠른 가져오기 - $name';
+  }
+
+  @override
+  String get noSavedQuickImportRecords => '저장된 빠른 가져오기 기록이 없습니다';
+
+  @override
+  String get noValidWarehouseLoginUrl => '유효한 교무 로그인 URL을 찾을 수 없습니다';
+
+  @override
+  String get noMacroRecordFound => '녹화 기록을 찾을 수 없습니다. 먼저 녹화를 완료하세요';
+
+  @override
+  String get quickImportPlayingTitle => '자동 가져오는 중…';
+
+  @override
+  String get quickImportExecutingScriptTitle => '재생 완료, 가져오기 스크립트 실행 중…';
+
+  @override
+  String get quickImportManualInputTitle => '수동 작업 필요';
+
+  @override
+  String get quickImportManualInputHint => '필요한 수동 작업을 완료한 후 계속을 탭하세요.';
+
+  @override
+  String get quickImportCancelImportAction => '가져오기 취소';
+
+  @override
+  String get quickImportContinueAction => '계속';
+
+  @override
+  String get quickImportFinishedTitle => '가져오기 완료';
+
+  @override
+  String get quickImportDismissAction => '완료';
+
+  @override
+  String get quickImportRetryAction => '재시도';
+
+  @override
+  String quickImportPlaybackStepProgress(int current, int total) {
+    return '단계 $current / $total';
+  }
+
+  @override
+  String get quickImportCancelPlaybackAction => '취소';
+
+  @override
+  String get quickImportUnknownError => '알 수 없는 오류가 발생했습니다';
+
+  @override
+  String get recentSchoolLabel => '최근 사용';
+
+  @override
+  String get warehouseSchoolTapHint => '탭하여 어댑터를 선택하고 가져오기';
+
+  @override
+  String get warehouseAdaptersLoadFailedTitle => '어댑터 목록을 불러올 수 없습니다';
+
+  @override
+  String get stopRecordingTooltip => '녹화 중지';
+
+  @override
+  String get startRecordingTooltip => '동작 녹화';
+
+  @override
   String get savedImportUrlHint => '교무 URL 저장됨. 다음에 바로 가져올 수 있습니다';
 
   @override

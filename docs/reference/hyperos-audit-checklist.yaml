@@ -1,0 +1,245 @@
+# HyperOS 澎湃 UI 完整审计清单
+# 机器执行：tool/hyperos_audit.py
+# 人类规范来源：docs/reference/hyperos-ui-kit.md + lib/ui/hyperos/
+
+version: 1
+
+# 审计扫描范围（相对仓库根）
+scanPaths:
+  - lib/screens
+  - lib/widgets
+
+excludePathFragments:
+  - hyperos_showcase_screen.dart
+  - /ui/debug/
+  - /generated/
+
+# Miuix / HyperOS 标准值（与 hyperos_miuix_spec.dart 对齐）
+tokens:
+  cardRadius: 24
+  cardRadiusLegacy: 16
+  listPaddingHorizontal: 16
+  sectionGap: 12
+  rowPaddingHorizontal: 16
+  iconGap: 12
+  titleChevronGap: 8
+  listTitleSize: 17
+  listDetailSize: 14
+  sectionLabelSize: 13
+  nestedHeaderTitleSize: 20
+  allowedBorderRadii: [4, 8, 12, 16, 20, 24, 28]
+  allowedSpacing: [4, 6, 8, 12, 13, 16, 20, 24, 28, 32, 48, 56, 72]
+
+categories:
+  - id: components
+    label: 组件禁用与替换
+  - id: shell
+    label: 页面壳层
+  - id: typography
+    label: 字体与标题
+  - id: colors
+    label: 颜色与暗色适配
+  - id: radius
+    label: 圆角
+  - id: spacing
+    label: 间距与列表结构
+  - id: dialog
+    label: 对话框与 Sheet
+  - id: manual
+    label: 需真机/Agent 核对
+
+# severity: error → --strict 失败；warn → --perfect 失败；info → 仅报告
+rules:
+  # --- components ---
+  - id: no-list-tile
+    category: components
+    severity: error
+    pattern: '\bListTile\s*\('
+    message: 使用 HyperosListTile / HyperosSwitchTile / HyperosChoiceTile
+
+  - id: no-material-page-route
+    category: components
+    severity: error
+    pattern: '\bMaterialPageRoute\b'
+    message: 使用 HyperosPageRoute / HyperosNavigation
+
+  - id: no-snackbar
+    category: components
+    severity: error
+    pattern: '\bSnackBar\b'
+    message: 使用 showAppToast / showHyperosSnackBar
+
+  - id: no-fdialog
+    category: components
+    severity: error
+    pattern: '\bshowFDialog\b|\bFDialog\b'
+    message: 使用 showAppConfirmDialog / showHyperosDialog
+
+  - id: no-settings-section-card
+    category: components
+    severity: error
+    pattern: '\bSettingsSectionCard\b'
+    message: 兼容层已删除，使用 HyperosListGroup
+
+  - id: no-ftile-group
+    category: components
+    severity: warn
+    pattern: '\bFTileGroup\b|\bFTile\s*\('
+    message: 新代码应使用 HyperosListGroup / HyperosListTile
+
+  # --- typography ---
+  - id: no-font-bold
+    category: typography
+    severity: warn
+    pattern: 'FontWeight\.(bold|w700|w800|w900)'
+    message: 标题/正文不加粗；顶栏 nestedHeader 20sp w400（见 HyperosTypography）
+
+  - id: no-font-w600
+    category: typography
+    severity: warn
+    pattern: 'FontWeight\.w600'
+    message: 列表标题/section 标签用 w400；仅 Tab/Nav 选中态可在 HyperOS 组件库内使用 w600
+
+  - id: no-raw-textstyle-fontsize
+    category: typography
+    severity: warn
+    pattern: 'TextStyle\s*\([^)]*fontSize\s*:'
+    message: 优先 HyperosTypography.title/listTitle/listDetail/sectionLabel
+
+  - id: no-text-theme-headline
+    category: typography
+    severity: warn
+    pattern: 'textTheme\.(headline|titleLarge|titleMedium|labelLarge)'
+    message: 设置页标题用 HyperosTypography 或 nestedHeaderStyle
+
+  # --- colors / dark ---
+  - id: no-hardcoded-color-hex
+    category: colors
+    severity: warn
+    pattern: 'Color\s*\(\s*0[xX]'
+    message: 使用 HyperosColors.*(context)；课程色/图表色须在 registry notes 声明例外
+
+  - id: no-material-colors
+    category: colors
+    severity: warn
+    pattern: 'Colors\.(white|black|grey|blue|red|green|orange|purple|teal|amber|brown)\b'
+    message: 使用 HyperosColors；暗色模式依赖 Forui FColors 回落
+
+  - id: require-hyperos-colors-in-settings
+    category: colors
+    severity: info
+    check: hyperos_colors_usage
+    message: 含 HyperosSubpage 的文件应使用 HyperosColors 解析文字/背景色
+
+  # --- radius ---
+  - id: border-radius-token
+    category: radius
+    severity: warn
+    check: border_radius_values
+    message: 卡片圆角 24（HyperosTheme.cardShape）；允许 8/12/16/20/24/28
+
+  # --- spacing / layout ---
+  - id: prefer-hyperos-list-view
+    category: spacing
+    severity: warn
+    check: prefer_hyperos_list_view
+    message: HyperosSubpage 内列表应使用 HyperosListView（16dp padding）
+
+  - id: prefer-list-group
+    category: spacing
+    severity: info
+    check: prefer_list_group
+    message: 多个 HyperosListTile 应包在 HyperosListGroup 内
+
+  - id: spacing-grid
+    category: spacing
+    severity: info
+    check: edge_insets_grid
+    message: 间距遵循 4dp 网格；列表水平 16dp（HyperosMiuixSpec.settingsRowPadding）
+
+  # --- dialog / sheet ---
+  - id: no-show-dialog
+    category: dialog
+    severity: warn
+    pattern: '\bshowDialog\s*\('
+    message: 使用 showHyperosDialog / showAppConfirmDialog
+
+  - id: no-alert-dialog
+    category: dialog
+    severity: warn
+    pattern: '\bAlertDialog\s*\('
+    message: 使用 HyperosDialog
+
+  - id: no-raw-modal-sheet
+    category: dialog
+    severity: warn
+    pattern: '\bshowModalBottomSheet\s*\('
+    message: 使用 showHyperosSheet
+
+  # --- 用户历史对话提炼（可静态查） ---
+  - id: no-raw-slider
+    category: components
+    severity: warn
+    pattern: '\bSlider\s*\('
+    message: 使用 HyperosSlider / HyperosSliderTile；轨道无 tick 打点
+
+  - id: no-selectable-text
+    category: typography
+    severity: warn
+    pattern: '\bSelectableText\b'
+    message: Markdown/更新日志整页滚动；勿逐行可滑动 SelectableText
+
+  - id: no-scaffold-messenger-snackbar
+    category: components
+    severity: error
+    pattern: 'ScaffoldMessenger\.|\.showSnackBar\s*\('
+    message: 使用 showAppToast / showHyperosRichSnackBar
+
+  - id: switch-subtitle-single-line
+    category: spacing
+    severity: warn
+    check: switch_subtitle_maxlines_one
+    message: HyperosSwitchTile subtitle 允许多行换行；勿 maxLines:1 + ellipsis
+
+  - id: listtile-trailing-check-closed
+    category: components
+    severity: warn
+    check: listtile_trailing_checkmark
+    message: HyperosListTile 未开弹窗时勿 trailing 勾；仅 chevron
+
+  - id: slider-tick-marks
+    category: components
+    severity: warn
+    pattern: 'RoundSliderTickMarkShape|showValueIndicator|SliderThemeData\s*\([^)]*tickMark'
+    message: Slider 轨道勿显示 tick 打点
+
+  # --- manual (report only, agent must verify) ---
+  - id: chevron-symmetric
+    category: manual
+    severity: info
+    manual: true
+    message: chevron 距右缘与标题距左缘对称（16dp 体系）
+
+  - id: section-label-style
+    category: manual
+    severity: info
+    manual: true
+    message: 分组标题用 HyperosSectionLabel，不居中、不加粗
+
+  - id: dark-mode-screens
+    category: manual
+    severity: info
+    manual: true
+    message: 深色模式下文字/卡片/顶栏可读；禁止仅写死浅色 Color
+
+  - id: cfh-header-blur
+    category: manual
+    severity: info
+    manual: true
+    message: overlayHeader 页返回后 CFH 模糊正常（见 hyperos-blurred-header spec）
+
+  - id: import-subflows
+    category: manual
+    severity: info
+    manual: true
+    message: 课程导入 4 子流程（教务/WebView、表格、宏、预览）逐条 UI 合规

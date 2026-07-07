@@ -19,6 +19,7 @@ class HyperosRootPage extends StatelessWidget {
     required this.title,
     required this.child,
     this.suffixes,
+    this.headerExtension,
     this.childPad = false,
     this.backgroundColor,
     this.headerDecoration,
@@ -30,6 +31,10 @@ class HyperosRootPage extends StatelessWidget {
   final Widget title;
   final Widget child;
   final List<Widget>? suffixes;
+
+  /// Optional chrome rendered below the title row inside the same frosted header
+  /// shell (shares live backdrop blur with the status-bar region).
+  final Widget? headerExtension;
   final bool childPad;
   final Color? backgroundColor;
   final BoxDecoration? headerDecoration;
@@ -48,6 +53,7 @@ class HyperosRootPage extends StatelessWidget {
       headerDecoration: headerDecoration,
       resizeToAvoidBottomInset: resizeToAvoidBottomInset,
       overlayHeader: overlayHeader,
+      headerExtension: headerExtension,
       header: FHeader(
         style: headerStyle ?? HyperosTheme.nestedHeaderStyle(context),
         suffixes: suffixes ?? const [],
@@ -70,6 +76,7 @@ class HyperosSubpage extends StatelessWidget {
     this.onBack,
     this.prefixes,
     this.suffixes,
+    this.headerExtension,
     this.childPad = false,
     this.overlayHeader = true,
   });
@@ -79,6 +86,9 @@ class HyperosSubpage extends StatelessWidget {
   final VoidCallback? onBack;
   final List<Widget>? prefixes;
   final List<Widget>? suffixes;
+
+  /// Optional chrome below the title row, sharing the header frosted backdrop.
+  final Widget? headerExtension;
   final bool childPad;
 
   /// When true, the header floats above scrollable content for live backdrop blur.
@@ -90,6 +100,7 @@ class HyperosSubpage extends StatelessWidget {
     return _HyperosBlurredPage(
       childPad: childPad,
       overlayHeader: overlayHeader,
+      headerExtension: headerExtension,
       header: HyperosOverlayNestedHeader(
         prefixes:
             prefixes ??
@@ -107,6 +118,7 @@ class _HyperosBlurredPage extends StatefulWidget {
     required this.header,
     required this.child,
     required this.childPad,
+    this.headerExtension,
     this.backgroundColor,
     this.headerDecoration,
     this.resizeToAvoidBottomInset = true,
@@ -114,6 +126,7 @@ class _HyperosBlurredPage extends StatefulWidget {
   });
 
   final Widget header;
+  final Widget? headerExtension;
   final Widget child;
   final bool childPad;
   final Color? backgroundColor;
@@ -143,6 +156,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   AnimationStatusListener? _routeAnimationStatusListener;
   bool? _diagLastTransitioning;
   bool? _diagLastIsCurrent;
+  final GlobalKey _overlayHeaderKey = GlobalKey();
+  double _measuredOverlayHeaderHeight = 0;
+  bool _overlayHeaderMeasurePending = false;
 
   @override
   void initState() {
@@ -175,8 +191,18 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   bool get _blurReady => !_isRouteTransitioning && _blurSettled;
 
   @override
+  void didUpdateWidget(covariant _HyperosBlurredPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.headerExtension != widget.headerExtension) {
+      _measuredOverlayHeaderHeight = 0;
+      _requestOverlayHeaderMeasure();
+    }
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _requestOverlayHeaderMeasure();
     final route = ModalRoute.of(context);
     _subscribeRouteObserver(route);
     final animation = route?.animation;
@@ -476,6 +502,55 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     return HyperosBlurredHeaderShell(child: header);
   }
 
+  Widget _buildHeaderContent() {
+    if (widget.headerExtension == null) {
+      return widget.header;
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [widget.header, widget.headerExtension!],
+    );
+  }
+
+  double _overlayContentTopInset(BuildContext context) {
+    if (!_useOverlayLayout) {
+      return 0;
+    }
+    if (_measuredOverlayHeaderHeight > 0) {
+      return _measuredOverlayHeaderHeight;
+    }
+    if (widget.headerExtension != null) {
+      return HyperosBlurredHeader.contentTopInsetWithExtension(context);
+    }
+    return HyperosBlurredHeader.contentTopInset(context);
+  }
+
+  void _requestOverlayHeaderMeasure() {
+    if (!_useOverlayLayout || widget.headerExtension == null) {
+      return;
+    }
+    if (_overlayHeaderMeasurePending) {
+      return;
+    }
+    _overlayHeaderMeasurePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _overlayHeaderMeasurePending = false;
+      if (!mounted) {
+        return;
+      }
+      final box =
+          _overlayHeaderKey.currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) {
+        return;
+      }
+      final height = box.size.height;
+      if ((height - _measuredOverlayHeaderHeight).abs() > 0.5) {
+        setState(() => _measuredOverlayHeaderHeight = height);
+      }
+    });
+  }
+
   Widget _buildBody({required Color pageBackground, required Widget child}) {
     final body = Material(
       type: MaterialType.transparency,
@@ -495,7 +570,8 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   }
 
   Widget _buildScaffoldHeaderLayout(Color pageBackground) {
-    final blurredHeader = _buildHeaderShell(widget.header, pageBackground);
+    final headerContent = _buildHeaderContent();
+    final blurredHeader = _buildHeaderShell(headerContent, pageBackground);
     final header = _buildHeaderScope(
       contentTopInset: 0,
       routeBlurEnabled: _backdropBlurEnabled,
@@ -525,8 +601,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
       return _buildScaffoldHeaderLayout(pageBackground);
     }
 
-    final blurredHeader = _buildHeaderShell(widget.header, pageBackground);
-    final headerInset = HyperosBlurredHeader.contentTopInset(context);
+    final headerContent = _buildHeaderContent();
+    final blurredHeader = _buildHeaderShell(headerContent, pageBackground);
+    final headerInset = _overlayContentTopInset(context);
 
     return FScaffold(
       resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
@@ -560,7 +637,11 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
                     });
                     return const SizedBox.shrink();
                   }
-                  return SizedBox(width: width, child: blurredHeader);
+                  return SizedBox(
+                    key: _overlayHeaderKey,
+                    width: width,
+                    child: blurredHeader,
+                  );
                 },
               ),
             ),
