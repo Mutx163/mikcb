@@ -255,6 +255,7 @@ const Map<String, String> appLogCategoryLabels = {
   'live_update_task_removed': '超级岛：任务被移除',
   'live_update_task_removed_resumed': '超级岛：任务移除后恢复',
   'live_update_before_class_quick_action': '超级岛：课前快捷操作',
+  'live_update_before_class_quick_action_restored': '超级岛：课前快捷操作已恢复',
   'live_update_status_bar_dismissed': '超级岛：状态栏通知已关闭',
   'live_update_not_promoted': '超级岛：未提升通知',
   'live_update_promoted_not_shown': '超级岛：提升未显示',

@@ -191,11 +191,7 @@ Future<void> main() async {
         return false;
       };
 
-      unawaited(() async {
-        final packageInfo = await PackageInfo.fromPlatform();
-        runApp(MyApp(packageInfo: packageInfo));
-        unawaited(_warmUpAfterFirstFrame(packageInfo));
-      }());
+      runApp(const _PackageInfoLoader());
     },
     (error, stackTrace) {
       unawaited(
@@ -386,33 +382,55 @@ class _AppEntryScreenState extends State<AppEntryScreen>
     );
 
     try {
-      // --- 并行初始化和读取所有启动状态 ---
-      final initFuture = _storageService.init();
-      final legacyPackageFuture = _migrationService
-          .findInstalledLegacyPackage();
+      await _storageService.init();
+      if (!mounted) {
+        return;
+      }
 
-      await initFuture;
-
-      final startupResults = await Future.wait([
-        _storageService.isAppDataEffectivelyEmpty(),
-        _storageService.hasCompletedOnboarding(),
-        _storageService.hasHandledPackageMigration(),
-        _storageService.hasAcceptedPrivacyPolicy(),
-        _storageService.hasSeenUserGuide(),
-      ]);
-
-      final isDataEmpty = startupResults[0];
-      final hasHandledPackageMigration = startupResults[2];
-      final hasAcceptedPrivacy = startupResults[3];
-      final hasSeenGuide = startupResults[4];
-
+      final hasAcceptedPrivacy =
+          await _storageService.hasAcceptedPrivacyPolicy();
+      final hasSeenGuide = await _storageService.hasSeenUserGuide();
       if (!mounted) {
         return;
       }
       final provider = context.read<TimetableProvider>();
 
-      // 并行执行 provider 初始化和旧包检测
-      await Future.wait([provider.initialize(), legacyPackageFuture]);
+      // 老用户快速路径：不等待课表 JSON 解析/Provider 初始化，先进入主界面。
+      if (hasAcceptedPrivacy && hasSeenGuide) {
+        _cloudSyncCoordinator.bindProvider(provider);
+        unawaited(provider.initialize());
+        unawaited(_cloudSyncCoordinator.maybePullRemote());
+        unawaited(AppLogService.instance.updatePrivacyAccepted(true));
+        unawaited(UmengAnalyticsService.initializeIfNeeded());
+        unawaited(_checkPendingExternalImport());
+        unawaited(_installLanEditNotificationHandler());
+        unawaited(
+          AppLogService.instance.info(
+            'startup_flow_completed',
+            AppLogMessages.startupFlowCompletedNoOnboarding,
+          ),
+        );
+        unawaited(_maybeShowDeferredMigrationGuide());
+        await _revealMainContent();
+        return;
+      }
+
+      final legacyPackageFuture = _migrationService
+          .findInstalledLegacyPackage();
+      final providerInitFuture = provider.initialize();
+
+      final startupResults = await Future.wait([
+        _storageService.isAppDataEffectivelyEmpty(),
+        _storageService.hasCompletedOnboarding(),
+        _storageService.hasHandledPackageMigration(),
+        Future<bool>.value(hasAcceptedPrivacy),
+        Future<bool>.value(hasSeenGuide),
+      ]);
+
+      final isDataEmpty = startupResults[0];
+      final hasHandledPackageMigration = startupResults[2];
+
+      await Future.wait([providerInitFuture, legacyPackageFuture]);
       _cloudSyncCoordinator.bindProvider(provider);
       unawaited(_cloudSyncCoordinator.maybePullRemote());
       final legacyPackage = await legacyPackageFuture;
@@ -446,22 +464,6 @@ class _AppEntryScreenState extends State<AppEntryScreen>
           await _storageService.setHandledPackageMigration(true);
           await _storageService.setCompletedOnboarding(true);
         }
-      }
-
-      if (hasAcceptedPrivacy && hasSeenGuide) {
-        // 非关键初始化：后台执行，不阻塞首帧
-        unawaited(AppLogService.instance.updatePrivacyAccepted(true));
-        unawaited(UmengAnalyticsService.initializeIfNeeded());
-        unawaited(_checkPendingExternalImport());
-        unawaited(_installLanEditNotificationHandler());
-        unawaited(
-          AppLogService.instance.info(
-            'startup_flow_completed',
-            AppLogMessages.startupFlowCompletedNoOnboarding,
-          ),
-        );
-        await _revealMainContent();
-        return;
       }
 
       if (!mounted) {
@@ -511,6 +513,50 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (mounted) {
         await _revealMainContent();
       }
+    }
+  }
+
+  /// 快速启动路径下，极少数未完成迁移的老用户仍可能在后台弹出迁移引导。
+  Future<void> _maybeShowDeferredMigrationGuide() async {
+    try {
+      if (!mounted) {
+        return;
+      }
+      if (await _storageService.hasHandledPackageMigration()) {
+        return;
+      }
+      if (!await _storageService.isAppDataEffectivelyEmpty()) {
+        return;
+      }
+      final legacyPackage = await _migrationService.findInstalledLegacyPackage();
+      if (!mounted || legacyPackage == null) {
+        return;
+      }
+
+      final action = await Navigator.of(context).push<MigrationFlowAction>(
+        HyperosPageRoute(
+          builder: (_) =>
+              PackageMigrationGuideScreen(legacyPackageName: legacyPackage),
+          fullscreenDialog: true,
+        ),
+      );
+      if (!mounted) {
+        return;
+      }
+      if (action == MigrationFlowAction.restoreBackup) {
+        final imported = await _runBackupImportFlow(
+          forcedMode: _BackupImportMode.replaceCurrent,
+        );
+        if (imported) {
+          await _storageService.setHandledPackageMigration(true);
+          await _storageService.setCompletedOnboarding(true);
+        }
+      } else if (action == MigrationFlowAction.skip) {
+        await _storageService.setHandledPackageMigration(true);
+        await _storageService.setCompletedOnboarding(true);
+      }
+    } catch (_) {
+      // Non-critical deferred migration helper.
     }
   }
 
@@ -865,5 +911,44 @@ class _AppRouteLogObserver extends NavigatorObserver {
       return name;
     }
     return route.runtimeType.toString();
+  }
+}
+
+/// Loads [PackageInfo] after the first frame so [runApp] is not blocked.
+class _PackageInfoLoader extends StatefulWidget {
+  const _PackageInfoLoader();
+
+  @override
+  State<_PackageInfoLoader> createState() => _PackageInfoLoaderState();
+}
+
+class _PackageInfoLoaderState extends State<_PackageInfoLoader> {
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_loadPackageInfo());
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    if (!mounted) {
+      return;
+    }
+    setState(() => _packageInfo = packageInfo);
+    unawaited(_warmUpAfterFirstFrame(packageInfo));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final packageInfo = _packageInfo;
+    if (packageInfo == null) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: ColoredBox(color: Color(0xFFF7F7F7)),
+      );
+    }
+    return MyApp(packageInfo: packageInfo);
   }
 }

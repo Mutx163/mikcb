@@ -1000,7 +1000,7 @@
   "hidePrefixTextTitle": "プレフィックステキストを非表示",
   "hidePrefixTextSubtitle": "例：「もうすぐ授業」などのプレフィックスを非表示",
   "beforeClassQuickActionTitle": "授業前クイックアクション",
-  "beforeClassQuickActionSubtitle": "授業前リマインダーの展開通知にのみ表示。おやすみモード初回はシステム認証ページに飛ぶ場合あり。",
+  "beforeClassQuickActionSubtitle": "授業前リマインダーの展開通知にのみ表示。サイレント/おやすみモードは授業終了後と端末再起動後に自動復元。おやすみモード初回はシステム認証ページに飛ぶ場合あり。",
   "liveMiuiLabelSizePreview": "{value}",
   "@liveMiuiLabelSizePreview": {
     "placeholders": {
@@ -1753,6 +1753,7 @@
   "aboutUpdateStatusTitle": "更新ステータス",
   "aboutRefreshCheckTooltip": "再確認",
   "aboutCheckingLatestVersion": "最新バージョン情報を確認中…",
+  "aboutCheckingForUpdate": "更新を確認中…",
   "aboutReadVersionFailed": "バージョン情報を一時的に読み込めません。後でもう一度お試しください。",
   "aboutReadVersionFailedHint": "現在のネットワークでGitHubへのアクセスが不安定な場合、後でもう一度お試しいただくか、下の国内ダウンロード方式に切替えてから再試行。",
   "aboutViewReleaseAction": "Releaseを確認",

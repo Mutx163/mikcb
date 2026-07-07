@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -12,23 +11,23 @@ class NatureRatio extends StatelessWidget {
 
   const NatureRatio({super.key, required this.stats});
 
+  static const _requiredColor = HyperosIconColors.blue;
+  static const _electiveColor = HyperosIconColors.purple;
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
-    final colorScheme = Theme.of(context).colorScheme;
     final hasData = stats.totalCount > 0;
 
-    return HyperosCard(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    return HyperosControlCard(
+      child: HyperosControlCardInset(
         child: hasData
             ? Row(
                 children: [
                   SizedBox(
                     width: 100,
                     height: 100,
-                    child: _buildDonutChart(context),
+                    child: _buildDonutChart(),
                   ),
                   const SizedBox(width: 20),
                   Expanded(
@@ -36,7 +35,7 @@ class NatureRatio extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _LegendItem(
-                          color: colorScheme.primary,
+                          color: _requiredColor,
                           label: l10n.courseNatureRequired,
                           count: stats.requiredCount,
                           sections: stats.requiredSections,
@@ -44,7 +43,7 @@ class NatureRatio extends StatelessWidget {
                         ),
                         const SizedBox(height: 12),
                         _LegendItem(
-                          color: colorScheme.tertiary,
+                          color: _electiveColor,
                           label: l10n.courseNatureElective,
                           count: stats.electiveCount,
                           sections: stats.electiveSections,
@@ -60,9 +59,7 @@ class NatureRatio extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   child: Text(
                     l10n.statisticsNoData,
-                    style: theme.typography.body.sm.copyWith(
-                      color: theme.colors.mutedForeground,
-                    ),
+                    style: HyperosTypography.listDetail(context),
                   ),
                 ),
               ),
@@ -70,9 +67,7 @@ class NatureRatio extends StatelessWidget {
     );
   }
 
-  Widget _buildDonutChart(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
+  Widget _buildDonutChart() {
     return PieChart(
       PieChartData(
         sectionsSpace: 2,
@@ -80,13 +75,13 @@ class NatureRatio extends StatelessWidget {
         sections: [
           PieChartSectionData(
             value: stats.requiredCount.toDouble(),
-            color: colorScheme.primary,
+            color: _requiredColor,
             radius: 22,
             showTitle: false,
           ),
           PieChartSectionData(
             value: stats.electiveCount.toDouble(),
-            color: colorScheme.tertiary,
+            color: _electiveColor,
             radius: 22,
             showTitle: false,
           ),
@@ -114,7 +109,6 @@ class _LegendItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
 
     return Row(
       children: [
@@ -133,14 +127,14 @@ class _LegendItem extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: theme.typography.body.sm.copyWith(
+                style: HyperosTypography.listTitle(context).copyWith(
                   fontWeight: FontWeight.w600,
                 ),
               ),
               Text(
                 l10n.statisticsNatureLegendDetail(count, sections),
-                style: theme.typography.body.xs.copyWith(
-                  color: theme.colors.mutedForeground,
+                style: HyperosTypography.listDetail(context).copyWith(
+                  fontSize: HyperosMiuixTypography.footnote2,
                 ),
               ),
             ],
@@ -148,7 +142,7 @@ class _LegendItem extends StatelessWidget {
         ),
         Text(
           '${(ratio * 100).round()}%',
-          style: theme.typography.body.md.copyWith(
+          style: HyperosTypography.listTitle(context).copyWith(
             fontWeight: FontWeight.w800,
             color: color,
           ),

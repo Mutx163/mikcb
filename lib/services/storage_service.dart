@@ -33,6 +33,18 @@ class StorageService {
   SharedPreferences? _ensuredForPrefs;
   bool _profilesEnsured = false;
   bool _timeSchemesEnsured = false;
+  List<TimetableProfile>? _profilesListCache;
+  List<TimeScheme>? _timeSchemesListCache;
+
+  void _invalidateProfilesListCache() {
+    _profilesListCache = null;
+    _profilesEnsured = false;
+  }
+
+  void _invalidateTimeSchemesListCache() {
+    _timeSchemesListCache = null;
+    _timeSchemesEnsured = false;
+  }
   bool _hidePrefixMigrated = false;
 
   Future<void>? _initFuture;
@@ -42,6 +54,10 @@ class StorageService {
   void resetForTesting() {
     _initFuture = null;
     _prefs = null;
+    _profilesListCache = null;
+    _timeSchemesListCache = null;
+    _profilesEnsured = false;
+    _timeSchemesEnsured = false;
   }
 
   Future<void> init() async {
@@ -103,8 +119,8 @@ class StorageService {
   void _resetEnsureCacheIfNeeded() {
     if (_ensuredForPrefs != _prefs) {
       _ensuredForPrefs = _prefs;
-      _profilesEnsured = false;
-      _timeSchemesEnsured = false;
+      _invalidateProfilesListCache();
+      _invalidateTimeSchemesListCache();
       _hidePrefixMigrated = false;
     }
   }
@@ -412,28 +428,38 @@ class StorageService {
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
     await _migrateHidePrefixDefault();
+    final cached = _profilesListCache;
+    if (cached != null) {
+      return cached;
+    }
+
     final profilesJson = _prefs?.getString(_profilesKey);
     if (profilesJson == null || profilesJson.isEmpty) {
+      _profilesListCache = const [];
       return const [];
     }
 
     final rawProfiles = await _readJsonListPreference(_profilesKey);
     if (rawProfiles == null) {
+      _profilesListCache = const [];
       return const [];
     }
     try {
-      return rawProfiles
+      final profiles = rawProfiles
           .map(
             (item) => TimetableProfile.fromJson(
               Map<String, dynamic>.from(item as Map),
             ),
           )
           .toList();
+      _profilesListCache = profiles;
+      return profiles;
     } catch (_) {
       final raw = _prefs?.getString(_profilesKey);
       if (raw != null) {
         await _backupAndRemoveCorruptString(_profilesKey, raw);
       }
+      _profilesListCache = const [];
       return const [];
     }
   }
@@ -444,6 +470,7 @@ class StorageService {
       profiles.map((profile) => profile.toJson()).toList(),
     );
     await _prefs?.setString(_profilesKey, payload);
+    _profilesListCache = List<TimetableProfile>.from(profiles);
   }
 
   Future<String?> getActiveProfileId() async {
@@ -463,27 +490,37 @@ class StorageService {
     if (_prefs == null) await init();
     await _ensureProfilesInitialized();
     await _ensureTimeSchemesInitialized();
+    final cached = _timeSchemesListCache;
+    if (cached != null) {
+      return cached;
+    }
+
     final rawSchemes = _prefs?.getString(_timeSchemesKey);
     if (rawSchemes == null || rawSchemes.isEmpty) {
+      _timeSchemesListCache = const [];
       return const [];
     }
 
     final decoded = await _readJsonListPreference(_timeSchemesKey);
     if (decoded == null) {
+      _timeSchemesListCache = const [];
       return const [];
     }
     try {
-      return decoded
+      final schemes = decoded
           .map(
             (item) =>
                 TimeScheme.fromJson(Map<String, dynamic>.from(item as Map)),
           )
           .toList();
+      _timeSchemesListCache = schemes;
+      return schemes;
     } catch (_) {
       final raw = _prefs?.getString(_timeSchemesKey);
       if (raw != null) {
         await _backupAndRemoveCorruptString(_timeSchemesKey, raw);
       }
+      _timeSchemesListCache = const [];
       return const [];
     }
   }
@@ -494,6 +531,7 @@ class StorageService {
       schemes.map((scheme) => scheme.toJson()).toList(),
     );
     await _prefs?.setString(_timeSchemesKey, payload);
+    _timeSchemesListCache = List<TimeScheme>.from(schemes);
   }
 
   // ---------------------------------------------------------------------------

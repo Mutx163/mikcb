@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -15,17 +14,16 @@ class CourseRanking extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
 
     if (courseRanking.isEmpty) {
-      return HyperosCard(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          child: Center(
-            child: Text(
-              l10n.statisticsNoData,
-              style: theme.typography.body.sm.copyWith(
-                color: theme.colors.mutedForeground,
+      return HyperosControlCard(
+        child: HyperosControlCardInset(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                l10n.statisticsNoData,
+                style: HyperosTypography.listDetail(context),
               ),
             ),
           ),
@@ -33,18 +31,14 @@ class CourseRanking extends StatelessWidget {
       );
     }
 
-    return HyperosCard(
-      child: Column(
-        children: List.generate(courseRanking.length, (index) {
-          final stat = courseRanking[index];
-          final isLast = index == courseRanking.length - 1;
-          return _CourseRankingTile(
-            stat: stat,
+    return HyperosListGroup(
+      children: [
+        for (var index = 0; index < courseRanking.length; index++)
+          _CourseRankingTile(
+            stat: courseRanking[index],
             rank: index + 1,
-            isLast: isLast,
-          );
-        }),
-      ),
+          ),
+      ],
     );
   }
 }
@@ -52,13 +46,8 @@ class CourseRanking extends StatelessWidget {
 class _CourseRankingTile extends StatefulWidget {
   final CourseSemesterStat stat;
   final int rank;
-  final bool isLast;
 
-  const _CourseRankingTile({
-    required this.stat,
-    required this.rank,
-    required this.isLast,
-  });
+  const _CourseRankingTile({required this.stat, required this.rank});
 
   @override
   State<_CourseRankingTile> createState() => _CourseRankingTileState();
@@ -70,241 +59,167 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final scope = HyperosListTileScope.maybeOf(context);
+    final cardColor = HyperosColors.card(context);
+    final highlightColor = HyperosColors.rowHighlight(context);
     final isRequired = widget.stat.nature == CourseNature.required;
 
-    // 排名颜色
-    Color? rankColor;
-    if (widget.rank == 1) {
-      rankColor = Colors.amber;
-    } else if (widget.rank == 2) {
-      rankColor = Colors.grey[400];
-    } else if (widget.rank == 3) {
-      rankColor = Colors.brown[300];
-    }
-
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            setState(() {
-              _isExpanded = !_isExpanded;
-            });
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                // 排名
-                SizedBox(
-                  width: 28,
-                  child: rankColor != null
-                      ? Icon(
-                          Icons.emoji_events_rounded,
-                          size: 20,
-                          color: rankColor,
-                        )
-                      : Text(
-                          '${widget.rank}',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 8),
-                // 左侧信息
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    final row = ConstrainedBox(
+      constraints: const BoxConstraints(
+        minHeight: HyperosTokens.listRowTwoLineMinHeight,
+      ),
+      child: Padding(
+        padding: HyperosTokens.rowPadding(
+          isFirst: scope?.isFirst ?? true,
+          isLast: (scope?.isLast ?? true) && !_isExpanded,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _RankBadge(rank: widget.rank),
+            const SizedBox(width: HyperosTokens.rowContentGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              widget.stat.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isRequired
-                                  ? colorScheme.primary.withValues(alpha: 0.12)
-                                  : colorScheme.tertiary.withValues(
-                                      alpha: 0.12,
-                                    ),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              isRequired
-                                  ? l10n.courseNatureRequired
-                                  : l10n.courseNatureElective,
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: isRequired
-                                    ? colorScheme.primary
-                                    : colorScheme.tertiary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (widget.stat.teacher.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.stat.teacher,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
+                      Expanded(
+                        child: Text(
+                          widget.stat.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: HyperosTypography.listTitle(context),
                         ),
-                      ],
-                      const SizedBox(height: 4),
-                      // 时间标签
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: widget.stat.slots.map((slot) {
-                          final dayLabel = _weekdayShortLabel(
-                            l10n,
-                            slot.dayOfWeek,
-                          );
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
+                      ),
+                      const SizedBox(width: 6),
+                      HyperosTag(
+                        label: isRequired
+                            ? l10n.courseNatureRequired
+                            : l10n.courseNatureElective,
+                        backgroundColor: isRequired
+                            ? HyperosIconColors.blue.withValues(alpha: 0.12)
+                            : HyperosIconColors.purple.withValues(alpha: 0.12),
+                        textStyle: HyperosTypography.listDetail(context)
+                            .copyWith(
+                              fontSize: HyperosMiuixTypography.footnote2,
+                              fontWeight: FontWeight.w600,
+                              color: isRequired
+                                  ? HyperosIconColors.blue
+                                  : HyperosIconColors.purple,
                             ),
-                            decoration: BoxDecoration(
-                              color: colorScheme.surfaceContainerHigh,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              '$dayLabel ${slot.startSection}-${widget.stat.slots.length > 1 ? slot.endSection : ''}${l10n.statisticsSectionUnit}',
-                              style: theme.textTheme.labelSmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          );
-                        }).toList(),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 12),
-                // 右侧课时数 + 展开图标
-                Column(
-                  children: [
+                  if (widget.stat.teacher.isNotEmpty) ...[
+                    const SizedBox(height: 2),
                     Text(
-                      '${widget.stat.totalSections}',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.primary,
-                      ),
-                    ),
-                    Text(
-                      l10n.statisticsSectionsUnit,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
+                      widget.stat.teacher,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: HyperosTypography.listDetail(context),
                     ),
                   ],
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  _isExpanded
-                      ? Icons.expand_less_rounded
-                      : Icons.expand_more_rounded,
-                  size: 20,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-        // 展开的详情
-        if (_isExpanded)
-          _buildExpandedDetail(context, l10n, theme, colorScheme),
-        if (!widget.isLast)
-          Divider(
-            height: 1,
-            indent: 52,
-            endIndent: 16,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildExpandedDetail(
-    BuildContext context,
-    AppLocalizations l10n,
-    ThemeData theme,
-    ColorScheme colorScheme,
-  ) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(52, 0, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          // 详细信息
-          ...widget.stat.slots.map((slot) {
-            final dayLabel = _weekdayFullLabel(l10n, slot.dayOfWeek);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    size: 16,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.statisticsRankingSlotDetail(
-                        dayLabel,
-                        slot.startSection,
-                        slot.endSection,
-                      ),
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  if (slot.location.isNotEmpty) ...[
-                    Icon(
-                      Icons.location_on_rounded,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      child: Text(
-                        slot.location,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  if (widget.stat.slots.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: widget.stat.slots.map((slot) {
+                        return HyperosTag(
+                          label: _slotLabel(l10n, slot),
+                          outlined: true,
+                        );
+                      }).toList(),
                     ),
                   ],
                 ],
               ),
-            );
-          }),
-        ],
+            ),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${widget.stat.totalSections}',
+                  style: HyperosTypography.listTitle(context).copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: HyperosTokens.accent,
+                  ),
+                ),
+                Text(
+                  l10n.statisticsSectionsUnit,
+                  style: HyperosTypography.listDetail(context),
+                ),
+              ],
+            ),
+            const SizedBox(width: 4),
+            Icon(
+              _isExpanded ? Icons.expand_less : Icons.expand_more,
+              size: 20,
+              color: HyperosColors.actionIcon(context),
+            ),
+          ],
+        ),
       ),
     );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosPressableRow(
+          onTap: () => setState(() => _isExpanded = !_isExpanded),
+          backgroundColor: cardColor,
+          highlightColor: highlightColor,
+          child: row,
+        ),
+        if (_isExpanded) _buildExpandedDetail(context, l10n),
+      ],
+    );
+  }
+
+  Widget _buildExpandedDetail(BuildContext context, AppLocalizations l10n) {
+    const rankBadgeSize = 36.0;
+    final dividerIndent =
+        HyperosMiuixSpec.settingsRowPadding.left +
+        rankBadgeSize +
+        HyperosTokens.rowContentGap;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosInsetDivider(indent: dividerIndent),
+        Padding(
+          padding: EdgeInsets.fromLTRB(
+            dividerIndent,
+            10,
+            HyperosMiuixSpec.settingsRowPadding.right,
+            scopeBottomPadding(context),
+          ),
+          child: Column(
+            children: [
+              for (var i = 0; i < widget.stat.slots.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                _SlotDetailRow(slot: widget.stat.slots[i], l10n: l10n),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  double scopeBottomPadding(BuildContext context) {
+    final scope = HyperosListTileScope.maybeOf(context);
+    return scope?.isLast ?? true ? 12 : 0;
+  }
+
+  String _slotLabel(AppLocalizations l10n, CourseSlot slot) {
+    final dayLabel = _weekdayShortLabel(l10n, slot.dayOfWeek);
+    final sections = slot.startSection == slot.endSection
+        ? '${slot.startSection}'
+        : '${slot.startSection}-${slot.endSection}';
+    return '$dayLabel $sections${l10n.statisticsSectionUnit}';
   }
 
   String _weekdayShortLabel(AppLocalizations l10n, int dayOfWeek) {
@@ -318,6 +233,108 @@ class _CourseRankingTileState extends State<_CourseRankingTile> {
       7 => l10n.weekdayShortSunday,
       _ => dayOfWeek.toString(),
     };
+  }
+}
+
+class _RankBadge extends StatelessWidget {
+  const _RankBadge({required this.rank});
+
+  final int rank;
+
+  @override
+  Widget build(BuildContext context) {
+    final (background, foreground, icon) = switch (rank) {
+      1 => (
+        HyperosIconColors.yellow.withValues(alpha: 0.18),
+        HyperosIconColors.yellow,
+        Icons.emoji_events_rounded,
+      ),
+      2 => (
+        HyperosColors.secondaryText(context).withValues(alpha: 0.14),
+        HyperosColors.secondaryText(context),
+        Icons.emoji_events_rounded,
+      ),
+      3 => (
+        HyperosIconColors.orange.withValues(alpha: 0.16),
+        HyperosIconColors.orange,
+        Icons.emoji_events_rounded,
+      ),
+      _ => (
+        HyperosColors.secondaryText(context).withValues(alpha: 0.1),
+        HyperosColors.secondaryText(context),
+        null,
+      ),
+    };
+
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      alignment: Alignment.center,
+      child: icon != null
+          ? Icon(icon, size: 18, color: foreground)
+          : Text(
+              '$rank',
+              style: HyperosTypography.listTitle(context).copyWith(
+                color: foreground,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+    );
+  }
+}
+
+class _SlotDetailRow extends StatelessWidget {
+  const _SlotDetailRow({required this.slot, required this.l10n});
+
+  final CourseSlot slot;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final dayLabel = _weekdayFullLabel(l10n, slot.dayOfWeek);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.schedule_rounded,
+          size: 16,
+          color: HyperosColors.actionIcon(context),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            l10n.statisticsRankingSlotDetail(
+              dayLabel,
+              slot.startSection,
+              slot.endSection,
+            ),
+            style: HyperosTypography.listDetail(context),
+          ),
+        ),
+        if (slot.location.isNotEmpty) ...[
+          Icon(
+            Icons.location_on_outlined,
+            size: 16,
+            color: HyperosColors.actionIcon(context),
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              slot.location,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.end,
+              style: HyperosTypography.listDetail(context),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   String _weekdayFullLabel(AppLocalizations l10n, int dayOfWeek) {

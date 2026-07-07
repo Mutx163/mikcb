@@ -82,12 +82,16 @@ class ExamListScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
-    return HyperosEmptyState(
-      icon: Icons.school_outlined,
-      title: l10n.noExams,
-      action: HyperosButton(
-        label: l10n.addExam,
-        onPressed: () => _navigateToAddExam(context),
+    return HyperosBlurredBodyInset(
+      child: Center(
+        child: HyperosEmptyState(
+          icon: Icons.school_outlined,
+          title: l10n.noExams,
+          action: HyperosButton(
+            label: l10n.addExam,
+            onPressed: () => _navigateToAddExam(context),
+          ),
+        ),
       ),
     );
   }
@@ -243,7 +247,7 @@ class ExamListScreen extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
-                                '座位: ${exam.seatNumber}',
+                                '${l10n.examSeatLabel}: ${exam.seatNumber}',
                                 style: theme.typography.body.xs.copyWith(
                                   color: theme.colors.mutedForeground,
                                 ),

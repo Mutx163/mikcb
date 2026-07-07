@@ -999,7 +999,7 @@
   "hidePrefixTextTitle": "隱藏前綴文案",
   "hidePrefixTextSubtitle": "例如隱藏“即將上課”這類前綴",
   "beforeClassQuickActionTitle": "上課前快捷操作",
-  "beforeClassQuickActionSubtitle": "只在上課前提醒的展開通知裡顯示。免打擾首次可能會跳到系統授權頁。",
+  "beforeClassQuickActionSubtitle": "只在上課前提醒的展開通知裡顯示。靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁。",
   "liveMiuiLabelSizePreview": "{value}",
   "@liveMiuiLabelSizePreview": {
     "placeholders": {
@@ -1750,6 +1750,7 @@
   "aboutUpdateStatusTitle": "更新狀態",
   "aboutRefreshCheckTooltip": "重新檢查",
   "aboutCheckingLatestVersion": "正在檢查最新版本資訊…",
+  "aboutCheckingForUpdate": "正在檢測更新…",
   "aboutReadVersionFailed": "暫時無法讀取版本資訊，请稍後重試。",
   "aboutReadVersionFailedHint": "如果你目前網路访問 GitHub 不穩定，可稍後再試，或切到下面的國內下載方式後重試。",
   "aboutViewReleaseAction": "查看 Release",

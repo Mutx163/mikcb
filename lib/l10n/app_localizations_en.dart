@@ -1916,7 +1916,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      'Only appears in the expanded before-class reminder. Do Not Disturb may open a system permission page on first use.';
+      'Only appears in the expanded before-class reminder. Silent/DND restores after class ends and on reboot. Do Not Disturb may open a system permission page on first use.';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -3468,6 +3468,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get aboutCheckingLatestVersion =>
       'Checking the latest version information…';
+
+  @override
+  String get aboutCheckingForUpdate => 'Checking for updates…';
 
   @override
   String get aboutReadVersionFailed =>

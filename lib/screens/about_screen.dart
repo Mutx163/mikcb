@@ -603,48 +603,19 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Widget _buildUpdateList(ThemeData theme, TimetableSettings settings) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
 
     return FutureBuilder<AppUpdateCheckResult>(
       future: _updateFuture,
       builder: (context, snapshot) {
         if (widget.packageInfo == null ||
             snapshot.connectionState == ConnectionState.waiting) {
-          return HyperosListView(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 48,
-                  horizontal: 8,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _UpdateCheckAnimation(colorScheme: colorScheme),
-                    const SizedBox(height: 24),
-                    Text(
-                      l10n.aboutCheckingLatestVersion,
-                      style: theme.textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '正在连接更新服务器...',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          );
+          return _buildUpdateCheckingView(context, theme);
         }
 
         final result = snapshot.data;
         if (result == null) {
           return HyperosListView(
+            includeHeaderInset: false,
             children: [
               Material(
                 color: HyperosColors.card(context),
@@ -654,11 +625,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        size: 48,
-                        color: colorScheme.error,
-                      ),
+                      _buildAppLauncherLogo(context, size: 72),
                       const SizedBox(height: 12),
                       Text(
                         l10n.aboutReadVersionFailed,
@@ -679,6 +646,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         }
 
         return HyperosListView(
+          includeHeaderInset: false,
           children: [
             _buildStatusCard(theme, result),
             if ((result.latestRelease?.body ?? '').isNotEmpty) ...[
@@ -691,9 +659,71 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     );
   }
 
+  Widget _buildAppLauncherLogo(BuildContext context, {double size = 84}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final radius = size * 24 / 84;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(radius),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.primary.withValues(alpha: 0.18),
+            blurRadius: size * 0.21,
+            offset: Offset(0, size * 0.12),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: BundledAssetImage(
+          assetPath: BundledAssets.launcherIcon,
+          fit: BoxFit.cover,
+          cacheWidth: (size * 2).round(),
+          cacheHeight: (size * 2).round(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpdateCheckingView(BuildContext context, ThemeData theme) {
+    final l10n = AppLocalizations.of(context)!;
+    final foruiTheme = context.theme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: [
+          const Spacer(flex: 2),
+          _buildAppLauncherLogo(context),
+          const SizedBox(height: 16),
+          Text(
+            l10n.timetableAppName,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: foruiTheme.typography.display.lg.copyWith(
+              fontWeight: FontWeight.w600,
+              height: 1.0,
+              letterSpacing: 0.1,
+              color: foruiTheme.colors.foreground,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.aboutCheckingForUpdate,
+            style: HyperosTypography.listDetail(context),
+            textAlign: TextAlign.center,
+          ),
+          const Spacer(flex: 3),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStatusCard(ThemeData theme, AppUpdateCheckResult result) {
     final l10n = AppLocalizations.of(context)!;
-    final colorScheme = theme.colorScheme;
     final release = result.latestRelease;
     final settings = context.read<TimetableProvider>().settings;
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
@@ -727,10 +757,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       AboutUpdatePrimaryAction.openDownloadLink =>
         l10n.aboutOpenDownloadPageAction,
     };
-    final statusColor = result.hasUpdate ? colorScheme.primary : Colors.green;
-    final statusIcon = result.hasUpdate
-        ? Icons.system_update_rounded
-        : Icons.check_circle;
 
     return Material(
       color: HyperosColors.card(context),
@@ -740,73 +766,65 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
         padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
         child: Column(
           children: [
-            // 居中状态图标
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(statusIcon, size: 32, color: statusColor),
-            ),
+            _buildAppLauncherLogo(context, size: 72),
             const SizedBox(height: 16),
             // 状态标题
             Text(
               result.hasUpdate ? '有版本更新' : '已是最新版本',
-              style: HyperosTypography.sectionLabel(
-                context,
-              ).copyWith(fontSize: 20, fontWeight: FontWeight.w500),
+              style: result.hasUpdate
+                  ? HyperosTypography.sectionLabel(context).copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                    )
+                  : HyperosTypography.sectionLabel(context).copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w400,
+                      color: HyperosColors.primaryText(context),
+                    ),
             ),
-            const SizedBox(height: 4),
-            // 更新时间
-            if (release?.updatedAt != null)
-              Text(
-                l10n.aboutUpdatedAt(_formatDateTime(release!.updatedAt!)),
-                style: HyperosTypography.listDetail(context),
-              ),
             const SizedBox(height: 20),
             // 版本对比信息
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(
-                  children: [
-                    Text(
-                      l10n.aboutCurrentVersionLabel,
-                      style: HyperosTypography.listDetail(context),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      result.currentVersion,
-                      style: HyperosTypography.listTitle(
-                        context,
-                      ).copyWith(fontFamily: 'monospace'),
-                    ),
-                  ],
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Container(
-                    width: 1,
-                    height: 32,
-                    color: colorScheme.outlineVariant,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        l10n.aboutCurrentVersionLabel,
+                        style: HyperosTypography.listDetail(context),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        result.currentVersion,
+                        style: HyperosTypography.listTitle(
+                          context,
+                        ).copyWith(fontFamily: 'monospace'),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
                 ),
-                Column(
-                  children: [
-                    Text(
-                      l10n.aboutLatestVersionLabel,
-                      style: HyperosTypography.listDetail(context),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      release?.version ?? l10n.aboutUnreleasedLabel,
-                      style: HyperosTypography.listTitle(
-                        context,
-                      ).copyWith(fontFamily: 'monospace'),
-                    ),
-                  ],
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        l10n.aboutLatestVersionLabel,
+                        style: HyperosTypography.listDetail(context),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        release?.version ?? l10n.aboutUnreleasedLabel,
+                        style: HyperosTypography.listTitle(
+                          context,
+                        ).copyWith(fontFamily: 'monospace'),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -858,6 +876,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   Widget _buildNotesCard(ThemeData theme, AppUpdateCheckResult result) {
     final l10n = AppLocalizations.of(context)!;
     final colorScheme = theme.colorScheme;
+    final release = result.latestRelease;
+    final updatedAt = release?.updatedAt;
+    final headerTextStyle = HyperosTypography.listDetail(context).copyWith(
+      color: Theme.of(context).colorScheme.onSurface,
+    );
     return Material(
       color: HyperosColors.card(context),
       shape: HyperosTheme.cardShape(),
@@ -868,6 +891,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.update_rounded,
@@ -875,17 +899,25 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
                   color: colorScheme.primary,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  l10n.aboutReleaseNotesTitle,
-                  style: HyperosTypography.sectionLabel(context),
+                Expanded(
+                  child: Text(
+                    l10n.aboutReleaseNotesTitle,
+                    style: headerTextStyle,
+                  ),
                 ),
+                if (updatedAt != null)
+                  Text(
+                    l10n.aboutUpdatedAt(_formatDateTime(updatedAt)),
+                    style: headerTextStyle,
+                  ),
               ],
             ),
             const SizedBox(height: 12),
             ReleaseNotesMarkdown(
-              data: result.latestRelease!.body.trim(),
+              data: release!.body.trim(),
               onTapLink: _openUrl,
               plainTypography: true,
+              usePrimaryTextColor: true,
             ),
           ],
         ),
@@ -1626,148 +1658,6 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
   }
 }
 
-class _UpdateCheckAnimation extends StatefulWidget {
-  final ColorScheme colorScheme;
-
-  const _UpdateCheckAnimation({required this.colorScheme});
-
-  @override
-  State<_UpdateCheckAnimation> createState() => _UpdateCheckAnimationState();
-}
-
-class _UpdateCheckAnimationState extends State<_UpdateCheckAnimation>
-    with TickerProviderStateMixin {
-  late final AnimationController _rotationController;
-  late final AnimationController _pulseController;
-  late final AnimationController _arcController;
-  late final Animation<double> _pulseAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _rotationController = AnimationController(
-      duration: const Duration(seconds: 3),
-      vsync: this,
-    )..repeat();
-
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat(reverse: true);
-
-    _arcController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    )..repeat();
-
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _rotationController.dispose();
-    _pulseController.dispose();
-    _arcController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = widget.colorScheme;
-    return SizedBox(
-      width: 80,
-      height: 80,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 外圈脉冲效果
-          AnimatedBuilder(
-            animation: _pulseAnimation,
-            builder: (context, child) {
-              return Transform.scale(
-                scale: _pulseAnimation.value,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: colorScheme.primary.withValues(alpha: 0.08),
-                  ),
-                ),
-              );
-            },
-          ),
-          // 旋转的弧形
-          AnimatedBuilder(
-            animation: _arcController,
-            builder: (context, child) {
-              return CustomPaint(
-                size: const Size(64, 64),
-                painter: _ArcPainter(
-                  color: colorScheme.primary,
-                  animationValue: _arcController.value,
-                ),
-              );
-            },
-          ),
-          // 中心图标
-          AnimatedBuilder(
-            animation: _rotationController,
-            builder: (context, child) {
-              return Transform.rotate(
-                angle: _rotationController.value * 2 * 3.14159,
-                child: Icon(
-                  Icons.sync_rounded,
-                  size: 28,
-                  color: colorScheme.primary,
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ArcPainter extends CustomPainter {
-  final Color color;
-  final double animationValue;
-
-  _ArcPainter({required this.color, required this.animationValue});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    final startAngle = animationValue * 2 * 3.14159;
-    const sweepAngle = 3.14159 * 0.8; // 约 144 度的弧
-
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
-
-    // 第二条较短的弧
-    final paint2 = Paint()
-      ..color = color.withValues(alpha: 0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-
-    canvas.drawArc(rect, startAngle + 3.14159, sweepAngle * 0.6, false, paint2);
-  }
-
-  @override
-  bool shouldRepaint(_ArcPainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue;
-  }
-}
-
 class _AdvancedOptionsScreen extends StatefulWidget {
   final ThemeData theme;
   final TimetableSettings settings;
@@ -2256,40 +2146,101 @@ class ReleaseNotesMarkdown extends StatelessWidget {
   final String data;
   final ValueChanged<String?>? onTapLink;
   final bool plainTypography;
+  final bool usePrimaryTextColor;
+
+  static final RegExp _versionHeadingPattern = RegExp(
+    r'^#\s+v[\d.\-a-zA-Z]+',
+    caseSensitive: false,
+  );
 
   const ReleaseNotesMarkdown({
     super.key,
     required this.data,
     this.onTapLink,
     this.plainTypography = false,
+    this.usePrimaryTextColor = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final baseSheet = MarkdownStyleSheet.fromTheme(theme);
-    final body = theme.textTheme.bodyMedium;
-    final styleSheet = plainTypography
-        ? baseSheet.copyWith(
-            p: body,
-            strong: body?.copyWith(fontWeight: FontWeight.w400),
-            h1: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w400,
-            ),
-            h2: theme.textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.w400,
-            ),
-            h3: body?.copyWith(fontWeight: FontWeight.w400),
-            h4: body?.copyWith(fontWeight: FontWeight.w400),
-            h5: body?.copyWith(fontWeight: FontWeight.w400),
-            h6: body?.copyWith(fontWeight: FontWeight.w400),
-          )
-        : baseSheet;
+    final normalized = plainTypography ? _stripVersionHeading(data) : data;
+    final styleSheet = _buildReleaseNotesStyleSheet(
+      context,
+      plainTypography: plainTypography,
+      usePrimaryTextColor: usePrimaryTextColor,
+    );
+    final bulletStyle = styleSheet.listBullet;
     return MarkdownBody(
-      data: data,
-      selectable: true,
+      data: normalized,
+      selectable: false,
       styleSheet: styleSheet,
+      listItemCrossAxisAlignment: plainTypography
+          ? MarkdownListItemCrossAxisAlignment.start
+          : MarkdownListItemCrossAxisAlignment.baseline,
+      bulletBuilder: plainTypography
+          ? (_) => Text(
+              '·',
+              style: bulletStyle?.copyWith(height: 1.35),
+            )
+          : null,
       onTapLink: (text, href, title) => onTapLink?.call(href),
+    );
+  }
+
+  static String _stripVersionHeading(String data) {
+    final lines = data.split('\n');
+    var start = 0;
+    if (lines.isNotEmpty && _versionHeadingPattern.hasMatch(lines.first.trim())) {
+      start = 1;
+      while (start < lines.length && lines[start].trim().isEmpty) {
+        start++;
+      }
+    }
+    return lines.sublist(start).join('\n').trim();
+  }
+
+  static MarkdownStyleSheet _buildReleaseNotesStyleSheet(
+    BuildContext context, {
+    required bool plainTypography,
+    required bool usePrimaryTextColor,
+  }) {
+    final theme = Theme.of(context);
+    if (!plainTypography) {
+      return MarkdownStyleSheet.fromTheme(theme);
+    }
+    final onSurface = theme.colorScheme.onSurface;
+    final body = usePrimaryTextColor
+        ? HyperosTypography.sectionDescription(
+            context,
+          ).copyWith(color: onSurface)
+        : HyperosTypography.sectionDescription(context);
+    final sectionHeader = body.copyWith(fontWeight: FontWeight.w600);
+    final linkColor = usePrimaryTextColor ? onSurface : theme.colorScheme.primary;
+    return MarkdownStyleSheet(
+      p: body,
+      pPadding: EdgeInsets.zero,
+      listBullet: body,
+      listIndent: 12,
+      listBulletPadding: const EdgeInsets.only(right: 4),
+      blockSpacing: 6,
+      h1: sectionHeader,
+      h1Padding: EdgeInsets.zero,
+      h2: sectionHeader,
+      h2Padding: const EdgeInsets.only(top: 8, bottom: 2),
+      h3: sectionHeader,
+      h3Padding: EdgeInsets.zero,
+      h4: body,
+      h5: body,
+      h6: body,
+      strong: body.copyWith(fontWeight: FontWeight.w500),
+      em: body.copyWith(fontStyle: FontStyle.italic),
+      a: body.copyWith(color: linkColor, decoration: TextDecoration.underline),
+      blockquote: body,
+      blockquotePadding: const EdgeInsets.only(left: 12),
+      code: body.copyWith(
+        fontFamily: 'monospace',
+        fontSize: (body.fontSize ?? 14) - 1,
+      ),
     );
   }
 }

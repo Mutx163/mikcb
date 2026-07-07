@@ -3373,7 +3373,7 @@ abstract class AppLocalizations {
   /// No description provided for @beforeClassQuickActionSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'只在上课前提醒的展开通知里显示。免打扰首次可能会跳到系统授权页。'**
+  /// **'只在上课前提醒的展开通知里显示。静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页。'**
   String get beforeClassQuickActionSubtitle;
 
   /// No description provided for @liveMiuiLabelSizePreview.
@@ -5996,6 +5996,12 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'正在检查最新版本信息…'**
   String get aboutCheckingLatestVersion;
+
+  /// No description provided for @aboutCheckingForUpdate.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在检测更新…'**
+  String get aboutCheckingForUpdate;
 
   /// No description provided for @aboutReadVersionFailed.
   ///

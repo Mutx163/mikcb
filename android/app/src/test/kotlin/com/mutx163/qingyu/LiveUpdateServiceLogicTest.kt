@@ -6,6 +6,26 @@ import org.junit.Test
 
 class LiveUpdateServiceLogicTest {
     @Test
+    fun beforeClassQuickActionRestoresAfterClassEndWhenDue() {
+        assertTrue(
+            beforeClassQuickActionShouldRestoreAfterClassEnd(
+                nowMillis = 1_700_000_000_000L,
+                restoreAtMillis = 1_699_999_000_000L,
+            )
+        )
+    }
+
+    @Test
+    fun beforeClassQuickActionDoesNotRestoreBeforeClassEnd() {
+        assertFalse(
+            beforeClassQuickActionShouldRestoreAfterClassEnd(
+                nowMillis = 1_699_999_000_000L,
+                restoreAtMillis = 1_700_000_000_000L,
+            )
+        )
+    }
+
+    @Test
     fun promotedApi36PlusDoesNotMirrorStatusIntoMiuiFocusHint() {
         assertFalse(
             liveShouldMirrorStatusIntoMiuiFocusHint(

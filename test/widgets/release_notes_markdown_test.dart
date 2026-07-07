@@ -20,4 +20,26 @@ void main() {
     expect(find.text('第二项'), findsOneWidget);
     expect(find.text('查看详情'), findsOneWidget);
   });
+
+  testWidgets('plain release notes show section headers and indented lists', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const TestApp(
+        home: Scaffold(
+          body: ReleaseNotesMarkdown(
+            plainTypography: true,
+            data:
+                '# v1.2.1.1\n\n## 新增\n\n- 第一项\n\n## 优化\n\n- 第二项',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('v1.2.1.1'), findsNothing);
+    expect(find.text('新增'), findsOneWidget);
+    expect(find.text('优化'), findsOneWidget);
+    expect(find.text('第一项'), findsOneWidget);
+    expect(find.text('第二项'), findsOneWidget);
+  });
 }

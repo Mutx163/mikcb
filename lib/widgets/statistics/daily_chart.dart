@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
@@ -15,8 +14,6 @@ class DailyChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final theme = context.theme;
-    final colorScheme = Theme.of(context).colorScheme;
 
     if (dailyAverages.isEmpty) {
       return const SizedBox.shrink();
@@ -46,9 +43,8 @@ class DailyChart extends StatelessWidget {
       l10n.weekdayShortSunday,
     ];
 
-    return HyperosCard(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(8, 12, 12, 4),
+    return HyperosControlCard(
+      child: HyperosControlCardInset(
         child: SizedBox(
           height: 168,
           child: BarChart(
@@ -62,8 +58,8 @@ class DailyChart extends StatelessWidget {
                   getTooltipItem: (group, groupIndex, rod, rodIndex) {
                     return BarTooltipItem(
                       '${rod.toY.toStringAsFixed(1)} ${l10n.statisticsSectionsUnit}',
-                      theme.typography.body.xs.copyWith(
-                        color: colorScheme.onInverseSurface,
+                      HyperosTypography.listDetail(context).copyWith(
+                        color: Colors.white,
                         fontWeight: FontWeight.w600,
                       ),
                     );
@@ -95,13 +91,14 @@ class DailyChart extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                           weekdayLabels[index],
-                          style: theme.typography.body.xs.copyWith(
+                          style: HyperosTypography.listDetail(context).copyWith(
+                            fontSize: HyperosMiuixTypography.footnote2,
                             fontWeight: isMax
                                 ? FontWeight.w800
                                 : FontWeight.w500,
                             color: isMax
-                                ? theme.colors.primary
-                                : theme.colors.mutedForeground,
+                                ? HyperosTokens.accent
+                                : HyperosColors.secondaryText(context),
                           ),
                         ),
                       );
@@ -119,8 +116,8 @@ class DailyChart extends StatelessWidget {
                       }
                       return Text(
                         value.toInt().toString(),
-                        style: theme.typography.body.xs.copyWith(
-                          color: theme.colors.mutedForeground,
+                        style: HyperosTypography.listDetail(context).copyWith(
+                          fontSize: HyperosMiuixTypography.footnote2,
                         ),
                       );
                     },
@@ -133,7 +130,7 @@ class DailyChart extends StatelessWidget {
                 horizontalInterval: maxAverage > 4 ? null : 1,
                 getDrawingHorizontalLine: (value) {
                   return FlLine(
-                    color: theme.colors.border.withValues(alpha: 0.5),
+                    color: HyperosTokens.divider,
                     strokeWidth: 1,
                   );
                 },
@@ -148,14 +145,11 @@ class DailyChart extends StatelessWidget {
                     stat.averageSections == minAverage &&
                     stat.averageSections > 0;
 
-                Color barColor;
-                if (isMax) {
-                  barColor = colorScheme.primary;
-                } else if (isMin) {
-                  barColor = colorScheme.tertiary;
-                } else {
-                  barColor = colorScheme.primary.withValues(alpha: 0.4);
-                }
+                final barColor = isMax
+                    ? HyperosTokens.accent
+                    : isMin
+                    ? HyperosIconColors.teal
+                    : HyperosTokens.accent.withValues(alpha: 0.35);
 
                 return BarChartGroupData(
                   x: index,

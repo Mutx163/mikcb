@@ -47,6 +47,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
   List<String> _getKnownVersions() {
     // 返回所有已知版本，按倒序排列（最新在前）
     return [
+      'v2.0.1',
+      'v2.0',
       'v1.2.1.16',
       'v1.2.1.15',
       'v1.2.1.14',
@@ -144,11 +146,8 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
         child: HyperosBlurredBodyInset(
           child: _loading
               ? const Center(child: HyperosCircularProgress())
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+              : HyperosListView(
+                  includeHeaderInset: false,
                   itemCount: _entries.length,
                   itemBuilder: (context, index) {
                     final entry = _entries[index];
@@ -228,6 +227,8 @@ class _ChangelogCardState extends State<_ChangelogCard> {
                     const SizedBox(height: 12),
                     ReleaseNotesMarkdown(
                       data: widget.entry.content,
+                      plainTypography: true,
+                      usePrimaryTextColor: true,
                       onTapLink: (href) {
                         if (href != null) {
                           // 可以处理链接点击

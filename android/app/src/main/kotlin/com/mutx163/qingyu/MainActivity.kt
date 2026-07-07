@@ -29,7 +29,6 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.graphics.drawable.Icon
-import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -1618,10 +1617,12 @@ class LiveUpdateService : Service() {
         return try {
             val quickActionResult = when (intent?.action) {
                 ACTION_ENABLE_SILENT_MODE -> {
+                    readQuickActionTimingExtra(intent)
                     handleBeforeClassQuickAction(enableDoNotDisturb = false)
                     START_NOT_STICKY
                 }
                 ACTION_ENABLE_DO_NOT_DISTURB -> {
+                    readQuickActionTimingExtra(intent)
                     handleBeforeClassQuickAction(enableDoNotDisturb = true)
                     START_NOT_STICKY
                 }
@@ -1936,6 +1937,7 @@ class LiveUpdateService : Service() {
             action.hashCode(),
             Intent(this, LiveUpdateService::class.java).apply {
                 this.action = action
+                putExtra("endAtMillis", endAtMillis)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -1963,10 +1965,26 @@ class LiveUpdateService : Service() {
     }
 
     private fun handleBeforeClassQuickAction(enableDoNotDisturb: Boolean) {
+        val restoreAtMillis = endAtMillis.takeIf { it > 0L }
+            ?: (System.currentTimeMillis() + 2 * 60 * 60_000L)
         val applied = if (enableDoNotDisturb) {
-            enableDoNotDisturbMode()
+            val enabled = BeforeClassQuickActionRestore.enableDoNotDisturbMode(
+                this,
+                restoreAtMillis,
+            )
+            if (!enabled) {
+                openNotificationPolicyAccessSettings()
+            }
+            enabled
         } else {
-            enableSilentMode()
+            val enabled = BeforeClassQuickActionRestore.enableSilentMode(
+                this,
+                restoreAtMillis,
+            )
+            if (!enabled) {
+                openSoundSettings()
+            }
+            enabled
         }
         UmengDiagnosticReporter.record(
             context = applicationContext,
@@ -2008,42 +2026,15 @@ class LiveUpdateService : Service() {
         stopSelf()
     }
 
-    private fun enableSilentMode(): Boolean {
-        val audioManager = getSystemService(AudioManager::class.java) ?: return false
-        return try {
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            true
-        } catch (e: SecurityException) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_DIRECT_FAILED, e)
-            openSoundSettings()
-            false
-        } catch (e: Exception) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_SILENT_MODE_FAILED, e)
-            openSoundSettings()
-            false
+    private fun readQuickActionTimingExtra(intent: Intent?) {
+        val restoreAtMillis = intent?.getLongExtra("endAtMillis", 0L) ?: 0L
+        if (restoreAtMillis > 0L) {
+            endAtMillis = restoreAtMillis
         }
     }
 
-    private fun enableDoNotDisturbMode(): Boolean {
-        val manager = getSystemService(NotificationManager::class.java) ?: return false
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M &&
-            !manager.isNotificationPolicyAccessGranted
-        ) {
-            openNotificationPolicyAccessSettings()
-            return false
-        }
-        return try {
-            manager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
-            true
-        } catch (e: SecurityException) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_DIRECT_FAILED, e)
-            openNotificationPolicyAccessSettings()
-            false
-        } catch (e: Exception) {
-            Log.w(TAG, DiagnosticLogMessages.LOG_ENABLE_DND_FAILED, e)
-            openNotificationPolicyAccessSettings()
-            false
-        }
+    private fun restoreBeforeClassQuickActionIfNeeded(reason: String) {
+        BeforeClassQuickActionRestore.restoreIfPending(this, reason)
     }
 
     private fun openNotificationPolicyAccessSettings() {
@@ -2129,6 +2120,8 @@ class LiveUpdateService : Service() {
                     return
                 }
                 lastTickerStage = stage
+
+                BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
                     if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
@@ -3259,6 +3252,7 @@ class LiveUpdateService : Service() {
     }
 
     private fun stopAndRemoveNotification() {
+        restoreBeforeClassQuickActionIfNeeded("service_stop")
         markServiceStopped("实时提醒已结束并移除通知")
         UmengDiagnosticReporter.record(
             context = applicationContext,

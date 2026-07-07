@@ -371,7 +371,8 @@ class TimetableProvider with ChangeNotifier {
     }
     _applyProfileState(activeProfile);
 
-    await precacheHomePageBackdropImage(_settings);
+    // 壁纸预加载不阻塞首帧；无壁纸时此调用会立即返回。
+    unawaited(precacheHomePageBackdropImage(_settings));
 
     // --- 迁移逻辑：不阻塞首帧，后台完成 ---
     unawaited(_runAppLogsMigrationIfNeeded(activeProfile));

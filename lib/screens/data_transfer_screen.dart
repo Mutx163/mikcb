@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:provider/provider.dart';
 
@@ -76,42 +75,47 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
           const HyperosSectionGap(),
           HyperosControlCard(
             title: l10n.transferOverviewTitle,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBullet(
-                  context,
-                  l10n.courseCountBullet(provider.courses.length),
-                ),
-                _buildBullet(
-                  context,
-                  l10n.currentTimetableBullet(activeProfileName),
-                ),
-                _buildBullet(
-                  context,
-                  l10n.allTimetablesBullet(provider.profiles.length),
-                ),
-                _buildBullet(
-                  context,
-                  l10n.timeSchemeCountBullet(provider.timeSchemes.length),
-                ),
-                _buildBullet(
-                  context,
-                  l10n.currentWeekBullet(provider.currentWeek),
-                ),
-                _buildBullet(
-                  context,
-                  provider.settings.semesterStartDate == null
-                      ? l10n.semesterStartUnsetBullet
-                      : l10n.semesterStartBullet(
-                          _formatDate(provider.settings.semesterStartDate!),
-                        ),
-                ),
-                _buildBullet(
-                  context,
-                  l10n.fileExtensionBullet(DataTransferService.fileExtension),
-                ),
-              ],
+            child: HyperosControlCardInset(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildOverviewRow(
+                    context,
+                    l10n.courseCountBullet(provider.courses.length),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    l10n.currentTimetableBullet(activeProfileName),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    l10n.allTimetablesBullet(provider.profiles.length),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    l10n.timeSchemeCountBullet(provider.timeSchemes.length),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    l10n.currentWeekBullet(provider.currentWeek),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    provider.settings.semesterStartDate == null
+                        ? l10n.semesterStartUnsetBullet
+                        : l10n.semesterStartBullet(
+                            _formatDate(provider.settings.semesterStartDate!),
+                          ),
+                  ),
+                  _buildOverviewRow(
+                    context,
+                    l10n.fileExtensionBullet(
+                      DataTransferService.fileExtension,
+                    ),
+                    isLast: true,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -119,23 +123,48 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
     );
   }
 
-  Widget _buildBullet(BuildContext context, String text) {
-    final typo = context.theme.typography.body;
+  (String, String) _splitOverviewLabelValue(String text) {
+    final fullWidthColon = text.indexOf('：');
+    if (fullWidthColon != -1) {
+      return (
+        text.substring(0, fullWidthColon),
+        text.substring(fullWidthColon + 1).trim(),
+      );
+    }
+
+    final halfWidthColon = text.indexOf(': ');
+    if (halfWidthColon != -1) {
+      return (
+        text.substring(0, halfWidthColon),
+        text.substring(halfWidthColon + 2).trim(),
+      );
+    }
+
+    return ('', text);
+  }
+
+  Widget _buildOverviewRow(
+    BuildContext context,
+    String text, {
+    bool isLast = false,
+  }) {
+    final (label, value) = _splitOverviewLabelValue(text);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Icon(
-              Icons.circle,
-              size: 6,
-              color: context.theme.colors.mutedForeground,
+          Expanded(
+            child: Text(label, style: HyperosTypography.listDetail(context)),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: HyperosTypography.listDetail(context),
             ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(text, style: typo.sm)),
         ],
       ),
     );

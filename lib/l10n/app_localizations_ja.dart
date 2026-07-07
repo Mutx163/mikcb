@@ -1832,7 +1832,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '授業前リマインダーの展開通知にのみ表示。おやすみモード初回はシステム認証ページに飛ぶ場合あり。';
+      '授業前リマインダーの展開通知にのみ表示。サイレント/おやすみモードは授業終了後と端末再起動後に自動復元。おやすみモード初回はシステム認証ページに飛ぶ場合あり。';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -3311,6 +3311,9 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get aboutCheckingLatestVersion => '最新バージョン情報を確認中…';
+
+  @override
+  String get aboutCheckingForUpdate => '更新を確認中…';
 
   @override
   String get aboutReadVersionFailed => 'バージョン情報を一時的に読み込めません。後でもう一度お試しください。';

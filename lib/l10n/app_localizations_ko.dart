@@ -1845,7 +1845,7 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '수업 전 알림의 펼친 알림에만 표시됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다.';
+      '수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다.';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -3335,6 +3335,9 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get aboutCheckingLatestVersion => '최신 버전 정보 확인 중…';
+
+  @override
+  String get aboutCheckingForUpdate => '업데이트 확인 중…';
 
   @override
   String get aboutReadVersionFailed => '버전 정보를 일시적으로 읽을 수 없습니다. 나중에 다시 시도하세요.';

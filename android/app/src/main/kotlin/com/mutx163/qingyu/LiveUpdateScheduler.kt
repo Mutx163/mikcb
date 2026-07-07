@@ -364,6 +364,7 @@ object LiveUpdateScheduler {
     }
 
     fun handleSystemReschedule(context: Context) {
+        BeforeClassQuickActionRestore.restoreOnBoot(context.applicationContext)
         reschedule(context, allowImmediateStart = true)
     }
 

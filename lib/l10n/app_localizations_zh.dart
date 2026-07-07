@@ -1802,7 +1802,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上课前提醒的展开通知里显示。免打扰首次可能会跳到系统授权页。';
+      '只在上课前提醒的展开通知里显示。静音/免打扰会在下课后自动恢复，重启手机也会恢复；免打扰首次可能会跳到系统授权页。';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -3248,6 +3248,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutCheckingLatestVersion => '正在检查最新版本信息…';
+
+  @override
+  String get aboutCheckingForUpdate => '正在检测更新…';
 
   @override
   String get aboutReadVersionFailed => '暂时无法读取版本信息，请稍后重试。';
@@ -7173,7 +7176,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上課前提醒的展開通知裡顯示。免打擾首次可能會跳到系統授權頁。';
+      '只在上課前提醒的展開通知裡顯示。靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁。';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -8507,6 +8510,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get aboutCheckingLatestVersion => '正在檢查最新版本資訊…';
+
+  @override
+  String get aboutCheckingForUpdate => '正在檢測更新…';
 
   @override
   String get aboutReadVersionFailed => '暫時無法讀取版本資訊，请稍後重試。';
@@ -12432,7 +12438,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get beforeClassQuickActionSubtitle =>
-      '只在上課前提醒的展開通知裡顯示。免打擾首次可能會跳到系統授權頁。';
+      '只在上課前提醒的展開通知裡顯示。靜音/免打擾會在下課後自動恢復，重啟手機也會恢復；免打擾首次可能會跳到系統授權頁。';
 
   @override
   String liveMiuiLabelSizePreview(String value) {
@@ -13766,6 +13772,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get aboutCheckingLatestVersion => '正在檢查最新版本資訊…';
+
+  @override
+  String get aboutCheckingForUpdate => '正在檢測更新…';
 
   @override
   String get aboutReadVersionFailed => '暫時無法讀取版本資訊，请稍後重試。';

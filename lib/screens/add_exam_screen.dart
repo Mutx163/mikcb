@@ -98,19 +98,19 @@ class _AddExamScreenState extends State<AddExamScreen> {
         child: HyperosListView(
           children: [
             HyperosControlCard(
-              plainTitle: true,
+              edgeToEdge: true,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    l10n.linkCourse,
-                    style: HyperosTypography.listTitle(context),
-                  ),
-                  const SizedBox(height: 8),
                   _buildCourseLinkTile(courseGroups, l10n, provider),
                   if (_selectedCourseId == null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 6, left: 4),
+                      padding: const EdgeInsets.fromLTRB(
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                        6,
+                        HyperosControlCardScope.defaultHorizontalPadding,
+                        HyperosControlCardScope.defaultBodyBottomInset,
+                      ),
                       child: Text(
                         l10n.linkCourseRequired,
                         style: HyperosTypography.listDetail(
@@ -123,36 +123,59 @@ class _AddExamScreenState extends State<AddExamScreen> {
             ),
             const HyperosSectionGap(),
             HyperosControlCard(
-              plainTitle: true,
+              edgeToEdge: true,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _withSpacing([
-                  _buildNameField(l10n),
-                  _buildDatePicker(l10n),
-                  _buildTimePickers(l10n),
-                ]),
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      HyperosControlCardScope.defaultHorizontalPadding,
+                      HyperosControlCardScope.defaultHorizontalPadding,
+                      HyperosControlCardScope.defaultHorizontalPadding,
+                      0,
+                    ),
+                    child: _buildNameField(l10n),
+                  ),
+                  _buildDateTimePickerRows(l10n),
+                ],
               ),
             ),
             const HyperosSectionGap(),
             HyperosControlCard(
-              plainTitle: true,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _withSpacing([
-                  _buildLocationField(l10n, provider),
-                  _buildSeatField(l10n),
-                ]),
+              edgeToEdge: true,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  HyperosControlCardScope.defaultHorizontalPadding,
+                  HyperosControlCardScope.defaultBodyBottomInset,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _withSpacing([
+                    _buildLocationField(l10n, provider),
+                    _buildSeatField(l10n),
+                  ]),
+                ),
               ),
             ),
             const HyperosSectionGap(),
             HyperosControlCard(
-              plainTitle: true,
+              edgeToEdge: true,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: _withSpacing([
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   _buildReminderDropdown(l10n),
-                  _buildNoteField(l10n),
-                ]),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      HyperosControlCardScope.defaultHorizontalPadding,
+                      0,
+                      HyperosControlCardScope.defaultHorizontalPadding,
+                      HyperosControlCardScope.defaultBodyBottomInset,
+                    ),
+                    child: _buildNoteField(l10n),
+                  ),
+                ],
               ),
             ),
           ],
@@ -204,7 +227,9 @@ class _AddExamScreenState extends State<AddExamScreen> {
 
     final detailsText = selected != null
         ? '${selected.name} · ${selected.teacher}'
-        : (courseGroups.isEmpty ? '暂无课程，请先添加课程' : l10n.linkCourse);
+        : (courseGroups.isEmpty
+              ? l10n.noCoursesInCurrentProfile
+              : l10n.linkCourse);
 
     return HyperosChoiceTile(
       prefix: Container(
@@ -240,8 +265,6 @@ class _AddExamScreenState extends State<AddExamScreen> {
               Icons.chevron_right_rounded,
               color: context.theme.colors.mutedForeground,
             ),
-      selected: selected != null,
-      highlightSelectedText: true,
       onTap: courseGroups.isEmpty
           ? null
           : () => _showCourseSheet(courseGroups, l10n),
@@ -252,13 +275,20 @@ class _AddExamScreenState extends State<AddExamScreen> {
     List<CourseGroup> courseGroups,
     AppLocalizations l10n,
   ) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final course = await showCourseTemplatePickerSheet(
       context,
       title: l10n.linkCourse,
       courseGroups: courseGroups,
       selectedCourseId: _selectedCourseId,
     );
-    if (course != null && mounted) {
+    if (!mounted) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      FocusManager.instance.primaryFocus?.unfocus();
+    });
+    if (course != null) {
       setState(() {
         _selectedCourseId = course.id;
         if (_nameController.text.isEmpty) {
@@ -328,31 +358,74 @@ class _AddExamScreenState extends State<AddExamScreen> {
     );
   }
 
-  Widget _buildTimePickers(AppLocalizations l10n) {
+  Widget _buildDateTimePickerRows(AppLocalizations l10n) {
+    final dateTile = _buildDatePicker(l10n);
+    final startTile = _buildPickerTile(
+      label: l10n.examStartTimeLabel,
+      value: _formatTimeOfDay(_startTime),
+      icon: Icons.schedule_rounded,
+      onPress: () => _pickTime(isStart: true),
+    );
+    final endTile = _buildPickerTile(
+      label: l10n.examEndTimeLabel,
+      value: _formatTimeOfDay(_endTime),
+      icon: Icons.schedule_outlined,
+      onPress: () => _pickTime(isStart: false),
+    );
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final startTile = _buildPickerTile(
-          label: l10n.examStartTimeLabel,
-          value: _formatTimeOfDay(_startTime),
-          icon: Icons.schedule_rounded,
-          onPress: () => _pickTime(isStart: true),
-        );
-        final endTile = _buildPickerTile(
-          label: l10n.examEndTimeLabel,
-          value: _formatTimeOfDay(_endTime),
-          icon: Icons.schedule_outlined,
-          onPress: () => _pickTime(isStart: false),
-        );
         if (constraints.maxWidth < 420) {
           return Column(
-            children: [startTile, const SizedBox(height: 12), endTile],
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              HyperosListTileScope(
+                isFirst: true,
+                isLast: false,
+                child: dateTile,
+              ),
+              HyperosListTileScope(
+                isFirst: false,
+                isLast: false,
+                child: startTile,
+              ),
+              HyperosListTileScope(
+                isFirst: false,
+                isLast: true,
+                child: endTile,
+              ),
+            ],
           );
         }
-        return Row(
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(child: startTile),
-            const SizedBox(width: 12),
-            Expanded(child: endTile),
+            HyperosListTileScope(
+              isFirst: true,
+              isLast: false,
+              child: dateTile,
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: HyperosListTileScope(
+                    isFirst: false,
+                    isLast: true,
+                    child: startTile,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: HyperosListTileScope(
+                    isFirst: false,
+                    isLast: true,
+                    child: endTile,
+                  ),
+                ),
+              ],
+            ),
           ],
         );
       },

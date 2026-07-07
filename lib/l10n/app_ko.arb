@@ -1000,7 +1000,7 @@
   "hidePrefixTextTitle": "접두사 텍스트 숨기기",
   "hidePrefixTextSubtitle": "예: '곧 수업' 같은 접두사를 숨기기",
   "beforeClassQuickActionTitle": "수업 전 빠른 작업",
-  "beforeClassQuickActionSubtitle": "수업 전 알림의 펼친 알림에만 표시됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다.",
+  "beforeClassQuickActionSubtitle": "수업 전 알림의 펼친 알림에만 표시됩니다. 무음/방해 금지는 수업 종료 후와 재부팅 후 자동 복원됩니다. 방해 금지 모드 첫 실행 시 시스템 인증 페이지로 이동할 수 있습니다.",
   "liveMiuiLabelSizePreview": "{value}",
   "@liveMiuiLabelSizePreview": {
     "placeholders": {
@@ -1753,6 +1753,7 @@
   "aboutUpdateStatusTitle": "업데이트 상태",
   "aboutRefreshCheckTooltip": "다시 확인",
   "aboutCheckingLatestVersion": "최신 버전 정보 확인 중…",
+  "aboutCheckingForUpdate": "업데이트 확인 중…",
   "aboutReadVersionFailed": "버전 정보를 일시적으로 읽을 수 없습니다. 나중에 다시 시도하세요.",
   "aboutReadVersionFailedHint": "현재 네트워크에서 GitHub 접속이 불안정하면 나중에 다시 시도하거나, 아래의 국내 다운로드 방식으로 전환한 뒤 재시도하세요.",
   "aboutViewReleaseAction": "Release 보기",

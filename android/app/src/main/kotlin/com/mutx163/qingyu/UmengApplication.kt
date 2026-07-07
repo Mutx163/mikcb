@@ -9,6 +9,8 @@ class UmengApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
+
         UMConfigure.setLogEnabled(BuildConfig.DEBUG)
         UMConfigure.preInit(
             this,
