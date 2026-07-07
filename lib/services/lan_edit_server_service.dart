@@ -74,7 +74,7 @@ class LanEditServerService {
       lanEditAuditInfo(
         'lan_edit_session_stopped',
         AppLogMessages.lanEditSessionStopped,
-        extras: {'reason': reason, if (port != null) 'port': port},
+        extras: {'reason': reason, 'port': ?port},
       );
     }
     onStopped?.call();

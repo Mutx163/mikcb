@@ -520,7 +520,7 @@ void main() {
 
       final result = await service.downloadAndInstallUpdate(
         'http://${server.address.host}:${server.port}/app.apk',
-        (_, __) {},
+        (_, _) {},
         null,
       );
 

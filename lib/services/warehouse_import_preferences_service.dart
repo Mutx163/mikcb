@@ -103,9 +103,7 @@ class FlutterWarehouseSecureStorage extends WarehouseSecureStorage {
     FlutterSecureStorage storage = _defaultStorage,
   }) : _storage = storage;
 
-  static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage(
-    aOptions: AndroidOptions(encryptedSharedPreferences: true),
-  );
+  static const FlutterSecureStorage _defaultStorage = FlutterSecureStorage();
 
   final FlutterSecureStorage _storage;
 

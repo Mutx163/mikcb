@@ -285,7 +285,7 @@ class _InfoRow extends StatelessWidget {
               style: typo.sm.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );

@@ -257,7 +257,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     }
     HyperosHeaderDiag.log('blur_settle', {
       'blurSettled': true,
-      if (source != null) 'source': source,
+      'source': ?source,
     });
     setState(() => _blurSettled = true);
     _scheduleResyncHeaderFrostAfterLayout();
