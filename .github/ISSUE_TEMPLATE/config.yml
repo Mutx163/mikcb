@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 教务适配仓库
+    url: https://github.com/Mutx163/qingyu_warehouse/issues
+    about: 学校网页登录导入脚本请在 qingyu_warehouse 提交 Issue
+  - name: 安全漏洞私下报告
+    url: https://github.com/Mutx163/mikcb/security/advisories/new
+    about: 请勿公开 Issue 报告安全问题

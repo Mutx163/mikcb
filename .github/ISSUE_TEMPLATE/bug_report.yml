@@ -1,0 +1,61 @@
+name: Bug 报告
+description: 报告崩溃、功能异常或显示问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先确认使用的是 [最新 Release](https://github.com/Mutx163/mikcb/releases)。
+        安全问题请走 [Security Advisory](https://github.com/Mutx163/mikcb/security/advisories/new)，不要在此提交。
+
+  - type: input
+    id: version
+    attributes:
+      label: 应用版本
+      description: 例如 v2.0 或 设置 → 关于 中显示的版本号
+      placeholder: v2.0
+    validations:
+      required: true
+
+  - type: input
+    id: device
+    attributes:
+      label: 设备与系统
+      placeholder: 例如 Xiaomi 14 / HyperOS 2.0 / Android 15
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开 …
+        2. 点击 …
+        3. 出现 …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 日志 / 截图
+      description: 如有崩溃，可附 Live 诊断日志或 logcat 片段
+    validations:
+      required: false

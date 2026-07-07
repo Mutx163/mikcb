@@ -60,8 +60,14 @@ jobs:
           print("pubspec.yaml encoding OK")
           PY
 
+      - name: Verify GitHub Actions pin SHAs
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash tool/verify_action_pins.sh
+
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze
 
       - name: Test
         run: flutter test

@@ -1,0 +1,33 @@
+name: 功能建议
+description: 提出新功能或体验改进想法
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你想解决什么问题？
+      description: 从用户场景描述，而不是实现细节
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 期望的方案或行为
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: 相关模块
+      options:
+        - 课表 / 课程编辑
+        - 提醒 / 超级岛 / 通知
+        - 导入 / 备份 / 云同步
+        - 设置 / UI
+        - 其他
+    validations:
+      required: true

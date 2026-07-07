@@ -1,0 +1,36 @@
+name: 教务适配请求
+description: 请求新增或修复某学校的网页登录导入
+title: "[Warehouse] "
+labels:
+  - warehouse
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **教务导入脚本在独立仓库维护：** [qingyu_warehouse](https://github.com/Mutx163/qingyu_warehouse)
+
+        若你准备直接提交适配代码，请前往该仓库开 Issue / PR。
+        此处仅用于从主应用侧登记需求，便于排期。
+
+  - type: input
+    id: school
+    attributes:
+      label: 学校名称
+    validations:
+      required: true
+
+  - type: input
+    id: portal
+    attributes:
+      label: 教务系统网址（可选）
+      placeholder: https://...
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 补充说明
+      description: 登录方式、是否需 VPN、已知限制等
+    validations:
+      required: false

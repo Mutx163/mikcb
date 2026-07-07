@@ -1,6 +1,6 @@
 # 轻屿课表
 
-![Flutter](https://img.shields.io/badge/Flutter-3.35.7-02569B?logo=flutter&logoColor=white)
+![Flutter](https://img.shields.io/badge/Flutter-3.44.4-02569B?logo=flutter&logoColor=white)
 ![Android](https://img.shields.io/badge/Android-Only-34A853?logo=android&logoColor=white)
 ![HyperOS](https://img.shields.io/badge/Focus-HyperOS%20%E8%B6%85%E7%BA%A7%E5%B2%9B-FF6A00)
 ![Release](https://img.shields.io/github/v/release/Mutx163/mikcb?display_name=tag)
@@ -9,6 +9,15 @@
 一个面向校园场景的 Android 课表应用。
 
 轻屿课表的重点不是单纯展示课程，而是把课表、提醒、通知、小组件和 HyperOS 超级岛串成一条完整链路。它关注的是“接下来要上什么课、现在这节课进行到哪、能不能不打开应用就知道状态”。
+
+## 命名说明
+
+| 名称 | 说明 |
+|------|------|
+| 仓库 `mikcb` | GitHub 仓库名 |
+| Dart 包 `university_timetable` | 历史包名（pubspec），与仓库名不同 |
+| Android 包名 `com.mutx163.qingyu` | 应用 ID |
+| 产品名「轻屿课表」 | 用户可见名称 |
 
 ## 项目定位
 
@@ -60,13 +69,15 @@
 
 ### 环境版本
 
+版本真源：[`.fvmrc`](./.fvmrc) 与 GitHub Actions（当前 **Flutter 3.44.4**）。
+
 | 工具 | 版本 |
 |------|------|
-| Flutter | 3.35.7 |
-| Dart SDK | 3.9.2（pubspec 要求 ^3.9.0） |
+| Flutter | 3.44.4 |
+| Dart SDK | 3.9.x（pubspec 要求 ^3.9.0） |
 | JDK | 17 |
 | Android SDK | compileSdk 36 / targetSdk 36 / minSdk 26 |
-| Android NDK | 27.0.12077973 |
+| Android NDK | 28.2.13676358 |
 | Gradle | 8.11.1 |
 | Android Gradle Plugin | 8.9.1 |
 | Kotlin | 2.1.0 |
@@ -93,9 +104,15 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 ## 相关文档
 
-- 产品说明：[docs/PRODUCT.md](./docs/PRODUCT.md)
+- 贡献指南：[CONTRIBUTING.md](./CONTRIBUTING.md)
+- 行为准则：[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- 安全报告：[SECURITY.md](./SECURITY.md)
+- 隐私说明：[docs/PRIVACY.md](./docs/PRIVACY.md)
+- 第三方许可：[docs/THIRD_PARTY_LICENSES.md](./docs/THIRD_PARTY_LICENSES.md)
+- 产品说明（存档）：[docs/PRODUCT.md](./docs/PRODUCT.md)
 - 发布流程：[docs/RELEASE.md](./docs/RELEASE.md)
 - 网站与国际化协作约定：[docs/WEB_AND_L10N_WORKFLOW.md](./docs/WEB_AND_L10N_WORKFLOW.md)
+- 变更日志：[GitHub Releases](https://github.com/Mutx163/mikcb/releases) / [docs/releases/](./docs/releases/)
 
 ## 技术栈
 
@@ -129,4 +146,6 @@ flutter build apk --release --flavor prod --target-platform android-arm64
 
 ## 许可证
 
-本仓库使用 [GNU General Public License v3.0](./LICENSE)。
+本仓库源码使用 [GNU General Public License v3.0](./LICENSE)（SPDX: `GPL-3.0-or-later`）。
+
+随应用分发的第三方 SDK 与资源许可见 [docs/THIRD_PARTY_LICENSES.md](./docs/THIRD_PARTY_LICENSES.md)。
