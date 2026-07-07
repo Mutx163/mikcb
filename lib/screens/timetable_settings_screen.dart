@@ -1908,10 +1908,12 @@ class _LiveTestingSettingsScreenState extends State<_LiveTestingSettingsScreen>
       );
       return;
     }
-    await Share.shareXFiles(
-      [XFile(exportPath)],
-      text: shareText,
-      subject: shareSubject,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(exportPath)],
+        text: shareText,
+        subject: shareSubject,
+      ),
     );
   }
 

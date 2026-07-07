@@ -43,10 +43,12 @@ class StatisticsShareService {
       await file.writeAsBytes(byteData.buffer.asUint8List());
 
       // 4. 分享
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        subject: title,
-        text: '来自轻屿课表的学期统计',
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: title,
+          text: '来自轻屿课表的学期统计',
+        ),
       );
     } catch (e) {
       appDebugLog('StatisticsShare', '分享失败：$e');
