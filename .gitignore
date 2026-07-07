@@ -75,6 +75,8 @@ stderr.txt
 # 审查输出
 reviews/
 progress.md
+.review_changed_files.txt
+.codebuddy/
 
 # 测试覆盖率
 coverage/

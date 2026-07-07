@@ -549,13 +549,6 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HyperosSectionLabel(text: l10n.cloudBackupSectionTitle),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Text(
-            l10n.cloudBackupSectionSubtitle,
-            style: HyperosTypography.sectionDescription(context),
-          ),
-        ),
         if (_loadingBackups)
           const HyperosControlCard(
             child: Padding(
