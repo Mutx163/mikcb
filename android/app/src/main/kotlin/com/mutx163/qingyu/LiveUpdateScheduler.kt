@@ -584,6 +584,8 @@ private data class LiveUpdatePayload(
     val progressBreakOffsetsMillis: LongArray,
     val progressMilestoneLabels: List<String>,
     val progressMilestoneTimeTexts: List<String>,
+    /** When true, ticker re-validates against the schedule snapshot (scheduler path). */
+    val validateAgainstSchedule: Boolean = true,
 )
 
 private fun normalizeNullableText(value: String?): String? {
@@ -798,6 +800,7 @@ object LiveUpdateScheduler {
             progressBreakOffsetsMillis = progressBreakOffsetsMillis,
             progressMilestoneLabels = progressMilestoneLabels,
             progressMilestoneTimeTexts = progressMilestoneTimeTexts,
+            validateAgainstSchedule = false,
         )
         return buildServiceIntent(context, payload)
     }
@@ -1236,6 +1239,7 @@ object LiveUpdateScheduler {
             putExtra("miuiIslandExpandedIconMode", payload.miuiIslandExpandedIconMode)
             putExtra("miuiIslandExpandedIconPath", payload.miuiIslandExpandedIconPath)
             putExtra("beforeClassQuickAction", payload.beforeClassQuickAction)
+            putExtra("validateAgainstSchedule", payload.validateAgainstSchedule)
         }
     }
 
@@ -1645,6 +1649,7 @@ object LiveUpdateScheduler {
             progressBreakOffsetsMillis = selection.progressBreakOffsetsMillis,
             progressMilestoneLabels = selection.progressMilestoneLabels,
             progressMilestoneTimeTexts = selection.progressMilestoneTimeTexts,
+            validateAgainstSchedule = true,
         )
     }
 

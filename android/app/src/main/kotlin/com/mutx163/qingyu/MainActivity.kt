@@ -1610,6 +1610,7 @@ class LiveUpdateService : Service() {
     private var cachedIslandBitmap: Bitmap? = null
     private var hasStartedForeground = false
     private var lastTickerStage: String? = null
+    private var validateAgainstSchedule = true
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -1722,6 +1723,8 @@ class LiveUpdateService : Service() {
                 intent?.getBooleanExtra("showNotificationDuringClass", true) ?: true
             beforeClassQuickAction =
                 intent?.getStringExtra("beforeClassQuickAction") ?: "none"
+            validateAgainstSchedule =
+                intent?.getBooleanExtra("validateAgainstSchedule", true) ?: true
             progressBreakOffsetsMillis =
                 intent?.getLongArrayExtra("progressBreakOffsetsMillis") ?: longArrayOf()
             progressMilestoneLabels =
@@ -2088,50 +2091,55 @@ class LiveUpdateService : Service() {
         return KeepAliveAccessibilityStatus.isEnabled(this)
     }
 
+    private fun finishLiveSessionFromTicker() {
+        if (validateAgainstSchedule) {
+            if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
+                stopAndRemoveNotification()
+            }
+        } else {
+            stopAndRemoveNotification()
+        }
+    }
+
     private fun startTicker() {
         stopTicker()
         ticker = object : Runnable {
             override fun run() {
                 val now = System.currentTimeMillis()
                 BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext, now)
-                if (!LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)) {
-                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                        stopAndRemoveNotification()
-                    }
+                if (validateAgainstSchedule &&
+                    !LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)
+                ) {
+                    finishLiveSessionFromTicker()
                     return
                 }
                 val stage = resolveStage(now)
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
                 ) {
-                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                        stopAndRemoveNotification()
-                    }
+                    finishLiveSessionFromTicker()
                     return
                 }
 
                 if (stage == null) {
-                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                        stopAndRemoveNotification()
-                    }
+                    finishLiveSessionFromTicker()
                     return
                 }
 
                 // When stage transitions, reschedule so onStartCommand re-reads
                 // the correct displaySettings for the new stage.
                 if (lastTickerStage != null && stage != lastTickerStage) {
-                    lastTickerStage = stage
-                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                        stopAndRemoveNotification()
+                    if (validateAgainstSchedule) {
+                        lastTickerStage = stage
+                        finishLiveSessionFromTicker()
+                        return
                     }
-                    return
+                    activityStage = stage
                 }
                 lastTickerStage = stage
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
-                    if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                        stopAndRemoveNotification()
-                    }
+                    finishLiveSessionFromTicker()
                     return
                 }
 
