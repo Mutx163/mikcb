@@ -548,9 +548,12 @@ class _SpreadsheetCourseImportScreenState
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/mikcb_course_import_template.csv');
       await file.writeAsBytes(data.buffer.asUint8List());
-      await Share.shareXFiles([
-        XFile(file.path),
-      ], subject: l10n.downloadSpreadsheetTemplateAction);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          subject: l10n.downloadSpreadsheetTemplateAction,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         showAppToast(

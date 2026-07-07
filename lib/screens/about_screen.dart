@@ -435,10 +435,12 @@ class _AboutScreenState extends State<AboutScreen> {
               if (path == null || path.isEmpty) {
                 return;
               }
-              await Share.shareXFiles(
-                [XFile(path)],
-                text: l10n.appLogsShareText,
-                subject: l10n.appLogsShareSubject,
+              await SharePlus.instance.share(
+                ShareParams(
+                  files: [XFile(path)],
+                  text: l10n.appLogsShareText,
+                  subject: l10n.appLogsShareSubject,
+                ),
               );
             },
             onClear: () async {
@@ -1057,10 +1059,12 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
 
-    await Share.shareXFiles(
-      [XFile(path)],
-      text: AppLocalizations.of(context)!.appLogsShareText,
-      subject: AppLocalizations.of(context)!.appLogsShareSubject,
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        text: AppLocalizations.of(context)!.appLogsShareText,
+        subject: AppLocalizations.of(context)!.appLogsShareSubject,
+      ),
     );
   }
 

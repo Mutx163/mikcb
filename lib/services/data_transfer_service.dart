@@ -183,10 +183,14 @@ class DataTransferService {
       ),
     );
 
-    await Share.shareXFiles(
-      [XFile.fromData(bytes, mimeType: 'application/json', name: filename)],
-      text: '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。',
-      subject: profileName == null ? '轻屿课表备份' : '$profileName - 轻屿课表备份',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile.fromData(bytes, mimeType: 'application/json', name: filename),
+        ],
+        text: '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。',
+        subject: profileName == null ? '轻屿课表备份' : '$profileName - 轻屿课表备份',
+      ),
     );
   }
 
@@ -208,10 +212,14 @@ class DataTransferService {
       ),
     );
 
-    await Share.shareXFiles(
-      [XFile.fromData(bytes, mimeType: 'application/json', name: filename)],
-      text: '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。',
-      subject: '轻屿课表 - 全部数据备份',
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [
+          XFile.fromData(bytes, mimeType: 'application/json', name: filename),
+        ],
+        text: '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。',
+        subject: '轻屿课表 - 全部数据备份',
+      ),
     );
   }
 }
