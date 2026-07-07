@@ -614,7 +614,7 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       if (initialContent != null) {
         content = initialContent;
       } else {
-        final result = await FilePicker.platform.pickFiles(
+        final result = await FilePicker.pickFiles(
           type: FileType.custom,
           withData: true,
           allowedExtensions: const ['json', 'mikcb'],

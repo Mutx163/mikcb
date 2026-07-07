@@ -8,7 +8,7 @@ Future<String?> pickAndStoreManagedImage({
   required String directoryName,
   required String filePrefix,
 }) async {
-  final result = await FilePicker.platform.pickFiles(
+  final result = await FilePicker.pickFiles(
     type: FileType.image,
     withData: true,
   );

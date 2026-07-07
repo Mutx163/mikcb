@@ -316,7 +316,7 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
       _isImporting = true;
     });
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['ics'],
         withData: true,
@@ -604,7 +604,7 @@ class _SpreadsheetCourseImportScreenState
       _isImporting = true;
     });
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['csv', 'xlsx'],
         withData: true,
@@ -2323,7 +2323,7 @@ class _WarehouseCustomDebugEditScreenState
   Future<void> _pickScriptFromFile() async {
     final l10n = AppLocalizations.of(context)!;
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: const ['js', 'txt'],
         withData: true,
