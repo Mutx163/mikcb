@@ -1,18 +1,22 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import '../logging/app_log_message_localizer.dart';
+import '../logging/diagnostics_log_parser.dart';
 import '../services/diagnostics_log_viewer_preferences.dart';
 import '../utils/app_toast.dart';
 
-enum DiagnosticsLogViewMode { structured, raw }
+export '../logging/diagnostics_log_parser.dart'
+    show DiagnosticsLogLevel;
 
-enum DiagnosticsLogLevel { all, error, warn, info, debug, verbose }
+enum DiagnosticsLogViewMode { structured, raw }
 
 enum DiagnosticsLogTimeSort { ascending, descending }
 
@@ -51,12 +55,16 @@ class _LiveDiagnosticsLogViewerScreenState
   DiagnosticsLogLevel _selectedLevel = DiagnosticsLogLevel.all;
   DiagnosticsLogTimeSort _timeSort = DiagnosticsLogTimeSort.ascending;
   late String _rawLog;
+  String _lastBody = '';
   bool? _recordingEnabled;
-  bool _loading = false;
+  bool _initializing = false;
+  bool _parsing = false;
   String? _loadError;
   bool _clearing = false;
   bool _exporting = false;
-  _DiagnosticsParsedLog? _parsedCache;
+  DiagnosticsLogSnapshot _parsed = DiagnosticsLogSnapshot.empty;
+  Map<DiagnosticsLogLevel, int> _levelCounts = const {};
+  List<DiagnosticsLogEntry> _visibleEntries = const [];
   StreamSubscription<String>? _logSubscription;
   final ScrollController _structuredScrollController = ScrollController();
   final ScrollController _rawScrollController = ScrollController();
@@ -64,6 +72,11 @@ class _LiveDiagnosticsLogViewerScreenState
   bool _isStreaming = false;
   bool _autoScrollPending = false;
   bool _displayOptionsExpanded = false;
+  final Map<String, bool> _expandedEntryIds = <String, bool>{};
+  bool _deviceInfoExpanded = false;
+  Timer? _uiRefreshTimer;
+  int _parseGeneration = 0;
+  static const int _isolateParseThresholdBytes = 128 * 1024;
 
   @override
   void initState() {
@@ -77,9 +90,16 @@ class _LiveDiagnosticsLogViewerScreenState
       _isStreaming = true;
       _startWatching();
     } else if (widget.loadRawLog != null) {
+      _initializing = true;
       unawaited(_loadLogs());
-    } else {
-      _refreshParsedCache();
+    } else if (_rawLog.trim().isNotEmpty) {
+      if (_rawLog.length <= _isolateParseThresholdBytes) {
+        _parsed = parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
+        _lastBody = extractDiagnosticsLogBody(_rawLog);
+        _rebuildVisibleEntries();
+      } else {
+        unawaited(_applyFullLogText(_rawLog, isFirstEmission: true));
+      }
     }
   }
 
@@ -99,6 +119,7 @@ class _LiveDiagnosticsLogViewerScreenState
           : DiagnosticsLogTimeSort.ascending;
       _displayOptionsExpanded = displayExpanded;
     });
+    _rebuildVisibleEntries();
   }
 
   void _toggleDisplayOptionsExpanded() {
@@ -136,6 +157,7 @@ class _LiveDiagnosticsLogViewerScreenState
             : DiagnosticsLogViewerPreferences.ascending,
       ),
     );
+    _rebuildVisibleEntries();
     if (_stickToLatest) {
       _scheduleAutoScroll();
     }
@@ -144,6 +166,7 @@ class _LiveDiagnosticsLogViewerScreenState
   @override
   void dispose() {
     _logSubscription?.cancel();
+    _uiRefreshTimer?.cancel();
     _structuredScrollController
       ..removeListener(_onStructuredScroll)
       ..dispose();
@@ -154,55 +177,162 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   void _startWatching() {
-    setState(() {
-      _loading = true;
-      _loadError = null;
-    });
-    var isFirstEmission = true;
+    _loadError = null;
     _logSubscription = widget.watchRawLog!().listen(
       (loaded) {
         if (!mounted) {
           return;
         }
-        _applyLoadedLog(
-          loaded,
-          isFirstEmission: isFirstEmission,
-        );
-        isFirstEmission = false;
+        unawaited(_applyLoadedLog(loaded));
       },
       onError: (Object error) {
         if (!mounted) {
           return;
         }
         setState(() {
-          _loading = false;
+          _initializing = false;
+          _parsing = false;
           _loadError = error.toString();
         });
       },
     );
   }
 
-  void _applyLoadedLog(String loaded, {required bool isFirstEmission}) {
-    if (isFirstEmission && loaded.trim().isEmpty && widget.onLoadEmpty != null) {
+  Future<void> _applyLoadedLog(String loaded) async {
+    final body = extractDiagnosticsLogBody(loaded);
+    if (body.trim().isEmpty && _parsed.entries.isEmpty && widget.onLoadEmpty != null) {
       widget.onLoadEmpty!();
       return;
     }
-    if (!isFirstEmission && loaded == _rawLog) {
+    if (body == _lastBody) {
+      if (_initializing || _parsing) {
+        setState(() {
+          _initializing = false;
+          _parsing = false;
+          _loadError = null;
+        });
+      }
       return;
     }
-    final previousCount = _parsedCache?.entries.length ?? 0;
+
+    final previousCount = _parsed.entries.length;
+    final previousBody = _lastBody;
+    final isAppend =
+        previousBody.isNotEmpty &&
+        body.startsWith(previousBody) &&
+        body.length > previousBody.length;
+    _rawLog = loaded;
+    _lastBody = body;
+    _loadError = null;
+
+    if (isAppend) {
+      final appendedBody = body.substring(previousBody.length);
+      _parsed = appendDiagnosticsLogBody(
+        _parsed,
+        appendedBody,
+        mergedFullText: loaded,
+      );
+      _rebuildVisibleEntries();
+      _scheduleUiRefresh();
+      if (_initializing || _parsing) {
+        setState(() {
+          _initializing = false;
+          _parsing = false;
+        });
+      }
+    } else {
+      if (!_parsing && !_initializing) {
+        _parsing = true;
+        _scheduleUiRefresh();
+      }
+      await _parseFullLogText(
+        loaded,
+        previousCount: previousCount,
+        isFirstEmission: previousCount == 0,
+      );
+    }
+  }
+
+  Future<void> _applyFullLogText(
+    String loaded, {
+    required bool isFirstEmission,
+  }) async {
+    final body = extractDiagnosticsLogBody(loaded);
+    if (body.trim().isEmpty && isFirstEmission && widget.onLoadEmpty != null) {
+      widget.onLoadEmpty!();
+      return;
+    }
+    _rawLog = loaded;
+    _lastBody = body;
+    _loadError = null;
+    _parsing = true;
+    _scheduleUiRefresh();
+    await _parseFullLogText(
+      loaded,
+      previousCount: 0,
+      isFirstEmission: isFirstEmission,
+    );
+  }
+
+  Future<DiagnosticsLogSnapshot> _parseLogSnapshot(String loaded) async {
+    if (kIsWeb || loaded.length <= _isolateParseThresholdBytes) {
+      return parseDiagnosticsLog(loaded, fallbackTitle: widget.title);
+    }
+    return compute(parseDiagnosticsLogIsolate, loaded);
+  }
+
+  Future<void> _parseFullLogText(
+    String loaded, {
+    required int previousCount,
+    required bool isFirstEmission,
+  }) async {
+    final generation = ++_parseGeneration;
+    final parsed = await _parseLogSnapshot(loaded);
+    if (!mounted || generation != _parseGeneration) {
+      return;
+    }
     setState(() {
-      _rawLog = loaded;
-      _loading = false;
-      _loadError = null;
+      _parsed = parsed.title.isEmpty
+          ? parsed.copyWith(title: widget.title)
+          : parsed;
+      _initializing = false;
+      _parsing = false;
+      _rebuildVisibleEntries();
     });
-    _refreshParsedCache();
     final shouldFollowLatest = _stickToLatest &&
         (isFirstEmission ||
             (_isStreaming && _parsed.entries.length > previousCount));
     if (shouldFollowLatest) {
       _scheduleAutoScroll();
     }
+  }
+
+  void _rebuildVisibleEntries() {
+    _levelCounts = countDiagnosticsLevels(_parsed.entries);
+    _visibleEntries = sortDiagnosticsEntries(
+      filterDiagnosticsEntries(_parsed.entries, _selectedLevel),
+      ascending: _timeSort == DiagnosticsLogTimeSort.ascending,
+    );
+  }
+
+  void _scheduleUiRefresh() {
+    if (_uiRefreshTimer?.isActive ?? false) {
+      return;
+    }
+    final delay = _isStreaming
+        ? const Duration(milliseconds: 250)
+        : const Duration(milliseconds: 16);
+    _uiRefreshTimer = Timer(delay, () {
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _rebuildVisibleEntries();
+      });
+      if (_stickToLatest) {
+        _scheduleAutoScroll();
+      }
+    });
   }
 
   bool get _latestAtBottom => _timeSort == DiagnosticsLogTimeSort.ascending;
@@ -248,7 +378,7 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   void _safeScrollToEdge({required int attempt}) {
-    if (!_stickToLatest || attempt > 3) {
+    if (!_stickToLatest || attempt > 2) {
       return;
     }
     final controller = _viewMode == DiagnosticsLogViewMode.raw
@@ -279,7 +409,7 @@ class _LiveDiagnosticsLogViewerScreenState
 
   Future<void> _loadLogs() async {
     setState(() {
-      _loading = true;
+      _initializing = true;
       _loadError = null;
     });
     try {
@@ -287,35 +417,23 @@ class _LiveDiagnosticsLogViewerScreenState
       if (!mounted) {
         return;
       }
-      if (loaded.trim().isEmpty && widget.onLoadEmpty != null) {
-        widget.onLoadEmpty!();
-        return;
-      }
-      _applyLoadedLog(loaded, isFirstEmission: true);
+      await _applyFullLogText(loaded, isFirstEmission: true);
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
-        _loading = false;
+        _initializing = false;
+        _parsing = false;
         _loadError = error.toString();
       });
     }
   }
 
-  void _refreshParsedCache() {
-    _parsedCache = _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
-  }
-
-  _DiagnosticsParsedLog get _parsed {
-    return _parsedCache ??
-        _parseDiagnosticsLog(_rawLog, fallbackTitle: widget.title);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final showControls = !_loading && _loadError == null;
+    final showControls = _loadError == null;
 
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
@@ -323,14 +441,11 @@ class _LiveDiagnosticsLogViewerScreenState
       suffixes: _buildHeaderActions(l10n),
       headerExtension: showControls
           ? HyperosBlurredHeaderExtension(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-              child: _buildControlsSection(context, l10n, _parsed),
+              child: _buildControlsSection(context, l10n),
             )
           : null,
       child: HyperosBlurredBodyInset(
-        child: _loading
-            ? const Center(child: HyperosCircularProgress())
-            : _loadError != null
+        child: _loadError != null
             ? _buildLoadError(context, l10n)
             : _buildLogBody(context, l10n),
       ),
@@ -338,26 +453,27 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   List<FHeaderAction> _buildHeaderActions(AppLocalizations l10n) {
-    if (_loading || _loadError != null) {
+    if (_loadError != null) {
       return const [];
     }
 
-    final parsed = _parsed;
-    final visibleEntries = _visibleEntries(parsed.entries);
-    final filteredRawText = _buildFilteredRawText(parsed, visibleEntries);
+    final filteredRawText = buildFilteredDiagnosticsRawText(
+      _parsed,
+      _visibleEntries,
+    );
 
     return [
       FHeaderAction(
         icon: const Icon(Icons.copy_all_rounded),
         semanticsLabel: l10n.appLogsCopyAction,
-        onPress: () => _copyLogs(filteredRawText),
+        onPress: _parsed.entries.isEmpty ? null : () => _copyLogs(filteredRawText),
       ),
       FHeaderAction(
         icon: _exporting
             ? const HyperosCircularProgress(size: 18, strokeWidth: 2)
             : const Icon(Icons.ios_share_rounded),
         semanticsLabel: l10n.appLogsExportAction,
-        onPress: widget.onExport == null || _exporting
+        onPress: widget.onExport == null || _exporting || _parsed.entries.isEmpty
             ? null
             : () => _exportLogs(filteredRawText),
       ),
@@ -408,16 +524,16 @@ class _LiveDiagnosticsLogViewerScreenState
   }
 
   Widget _buildLogBody(BuildContext context, AppLocalizations l10n) {
-    final parsed = _parsed;
-    final visibleEntries = _visibleEntries(parsed.entries);
-
-    if (parsed.entries.isEmpty) {
+    if (_initializing && _parsed.entries.isEmpty) {
+      return const Center(child: HyperosCircularProgress());
+    }
+    if (_parsed.entries.isEmpty && !_parsing) {
       return _buildEmptyState(context, l10n);
     }
     if (_viewMode == DiagnosticsLogViewMode.raw) {
-      return _buildRawView(context, l10n, parsed, visibleEntries);
+      return _buildRawView(context, l10n);
     }
-    return _buildStructuredView(context, l10n, parsed, visibleEntries);
+    return _buildStructuredView(context, l10n);
   }
 
   Widget _buildRecordingSection(BuildContext context, AppLocalizations l10n) {
@@ -451,11 +567,7 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
-  Widget _buildControlsSection(
-    BuildContext context,
-    AppLocalizations l10n,
-    _DiagnosticsParsedLog parsed,
-  ) {
+  Widget _buildControlsSection(BuildContext context, AppLocalizations l10n) {
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
 
@@ -528,6 +640,9 @@ class _LiveDiagnosticsLogViewerScreenState
                               ? DiagnosticsLogViewMode.structured
                               : DiagnosticsLogViewMode.raw;
                         });
+                        if (_stickToLatest) {
+                          _scheduleAutoScroll();
+                        }
                       },
                     ),
                     const SizedBox(height: 10),
@@ -554,7 +669,31 @@ class _LiveDiagnosticsLogViewerScreenState
           ],
         ),
         const HyperosSectionGap(),
-        HyperosSectionLabel(text: l10n.diagnosticsLevelLabel),
+        Row(
+          children: [
+            Expanded(
+              child: HyperosSectionLabel(text: l10n.diagnosticsLevelLabel),
+            ),
+            if (_parsing)
+              const Padding(
+                padding: EdgeInsets.only(right: 4),
+                child: HyperosCircularProgress(size: 14, strokeWidth: 2),
+              ),
+          ],
+        ),
+        if (_parsed.entries.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Text(
+              l10n.diagnosticsShowingCount(
+                _visibleEntries.length,
+                _parsed.entries.length,
+              ),
+              style: HyperosTypography.listDetail(context).copyWith(
+                color: HyperosColors.secondaryText(context),
+              ),
+            ),
+          ),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
@@ -564,13 +703,17 @@ class _LiveDiagnosticsLogViewerScreenState
                 if (i > 0) const SizedBox(width: 8),
                 _LevelFilterChip(
                   label:
-                      '${_levelLabel(l10n, DiagnosticsLogLevel.values[i])} ${_levelCount(parsed.entries, DiagnosticsLogLevel.values[i])}',
+                      '${_levelLabel(l10n, DiagnosticsLogLevel.values[i])} ${_levelCounts[DiagnosticsLogLevel.values[i]] ?? 0}',
                   selected:
                       _selectedLevel == DiagnosticsLogLevel.values[i],
                   onPress: () {
                     setState(() {
                       _selectedLevel = DiagnosticsLogLevel.values[i];
+                      _rebuildVisibleEntries();
                     });
+                    if (_stickToLatest) {
+                      _scheduleAutoScroll();
+                    }
                   },
                 ),
               ],
@@ -579,45 +722,6 @@ class _LiveDiagnosticsLogViewerScreenState
         ),
       ],
     );
-  }
-
-  List<_DiagnosticsLogEntry> _filterEntries(
-    List<_DiagnosticsLogEntry> entries,
-    DiagnosticsLogLevel level,
-  ) {
-    if (level == DiagnosticsLogLevel.all) {
-      return entries;
-    }
-    return entries
-        .where((entry) => entry.level == level)
-        .toList(growable: false);
-  }
-
-  List<_DiagnosticsLogEntry> _sortEntries(
-    List<_DiagnosticsLogEntry> entries,
-  ) {
-    final sorted = entries.toList(growable: true);
-    sorted.sort((a, b) {
-      final cmp = a.timeMillis.compareTo(b.timeMillis);
-      return _timeSort == DiagnosticsLogTimeSort.ascending ? cmp : -cmp;
-    });
-    return sorted;
-  }
-
-  List<_DiagnosticsLogEntry> _visibleEntries(
-    List<_DiagnosticsLogEntry> entries,
-  ) {
-    return _sortEntries(_filterEntries(entries, _selectedLevel));
-  }
-
-  int _levelCount(
-    List<_DiagnosticsLogEntry> entries,
-    DiagnosticsLogLevel level,
-  ) {
-    if (level == DiagnosticsLogLevel.all) {
-      return entries.length;
-    }
-    return entries.where((entry) => entry.level == level).length;
   }
 
   Widget _buildEmptyState(BuildContext context, AppLocalizations l10n) {
@@ -652,24 +756,15 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
-  Widget _buildStructuredView(
-    BuildContext context,
-    AppLocalizations l10n,
-    _DiagnosticsParsedLog parsed,
-    List<_DiagnosticsLogEntry> filteredEntries,
-  ) {
-    if (filteredEntries.isEmpty) {
+  Widget _buildStructuredView(BuildContext context, AppLocalizations l10n) {
+    if (_visibleEntries.isEmpty && _parsed.entries.isNotEmpty) {
       return _buildNoMatchingState(context, l10n);
     }
 
-    final listChildren = <Widget>[
-      if (parsed.headerEntries.isNotEmpty)
-        _DiagnosticsHeaderRow(parsed: parsed, l10n: l10n),
-      for (final entry in filteredEntries)
-        _DiagnosticsLogEntryTile(entry: entry, l10n: l10n),
-    ];
+    final hasHeader = _parsed.headerEntries.isNotEmpty;
+    final itemCount = _visibleEntries.length + (hasHeader ? 1 : 0);
 
-    return ListView(
+    return ListView.builder(
       controller: _structuredScrollController,
       physics: const HyperosOverscrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -680,9 +775,57 @@ class _LiveDiagnosticsLogViewerScreenState
         HyperosTokens.listPadding.right,
         HyperosTokens.listPadding.bottom,
       ),
-      children: [
-        HyperosListGroup(children: listChildren),
-      ],
+      scrollCacheExtent: const ScrollCacheExtent.pixels(640),
+      itemCount: itemCount,
+      itemBuilder: (context, index) {
+        if (hasHeader && index == 0) {
+          return RepaintBoundary(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: HyperosListGroup(
+                children: [
+                  _DiagnosticsHeaderRow(
+                    parsed: _parsed,
+                    l10n: l10n,
+                    expanded: _deviceInfoExpanded,
+                    onToggle: () {
+                      setState(() {
+                        _deviceInfoExpanded = !_deviceInfoExpanded;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final entryIndex = index - (hasHeader ? 1 : 0);
+        final entry = _visibleEntries[entryIndex];
+        return RepaintBoundary(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: entryIndex == _visibleEntries.length - 1 ? 0 : 8,
+            ),
+            child: HyperosListGroup(
+              children: [
+                _DiagnosticsLogEntryTile(
+                  key: ValueKey(entry.stableId),
+                  entry: entry,
+                  l10n: l10n,
+                  expanded: _expandedEntryIds[entry.stableId] ?? false,
+                  onToggle: () {
+                    setState(() {
+                      _expandedEntryIds[entry.stableId] =
+                          !(_expandedEntryIds[entry.stableId] ?? false);
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -718,18 +861,12 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
-  Widget _buildRawView(
-    BuildContext context,
-    AppLocalizations l10n,
-    _DiagnosticsParsedLog parsed,
-    List<_DiagnosticsLogEntry> filteredEntries,
-  ) {
-    if (filteredEntries.isEmpty) {
+  Widget _buildRawView(BuildContext context, AppLocalizations l10n) {
+    if (_visibleEntries.isEmpty && _parsed.entries.isNotEmpty) {
       return _buildNoMatchingState(context, l10n);
     }
 
-    final rawText = _buildFilteredRawText(parsed, filteredEntries);
-    return SingleChildScrollView(
+    return ListView.builder(
       controller: _rawScrollController,
       physics: const HyperosOverscrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
@@ -740,14 +877,26 @@ class _LiveDiagnosticsLogViewerScreenState
         HyperosTokens.listPadding.right,
         HyperosTokens.listPadding.bottom,
       ),
-      child: HyperosControlCard(
-        child: Text(
-          rawText,
-          style: HyperosTypography.listDetail(
-            context,
-          ).copyWith(fontFamily: 'monospace', height: 1.45),
-        ),
-      ),
+      scrollCacheExtent: const ScrollCacheExtent.pixels(480),
+      itemCount: _visibleEntries.length,
+      itemBuilder: (context, index) {
+        final entry = _visibleEntries[index];
+        return RepaintBoundary(
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: index == _visibleEntries.length - 1 ? 0 : 8,
+            ),
+            child: HyperosControlCard(
+              child: Text(
+                entry.rawBlock.trim(),
+                style: HyperosTypography.listDetail(
+                  context,
+                ).copyWith(fontFamily: 'monospace', height: 1.45),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -795,18 +944,16 @@ class _LiveDiagnosticsLogViewerScreenState
       return;
     }
     if (cleared) {
-      if (widget.watchRawLog != null) {
-        setState(() {
-          _rawLog = '';
-          _refreshParsedCache();
-        });
-      } else if (widget.loadRawLog != null) {
+      _parseGeneration++;
+      _lastBody = '';
+      _expandedEntryIds.clear();
+      setState(() {
+        _rawLog = '';
+        _parsed = DiagnosticsLogSnapshot.empty;
+        _rebuildVisibleEntries();
+      });
+      if (widget.loadRawLog != null) {
         await _loadLogs();
-      } else {
-        setState(() {
-          _rawLog = '';
-          _refreshParsedCache();
-        });
       }
     }
     if (!mounted) {
@@ -869,18 +1016,18 @@ class _LevelFilterChip extends StatelessWidget {
   }
 }
 
-class _DiagnosticsHeaderRow extends StatefulWidget {
-  final _DiagnosticsParsedLog parsed;
+class _DiagnosticsHeaderRow extends StatelessWidget {
+  final DiagnosticsLogSnapshot parsed;
   final AppLocalizations l10n;
+  final bool expanded;
+  final VoidCallback onToggle;
 
-  const _DiagnosticsHeaderRow({required this.parsed, required this.l10n});
-
-  @override
-  State<_DiagnosticsHeaderRow> createState() => _DiagnosticsHeaderRowState();
-}
-
-class _DiagnosticsHeaderRowState extends State<_DiagnosticsHeaderRow> {
-  bool _expanded = false;
+  const _DiagnosticsHeaderRow({
+    required this.parsed,
+    required this.l10n,
+    required this.expanded,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -889,7 +1036,7 @@ class _DiagnosticsHeaderRowState extends State<_DiagnosticsHeaderRow> {
     final padding = _diagnosticsListRowPadding(context);
 
     return HyperosPressableRow(
-      onTap: () => setState(() => _expanded = !_expanded),
+      onTap: onToggle,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: Padding(
@@ -901,19 +1048,19 @@ class _DiagnosticsHeaderRowState extends State<_DiagnosticsHeaderRow> {
               children: [
                 Expanded(
                   child: Text(
-                    widget.l10n.diagnosticsDeviceInfoTitle,
+                    l10n.diagnosticsDeviceInfoTitle,
                     style: HyperosTypography.listTitle(context),
                   ),
                 ),
                 const HyperosUpDownChevron(),
               ],
             ),
-            if (_expanded) ...[
+            if (expanded) ...[
               const SizedBox(height: 8),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: widget.parsed.headerEntries.entries
+                children: parsed.headerEntries.entries
                     .map(
                       (item) => Container(
                         padding: const EdgeInsets.symmetric(
@@ -927,7 +1074,7 @@ class _DiagnosticsHeaderRowState extends State<_DiagnosticsHeaderRow> {
                           ),
                         ),
                         child: Text(
-                          '${_prettyKey(item.key, widget.l10n)}: ${_inlineValue(item.value)}',
+                          '${_prettyKey(item.key, l10n)}: ${_inlineValue(item.value)}',
                           style: HyperosTypography.listDetail(context).copyWith(
                             fontSize: HyperosMiuixTypography.footnote2,
                             height: 1.3,
@@ -945,38 +1092,38 @@ class _DiagnosticsHeaderRowState extends State<_DiagnosticsHeaderRow> {
   }
 }
 
-class _DiagnosticsLogEntryTile extends StatefulWidget {
-  final _DiagnosticsLogEntry entry;
+class _DiagnosticsLogEntryTile extends StatelessWidget {
+  final DiagnosticsLogEntry entry;
   final AppLocalizations l10n;
+  final bool expanded;
+  final VoidCallback onToggle;
 
-  const _DiagnosticsLogEntryTile({required this.entry, required this.l10n});
-
-  @override
-  State<_DiagnosticsLogEntryTile> createState() =>
-      _DiagnosticsLogEntryTileState();
-}
-
-class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
-  bool _expanded = false;
+  const _DiagnosticsLogEntryTile({
+    super.key,
+    required this.entry,
+    required this.l10n,
+    required this.expanded,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
     final localizedMessage = AppLogMessageLocalizer.localizeMessage(
-      widget.l10n,
-      widget.entry.message,
+      l10n,
+      entry.message,
     );
-    final details = widget.entry.detailEntries.toList(growable: false);
+    final details = entry.detailEntries.toList(growable: false);
     final cardColor = HyperosColors.card(context);
     final highlightColor = HyperosColors.rowHighlight(context);
     final padding = _diagnosticsListRowPadding(context);
 
     return HyperosPressableRow(
-      onTap: () => setState(() => _expanded = !_expanded),
+      onTap: onToggle,
       backgroundColor: cardColor,
       highlightColor: highlightColor,
       child: Padding(
         padding: padding,
-        child: _expanded
+        child: expanded
             ? _buildExpanded(context, localizedMessage, details)
             : _buildCollapsed(context, localizedMessage),
       ),
@@ -984,8 +1131,8 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
   }
 
   Widget _buildCollapsed(BuildContext context, String localizedMessage) {
-    final levelColor = _levelColor(context, widget.entry.level);
-    final time = widget.entry.formattedTime;
+    final levelColor = _levelColor(context, entry.level);
+    final time = entry.formattedTime;
     final prefix = time == null ? '' : '$time ';
     return Row(
       children: [
@@ -1017,7 +1164,7 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
     String localizedMessage,
     List<MapEntry<String, String>> details,
   ) {
-    final levelColor = _levelColor(context, widget.entry.level);
+    final levelColor = _levelColor(context, entry.level);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1034,7 +1181,7 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
                 ),
               ),
               child: Icon(
-                _levelIcon(widget.entry.level),
+                _levelIcon(entry.level),
                 color: levelColor,
                 size: 14,
               ),
@@ -1046,21 +1193,21 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
                 runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  HyperosTag(label: _levelLabel(widget.l10n, widget.entry.level)),
+                  HyperosTag(label: _levelLabel(l10n, entry.level)),
                   HyperosTag(
-                    label: _sourceLabel(widget.l10n, widget.entry),
+                    label: _sourceLabel(l10n, entry),
                     outlined: true,
                   ),
-                  if (widget.entry.isLevelInferred)
+                  if (entry.isLevelInferred)
                     HyperosTag(
-                      label: widget.l10n.diagnosticsLevelInferred,
+                      label: l10n.diagnosticsLevelInferred,
                       outlined: true,
                     ),
-                  if (widget.entry.category.isNotEmpty)
+                  if (entry.category.isNotEmpty)
                     Text(
                       AppLogMessageLocalizer.localizeCategory(
-                        widget.l10n,
-                        widget.entry.category,
+                        l10n,
+                        entry.category,
                       ),
                       style: HyperosTypography.listDetail(context).copyWith(
                         color: HyperosColors.secondaryText(context),
@@ -1073,10 +1220,10 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
             const HyperosUpDownChevron(),
           ],
         ),
-        if (widget.entry.formattedTime != null) ...[
+        if (entry.formattedTime != null) ...[
           const SizedBox(height: 4),
           Text(
-            widget.entry.formattedTime!,
+            entry.formattedTime!,
             style: HyperosTypography.listDetail(context).copyWith(
               color: HyperosColors.secondaryText(context),
             ),
@@ -1096,7 +1243,7 @@ class _DiagnosticsLogEntryTileState extends State<_DiagnosticsLogEntryTile> {
           const SizedBox(height: 6),
           for (var i = 0; i < details.length; i++) ...[
             _DiagnosticsDetailRow(
-              label: _prettyKey(details[i].key, widget.l10n),
+              label: _prettyKey(details[i].key, l10n),
               value: _inlineValue(details[i].value),
               compact: true,
             ),
@@ -1156,274 +1303,6 @@ class _DiagnosticsDetailRow extends StatelessWidget {
   }
 }
 
-class _DiagnosticsParsedLog {
-  final String title;
-  final String rawHeader;
-  final String fullText;
-  final Map<String, String> headerEntries;
-  final List<_DiagnosticsLogEntry> entries;
-
-  const _DiagnosticsParsedLog({
-    required this.title,
-    required this.rawHeader,
-    required this.fullText,
-    required this.headerEntries,
-    required this.entries,
-  });
-}
-
-class _DiagnosticsLogEntry {
-  final String rawBlock;
-  final Map<String, String> fields;
-  final DiagnosticsLogLevel level;
-  final bool isLevelInferred;
-
-  const _DiagnosticsLogEntry({
-    required this.rawBlock,
-    required this.fields,
-    required this.level,
-    required this.isLevelInferred,
-  });
-
-  String get category => fields['category']?.trim() ?? '';
-
-  String get message => fields['message']?.trim() ?? rawBlock.trim();
-
-  String get sourceKey {
-    final explicit = fields['source']?.trim();
-    if (explicit == 'app' || explicit == 'native') {
-      return explicit!;
-    }
-    final categoryLower = category.toLowerCase();
-    if (categoryLower.startsWith('live_update') ||
-        categoryLower.startsWith('miui_live') ||
-        categoryLower.startsWith('diagnostics_')) {
-      return 'native';
-    }
-    return 'app';
-  }
-
-  bool get isNativeSource => sourceKey == 'native';
-
-  String? get formattedTime => _formatMillis(fields['time']);
-
-  int get timeMillis => int.tryParse(fields['time'] ?? '') ?? 0;
-
-  Iterable<MapEntry<String, String>> get detailEntries => fields.entries.where(
-    (entry) => !const {
-      'time',
-      'category',
-      'message',
-      'level',
-      'severity',
-      'source',
-    }.contains(entry.key),
-  );
-}
-
-_DiagnosticsParsedLog _parseDiagnosticsLog(
-  String rawLog, {
-  String fallbackTitle = '',
-}) {
-  final normalizedText = rawLog.trim();
-  if (normalizedText.isEmpty) {
-    return _DiagnosticsParsedLog(
-      title: fallbackTitle,
-      rawHeader: '',
-      fullText: '',
-      headerEntries: const <String, String>{},
-      entries: const <_DiagnosticsLogEntry>[],
-    );
-  }
-
-  final lines = normalizedText.split(RegExp(r'\r?\n'));
-  final separatorIndex = lines.indexWhere((line) => line.trim() == '----');
-  final headerLines = separatorIndex >= 0
-      ? lines.take(separatorIndex).toList(growable: false)
-      : <String>[];
-  final bodyLines = separatorIndex >= 0
-      ? lines.skip(separatorIndex + 1).toList(growable: false)
-      : lines;
-  final headerEntries = _parseIndentedKeyValueBlock(
-    headerLines.skip(1).toList(growable: false),
-  );
-  final rawSections = _splitDiagnosticSections(bodyLines);
-  final entries = rawSections
-      .map(_parseDiagnosticsLogEntry)
-      .whereType<_DiagnosticsLogEntry>()
-      .toList(growable: false);
-
-  return _DiagnosticsParsedLog(
-    title: headerLines.isNotEmpty
-        ? headerLines.first.trim()
-        : (fallbackTitle.isNotEmpty ? fallbackTitle : 'Diagnostics Log'),
-    rawHeader: headerLines.join('\n').trim(),
-    fullText: normalizedText,
-    headerEntries: headerEntries,
-    entries: entries,
-  );
-}
-
-List<List<String>> _splitDiagnosticSections(List<String> lines) {
-  final sections = <List<String>>[];
-  var current = <String>[];
-
-  for (final line in lines) {
-    if (line.trim().isEmpty) {
-      if (current.isNotEmpty) {
-        sections.add(current);
-        current = <String>[];
-      }
-      continue;
-    }
-    current.add(line);
-  }
-
-  if (current.isNotEmpty) {
-    sections.add(current);
-  }
-
-  return sections;
-}
-
-_DiagnosticsLogEntry? _parseDiagnosticsLogEntry(List<String> lines) {
-  final rawBlock = lines.join('\n').trimRight();
-  if (rawBlock.isEmpty) {
-    return null;
-  }
-
-  final fields = _parseIndentedKeyValueBlock(lines);
-  final normalizedFields = fields.isEmpty
-      ? <String, String>{'message': rawBlock}
-      : Map<String, String>.from(fields);
-  final explicitLevel = _parseDiagnosticsLogLevel(
-    normalizedFields['level'] ?? normalizedFields['severity'],
-  );
-  final level =
-      explicitLevel ?? _inferDiagnosticsLogLevel(normalizedFields, rawBlock);
-
-  return _DiagnosticsLogEntry(
-    rawBlock: rawBlock,
-    fields: normalizedFields,
-    level: level,
-    isLevelInferred: explicitLevel == null,
-  );
-}
-
-Map<String, String> _parseIndentedKeyValueBlock(List<String> lines) {
-  final result = <String, String>{};
-  String? currentKey;
-  final currentValue = StringBuffer();
-
-  void commit() {
-    if (currentKey == null) {
-      return;
-    }
-    result[currentKey!] = currentValue.toString().trimRight();
-    currentKey = null;
-    currentValue.clear();
-  }
-
-  for (final line in lines) {
-    final match = RegExp(r'^([A-Za-z0-9_.-]+)=(.*)$').firstMatch(line);
-    if (match != null && !line.startsWith('  ')) {
-      commit();
-      currentKey = match.group(1);
-      currentValue.write(match.group(2)?.trimLeft() ?? '');
-      continue;
-    }
-
-    if (currentKey == null) {
-      continue;
-    }
-
-    final normalized = line.startsWith('  ') ? line.substring(2) : line;
-    if (currentValue.isNotEmpty) {
-      currentValue.writeln();
-    }
-    currentValue.write(normalized);
-  }
-
-  commit();
-  return result;
-}
-
-DiagnosticsLogLevel? _parseDiagnosticsLogLevel(String? raw) {
-  final normalized = (raw ?? '').trim().toLowerCase();
-  switch (normalized) {
-    case 'error':
-    case 'err':
-    case 'fatal':
-      return DiagnosticsLogLevel.error;
-    case 'warn':
-    case 'warning':
-      return DiagnosticsLogLevel.warn;
-    case 'info':
-      return DiagnosticsLogLevel.info;
-    case 'debug':
-      return DiagnosticsLogLevel.debug;
-    case 'verbose':
-    case 'trace':
-      return DiagnosticsLogLevel.verbose;
-    case 'all':
-      return DiagnosticsLogLevel.all;
-    default:
-      return null;
-  }
-}
-
-DiagnosticsLogLevel _inferDiagnosticsLogLevel(
-  Map<String, String> fields,
-  String rawBlock,
-) {
-  final haystack = [
-    rawBlock,
-    fields['category'],
-    fields['message'],
-    fields['throwable'],
-    fields['stackTrace'],
-    fields['truncatedHint'],
-  ].whereType<String>().join('\n').toLowerCase();
-
-  if (fields.containsKey('throwable') ||
-      fields.containsKey('stackTrace') ||
-      RegExp(
-        r'\b(error|exception|crash|fatal|failed|failure)\b',
-      ).hasMatch(haystack)) {
-    return DiagnosticsLogLevel.error;
-  }
-  if (RegExp(
-    r'\b(warn|warning|denied|blocked|invalid|missing)\b',
-  ).hasMatch(haystack)) {
-    return DiagnosticsLogLevel.warn;
-  }
-  if (RegExp(r'\b(verbose|trace)\b').hasMatch(haystack)) {
-    return DiagnosticsLogLevel.verbose;
-  }
-  if (RegExp(
-    r'\b(debug|diagnostic|snapshot|payload|test)\b',
-  ).hasMatch(haystack)) {
-    return DiagnosticsLogLevel.debug;
-  }
-  return DiagnosticsLogLevel.info;
-}
-
-String _buildFilteredRawText(
-  _DiagnosticsParsedLog parsed,
-  List<_DiagnosticsLogEntry> filteredEntries,
-) {
-  final blocks = filteredEntries
-      .map((entry) => entry.rawBlock.trim())
-      .join('\n\n');
-  if (parsed.rawHeader.isEmpty) {
-    return blocks;
-  }
-  if (blocks.isEmpty) {
-    return parsed.rawHeader;
-  }
-  return '${parsed.rawHeader}\n----\n$blocks'.trim();
-}
-
 String _levelLabel(AppLocalizations l10n, DiagnosticsLogLevel level) {
   return switch (level) {
     DiagnosticsLogLevel.all => l10n.diagnosticsLevelAll,
@@ -1435,7 +1314,7 @@ String _levelLabel(AppLocalizations l10n, DiagnosticsLogLevel level) {
   };
 }
 
-String _sourceLabel(AppLocalizations l10n, _DiagnosticsLogEntry entry) {
+String _sourceLabel(AppLocalizations l10n, DiagnosticsLogEntry entry) {
   return entry.isNativeSource ? l10n.appLogsSourceNative : l10n.appLogsSourceApp;
 }
 
@@ -1490,16 +1369,6 @@ String _prettyKey(String key, AppLocalizations l10n) {
 }
 
 String _inlineValue(String value) {
-  final formattedTime = _formatMillis(value);
+  final formattedTime = formatDiagnosticsMillis(value);
   return formattedTime ?? value;
-}
-
-String? _formatMillis(String? raw) {
-  final millis = int.tryParse(raw ?? '');
-  if (millis == null) {
-    return null;
-  }
-  final dateTime = DateTime.fromMillisecondsSinceEpoch(millis);
-  String two(int value) => value.toString().padLeft(2, '0');
-  return '${dateTime.year}-${two(dateTime.month)}-${two(dateTime.day)} ${two(dateTime.hour)}:${two(dateTime.minute)}:${two(dateTime.second)}';
 }

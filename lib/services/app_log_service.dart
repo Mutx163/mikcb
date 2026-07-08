@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../logging/app_log_messages.dart';
+import '../logging/diagnostics_log_parser.dart';
 import '../models/timetable_settings.dart';
 
 class AppLogService {
@@ -194,24 +195,27 @@ class AppLogService {
     await _writeQueue;
   }
 
-  Future<String> readAppLogsText() async {
+  Future<String> readAppLogsText({bool forExport = false}) async {
     if (!_initialized) {
       await initialize();
     }
     final file = await _resolveLogFile();
     if (!await file.exists()) {
-      return _buildHeader();
+      return _buildHeader(includeExportTime: forExport);
     }
     final body = (await file.readAsString()).trim();
-    final header = _buildHeader();
+    final header = _buildHeader(includeExportTime: forExport);
     if (body.isEmpty) {
       return header;
     }
     return '$header\n$body'.trim();
   }
 
-  Future<String> readMergedLogsText({String? nativeRawLog}) async {
-    final appText = await readAppLogsText();
+  Future<String> readMergedLogsText({
+    String? nativeRawLog,
+    bool forExport = false,
+  }) async {
+    final appText = await readAppLogsText(forExport: forExport);
     final appBody = _extractBody(appText);
     final nativeBody = _extractBody(nativeRawLog ?? '');
 
@@ -226,7 +230,7 @@ class AppLogService {
         .where((item) => item.trim().isNotEmpty)
         .join('\n\n')
         .trim();
-    final header = _buildHeader();
+    final header = _buildHeader(includeExportTime: forExport);
     if (mergedBody.isEmpty) {
       return header;
     }
@@ -242,7 +246,7 @@ class AppLogService {
     Timer? debounceTimer;
     StreamSubscription<void>? logChangeSub;
     var closed = false;
-    String? lastEmitted;
+    String? lastEmittedBody;
 
     Future<void> emit() async {
       if (closed) {
@@ -253,10 +257,11 @@ class AppLogService {
             ? await loadNativeRawLog()
             : null;
         final text = await readMergedLogsText(nativeRawLog: nativeRaw);
-        if (closed || text == lastEmitted) {
+        final body = extractDiagnosticsLogBody(text);
+        if (closed || body == lastEmittedBody) {
           return;
         }
-        lastEmitted = text;
+        lastEmittedBody = body;
         controller.add(text);
       } catch (error, stackTrace) {
         if (!closed) {
@@ -293,7 +298,10 @@ class AppLogService {
   }
 
   Future<String?> exportMergedLogsFile({String? nativeRawLog}) async {
-    final text = await readMergedLogsText(nativeRawLog: nativeRawLog);
+    final text = await readMergedLogsText(
+      nativeRawLog: nativeRawLog,
+      forExport: true,
+    );
     final exportDir = await getTemporaryDirectory();
     final file = File(
       '${exportDir.path}/mikcb-app-logs-${DateTime.now().millisecondsSinceEpoch}.log',
@@ -419,13 +427,14 @@ class AppLogService {
     await file.writeAsString(retained.trimLeft(), flush: true);
   }
 
-  String _buildHeader() {
+  String _buildHeader({bool includeExportTime = false}) {
     final versionText = _packageInfo == null
         ? ''
         : '${_packageInfo!.version}+${_packageInfo!.buildNumber}';
     return [
       _logTitleKey,
-      'exportedAt=${DateTime.now().millisecondsSinceEpoch}',
+      if (includeExportTime)
+        'exportedAt=${DateTime.now().millisecondsSinceEpoch}',
       'platform=${defaultTargetPlatform.name}',
       if (versionText.isNotEmpty) 'version=$versionText',
       '----',
