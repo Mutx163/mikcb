@@ -1,10 +1,10 @@
 {
-  "updatedAt": "2026-07-07T05:43:41+00:00",
+  "updatedAt": "2026-07-08T04:48:35+00:00",
   "source": "https://github.com/Mutx163/qingyu_warehouse",
   "sourceRef": "main",
   "counts": {
-    "total": 119,
-    "schools": 114,
+    "total": 121,
+    "schools": 116,
     "generic": 5
   },
   "schools": [
@@ -401,6 +401,13 @@
       "category": "school"
     },
     {
+      "id": "HUNNU",
+      "name": "湖南师范大学",
+      "initial": "H",
+      "resourceFolder": "HUNNU",
+      "category": "school"
+    },
+    {
       "id": "HNUST",
       "name": "湖南科技大学",
       "initial": "H",
@@ -699,6 +706,13 @@
       "name": "武汉商学院",
       "initial": "W",
       "resourceFolder": "WBU",
+      "category": "school"
+    },
+    {
+      "id": "WHUT",
+      "name": "武汉理工大学",
+      "initial": "W",
+      "resourceFolder": "WHUT",
       "category": "school"
     },
     {
