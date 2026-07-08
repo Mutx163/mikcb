@@ -1111,6 +1111,7 @@
       }
     }
   },
+  "liveMiuiLabelLogoCornerRadiusTitle": "Left icon corner radius",
   "liveMiuiLabelFontSizeLabel": "Left Text Size {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {
@@ -1119,6 +1120,7 @@
       }
     }
   },
+  "liveMiuiLabelFontSizeTitle": "Left text size",
   "liveMiuiLabelOffsetXLabel": "Left Text Horizontal Offset {value}",
   "@liveMiuiLabelOffsetXLabel": {
     "placeholders": {
@@ -1127,6 +1129,7 @@
       }
     }
   },
+  "liveMiuiLabelOffsetXTitle": "Left text horizontal offset",
   "liveMiuiLabelOffsetYLabel": "Left Text Vertical Offset {value}",
   "@liveMiuiLabelOffsetYLabel": {
     "placeholders": {
@@ -1135,6 +1138,7 @@
       }
     }
   },
+  "liveMiuiLabelOffsetYTitle": "Left text vertical offset",
   "liveMiuiLabelFontWeightLabel": "Left Text Weight",
   "liveMiuiLabelRenderQualityLabel": "Left Text Render Quality",
   "liveMiuiExpandedIconLabel": "Expanded Large Icon",
@@ -1222,6 +1226,7 @@
       }
     }
   },
+  "timeCorrectionTitle": "Bell-time correction",
   "timeCorrectionHelp": "If the school bell is early, shift earlier. If the bell is late, shift later.",
   "duringEndTimeDisplayLabel": "During-class / before-end time style",
   "duringEndTimeDisplayHelp": "Choose whether compact reminders show nearest time or the total remaining time.",
@@ -1909,6 +1914,7 @@
       }
     }
   },
+  "pageTransitionSpeedTitle": "Page transition speed",
   "pageTransitionSpeedSubtitle": "Adjust how fast sub-pages slide in and out. Higher is faster, lower is slower. Multiplied by the system transition animation scale on Android.",
   "pageTransitionSpeedDurationHint": "About {milliseconds} ms",
   "@pageTransitionSpeedDurationHint": {
@@ -1932,6 +1938,7 @@
       }
     }
   },
+  "layoutBackToCurrentWeekButtonOpacityTitle": "Floating button opacity",
   "layoutBackToCurrentWeekButtonOpacitySubtitle": "Only applies to the floating bottom-right style.",
   "layoutCourseCardGapLabel": "Course card spacing {value}",
   "@layoutCourseCardGapLabel": {
@@ -1941,6 +1948,7 @@
       }
     }
   },
+  "layoutCourseCardGapTitle": "Course card spacing",
   "layoutSectionHeightLabel": "Row height {value}",
   "@layoutSectionHeightLabel": {
     "placeholders": {
@@ -1949,6 +1957,7 @@
       }
     }
   },
+  "layoutSectionHeightTitle": "Row height",
   "layoutCompactFontSizeLabel": "Compact font size {value}",
   "@layoutCompactFontSizeLabel": {
     "placeholders": {
@@ -1957,6 +1966,7 @@
       }
     }
   },
+  "layoutCompactFontSizeTitle": "Compact font size",
   "layoutCourseCardFontSizeLabel": "Course card font size {value}",
   "@layoutCourseCardFontSizeLabel": {
     "placeholders": {
@@ -1965,6 +1975,7 @@
       }
     }
   },
+  "layoutCourseCardFontSizeTitle": "Course card font size",
   "layoutCourseCardDisplayTitle": "Course card display",
   "layoutCourseCardDisplaySubtitle": "Course name, teacher, and classroom are shown by default. Other information can be toggled freely per timetable.",
   "layoutShowTeacherTitle": "Show teacher",

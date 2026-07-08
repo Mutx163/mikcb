@@ -2096,6 +2096,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get timeCorrectionTitle => '铃声时间矫正';
+
+  @override
   String get timeCorrectionHelp => '如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。';
 
   @override
@@ -2185,9 +2188,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => '左侧图标圆角';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左侧文字大小 $value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => '左侧文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2195,9 +2204,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => '左侧文字水平偏移';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左侧文字垂直偏移 $value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => '左侧文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左侧文字粗细';
@@ -3452,6 +3467,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get pageTransitionSpeedTitle => '页面转场速度';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       '调节进入和返回子页面时的滑动动画快慢。数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置。';
 
@@ -3485,6 +3503,9 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '悬浮按钮不透明度';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle => '只对右下角悬浮样式生效。';
 
   @override
@@ -3493,9 +3514,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get layoutCourseCardGapTitle => '课程卡片间距';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return '课表行高 $value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => '课表行高';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -3503,9 +3530,15 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => '紧凑字号';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return '课程卡片字号 $value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => '课程卡片字号';
 
   @override
   String get layoutCourseCardDisplayTitle => '课程卡片显示';

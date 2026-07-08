@@ -2135,6 +2135,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get timeCorrectionTitle => '铃声时间矫正';
+
+  @override
   String get timeCorrectionHelp =>
       '학교 종이 시간표보다 몇 초 빠르면 \'앞당기기\', 느리면 \'늦추기\'로 설정하세요.';
 
@@ -2231,9 +2234,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => '左侧图标圆角';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '왼쪽 텍스트 크기 $value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => '左侧文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2241,9 +2250,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => '左侧文字水平偏移';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '왼쪽 텍스트 수직 오프셋 $value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => '左侧文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '왼쪽 텍스트 굵기';
@@ -3533,6 +3548,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get pageTransitionSpeedTitle => '页面转场速度';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       '하위 페이지 슬라이드 애니메이션 속도를 조절합니다. 값이 클수록 빠르고, 작을수록 느립니다. Android 시스템 \'전환 애니메이션 배율\'과 함께 적용됩니다.';
 
@@ -3566,6 +3584,9 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '悬浮按钮不透明度';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
       '오른쪽 아래 플로팅 스타일에만 유효합니다.';
 
@@ -3575,9 +3596,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get layoutCourseCardGapTitle => '课程卡片间距';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return '시간표 행 높이 $value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => '课表行高';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -3585,9 +3612,15 @@ class AppLocalizationsKo extends AppLocalizations {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => '紧凑字号';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return '수업 카드 폰트 크기 $value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => '课程卡片字号';
 
   @override
   String get layoutCourseCardDisplayTitle => '수업 카드 표시';

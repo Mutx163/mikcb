@@ -2124,6 +2124,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get timeCorrectionTitle => '铃声时间矫正';
+
+  @override
   String get timeCorrectionHelp => '学校のチャイムが時間割より数秒早い場合は「早める」、遅い場合は「遅らせる」に設定。';
 
   @override
@@ -2217,9 +2220,15 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => '左侧图标圆角';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return '左側テキストサイズ$value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => '左侧文字大小';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2227,9 +2236,15 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => '左侧文字水平偏移';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return '左側テキスト垂直オフセット$value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => '左侧文字垂直偏移';
 
   @override
   String get liveMiuiLabelFontWeightLabel => '左側テキスト太さ';
@@ -3509,6 +3524,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get pageTransitionSpeedTitle => '页面转场速度';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       'サブページのスライドアニメーションの速さを調整します。数値が大きいほど速く、小さいほど遅くなります。Android のシステム「遷移アニメーションのスケール」と掛け合わされます。';
 
@@ -3542,6 +3560,9 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle => '悬浮按钮不透明度';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
       '右下フローティングスタイルにのみ有効。';
 
@@ -3551,9 +3572,15 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get layoutCourseCardGapTitle => '课程卡片间距';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return '時間割行高さ$value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => '课表行高';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -3561,9 +3588,15 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => '紧凑字号';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return '授業カードフォントサイズ$value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => '课程卡片字号';
 
   @override
   String get layoutCourseCardDisplayTitle => '授業カード表示';

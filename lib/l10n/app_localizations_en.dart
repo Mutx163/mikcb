@@ -2221,6 +2221,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get timeCorrectionTitle => 'Bell-time correction';
+
+  @override
   String get timeCorrectionHelp =>
       'If the school bell is early, shift earlier. If the bell is late, shift later.';
 
@@ -2321,9 +2324,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelLogoCornerRadiusTitle => 'Left icon corner radius';
+
+  @override
   String liveMiuiLabelFontSizeLabel(String value) {
     return 'Left Text Size $value';
   }
+
+  @override
+  String get liveMiuiLabelFontSizeTitle => 'Left text size';
 
   @override
   String liveMiuiLabelOffsetXLabel(String value) {
@@ -2331,9 +2340,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get liveMiuiLabelOffsetXTitle => 'Left text horizontal offset';
+
+  @override
   String liveMiuiLabelOffsetYLabel(String value) {
     return 'Left Text Vertical Offset $value';
   }
+
+  @override
+  String get liveMiuiLabelOffsetYTitle => 'Left text vertical offset';
 
   @override
   String get liveMiuiLabelFontWeightLabel => 'Left Text Weight';
@@ -3674,6 +3689,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pageTransitionSpeedTitle => 'Page transition speed';
+
+  @override
   String get pageTransitionSpeedSubtitle =>
       'Adjust how fast sub-pages slide in and out. Higher is faster, lower is slower. Multiplied by the system transition animation scale on Android.';
 
@@ -3710,6 +3728,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get layoutBackToCurrentWeekButtonOpacityTitle =>
+      'Floating button opacity';
+
+  @override
   String get layoutBackToCurrentWeekButtonOpacitySubtitle =>
       'Only applies to the floating bottom-right style.';
 
@@ -3719,9 +3741,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get layoutCourseCardGapTitle => 'Course card spacing';
+
+  @override
   String layoutSectionHeightLabel(String value) {
     return 'Row height $value';
   }
+
+  @override
+  String get layoutSectionHeightTitle => 'Row height';
 
   @override
   String layoutCompactFontSizeLabel(String value) {
@@ -3729,9 +3757,15 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get layoutCompactFontSizeTitle => 'Compact font size';
+
+  @override
   String layoutCourseCardFontSizeLabel(String value) {
     return 'Course card font size $value';
   }
+
+  @override
+  String get layoutCourseCardFontSizeTitle => 'Course card font size';
 
   @override
   String get layoutCourseCardDisplayTitle => 'Course card display';

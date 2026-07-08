@@ -3898,6 +3898,12 @@ abstract class AppLocalizations {
   /// **'铃声时间矫正：{value}'**
   String timeCorrectionLabel(String value);
 
+  /// No description provided for @timeCorrectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'铃声时间矫正'**
+  String get timeCorrectionTitle;
+
   /// No description provided for @timeCorrectionHelp.
   ///
   /// In zh, this message translates to:
@@ -4066,11 +4072,23 @@ abstract class AppLocalizations {
   /// **'左侧图标圆角 {value}'**
   String liveMiuiLabelLogoCornerRadiusLabel(String value);
 
+  /// No description provided for @liveMiuiLabelLogoCornerRadiusTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧图标圆角'**
+  String get liveMiuiLabelLogoCornerRadiusTitle;
+
   /// No description provided for @liveMiuiLabelFontSizeLabel.
   ///
   /// In zh, this message translates to:
   /// **'左侧文字大小 {value}'**
   String liveMiuiLabelFontSizeLabel(String value);
+
+  /// No description provided for @liveMiuiLabelFontSizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧文字大小'**
+  String get liveMiuiLabelFontSizeTitle;
 
   /// No description provided for @liveMiuiLabelOffsetXLabel.
   ///
@@ -4078,11 +4096,23 @@ abstract class AppLocalizations {
   /// **'左侧文字水平偏移 {value}'**
   String liveMiuiLabelOffsetXLabel(String value);
 
+  /// No description provided for @liveMiuiLabelOffsetXTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧文字水平偏移'**
+  String get liveMiuiLabelOffsetXTitle;
+
   /// No description provided for @liveMiuiLabelOffsetYLabel.
   ///
   /// In zh, this message translates to:
   /// **'左侧文字垂直偏移 {value}'**
   String liveMiuiLabelOffsetYLabel(String value);
+
+  /// No description provided for @liveMiuiLabelOffsetYTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'左侧文字垂直偏移'**
+  String get liveMiuiLabelOffsetYTitle;
 
   /// No description provided for @liveMiuiLabelFontWeightLabel.
   ///
@@ -6369,6 +6399,12 @@ abstract class AppLocalizations {
   /// **'页面转场速度 {speed}×'**
   String pageTransitionSpeedLabel(String speed);
 
+  /// No description provided for @pageTransitionSpeedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'页面转场速度'**
+  String get pageTransitionSpeedTitle;
+
   /// No description provided for @pageTransitionSpeedSubtitle.
   ///
   /// In zh, this message translates to:
@@ -6423,6 +6459,12 @@ abstract class AppLocalizations {
   /// **'悬浮按钮不透明度 {value}%'**
   String layoutBackToCurrentWeekButtonOpacityLabel(int value);
 
+  /// No description provided for @layoutBackToCurrentWeekButtonOpacityTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'悬浮按钮不透明度'**
+  String get layoutBackToCurrentWeekButtonOpacityTitle;
+
   /// No description provided for @layoutBackToCurrentWeekButtonOpacitySubtitle.
   ///
   /// In zh, this message translates to:
@@ -6435,11 +6477,23 @@ abstract class AppLocalizations {
   /// **'课程卡片间距 {value}'**
   String layoutCourseCardGapLabel(String value);
 
+  /// No description provided for @layoutCourseCardGapTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片间距'**
+  String get layoutCourseCardGapTitle;
+
   /// No description provided for @layoutSectionHeightLabel.
   ///
   /// In zh, this message translates to:
   /// **'课表行高 {value}'**
   String layoutSectionHeightLabel(String value);
+
+  /// No description provided for @layoutSectionHeightTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表行高'**
+  String get layoutSectionHeightTitle;
 
   /// No description provided for @layoutCompactFontSizeLabel.
   ///
@@ -6447,11 +6501,23 @@ abstract class AppLocalizations {
   /// **'紧凑字号 {value}'**
   String layoutCompactFontSizeLabel(String value);
 
+  /// No description provided for @layoutCompactFontSizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'紧凑字号'**
+  String get layoutCompactFontSizeTitle;
+
   /// No description provided for @layoutCourseCardFontSizeLabel.
   ///
   /// In zh, this message translates to:
   /// **'课程卡片字号 {value}'**
   String layoutCourseCardFontSizeLabel(String value);
+
+  /// No description provided for @layoutCourseCardFontSizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程卡片字号'**
+  String get layoutCourseCardFontSizeTitle;
 
   /// No description provided for @layoutCourseCardDisplayTitle.
   ///

@@ -1188,6 +1188,7 @@
       }
     }
   },
+  "timeCorrectionTitle": "铃声时间矫正",
   "timeCorrectionHelp": "如果学校铃声比课表快几秒，就调成提前；如果铃声慢几秒，就调成延后。",
   "duringEndTimeDisplayLabel": "课中 / 下课提醒时间样式",
   "duringEndTimeDisplayHelp": "控制紧凑提醒里显示最近时间还是整段总时间。",
@@ -1230,6 +1231,7 @@
       }
     }
   },
+  "liveMiuiLabelLogoCornerRadiusTitle": "左侧图标圆角",
   "liveMiuiLabelFontSizeLabel": "左侧文字大小 {value}",
   "@liveMiuiLabelFontSizeLabel": {
     "placeholders": {
@@ -1238,6 +1240,7 @@
       }
     }
   },
+  "liveMiuiLabelFontSizeTitle": "左侧文字大小",
   "liveMiuiLabelOffsetXLabel": "左侧文字水平偏移 {value}",
   "@liveMiuiLabelOffsetXLabel": {
     "placeholders": {
@@ -1246,6 +1249,7 @@
       }
     }
   },
+  "liveMiuiLabelOffsetXTitle": "左侧文字水平偏移",
   "liveMiuiLabelOffsetYLabel": "左侧文字垂直偏移 {value}",
   "@liveMiuiLabelOffsetYLabel": {
     "placeholders": {
@@ -1254,6 +1258,7 @@
       }
     }
   },
+  "liveMiuiLabelOffsetYTitle": "左侧文字垂直偏移",
   "liveMiuiLabelFontWeightLabel": "左侧文字粗细",
   "liveMiuiLabelRenderQualityLabel": "左侧文字清晰度",
   "liveMiuiExpandedIconLabel": "展开态大图标",
@@ -1909,6 +1914,7 @@
       }
     }
   },
+  "pageTransitionSpeedTitle": "页面转场速度",
   "pageTransitionSpeedSubtitle": "调节进入和返回子页面时的滑动动画快慢。数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置。",
   "pageTransitionSpeedDurationHint": "约 {milliseconds} 毫秒",
   "@pageTransitionSpeedDurationHint": {
@@ -1932,6 +1938,7 @@
       }
     }
   },
+  "layoutBackToCurrentWeekButtonOpacityTitle": "悬浮按钮不透明度",
   "layoutBackToCurrentWeekButtonOpacitySubtitle": "只对右下角悬浮样式生效。",
   "layoutCourseCardGapLabel": "课程卡片间距 {value}",
   "@layoutCourseCardGapLabel": {
@@ -1941,6 +1948,7 @@
       }
     }
   },
+  "layoutCourseCardGapTitle": "课程卡片间距",
   "layoutSectionHeightLabel": "课表行高 {value}",
   "@layoutSectionHeightLabel": {
     "placeholders": {
@@ -1949,6 +1957,7 @@
       }
     }
   },
+  "layoutSectionHeightTitle": "课表行高",
   "layoutCompactFontSizeLabel": "紧凑字号 {value}",
   "@layoutCompactFontSizeLabel": {
     "placeholders": {
@@ -1957,6 +1966,7 @@
       }
     }
   },
+  "layoutCompactFontSizeTitle": "紧凑字号",
   "layoutCourseCardFontSizeLabel": "课程卡片字号 {value}",
   "@layoutCourseCardFontSizeLabel": {
     "placeholders": {
@@ -1965,6 +1975,7 @@
       }
     }
   },
+  "layoutCourseCardFontSizeTitle": "课程卡片字号",
   "layoutCourseCardDisplayTitle": "课程卡片显示",
   "layoutCourseCardDisplaySubtitle": "默认显示课程名、老师和教室；其他信息可按课表自由开关组合。",
   "layoutShowTeacherTitle": "显示老师",
