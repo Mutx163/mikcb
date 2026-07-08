@@ -8,6 +8,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/holiday_log_localizer.dart';
+import 'package:university_timetable/l10n/holiday_name_localizer.dart';
 import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
@@ -2991,16 +2992,20 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
         title: l10n.homeWidgetTodayCourseTitle,
         subtitle: l10n.homeWidgetTodayCourseSubtitle,
         edgeToEdge: true,
-        child: HyperosSelectTile<WidgetBackgroundStyle>(
-          label: l10n.homeWidgetBackgroundStyleLabel,
-          items: {
-            for (final v in WidgetBackgroundStyle.values)
-              widgetBackgroundStyleLabel(l10n, v): v,
-          },
-          value: _draft.widgetBackgroundStyle,
-          onChanged: (value) {
-            _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
-          },
+        child: HyperosControlCardRowScope(
+          isFirst: true,
+          isLast: false,
+          child: HyperosSelectTile<WidgetBackgroundStyle>(
+            label: l10n.homeWidgetBackgroundStyleLabel,
+            items: {
+              for (final v in WidgetBackgroundStyle.values)
+                widgetBackgroundStyleLabel(l10n, v): v,
+            },
+            value: _draft.widgetBackgroundStyle,
+            onChanged: (value) {
+              _updateDraft(_draft.copyWith(widgetBackgroundStyle: value));
+            },
+          ),
         ),
       ),
       2 => HyperosListGroup(
@@ -3111,24 +3116,7 @@ class _HomeWidgetSettingsScreenState extends State<_HomeWidgetSettingsScreen> {
           ),
         ),
       ),
-      _ => Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          HyperosSectionLabel(text: l10n.homeWidgetDescriptionTitle),
-          Padding(
-            padding: const EdgeInsets.only(
-              left: HyperosTokens.sectionLabelInset,
-              right: HyperosTokens.sectionLabelInset,
-            ),
-            child: Text(
-              l10n.homeWidgetDescriptionText,
-              style: HyperosTypography.sectionDescription(context),
-              softWrap: true,
-            ),
-          ),
-        ],
-      ),
+      _ => const SizedBox.shrink(),
     };
 
     if (index == 0) {
@@ -4232,43 +4220,50 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                       label: l10n.customHolidayNameLabel,
                     ),
                     const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () async {
-                        FocusManager.instance.primaryFocus?.unfocus();
-                        final now = DateTime.now();
-                        final picked = await showDateRangePicker(
-                          context: ctx,
-                          initialDateRange: startDate != null && endDate != null
-                              ? DateTimeRange(start: startDate!, end: endDate!)
-                              : null,
-                          firstDate: DateTime(now.year - 1),
-                          lastDate: DateTime(now.year + 2),
-                        );
-                        if (picked != null) {
-                          setDialogState(() {
-                            startDate = picked.start;
-                            endDate = picked.end;
-                          });
-                        }
-                      },
-                      child: InputDecorator(
-                        decoration: InputDecoration(
-                          labelText:
+                    HyperosListGroup(
+                      children: [
+                        HyperosChoiceTile(
+                          prefix: Icon(
+                            Icons.date_range,
+                            size: 18,
+                            color: Theme.of(ctx).colorScheme.onSurfaceVariant,
+                          ),
+                          title:
                               '${l10n.customHolidayStartDate} / ${l10n.customHolidayEndDate}',
-                          border: const OutlineInputBorder(),
-                          suffixIcon: const Icon(Icons.date_range, size: 18),
+                          subtitle: Text(
+                            startDate != null && endDate != null
+                                ? '${startDate!.month}/${startDate!.day} — ${endDate!.month}/${endDate!.day}'
+                                : '--',
+                          ),
+                          onTap: () async {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            final now = DateTime.now();
+                            final picked = await showDateRangePicker(
+                              context: ctx,
+                              initialDateRange:
+                                  startDate != null && endDate != null
+                                  ? DateTimeRange(
+                                      start: startDate!,
+                                      end: endDate!,
+                                    )
+                                  : null,
+                              firstDate: DateTime(now.year - 1),
+                              lastDate: DateTime(now.year + 2),
+                            );
+                            if (picked != null) {
+                              setDialogState(() {
+                                startDate = picked.start;
+                                endDate = picked.end;
+                              });
+                            }
+                          },
                         ),
-                        child: Text(
-                          startDate != null && endDate != null
-                              ? '${startDate!.month}/${startDate!.day} — ${endDate!.month}/${endDate!.day}'
-                              : '--',
-                        ),
-                      ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     Text(
                       l10n.customHolidayType,
-                      style: const TextStyle(fontSize: 13),
+                      style: HyperosTypography.sectionLabel(ctx),
                     ),
                     const SizedBox(height: 4),
                     SizedBox(
@@ -4294,12 +4289,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: HyperosButton(
+                          child: HyperosFrostedSheetButton(
                             label: MaterialLocalizations.of(
                               ctx,
                             ).cancelButtonLabel,
-                            variant: HyperosButtonVariant.secondary,
                             expand: true,
+                            bordered: true,
                             onPressed: () => Navigator.pop(ctx, false),
                           ),
                         ),
@@ -4427,7 +4422,7 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
               : groupEntries;
           officialHolidays.add(
             _HolidayDisplayItem(
-              name: representative.first.name,
+              name: localizedHolidayName(l10n, representative.first.name),
               startDate: representative.first.date,
               endDate: representative.last.date,
               type: representative.first.type,
@@ -4771,9 +4766,12 @@ class _HolidaySettingsScreenState extends State<_HolidaySettingsScreen> {
                 ),
               )
             else
-              SizedBox(
-                height: 140,
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 140),
                 child: ListView.builder(
+                  shrinkWrap: true,
+                  physics: const ClampingScrollPhysics(),
+                  padding: EdgeInsets.zero,
                   itemCount: provider.holidayLogs.length,
                   itemBuilder: (_, i) {
                     final log = provider.holidayLogs[i];

@@ -5681,18 +5681,22 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                   const SizedBox(height: 12),
                   HyperosControlCard(
                     edgeToEdge: true,
-                    child: HyperosSelectTile<int>(
-                      label: l10n.importFirstCourseWeekMappingLabel,
-                      subtitle: l10n.importFirstCourseWeekMappingSubtitle,
-                      items: weekItems,
-                      value: selectedFirstCourseWeek,
-                      useSheetForPopup: true,
-                      onChanged: (picked) {
-                        setModalState(() {
-                          selectedFirstCourseWeek = picked;
-                          autoTrackWeekMapping = false;
-                        });
-                      },
+                    child: HyperosControlCardRowScope(
+                      isFirst: true,
+                      isLast: false,
+                      child: HyperosSelectTile<int>(
+                        label: l10n.importFirstCourseWeekMappingLabel,
+                        subtitle: l10n.importFirstCourseWeekMappingSubtitle,
+                        items: weekItems,
+                        value: selectedFirstCourseWeek,
+                        useSheetForPopup: true,
+                        onChanged: (picked) {
+                          setModalState(() {
+                            selectedFirstCourseWeek = picked;
+                            autoTrackWeekMapping = false;
+                          });
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),

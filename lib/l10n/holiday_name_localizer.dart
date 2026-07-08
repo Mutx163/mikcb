@@ -11,7 +11,10 @@ String localizedHolidayName(AppLocalizations l10n, String name) {
     'holiday_name:qingming' || '清明节' => l10n.holidayNameQingming,
     'holiday_name:dragon_boat' || '端午节' => l10n.holidayNameDragonBoat,
     'holiday_name:mid_autumn' || '中秋节' => l10n.holidayNameMidAutumn,
-    'holiday_name:statutory' || '法定假日' => l10n.holidayStatutoryLabel,
+    'holiday_name:statutory' ||
+    '法定假日' ||
+    'Public holiday' ||
+    'Holiday' => l10n.holidayStatutoryLabel,
     _ => name,
   };
 }
