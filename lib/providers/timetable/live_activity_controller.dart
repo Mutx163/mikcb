@@ -139,18 +139,7 @@ LiveActivityCourseSelection? _liveGetActivityCourseSelection(
   bool allowUpcomingFallback = false,
   int? week,
 }) {
-  // Live scheduling needs a real calendar week. Without semester start we only
-  // have the manually pinned UI week, which may stay on an old week and show
-  // the wrong course at today's time slot.
-  if (host._settings.semesterStartDate == null) {
-    return null;
-  }
-
   final currentTime = now ?? DateTime.now();
-  if (host.isHoliday(currentTime)) {
-    return null;
-  }
-
   final targetWeek = week ?? host._calculateCalendarWeekForDate(currentTime);
   final todayCourses = host.getActiveCoursesForDay(
     currentTime.weekday,
@@ -394,23 +383,16 @@ Future<void> _liveUpdateActivity(
     return;
   }
 
-  if (syncScheduleSnapshot) {
-    await _liveSyncScheduleSnapshot(host);
-  }
-
-  if (host._settings.semesterStartDate == null) {
-    host._currentLiveCourseId = null;
-    host._lastLiveActivityStageKey = null;
-    await host._liveActivitiesService.stopLiveUpdate();
-    return;
-  }
-
   final suspendedUntil = host._liveActivitySuspendedUntil;
   if (suspendedUntil != null) {
     if (DateTime.now().isBefore(suspendedUntil)) {
       return;
     }
     host._liveActivitySuspendedUntil = null;
+  }
+
+  if (syncScheduleSnapshot) {
+    await _liveSyncScheduleSnapshot(host);
   }
 
   if (host.isHoliday(DateTime.now())) {

@@ -63,6 +63,8 @@
     <string name="debug_promoted_permission_not_declared">应用未声明提升通知权限</string>
     <string name="debug_system_denied_promoted">系统未允许提升通知</string>
     <string name="debug_notification_not_promotable">当前通知不满足系统提升特征</string>
+    <string name="debug_miui_focus_param_missing">MIUI 焦点通知参数构建失败</string>
+    <string name="debug_try_return_home">请返回桌面查看超级岛（应用在前台时系统可能不弹出）</string>
 
     <string name="stop_service_start_failed">实时服务启动失败</string>
     <string name="stop_service_destroyed">原生实时服务已销毁</string>

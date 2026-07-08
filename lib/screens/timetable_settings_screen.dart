@@ -32,6 +32,7 @@ import '../widgets/semester_week_count_picker_sheet.dart';
 import '../widgets/theme_manage_sheets.dart';
 import '../widgets/timetable_text_color_settings.dart';
 import '../widgets/timetable_week_preview.dart';
+import '../services/android_animation_scale_service.dart';
 import '../services/bundled_assets.dart';
 import '../widgets/bundled_asset_image.dart';
 import 'about_screen.dart';
@@ -46,6 +47,8 @@ import 'time_scheme_management_screen.dart';
 import 'timetable_profiles_screen.dart';
 import 'hyperos_showcase_screen.dart';
 import 'user_guide_screen.dart';
+
+bool _liveUpdateTestInFlight = false;
 
 class TimetableSettingsScreen extends StatelessWidget {
   const TimetableSettingsScreen({super.key});
@@ -2543,6 +2546,20 @@ Future<void> _triggerUmengTestAnr(BuildContext context) async {
 }
 
 Future<void> _showTestOptions(BuildContext context) async {
+  if (_liveUpdateTestInFlight) {
+    if (!context.mounted) return;
+    final locale = Localizations.localeOf(context);
+    showAppToast(
+      context,
+      message: locale.languageCode == 'zh'
+          ? '测试进行中，请勿重复点击，约 8 秒后查看超级岛'
+          : 'Test in progress. Please wait about 8 seconds before tapping again.',
+      kind: AppToastKind.warning,
+    );
+    return;
+  }
+  _liveUpdateTestInFlight = true;
+
   final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
   const beforeClassLead = Duration(seconds: 8);
@@ -2569,6 +2586,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       AppLogMessages.liveUpdateTestNoSelection,
       extras: {'weekday': now.weekday},
     );
+    _liveUpdateTestInFlight = false;
     if (!context.mounted) return;
     showAppToast(
       context,
@@ -2612,7 +2630,10 @@ Future<void> _showTestOptions(BuildContext context) async {
     note: l10n.liveTestingTestCourseNote,
   );
 
-  if (!context.mounted) return;
+  if (!context.mounted) {
+    _liveUpdateTestInFlight = false;
+    return;
+  }
 
   try {
     provider.suspendLiveActivitySyncFor(
@@ -2627,8 +2648,6 @@ Future<void> _showTestOptions(BuildContext context) async {
             .millisecondsSinceEpoch,
       },
     );
-    await liveService.stopLiveUpdate();
-    await Future<void>.delayed(const Duration(milliseconds: 150));
     final progressMilestones = provider.buildLiveProgressMilestones(
       baseCourse,
       startAtMillis: start.millisecondsSinceEpoch,
@@ -2662,7 +2681,7 @@ Future<void> _showTestOptions(BuildContext context) async {
       promoteDuringClass: settings.livePromoteDuringClass,
       showNotificationDuringClass: settings.liveShowDuringClassNotification,
       enableBeforeClass: true,
-      enableDuringClass: false,
+      enableDuringClass: true,
       enableBeforeEnd: false,
       showCountdown: displaySettings.showCountdown,
       countdownTextStyle: displaySettings.countdownTextStyle,
@@ -2705,12 +2724,17 @@ Future<void> _showTestOptions(BuildContext context) async {
       },
     );
     if (!context.mounted) return;
+    final locale = Localizations.localeOf(context);
+    final homeHint = locale.languageCode == 'zh'
+        ? '请按 Home 键回到桌面查看超级岛（停留在应用内时系统通常不会弹出）。'
+        : 'Press Home and watch the island; it usually will not pop while the app stays open.';
     showAppToast(
       context,
-      message: AppLocalizations.of(context)!.liveTestingNotificationSent,
+      message: '${AppLocalizations.of(context)!.liveTestingNotificationSent}\n$homeHint',
       kind: AppToastKind.success,
     );
   } catch (e, stackTrace) {
+    _liveUpdateTestInFlight = false;
     await UmengAnalyticsService.reportDiagnostic(
       'live_update_test_failed',
       AppLogMessages.liveUpdateTestFailed,
@@ -2723,6 +2747,12 @@ Future<void> _showTestOptions(BuildContext context) async {
       context,
       message: AppLocalizations.of(context)!.sendFailedWithError('$e'),
       kind: AppToastKind.error,
+    );
+  } finally {
+    unawaited(
+      Future<void>.delayed(const Duration(seconds: 12), () {
+        _liveUpdateTestInFlight = false;
+      }),
     );
   }
 }
@@ -3160,7 +3190,7 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
     );
   }
 
-  static const _layoutSectionCount = 13;
+  static const _layoutSectionCount = 14;
 
   Widget _buildLayoutSection(BuildContext context, int index) {
     final l10n = AppLocalizations.of(context)!;
@@ -3192,8 +3222,33 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      1 => const HyperosSectionGap(),
-      2 => HyperosControlCard(
+      1 => HyperosControlCard(
+        subtitle: l10n.pageTransitionSpeedSubtitle,
+        edgeToEdge: true,
+        child: HyperosSliderTile(
+          title: l10n.pageTransitionSpeedLabel(
+            _draft.pageTransitionSpeed.toStringAsFixed(1),
+          ),
+          value: _draft.pageTransitionSpeed,
+          min: TimetableSettings.minPageTransitionSpeed,
+          max: TimetableSettings.maxPageTransitionSpeed,
+          divisions: 20,
+          valueLabel: l10n.pageTransitionSpeedDurationHint(
+            AndroidAnimationScaleService.scaledDuration(
+              HyperosMiuixNavigation.transitionDurationMs,
+            ).inMilliseconds,
+          ),
+          onChanged: (value) {
+            HyperosNavigation.applyUserTransitionSpeed(value);
+            _updateDraft(
+              _draft.copyWith(pageTransitionSpeed: value),
+              debounce: true,
+            );
+          },
+        ),
+      ),
+      2 => const HyperosSectionGap(),
+      3 => HyperosControlCard(
         subtitle: l10n.layoutEntrySubtitle,
         edgeToEdge: true,
         child: Column(
@@ -3333,9 +3388,9 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ],
         ),
       ),
-      3 => const HyperosSectionGap(),
-      4 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
-      5 => HyperosListGroup(
+      4 => const HyperosSectionGap(),
+      5 => HyperosSectionLabel(text: l10n.layoutCourseCardDisplayTitle),
+      6 => HyperosListGroup(
         children: [
           HyperosSwitchTile(
             title: l10n.showCourseNameTitle,
@@ -3410,11 +3465,11 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ],
       ),
-      6 => HyperosSectionDescription(
+      7 => HyperosSectionDescription(
         text: l10n.layoutCourseCardDisplaySubtitle,
       ),
-      7 => const HyperosSectionGap(),
-      8 => HyperosControlCard(
+      8 => const HyperosSectionGap(),
+      9 => HyperosControlCard(
         edgeToEdge: true,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -3445,8 +3500,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ],
         ),
       ),
-      9 => const HyperosSectionGap(),
-      10 => HyperosControlCard(
+      10 => const HyperosSectionGap(),
+      11 => HyperosControlCard(
         title: l10n.layoutConflictOpacityLabel(
           (_draft.timetableConflictCourseOpacity * 100).round(),
         ),
@@ -3462,8 +3517,8 @@ class _LayoutSettingsScreenState extends State<_LayoutSettingsScreen> {
           ),
         ),
       ),
-      11 => const HyperosSectionGap(),
-      12 => HyperosControlCard(
+      12 => const HyperosSectionGap(),
+      13 => HyperosControlCard(
         title: l10n.textColorTitle,
         subtitle: l10n.textColorSubtitle,
         edgeToEdge: true,

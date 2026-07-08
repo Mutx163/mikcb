@@ -691,7 +691,7 @@ object LiveUpdateScheduler {
             category = "live_update_alarm_triggered",
             message = DiagnosticLogMessages.LIVE_UPDATE_ALARM_TRIGGERED,
         )
-        reschedule(context, allowImmediateStart = true)
+        reschedule(context, allowImmediateStart = true, stopStaleSessions = true)
     }
 
     /** Whether the persisted schedule snapshot still has a course to show right now. */
@@ -707,11 +707,11 @@ object LiveUpdateScheduler {
 
     fun handleBootReschedule(context: Context) {
         BeforeClassQuickActionRestore.restoreOnBoot(context.applicationContext)
-        reschedule(context, allowImmediateStart = true)
+        reschedule(context, allowImmediateStart = true, stopStaleSessions = true)
     }
 
     fun handleTimeReschedule(context: Context) {
-        reschedule(context, allowImmediateStart = true)
+        reschedule(context, allowImmediateStart = true, stopStaleSessions = true)
     }
 
     fun onLiveUpdateStopped(context: Context) {
@@ -805,18 +805,20 @@ object LiveUpdateScheduler {
         return buildServiceIntent(context, payload)
     }
 
-    fun reschedule(context: Context, allowImmediateStart: Boolean): Boolean {
+    fun reschedule(
+        context: Context,
+        allowImmediateStart: Boolean,
+        stopStaleSessions: Boolean = false,
+    ): Boolean {
         cancelScheduledAlarm(context)
         val snapshot = loadSnapshot(context) ?: run {
-            if (allowImmediateStart) {
+            if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
             }
             return false
         }
-        if (snapshot.semesterStartMillis == null) {
-            if (allowImmediateStart) {
-                stopRunningLiveUpdate(context)
-            }
+        if (stopStaleSessions && snapshot.semesterStartMillis == null) {
+            stopRunningLiveUpdate(context)
             UmengDiagnosticReporter.record(
                 context = context.applicationContext,
                 category = "live_update_semester_start_missing",
@@ -827,7 +829,7 @@ object LiveUpdateScheduler {
         // Check if today is a holiday (uses both legacy isHoliday flag and full date list)
         val nowCalendar = Calendar.getInstance()
         if (snapshot.isHoliday || isDateHoliday(snapshot, nowCalendar)) {
-            if (allowImmediateStart) {
+            if (stopStaleSessions) {
                 stopRunningLiveUpdate(context)
             }
             UmengDiagnosticReporter.record(
@@ -853,12 +855,14 @@ object LiveUpdateScheduler {
                 startForegroundService(context, selectionToPayload(snapshot, activeSelection))
                 return true
             }
-            stopRunningLiveUpdate(context)
-            UmengDiagnosticReporter.record(
-                context = context.applicationContext,
-                category = "live_update_stopped_no_active_selection",
-                message = DiagnosticLogMessages.LIVE_UPDATE_STOPPED_NO_ACTIVE_SELECTION,
-            )
+            if (stopStaleSessions) {
+                stopRunningLiveUpdate(context)
+                UmengDiagnosticReporter.record(
+                    context = context.applicationContext,
+                    category = "live_update_stopped_no_active_selection",
+                    message = DiagnosticLogMessages.LIVE_UPDATE_STOPPED_NO_ACTIVE_SELECTION,
+                )
+            }
         }
 
         val nextSelection = findNextSelection(context, snapshot, now) ?: return false

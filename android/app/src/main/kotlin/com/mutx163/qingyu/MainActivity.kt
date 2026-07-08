@@ -1655,6 +1655,7 @@ class LiveUpdateService : Service() {
                 val resumed = LiveUpdateScheduler.reschedule(
                     applicationContext,
                     allowImmediateStart = true,
+                    stopStaleSessions = true,
                 )
                 if (!resumed) {
                     stopAndRemoveNotification()
@@ -1817,7 +1818,9 @@ class LiveUpdateService : Service() {
             }
             hasStartedForeground = false
         }
-        LiveUpdateScheduler.onLiveUpdateStopped(applicationContext)
+        if (validateAgainstSchedule) {
+            LiveUpdateScheduler.onLiveUpdateStopped(applicationContext)
+        }
         super.onDestroy()
     }
 
@@ -1843,6 +1846,7 @@ class LiveUpdateService : Service() {
         val resumed = LiveUpdateScheduler.reschedule(
             applicationContext,
             allowImmediateStart = true,
+            stopStaleSessions = validateAgainstSchedule,
         )
         if (!resumed) {
             stopAndRemoveNotification()
@@ -2091,16 +2095,6 @@ class LiveUpdateService : Service() {
         return KeepAliveAccessibilityStatus.isEnabled(this)
     }
 
-    private fun finishLiveSessionFromTicker() {
-        if (validateAgainstSchedule) {
-            if (!LiveUpdateScheduler.reschedule(applicationContext, allowImmediateStart = true)) {
-                stopAndRemoveNotification()
-            }
-        } else {
-            stopAndRemoveNotification()
-        }
-    }
-
     private fun startTicker() {
         stopTicker()
         ticker = object : Runnable {
@@ -2110,36 +2104,68 @@ class LiveUpdateService : Service() {
                 if (validateAgainstSchedule &&
                     !LiveUpdateScheduler.hasActiveLiveSelection(applicationContext, now)
                 ) {
-                    finishLiveSessionFromTicker()
+                    if (!LiveUpdateScheduler.reschedule(
+                            applicationContext,
+                            allowImmediateStart = true,
+                            stopStaleSessions = true,
+                        )
+                    ) {
+                        stopAndRemoveNotification()
+                    }
                     return
                 }
                 val stage = resolveStage(now)
                 if (autoDismissAfterStartMinutes > 0 &&
                     now >= startAtMillis + autoDismissAfterStartMinutes * 60_000L
                 ) {
-                    finishLiveSessionFromTicker()
+                    if (!LiveUpdateScheduler.reschedule(
+                            applicationContext,
+                            allowImmediateStart = true,
+                            stopStaleSessions = validateAgainstSchedule,
+                        )
+                    ) {
+                        stopAndRemoveNotification()
+                    }
                     return
                 }
 
                 if (stage == null) {
-                    finishLiveSessionFromTicker()
+                    if (!LiveUpdateScheduler.reschedule(
+                            applicationContext,
+                            allowImmediateStart = true,
+                            stopStaleSessions = validateAgainstSchedule,
+                        )
+                    ) {
+                        stopAndRemoveNotification()
+                    }
                     return
                 }
 
                 // When stage transitions, reschedule so onStartCommand re-reads
                 // the correct displaySettings for the new stage.
                 if (lastTickerStage != null && stage != lastTickerStage) {
-                    if (validateAgainstSchedule) {
-                        lastTickerStage = stage
-                        finishLiveSessionFromTicker()
-                        return
+                    lastTickerStage = stage
+                    if (!LiveUpdateScheduler.reschedule(
+                            applicationContext,
+                            allowImmediateStart = true,
+                            stopStaleSessions = validateAgainstSchedule,
+                        )
+                    ) {
+                        stopAndRemoveNotification()
                     }
-                    activityStage = stage
+                    return
                 }
                 lastTickerStage = stage
 
                 if (now >= endAtMillis + 30_000L) { // Auto-remove 30s after class end, especially for tests.
-                    finishLiveSessionFromTicker()
+                    if (!LiveUpdateScheduler.reschedule(
+                            applicationContext,
+                            allowImmediateStart = true,
+                            stopStaleSessions = validateAgainstSchedule,
+                        )
+                    ) {
+                        stopAndRemoveNotification()
+                    }
                     return
                 }
 
@@ -3132,8 +3158,19 @@ class LiveUpdateService : Service() {
         } else {
             null
         }
-        val isActuallyPromotable =
-            shouldPromote && !isDuringClassStatusBar && canPostPromoted && hasPromotableCharacteristics == true
+        val isMiuiFocusIslandReady =
+            isXiaomiFamilyDevice() &&
+                miuiFocusParam != null &&
+                shouldPromote &&
+                !isDuringClassStatusBar
+        val isActuallyPromotable = when {
+            isDuringClassStatusBar || !shouldPromote -> false
+            Build.VERSION.SDK_INT >= 36 &&
+                canPostPromoted &&
+                hasPromotableCharacteristics == true -> true
+            isMiuiFocusIslandReady -> true
+            else -> false
+        }
         val notIslandReason = when {
             !hasStartedForeground -> getString(R.string.debug_foreground_not_started)
             stage == null -> getString(R.string.debug_stage_not_displayable)
@@ -3141,12 +3178,19 @@ class LiveUpdateService : Service() {
             !shouldPromote && isDuringClass && !promoteDuringClass ->
                 getString(R.string.debug_during_class_normal_notification)
             !shouldPromote -> getString(R.string.debug_promote_not_requested)
-            Build.VERSION.SDK_INT < 36 -> getString(R.string.debug_os_not_supported)
             !hasNotificationPermissionCompat(this) -> getString(R.string.debug_notification_permission_off)
-            !isPromotedPermissionDeclaredCompat(this) -> getString(R.string.debug_promoted_permission_not_declared)
-            !canPostPromoted -> getString(R.string.debug_system_denied_promoted)
-            hasPromotableCharacteristics == false -> getString(R.string.debug_notification_not_promotable)
-            else -> ""
+            isActuallyPromotable -> ""
+            Build.VERSION.SDK_INT >= 36 && !isPromotedPermissionDeclaredCompat(this) ->
+                getString(R.string.debug_promoted_permission_not_declared)
+            Build.VERSION.SDK_INT >= 36 && !canPostPromoted && !isMiuiFocusIslandReady ->
+                getString(R.string.debug_system_denied_promoted)
+            Build.VERSION.SDK_INT >= 36 && hasPromotableCharacteristics == false && !isMiuiFocusIslandReady ->
+                getString(R.string.debug_notification_not_promotable)
+            isXiaomiFamilyDevice() && miuiFocusParam == null ->
+                getString(R.string.debug_miui_focus_param_missing)
+            Build.VERSION.SDK_INT < 36 && !isXiaomiFamilyDevice() ->
+                getString(R.string.debug_os_not_supported)
+            else -> getString(R.string.debug_try_return_home)
         }
 
         updateDebugSnapshot(

@@ -1597,7 +1597,7 @@ void main() {
   });
 
   test(
-    'live activity returns null without semester start when currentWeek is stale',
+    'live activity still uses manual currentWeek without semester start (v2.0 behavior)',
     () async {
       final provider = TimetableProvider(
         autoInitialize: false,
@@ -1616,7 +1616,9 @@ void main() {
 
       final now = DateTime(2026, 4, 13, 8, 30);
       expect(provider.getWeekIndex(now, _liveSemesterStart2026), 8);
-      expect(provider.getLiveActivityCourseSelection(now: now), isNull);
+      final selection = provider.getLiveActivityCourseSelection(now: now);
+      expect(selection, isNotNull);
+      expect(selection!.currentCourse.name, '高等数学');
     },
   );
 
@@ -1725,10 +1727,6 @@ void main() {
 
       final holidayMonday = DateTime(2026, 4, 13, 8, 30);
       expect(provider.isHoliday(holidayMonday), isTrue);
-      expect(
-        provider.getLiveActivityCourseSelection(now: holidayMonday),
-        isNull,
-      );
 
       liveService.stopLiveUpdateCallCount = 0;
       liveService.startLiveUpdateCallCount = 0;
