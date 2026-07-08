@@ -9,6 +9,7 @@ import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
 import 'cloud_backup_index_service.dart';
 import 'webdav_client_service.dart';
+import 'webdav_error_message.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_credentials_store.dart';
 
@@ -31,6 +32,18 @@ class WebdavSyncResult {
   final String? message;
 
   const WebdavSyncResult({required this.kind, this.message});
+}
+
+class WebdavBackupListResult {
+  final List<CloudBackupEntry> entries;
+  final String? errorMessage;
+
+  const WebdavBackupListResult({
+    required this.entries,
+    this.errorMessage,
+  });
+
+  bool get hasError => errorMessage != null;
 }
 
 typedef WebdavSyncConflictHandler =
@@ -136,6 +149,9 @@ class WebdavSyncService {
       );
     }
 
+    WebdavClient? client;
+    var wroteSnapshot = false;
+    var wroteMeta = false;
     try {
       final deviceId = await _credentialsStore.getOrCreateDeviceId();
       final deviceLabel = await resolveDeviceLabel();
@@ -153,7 +169,7 @@ class WebdavSyncService {
         appVersion: packageInfo.version,
       );
 
-      final client = _clientService.createClient(params);
+      client = _clientService.createClient(params);
       await _clientService.ensureRemoteFolder(
         client: client,
         remoteFolder: config.normalizedRemoteFolder,
@@ -163,6 +179,7 @@ class WebdavSyncService {
         remotePath: config.snapshotRemotePath,
         bytes: snapshotBytes,
       );
+      wroteSnapshot = true;
       await _clientService.putBytes(
         client: client,
         remotePath: config.metaRemotePath,
@@ -170,6 +187,7 @@ class WebdavSyncService {
           utf8.encode(_snapshotService.buildMetaJson(meta)),
         ),
       );
+      wroteMeta = true;
 
       if (writeHistory) {
         final skipHistory =
@@ -185,6 +203,7 @@ class WebdavSyncService {
             deviceLabel: deviceLabel,
             appVersion: packageInfo.version,
             source: backupSource,
+            allowDuplicateHash: backupSource == CloudBackupSource.manual,
           );
         } else {
           await _refreshBackupCurrentMarker(
@@ -207,20 +226,69 @@ class WebdavSyncService {
 
       return const WebdavSyncResult(kind: WebdavSyncResultKind.uploaded);
     } catch (error) {
+      final activeClient = client;
+      if (activeClient != null && (wroteSnapshot || wroteMeta)) {
+        await _cleanupPartialUpload(
+          client: activeClient,
+          config: config,
+          deleteSnapshot: wroteSnapshot,
+          deleteMeta: wroteMeta,
+        );
+      }
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
-        message: error.toString(),
+        message: sanitizeWebdavErrorMessage(error),
       );
     }
   }
 
-  Future<List<CloudBackupEntry>> fetchBackupList({
+  Future<void> _cleanupPartialUpload({
+    required WebdavClient client,
+    required WebdavSyncConfig config,
+    required bool deleteSnapshot,
+    required bool deleteMeta,
+  }) async {
+    if (deleteSnapshot) {
+      try {
+        await _clientService.deleteRemoteFile(
+          client: client,
+          remotePath: config.snapshotRemotePath,
+        );
+      } catch (_) {}
+    }
+    if (deleteMeta) {
+      try {
+        await _clientService.deleteRemoteFile(
+          client: client,
+          remotePath: config.metaRemotePath,
+        );
+      } catch (_) {}
+    }
+  }
+
+  Future<WebdavSyncResult> createManualBackup({
+    required TimetableProvider provider,
+  }) async {
+    final result = await uploadSnapshot(
+      provider: provider,
+      backupSource: CloudBackupSource.manual,
+    );
+    if (result.kind == WebdavSyncResultKind.uploaded) {
+      return const WebdavSyncResult(kind: WebdavSyncResultKind.backupCreated);
+    }
+    return result;
+  }
+
+  Future<WebdavBackupListResult> fetchBackupList({
     WebdavSyncConfig? configOverride,
   }) async {
     final config = configOverride ?? await _configStore.load();
     final params = await buildConnectionParams(config);
     if (params == null) {
-      return const [];
+      return const WebdavBackupListResult(
+        entries: [],
+        errorMessage: 'missing_credentials',
+      );
     }
 
     try {
@@ -228,9 +296,12 @@ class WebdavSyncService {
       final index = await _loadRemoteBackupIndex(client: client, config: config);
       final sorted = [...index.entries]
         ..sort((a, b) => b.exportedAt.compareTo(a.exportedAt));
-      return sorted;
-    } catch (_) {
-      return const [];
+      return WebdavBackupListResult(entries: sorted);
+    } catch (error) {
+      return WebdavBackupListResult(
+        entries: const [],
+        errorMessage: sanitizeWebdavErrorMessage(error),
+      );
     }
   }
 
@@ -305,7 +376,7 @@ class WebdavSyncService {
     } catch (error) {
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
-        message: error.toString(),
+        message: sanitizeWebdavErrorMessage(error),
       );
     }
   }
@@ -353,7 +424,7 @@ class WebdavSyncService {
     } catch (error) {
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
-        message: error.toString(),
+        message: sanitizeWebdavErrorMessage(error),
       );
     }
   }
@@ -401,6 +472,15 @@ class WebdavSyncService {
         localContentSha256: localSnapshot.contentSha256,
         remoteContentSha256: remoteMeta.contentSha256,
       )) {
+        final localChangedSinceUpload =
+            config.lastUploadedLocalHash != null &&
+            localSnapshot.contentSha256 != config.lastUploadedLocalHash;
+        if (!allowConflictPrompt && localChangedSinceUpload) {
+          return const WebdavSyncResult(
+            kind: WebdavSyncResultKind.cancelled,
+            message: 'local_changes_pending_sync',
+          );
+        }
         final conflict = SyncConflictInfo(
           localExportedAt: localSnapshot.exportedAt,
           remoteExportedAt: remoteMeta.exportedAt,
@@ -455,7 +535,7 @@ class WebdavSyncService {
     } catch (error) {
       return WebdavSyncResult(
         kind: WebdavSyncResultKind.failed,
-        message: error.toString(),
+        message: sanitizeWebdavErrorMessage(error),
       );
     }
   }

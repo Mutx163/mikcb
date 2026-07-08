@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../providers/timetable_provider.dart';
 import 'app_sync_snapshot_service.dart';
-import 'cloud_backup_index_service.dart';
+import 'sync_operation_gate.dart';
 import 'webdav_sync_config.dart';
 import 'webdav_sync_service.dart';
 
@@ -28,8 +28,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
   final WebdavSyncService _syncService;
   TimetableProvider? _provider;
   Timer? _uploadDebounce;
-  bool _uploadInFlight = false;
-  bool _pullInFlight = false;
+  final SyncOperationGate _syncGate = SyncOperationGate();
 
   WebdavSyncStatus _status = const WebdavSyncStatus.idle();
   WebdavSyncStatus get status => _status;
@@ -48,30 +47,27 @@ class WebdavSyncCoordinator extends ChangeNotifier {
 
   Future<void> maybePullRemote({bool fromManualSync = false}) async {
     final provider = _provider;
-    if (provider == null || _pullInFlight) {
+    if (provider == null) {
       return;
     }
 
     final config = await _syncService.loadConfig();
     if (!config.enabled || config.syncMode != WebdavSyncMode.auto) {
-      if (fromManualSync) {
-        return;
-      }
       return;
     }
 
-    _pullInFlight = true;
-    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
-    try {
-      final result = await _syncService.downloadAndApply(
-        provider: provider,
-        allowConflictPrompt: false,
-      );
-      _applyResult(result);
-    } finally {
-      _pullInFlight = false;
-      _setStatus(_status.copyWith(isSyncing: false));
-    }
+    await _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.downloadAndApply(
+          provider: provider,
+          allowConflictPrompt: false,
+        );
+        _applyResult(result);
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<WebdavSyncResult> syncNow({bool allowConflictPrompt = true}) async {
@@ -83,17 +79,19 @@ class WebdavSyncCoordinator extends ChangeNotifier {
       );
     }
 
-    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
-    try {
-      final result = await _syncService.syncNow(
-        provider: provider,
-        allowConflictPrompt: allowConflictPrompt,
-      );
-      _applyResult(result);
-      return result;
-    } finally {
-      _setStatus(_status.copyWith(isSyncing: false));
-    }
+    return _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.syncNow(
+          provider: provider,
+          allowConflictPrompt: allowConflictPrompt,
+        );
+        _applyResult(result);
+        return result;
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<void> refreshStatus() async {
@@ -107,8 +105,29 @@ class WebdavSyncCoordinator extends ChangeNotifier {
     );
   }
 
-  Future<List<CloudBackupEntry>> fetchBackupList() {
+  Future<WebdavBackupListResult> fetchBackupList() {
     return _syncService.fetchBackupList();
+  }
+
+  Future<WebdavSyncResult> createManualBackup() async {
+    final provider = _provider;
+    if (provider == null) {
+      return const WebdavSyncResult(
+        kind: WebdavSyncResultKind.failed,
+        message: 'provider_not_ready',
+      );
+    }
+
+    return _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.createManualBackup(provider: provider);
+        _applyResult(result);
+        return result;
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<WebdavSyncResult> restoreBackup(
@@ -123,29 +142,33 @@ class WebdavSyncCoordinator extends ChangeNotifier {
       );
     }
 
-    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
-    try {
-      final result = await _syncService.restoreFromBackup(
-        provider: provider,
-        entryId: entryId,
-        uploadAsCurrent: uploadAsCurrent,
-      );
-      _applyResult(result);
-      return result;
-    } finally {
-      _setStatus(_status.copyWith(isSyncing: false));
-    }
+    return _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.restoreFromBackup(
+          provider: provider,
+          entryId: entryId,
+          uploadAsCurrent: uploadAsCurrent,
+        );
+        _applyResult(result);
+        return result;
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<WebdavSyncResult> deleteBackup(String entryId) async {
-    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
-    try {
-      final result = await _syncService.deleteBackup(entryId: entryId);
-      _applyResult(result);
-      return result;
-    } finally {
-      _setStatus(_status.copyWith(isSyncing: false));
-    }
+    return _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.deleteBackup(entryId: entryId);
+        _applyResult(result);
+        return result;
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<void> _scheduleUploadDebounced() async {
@@ -157,7 +180,7 @@ class WebdavSyncCoordinator extends ChangeNotifier {
 
   Future<void> _performAutoUpload() async {
     final provider = _provider;
-    if (provider == null || _uploadInFlight) {
+    if (provider == null) {
       return;
     }
 
@@ -166,15 +189,15 @@ class WebdavSyncCoordinator extends ChangeNotifier {
       return;
     }
 
-    _uploadInFlight = true;
-    _setStatus(_status.copyWith(isSyncing: true, clearError: true));
-    try {
-      final result = await _syncService.uploadSnapshot(provider: provider);
-      _applyResult(result);
-    } finally {
-      _uploadInFlight = false;
-      _setStatus(_status.copyWith(isSyncing: false));
-    }
+    await _syncGate.runExclusive(() async {
+      _setStatus(_status.copyWith(isSyncing: true, clearError: true));
+      try {
+        final result = await _syncService.uploadSnapshot(provider: provider);
+        _applyResult(result);
+      } finally {
+        _setStatus(_status.copyWith(isSyncing: false));
+      }
+    });
   }
 
   Future<SyncConflictChoice?> _handleConflict(SyncConflictInfo info) async {
