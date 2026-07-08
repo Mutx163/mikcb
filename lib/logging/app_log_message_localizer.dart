@@ -56,6 +56,7 @@ abstract final class AppLogMessageLocalizer {
       'log_live_update_debug_status_failed' => l10n.logLiveUpdateDebugStatusFailed,
       'log_live_update_snapshot_sync_failed' => l10n.logLiveUpdateSnapshotSyncFailed,
       'log_live_update_snapshot_clear_failed' => l10n.logLiveUpdateSnapshotClearFailed,
+      'log_live_update_suspend_triggers_failed' => l10n.logLiveUpdateSuspendTriggersFailed,
       'log_lan_edit_auth_failed' => l10n.logLanEditAuthFailed,
       'log_lan_edit_course_created' => l10n.logLanEditCourseCreated,
       'log_lan_edit_course_updated' => l10n.logLanEditCourseUpdated,

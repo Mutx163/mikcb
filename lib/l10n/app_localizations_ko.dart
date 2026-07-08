@@ -7587,6 +7587,10 @@ class AppLocalizationsKo extends AppLocalizations {
       'Failed to clear Live Island timetable snapshot';
 
   @override
+  String get logLiveUpdateSuspendTriggersFailed =>
+      'Failed to suspend Live Island schedule triggers';
+
+  @override
   String get logLanEditAuthFailed => 'LAN edit: authentication failed';
 
   @override

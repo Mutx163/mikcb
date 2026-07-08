@@ -7385,6 +7385,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
 
   @override
+  String get logLiveUpdateSuspendTriggersFailed => '挂起超级岛课表调度失败';
+
+  @override
   String get logLanEditAuthFailed => '局域网编辑：认证失败';
 
   @override
@@ -15139,6 +15142,9 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
 
   @override
+  String get logLiveUpdateSuspendTriggersFailed => '挂起超级岛课表调度失败';
+
+  @override
   String get logLanEditAuthFailed => '局域网编辑：认证失败';
 
   @override
@@ -22891,6 +22897,9 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
+
+  @override
+  String get logLiveUpdateSuspendTriggersFailed => '挂起超级岛课表调度失败';
 
   @override
   String get logLanEditAuthFailed => '局域网编辑：认证失败';

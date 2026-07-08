@@ -34,6 +34,7 @@ abstract final class AppLogMessages {
   static const liveUpdateDebugStatusFailed = 'log_live_update_debug_status_failed';
   static const liveUpdateSnapshotSyncFailed = 'log_live_update_snapshot_sync_failed';
   static const liveUpdateSnapshotClearFailed = 'log_live_update_snapshot_clear_failed';
+  static const liveUpdateSuspendTriggersFailed = 'log_live_update_suspend_triggers_failed';
   static const lanEditAuthFailed = 'log_lan_edit_auth_failed';
   static const lanEditCourseCreated = 'log_lan_edit_course_created';
   static const lanEditCourseUpdated = 'log_lan_edit_course_updated';

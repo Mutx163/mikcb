@@ -4525,6 +4525,7 @@
   "logLiveUpdateDebugStatusFailed": "Failed to get native Live Island debug status",
   "logLiveUpdateSnapshotSyncFailed": "Failed to sync Live Island timetable snapshot",
   "logLiveUpdateSnapshotClearFailed": "Failed to clear Live Island timetable snapshot",
+  "logLiveUpdateSuspendTriggersFailed": "Failed to suspend Live Island schedule triggers",
   "logLanEditAuthFailed": "LAN edit: authentication failed",
   "logLanEditCourseCreated": "LAN edit: course created",
   "logLanEditCourseUpdated": "LAN edit: course updated",

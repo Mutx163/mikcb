@@ -13275,6 +13275,12 @@ abstract class AppLocalizations {
   /// **'清空超级岛课表快照失败'**
   String get logLiveUpdateSnapshotClearFailed;
 
+  /// No description provided for @logLiveUpdateSuspendTriggersFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'挂起超级岛课表调度失败'**
+  String get logLiveUpdateSuspendTriggersFailed;
+
   /// No description provided for @logLanEditAuthFailed.
   ///
   /// In zh, this message translates to:

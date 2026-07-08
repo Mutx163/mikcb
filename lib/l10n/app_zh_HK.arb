@@ -4525,6 +4525,7 @@
   "logLiveUpdateDebugStatusFailed": "获取原生超级岛调试状态失败",
   "logLiveUpdateSnapshotSyncFailed": "同步超级岛课表快照失败",
   "logLiveUpdateSnapshotClearFailed": "清空超级岛课表快照失败",
+  "logLiveUpdateSuspendTriggersFailed": "挂起超级岛课表调度失败",
   "logLanEditAuthFailed": "局域网编辑：认证失败",
   "logLanEditCourseCreated": "局域网编辑：已创建课程",
   "logLanEditCourseUpdated": "局域网编辑：已更新课程",

@@ -614,7 +614,7 @@ class MiuiLiveActivitiesService {
     } catch (e, stackTrace) {
       await UmengAnalyticsService.reportDiagnostic(
         'live_update_suspend_triggers_failed',
-        AppLogMessages.liveUpdateSnapshotSyncFailed,
+        AppLogMessages.liveUpdateSuspendTriggersFailed,
         error: e,
         stackTrace: stackTrace,
       );
