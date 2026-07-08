@@ -2,7 +2,10 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 
 import '../models/warehouse_macro_models.dart';
 
@@ -30,38 +33,46 @@ class ReplayProgress {
   double get progress =>
       totalSteps > 0 ? (currentStepIndex + 1) / totalSteps : 0.0;
 
-  String get statusLabel {
+  String statusLabel(AppLocalizations l10n) {
     switch (status) {
       case ReplayStepStatus.running:
-        return _stepTypeLabel(currentStep.type);
+        return _stepTypeLabel(l10n, currentStep.type);
       case ReplayStepStatus.failed:
-        return '失败: $errorMessage';
+        return l10n.macroReplayStatusFailed(
+          errorMessage != null
+              ? localizeServiceMessage(l10n, errorMessage!)
+              : '',
+        );
       case ReplayStepStatus.pausedForInput:
-        return '等待手动操作: ${pauseReason ?? ""}';
+        return l10n.macroReplayStatusPaused(
+          pauseReason != null
+              ? localizeServiceMessage(l10n, pauseReason!)
+              : '',
+        );
       case ReplayStepStatus.pending:
       case ReplayStepStatus.succeeded:
         return '';
     }
   }
 
-  static String _stepTypeLabel(MacroStepType type) {
+  static String _stepTypeLabel(AppLocalizations l10n, MacroStepType type) {
     switch (type) {
       case MacroStepType.navigate:
-        return '正在导航...';
+        return l10n.macroReplayStepNavigating;
       case MacroStepType.fillField:
-        return '正在填充表单...';
+        return l10n.macroReplayStepFilling;
       case MacroStepType.click:
-        return '正在点击...';
+        return l10n.macroReplayStepClicking;
       case MacroStepType.waitForUrl:
-        return '等待页面跳转...';
+        return l10n.macroReplayStepWaitUrl;
       case MacroStepType.waitForSelector:
-        return '等待页面元素...';
+        return l10n.macroReplayStepWaitSelector;
       case MacroStepType.waitForManualInput:
-        return '等待用户操作';
+        return l10n.macroReplayStepWaitManual;
       case MacroStepType.executeScript:
-        return '正在执行导入脚本...';
+        return l10n.macroReplayStepExecuteScript;
       case MacroStepType.delay:
-        return '等待中...';
+        return l10n.macroReplayStepDelay;
     }
   }
 }
@@ -93,14 +104,17 @@ class ReplayCallbacks {
 class WarehouseMacroReplayer {
   final WebViewController _controller;
   final ReplayCallbacks _callbacks;
+  final AppLocalizations _l10n;
   bool _isCancelled = false;
   Timer? _timeoutTimer;
 
   WarehouseMacroReplayer({
     required WebViewController controller,
     required ReplayCallbacks callbacks,
+    required AppLocalizations l10n,
   }) : _controller = controller,
-       _callbacks = callbacks;
+       _callbacks = callbacks,
+       _l10n = l10n;
 
   /// 取消回放
   void cancel() {
@@ -113,13 +127,13 @@ class WarehouseMacroReplayer {
     _isCancelled = false;
     final steps = macro.steps;
     if (steps.isEmpty) {
-      _callbacks.onComplete(false, '没有录制的步骤');
+      _callbacks.onComplete(false, 'macro_no_steps');
       return;
     }
 
     for (var i = 0; i < steps.length; i++) {
       if (_isCancelled) {
-        _callbacks.onComplete(false, '用户取消');
+        _callbacks.onComplete(false, 'macro_user_cancelled');
         return;
       }
 
@@ -144,16 +158,27 @@ class WarehouseMacroReplayer {
           ),
         );
       } catch (e) {
+        final detail = _exceptionPayload(e);
         _callbacks.onProgress(
           ReplayProgress(
             currentStepIndex: i,
             totalSteps: steps.length,
             currentStep: step,
             status: ReplayStepStatus.failed,
-            errorMessage: '$e',
+            errorMessage: detail,
           ),
         );
-        _callbacks.onComplete(false, '第 ${i + 1}/${steps.length} 步失败: $e');
+        _callbacks.onComplete(
+          false,
+          encodeServiceMessage(
+            'macro_step_failed',
+            {
+              'stepIndex': i + 1,
+              'totalSteps': steps.length,
+              'detail': detail,
+            },
+          ),
+        );
         return;
       }
     }
@@ -196,10 +221,12 @@ class WarehouseMacroReplayer {
 
   Future<void> _executeNavigate(MacroStep step) async {
     final url = step.value ?? '';
-    if (url.isEmpty) throw Exception('导航 URL 为空');
+    if (url.isEmpty) throw Exception('macro_navigate_url_empty');
     final uri = Uri.tryParse(url);
     if (uri == null || uri.host.isEmpty) {
-      throw Exception('无效的 URL: $url');
+      throw Exception(
+        encodeServiceMessage('macro_navigate_url_invalid', {'url': url}),
+      );
     }
 
     final completer = Completer<void>();
@@ -228,7 +255,7 @@ class WarehouseMacroReplayer {
         }
       },
       timeout: Duration(milliseconds: timeout),
-      stepLabel: '导航到 $url',
+      stepLabel: _l10n.macroReplayNavigateTo(url),
     );
 
     // 额外等待确保页面完全渲染
@@ -238,7 +265,7 @@ class WarehouseMacroReplayer {
   Future<void> _executeFillField(MacroStep step) async {
     final selector = step.selector ?? '';
     final value = step.value ?? '';
-    if (selector.isEmpty) throw Exception('填充字段的选择器为空');
+    if (selector.isEmpty) throw Exception('macro_fill_selector_empty');
 
     // 先等待一下确保元素存在
     await Future.delayed(const Duration(milliseconds: 300));
@@ -264,14 +291,17 @@ class WarehouseMacroReplayer {
 
     final result = await _controller.runJavaScriptReturningResult(js);
     final normalized = _normalizeJsResult(result);
-    ensureMacroElementFound(normalized, '未找到表单字段: $selector');
+    ensureMacroElementFound(
+      normalized,
+      encodeServiceMessage('macro_element_not_found', {'selector': selector}),
+    );
     // 填充后等待页面响应
     await _waitForPageReady(timeout: 15000);
   }
 
   Future<void> _executeClick(MacroStep step) async {
     final selector = step.selector ?? '';
-    if (selector.isEmpty) throw Exception('点击元素的选择器为空');
+    if (selector.isEmpty) throw Exception('macro_click_selector_empty');
 
     await Future.delayed(const Duration(milliseconds: 200));
 
@@ -292,7 +322,10 @@ class WarehouseMacroReplayer {
 
     final result = await _controller.runJavaScriptReturningResult(js);
     final normalized = _normalizeJsResult(result);
-    ensureMacroElementFound(normalized, '未找到点击元素: $selector');
+    ensureMacroElementFound(
+      normalized,
+      encodeServiceMessage('macro_element_not_found', {'selector': selector}),
+    );
 
     // 点击后等待页面加载（可能触发导航到新页）
     await _waitForPageReady(timeout: 15000);
@@ -300,7 +333,7 @@ class WarehouseMacroReplayer {
 
   Future<void> _executeWaitForUrl(MacroStep step) async {
     final pattern = step.value ?? '';
-    if (pattern.isEmpty) throw Exception('URL 模式为空');
+    if (pattern.isEmpty) throw Exception('macro_url_pattern_empty');
 
     await _pollCondition(
       check: () async {
@@ -314,13 +347,13 @@ class WarehouseMacroReplayer {
         }
       },
       timeout: Duration(milliseconds: step.waitMs > 0 ? step.waitMs : 15000),
-      stepLabel: '等待 URL 匹配: $pattern',
+      stepLabel: _l10n.macroReplayWaitUrlPattern(pattern),
     );
   }
 
   Future<void> _executeWaitForSelector(MacroStep step) async {
     final selector = step.selector ?? '';
-    if (selector.isEmpty) throw Exception('等待元素的选择器为空');
+    if (selector.isEmpty) throw Exception('macro_wait_selector_empty');
 
     await _pollCondition(
       check: () async {
@@ -334,17 +367,17 @@ document.querySelector(${jsonEncode(selector)}) !== null
         }
       },
       timeout: Duration(milliseconds: step.waitMs > 0 ? step.waitMs : 15000),
-      stepLabel: '等待元素: $selector',
+      stepLabel: _l10n.macroReplayWaitSelector(selector),
     );
 
     await Future.delayed(const Duration(milliseconds: 500));
   }
 
   Future<void> _executeWaitForManualInput(MacroStep step) async {
-    final reason = step.value ?? '需要手动操作';
+    final reason = step.value ?? 'macro_manual_input_default';
     final shouldContinue = await _callbacks.onPauseForManualInput(step, reason);
     if (!shouldContinue) {
-      throw Exception('用户取消');
+      throw Exception('macro_user_cancelled');
     }
   }
 
@@ -366,7 +399,7 @@ document.querySelector(${jsonEncode(selector)}) !== null
         }
       },
       timeout: Duration(milliseconds: timeout),
-      stepLabel: '等待页面加载',
+      stepLabel: _l10n.macroReplayWaitPageLoad,
     );
 
     // 等待页面 DOM 完全就绪（document.readyState === 'complete'）
@@ -380,7 +413,7 @@ document.querySelector(${jsonEncode(selector)}) !== null
           return state == 'complete';
         },
         timeout: const Duration(milliseconds: 15000),
-        stepLabel: '等待 DOM 就绪',
+        stepLabel: _l10n.macroReplayWaitDomReady,
       );
     } catch (_) {
       // 超时了也继续，DOM readyState 可能受 iframe 影响
@@ -400,7 +433,7 @@ document.querySelector(${jsonEncode(selector)}) !== null
     var lastError = '';
 
     while (DateTime.now().isBefore(deadline)) {
-      if (_isCancelled) throw Exception('用户取消');
+      if (_isCancelled) throw Exception('macro_user_cancelled');
 
       try {
         final satisfied = await check();
@@ -414,9 +447,23 @@ document.querySelector(${jsonEncode(selector)}) !== null
     }
 
     throw Exception(
-      '$stepLabel 超时（${timeout.inSeconds}秒）${lastError.isNotEmpty ? ": $lastError" : ""}',
+      encodeServiceMessage(
+        'macro_poll_timeout',
+        {
+          'stepLabel': stepLabel,
+          'timeoutSeconds': timeout.inSeconds,
+          'lastError': lastError.isNotEmpty ? ': $lastError' : '',
+        },
+      ),
     );
   }
+}
+
+String _exceptionPayload(Object error) {
+  if (error is Exception) {
+    return error.toString().replaceFirst('Exception: ', '');
+  }
+  return error.toString();
 }
 
 /// 回放 UI 状态
@@ -441,7 +488,11 @@ void ensureMacroElementFound(String normalizedResult, String errorMessage) {
   }
 }
 
-bool shouldUseRememberedPasswordForManualStep(MacroStep step, String reason) {
+bool shouldUseRememberedPasswordForManualStep(
+  MacroStep step,
+  String reason,
+  AppLocalizations l10n,
+) {
   final lowerReason = reason.toLowerCase();
   final looksLikeCaptcha =
       step.fieldType == 'captcha' ||
@@ -457,7 +508,7 @@ bool shouldUseRememberedPasswordForManualStep(MacroStep step, String reason) {
           (reason.contains('密码') ||
               lowerReason.contains('password') ||
               lowerReason.contains('pwd') ||
-              reason == '需要手动操作');
+              reason == l10n.macroReplayManualActionRequired);
 }
 
 /// 标准化 JS 返回值

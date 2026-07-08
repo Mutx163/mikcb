@@ -2795,6 +2795,24 @@ abstract class AppLocalizations {
   /// **'清空应用日志失败'**
   String get appLogsClearFailed;
 
+  /// No description provided for @appLogsSourceApp.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用'**
+  String get appLogsSourceApp;
+
+  /// No description provided for @appLogsSourceNative.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛'**
+  String get appLogsSourceNative;
+
+  /// No description provided for @appLogsRecordingPausedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'记录已关闭。下方为历史日志，关闭后不再新增。'**
+  String get appLogsRecordingPausedHint;
+
   /// No description provided for @aboutRepositorySubtitle.
   ///
   /// In zh, this message translates to:
@@ -3949,7 +3967,7 @@ abstract class AppLocalizations {
   /// No description provided for @diagnosticsEmptySubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'当前没有可显示的超级岛诊断日志。'**
+  /// **'当前没有可显示的应用日志。'**
   String get diagnosticsEmptySubtitle;
 
   /// No description provided for @diagnosticsLogTitleFallback.
@@ -5316,25 +5334,25 @@ abstract class AppLocalizations {
   /// No description provided for @liveDiagnosticsUnavailable.
   ///
   /// In zh, this message translates to:
-  /// **'当前还没有可查看的超级岛诊断日志'**
+  /// **'当前还没有可查看的应用日志'**
   String get liveDiagnosticsUnavailable;
 
   /// No description provided for @liveDiagnosticsViewerTitle.
   ///
   /// In zh, this message translates to:
-  /// **'超级岛诊断日志'**
+  /// **'超级岛日志'**
   String get liveDiagnosticsViewerTitle;
 
   /// No description provided for @liveDiagnosticsShareText.
   ///
   /// In zh, this message translates to:
-  /// **'这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。'**
+  /// **'这是轻屿课表导出的超级岛相关日志，可用于排查“超级岛没有弹出”等问题。'**
   String get liveDiagnosticsShareText;
 
   /// No description provided for @liveDiagnosticsShareSubject.
   ///
   /// In zh, this message translates to:
-  /// **'轻屿课表 - 超级岛诊断日志'**
+  /// **'轻屿课表 - 超级岛日志'**
   String get liveDiagnosticsShareSubject;
 
   /// No description provided for @liveDiagnosticsSnapshotShareText.
@@ -5358,13 +5376,13 @@ abstract class AppLocalizations {
   /// No description provided for @liveDiagnosticsCleared.
   ///
   /// In zh, this message translates to:
-  /// **'已清空超级岛诊断日志，后续会重新开始收集'**
+  /// **'已清空应用日志'**
   String get liveDiagnosticsCleared;
 
   /// No description provided for @liveDiagnosticsClearFailed.
   ///
   /// In zh, this message translates to:
-  /// **'清空超级岛诊断日志失败'**
+  /// **'清空应用日志失败'**
   String get liveDiagnosticsClearFailed;
 
   /// No description provided for @liveTestingNotRefreshed.
@@ -5900,6 +5918,24 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'关闭后，页码切换等交互不再触发轻微震动。'**
   String get layoutEnableHapticsSubtitle;
+
+  /// No description provided for @pageTransitionSpeedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'页面转场速度 {speed}×'**
+  String pageTransitionSpeedLabel(String speed);
+
+  /// No description provided for @pageTransitionSpeedSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'调节进入和返回子页面时的滑动动画快慢。数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置。'**
+  String get pageTransitionSpeedSubtitle;
+
+  /// No description provided for @pageTransitionSpeedDurationHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'约 {milliseconds} 毫秒'**
+  String pageTransitionSpeedDurationHint(int milliseconds);
 
   /// No description provided for @layoutTimeColumnDisplayLabel.
   ///
@@ -6516,7 +6552,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutRecordDiagnosticsSubtitle.
   ///
   /// In zh, this message translates to:
-  /// **'打开后会在本地持续记录关键日志，仅用于排查“该弹不弹”等问题。'**
+  /// **'打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源。'**
   String get aboutRecordDiagnosticsSubtitle;
 
   /// No description provided for @aboutExportDiagnosticsAction.
@@ -6540,19 +6576,19 @@ abstract class AppLocalizations {
   /// No description provided for @aboutLiveDiagnosticsEnabled.
   ///
   /// In zh, this message translates to:
-  /// **'已开启超级岛诊断日志'**
+  /// **'已开启应用日志记录'**
   String get aboutLiveDiagnosticsEnabled;
 
   /// No description provided for @aboutLiveDiagnosticsDisabled.
   ///
   /// In zh, this message translates to:
-  /// **'已关闭超级岛诊断日志'**
+  /// **'已关闭应用日志记录'**
   String get aboutLiveDiagnosticsDisabled;
 
   /// No description provided for @aboutNoDiagnosticsExportYet.
   ///
   /// In zh, this message translates to:
-  /// **'还没有可导出的超级岛诊断日志'**
+  /// **'还没有可导出的应用日志'**
   String get aboutNoDiagnosticsExportYet;
 
   /// No description provided for @aboutProbeNoMirrorFound.
@@ -10141,6 +10177,3907 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'{count} 门 · {sections} 节'**
   String statisticsNatureLegendDetail(int count, int sections);
+
+  /// No description provided for @weekListSeparator.
+  ///
+  /// In zh, this message translates to:
+  /// **'、'**
+  String get weekListSeparator;
+
+  /// No description provided for @courseWeekListLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{weeks}周'**
+  String courseWeekListLabel(String weeks);
+
+  /// No description provided for @courseWeekRangeLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{startWeek}-{endWeek}周{mode}'**
+  String courseWeekRangeLabel(int startWeek, int endWeek, String mode);
+
+  /// No description provided for @courseWeekSuspendedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{weeks}周停课'**
+  String courseWeekSuspendedLabel(String weeks);
+
+  /// No description provided for @importSemesterStartDateTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开学日期'**
+  String get importSemesterStartDateTitle;
+
+  /// No description provided for @importSemesterStartDateSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'按这一天所在周作为校历第 1 周'**
+  String get importSemesterStartDateSubtitle;
+
+  /// No description provided for @importFirstCourseWeekMappingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表第 1 周对应校历第几周'**
+  String get importFirstCourseWeekMappingLabel;
+
+  /// No description provided for @importFirstCourseWeekMappingSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。'**
+  String get importFirstCourseWeekMappingSubtitle;
+
+  /// No description provided for @importSemesterMappingNoShiftHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入后会直接把课表第 1 周当作校历第 1 周。'**
+  String get importSemesterMappingNoShiftHint;
+
+  /// No description provided for @importSemesterMappingShiftHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入后会把所有课程周次整体顺延 {shiftedWeeks} 周，让课表第 1 周落在校历第 {calendarWeek} 周。'**
+  String importSemesterMappingShiftHint(int shiftedWeeks, int calendarWeek);
+
+  /// No description provided for @calendarWeekOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'校历第 {week} 周'**
+  String calendarWeekOption(int week);
+
+  /// No description provided for @aboutDownloadPackageMethodTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载安装包方式'**
+  String get aboutDownloadPackageMethodTitle;
+
+  /// No description provided for @aboutInAppDownloadTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用内下载'**
+  String get aboutInAppDownloadTitle;
+
+  /// No description provided for @aboutInAppDownloadSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载完成后直接在应用内安装'**
+  String get aboutInAppDownloadSubtitle;
+
+  /// No description provided for @aboutSystemDownloaderTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统管理器'**
+  String get aboutSystemDownloaderTitle;
+
+  /// No description provided for @aboutSystemDownloaderChoiceSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'交给系统下载管理器处理'**
+  String get aboutSystemDownloaderChoiceSubtitle;
+
+  /// No description provided for @syncErrorAuthFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号或密码错误'**
+  String get syncErrorAuthFailed;
+
+  /// No description provided for @syncErrorAccessDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有访问权限'**
+  String get syncErrorAccessDenied;
+
+  /// No description provided for @syncErrorCertificateError.
+  ///
+  /// In zh, this message translates to:
+  /// **'证书校验失败'**
+  String get syncErrorCertificateError;
+
+  /// No description provided for @syncErrorConnectionTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接超时'**
+  String get syncErrorConnectionTimeout;
+
+  /// No description provided for @syncErrorConnectionFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法连接服务器'**
+  String get syncErrorConnectionFailed;
+
+  /// No description provided for @syncErrorNetworkError.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络异常'**
+  String get syncErrorNetworkError;
+
+  /// No description provided for @syncErrorInvalidResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器响应无效'**
+  String get syncErrorInvalidResponse;
+
+  /// No description provided for @syncErrorLocalChangesPendingSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'本地有未同步修改，已跳过自动覆盖'**
+  String get syncErrorLocalChangesPendingSync;
+
+  /// No description provided for @syncErrorMissingCredentials.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先配置云同步账号'**
+  String get syncErrorMissingCredentials;
+
+  /// No description provided for @syncErrorBackupNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份不存在'**
+  String get syncErrorBackupNotFound;
+
+  /// No description provided for @syncErrorMissingBackupSnapshot.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份快照缺失'**
+  String get syncErrorMissingBackupSnapshot;
+
+  /// No description provided for @syncErrorCannotDeleteCurrentBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'不能删除当前备份'**
+  String get syncErrorCannotDeleteCurrentBackup;
+
+  /// No description provided for @syncErrorProviderNotReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表尚未就绪'**
+  String get syncErrorProviderNotReady;
+
+  /// No description provided for @syncErrorSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步失败'**
+  String get syncErrorSyncFailed;
+
+  /// No description provided for @sectionTimeDisplayHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'不显示'**
+  String get sectionTimeDisplayHidden;
+
+  /// No description provided for @sectionTimeDisplayStartOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅显示上课时间'**
+  String get sectionTimeDisplayStartOnly;
+
+  /// No description provided for @sectionTimeDisplayStartAndEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示上下课时间'**
+  String get sectionTimeDisplayStartAndEnd;
+
+  /// No description provided for @examReminderNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'不提醒'**
+  String get examReminderNone;
+
+  /// No description provided for @examReminderMin30.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 30 分钟'**
+  String get examReminderMin30;
+
+  /// No description provided for @examReminderHour1.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 1 小时'**
+  String get examReminderHour1;
+
+  /// No description provided for @examReminderHour1AndMin30.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 1 小时 + 30 分钟'**
+  String get examReminderHour1AndMin30;
+
+  /// No description provided for @examReminderDay1.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 1 天'**
+  String get examReminderDay1;
+
+  /// No description provided for @examReminderDay1AndHour1.
+  ///
+  /// In zh, this message translates to:
+  /// **'考前 1 天 + 1 小时'**
+  String get examReminderDay1AndHour1;
+
+  /// No description provided for @examReminderCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get examReminderCustom;
+
+  /// No description provided for @debugCopiedJson.
+  ///
+  /// In zh, this message translates to:
+  /// **'已复制 JSON'**
+  String get debugCopiedJson;
+
+  /// No description provided for @liveDuringClassTimeNearest.
+  ///
+  /// In zh, this message translates to:
+  /// **'最近时间'**
+  String get liveDuringClassTimeNearest;
+
+  /// No description provided for @liveDuringClassTimeTotal.
+  ///
+  /// In zh, this message translates to:
+  /// **'总时间'**
+  String get liveDuringClassTimeTotal;
+
+  /// No description provided for @liveCountdownTextStyleSmart.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能（中文）'**
+  String get liveCountdownTextStyleSmart;
+
+  /// No description provided for @liveCountdownTextStyleSmartMinS.
+  ///
+  /// In zh, this message translates to:
+  /// **'智能（英文）'**
+  String get liveCountdownTextStyleSmartMinS;
+
+  /// No description provided for @liveCountdownTextStyleMinuteSecondCn.
+  ///
+  /// In zh, this message translates to:
+  /// **'分秒（5分钟19秒）'**
+  String get liveCountdownTextStyleMinuteSecondCn;
+
+  /// No description provided for @liveCountdownTextStyleMinuteSecondColon.
+  ///
+  /// In zh, this message translates to:
+  /// **'mm:ss（05:19）'**
+  String get liveCountdownTextStyleMinuteSecondColon;
+
+  /// No description provided for @liveCountdownTextStyleMinuteSecondMinS.
+  ///
+  /// In zh, this message translates to:
+  /// **'min+s（5min19s）'**
+  String get liveCountdownTextStyleMinuteSecondMinS;
+
+  /// No description provided for @liveCountdownTextStyleMinuteSecondMinSlashS.
+  ///
+  /// In zh, this message translates to:
+  /// **'min/s（5min/19s）'**
+  String get liveCountdownTextStyleMinuteSecondMinSlashS;
+
+  /// No description provided for @liveCountdownTextStyleMinuteOnlyCn.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯分钟（5分钟）'**
+  String get liveCountdownTextStyleMinuteOnlyCn;
+
+  /// No description provided for @liveCountdownTextStyleMinuteOnlyMin.
+  ///
+  /// In zh, this message translates to:
+  /// **'min（5min）'**
+  String get liveCountdownTextStyleMinuteOnlyMin;
+
+  /// No description provided for @liveCountdownTextStyleMinuteOnlySlash.
+  ///
+  /// In zh, this message translates to:
+  /// **'/min（5/min）'**
+  String get liveCountdownTextStyleMinuteOnlySlash;
+
+  /// No description provided for @liveCountdownTextStyleSecondOnlyCn.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯秒（5秒）'**
+  String get liveCountdownTextStyleSecondOnlyCn;
+
+  /// No description provided for @liveCountdownTextStyleSecondOnlyShort.
+  ///
+  /// In zh, this message translates to:
+  /// **'s（5s）'**
+  String get liveCountdownTextStyleSecondOnlyShort;
+
+  /// No description provided for @liveCountdownTextStyleSecondOnlySlash.
+  ///
+  /// In zh, this message translates to:
+  /// **'/s（5/s）'**
+  String get liveCountdownTextStyleSecondOnlySlash;
+
+  /// No description provided for @miuiIslandLabelStyleTextOnly.
+  ///
+  /// In zh, this message translates to:
+  /// **'仅文字'**
+  String get miuiIslandLabelStyleTextOnly;
+
+  /// No description provided for @miuiIslandLabelStyleIconAndText.
+  ///
+  /// In zh, this message translates to:
+  /// **'图标+文字'**
+  String get miuiIslandLabelStyleIconAndText;
+
+  /// No description provided for @miuiIslandLabelContentCourseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名'**
+  String get miuiIslandLabelContentCourseName;
+
+  /// No description provided for @miuiIslandLabelContentLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'教室'**
+  String get miuiIslandLabelContentLocation;
+
+  /// No description provided for @miuiIslandLabelContentCourseNameAndLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名+教室'**
+  String get miuiIslandLabelContentCourseNameAndLocation;
+
+  /// No description provided for @miuiIslandLabelFontWeightRegular.
+  ///
+  /// In zh, this message translates to:
+  /// **'常规'**
+  String get miuiIslandLabelFontWeightRegular;
+
+  /// No description provided for @miuiIslandLabelFontWeightMedium.
+  ///
+  /// In zh, this message translates to:
+  /// **'中等'**
+  String get miuiIslandLabelFontWeightMedium;
+
+  /// No description provided for @miuiIslandLabelFontWeightBold.
+  ///
+  /// In zh, this message translates to:
+  /// **'加粗'**
+  String get miuiIslandLabelFontWeightBold;
+
+  /// No description provided for @miuiIslandLabelRenderQualityStandard.
+  ///
+  /// In zh, this message translates to:
+  /// **'标准'**
+  String get miuiIslandLabelRenderQualityStandard;
+
+  /// No description provided for @miuiIslandLabelRenderQualityHigh.
+  ///
+  /// In zh, this message translates to:
+  /// **'高清'**
+  String get miuiIslandLabelRenderQualityHigh;
+
+  /// No description provided for @miuiIslandLabelRenderQualityUltra.
+  ///
+  /// In zh, this message translates to:
+  /// **'超高清'**
+  String get miuiIslandLabelRenderQualityUltra;
+
+  /// No description provided for @miuiIslandExpandedIconAppIcon.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用图标'**
+  String get miuiIslandExpandedIconAppIcon;
+
+  /// No description provided for @miuiIslandExpandedIconCustomImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义图片'**
+  String get miuiIslandExpandedIconCustomImage;
+
+  /// No description provided for @miuiIslandExpandedIconHidden.
+  ///
+  /// In zh, this message translates to:
+  /// **'不显示'**
+  String get miuiIslandExpandedIconHidden;
+
+  /// No description provided for @liveBeforeClassQuickActionNone.
+  ///
+  /// In zh, this message translates to:
+  /// **'不显示'**
+  String get liveBeforeClassQuickActionNone;
+
+  /// No description provided for @liveBeforeClassQuickActionSilent.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开静音'**
+  String get liveBeforeClassQuickActionSilent;
+
+  /// No description provided for @liveBeforeClassQuickActionDoNotDisturb.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开免打扰'**
+  String get liveBeforeClassQuickActionDoNotDisturb;
+
+  /// No description provided for @courseCardVerticalAlignTop.
+  ///
+  /// In zh, this message translates to:
+  /// **'顶部对齐'**
+  String get courseCardVerticalAlignTop;
+
+  /// No description provided for @courseCardVerticalAlignCenter.
+  ///
+  /// In zh, this message translates to:
+  /// **'垂直居中'**
+  String get courseCardVerticalAlignCenter;
+
+  /// No description provided for @courseCardVerticalAlignBottom.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部对齐'**
+  String get courseCardVerticalAlignBottom;
+
+  /// No description provided for @courseCardVerticalAlignSpaceEvenly.
+  ///
+  /// In zh, this message translates to:
+  /// **'上下均布'**
+  String get courseCardVerticalAlignSpaceEvenly;
+
+  /// No description provided for @courseCardHorizontalAlignLeft.
+  ///
+  /// In zh, this message translates to:
+  /// **'居左'**
+  String get courseCardHorizontalAlignLeft;
+
+  /// No description provided for @courseCardHorizontalAlignCenter.
+  ///
+  /// In zh, this message translates to:
+  /// **'居中'**
+  String get courseCardHorizontalAlignCenter;
+
+  /// No description provided for @courseCardHorizontalAlignRight.
+  ///
+  /// In zh, this message translates to:
+  /// **'居右'**
+  String get courseCardHorizontalAlignRight;
+
+  /// No description provided for @timetableTimeColumnWidthNarrow.
+  ///
+  /// In zh, this message translates to:
+  /// **'窄'**
+  String get timetableTimeColumnWidthNarrow;
+
+  /// No description provided for @timetableTimeColumnWidthWide.
+  ///
+  /// In zh, this message translates to:
+  /// **'宽'**
+  String get timetableTimeColumnWidthWide;
+
+  /// No description provided for @timetableCourseSpacingNarrow.
+  ///
+  /// In zh, this message translates to:
+  /// **'窄'**
+  String get timetableCourseSpacingNarrow;
+
+  /// No description provided for @timetableCourseSpacingWide.
+  ///
+  /// In zh, this message translates to:
+  /// **'宽'**
+  String get timetableCourseSpacingWide;
+
+  /// No description provided for @appUpdateDownloadSourceOriginal.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 原版'**
+  String get appUpdateDownloadSourceOriginal;
+
+  /// No description provided for @appUpdateDownloadSourceMirror.
+  ///
+  /// In zh, this message translates to:
+  /// **'国内镜像'**
+  String get appUpdateDownloadSourceMirror;
+
+  /// No description provided for @appUpdateDownloadChannelPgyer.
+  ///
+  /// In zh, this message translates to:
+  /// **'蒲公英下载'**
+  String get appUpdateDownloadChannelPgyer;
+
+  /// No description provided for @appUpdateDownloadChannelGithub.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 下载'**
+  String get appUpdateDownloadChannelGithub;
+
+  /// No description provided for @appUpdateDownloadChannelPgyerDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'国内高速下载，推荐使用'**
+  String get appUpdateDownloadChannelPgyerDescription;
+
+  /// No description provided for @appUpdateDownloadChannelGithubDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 原生 + 国内镜像'**
+  String get appUpdateDownloadChannelGithubDescription;
+
+  /// No description provided for @holidayStatutoryLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'法定节假日'**
+  String get holidayStatutoryLabel;
+
+  /// No description provided for @serviceMsgImportFileUnrecognized.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入失败，文件内容无法识别'**
+  String get serviceMsgImportFileUnrecognized;
+
+  /// No description provided for @serviceMsgImportUseOverwriteForFullBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是全部数据备份，请使用“覆盖当前课表”方式导入'**
+  String get serviceMsgImportUseOverwriteForFullBackup;
+
+  /// No description provided for @serviceMsgImportNoProfilesInBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份文件中没有可恢复的课表'**
+  String get serviceMsgImportNoProfilesInBackup;
+
+  /// No description provided for @serviceMsgUnrecognizedMikcbDataFile.
+  ///
+  /// In zh, this message translates to:
+  /// **'不是可识别的 mikcb 数据文件'**
+  String get serviceMsgUnrecognizedMikcbDataFile;
+
+  /// No description provided for @serviceMsgMissingSettingsData.
+  ///
+  /// In zh, this message translates to:
+  /// **'缺少设置数据'**
+  String get serviceMsgMissingSettingsData;
+
+  /// No description provided for @serviceMsgUnrecognizedMikcbFullBackup.
+  ///
+  /// In zh, this message translates to:
+  /// **'不是可识别的 mikcb 全量备份文件'**
+  String get serviceMsgUnrecognizedMikcbFullBackup;
+
+  /// No description provided for @serviceMsgMissingFullBackupData.
+  ///
+  /// In zh, this message translates to:
+  /// **'缺少完整备份数据'**
+  String get serviceMsgMissingFullBackupData;
+
+  /// No description provided for @serviceMsgUseProfileBackupNotFull.
+  ///
+  /// In zh, this message translates to:
+  /// **'请使用课表档案备份 JSON，而非全部数据备份'**
+  String get serviceMsgUseProfileBackupNotFull;
+
+  /// No description provided for @serviceMsgUnrecognizedSyncSnapshot.
+  ///
+  /// In zh, this message translates to:
+  /// **'不是可识别的 mikcb 云同步快照'**
+  String get serviceMsgUnrecognizedSyncSnapshot;
+
+  /// No description provided for @serviceMsgMissingSyncTimetableData.
+  ///
+  /// In zh, this message translates to:
+  /// **'缺少云同步课表数据'**
+  String get serviceMsgMissingSyncTimetableData;
+
+  /// No description provided for @serviceMsgSyncSnapshotChecksumFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步快照校验失败'**
+  String get serviceMsgSyncSnapshotChecksumFailed;
+
+  /// No description provided for @serviceMsgSyncSnapshotNoProfiles.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步快照中没有可恢复的课表'**
+  String get serviceMsgSyncSnapshotNoProfiles;
+
+  /// No description provided for @serviceMsgSyncSnapshotUnrecognized.
+  ///
+  /// In zh, this message translates to:
+  /// **'云同步快照无法识别'**
+  String get serviceMsgSyncSnapshotUnrecognized;
+
+  /// No description provided for @serviceMsgTimeSchemeNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间模板不存在'**
+  String get serviceMsgTimeSchemeNotFound;
+
+  /// No description provided for @serviceMsgTimeSchemeConfigUnavailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前课表时间配置不可用'**
+  String get serviceMsgTimeSchemeConfigUnavailable;
+
+  /// No description provided for @serviceMsgTimeSchemeNotFoundSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到所选时间模板'**
+  String get serviceMsgTimeSchemeNotFoundSelected;
+
+  /// No description provided for @serviceMsgTimeSchemeSectionsInsufficient.
+  ///
+  /// In zh, this message translates to:
+  /// **'所选时间模板节次数不足，无法覆盖第 {startSection}-{endSection} 节'**
+  String serviceMsgTimeSchemeSectionsInsufficient(
+    int startSection,
+    int endSection,
+  );
+
+  /// No description provided for @serviceMsgSectionCountBelowUsage.
+  ///
+  /// In zh, this message translates to:
+  /// **'节次数量不能小于当前已使用的最大节次（第{requiredMaxSection}节）'**
+  String serviceMsgSectionCountBelowUsage(int requiredMaxSection);
+
+  /// No description provided for @serviceMsgSectionCountBelowUsageDetail.
+  ///
+  /// In zh, this message translates to:
+  /// **'节次数量不能小于当前已使用的最大节次（第{requiredMaxSection}节）。正在使用：{profileName} · {courseName}（周{dayOfWeek} {startSection}-{endSection}节，{usageType}）'**
+  String serviceMsgSectionCountBelowUsageDetail(
+    int requiredMaxSection,
+    String profileName,
+    String courseName,
+    int dayOfWeek,
+    int startSection,
+    int endSection,
+    String usageType,
+  );
+
+  /// No description provided for @serviceMsgAtLeastOneSectionRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'至少需要保留一节课的时间'**
+  String get serviceMsgAtLeastOneSectionRequired;
+
+  /// No description provided for @serviceMsgSectionEndMustAfterStart.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {sectionNumber} 节结束时间必须晚于开始时间，暂不支持跨 0 点课程'**
+  String serviceMsgSectionEndMustAfterStart(int sectionNumber);
+
+  /// No description provided for @serviceMsgSectionStartBeforePreviousEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {sectionNumber} 节开始时间不能早于上一节的结束时间'**
+  String serviceMsgSectionStartBeforePreviousEnd(int sectionNumber);
+
+  /// No description provided for @serviceMsgPeriodStartTimeRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'请为有节次的时段设置第一节开始时间'**
+  String get serviceMsgPeriodStartTimeRequired;
+
+  /// No description provided for @serviceMsgSectionCrossesMidnight.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {sectionNumber} 节会跨到次日，当前暂不支持跨 0 点课程'**
+  String serviceMsgSectionCrossesMidnight(int sectionNumber);
+
+  /// No description provided for @serviceMsgClassDurationMustPositive.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课时长必须大于 0'**
+  String get serviceMsgClassDurationMustPositive;
+
+  /// No description provided for @serviceMsgBreakDurationMustNonNegative.
+  ///
+  /// In zh, this message translates to:
+  /// **'课间时长不能小于 0'**
+  String get serviceMsgBreakDurationMustNonNegative;
+
+  /// No description provided for @serviceMsgAtLeastOnePeriodSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'至少需要设置一个时段的节次数'**
+  String get serviceMsgAtLeastOnePeriodSection;
+
+  /// No description provided for @serviceMsgInvalidTimeFormat.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间格式不正确'**
+  String get serviceMsgInvalidTimeFormat;
+
+  /// No description provided for @serviceMsgLinkedCourseNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'关联的课程不存在'**
+  String get serviceMsgLinkedCourseNotFound;
+
+  /// No description provided for @serviceMsgCourseNotFoundForDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到要删除的课程'**
+  String get serviceMsgCourseNotFoundForDelete;
+
+  /// No description provided for @serviceMsgCourseNotScheduledWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'这门课在第 {sourceWeek} 周没有排课'**
+  String serviceMsgCourseNotScheduledWeek(int sourceWeek);
+
+  /// No description provided for @serviceMsgCourseNotFoundForReschedule.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到要调课的课程'**
+  String get serviceMsgCourseNotFoundForReschedule;
+
+  /// No description provided for @serviceMsgTargetWeekOutOfRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标周次超出当前学期范围'**
+  String get serviceMsgTargetWeekOutOfRange;
+
+  /// No description provided for @serviceMsgAtLeastOneScheduleSlot.
+  ///
+  /// In zh, this message translates to:
+  /// **'至少需要保留一个上课时间段'**
+  String get serviceMsgAtLeastOneScheduleSlot;
+
+  /// No description provided for @serviceMsgCourseNameRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名称不能为空'**
+  String get serviceMsgCourseNameRequired;
+
+  /// No description provided for @serviceMsgBackupContentRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份内容不能为空'**
+  String get serviceMsgBackupContentRequired;
+
+  /// No description provided for @serviceMsgSpreadsheetFormatOrEncodingUnrecognized.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法识别表格格式或编码，请将 CSV 另存为 UTF-8 后重试'**
+  String get serviceMsgSpreadsheetFormatOrEncodingUnrecognized;
+
+  /// No description provided for @serviceMsgSpreadsheetXlsxParseFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'XLSX 文件解析失败：{error}'**
+  String serviceMsgSpreadsheetXlsxParseFailed(String error);
+
+  /// No description provided for @serviceMsgSpreadsheetRowWarning.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {rowNumber} 行：{message}'**
+  String serviceMsgSpreadsheetRowWarning(int rowNumber, String message);
+
+  /// No description provided for @serviceMsgSpreadsheetWakeupInsufficientColumns.
+  ///
+  /// In zh, this message translates to:
+  /// **'WakeUp 格式需要至少 7 列，但第 {rowNumber} 行只有 {columnCount} 列'**
+  String serviceMsgSpreadsheetWakeupInsufficientColumns(
+    int rowNumber,
+    int columnCount,
+  );
+
+  /// No description provided for @serviceMsgWeekdayMustBe1To7.
+  ///
+  /// In zh, this message translates to:
+  /// **'星期必须是 1-7'**
+  String get serviceMsgWeekdayMustBe1To7;
+
+  /// No description provided for @serviceMsgCustomWeeksRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'周数 不能为空'**
+  String get serviceMsgCustomWeeksRequired;
+
+  /// No description provided for @serviceMsgClassWeeksRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课周 不能为空'**
+  String get serviceMsgClassWeeksRequired;
+
+  /// No description provided for @serviceMsgStartWeekMustBeAtLeast1.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始周 必须大于等于 1'**
+  String get serviceMsgStartWeekMustBeAtLeast1;
+
+  /// No description provided for @serviceMsgStartWeekExceedsSemester.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始周 {startWeek} 超过学期周数 {semesterWeekCount}'**
+  String serviceMsgStartWeekExceedsSemester(
+    int startWeek,
+    int semesterWeekCount,
+  );
+
+  /// No description provided for @serviceMsgEndWeekBeforeStartWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束周 不能小于开始周'**
+  String get serviceMsgEndWeekBeforeStartWeek;
+
+  /// No description provided for @serviceMsgWeeksRangeRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课周 或 开始周+结束周 必须填写'**
+  String get serviceMsgWeeksRangeRequired;
+
+  /// No description provided for @serviceMsgFieldMustBeAtLeast1.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 必须大于等于 1'**
+  String serviceMsgFieldMustBeAtLeast1(String field);
+
+  /// No description provided for @serviceMsgFieldCannotBeLessThan.
+  ///
+  /// In zh, this message translates to:
+  /// **'{endField} 不能小于{startField}'**
+  String serviceMsgFieldCannotBeLessThan(String startField, String endField);
+
+  /// No description provided for @serviceMsgSectionOutOfRange.
+  ///
+  /// In zh, this message translates to:
+  /// **'节次 {section} 超出时间模板范围（1-{maxSection}）'**
+  String serviceMsgSectionOutOfRange(int section, int maxSection);
+
+  /// No description provided for @serviceMsgFieldMustBeInteger.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 必须是整数'**
+  String serviceMsgFieldMustBeInteger(String field);
+
+  /// No description provided for @serviceMsgFieldCannotBeEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 不能为空'**
+  String serviceMsgFieldCannotBeEmpty(String field);
+
+  /// No description provided for @serviceMsgSpreadsheetEndWeekClamped.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {rowNumber} 行：结束周 {endWeek} 超过学期周数 {semesterWeekCount}，已调整为 {semesterWeekCount}'**
+  String serviceMsgSpreadsheetEndWeekClamped(
+    int rowNumber,
+    int endWeek,
+    int semesterWeekCount,
+  );
+
+  /// No description provided for @serviceMsgSpreadsheetOddEvenBoth.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {rowNumber} 行：单周与双周不能同时勾选，已按单周处理'**
+  String serviceMsgSpreadsheetOddEvenBoth(int rowNumber);
+
+  /// No description provided for @serviceMsgFieldCourseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名称'**
+  String get serviceMsgFieldCourseName;
+
+  /// No description provided for @serviceMsgFieldWeekday.
+  ///
+  /// In zh, this message translates to:
+  /// **'星期'**
+  String get serviceMsgFieldWeekday;
+
+  /// No description provided for @serviceMsgFieldStartSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始节数'**
+  String get serviceMsgFieldStartSection;
+
+  /// No description provided for @serviceMsgFieldEndSection.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束节数'**
+  String get serviceMsgFieldEndSection;
+
+  /// No description provided for @serviceMsgFieldCustomWeeks.
+  ///
+  /// In zh, this message translates to:
+  /// **'周数'**
+  String get serviceMsgFieldCustomWeeks;
+
+  /// No description provided for @serviceMsgFieldClassWeeks.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课周'**
+  String get serviceMsgFieldClassWeeks;
+
+  /// No description provided for @serviceMsgFieldStartWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始周'**
+  String get serviceMsgFieldStartWeek;
+
+  /// No description provided for @serviceMsgFieldEndWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'结束周'**
+  String get serviceMsgFieldEndWeek;
+
+  /// No description provided for @serviceMsgWeekStartInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 周次起始值不合法'**
+  String serviceMsgWeekStartInvalid(String itemName);
+
+  /// No description provided for @serviceMsgWeekRangeInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 周次范围不合法'**
+  String serviceMsgWeekRangeInvalid(String itemName);
+
+  /// No description provided for @serviceMsgWeekRangeTooLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 周次范围过大，请检查'**
+  String serviceMsgWeekRangeTooLarge(String itemName);
+
+  /// No description provided for @serviceMsgWeekTokenUnrecognized.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 含有无法识别的周次：{token}'**
+  String serviceMsgWeekTokenUnrecognized(String itemName, String token);
+
+  /// No description provided for @serviceMsgWeeksExceedSemesterClamped.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 含有超过学期周数 {semesterWeekCount} 的周次（{weeks}），已忽略超出部分'**
+  String serviceMsgWeeksExceedSemesterClamped(
+    String itemName,
+    int semesterWeekCount,
+    String weeks,
+  );
+
+  /// No description provided for @serviceMsgAiResultNotObject.
+  ///
+  /// In zh, this message translates to:
+  /// **'AI 结果不是合法对象，请重新复制完整 JSON'**
+  String get serviceMsgAiResultNotObject;
+
+  /// No description provided for @serviceMsgAiSchemaMustBe.
+  ///
+  /// In zh, this message translates to:
+  /// **'schema 必须为 {schema}'**
+  String serviceMsgAiSchemaMustBe(String schema);
+
+  /// No description provided for @serviceMsgAiCoursesMustBeArray.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses 必须是数组'**
+  String get serviceMsgAiCoursesMustBeArray;
+
+  /// No description provided for @serviceMsgAiWarningsMustBeArray.
+  ///
+  /// In zh, this message translates to:
+  /// **'warnings 必须是字符串数组'**
+  String get serviceMsgAiWarningsMustBeArray;
+
+  /// No description provided for @serviceMsgAiWarningItemMustBeString.
+  ///
+  /// In zh, this message translates to:
+  /// **'warnings 中的每一项都必须是字符串'**
+  String get serviceMsgAiWarningItemMustBeString;
+
+  /// No description provided for @serviceMsgAiCourseNotObject.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}] 不是合法对象'**
+  String serviceMsgAiCourseNotObject(int index);
+
+  /// No description provided for @serviceMsgAiCourseNameEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].name 不能为空'**
+  String serviceMsgAiCourseNameEmpty(int index);
+
+  /// No description provided for @serviceMsgAiCourseDayOfWeekInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].dayOfWeek 必须是 1-7'**
+  String serviceMsgAiCourseDayOfWeekInvalid(int index);
+
+  /// No description provided for @serviceMsgAiCourseStartSectionInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].startSection 必须大于等于 1'**
+  String serviceMsgAiCourseStartSectionInvalid(int index);
+
+  /// No description provided for @serviceMsgAiCourseEndSectionInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].endSection 不能小于 startSection'**
+  String serviceMsgAiCourseEndSectionInvalid(int index);
+
+  /// No description provided for @serviceMsgAiCourseCustomWeeksEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].customWeeks 不能为空'**
+  String serviceMsgAiCourseCustomWeeksEmpty(int index);
+
+  /// No description provided for @serviceMsgAiCourseNatureInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'courses[{index}].courseNature 只能是 required 或 elective'**
+  String serviceMsgAiCourseNatureInvalid(int index);
+
+  /// No description provided for @serviceMsgAiUnknownFields.
+  ///
+  /// In zh, this message translates to:
+  /// **'{targetName} 包含不支持的字段：{fields}'**
+  String serviceMsgAiUnknownFields(String targetName, String fields);
+
+  /// No description provided for @serviceMsgAiFieldMustBeString.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 必须是字符串'**
+  String serviceMsgAiFieldMustBeString(String field);
+
+  /// No description provided for @serviceMsgAiFieldMustBeInteger.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 必须是整数'**
+  String serviceMsgAiFieldMustBeInteger(String field);
+
+  /// No description provided for @serviceMsgAiWeekListInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'{itemName} 只能包含大于等于 1 的整数'**
+  String serviceMsgAiWeekListInvalid(String itemName);
+
+  /// No description provided for @serviceMsgAiWeekListTypeInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'{field} 必须是整数数组或周次字符串'**
+  String serviceMsgAiWeekListTypeInvalid(String field);
+
+  /// No description provided for @serviceMsgNoReleaseAvailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'仓库还没有发布 Release。'**
+  String get serviceMsgNoReleaseAvailable;
+
+  /// No description provided for @serviceMsgNoReleaseWithPrerelease.
+  ///
+  /// In zh, this message translates to:
+  /// **'还没有可用的正式版或预发布版本。'**
+  String get serviceMsgNoReleaseWithPrerelease;
+
+  /// No description provided for @serviceMsgUpdateCheckHttpFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查更新失败（HTTP {statusCode}）。'**
+  String serviceMsgUpdateCheckHttpFailed(int statusCode);
+
+  /// No description provided for @serviceMsgUpdateCheckNetworkFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'网络异常，暂时无法检查更新。'**
+  String get serviceMsgUpdateCheckNetworkFailed;
+
+  /// No description provided for @serviceMsgUpdateDownloadUrlUntrusted.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新下载地址未通过安全校验'**
+  String get serviceMsgUpdateDownloadUrlUntrusted;
+
+  /// No description provided for @serviceMsgUpdateDownloadHttpFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载失败（HTTP {statusCode}）'**
+  String serviceMsgUpdateDownloadHttpFailed(int statusCode);
+
+  /// No description provided for @serviceMsgUpdateOpenInstallerFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开安装包失败: {detail}'**
+  String serviceMsgUpdateOpenInstallerFailed(String detail);
+
+  /// No description provided for @serviceMsgUpdateDownloadInstallError.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载或安装过程中出现错误: {detail}'**
+  String serviceMsgUpdateDownloadInstallError(String detail);
+
+  /// No description provided for @serviceMsgInvalidUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'地址无效'**
+  String get serviceMsgInvalidUrl;
+
+  /// No description provided for @serviceMsgUpdateAvailablePrerelease.
+  ///
+  /// In zh, this message translates to:
+  /// **'发现新的预发布版本'**
+  String get serviceMsgUpdateAvailablePrerelease;
+
+  /// No description provided for @serviceMsgUpdateAvailable.
+  ///
+  /// In zh, this message translates to:
+  /// **'发现新版本'**
+  String get serviceMsgUpdateAvailable;
+
+  /// No description provided for @serviceMsgAlreadyLatest.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前已经是最新版本'**
+  String get serviceMsgAlreadyLatest;
+
+  /// No description provided for @serviceMsgShareBackupText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。'**
+  String get serviceMsgShareBackupText;
+
+  /// No description provided for @serviceMsgShareBackupSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表备份'**
+  String get serviceMsgShareBackupSubject;
+
+  /// No description provided for @serviceMsgShareBackupSubjectNamed.
+  ///
+  /// In zh, this message translates to:
+  /// **'{profileName} - 轻屿课表备份'**
+  String serviceMsgShareBackupSubjectNamed(String profileName);
+
+  /// No description provided for @serviceMsgShareFullBackupText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。'**
+  String get serviceMsgShareFullBackupText;
+
+  /// No description provided for @serviceMsgShareFullBackupSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 - 全部数据备份'**
+  String get serviceMsgShareFullBackupSubject;
+
+  /// No description provided for @serviceMsgInvalidRepositoryUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'仓库地址格式不正确'**
+  String get serviceMsgInvalidRepositoryUrl;
+
+  /// No description provided for @serviceMsgIncompleteGithubRepoUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'GitHub 仓库地址不完整'**
+  String get serviceMsgIncompleteGithubRepoUrl;
+
+  /// No description provided for @serviceMsgIncompleteRawGithubUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'raw.githubusercontent.com 地址不完整'**
+  String get serviceMsgIncompleteRawGithubUrl;
+
+  /// No description provided for @serviceMsgGithubOnlySupported.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前只支持 GitHub 仓库地址'**
+  String get serviceMsgGithubOnlySupported;
+
+  /// No description provided for @serviceMsgWarehouseNoSchoolsIndex.
+  ///
+  /// In zh, this message translates to:
+  /// **'未读取到任何学校或工具索引'**
+  String get serviceMsgWarehouseNoSchoolsIndex;
+
+  /// No description provided for @serviceMsgWarehouseNoAdapters.
+  ///
+  /// In zh, this message translates to:
+  /// **'未读取到 {schoolName} 的适配器信息'**
+  String serviceMsgWarehouseNoAdapters(String schoolName);
+
+  /// No description provided for @serviceMsgWarehouseFetchFailedMirror.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法读取适配仓。已尝试 {candidatesCount} 个镜像线路均失败。请检查网络，或到「版本更新」里切到其他镜像线路后重试。'**
+  String serviceMsgWarehouseFetchFailedMirror(int candidatesCount);
+
+  /// No description provided for @serviceMsgWarehouseFetchFailedGithub.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试。'**
+  String get serviceMsgWarehouseFetchFailedGithub;
+
+  /// No description provided for @serviceMsgManualInputCaptcha.
+  ///
+  /// In zh, this message translates to:
+  /// **'请手动输入验证码；完成后点击继续'**
+  String get serviceMsgManualInputCaptcha;
+
+  /// No description provided for @serviceMsgManualInputPassword.
+  ///
+  /// In zh, this message translates to:
+  /// **'请手动输入密码；如已自动填充请直接继续'**
+  String get serviceMsgManualInputPassword;
+
+  /// No description provided for @serviceMsgMacroNoSteps.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有录制的步骤'**
+  String get serviceMsgMacroNoSteps;
+
+  /// No description provided for @serviceMsgMacroUserCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'用户取消'**
+  String get serviceMsgMacroUserCancelled;
+
+  /// No description provided for @serviceMsgMacroStepFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {stepIndex}/{totalSteps} 步失败: {detail}'**
+  String serviceMsgMacroStepFailed(
+    int stepIndex,
+    int totalSteps,
+    String detail,
+  );
+
+  /// No description provided for @serviceMsgMacroNavigateUrlEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航 URL 为空'**
+  String get serviceMsgMacroNavigateUrlEmpty;
+
+  /// No description provided for @serviceMsgMacroNavigateUrlInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'无效的 URL: {url}'**
+  String serviceMsgMacroNavigateUrlInvalid(String url);
+
+  /// No description provided for @serviceMsgMacroFillSelectorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'填充字段的选择器为空'**
+  String get serviceMsgMacroFillSelectorEmpty;
+
+  /// No description provided for @serviceMsgMacroElementNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到元素: {selector}'**
+  String serviceMsgMacroElementNotFound(String selector);
+
+  /// No description provided for @serviceMsgMacroClickSelectorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击元素的选择器为空'**
+  String get serviceMsgMacroClickSelectorEmpty;
+
+  /// No description provided for @serviceMsgMacroUrlPatternEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'URL 模式为空'**
+  String get serviceMsgMacroUrlPatternEmpty;
+
+  /// No description provided for @serviceMsgMacroWaitSelectorEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待元素的选择器为空'**
+  String get serviceMsgMacroWaitSelectorEmpty;
+
+  /// No description provided for @serviceMsgMacroManualInputDefault.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要手动操作'**
+  String get serviceMsgMacroManualInputDefault;
+
+  /// No description provided for @serviceMsgMacroPollTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'{stepLabel} 超时（{timeoutSeconds}秒）{lastError}'**
+  String serviceMsgMacroPollTimeout(
+    String stepLabel,
+    int timeoutSeconds,
+    String lastError,
+  );
+
+  /// No description provided for @serviceMsgMacroReplayNavigate.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在导航...'**
+  String get serviceMsgMacroReplayNavigate;
+
+  /// No description provided for @serviceMsgMacroReplayFillField.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在填充表单...'**
+  String get serviceMsgMacroReplayFillField;
+
+  /// No description provided for @serviceMsgMacroReplayClick.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在点击...'**
+  String get serviceMsgMacroReplayClick;
+
+  /// No description provided for @serviceMsgMacroReplayWaitUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待页面跳转...'**
+  String get serviceMsgMacroReplayWaitUrl;
+
+  /// No description provided for @serviceMsgMacroReplayWaitSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待页面元素...'**
+  String get serviceMsgMacroReplayWaitSelector;
+
+  /// No description provided for @serviceMsgMacroReplayWaitManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待用户操作'**
+  String get serviceMsgMacroReplayWaitManual;
+
+  /// No description provided for @serviceMsgMacroReplayExecuteScript.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在执行导入脚本...'**
+  String get serviceMsgMacroReplayExecuteScript;
+
+  /// No description provided for @serviceMsgMacroReplayDelay.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待中...'**
+  String get serviceMsgMacroReplayDelay;
+
+  /// No description provided for @serviceMsgMacroReplayFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'失败: {detail}'**
+  String serviceMsgMacroReplayFailed(String detail);
+
+  /// No description provided for @serviceMsgMacroReplayPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待手动操作: {reason}'**
+  String serviceMsgMacroReplayPaused(String reason);
+
+  /// No description provided for @serviceMsgSupportDonorsLoadFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载鸣谢名单失败：{detail}'**
+  String serviceMsgSupportDonorsLoadFailed(String detail);
+
+  /// No description provided for @serviceMsgStatisticsShareFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享失败: {detail}'**
+  String serviceMsgStatisticsShareFailed(String detail);
+
+  /// No description provided for @serviceMsgAuthFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'账号或密码错误'**
+  String get serviceMsgAuthFailed;
+
+  /// No description provided for @serviceMsgAccessDenied.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有访问权限'**
+  String get serviceMsgAccessDenied;
+
+  /// No description provided for @serviceMsgCertificateError.
+  ///
+  /// In zh, this message translates to:
+  /// **'证书校验失败'**
+  String get serviceMsgCertificateError;
+
+  /// No description provided for @serviceMsgConnectionTimeout.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接超时'**
+  String get serviceMsgConnectionTimeout;
+
+  /// No description provided for @serviceMsgConnectionFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'无法连接服务器'**
+  String get serviceMsgConnectionFailed;
+
+  /// No description provided for @serviceMsgInvalidResponse.
+  ///
+  /// In zh, this message translates to:
+  /// **'服务器响应无效'**
+  String get serviceMsgInvalidResponse;
+
+  /// No description provided for @serviceMsgSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步失败'**
+  String get serviceMsgSyncFailed;
+
+  /// No description provided for @serviceMsgUsageTypeOverride.
+  ///
+  /// In zh, this message translates to:
+  /// **'副时间表'**
+  String get serviceMsgUsageTypeOverride;
+
+  /// No description provided for @serviceMsgUsageTypeProfile.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表主时间表'**
+  String get serviceMsgUsageTypeProfile;
+
+  /// No description provided for @dataTransferProfileShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。'**
+  String get dataTransferProfileShareText;
+
+  /// No description provided for @dataTransferProfileShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表备份'**
+  String get dataTransferProfileShareSubject;
+
+  /// No description provided for @dataTransferProfileShareSubjectNamed.
+  ///
+  /// In zh, this message translates to:
+  /// **'{profileName} - 轻屿课表备份'**
+  String dataTransferProfileShareSubjectNamed(String profileName);
+
+  /// No description provided for @dataTransferFullBackupShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。'**
+  String get dataTransferFullBackupShareText;
+
+  /// No description provided for @dataTransferFullBackupShareSubject.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 - 全部数据备份'**
+  String get dataTransferFullBackupShareSubject;
+
+  /// No description provided for @courseWeekCustomDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{weeks}周'**
+  String courseWeekCustomDescription(String weeks);
+
+  /// No description provided for @courseWeekRangeDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{startWeek}-{endWeek}周{mode}'**
+  String courseWeekRangeDescription(int startWeek, int endWeek, String mode);
+
+  /// No description provided for @courseWeekOddModeSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **' 单周'**
+  String get courseWeekOddModeSuffix;
+
+  /// No description provided for @courseWeekEvenModeSuffix.
+  ///
+  /// In zh, this message translates to:
+  /// **' 双周'**
+  String get courseWeekEvenModeSuffix;
+
+  /// No description provided for @courseWeekSuspensionDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'第{weeks}周停课'**
+  String courseWeekSuspensionDescription(String weeks);
+
+  /// No description provided for @courseWeekListSeparator.
+  ///
+  /// In zh, this message translates to:
+  /// **'、'**
+  String get courseWeekListSeparator;
+
+  /// No description provided for @holidayLogMemoryCacheHit.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：命中内存缓存（{count} 条），后台刷新中…'**
+  String holidayLogMemoryCacheHit(int year, int count);
+
+  /// No description provided for @holidayLogLocalCacheHit.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：命中本地缓存（{count} 条），后台刷新中…'**
+  String holidayLogLocalCacheHit(int year, int count);
+
+  /// No description provided for @holidayLogNoCacheFetching.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：无缓存，正在拉取远程数据…'**
+  String holidayLogNoCacheFetching(int year);
+
+  /// No description provided for @holidayLogRemoteSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：远程拉取成功（{count} 条），已缓存'**
+  String holidayLogRemoteSuccess(int year, int count);
+
+  /// No description provided for @holidayLogRemoteFailedBuiltin.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：远程拉取失败，使用内置资产兜底'**
+  String holidayLogRemoteFailedBuiltin(int year);
+
+  /// No description provided for @holidayLogBuiltinLoaded.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：加载内置资产（{count} 条）'**
+  String holidayLogBuiltinLoaded(int year, int count);
+
+  /// No description provided for @holidayLogBackgroundSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：后台更新成功（{count} 条），已覆盖缓存'**
+  String holidayLogBackgroundSuccess(int year, int count);
+
+  /// No description provided for @holidayLogBackgroundNoData.
+  ///
+  /// In zh, this message translates to:
+  /// **'{year}年：后台更新未获取到新数据'**
+  String holidayLogBackgroundNoData(int year);
+
+  /// No description provided for @holidayLogPrimaryApiFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'主 API 失败，尝试备用 API…'**
+  String get holidayLogPrimaryApiFailed;
+
+  /// No description provided for @holidayLogRequesting.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在请求 {uri} …'**
+  String holidayLogRequesting(String uri);
+
+  /// No description provided for @holidayLogPrimaryApiStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'主 API 响应 {statusCode}，跳过'**
+  String holidayLogPrimaryApiStatus(int statusCode);
+
+  /// No description provided for @holidayLogPrimaryApiError.
+  ///
+  /// In zh, this message translates to:
+  /// **'主 API 返回错误：{message}'**
+  String holidayLogPrimaryApiError(String message);
+
+  /// No description provided for @holidayLogPrimaryApiException.
+  ///
+  /// In zh, this message translates to:
+  /// **'主 API 异常：{error}'**
+  String holidayLogPrimaryApiException(String error);
+
+  /// No description provided for @holidayLogPrimaryApiParsing.
+  ///
+  /// In zh, this message translates to:
+  /// **'主 API 返回 {count} 条原始数据，正在解析…'**
+  String holidayLogPrimaryApiParsing(int count);
+
+  /// No description provided for @holidayLogNoValidEntries.
+  ///
+  /// In zh, this message translates to:
+  /// **'解析后无有效条目，跳过'**
+  String get holidayLogNoValidEntries;
+
+  /// No description provided for @holidayLogFallbackApiStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用 API 响应 {statusCode}，跳过'**
+  String holidayLogFallbackApiStatus(int statusCode);
+
+  /// No description provided for @holidayLogFallbackApiError.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用 API 返回错误'**
+  String get holidayLogFallbackApiError;
+
+  /// No description provided for @holidayLogFallbackApiParsing.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用 API 返回 {count} 条原始数据，正在解析…'**
+  String holidayLogFallbackApiParsing(int count);
+
+  /// No description provided for @holidayLogFallbackApiException.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用 API 异常：{error}'**
+  String holidayLogFallbackApiException(String error);
+
+  /// No description provided for @holidayNameNewYear.
+  ///
+  /// In zh, this message translates to:
+  /// **'元旦'**
+  String get holidayNameNewYear;
+
+  /// No description provided for @holidayNameLaborDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'劳动节'**
+  String get holidayNameLaborDay;
+
+  /// No description provided for @holidayNameNationalDay.
+  ///
+  /// In zh, this message translates to:
+  /// **'国庆节'**
+  String get holidayNameNationalDay;
+
+  /// No description provided for @holidayNameSpringFestival.
+  ///
+  /// In zh, this message translates to:
+  /// **'春节'**
+  String get holidayNameSpringFestival;
+
+  /// No description provided for @holidayNameQingming.
+  ///
+  /// In zh, this message translates to:
+  /// **'清明节'**
+  String get holidayNameQingming;
+
+  /// No description provided for @holidayNameDragonBoat.
+  ///
+  /// In zh, this message translates to:
+  /// **'端午节'**
+  String get holidayNameDragonBoat;
+
+  /// No description provided for @holidayNameMidAutumn.
+  ///
+  /// In zh, this message translates to:
+  /// **'中秋节'**
+  String get holidayNameMidAutumn;
+
+  /// No description provided for @macroReplayStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'失败: {error}'**
+  String macroReplayStatusFailed(String error);
+
+  /// No description provided for @macroReplayStatusPaused.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待手动操作: {reason}'**
+  String macroReplayStatusPaused(String reason);
+
+  /// No description provided for @macroReplayStepNavigating.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在导航...'**
+  String get macroReplayStepNavigating;
+
+  /// No description provided for @macroReplayStepFilling.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在填充表单...'**
+  String get macroReplayStepFilling;
+
+  /// No description provided for @macroReplayStepClicking.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在点击...'**
+  String get macroReplayStepClicking;
+
+  /// No description provided for @macroReplayStepWaitUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待页面跳转...'**
+  String get macroReplayStepWaitUrl;
+
+  /// No description provided for @macroReplayStepWaitSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待页面元素...'**
+  String get macroReplayStepWaitSelector;
+
+  /// No description provided for @macroReplayStepWaitManual.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待用户操作'**
+  String get macroReplayStepWaitManual;
+
+  /// No description provided for @macroReplayStepExecuteScript.
+  ///
+  /// In zh, this message translates to:
+  /// **'正在执行导入脚本...'**
+  String get macroReplayStepExecuteScript;
+
+  /// No description provided for @macroReplayStepDelay.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待中...'**
+  String get macroReplayStepDelay;
+
+  /// No description provided for @macroReplayNoSteps.
+  ///
+  /// In zh, this message translates to:
+  /// **'没有录制的步骤'**
+  String get macroReplayNoSteps;
+
+  /// No description provided for @macroReplayUserCancelled.
+  ///
+  /// In zh, this message translates to:
+  /// **'用户取消'**
+  String get macroReplayUserCancelled;
+
+  /// No description provided for @macroReplayStepFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'第 {current}/{total} 步失败: {error}'**
+  String macroReplayStepFailed(int current, int total, String error);
+
+  /// No description provided for @macroReplayEmptyNavigateUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航 URL 为空'**
+  String get macroReplayEmptyNavigateUrl;
+
+  /// No description provided for @macroReplayInvalidUrl.
+  ///
+  /// In zh, this message translates to:
+  /// **'无效的 URL: {url}'**
+  String macroReplayInvalidUrl(String url);
+
+  /// No description provided for @macroReplayEmptyFillSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'填充字段的选择器为空'**
+  String get macroReplayEmptyFillSelector;
+
+  /// No description provided for @macroReplayFieldNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到表单字段: {selector}'**
+  String macroReplayFieldNotFound(String selector);
+
+  /// No description provided for @macroReplayEmptyClickSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击元素的选择器为空'**
+  String get macroReplayEmptyClickSelector;
+
+  /// No description provided for @macroReplayClickNotFound.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到点击元素: {selector}'**
+  String macroReplayClickNotFound(String selector);
+
+  /// No description provided for @macroReplayWaitUrlPattern.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待 URL 匹配: {pattern}'**
+  String macroReplayWaitUrlPattern(String pattern);
+
+  /// No description provided for @macroReplayEmptyWaitSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待元素的选择器为空'**
+  String get macroReplayEmptyWaitSelector;
+
+  /// No description provided for @macroReplayWaitSelector.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待元素: {selector}'**
+  String macroReplayWaitSelector(String selector);
+
+  /// No description provided for @macroReplayManualActionRequired.
+  ///
+  /// In zh, this message translates to:
+  /// **'需要手动操作'**
+  String get macroReplayManualActionRequired;
+
+  /// No description provided for @macroReplayNavigateTo.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航到 {url}'**
+  String macroReplayNavigateTo(String url);
+
+  /// No description provided for @macroReplayWaitPageLoad.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待页面加载'**
+  String get macroReplayWaitPageLoad;
+
+  /// No description provided for @macroReplayWaitDomReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'等待 DOM 就绪'**
+  String get macroReplayWaitDomReady;
+
+  /// No description provided for @hyperosShowcaseTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'澎湃 UI 组件库'**
+  String get hyperosShowcaseTitle;
+
+  /// No description provided for @hyperosShowcaseSectionSummary.
+  ///
+  /// In zh, this message translates to:
+  /// **'概要卡片'**
+  String get hyperosShowcaseSectionSummary;
+
+  /// No description provided for @hyperosShowcaseKitSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'mikcb 澎湃风格组件一览'**
+  String get hyperosShowcaseKitSubtitle;
+
+  /// No description provided for @hyperosShowcaseSectionTags.
+  ///
+  /// In zh, this message translates to:
+  /// **'标签 / 手风琴 / 提示'**
+  String get hyperosShowcaseSectionTags;
+
+  /// No description provided for @hyperosShowcaseAccordionSection1.
+  ///
+  /// In zh, this message translates to:
+  /// **'第一节'**
+  String get hyperosShowcaseAccordionSection1;
+
+  /// No description provided for @hyperosShowcaseAccordionSection1Body.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开后显示的内容区域。'**
+  String get hyperosShowcaseAccordionSection1Body;
+
+  /// No description provided for @hyperosShowcaseAccordionSection2.
+  ///
+  /// In zh, this message translates to:
+  /// **'第二节'**
+  String get hyperosShowcaseAccordionSection2;
+
+  /// No description provided for @hyperosShowcaseAccordionSection2Body.
+  ///
+  /// In zh, this message translates to:
+  /// **'可折叠分组，替代 FAccordion。'**
+  String get hyperosShowcaseAccordionSection2Body;
+
+  /// No description provided for @hyperosShowcaseSectionNavRows.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表行 · 导航'**
+  String get hyperosShowcaseSectionNavRows;
+
+  /// No description provided for @hyperosShowcaseNavRowWithIcon.
+  ///
+  /// In zh, this message translates to:
+  /// **'带图标'**
+  String get hyperosShowcaseNavRowWithIcon;
+
+  /// No description provided for @hyperosShowcaseNavRowNoIconSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'无左侧彩图标'**
+  String get hyperosShowcaseNavRowNoIconSubtitle;
+
+  /// No description provided for @hyperosShowcaseNavRowDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'详情'**
+  String get hyperosShowcaseNavRowDetails;
+
+  /// No description provided for @hyperosShowcaseSectionSwitchRows.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表行 · 开关 / 危险'**
+  String get hyperosShowcaseSectionSwitchRows;
+
+  /// No description provided for @hyperosShowcaseSwitchRowSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'带图标开关行'**
+  String get hyperosShowcaseSwitchRowSubtitle;
+
+  /// No description provided for @hyperosShowcaseSwitchRowPlain.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯文字开关行'**
+  String get hyperosShowcaseSwitchRowPlain;
+
+  /// No description provided for @hyperosShowcaseSectionChoiceRows.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表行 · 单选 / 选择 / 日期'**
+  String get hyperosShowcaseSectionChoiceRows;
+
+  /// No description provided for @hyperosShowcaseOptionA.
+  ///
+  /// In zh, this message translates to:
+  /// **'选项 A'**
+  String get hyperosShowcaseOptionA;
+
+  /// No description provided for @hyperosShowcaseOptionB.
+  ///
+  /// In zh, this message translates to:
+  /// **'选项 B'**
+  String get hyperosShowcaseOptionB;
+
+  /// No description provided for @hyperosShowcaseOptionC.
+  ///
+  /// In zh, this message translates to:
+  /// **'选项 C'**
+  String get hyperosShowcaseOptionC;
+
+  /// No description provided for @hyperosShowcaseSelectSizeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'选择尺寸'**
+  String get hyperosShowcaseSelectSizeTitle;
+
+  /// No description provided for @hyperosShowcaseSizeSmall.
+  ///
+  /// In zh, this message translates to:
+  /// **'小'**
+  String get hyperosShowcaseSizeSmall;
+
+  /// No description provided for @hyperosShowcaseSizeMedium.
+  ///
+  /// In zh, this message translates to:
+  /// **'中'**
+  String get hyperosShowcaseSizeMedium;
+
+  /// No description provided for @hyperosShowcaseSizeLarge.
+  ///
+  /// In zh, this message translates to:
+  /// **'大'**
+  String get hyperosShowcaseSizeLarge;
+
+  /// No description provided for @hyperosShowcaseSectionControls.
+  ///
+  /// In zh, this message translates to:
+  /// **'控件卡片'**
+  String get hyperosShowcaseSectionControls;
+
+  /// No description provided for @hyperosShowcaseControlsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'滑条、分段、按钮'**
+  String get hyperosShowcaseControlsSubtitle;
+
+  /// No description provided for @hyperosShowcaseSegmentLeft.
+  ///
+  /// In zh, this message translates to:
+  /// **'左'**
+  String get hyperosShowcaseSegmentLeft;
+
+  /// No description provided for @hyperosShowcaseSegmentRight.
+  ///
+  /// In zh, this message translates to:
+  /// **'右'**
+  String get hyperosShowcaseSegmentRight;
+
+  /// No description provided for @hyperosShowcaseSectionInput.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入'**
+  String get hyperosShowcaseSectionInput;
+
+  /// No description provided for @hyperosShowcaseInputHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'请输入内容'**
+  String get hyperosShowcaseInputHint;
+
+  /// No description provided for @hyperosShowcaseInputCardLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'卡片内输入'**
+  String get hyperosShowcaseInputCardLabel;
+
+  /// No description provided for @hyperosShowcaseSectionPicker.
+  ///
+  /// In zh, this message translates to:
+  /// **'滚轮选择器'**
+  String get hyperosShowcaseSectionPicker;
+
+  /// No description provided for @hyperosShowcasePickerCurrentValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前值：{value}'**
+  String hyperosShowcasePickerCurrentValue(int value);
+
+  /// No description provided for @hyperosShowcaseSectionInline.
+  ///
+  /// In zh, this message translates to:
+  /// **'基础控件 · 行内'**
+  String get hyperosShowcaseSectionInline;
+
+  /// No description provided for @hyperosShowcaseCheckboxSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'多选偏好行'**
+  String get hyperosShowcaseCheckboxSubtitle;
+
+  /// No description provided for @hyperosShowcaseSectionNavActions.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航与操作'**
+  String get hyperosShowcaseSectionNavActions;
+
+  /// No description provided for @hyperosShowcaseTooltipButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'带 Tooltip 的按钮'**
+  String get hyperosShowcaseTooltipButton;
+
+  /// No description provided for @hyperosShowcaseSectionProgress.
+  ///
+  /// In zh, this message translates to:
+  /// **'进度与刷新'**
+  String get hyperosShowcaseSectionProgress;
+
+  /// No description provided for @hyperosShowcaseSectionColorChip.
+  ///
+  /// In zh, this message translates to:
+  /// **'颜色选择 · ColorChip'**
+  String get hyperosShowcaseSectionColorChip;
+
+  /// No description provided for @hyperosShowcaseSectionNavBar.
+  ///
+  /// In zh, this message translates to:
+  /// **'底部导航 · HyperosNavigationBar'**
+  String get hyperosShowcaseSectionNavBar;
+
+  /// No description provided for @hyperosShowcaseNavHome.
+  ///
+  /// In zh, this message translates to:
+  /// **'首页'**
+  String get hyperosShowcaseNavHome;
+
+  /// No description provided for @hyperosShowcaseNavTimetable.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表'**
+  String get hyperosShowcaseNavTimetable;
+
+  /// No description provided for @hyperosShowcaseNavSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'设置'**
+  String get hyperosShowcaseNavSettings;
+
+  /// No description provided for @hyperosShowcaseSectionEmpty.
+  ///
+  /// In zh, this message translates to:
+  /// **'空态 / 分割线 / 装饰'**
+  String get hyperosShowcaseSectionEmpty;
+
+  /// No description provided for @hyperosShowcaseEmptySubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'列表无数据时的占位'**
+  String get hyperosShowcaseEmptySubtitle;
+
+  /// No description provided for @hyperosShowcaseActionButton.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作按钮'**
+  String get hyperosShowcaseActionButton;
+
+  /// No description provided for @hyperosShowcaseDividerRowTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'第二行（上方有缩进分割线）'**
+  String get hyperosShowcaseDividerRowTitle;
+
+  /// No description provided for @hyperosShowcaseSectionPressable.
+  ///
+  /// In zh, this message translates to:
+  /// **'底层行 · HyperosPressableRow'**
+  String get hyperosShowcaseSectionPressable;
+
+  /// No description provided for @hyperosShowcaseSectionShell.
+  ///
+  /// In zh, this message translates to:
+  /// **'页面壳层'**
+  String get hyperosShowcaseSectionShell;
+
+  /// No description provided for @hyperosShowcaseRootPageDetails.
+  ///
+  /// In zh, this message translates to:
+  /// **'无返回键根页'**
+  String get hyperosShowcaseRootPageDetails;
+
+  /// No description provided for @hyperosShowcaseSubpageSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前页即 Subpage + HyperosListView'**
+  String get hyperosShowcaseSubpageSubtitle;
+
+  /// No description provided for @hyperosShowcaseAlreadyInSubpage.
+  ///
+  /// In zh, this message translates to:
+  /// **'已在 Subpage 中'**
+  String get hyperosShowcaseAlreadyInSubpage;
+
+  /// No description provided for @hyperosShowcaseSectionFrosted.
+  ///
+  /// In zh, this message translates to:
+  /// **'模糊顶栏 · 滚动物理'**
+  String get hyperosShowcaseSectionFrosted;
+
+  /// No description provided for @hyperosShowcaseSectionFeedback.
+  ///
+  /// In zh, this message translates to:
+  /// **'反馈 · 弹层'**
+  String get hyperosShowcaseSectionFeedback;
+
+  /// No description provided for @hyperosShowcaseSectionIconColors.
+  ///
+  /// In zh, this message translates to:
+  /// **'主题色 · HyperosIconColors'**
+  String get hyperosShowcaseSectionIconColors;
+
+  /// No description provided for @hyperosShowcaseFooterNote.
+  ///
+  /// In zh, this message translates to:
+  /// **'此页仅在非 Release 构建设置首页可见，用于组件视觉验收。'**
+  String get hyperosShowcaseFooterNote;
+
+  /// No description provided for @hyperosShowcaseUndoAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'撤销'**
+  String get hyperosShowcaseUndoAction;
+
+  /// No description provided for @hyperosShowcaseDialogMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'系统风格对话框示例。'**
+  String get hyperosShowcaseDialogMessage;
+
+  /// No description provided for @hyperosShowcaseConfirmTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'确认操作'**
+  String get hyperosShowcaseConfirmTitle;
+
+  /// No description provided for @hyperosShowcaseConfirmed.
+  ///
+  /// In zh, this message translates to:
+  /// **'已确认'**
+  String get hyperosShowcaseConfirmed;
+
+  /// No description provided for @hyperosShowcaseToastDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'带图标与副标题，App Toast 同款'**
+  String get hyperosShowcaseToastDescription;
+
+  /// No description provided for @hyperosShowcaseMenuCopy.
+  ///
+  /// In zh, this message translates to:
+  /// **'复制'**
+  String get hyperosShowcaseMenuCopy;
+
+  /// No description provided for @hyperosShowcaseMenuShare.
+  ///
+  /// In zh, this message translates to:
+  /// **'分享'**
+  String get hyperosShowcaseMenuShare;
+
+  /// No description provided for @hyperosShowcaseMenuDelete.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除'**
+  String get hyperosShowcaseMenuDelete;
+
+  /// No description provided for @hyperosShowcaseRefreshDone.
+  ///
+  /// In zh, this message translates to:
+  /// **'刷新完成'**
+  String get hyperosShowcaseRefreshDone;
+
+  /// No description provided for @hyperosShowcaseSearchTooltip.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索'**
+  String get hyperosShowcaseSearchTooltip;
+
+  /// No description provided for @hyperosShowcaseRootShellLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'根页壳层'**
+  String get hyperosShowcaseRootShellLabel;
+
+  /// No description provided for @hyperosShowcasePushSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'通过 HyperosNavigation.push 进入'**
+  String get hyperosShowcasePushSubtitle;
+
+  /// No description provided for @hyperosShowcaseSampleText.
+  ///
+  /// In zh, this message translates to:
+  /// **'示例文本'**
+  String get hyperosShowcaseSampleText;
+
+  /// No description provided for @courseImportQuickImportDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'快捷导入 {schoolName} {adapterName}'**
+  String courseImportQuickImportDescription(
+    String schoolName,
+    String adapterName,
+  );
+
+  /// No description provided for @courseImportScriptNoCourses.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入脚本未返回课程数据'**
+  String get courseImportScriptNoCourses;
+
+  /// No description provided for @courseImportScriptFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'脚本执行失败'**
+  String get courseImportScriptFailed;
+
+  /// No description provided for @courseImportRecordingStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制中…点击停止完成录制'**
+  String get courseImportRecordingStatus;
+
+  /// No description provided for @courseImportRecordingStartedTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制已开始，请按正常流程操作教务网站'**
+  String get courseImportRecordingStartedTip;
+
+  /// No description provided for @courseImportRecordingEmptyStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'未录制到任何操作'**
+  String get courseImportRecordingEmptyStatus;
+
+  /// No description provided for @courseImportRecordingEmptyTip.
+  ///
+  /// In zh, this message translates to:
+  /// **'未录制到任何操作'**
+  String get courseImportRecordingEmptyTip;
+
+  /// No description provided for @courseImportSaveRecordingTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存录制'**
+  String get courseImportSaveRecordingTitle;
+
+  /// No description provided for @courseImportSaveRecordingMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制了 {count} 个操作步骤。是否保存为快捷导入？'**
+  String courseImportSaveRecordingMessage(int count);
+
+  /// No description provided for @courseImportRecordingSavedStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'录制已保存（{count} 步）'**
+  String courseImportRecordingSavedStatus(int count);
+
+  /// No description provided for @courseImportWeekNotProvided.
+  ///
+  /// In zh, this message translates to:
+  /// **'未提供周次'**
+  String get courseImportWeekNotProvided;
+
+  /// No description provided for @courseImportLocationNotFilled.
+  ///
+  /// In zh, this message translates to:
+  /// **'未填写地点'**
+  String get courseImportLocationNotFilled;
+
+  /// No description provided for @courseImportPreviewLine.
+  ///
+  /// In zh, this message translates to:
+  /// **'周{weekday} 第{startSection}-{endSection}节  {name}  {location}  周次：{weekText}'**
+  String courseImportPreviewLine(
+    String weekday,
+    int startSection,
+    int endSection,
+    String name,
+    String location,
+    String weekText,
+  );
+
+  /// No description provided for @courseImportCalendarWeekLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'校历第 {week} 周'**
+  String courseImportCalendarWeekLabel(int week);
+
+  /// No description provided for @courseImportTermStartDateTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开学日期'**
+  String get courseImportTermStartDateTitle;
+
+  /// No description provided for @courseImportFirstWeekMappingLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表第 1 周对应校历第几周'**
+  String get courseImportFirstWeekMappingLabel;
+
+  /// No description provided for @courseImportFirstWeekMappingSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。'**
+  String get courseImportFirstWeekMappingSubtitle;
+
+  /// No description provided for @courseImportFirstWeekNoShift.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入后会直接把课表第 1 周当作校历第 1 周。'**
+  String get courseImportFirstWeekNoShift;
+
+  /// No description provided for @courseImportFirstWeekShifted.
+  ///
+  /// In zh, this message translates to:
+  /// **'导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周。'**
+  String courseImportFirstWeekShifted(int weeks, int targetWeek);
+
+  /// No description provided for @courseImportContinueAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'继续导入'**
+  String get courseImportContinueAction;
+
+  /// No description provided for @courseImportUpdateRecommendedAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新课表（推荐）'**
+  String get courseImportUpdateRecommendedAction;
+
+  /// No description provided for @courseImportOverwriteAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'覆盖导入'**
+  String get courseImportOverwriteAction;
+
+  /// No description provided for @courseImportSectionCountInsufficientTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间模板节次不足'**
+  String get courseImportSectionCountInsufficientTitle;
+
+  /// No description provided for @courseImportSectionCountInsufficientMessage.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节。是否自动补齐后继续导入？'**
+  String courseImportSectionCountInsufficientMessage(int current, int required);
+
+  /// No description provided for @courseImportAutoFillAndImportAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'自动补齐并导入'**
+  String get courseImportAutoFillAndImportAction;
+
+  /// No description provided for @courseImportPortalUrlTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'输入教务网址'**
+  String get courseImportPortalUrlTitle;
+
+  /// No description provided for @courseImportPortalUrlSaveContinue.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存并继续'**
+  String get courseImportPortalUrlSaveContinue;
+
+  /// No description provided for @courseImportPortalUrlLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'教务网址'**
+  String get courseImportPortalUrlLabel;
+
+  /// No description provided for @courseImportPortalUrlHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存后下次会直接使用，也可以在适配器信息页里修改。'**
+  String get courseImportPortalUrlHint;
+
+  /// No description provided for @courseImportPortalUrlInvalid.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录地址格式不正确'**
+  String get courseImportPortalUrlInvalid;
+
+  /// No description provided for @logAppLoggerInitialized.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志服务已初始化'**
+  String get logAppLoggerInitialized;
+
+  /// No description provided for @logPrivacyConsentUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐私协议同意状态已更新'**
+  String get logPrivacyConsentUpdated;
+
+  /// No description provided for @logAppLogRecordingEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志记录已开启'**
+  String get logAppLogRecordingEnabled;
+
+  /// No description provided for @logAppLogRecordingRemainsEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志记录保持开启'**
+  String get logAppLogRecordingRemainsEnabled;
+
+  /// No description provided for @logStartupFlowStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程处理已开始'**
+  String get logStartupFlowStarted;
+
+  /// No description provided for @logStartupFlowCompletedNoOnboarding.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程已完成（无需引导页）'**
+  String get logStartupFlowCompletedNoOnboarding;
+
+  /// No description provided for @logStartupFlowCompletedAfterGuide.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程已完成（经过引导页）'**
+  String get logStartupFlowCompletedAfterGuide;
+
+  /// No description provided for @logStartupFlowFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程失败，进入降级模式'**
+  String get logStartupFlowFailed;
+
+  /// No description provided for @logAppLifecycleChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用生命周期已变更'**
+  String get logAppLifecycleChanged;
+
+  /// No description provided for @logNavigatorRouteReplaced.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航路由已替换'**
+  String get logNavigatorRouteReplaced;
+
+  /// No description provided for @logNavigatorRouteChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'导航路由已变更'**
+  String get logNavigatorRouteChanged;
+
+  /// No description provided for @logAppLogsDefaultMigrated.
+  ///
+  /// In zh, this message translates to:
+  /// **'迁移时已默认开启应用日志记录'**
+  String get logAppLogsDefaultMigrated;
+
+  /// No description provided for @logTimetableLoadSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载课表设置失败'**
+  String get logTimetableLoadSettingsFailed;
+
+  /// No description provided for @logTimetableLoadCoursesFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载课程数据失败'**
+  String get logTimetableLoadCoursesFailed;
+
+  /// No description provided for @logTimetableLoadCurrentWeekFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'加载当前周次失败'**
+  String get logTimetableLoadCurrentWeekFailed;
+
+  /// No description provided for @logHomeWidgetPinSupportFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'检查桌面小组件固定支持失败'**
+  String get logHomeWidgetPinSupportFailed;
+
+  /// No description provided for @logHomeWidgetPinRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求固定桌面小组件失败'**
+  String get logHomeWidgetPinRequestFailed;
+
+  /// No description provided for @logHomeWidgetSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步桌面小组件快照失败'**
+  String get logHomeWidgetSyncFailed;
+
+  /// No description provided for @logHomeWidgetClearFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空桌面小组件快照失败'**
+  String get logHomeWidgetClearFailed;
+
+  /// No description provided for @logHomeWidgetScheduleFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'调度桌面小组件刷新失败'**
+  String get logHomeWidgetScheduleFailed;
+
+  /// No description provided for @logMiuiLiveInitializeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'初始化 MIUI 超级岛通道失败'**
+  String get logMiuiLiveInitializeFailed;
+
+  /// No description provided for @logMiuiLiveOpenPromotedSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开超级岛权限设置失败'**
+  String get logMiuiLiveOpenPromotedSettingsFailed;
+
+  /// No description provided for @logMiuiLiveOpenNotificationSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开通知设置失败'**
+  String get logMiuiLiveOpenNotificationSettingsFailed;
+
+  /// No description provided for @logMiuiLiveOpenAutostartSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开自启动设置失败'**
+  String get logMiuiLiveOpenAutostartSettingsFailed;
+
+  /// No description provided for @logMiuiLiveOpenBatterySettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开电池优化设置失败'**
+  String get logMiuiLiveOpenBatterySettingsFailed;
+
+  /// No description provided for @logMiuiLiveOpenAccessibilitySettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'打开无障碍设置失败'**
+  String get logMiuiLiveOpenAccessibilitySettingsFailed;
+
+  /// No description provided for @logMiuiLiveHideFromRecentsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'更新「从最近任务隐藏」失败'**
+  String get logMiuiLiveHideFromRecentsFailed;
+
+  /// No description provided for @logLiveUpdateStartFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'从 Flutter 启动超级岛失败'**
+  String get logLiveUpdateStartFailed;
+
+  /// No description provided for @logLiveUpdateStopFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'从 Flutter 停止超级岛失败'**
+  String get logLiveUpdateStopFailed;
+
+  /// No description provided for @logLiveUpdateDebugStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'获取原生超级岛调试状态失败'**
+  String get logLiveUpdateDebugStatusFailed;
+
+  /// No description provided for @logLiveUpdateSnapshotSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'同步超级岛课表快照失败'**
+  String get logLiveUpdateSnapshotSyncFailed;
+
+  /// No description provided for @logLiveUpdateSnapshotClearFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'清空超级岛课表快照失败'**
+  String get logLiveUpdateSnapshotClearFailed;
+
+  /// No description provided for @logLanEditAuthFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：认证失败'**
+  String get logLanEditAuthFailed;
+
+  /// No description provided for @logLanEditCourseCreated.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已创建课程'**
+  String get logLanEditCourseCreated;
+
+  /// No description provided for @logLanEditCourseUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已更新课程'**
+  String get logLanEditCourseUpdated;
+
+  /// No description provided for @logLanEditCourseDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已删除课程'**
+  String get logLanEditCourseDeleted;
+
+  /// No description provided for @logLanEditCourseGroupSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已保存课程组'**
+  String get logLanEditCourseGroupSaved;
+
+  /// No description provided for @logLanEditMergeImported.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已导入合并备份'**
+  String get logLanEditMergeImported;
+
+  /// No description provided for @logLanEditCoursesBatchDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已批量删除课程'**
+  String get logLanEditCoursesBatchDeleted;
+
+  /// No description provided for @logLanEditCurrentWeekSet.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已设置当前周次'**
+  String get logLanEditCurrentWeekSet;
+
+  /// No description provided for @logLanEditSpreadsheetImported.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：已导入表格'**
+  String get logLanEditSpreadsheetImported;
+
+  /// No description provided for @logLanEditSessionStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：会话已启动'**
+  String get logLanEditSessionStarted;
+
+  /// No description provided for @logLanEditSessionStopped.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：会话已停止'**
+  String get logLanEditSessionStopped;
+
+  /// No description provided for @logLiveUpdateTestRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'用户请求手动超级岛测试通知'**
+  String get logLiveUpdateTestRequested;
+
+  /// No description provided for @logLiveUpdateTestNoSelection.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：未找到可用课程'**
+  String get logLiveUpdateTestNoSelection;
+
+  /// No description provided for @logLiveUpdateTestSelectionReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：已解析目标课程'**
+  String get logLiveUpdateTestSelectionReady;
+
+  /// No description provided for @logLiveUpdateTestSuspendSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：已临时暂停定时同步'**
+  String get logLiveUpdateTestSuspendSync;
+
+  /// No description provided for @logLiveUpdateTestStarting.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：正在启动原生超级岛'**
+  String get logLiveUpdateTestStarting;
+
+  /// No description provided for @logLiveUpdateTestStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：已成功请求原生超级岛'**
+  String get logLiveUpdateTestStarted;
+
+  /// No description provided for @logLiveUpdateTestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动超级岛测试：原生超级岛出现前失败'**
+  String get logLiveUpdateTestFailed;
+
+  /// No description provided for @logLiveUpdateSettingsSynced.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}'**
+  String logLiveUpdateSettingsSynced(
+    String beforeClass,
+    String duringClass,
+    String beforeEnd,
+    String promote,
+    String notification,
+    String countdown,
+    String courseName,
+    String location,
+  );
+
+  /// No description provided for @logFieldSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源'**
+  String get logFieldSource;
+
+  /// No description provided for @logFieldPlatform.
+  ///
+  /// In zh, this message translates to:
+  /// **'平台'**
+  String get logFieldPlatform;
+
+  /// No description provided for @logFieldVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'版本'**
+  String get logFieldVersion;
+
+  /// No description provided for @logFieldBuildNumber.
+  ///
+  /// In zh, this message translates to:
+  /// **'构建号'**
+  String get logFieldBuildNumber;
+
+  /// No description provided for @logFieldLoggingEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'日志记录'**
+  String get logFieldLoggingEnabled;
+
+  /// No description provided for @logFieldPrivacyAccepted.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐私协议'**
+  String get logFieldPrivacyAccepted;
+
+  /// No description provided for @logFieldAccepted.
+  ///
+  /// In zh, this message translates to:
+  /// **'已同意'**
+  String get logFieldAccepted;
+
+  /// No description provided for @logFieldPrevious.
+  ///
+  /// In zh, this message translates to:
+  /// **'先前状态'**
+  String get logFieldPrevious;
+
+  /// No description provided for @logFieldTruncated.
+  ///
+  /// In zh, this message translates to:
+  /// **'已截断'**
+  String get logFieldTruncated;
+
+  /// No description provided for @logFieldTruncatedHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'截断提示'**
+  String get logFieldTruncatedHint;
+
+  /// No description provided for @logFieldThrowable.
+  ///
+  /// In zh, this message translates to:
+  /// **'异常'**
+  String get logFieldThrowable;
+
+  /// No description provided for @logFieldExtras.
+  ///
+  /// In zh, this message translates to:
+  /// **'附加信息'**
+  String get logFieldExtras;
+
+  /// No description provided for @logFieldContext.
+  ///
+  /// In zh, this message translates to:
+  /// **'设备上下文'**
+  String get logFieldContext;
+
+  /// No description provided for @logFieldError.
+  ///
+  /// In zh, this message translates to:
+  /// **'错误'**
+  String get logFieldError;
+
+  /// No description provided for @logFieldBrand.
+  ///
+  /// In zh, this message translates to:
+  /// **'品牌'**
+  String get logFieldBrand;
+
+  /// No description provided for @logFieldManufacturer.
+  ///
+  /// In zh, this message translates to:
+  /// **'制造商'**
+  String get logFieldManufacturer;
+
+  /// No description provided for @logFieldModel.
+  ///
+  /// In zh, this message translates to:
+  /// **'型号'**
+  String get logFieldModel;
+
+  /// No description provided for @logFieldSdkInt.
+  ///
+  /// In zh, this message translates to:
+  /// **'SDK 版本'**
+  String get logFieldSdkInt;
+
+  /// No description provided for @logFieldVersionName.
+  ///
+  /// In zh, this message translates to:
+  /// **'版本名'**
+  String get logFieldVersionName;
+
+  /// No description provided for @logFieldChannel.
+  ///
+  /// In zh, this message translates to:
+  /// **'渠道'**
+  String get logFieldChannel;
+
+  /// No description provided for @logFieldHasNotificationPermission.
+  ///
+  /// In zh, this message translates to:
+  /// **'通知权限'**
+  String get logFieldHasNotificationPermission;
+
+  /// No description provided for @logFieldHasPromotedPermissionDeclared.
+  ///
+  /// In zh, this message translates to:
+  /// **'已声明提升通知权限'**
+  String get logFieldHasPromotedPermissionDeclared;
+
+  /// No description provided for @logFieldCanPostPromotedNotifications.
+  ///
+  /// In zh, this message translates to:
+  /// **'可发布提升通知'**
+  String get logFieldCanPostPromotedNotifications;
+
+  /// No description provided for @logFieldIgnoringBatteryOptimizations.
+  ///
+  /// In zh, this message translates to:
+  /// **'忽略电池优化'**
+  String get logFieldIgnoringBatteryOptimizations;
+
+  /// No description provided for @logFieldKeepAliveAccessibilityEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'无障碍保活已启用'**
+  String get logFieldKeepAliveAccessibilityEnabled;
+
+  /// No description provided for @logFieldHideFromRecentsEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'从最近任务隐藏'**
+  String get logFieldHideFromRecentsEnabled;
+
+  /// No description provided for @logFieldTaskRemovedRecently.
+  ///
+  /// In zh, this message translates to:
+  /// **'近期任务被移除'**
+  String get logFieldTaskRemovedRecently;
+
+  /// No description provided for @logFieldLastTaskRemovedAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次任务移除时间'**
+  String get logFieldLastTaskRemovedAt;
+
+  /// No description provided for @logFieldProcessImportance.
+  ///
+  /// In zh, this message translates to:
+  /// **'进程重要性'**
+  String get logFieldProcessImportance;
+
+  /// No description provided for @logFieldAutoStartStatus.
+  ///
+  /// In zh, this message translates to:
+  /// **'自启动状态'**
+  String get logFieldAutoStartStatus;
+
+  /// No description provided for @logFieldLiveEnableBeforeClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'课前超级岛'**
+  String get logFieldLiveEnableBeforeClass;
+
+  /// No description provided for @logFieldLiveEnableDuringClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'课中超级岛'**
+  String get logFieldLiveEnableDuringClass;
+
+  /// No description provided for @logFieldLiveEnableBeforeEnd.
+  ///
+  /// In zh, this message translates to:
+  /// **'下课前超级岛'**
+  String get logFieldLiveEnableBeforeEnd;
+
+  /// No description provided for @logFieldLivePromoteDuringClass.
+  ///
+  /// In zh, this message translates to:
+  /// **'课中提升通知'**
+  String get logFieldLivePromoteDuringClass;
+
+  /// No description provided for @logFieldLiveShowDuringClassNotification.
+  ///
+  /// In zh, this message translates to:
+  /// **'课中状态栏通知'**
+  String get logFieldLiveShowDuringClassNotification;
+
+  /// No description provided for @logFieldLiveShowCountdown.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示倒计时'**
+  String get logFieldLiveShowCountdown;
+
+  /// No description provided for @logFieldLiveShowStageText.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示阶段文字'**
+  String get logFieldLiveShowStageText;
+
+  /// No description provided for @logFieldLiveShowCourseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示课程名'**
+  String get logFieldLiveShowCourseName;
+
+  /// No description provided for @logFieldLiveShowLocation.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示地点'**
+  String get logFieldLiveShowLocation;
+
+  /// No description provided for @logFieldLiveUseShortName.
+  ///
+  /// In zh, this message translates to:
+  /// **'使用简称'**
+  String get logFieldLiveUseShortName;
+
+  /// No description provided for @logFieldLiveHidePrefixText.
+  ///
+  /// In zh, this message translates to:
+  /// **'隐藏前缀文字'**
+  String get logFieldLiveHidePrefixText;
+
+  /// No description provided for @logFieldLiveDuringClassTimeDisplayMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'课中时间显示模式'**
+  String get logFieldLiveDuringClassTimeDisplayMode;
+
+  /// No description provided for @logFieldLiveEnableMiuiIslandLabelImage.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签图片'**
+  String get logFieldLiveEnableMiuiIslandLabelImage;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelStyle.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签样式'**
+  String get logFieldLiveMiuiIslandLabelStyle;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelContent.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签内容'**
+  String get logFieldLiveMiuiIslandLabelContent;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelFontColor.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签字体颜色'**
+  String get logFieldLiveMiuiIslandLabelFontColor;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelFontWeight.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签字重'**
+  String get logFieldLiveMiuiIslandLabelFontWeight;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelRenderQuality.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签渲染质量'**
+  String get logFieldLiveMiuiIslandLabelRenderQuality;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelFontSize.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签字号'**
+  String get logFieldLiveMiuiIslandLabelFontSize;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelOffsetX.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签 X 偏移'**
+  String get logFieldLiveMiuiIslandLabelOffsetX;
+
+  /// No description provided for @logFieldLiveMiuiIslandLabelOffsetY.
+  ///
+  /// In zh, this message translates to:
+  /// **'岛标签 Y 偏移'**
+  String get logFieldLiveMiuiIslandLabelOffsetY;
+
+  /// No description provided for @logFieldLiveMiuiIslandExpandedIconMode.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开图标模式'**
+  String get logFieldLiveMiuiIslandExpandedIconMode;
+
+  /// No description provided for @logFieldLiveShowBeforeClassMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'课前显示分钟数'**
+  String get logFieldLiveShowBeforeClassMinutes;
+
+  /// No description provided for @logFieldLiveClassReminderStartMinutes.
+  ///
+  /// In zh, this message translates to:
+  /// **'上课提醒开始分钟'**
+  String get logFieldLiveClassReminderStartMinutes;
+
+  /// No description provided for @logFieldLiveEndSecondsCountdownThreshold.
+  ///
+  /// In zh, this message translates to:
+  /// **'下课秒倒计时阈值'**
+  String get logFieldLiveEndSecondsCountdownThreshold;
+
+  /// No description provided for @logFieldState.
+  ///
+  /// In zh, this message translates to:
+  /// **'状态'**
+  String get logFieldState;
+
+  /// No description provided for @logFieldRoute.
+  ///
+  /// In zh, this message translates to:
+  /// **'路由'**
+  String get logFieldRoute;
+
+  /// No description provided for @logFieldPreviousRoute.
+  ///
+  /// In zh, this message translates to:
+  /// **'先前路由'**
+  String get logFieldPreviousRoute;
+
+  /// No description provided for @logFieldProfileId.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表配置 ID'**
+  String get logFieldProfileId;
+
+  /// No description provided for @logFieldReason.
+  ///
+  /// In zh, this message translates to:
+  /// **'原因'**
+  String get logFieldReason;
+
+  /// No description provided for @logFieldClientIp.
+  ///
+  /// In zh, this message translates to:
+  /// **'客户端 IP'**
+  String get logFieldClientIp;
+
+  /// No description provided for @logFieldPort.
+  ///
+  /// In zh, this message translates to:
+  /// **'端口'**
+  String get logFieldPort;
+
+  /// No description provided for @logFieldCourseName.
+  ///
+  /// In zh, this message translates to:
+  /// **'课程名'**
+  String get logFieldCourseName;
+
+  /// No description provided for @logFieldStage.
+  ///
+  /// In zh, this message translates to:
+  /// **'阶段'**
+  String get logFieldStage;
+
+  /// No description provided for @logFieldFrom.
+  ///
+  /// In zh, this message translates to:
+  /// **'来源页面'**
+  String get logFieldFrom;
+
+  /// No description provided for @logFieldCurrentWeek.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前周次'**
+  String get logFieldCurrentWeek;
+
+  /// No description provided for @logFieldWeekday.
+  ///
+  /// In zh, this message translates to:
+  /// **'星期'**
+  String get logFieldWeekday;
+
+  /// No description provided for @logFieldUntilMillis.
+  ///
+  /// In zh, this message translates to:
+  /// **'暂停截止时间'**
+  String get logFieldUntilMillis;
+
+  /// No description provided for @logFieldStartAtMillis.
+  ///
+  /// In zh, this message translates to:
+  /// **'开始时间'**
+  String get logFieldStartAtMillis;
+
+  /// No description provided for @logFieldMergedCourseCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'合并课程数'**
+  String get logFieldMergedCourseCount;
+
+  /// No description provided for @logFieldDeletedCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'删除数量'**
+  String get logFieldDeletedCount;
+
+  /// No description provided for @logFieldRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'请求数量'**
+  String get logFieldRequested;
+
+  /// No description provided for @logFieldTarget.
+  ///
+  /// In zh, this message translates to:
+  /// **'目标'**
+  String get logFieldTarget;
+
+  /// No description provided for @logFieldCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'数量'**
+  String get logFieldCount;
+
+  /// No description provided for @logFieldValue.
+  ///
+  /// In zh, this message translates to:
+  /// **'值'**
+  String get logFieldValue;
+
+  /// No description provided for @logFieldSnapshotLength.
+  ///
+  /// In zh, this message translates to:
+  /// **'快照长度'**
+  String get logFieldSnapshotLength;
+
+  /// No description provided for @logFieldStoredSnapshotVersion.
+  ///
+  /// In zh, this message translates to:
+  /// **'存储快照版本'**
+  String get logFieldStoredSnapshotVersion;
+
+  /// No description provided for @logFieldIntentIsNull.
+  ///
+  /// In zh, this message translates to:
+  /// **'Intent 为空'**
+  String get logFieldIntentIsNull;
+
+  /// No description provided for @logFieldAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'操作'**
+  String get logFieldAction;
+
+  /// No description provided for @logFieldStep.
+  ///
+  /// In zh, this message translates to:
+  /// **'步骤'**
+  String get logFieldStep;
+
+  /// No description provided for @logCatAppLoggerInitialized.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志：初始化'**
+  String get logCatAppLoggerInitialized;
+
+  /// No description provided for @logCatPrivacyConsentUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志：隐私协议'**
+  String get logCatPrivacyConsentUpdated;
+
+  /// No description provided for @logCatAppLogRecordingEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志：记录开关'**
+  String get logCatAppLogRecordingEnabled;
+
+  /// No description provided for @logCatStartupFlowStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程：开始'**
+  String get logCatStartupFlowStarted;
+
+  /// No description provided for @logCatStartupFlowCompleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程：完成'**
+  String get logCatStartupFlowCompleted;
+
+  /// No description provided for @logCatStartupFlowFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'启动流程：失败'**
+  String get logCatStartupFlowFailed;
+
+  /// No description provided for @logCatAppLifecycleStateChanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用生命周期'**
+  String get logCatAppLifecycleStateChanged;
+
+  /// No description provided for @logCatRoutePushed.
+  ///
+  /// In zh, this message translates to:
+  /// **'路由：入栈'**
+  String get logCatRoutePushed;
+
+  /// No description provided for @logCatRoutePopped.
+  ///
+  /// In zh, this message translates to:
+  /// **'路由：出栈'**
+  String get logCatRoutePopped;
+
+  /// No description provided for @logCatRouteReplaced.
+  ///
+  /// In zh, this message translates to:
+  /// **'路由：替换'**
+  String get logCatRouteReplaced;
+
+  /// No description provided for @logCatFlutterFrameworkError.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter 框架错误'**
+  String get logCatFlutterFrameworkError;
+
+  /// No description provided for @logCatFlutterPlatformError.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter 平台错误'**
+  String get logCatFlutterPlatformError;
+
+  /// No description provided for @logCatFlutterZoneError.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter Zone 错误'**
+  String get logCatFlutterZoneError;
+
+  /// No description provided for @logCatAppLogsDefaultMigrated.
+  ///
+  /// In zh, this message translates to:
+  /// **'应用日志：迁移'**
+  String get logCatAppLogsDefaultMigrated;
+
+  /// No description provided for @logCatTimetableLoadSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表：加载设置失败'**
+  String get logCatTimetableLoadSettingsFailed;
+
+  /// No description provided for @logCatTimetableLoadCoursesFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表：加载课程失败'**
+  String get logCatTimetableLoadCoursesFailed;
+
+  /// No description provided for @logCatTimetableLoadCurrentWeekFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'课表：加载周次失败'**
+  String get logCatTimetableLoadCurrentWeekFailed;
+
+  /// No description provided for @logCatHomeWidgetPinSupportFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面小组件：检查固定支持'**
+  String get logCatHomeWidgetPinSupportFailed;
+
+  /// No description provided for @logCatHomeWidgetPinRequestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面小组件：请求固定'**
+  String get logCatHomeWidgetPinRequestFailed;
+
+  /// No description provided for @logCatHomeWidgetSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面小组件：同步失败'**
+  String get logCatHomeWidgetSyncFailed;
+
+  /// No description provided for @logCatHomeWidgetClearFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面小组件：清空失败'**
+  String get logCatHomeWidgetClearFailed;
+
+  /// No description provided for @logCatHomeWidgetScheduleFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'桌面小组件：调度刷新'**
+  String get logCatHomeWidgetScheduleFailed;
+
+  /// No description provided for @logCatMiuiLiveInitializeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：初始化失败'**
+  String get logCatMiuiLiveInitializeFailed;
+
+  /// No description provided for @logCatMiuiLiveOpenPromotedSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：打开权限设置'**
+  String get logCatMiuiLiveOpenPromotedSettingsFailed;
+
+  /// No description provided for @logCatMiuiLiveOpenNotificationSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：打开通知设置'**
+  String get logCatMiuiLiveOpenNotificationSettingsFailed;
+
+  /// No description provided for @logCatMiuiLiveOpenAutostartSettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：打开自启动设置'**
+  String get logCatMiuiLiveOpenAutostartSettingsFailed;
+
+  /// No description provided for @logCatMiuiLiveOpenBatterySettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：打开电池优化'**
+  String get logCatMiuiLiveOpenBatterySettingsFailed;
+
+  /// No description provided for @logCatMiuiLiveOpenAccessibilitySettingsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：打开无障碍设置'**
+  String get logCatMiuiLiveOpenAccessibilitySettingsFailed;
+
+  /// No description provided for @logCatMiuiLiveHideFromRecentsFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：隐藏最近任务'**
+  String get logCatMiuiLiveHideFromRecentsFailed;
+
+  /// No description provided for @logCatLiveUpdateFlutterInitializeFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：Flutter 初始化失败'**
+  String get logCatLiveUpdateFlutterInitializeFailed;
+
+  /// No description provided for @logCatLiveUpdateStartFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：启动失败'**
+  String get logCatLiveUpdateStartFailed;
+
+  /// No description provided for @logCatLiveUpdateStopFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：停止失败'**
+  String get logCatLiveUpdateStopFailed;
+
+  /// No description provided for @logCatLiveUpdateDebugStatusFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：调试状态失败'**
+  String get logCatLiveUpdateDebugStatusFailed;
+
+  /// No description provided for @logCatLiveUpdateSettingsSynced.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：设置已同步'**
+  String get logCatLiveUpdateSettingsSynced;
+
+  /// No description provided for @logCatLiveUpdateSnapshotSyncFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照同步失败'**
+  String get logCatLiveUpdateSnapshotSyncFailed;
+
+  /// No description provided for @logCatLiveUpdateSnapshotClearFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照清空失败'**
+  String get logCatLiveUpdateSnapshotClearFailed;
+
+  /// No description provided for @logCatLanEditAuthFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：认证'**
+  String get logCatLanEditAuthFailed;
+
+  /// No description provided for @logCatLanEditCourseCreated.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：创建课程'**
+  String get logCatLanEditCourseCreated;
+
+  /// No description provided for @logCatLanEditCourseUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：更新课程'**
+  String get logCatLanEditCourseUpdated;
+
+  /// No description provided for @logCatLanEditCourseDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：删除课程'**
+  String get logCatLanEditCourseDeleted;
+
+  /// No description provided for @logCatLanEditCourseGroupSaved.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：保存课程组'**
+  String get logCatLanEditCourseGroupSaved;
+
+  /// No description provided for @logCatLanEditMergeImported.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：合并导入'**
+  String get logCatLanEditMergeImported;
+
+  /// No description provided for @logCatLanEditCoursesBatchDeleted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：批量删除'**
+  String get logCatLanEditCoursesBatchDeleted;
+
+  /// No description provided for @logCatLanEditCurrentWeekSet.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：设置周次'**
+  String get logCatLanEditCurrentWeekSet;
+
+  /// No description provided for @logCatLanEditSpreadsheetImported.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：表格导入'**
+  String get logCatLanEditSpreadsheetImported;
+
+  /// No description provided for @logCatLanEditSessionStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：会话启动'**
+  String get logCatLanEditSessionStarted;
+
+  /// No description provided for @logCatLanEditSessionStopped.
+  ///
+  /// In zh, this message translates to:
+  /// **'局域网编辑：会话停止'**
+  String get logCatLanEditSessionStopped;
+
+  /// No description provided for @logCatLiveUpdateTestRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：请求'**
+  String get logCatLiveUpdateTestRequested;
+
+  /// No description provided for @logCatLiveUpdateTestNoSelection.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：无课程'**
+  String get logCatLiveUpdateTestNoSelection;
+
+  /// No description provided for @logCatLiveUpdateTestSelectionReady.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：已选课程'**
+  String get logCatLiveUpdateTestSelectionReady;
+
+  /// No description provided for @logCatLiveUpdateTestSuspendSync.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：暂停同步'**
+  String get logCatLiveUpdateTestSuspendSync;
+
+  /// No description provided for @logCatLiveUpdateTestStarting.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：启动中'**
+  String get logCatLiveUpdateTestStarting;
+
+  /// No description provided for @logCatLiveUpdateTestStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：已启动'**
+  String get logCatLiveUpdateTestStarted;
+
+  /// No description provided for @logCatLiveUpdateTestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛测试：失败'**
+  String get logCatLiveUpdateTestFailed;
+
+  /// No description provided for @logCatLiveUpdateSnapshotSettings.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照设置'**
+  String get logCatLiveUpdateSnapshotSettings;
+
+  /// No description provided for @logCatLiveUpdateSnapshotSynced.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照已同步'**
+  String get logCatLiveUpdateSnapshotSynced;
+
+  /// No description provided for @logCatLiveUpdateSnapshotCleared.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照已清空'**
+  String get logCatLiveUpdateSnapshotCleared;
+
+  /// No description provided for @logCatLiveUpdateAlarmTriggered.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：闹钟触发'**
+  String get logCatLiveUpdateAlarmTriggered;
+
+  /// No description provided for @logCatLiveUpdateSchedulerResume.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：调度恢复'**
+  String get logCatLiveUpdateSchedulerResume;
+
+  /// No description provided for @logCatLiveUpdateRescheduleHoliday.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：节假日跳过'**
+  String get logCatLiveUpdateRescheduleHoliday;
+
+  /// No description provided for @logCatLiveUpdateRescheduleActive.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：立即启动'**
+  String get logCatLiveUpdateRescheduleActive;
+
+  /// No description provided for @logCatLiveUpdateRescheduleScheduled.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：已调度'**
+  String get logCatLiveUpdateRescheduleScheduled;
+
+  /// No description provided for @logCatLiveUpdateSnapshotParseFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：快照解析失败'**
+  String get logCatLiveUpdateSnapshotParseFailed;
+
+  /// No description provided for @logCatLiveUpdateSnapshotInvalidatedAfterUpgrade.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：升级后快照失效'**
+  String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade;
+
+  /// No description provided for @logCatLiveUpdatePayloadSelected.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：已选负载'**
+  String get logCatLiveUpdatePayloadSelected;
+
+  /// No description provided for @logCatLiveUpdateSchedulerStartFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：调度启动失败'**
+  String get logCatLiveUpdateSchedulerStartFailed;
+
+  /// No description provided for @logCatLiveUpdateStartRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：请求启动'**
+  String get logCatLiveUpdateStartRequested;
+
+  /// No description provided for @logCatLiveUpdateStopRequested.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：请求停止'**
+  String get logCatLiveUpdateStopRequested;
+
+  /// No description provided for @logCatLiveUpdateServiceMissingPayload.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：服务缺少负载'**
+  String get logCatLiveUpdateServiceMissingPayload;
+
+  /// No description provided for @logCatLiveUpdateServiceStarted.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：服务已启动'**
+  String get logCatLiveUpdateServiceStarted;
+
+  /// No description provided for @logCatLiveUpdateServiceStartFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：服务启动失败'**
+  String get logCatLiveUpdateServiceStartFailed;
+
+  /// No description provided for @logCatLiveUpdateTaskRemoved.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：任务被移除'**
+  String get logCatLiveUpdateTaskRemoved;
+
+  /// No description provided for @logCatLiveUpdateTaskRemovedResumed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：任务移除后恢复'**
+  String get logCatLiveUpdateTaskRemovedResumed;
+
+  /// No description provided for @logCatLiveUpdateBeforeClassQuickAction.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：课前快捷操作'**
+  String get logCatLiveUpdateBeforeClassQuickAction;
+
+  /// No description provided for @logCatLiveUpdateBeforeClassQuickActionRestored.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：课前快捷操作已恢复'**
+  String get logCatLiveUpdateBeforeClassQuickActionRestored;
+
+  /// No description provided for @logCatLiveUpdateStatusBarDismissed.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：状态栏通知已关闭'**
+  String get logCatLiveUpdateStatusBarDismissed;
+
+  /// No description provided for @logCatLiveUpdateNotPromoted.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：未提升通知'**
+  String get logCatLiveUpdateNotPromoted;
+
+  /// No description provided for @logCatLiveUpdatePromotedNotShown.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：提升未显示'**
+  String get logCatLiveUpdatePromotedNotShown;
+
+  /// No description provided for @logCatLiveUpdateServiceStopped.
+  ///
+  /// In zh, this message translates to:
+  /// **'超级岛：服务已停止'**
+  String get logCatLiveUpdateServiceStopped;
+
+  /// No description provided for @logCatKeepAliveAccessibilityConnected.
+  ///
+  /// In zh, this message translates to:
+  /// **'保活：无障碍已连接'**
+  String get logCatKeepAliveAccessibilityConnected;
+
+  /// No description provided for @logCatDiagnosticsEnabled.
+  ///
+  /// In zh, this message translates to:
+  /// **'诊断：已开启'**
+  String get logCatDiagnosticsEnabled;
+
+  /// No description provided for @logCatDiagnosticsCleared.
+  ///
+  /// In zh, this message translates to:
+  /// **'诊断：已清空'**
+  String get logCatDiagnosticsCleared;
+
+  /// No description provided for @logCatDiagnosticsBootstrap.
+  ///
+  /// In zh, this message translates to:
+  /// **'诊断：引导'**
+  String get logCatDiagnosticsBootstrap;
+
+  /// No description provided for @logCatFlutterDiagnostic.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter 诊断'**
+  String get logCatFlutterDiagnostic;
+
+  /// No description provided for @logCatFlutterDiagnosticEvent.
+  ///
+  /// In zh, this message translates to:
+  /// **'Flutter 诊断事件'**
+  String get logCatFlutterDiagnosticEvent;
+
+  /// No description provided for @logCatRenderFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'渲染失败'**
+  String get logCatRenderFailed;
+
+  /// No description provided for @logCatDebugSnapshot.
+  ///
+  /// In zh, this message translates to:
+  /// **'调试快照'**
+  String get logCatDebugSnapshot;
+
+  /// No description provided for @logExportTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'轻屿课表 - 应用日志'**
+  String get logExportTitle;
+
+  /// No description provided for @appUpdateMirrorPresetGhfast.
+  ///
+  /// In zh, this message translates to:
+  /// **'默认镜像'**
+  String get appUpdateMirrorPresetGhfast;
+
+  /// No description provided for @appUpdateMirrorPresetGhproxyCn.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用镜像 1'**
+  String get appUpdateMirrorPresetGhproxyCn;
+
+  /// No description provided for @appUpdateMirrorPresetGhLlkk.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用镜像 2'**
+  String get appUpdateMirrorPresetGhLlkk;
+
+  /// No description provided for @appUpdateMirrorPresetGhProxyCom.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用镜像 3'**
+  String get appUpdateMirrorPresetGhProxyCom;
+
+  /// No description provided for @appUpdateMirrorPresetGhproxyNet.
+  ///
+  /// In zh, this message translates to:
+  /// **'备用镜像 4'**
+  String get appUpdateMirrorPresetGhproxyNet;
+
+  /// No description provided for @appUpdateMirrorPresetCustom.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义'**
+  String get appUpdateMirrorPresetCustom;
+
+  /// No description provided for @appUpdateMirrorPresetCustomDescription.
+  ///
+  /// In zh, this message translates to:
+  /// **'填写自定义镜像地址前缀'**
+  String get appUpdateMirrorPresetCustomDescription;
+
+  /// No description provided for @cloudBackupRetentionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'备份保留策略'**
+  String get cloudBackupRetentionTitle;
+
+  /// No description provided for @cloudBackupMaxCountTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最多保留份数'**
+  String get cloudBackupMaxCountTitle;
+
+  /// No description provided for @cloudBackupMaxCountSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'超过后自动删除最旧的备份'**
+  String get cloudBackupMaxCountSubtitle;
+
+  /// No description provided for @cloudBackupMaxCountOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'{count} 份'**
+  String cloudBackupMaxCountOption(int count);
+
+  /// No description provided for @cloudBackupMaxAgeTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'最长保留天数'**
+  String get cloudBackupMaxAgeTitle;
+
+  /// No description provided for @cloudBackupMaxAgeSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'超过后自动删除过期备份'**
+  String get cloudBackupMaxAgeSubtitle;
+
+  /// No description provided for @cloudBackupMaxAgeOption.
+  ///
+  /// In zh, this message translates to:
+  /// **'{days} 天'**
+  String cloudBackupMaxAgeOption(int days);
+
+  /// No description provided for @statisticsShareText.
+  ///
+  /// In zh, this message translates to:
+  /// **'来自轻屿课表的学期统计'**
+  String get statisticsShareText;
+
+  /// No description provided for @aboutUpdateAvailableHeadline.
+  ///
+  /// In zh, this message translates to:
+  /// **'有版本更新'**
+  String get aboutUpdateAvailableHeadline;
+
+  /// No description provided for @aboutAlreadyLatestHeadline.
+  ///
+  /// In zh, this message translates to:
+  /// **'已是最新版本'**
+  String get aboutAlreadyLatestHeadline;
+
+  /// No description provided for @aboutDownloadChannelSectionTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'下载渠道'**
+  String get aboutDownloadChannelSectionTitle;
+
+  /// No description provided for @aboutMirrorProbeFailedLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'失败'**
+  String get aboutMirrorProbeFailedLabel;
+
+  /// No description provided for @timeSchemeImportSupplementName.
+  ///
+  /// In zh, this message translates to:
+  /// **'{name}（导入补齐）'**
+  String timeSchemeImportSupplementName(String name);
+
+  /// No description provided for @profileTimeSchemeName.
+  ///
+  /// In zh, this message translates to:
+  /// **'{profileName} 时间'**
+  String profileTimeSchemeName(String profileName);
+
+  /// No description provided for @currentProfileTimeSchemeName.
+  ///
+  /// In zh, this message translates to:
+  /// **'当前课表时间'**
+  String get currentProfileTimeSchemeName;
+
+  /// No description provided for @unnamedTimetableProfile.
+  ///
+  /// In zh, this message translates to:
+  /// **'未命名课表'**
+  String get unnamedTimetableProfile;
+
+  /// No description provided for @cloudBackupManualProtectedTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动备份永不过期'**
+  String get cloudBackupManualProtectedTitle;
+
+  /// No description provided for @cloudBackupManualProtectedSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'开启后，手动创建的备份不会被自动清理'**
+  String get cloudBackupManualProtectedSubtitle;
+
+  /// No description provided for @courseImportPortalUrlMissingBody.
+  ///
+  /// In zh, this message translates to:
+  /// **'“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址。'**
+  String courseImportPortalUrlMissingBody(
+    String schoolName,
+    String adapterName,
+  );
+
+  /// No description provided for @guidePermissionsProgressLabel.
+  ///
+  /// In zh, this message translates to:
+  /// **'已就绪 {ready}/{total}'**
+  String guidePermissionsProgressLabel(int ready, int total);
 }
 
 class _AppLocalizationsDelegate

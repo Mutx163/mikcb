@@ -7,6 +7,27 @@ import '../../helpers_test_app.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  group('hyperosSelectPopupLayout', () {
+    test('flips popup above anchor when space below is insufficient', () {
+      const anchor = Rect.fromLTWH(24, 560, 312, 56);
+      const estimatedHeight = 240.0;
+      const screenHeight = 640.0;
+      const safeTop = 24.0;
+      const safeBottom = 628.0;
+
+      final layout = hyperosSelectPopupLayout(
+        anchorRect: anchor,
+        estimatedPopupHeight: estimatedHeight,
+        screenHeight: screenHeight,
+        safeTop: safeTop,
+        safeBottom: safeBottom,
+      );
+
+      expect(layout.top + layout.maxHeight, lessThanOrEqualTo(safeBottom + 0.01));
+      expect(layout.top, lessThan(anchor.top));
+    });
+  });
+
   group('HyperosSelectTile', () {
     testWidgets('shows label and current value', (tester) async {
       await tester.pumpWidget(
@@ -209,6 +230,7 @@ void main() {
             label: 'Theme mode',
             items: const {'Light': 'light', 'Dark': 'dark'},
             value: 'light',
+            useSheetForPopup: true,
             onChanged: (value) => selected = value,
           ),
         ),
@@ -223,6 +245,46 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(selected, 'dark');
+    });
+
+    testWidgets('anchored popup stays on screen when anchor is near bottom', (
+      tester,
+    ) async {
+      const screenHeight = 640.0;
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.binding.setSurfaceSize(const Size(360, screenHeight));
+
+      await tester.pumpWidget(
+        TestApp(
+          home: ListView(
+            children: [
+              const SizedBox(height: 500),
+              HyperosControlCard(
+                child: HyperosSelectTile<int>(
+                  label: 'Keep at most',
+                  items: {
+                    for (final count in [5, 10, 15, 20, 30])
+                      '$count versions': count,
+                  },
+                  value: 15,
+                  onChanged: (_) {},
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Keep at most'));
+      await tester.pumpAndSettle();
+
+      for (final label in ['5 versions', '30 versions']) {
+        final option = find.text(label).last;
+        expect(option, findsOneWidget);
+        final rect = tester.getRect(option);
+        expect(rect.bottom, lessThanOrEqualTo(screenHeight));
+        expect(rect.top, greaterThanOrEqualTo(0));
+      }
     });
   });
 

@@ -4,9 +4,9 @@ bool isSensitiveMacroFieldType(String? fieldType) {
 
 String manualInputReasonForFieldType(String? fieldType) {
   if (fieldType == 'captcha') {
-    return '请手动输入验证码；完成后点击继续';
+    return 'manual_input_captcha';
   }
-  return '请手动输入密码；如已自动填充请直接继续';
+  return 'manual_input_password';
 }
 
 /// Builds a stable key for matching script dialog responses during macro replay.

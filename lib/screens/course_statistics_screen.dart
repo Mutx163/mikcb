@@ -39,6 +39,7 @@ class _CourseStatisticsScreenState extends State<CourseStatisticsScreen> {
         final semesterStats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: currentWeek,
+          semesterWeekCount: provider.settings.semesterWeekCount,
         );
 
         // 计算成就

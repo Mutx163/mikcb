@@ -21,16 +21,6 @@ extension ExamReminderPresetX on ExamReminderPreset {
     ExamReminderPreset.custom => 'custom',
   };
 
-  String get label => switch (this) {
-    ExamReminderPreset.none => '不提醒',
-    ExamReminderPreset.min30 => '考前 30 分钟',
-    ExamReminderPreset.hour1 => '考前 1 小时',
-    ExamReminderPreset.hour1AndMin30 => '考前 1 小时 + 30 分钟',
-    ExamReminderPreset.day1 => '考前 1 天',
-    ExamReminderPreset.day1AndHour1 => '考前 1 天 + 1 小时',
-    ExamReminderPreset.custom => '自定义',
-  };
-
   List<int> get reminderMinutes => switch (this) {
     ExamReminderPreset.none => const [],
     ExamReminderPreset.min30 => const [30],

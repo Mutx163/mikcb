@@ -22,6 +22,7 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
   final _coordinator = WebdavSyncCoordinator.instance();
   List<CloudBackupEntry> _entries = const [];
   bool _loading = true;
+  bool _creatingBackup = false;
 
   @override
   void initState() {
@@ -33,14 +34,59 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
     setState(() {
       _loading = true;
     });
-    final entries = await _coordinator.fetchBackupList();
+    final result = await _coordinator.fetchBackupList();
     if (!mounted) {
       return;
     }
+    if (result.hasError) {
+      final l10n = AppLocalizations.of(context)!;
+      showAppToast(
+        context,
+        message: CloudBackupUiHelpers.localizeSyncError(
+          l10n,
+          result.errorMessage,
+        ),
+        kind: AppToastKind.error,
+      );
+    }
     setState(() {
-      _entries = entries;
+      _entries = result.entries;
       _loading = false;
     });
+  }
+
+  Future<void> _createManualBackup() async {
+    setState(() {
+      _creatingBackup = true;
+    });
+    try {
+      final result = await _coordinator.createManualBackup();
+      if (!mounted) {
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
+      final succeeded =
+          result.kind == WebdavSyncResultKind.backupCreated ||
+          result.kind == WebdavSyncResultKind.uploaded;
+      showAppToast(
+        context,
+        message: succeeded
+            ? l10n.cloudBackupCreateSuccess
+            : l10n.cloudBackupCreateFailed(
+                CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
+              ),
+        kind: succeeded ? AppToastKind.success : AppToastKind.error,
+      );
+      if (succeeded) {
+        await _loadBackups();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _creatingBackup = false;
+        });
+      }
+    }
   }
 
   Future<void> _openBackupDetail(CloudBackupEntry entry) async {
@@ -98,9 +144,11 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
     final message = switch (result.kind) {
       WebdavSyncResultKind.backupRestored => l10n.cloudBackupRestoreSuccess,
       WebdavSyncResultKind.failed => l10n.cloudBackupRestoreFailed(
-        result.message ?? '',
+        CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
       ),
-      _ => l10n.cloudBackupRestoreFailed(result.message ?? ''),
+      _ => l10n.cloudBackupRestoreFailed(
+        CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
+      ),
     };
     showAppToast(
       context,
@@ -138,7 +186,9 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
       context,
       message: result.kind == WebdavSyncResultKind.backupDeleted
           ? l10n.cloudBackupDeleteSuccess
-          : l10n.cloudBackupDeleteFailed(result.message ?? ''),
+          : l10n.cloudBackupDeleteFailed(
+              CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
+            ),
       kind: result.kind == WebdavSyncResultKind.backupDeleted
           ? AppToastKind.success
           : AppToastKind.error,
@@ -170,6 +220,16 @@ class _CloudBackupListScreenState extends State<CloudBackupListScreen> {
             )
           : HyperosListView(
               children: [
+                HyperosControlCard(
+                  child: HyperosControlCardInset(
+                    child: HyperosButton(
+                      label: l10n.cloudBackupCreateNow,
+                      loading: _creatingBackup,
+                      onPressed: _creatingBackup ? null : _createManualBackup,
+                    ),
+                  ),
+                ),
+                const HyperosSectionGap(),
                 HyperosListGroup(
                   children: [
                     for (final entry in _entries)

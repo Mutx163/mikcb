@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:forui/forui.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'about_screen.dart';
 
@@ -138,9 +139,10 @@ class _ChangelogScreenState extends State<ChangelogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: const Text('更新日志'),
+      title: Text(l10n.aboutChangelogTitle),
       childPad: false,
       child: Material(
         type: MaterialType.transparency,

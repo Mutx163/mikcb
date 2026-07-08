@@ -67,6 +67,24 @@ class HolidayService {
     }
   }
 
+  void _logKey(
+    String key, {
+    Map<String, Object?> params = const {},
+    bool verbose = false,
+  }) {
+    if (params.isEmpty) {
+      _log(key, verbose: verbose);
+      return;
+    }
+    final buffer = StringBuffer(key);
+    for (final entry in params.entries) {
+      buffer.write('|${entry.key}=${entry.value}');
+    }
+    _log(buffer.toString(), verbose: verbose);
+  }
+
+  static const holidayNameMakeupWorkdayKey = 'holiday_name:makeup_workday';
+
   /// 获取指定年份的节假日数据
   ///
   /// 有本地缓存时先返回缓存、后台拉远程覆盖；
@@ -75,7 +93,11 @@ class HolidayService {
     // 1. 内存缓存
     final cached = _memoryCache[year];
     if (cached != null) {
-      _log('$year年：命中内存缓存（${cached.entries.length} 条），后台刷新中…', verbose: true);
+      _logKey(
+        'holiday_log_memory_cache_hit',
+        params: {'year': year, 'count': cached.entries.length},
+        verbose: true,
+      );
       _backgroundRefresh(year);
       return cached;
     }
@@ -84,8 +106,9 @@ class HolidayService {
     final localCached = await _loadFromLocalCache(year);
     if (localCached != null) {
       _memoryCache[year] = localCached;
-      _log(
-        '$year年：命中本地缓存（${localCached.entries.length} 条），后台刷新中…',
+      _logKey(
+        'holiday_log_local_cache_hit',
+        params: {'year': year, 'count': localCached.entries.length},
         verbose: true,
       );
       _backgroundRefresh(year);
@@ -93,21 +116,27 @@ class HolidayService {
     }
 
     // 3. 无缓存 → 阻塞拉远程
-    _log('$year年：无缓存，正在拉取远程数据…');
+    _logKey('holiday_log_no_cache_fetching', params: {'year': year});
     final remote = await _fetchRemoteUpdate(year);
     if (remote != null && remote.entries.isNotEmpty) {
       _memoryCache[year] = remote;
       await _saveToLocalCache(year, remote);
-      _log('$year年：远程拉取成功（${remote.entries.length} 条），已缓存');
+      _logKey(
+        'holiday_log_remote_success',
+        params: {'year': year, 'count': remote.entries.length},
+      );
       return remote;
     }
 
     // 4. 离线兜底：加载内置资源
-    _log('$year年：远程拉取失败，使用内置资产兜底');
+    _logKey('holiday_log_remote_failed_builtin', params: {'year': year});
     final builtin = await _loadBuiltin(year);
     _memoryCache[year] = builtin;
     await _saveToLocalCache(year, builtin);
-    _log('$year年：加载内置资产（${builtin.entries.length} 条）');
+    _logKey(
+      'holiday_log_builtin_loaded',
+      params: {'year': year, 'count': builtin.entries.length},
+    );
     return builtin;
   }
 
@@ -118,12 +147,16 @@ class HolidayService {
         if (remote != null && remote.entries.isNotEmpty) {
           _memoryCache[year] = remote;
           unawaited(_saveToLocalCache(year, remote));
-          _log(
-            '$year年：后台更新成功（${remote.entries.length} 条），已覆盖缓存',
+          _logKey(
+            'holiday_log_background_success',
+            params: {'year': year, 'count': remote.entries.length},
             verbose: true,
           );
         } else {
-          _log('$year年：后台更新未获取到新数据');
+          _logKey(
+            'holiday_log_background_no_data',
+            params: {'year': year},
+          );
         }
       }),
     );
@@ -163,14 +196,14 @@ class HolidayService {
     // Try primary API first, then fallback
     final result = await _fetchFromXiaoai(year);
     if (result != null) return result;
-    _log('主 API 失败，尝试备用 API…');
+    _logKey('holiday_log_primary_api_failed');
     return _fetchFromAilcc(year);
   }
 
   Future<HolidayData?> _fetchFromXiaoai(int year) async {
     try {
       final uri = Uri.parse('$_remoteHolidayBaseUrl?year=$year');
-      _log('正在请求 $uri …', verbose: true);
+      _logKey('holiday_log_requesting', params: {'uri': uri.toString()}, verbose: true);
       final response = await _client
           .get(
             uri,
@@ -181,26 +214,36 @@ class HolidayService {
           )
           .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) {
-        _log('主 API 响应 ${response.statusCode}，跳过');
+        _logKey(
+          'holiday_log_primary_api_status',
+          params: {'statusCode': response.statusCode},
+        );
         return null;
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       if (json['code'] != 0) {
-        _log('主 API 返回错误：${json['msg']}');
+        _logKey(
+          'holiday_log_primary_api_error',
+          params: {'message': '${json['msg']}'},
+        );
         return null;
       }
       final list = json['data'] as List<dynamic>;
-      _log('主 API 返回 ${list.length} 条原始数据，正在解析…', verbose: true);
+      _logKey(
+        'holiday_log_primary_api_parsing',
+        params: {'count': list.length},
+        verbose: true,
+      );
       final entries = _convertApiEntries(list, year);
       if (entries.isEmpty) {
-        _log('解析后无有效条目，跳过');
+        _logKey('holiday_log_no_valid_entries');
         return null;
       }
 
       return HolidayData(year: year, version: 1, entries: entries);
     } catch (e) {
-      _log('主 API 异常：$e');
+      _logKey('holiday_log_primary_api_exception', params: {'error': '$e'});
       return null;
     }
   }
@@ -208,7 +251,7 @@ class HolidayService {
   Future<HolidayData?> _fetchFromAilcc(int year) async {
     try {
       final uri = Uri.parse('$_fallbackHolidayBaseUrl/$year');
-      _log('正在请求 $uri …', verbose: true);
+      _logKey('holiday_log_requesting', params: {'uri': uri.toString()}, verbose: true);
       final response = await _client
           .get(
             uri,
@@ -219,26 +262,33 @@ class HolidayService {
           )
           .timeout(const Duration(seconds: 8));
       if (response.statusCode != 200) {
-        _log('备用 API 响应 ${response.statusCode}，跳过');
+        _logKey(
+          'holiday_log_fallback_api_status',
+          params: {'statusCode': response.statusCode},
+        );
         return null;
       }
 
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       if (json['code'] != 0) {
-        _log('备用 API 返回错误');
+        _logKey('holiday_log_fallback_api_error');
         return null;
       }
       final holidayMap = json['holiday'] as Map<String, dynamic>;
-      _log('备用 API 返回 ${holidayMap.length} 条原始数据，正在解析…', verbose: true);
+      _logKey(
+        'holiday_log_fallback_api_parsing',
+        params: {'count': holidayMap.length},
+        verbose: true,
+      );
       final entries = _convertAilccEntries(holidayMap, year);
       if (entries.isEmpty) {
-        _log('解析后无有效条目，跳过');
+        _logKey('holiday_log_no_valid_entries');
         return null;
       }
 
       return HolidayData(year: year, version: 1, entries: entries);
     } catch (e) {
-      _log('备用 API 异常：$e');
+      _logKey('holiday_log_fallback_api_exception', params: {'error': '$e'});
       return null;
     }
   }
@@ -308,7 +358,7 @@ class HolidayService {
       entries.add(
         HolidayEntry(
           date: date,
-          name: '调休上班',
+          name: holidayNameMakeupWorkdayKey,
           type: HolidayType.adjustedWorkday,
           groupId: nearestGroupId,
         ),
@@ -388,7 +438,7 @@ class HolidayService {
       entries.add(
         HolidayEntry(
           date: date,
-          name: '调休上班',
+          name: holidayNameMakeupWorkdayKey,
           type: HolidayType.adjustedWorkday,
           groupId: nearestGroupId,
         ),
@@ -414,21 +464,29 @@ class HolidayService {
     final spanDays = group.length;
 
     // Fixed-date holidays
-    if (first.month == 1 && first.day <= 3) return '元旦';
-    if (first.month == 5 && first.day <= 5) return '劳动节';
-    if (first.month == 10 && first.day <= 7) return '国庆节';
+    if (first.month == 1 && first.day <= 3) return 'holiday_name:new_year';
+    if (first.month == 5 && first.day <= 5) return 'holiday_name:labor_day';
+    if (first.month == 10 && first.day <= 7) return 'holiday_name:national_day';
 
     // 跨年假期：12月31日开始，1月结束 → 元旦
-    if (first.month == 12 && last.month == 1) return '元旦';
+    if (first.month == 12 && last.month == 1) return 'holiday_name:new_year';
 
     // Lunar holidays by approximate date range
-    if (first.month >= 1 && first.month <= 2 && spanDays >= 5) return '春节';
-    if (first.month >= 1 && first.month <= 3 && spanDays >= 7) return '春节';
-    if (first.month == 4 && spanDays <= 4) return '清明节';
-    if (first.month >= 5 && first.month <= 6 && spanDays <= 4) return '端午节';
-    if (first.month >= 9 && first.month <= 10 && spanDays <= 4) return '中秋节';
+    if (first.month >= 1 && first.month <= 2 && spanDays >= 5) {
+      return 'holiday_name:spring_festival';
+    }
+    if (first.month >= 1 && first.month <= 3 && spanDays >= 7) {
+      return 'holiday_name:spring_festival';
+    }
+    if (first.month == 4 && spanDays <= 4) return 'holiday_name:qingming';
+    if (first.month >= 5 && first.month <= 6 && spanDays <= 4) {
+      return 'holiday_name:dragon_boat';
+    }
+    if (first.month >= 9 && first.month <= 10 && spanDays <= 4) {
+      return 'holiday_name:mid_autumn';
+    }
 
-    return '法定假日';
+    return 'holiday_name:statutory';
   }
 
   Future<SharedPreferences> _ensurePrefs() async {

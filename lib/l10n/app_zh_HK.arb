@@ -146,15 +146,21 @@
   "cloudBackupSummary": "{profileCount} 個課表 · {courseCount} 門課程",
   "@cloudBackupSummary": {
     "placeholders": {
-      "profileCount": { "type": "int" },
-      "courseCount": { "type": "int" }
+      "profileCount": {
+        "type": "int"
+      },
+      "courseCount": {
+        "type": "int"
+      }
     }
   },
   "cloudBackupRestoreTitle": "恢復到此備份",
   "cloudBackupRestoreBody": "將恢復到 {time} 的課表，本地未同步的修改會丟失。是否繼續？",
   "@cloudBackupRestoreBody": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "cloudBackupRestoreAction": "恢復",
@@ -162,28 +168,36 @@
   "cloudBackupRestoreFailed": "恢復失敗：{message}",
   "@cloudBackupRestoreFailed": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "cloudBackupDeleteTitle": "刪除此備份",
   "cloudBackupDeleteBody": "確定刪除 {time} 的雲端備份嗎？此操作不可撤銷。",
   "@cloudBackupDeleteBody": {
     "placeholders": {
-      "time": { "type": "String" }
+      "time": {
+        "type": "String"
+      }
     }
   },
   "cloudBackupDeleteSuccess": "備份已刪除",
   "cloudBackupDeleteFailed": "刪除失敗：{message}",
   "@cloudBackupDeleteFailed": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "cloudBackupCreateSuccess": "備份已保存到雲端",
   "cloudBackupCreateFailed": "備份失敗：{message}",
   "@cloudBackupCreateFailed": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "cloudBackupUploadAsCurrentTitle": "設為當前雲端版本",
@@ -569,22 +583,32 @@
   "supportGoalRaised": "已籌: {raised} / 目標 {goal}",
   "@supportGoalRaised": {
     "placeholders": {
-      "raised": { "type": "String" },
-      "goal": { "type": "String" }
+      "raised": {
+        "type": "String"
+      },
+      "goal": {
+        "type": "String"
+      }
     }
   },
   "supportBackerCount": "已有 {count} 人獻出愛心",
   "@supportBackerCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "supportDonorListFooter": "名單永久保留 💖",
   "supportMarqueeThanks": "🎉 感謝 {name} 贊助 {amount}",
   "@supportMarqueeThanks": {
     "placeholders": {
-      "name": { "type": "String" },
-      "amount": { "type": "String" }
+      "name": {
+        "type": "String"
+      },
+      "amount": {
+        "type": "String"
+      }
     }
   },
   "supportMarqueeTail": "輕嶼課表正在穩定運行中，期待你的每一次陪伴與愛心！",
@@ -1716,6 +1740,23 @@
   "layoutHideWeekendsSubtitle": "開啟後首頁只顯示周一到周五，剩余列宽会自動铺满。",
   "layoutEnableHapticsTitle": "啟用應用內震動反饋",
   "layoutEnableHapticsSubtitle": "關閉後，頁码切换等交互不再触發輕微震動。",
+  "pageTransitionSpeedLabel": "頁面轉場速度 {speed}×",
+  "@pageTransitionSpeedLabel": {
+    "placeholders": {
+      "speed": {
+        "type": "String"
+      }
+    }
+  },
+  "pageTransitionSpeedSubtitle": "調節進入和返回子頁面時的滑動動畫快慢。數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定。",
+  "pageTransitionSpeedDurationHint": "約 {milliseconds} 毫秒",
+  "@pageTransitionSpeedDurationHint": {
+    "placeholders": {
+      "milliseconds": {
+        "type": "int"
+      }
+    }
+  },
   "layoutTimeColumnDisplayLabel": "首頁時間列顯示",
   "layoutTimeColumnWidthLabel": "時間栏宽度",
   "layoutBackToCurrentWeekButtonStyleLabel": "「返回本週」按鈕樣式",
@@ -3148,43 +3189,69 @@
   "statisticsStoryBusiestDayContent": "截至第{week}週，這學期你最忙的一天是 **{day}**，平均 **{avg}** 節課",
   "@statisticsStoryBusiestDayContent": {
     "placeholders": {
-      "week": { "type": "int" },
-      "day": { "type": "String" },
-      "avg": { "type": "String" }
+      "week": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String"
+      },
+      "avg": {
+        "type": "String"
+      }
     }
   },
   "statisticsStoryLightestDayTitle": "最輕鬆的一天",
   "statisticsStoryLightestDayContent": "截至第{week}週，你最輕鬆的一天是 **{day}**，只有 **{avg}** 節課",
   "@statisticsStoryLightestDayContent": {
     "placeholders": {
-      "week": { "type": "int" },
-      "day": { "type": "String" },
-      "avg": { "type": "String" }
+      "week": {
+        "type": "int"
+      },
+      "day": {
+        "type": "String"
+      },
+      "avg": {
+        "type": "String"
+      }
     }
   },
   "statisticsStoryFavoriteRoomTitle": "最常去的教室",
   "statisticsStoryFavoriteRoomContent": "截至第{week}週，你最常去的教室是 **{room}**，共去了 **{count}** 次",
   "@statisticsStoryFavoriteRoomContent": {
     "placeholders": {
-      "week": { "type": "int" },
-      "room": { "type": "String" },
-      "count": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "room": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsStoryBuildingCountTitle": "教學樓探險",
   "statisticsStoryBuildingCountContent": "截至第{week}週，你的課程分佈在 **{count}** 棟不同的教學樓",
   "@statisticsStoryBuildingCountContent": {
     "placeholders": {
-      "week": { "type": "int" },
-      "count": { "type": "int" }
+      "week": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statisticsStoryTimeRangeTitle": "時間跨度",
   "statisticsStoryTimeRangeContent": "你最早的課是 **{earliest}**，最晚的課是 **{latest}**",
   "@statisticsStoryTimeRangeContent": {
     "placeholders": {
-      "earliest": { "type": "String" },
-      "latest": { "type": "String" }
+      "earliest": {
+        "type": "String"
+      },
+      "latest": {
+        "type": "String"
+      }
     }
   },
   "statisticsSemesterLabelCourses": "門課程",
@@ -3200,9 +3267,15 @@
   "statisticsRankingSlotDetail": "{day} 第{startSection}-{endSection}節",
   "@statisticsRankingSlotDetail": {
     "placeholders": {
-      "day": { "type": "String" },
-      "startSection": { "type": "int" },
-      "endSection": { "type": "int" }
+      "day": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
     }
   },
   "statisticsAchievementEarlyBirdName": "早八戰士",
@@ -3224,8 +3297,1506 @@
   "statisticsNatureLegendDetail": "{count} 門 · {sections} 節",
   "@statisticsNatureLegendDetail": {
     "placeholders": {
-      "count": { "type": "int" },
-      "sections": { "type": "int" }
+      "count": {
+        "type": "int"
+      },
+      "sections": {
+        "type": "int"
+      }
+    }
+  },
+  "weekListSeparator": "、",
+  "courseWeekListLabel": "第{weeks}周",
+  "@courseWeekListLabel": {
+    "placeholders": {
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "courseWeekRangeLabel": "第{startWeek}-{endWeek}周{mode}",
+  "@courseWeekRangeLabel": {
+    "placeholders": {
+      "startWeek": {
+        "type": "int"
+      },
+      "endWeek": {
+        "type": "int"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "courseWeekSuspendedLabel": "第{weeks}周停课",
+  "@courseWeekSuspendedLabel": {
+    "placeholders": {
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "importSemesterStartDateTitle": "开学日期",
+  "importSemesterStartDateSubtitle": "按這一天所在週作為校曆第 1 週",
+  "importFirstCourseWeekMappingLabel": "課表第 1 週對應校曆第幾週",
+  "importFirstCourseWeekMappingSubtitle": "如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週。",
+  "importSemesterMappingNoShiftHint": "匯入後會直接把課表第 1 週當作校曆第 1 週。",
+  "importSemesterMappingShiftHint": "匯入後會把所有課程週次整體順延 {shiftedWeeks} 週，讓課表第 1 週落在校曆第 {calendarWeek} 週。",
+  "@importSemesterMappingShiftHint": {
+    "placeholders": {
+      "shiftedWeeks": {
+        "type": "int"
+      },
+      "calendarWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "calendarWeekOption": "校曆第 {week} 週",
+  "@calendarWeekOption": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "aboutDownloadPackageMethodTitle": "下载安装包方式",
+  "aboutInAppDownloadTitle": "应用内下载",
+  "aboutInAppDownloadSubtitle": "下載完成後直接在應用內安裝",
+  "aboutSystemDownloaderTitle": "系统管理器",
+  "aboutSystemDownloaderChoiceSubtitle": "交給系統下載管理器處理",
+  "syncErrorAuthFailed": "帳號或密碼錯誤",
+  "syncErrorAccessDenied": "沒有存取權限",
+  "syncErrorCertificateError": "憑證校驗失敗",
+  "syncErrorConnectionTimeout": "連線逾時",
+  "syncErrorConnectionFailed": "無法連線伺服器",
+  "syncErrorNetworkError": "網路異常",
+  "syncErrorInvalidResponse": "伺服器回應無效",
+  "syncErrorLocalChangesPendingSync": "本機有未同步修改，已跳過自動覆蓋",
+  "syncErrorMissingCredentials": "請先設定雲同步帳號",
+  "syncErrorBackupNotFound": "備份不存在",
+  "syncErrorMissingBackupSnapshot": "備份快照缺失",
+  "syncErrorCannotDeleteCurrentBackup": "不能刪除目前備份",
+  "syncErrorProviderNotReady": "課表尚未就緒",
+  "syncErrorSyncFailed": "同步失敗",
+  "sectionTimeDisplayHidden": "不显示",
+  "sectionTimeDisplayStartOnly": "仅显示上课时间",
+  "sectionTimeDisplayStartAndEnd": "显示上下课时间",
+  "examReminderNone": "不提醒",
+  "examReminderMin30": "考前 30 分钟",
+  "examReminderHour1": "考前 1 小时",
+  "examReminderHour1AndMin30": "考前 1 小时 + 30 分钟",
+  "examReminderDay1": "考前 1 天",
+  "examReminderDay1AndHour1": "考前 1 天 + 1 小时",
+  "examReminderCustom": "自定义",
+  "debugCopiedJson": "已複製 JSON",
+  "liveDuringClassTimeNearest": "最近时间",
+  "liveDuringClassTimeTotal": "总时间",
+  "liveCountdownTextStyleSmart": "智能（中文）",
+  "liveCountdownTextStyleSmartMinS": "智能（英文）",
+  "liveCountdownTextStyleMinuteSecondCn": "分秒（5分钟19秒）",
+  "liveCountdownTextStyleMinuteSecondColon": "mm:ss（05:19）",
+  "liveCountdownTextStyleMinuteSecondMinS": "min+s（5min19s）",
+  "liveCountdownTextStyleMinuteSecondMinSlashS": "min/s（5min/19s）",
+  "liveCountdownTextStyleMinuteOnlyCn": "纯分钟（5分钟）",
+  "liveCountdownTextStyleMinuteOnlyMin": "min（5min）",
+  "liveCountdownTextStyleMinuteOnlySlash": "/min（5/min）",
+  "liveCountdownTextStyleSecondOnlyCn": "纯秒（5秒）",
+  "liveCountdownTextStyleSecondOnlyShort": "s（5s）",
+  "liveCountdownTextStyleSecondOnlySlash": "/s（5/s）",
+  "miuiIslandLabelStyleTextOnly": "仅文字",
+  "miuiIslandLabelStyleIconAndText": "图标+文字",
+  "miuiIslandLabelContentCourseName": "课程名",
+  "miuiIslandLabelContentLocation": "教室",
+  "miuiIslandLabelContentCourseNameAndLocation": "课程名+教室",
+  "miuiIslandLabelFontWeightRegular": "常规",
+  "miuiIslandLabelFontWeightMedium": "中等",
+  "miuiIslandLabelFontWeightBold": "加粗",
+  "miuiIslandLabelRenderQualityStandard": "标准",
+  "miuiIslandLabelRenderQualityHigh": "高清",
+  "miuiIslandLabelRenderQualityUltra": "超高清",
+  "miuiIslandExpandedIconAppIcon": "应用图标",
+  "miuiIslandExpandedIconCustomImage": "自定义图片",
+  "miuiIslandExpandedIconHidden": "不显示",
+  "liveBeforeClassQuickActionNone": "不显示",
+  "liveBeforeClassQuickActionSilent": "打开静音",
+  "liveBeforeClassQuickActionDoNotDisturb": "打开免打扰",
+  "courseCardVerticalAlignTop": "顶部对齐",
+  "courseCardVerticalAlignCenter": "垂直居中",
+  "courseCardVerticalAlignBottom": "底部对齐",
+  "courseCardVerticalAlignSpaceEvenly": "上下均布",
+  "courseCardHorizontalAlignLeft": "居左",
+  "courseCardHorizontalAlignCenter": "居中",
+  "courseCardHorizontalAlignRight": "居右",
+  "timetableTimeColumnWidthNarrow": "窄",
+  "timetableTimeColumnWidthWide": "宽",
+  "timetableCourseSpacingNarrow": "窄",
+  "timetableCourseSpacingWide": "宽",
+  "appUpdateDownloadSourceOriginal": "GitHub 原版",
+  "appUpdateDownloadSourceMirror": "国内镜像",
+  "appUpdateDownloadChannelPgyer": "蒲公英下载",
+  "appUpdateDownloadChannelGithub": "GitHub 下载",
+  "appUpdateDownloadChannelPgyerDescription": "国内高速下载，推荐使用",
+  "appUpdateDownloadChannelGithubDescription": "GitHub 原生 + 国内镜像",
+  "holidayStatutoryLabel": "法定假日",
+  "serviceMsgImportFileUnrecognized": "Import failed. The file content could not be recognized.",
+  "serviceMsgImportUseOverwriteForFullBackup": "This is a full data backup. Please import using overwrite current timetable.",
+  "serviceMsgImportNoProfilesInBackup": "No recoverable timetables were found in the backup file.",
+  "serviceMsgUnrecognizedMikcbDataFile": "Not a recognizable mikcb data file.",
+  "serviceMsgMissingSettingsData": "Settings data is missing.",
+  "serviceMsgUnrecognizedMikcbFullBackup": "Not a recognizable mikcb full backup file.",
+  "serviceMsgMissingFullBackupData": "Complete backup data is missing.",
+  "serviceMsgUseProfileBackupNotFull": "Use a timetable profile backup JSON, not a full data backup.",
+  "serviceMsgUnrecognizedSyncSnapshot": "Not a recognizable mikcb cloud sync snapshot.",
+  "serviceMsgMissingSyncTimetableData": "Cloud sync timetable data is missing.",
+  "serviceMsgSyncSnapshotChecksumFailed": "Cloud sync snapshot verification failed.",
+  "serviceMsgSyncSnapshotNoProfiles": "No recoverable timetables in the cloud sync snapshot.",
+  "serviceMsgSyncSnapshotUnrecognized": "Cloud sync snapshot could not be recognized.",
+  "serviceMsgTimeSchemeNotFound": "Time scheme not found.",
+  "serviceMsgTimeSchemeConfigUnavailable": "Current timetable time configuration is unavailable.",
+  "serviceMsgTimeSchemeNotFoundSelected": "Selected time scheme was not found.",
+  "serviceMsgTimeSchemeSectionsInsufficient": "Selected time scheme does not have enough sections for sections {startSection}-{endSection}.",
+  "@serviceMsgTimeSchemeSectionsInsufficient": {
+    "placeholders": {
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionCountBelowUsage": "Section count cannot be less than the maximum section in use (section {requiredMaxSection}).",
+  "@serviceMsgSectionCountBelowUsage": {
+    "placeholders": {
+      "requiredMaxSection": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionCountBelowUsageDetail": "Section count cannot be less than the maximum section in use (section {requiredMaxSection}). In use: {profileName} · {courseName} (weekday {dayOfWeek} sections {startSection}-{endSection}, {usageType})",
+  "@serviceMsgSectionCountBelowUsageDetail": {
+    "placeholders": {
+      "requiredMaxSection": {
+        "type": "int"
+      },
+      "profileName": {
+        "type": "String"
+      },
+      "courseName": {
+        "type": "String"
+      },
+      "dayOfWeek": {
+        "type": "int"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "usageType": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAtLeastOneSectionRequired": "At least one section time must be kept.",
+  "serviceMsgSectionEndMustAfterStart": "Section {sectionNumber} end time must be later than start time. Overnight classes are not supported.",
+  "@serviceMsgSectionEndMustAfterStart": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSectionStartBeforePreviousEnd": "Section {sectionNumber} start time cannot be earlier than the previous section end time.",
+  "@serviceMsgSectionStartBeforePreviousEnd": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgPeriodStartTimeRequired": "Set the first section start time for periods that have sections.",
+  "serviceMsgSectionCrossesMidnight": "Section {sectionNumber} would cross midnight. Overnight classes are not supported.",
+  "@serviceMsgSectionCrossesMidnight": {
+    "placeholders": {
+      "sectionNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgClassDurationMustPositive": "Class duration must be greater than 0.",
+  "serviceMsgBreakDurationMustNonNegative": "Break duration cannot be less than 0.",
+  "serviceMsgAtLeastOnePeriodSection": "At least one period must have sections.",
+  "serviceMsgInvalidTimeFormat": "Time format is invalid.",
+  "serviceMsgLinkedCourseNotFound": "Linked course was not found.",
+  "serviceMsgCourseNotFoundForDelete": "Course to delete was not found.",
+  "serviceMsgCourseNotScheduledWeek": "This course is not scheduled in week {sourceWeek}.",
+  "@serviceMsgCourseNotScheduledWeek": {
+    "placeholders": {
+      "sourceWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgCourseNotFoundForReschedule": "Course to reschedule was not found.",
+  "serviceMsgTargetWeekOutOfRange": "Target week is outside the current semester range.",
+  "serviceMsgAtLeastOneScheduleSlot": "At least one class time slot must be kept.",
+  "serviceMsgCourseNameRequired": "Course name cannot be empty.",
+  "serviceMsgBackupContentRequired": "Backup content cannot be empty.",
+  "serviceMsgSpreadsheetFormatOrEncodingUnrecognized": "Could not recognize spreadsheet format or encoding. Save CSV as UTF-8 and try again.",
+  "serviceMsgSpreadsheetXlsxParseFailed": "Failed to parse XLSX file: {error}",
+  "@serviceMsgSpreadsheetXlsxParseFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgSpreadsheetRowWarning": "Row {rowNumber}: {message}",
+  "@serviceMsgSpreadsheetRowWarning": {
+    "placeholders": {
+      "rowNumber": {
+        "type": "int"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgSpreadsheetWakeupInsufficientColumns": "WakeUp format needs at least 7 columns, but row {rowNumber} has only {columnCount}.",
+  "@serviceMsgSpreadsheetWakeupInsufficientColumns": {
+    "placeholders": {
+      "rowNumber": {
+        "type": "int"
+      },
+      "columnCount": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgWeekdayMustBe1To7": "Weekday must be between 1 and 7.",
+  "serviceMsgCustomWeeksRequired": "Weeks cannot be empty.",
+  "serviceMsgClassWeeksRequired": "Class weeks cannot be empty.",
+  "serviceMsgStartWeekMustBeAtLeast1": "Start week must be at least 1.",
+  "serviceMsgStartWeekExceedsSemester": "Start week {startWeek} exceeds semester week count {semesterWeekCount}.",
+  "@serviceMsgStartWeekExceedsSemester": {
+    "placeholders": {
+      "startWeek": {
+        "type": "int"
+      },
+      "semesterWeekCount": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgEndWeekBeforeStartWeek": "End week cannot be earlier than start week.",
+  "serviceMsgWeeksRangeRequired": "Class weeks or start week + end week must be provided.",
+  "serviceMsgFieldMustBeAtLeast1": "{field} must be at least 1.",
+  "@serviceMsgFieldMustBeAtLeast1": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgFieldCannotBeLessThan": "{endField} cannot be less than {startField}.",
+  "@serviceMsgFieldCannotBeLessThan": {
+    "placeholders": {
+      "startField": {
+        "type": "String"
+      },
+      "endField": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgSectionOutOfRange": "Section {section} is outside the time scheme range (1-{maxSection}).",
+  "@serviceMsgSectionOutOfRange": {
+    "placeholders": {
+      "section": {
+        "type": "int"
+      },
+      "maxSection": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgFieldMustBeInteger": "{field} must be an integer.",
+  "@serviceMsgFieldMustBeInteger": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgFieldCannotBeEmpty": "{field} cannot be empty.",
+  "@serviceMsgFieldCannotBeEmpty": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgSpreadsheetEndWeekClamped": "Row {rowNumber}: end week {endWeek} exceeds semester week count {semesterWeekCount}; adjusted to {semesterWeekCount}.",
+  "@serviceMsgSpreadsheetEndWeekClamped": {
+    "placeholders": {
+      "rowNumber": {
+        "type": "int"
+      },
+      "endWeek": {
+        "type": "int"
+      },
+      "semesterWeekCount": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgSpreadsheetOddEvenBoth": "Row {rowNumber}: odd and even weeks cannot both be selected; treated as odd weeks.",
+  "@serviceMsgSpreadsheetOddEvenBoth": {
+    "placeholders": {
+      "rowNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgFieldCourseName": "Course name",
+  "serviceMsgFieldWeekday": "Weekday",
+  "serviceMsgFieldStartSection": "Start section",
+  "serviceMsgFieldEndSection": "End section",
+  "serviceMsgFieldCustomWeeks": "Weeks",
+  "serviceMsgFieldClassWeeks": "Class weeks",
+  "serviceMsgFieldStartWeek": "Start week",
+  "serviceMsgFieldEndWeek": "End week",
+  "serviceMsgWeekStartInvalid": "{itemName}: week range start is invalid.",
+  "@serviceMsgWeekStartInvalid": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgWeekRangeInvalid": "{itemName}: week range is invalid.",
+  "@serviceMsgWeekRangeInvalid": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgWeekRangeTooLarge": "{itemName}: week range is too large. Please check.",
+  "@serviceMsgWeekRangeTooLarge": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgWeekTokenUnrecognized": "{itemName}: unrecognized week token: {token}",
+  "@serviceMsgWeekTokenUnrecognized": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      },
+      "token": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgWeeksExceedSemesterClamped": "{itemName} contains weeks beyond semester week count {semesterWeekCount} ({weeks}); excess weeks were ignored.",
+  "@serviceMsgWeeksExceedSemesterClamped": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      },
+      "semesterWeekCount": {
+        "type": "int"
+      },
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiResultNotObject": "AI result is not a valid JSON object. Copy the full JSON again.",
+  "serviceMsgAiSchemaMustBe": "schema must be {schema}",
+  "@serviceMsgAiSchemaMustBe": {
+    "placeholders": {
+      "schema": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiCoursesMustBeArray": "courses must be an array.",
+  "serviceMsgAiWarningsMustBeArray": "warnings must be a string array.",
+  "serviceMsgAiWarningItemMustBeString": "Each warnings item must be a string.",
+  "serviceMsgAiCourseNotObject": "courses[{index}] is not a valid object.",
+  "@serviceMsgAiCourseNotObject": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseNameEmpty": "courses[{index}].name cannot be empty.",
+  "@serviceMsgAiCourseNameEmpty": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseDayOfWeekInvalid": "courses[{index}].dayOfWeek must be between 1 and 7.",
+  "@serviceMsgAiCourseDayOfWeekInvalid": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseStartSectionInvalid": "courses[{index}].startSection must be at least 1.",
+  "@serviceMsgAiCourseStartSectionInvalid": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseEndSectionInvalid": "courses[{index}].endSection cannot be less than startSection.",
+  "@serviceMsgAiCourseEndSectionInvalid": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseCustomWeeksEmpty": "courses[{index}].customWeeks cannot be empty.",
+  "@serviceMsgAiCourseCustomWeeksEmpty": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiCourseNatureInvalid": "courses[{index}].courseNature must be required or elective.",
+  "@serviceMsgAiCourseNatureInvalid": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgAiUnknownFields": "{targetName} contains unsupported fields: {fields}",
+  "@serviceMsgAiUnknownFields": {
+    "placeholders": {
+      "targetName": {
+        "type": "String"
+      },
+      "fields": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiFieldMustBeString": "{field} must be a string.",
+  "@serviceMsgAiFieldMustBeString": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiFieldMustBeInteger": "{field} must be an integer.",
+  "@serviceMsgAiFieldMustBeInteger": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiWeekListInvalid": "{itemName} can only contain integers greater than or equal to 1.",
+  "@serviceMsgAiWeekListInvalid": {
+    "placeholders": {
+      "itemName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAiWeekListTypeInvalid": "{field} must be an integer array or week string.",
+  "@serviceMsgAiWeekListTypeInvalid": {
+    "placeholders": {
+      "field": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgNoReleaseAvailable": "No release has been published yet.",
+  "serviceMsgNoReleaseWithPrerelease": "No stable or prerelease version is available yet.",
+  "serviceMsgUpdateCheckHttpFailed": "Update check failed (HTTP {statusCode}).",
+  "@serviceMsgUpdateCheckHttpFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgUpdateCheckNetworkFailed": "Network error. Unable to check for updates right now.",
+  "serviceMsgUpdateDownloadUrlUntrusted": "Update download URL failed security validation.",
+  "serviceMsgUpdateDownloadHttpFailed": "Download failed (HTTP {statusCode}).",
+  "@serviceMsgUpdateDownloadHttpFailed": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgUpdateOpenInstallerFailed": "Failed to open installer: {detail}",
+  "@serviceMsgUpdateOpenInstallerFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgUpdateDownloadInstallError": "Download or installation error: {detail}",
+  "@serviceMsgUpdateDownloadInstallError": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgInvalidUrl": "Invalid URL.",
+  "serviceMsgUpdateAvailablePrerelease": "A new prerelease version is available.",
+  "serviceMsgUpdateAvailable": "A new version is available.",
+  "serviceMsgAlreadyLatest": "You are already on the latest version.",
+  "serviceMsgShareBackupText": "This is a full backup of the current timetable. Import it to restore courses and settings.",
+  "serviceMsgShareBackupSubject": "Qingyu Timetable backup",
+  "serviceMsgShareBackupSubjectNamed": "{profileName} - Qingyu Timetable backup",
+  "@serviceMsgShareBackupSubjectNamed": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgShareFullBackupText": "This is a full data backup containing all timetables, the active timetable, and time schemes.",
+  "serviceMsgShareFullBackupSubject": "Qingyu Timetable - full data backup",
+  "serviceMsgInvalidRepositoryUrl": "Repository URL format is invalid.",
+  "serviceMsgIncompleteGithubRepoUrl": "GitHub repository URL is incomplete.",
+  "serviceMsgIncompleteRawGithubUrl": "raw.githubusercontent.com URL is incomplete.",
+  "serviceMsgGithubOnlySupported": "Only GitHub repository URLs are supported.",
+  "serviceMsgWarehouseNoSchoolsIndex": "No school or tool index was found.",
+  "serviceMsgWarehouseNoAdapters": "No adapter information was found for {schoolName}.",
+  "@serviceMsgWarehouseNoAdapters": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgWarehouseFetchFailedMirror": "Unable to read the adapter repository. Tried {candidatesCount} mirror endpoints. Check your network or switch mirror in Version Update.",
+  "@serviceMsgWarehouseFetchFailedMirror": {
+    "placeholders": {
+      "candidatesCount": {
+        "type": "int"
+      }
+    }
+  },
+  "serviceMsgWarehouseFetchFailedGithub": "Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.",
+  "serviceMsgManualInputCaptcha": "Enter the captcha manually, then tap Continue.",
+  "serviceMsgManualInputPassword": "Enter the password manually. If it was auto-filled, tap Continue.",
+  "serviceMsgMacroNoSteps": "No recorded steps.",
+  "serviceMsgMacroUserCancelled": "Cancelled by user.",
+  "serviceMsgMacroStepFailed": "Step {stepIndex}/{totalSteps} failed: {detail}",
+  "@serviceMsgMacroStepFailed": {
+    "placeholders": {
+      "stepIndex": {
+        "type": "int"
+      },
+      "totalSteps": {
+        "type": "int"
+      },
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgMacroNavigateUrlEmpty": "Navigation URL is empty.",
+  "serviceMsgMacroNavigateUrlInvalid": "Invalid URL: {url}",
+  "@serviceMsgMacroNavigateUrlInvalid": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgMacroFillSelectorEmpty": "Fill-field selector is empty.",
+  "serviceMsgMacroElementNotFound": "Element not found: {selector}",
+  "@serviceMsgMacroElementNotFound": {
+    "placeholders": {
+      "selector": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgMacroClickSelectorEmpty": "Click selector is empty.",
+  "serviceMsgMacroUrlPatternEmpty": "URL pattern is empty.",
+  "serviceMsgMacroWaitSelectorEmpty": "Wait selector is empty.",
+  "serviceMsgMacroManualInputDefault": "Manual action required.",
+  "serviceMsgMacroPollTimeout": "{stepLabel} timed out ({timeoutSeconds}s){lastError}",
+  "@serviceMsgMacroPollTimeout": {
+    "placeholders": {
+      "stepLabel": {
+        "type": "String"
+      },
+      "timeoutSeconds": {
+        "type": "int"
+      },
+      "lastError": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgMacroReplayNavigate": "Navigating…",
+  "serviceMsgMacroReplayFillField": "Filling form…",
+  "serviceMsgMacroReplayClick": "Clicking…",
+  "serviceMsgMacroReplayWaitUrl": "Waiting for navigation…",
+  "serviceMsgMacroReplayWaitSelector": "Waiting for page element…",
+  "serviceMsgMacroReplayWaitManual": "Waiting for user action…",
+  "serviceMsgMacroReplayExecuteScript": "Running import script…",
+  "serviceMsgMacroReplayDelay": "Waiting…",
+  "serviceMsgMacroReplayFailed": "Failed: {detail}",
+  "@serviceMsgMacroReplayFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgMacroReplayPaused": "Waiting for manual action: {reason}",
+  "@serviceMsgMacroReplayPaused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgSupportDonorsLoadFailed": "Failed to load supporters list: {detail}",
+  "@serviceMsgSupportDonorsLoadFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgStatisticsShareFailed": "Share failed: {detail}",
+  "@serviceMsgStatisticsShareFailed": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "serviceMsgAuthFailed": "Invalid username or password.",
+  "serviceMsgAccessDenied": "Access denied.",
+  "serviceMsgCertificateError": "Certificate validation failed.",
+  "serviceMsgConnectionTimeout": "Connection timed out.",
+  "serviceMsgConnectionFailed": "Could not connect to the server.",
+  "serviceMsgInvalidResponse": "Invalid server response.",
+  "serviceMsgSyncFailed": "Sync failed.",
+  "serviceMsgUsageTypeOverride": "override time scheme",
+  "serviceMsgUsageTypeProfile": "profile main time scheme",
+  "dataTransferProfileShareText": "这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。",
+  "dataTransferProfileShareSubject": "轻屿课表备份",
+  "dataTransferProfileShareSubjectNamed": "{profileName} - 轻屿课表备份",
+  "@dataTransferProfileShareSubjectNamed": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "dataTransferFullBackupShareText": "这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。",
+  "dataTransferFullBackupShareSubject": "轻屿课表 - 全部数据备份",
+  "courseWeekCustomDescription": "第{weeks}周",
+  "@courseWeekCustomDescription": {
+    "placeholders": {
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "courseWeekRangeDescription": "第{startWeek}-{endWeek}周{mode}",
+  "@courseWeekRangeDescription": {
+    "placeholders": {
+      "startWeek": {
+        "type": "int"
+      },
+      "endWeek": {
+        "type": "int"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "courseWeekOddModeSuffix": " 单周",
+  "courseWeekEvenModeSuffix": " 双周",
+  "courseWeekSuspensionDescription": "第{weeks}周停课",
+  "@courseWeekSuspensionDescription": {
+    "placeholders": {
+      "weeks": {
+        "type": "String"
+      }
+    }
+  },
+  "courseWeekListSeparator": "、",
+  "holidayLogMemoryCacheHit": "{year}年：命中内存缓存（{count} 条），后台刷新中…",
+  "@holidayLogMemoryCacheHit": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogLocalCacheHit": "{year}年：命中本地缓存（{count} 条），后台刷新中…",
+  "@holidayLogLocalCacheHit": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogNoCacheFetching": "{year}年：无缓存，正在拉取远程数据…",
+  "@holidayLogNoCacheFetching": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogRemoteSuccess": "{year}年：远程拉取成功（{count} 条），已缓存",
+  "@holidayLogRemoteSuccess": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogRemoteFailedBuiltin": "{year}年：远程拉取失败，使用内置资产兜底",
+  "@holidayLogRemoteFailedBuiltin": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogBuiltinLoaded": "{year}年：加载内置资产（{count} 条）",
+  "@holidayLogBuiltinLoaded": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogBackgroundSuccess": "{year}年：后台更新成功（{count} 条），已覆盖缓存",
+  "@holidayLogBackgroundSuccess": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogBackgroundNoData": "{year}年：后台更新未获取到新数据",
+  "@holidayLogBackgroundNoData": {
+    "placeholders": {
+      "year": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogPrimaryApiFailed": "主 API 失败，尝试备用 API…",
+  "holidayLogRequesting": "正在请求 {uri} …",
+  "@holidayLogRequesting": {
+    "placeholders": {
+      "uri": {
+        "type": "String"
+      }
+    }
+  },
+  "holidayLogPrimaryApiStatus": "主 API 响应 {statusCode}，跳过",
+  "@holidayLogPrimaryApiStatus": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogPrimaryApiError": "主 API 返回错误：{message}",
+  "@holidayLogPrimaryApiError": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "holidayLogPrimaryApiException": "主 API 异常：{error}",
+  "@holidayLogPrimaryApiException": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "holidayLogPrimaryApiParsing": "主 API 返回 {count} 条原始数据，正在解析…",
+  "@holidayLogPrimaryApiParsing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogNoValidEntries": "解析后无有效条目，跳过",
+  "holidayLogFallbackApiStatus": "备用 API 响应 {statusCode}，跳过",
+  "@holidayLogFallbackApiStatus": {
+    "placeholders": {
+      "statusCode": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogFallbackApiError": "备用 API 返回错误",
+  "holidayLogFallbackApiParsing": "备用 API 返回 {count} 条原始数据，正在解析…",
+  "@holidayLogFallbackApiParsing": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "holidayLogFallbackApiException": "备用 API 异常：{error}",
+  "@holidayLogFallbackApiException": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "holidayNameNewYear": "元旦",
+  "holidayNameLaborDay": "劳动节",
+  "holidayNameNationalDay": "国庆节",
+  "holidayNameSpringFestival": "春节",
+  "holidayNameQingming": "清明节",
+  "holidayNameDragonBoat": "端午节",
+  "holidayNameMidAutumn": "中秋节",
+  "macroReplayStatusFailed": "失败: {error}",
+  "@macroReplayStatusFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayStatusPaused": "等待手动操作: {reason}",
+  "@macroReplayStatusPaused": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayStepNavigating": "正在导航...",
+  "macroReplayStepFilling": "正在填充表单...",
+  "macroReplayStepClicking": "正在点击...",
+  "macroReplayStepWaitUrl": "等待页面跳转...",
+  "macroReplayStepWaitSelector": "等待页面元素...",
+  "macroReplayStepWaitManual": "等待用户操作",
+  "macroReplayStepExecuteScript": "正在执行导入脚本...",
+  "macroReplayStepDelay": "等待中...",
+  "macroReplayNoSteps": "没有录制的步骤",
+  "macroReplayUserCancelled": "用户取消",
+  "macroReplayStepFailed": "第 {current}/{total} 步失败: {error}",
+  "@macroReplayStepFailed": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      },
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayEmptyNavigateUrl": "导航 URL 为空",
+  "macroReplayInvalidUrl": "无效的 URL: {url}",
+  "@macroReplayInvalidUrl": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayEmptyFillSelector": "填充字段的选择器为空",
+  "macroReplayFieldNotFound": "未找到表单字段: {selector}",
+  "@macroReplayFieldNotFound": {
+    "placeholders": {
+      "selector": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayEmptyClickSelector": "点击元素的选择器为空",
+  "macroReplayClickNotFound": "未找到点击元素: {selector}",
+  "@macroReplayClickNotFound": {
+    "placeholders": {
+      "selector": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayWaitUrlPattern": "等待 URL 匹配: {pattern}",
+  "@macroReplayWaitUrlPattern": {
+    "placeholders": {
+      "pattern": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayEmptyWaitSelector": "等待元素的选择器为空",
+  "macroReplayWaitSelector": "等待元素: {selector}",
+  "@macroReplayWaitSelector": {
+    "placeholders": {
+      "selector": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayManualActionRequired": "需要手动操作",
+  "macroReplayNavigateTo": "导航到 {url}",
+  "@macroReplayNavigateTo": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "macroReplayWaitPageLoad": "等待页面加载",
+  "macroReplayWaitDomReady": "等待 DOM 就绪",
+  "hyperosShowcaseTitle": "澎湃 UI 组件库",
+  "hyperosShowcaseSectionSummary": "概要卡片",
+  "hyperosShowcaseKitSubtitle": "mikcb 澎湃风格组件一览",
+  "hyperosShowcaseSectionTags": "标签 / 手风琴 / 提示",
+  "hyperosShowcaseAccordionSection1": "第一节",
+  "hyperosShowcaseAccordionSection1Body": "展开后显示的内容区域。",
+  "hyperosShowcaseAccordionSection2": "第二节",
+  "hyperosShowcaseAccordionSection2Body": "可折叠分组，替代 FAccordion。",
+  "hyperosShowcaseSectionNavRows": "列表行 · 导航",
+  "hyperosShowcaseNavRowWithIcon": "带图标",
+  "hyperosShowcaseNavRowNoIconSubtitle": "无左侧彩图标",
+  "hyperosShowcaseNavRowDetails": "详情",
+  "hyperosShowcaseSectionSwitchRows": "列表行 · 开关 / 危险",
+  "hyperosShowcaseSwitchRowSubtitle": "带图标开关行",
+  "hyperosShowcaseSwitchRowPlain": "纯文字开关行",
+  "hyperosShowcaseSectionChoiceRows": "列表行 · 单选 / 选择 / 日期",
+  "hyperosShowcaseOptionA": "选项 A",
+  "hyperosShowcaseOptionB": "选项 B",
+  "hyperosShowcaseOptionC": "选项 C",
+  "hyperosShowcaseSelectSizeTitle": "选择尺寸",
+  "hyperosShowcaseSizeSmall": "小",
+  "hyperosShowcaseSizeMedium": "中",
+  "hyperosShowcaseSizeLarge": "大",
+  "hyperosShowcaseSectionControls": "控件卡片",
+  "hyperosShowcaseControlsSubtitle": "滑条、分段、按钮",
+  "hyperosShowcaseSegmentLeft": "左",
+  "hyperosShowcaseSegmentRight": "右",
+  "hyperosShowcaseSectionInput": "输入",
+  "hyperosShowcaseInputHint": "请输入内容",
+  "hyperosShowcaseInputCardLabel": "卡片内输入",
+  "hyperosShowcaseSectionPicker": "滚轮选择器",
+  "hyperosShowcasePickerCurrentValue": "当前值：{value}",
+  "@hyperosShowcasePickerCurrentValue": {
+    "placeholders": {
+      "value": {
+        "type": "int"
+      }
+    }
+  },
+  "hyperosShowcaseSectionInline": "基础控件 · 行内",
+  "hyperosShowcaseCheckboxSubtitle": "多选偏好行",
+  "hyperosShowcaseSectionNavActions": "导航与操作",
+  "hyperosShowcaseTooltipButton": "带 Tooltip 的按钮",
+  "hyperosShowcaseSectionProgress": "进度与刷新",
+  "hyperosShowcaseSectionColorChip": "颜色选择 · ColorChip",
+  "hyperosShowcaseSectionNavBar": "底部导航 · HyperosNavigationBar",
+  "hyperosShowcaseNavHome": "首页",
+  "hyperosShowcaseNavTimetable": "课表",
+  "hyperosShowcaseNavSettings": "设置",
+  "hyperosShowcaseSectionEmpty": "空态 / 分割线 / 装饰",
+  "hyperosShowcaseEmptySubtitle": "列表无数据时的占位",
+  "hyperosShowcaseActionButton": "操作按钮",
+  "hyperosShowcaseDividerRowTitle": "第二行（上方有缩进分割线）",
+  "hyperosShowcaseSectionPressable": "底层行 · HyperosPressableRow",
+  "hyperosShowcaseSectionShell": "页面壳层",
+  "hyperosShowcaseRootPageDetails": "无返回键根页",
+  "hyperosShowcaseSubpageSubtitle": "当前页即 Subpage + HyperosListView",
+  "hyperosShowcaseAlreadyInSubpage": "已在 Subpage 中",
+  "hyperosShowcaseSectionFrosted": "模糊顶栏 · 滚动物理",
+  "hyperosShowcaseSectionFeedback": "反馈 · 弹层",
+  "hyperosShowcaseSectionIconColors": "主题色 · HyperosIconColors",
+  "hyperosShowcaseFooterNote": "此页仅在非 Release 构建设置首页可见，用于组件视觉验收。",
+  "hyperosShowcaseUndoAction": "撤销",
+  "hyperosShowcaseDialogMessage": "系统风格对话框示例。",
+  "hyperosShowcaseConfirmTitle": "确认操作",
+  "hyperosShowcaseConfirmed": "已确认",
+  "hyperosShowcaseToastDescription": "带图标与副标题，App Toast 同款",
+  "hyperosShowcaseMenuCopy": "复制",
+  "hyperosShowcaseMenuShare": "分享",
+  "hyperosShowcaseMenuDelete": "删除",
+  "hyperosShowcaseRefreshDone": "刷新完成",
+  "hyperosShowcaseSearchTooltip": "搜索",
+  "hyperosShowcaseRootShellLabel": "根页壳层",
+  "hyperosShowcasePushSubtitle": "通过 HyperosNavigation.push 进入",
+  "hyperosShowcaseSampleText": "示例文本",
+  "courseImportQuickImportDescription": "快捷导入 {schoolName} {adapterName}",
+  "@courseImportQuickImportDescription": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      },
+      "adapterName": {
+        "type": "String"
+      }
+    }
+  },
+  "courseImportScriptNoCourses": "导入脚本未返回课程数据",
+  "courseImportScriptFailed": "脚本执行失败",
+  "courseImportRecordingStatus": "录制中…点击停止完成录制",
+  "courseImportRecordingStartedTip": "录制已开始，请按正常流程操作教务网站",
+  "courseImportRecordingEmptyStatus": "未录制到任何操作",
+  "courseImportRecordingEmptyTip": "未录制到任何操作",
+  "courseImportSaveRecordingTitle": "保存录制",
+  "courseImportSaveRecordingMessage": "录制了 {count} 个操作步骤。是否保存为快捷导入？",
+  "@courseImportSaveRecordingMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportRecordingSavedStatus": "录制已保存（{count} 步）",
+  "@courseImportRecordingSavedStatus": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportWeekNotProvided": "未提供周次",
+  "courseImportLocationNotFilled": "未填写地点",
+  "courseImportPreviewLine": "周{weekday} 第{startSection}-{endSection}节  {name}  {location}  周次：{weekText}",
+  "@courseImportPreviewLine": {
+    "placeholders": {
+      "weekday": {
+        "type": "String"
+      },
+      "startSection": {
+        "type": "int"
+      },
+      "endSection": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      },
+      "weekText": {
+        "type": "String"
+      }
+    }
+  },
+  "courseImportCalendarWeekLabel": "校历第 {week} 周",
+  "@courseImportCalendarWeekLabel": {
+    "placeholders": {
+      "week": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportTermStartDateTitle": "开学日期",
+  "courseImportFirstWeekMappingLabel": "课表第 1 周对应校历第几周",
+  "courseImportFirstWeekMappingSubtitle": "如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。",
+  "courseImportFirstWeekNoShift": "导入后会直接把课表第 1 周当作校历第 1 周。",
+  "courseImportFirstWeekShifted": "导入后会把所有课程周次整体顺延 {weeks} 周，让课表第 1 周落在校历第 {targetWeek} 周。",
+  "@courseImportFirstWeekShifted": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      },
+      "targetWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportContinueAction": "继续导入",
+  "courseImportUpdateRecommendedAction": "更新课表（推荐）",
+  "courseImportOverwriteAction": "覆盖导入",
+  "courseImportSectionCountInsufficientTitle": "时间模板节次不足",
+  "courseImportSectionCountInsufficientMessage": "当前课表时间模板只有 {current} 节，但导入数据需要到第 {required} 节。是否自动补齐后继续导入？",
+  "@courseImportSectionCountInsufficientMessage": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "courseImportAutoFillAndImportAction": "自动补齐并导入",
+  "courseImportPortalUrlTitle": "输入教务网址",
+  "courseImportPortalUrlSaveContinue": "保存并继续",
+  "courseImportPortalUrlLabel": "教务网址",
+  "courseImportPortalUrlHint": "保存后下次会直接使用，也可以在适配器信息页里修改。",
+  "courseImportPortalUrlInvalid": "登录地址格式不正确",
+  "logAppLoggerInitialized": "应用日志服务已初始化",
+  "logPrivacyConsentUpdated": "隐私协议同意状态已更新",
+  "logAppLogRecordingEnabled": "应用日志记录已开启",
+  "logAppLogRecordingRemainsEnabled": "应用日志记录保持开启",
+  "logStartupFlowStarted": "启动流程处理已开始",
+  "logStartupFlowCompletedNoOnboarding": "启动流程已完成（无需引导页）",
+  "logStartupFlowCompletedAfterGuide": "启动流程已完成（经过引导页）",
+  "logStartupFlowFailed": "启动流程失败，进入降级模式",
+  "logAppLifecycleChanged": "应用生命周期已变更",
+  "logNavigatorRouteReplaced": "导航路由已替换",
+  "logNavigatorRouteChanged": "导航路由已变更",
+  "logAppLogsDefaultMigrated": "迁移时已默认开启应用日志记录",
+  "logTimetableLoadSettingsFailed": "加载课表设置失败",
+  "logTimetableLoadCoursesFailed": "加载课程数据失败",
+  "logTimetableLoadCurrentWeekFailed": "加载当前周次失败",
+  "logHomeWidgetPinSupportFailed": "检查桌面小组件固定支持失败",
+  "logHomeWidgetPinRequestFailed": "请求固定桌面小组件失败",
+  "logHomeWidgetSyncFailed": "同步桌面小组件快照失败",
+  "logHomeWidgetClearFailed": "清空桌面小组件快照失败",
+  "logHomeWidgetScheduleFailed": "调度桌面小组件刷新失败",
+  "logMiuiLiveInitializeFailed": "初始化 MIUI 超级岛通道失败",
+  "logMiuiLiveOpenPromotedSettingsFailed": "打开超级岛权限设置失败",
+  "logMiuiLiveOpenNotificationSettingsFailed": "打开通知设置失败",
+  "logMiuiLiveOpenAutostartSettingsFailed": "打开自启动设置失败",
+  "logMiuiLiveOpenBatterySettingsFailed": "打开电池优化设置失败",
+  "logMiuiLiveOpenAccessibilitySettingsFailed": "打开无障碍设置失败",
+  "logMiuiLiveHideFromRecentsFailed": "更新「从最近任务隐藏」失败",
+  "logLiveUpdateStartFailed": "从 Flutter 启动超级岛失败",
+  "logLiveUpdateStopFailed": "从 Flutter 停止超级岛失败",
+  "logLiveUpdateDebugStatusFailed": "获取原生超级岛调试状态失败",
+  "logLiveUpdateSnapshotSyncFailed": "同步超级岛课表快照失败",
+  "logLiveUpdateSnapshotClearFailed": "清空超级岛课表快照失败",
+  "logLanEditAuthFailed": "局域网编辑：认证失败",
+  "logLanEditCourseCreated": "局域网编辑：已创建课程",
+  "logLanEditCourseUpdated": "局域网编辑：已更新课程",
+  "logLanEditCourseDeleted": "局域网编辑：已删除课程",
+  "logLanEditCourseGroupSaved": "局域网编辑：已保存课程组",
+  "logLanEditMergeImported": "局域网编辑：已导入合并备份",
+  "logLanEditCoursesBatchDeleted": "局域网编辑：已批量删除课程",
+  "logLanEditCurrentWeekSet": "局域网编辑：已设置当前周次",
+  "logLanEditSpreadsheetImported": "局域网编辑：已导入表格",
+  "logLanEditSessionStarted": "局域网编辑：会话已启动",
+  "logLanEditSessionStopped": "局域网编辑：会话已停止",
+  "logLiveUpdateTestRequested": "用户请求手动超级岛测试通知",
+  "logLiveUpdateTestNoSelection": "手动超级岛测试：未找到可用课程",
+  "logLiveUpdateTestSelectionReady": "手动超级岛测试：已解析目标课程",
+  "logLiveUpdateTestSuspendSync": "手动超级岛测试：已临时暂停定时同步",
+  "logLiveUpdateTestStarting": "手动超级岛测试：正在启动原生超级岛",
+  "logLiveUpdateTestStarted": "手动超级岛测试：已成功请求原生超级岛",
+  "logLiveUpdateTestFailed": "手动超级岛测试：原生超级岛出现前失败",
+  "logLiveUpdateSettingsSynced": "Flutter 超级岛设置已同步：课前={beforeClass}，课中={duringClass}，下课前={beforeEnd}，提升={promote}，通知={notification}，倒计时={countdown}，课程名={courseName}，地点={location}",
+  "@logLiveUpdateSettingsSynced": {
+    "placeholders": {
+      "beforeClass": {
+        "type": "String"
+      },
+      "duringClass": {
+        "type": "String"
+      },
+      "beforeEnd": {
+        "type": "String"
+      },
+      "promote": {
+        "type": "String"
+      },
+      "notification": {
+        "type": "String"
+      },
+      "countdown": {
+        "type": "String"
+      },
+      "courseName": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "logFieldSource": "来源",
+  "logFieldPlatform": "平台",
+  "logFieldVersion": "版本",
+  "logFieldBuildNumber": "构建号",
+  "logFieldLoggingEnabled": "日志记录",
+  "logFieldPrivacyAccepted": "隐私协议",
+  "logFieldAccepted": "已同意",
+  "logFieldPrevious": "先前状态",
+  "logFieldTruncated": "已截断",
+  "logFieldTruncatedHint": "截断提示",
+  "logFieldThrowable": "异常",
+  "logFieldExtras": "附加信息",
+  "logFieldContext": "设备上下文",
+  "logFieldError": "错误",
+  "logFieldBrand": "品牌",
+  "logFieldManufacturer": "制造商",
+  "logFieldModel": "型号",
+  "logFieldSdkInt": "SDK 版本",
+  "logFieldVersionName": "版本名",
+  "logFieldChannel": "渠道",
+  "logFieldHasNotificationPermission": "通知权限",
+  "logFieldHasPromotedPermissionDeclared": "已声明提升通知权限",
+  "logFieldCanPostPromotedNotifications": "可发布提升通知",
+  "logFieldIgnoringBatteryOptimizations": "忽略电池优化",
+  "logFieldKeepAliveAccessibilityEnabled": "无障碍保活已启用",
+  "logFieldHideFromRecentsEnabled": "从最近任务隐藏",
+  "logFieldTaskRemovedRecently": "近期任务被移除",
+  "logFieldLastTaskRemovedAt": "上次任务移除时间",
+  "logFieldProcessImportance": "进程重要性",
+  "logFieldAutoStartStatus": "自启动状态",
+  "logFieldLiveEnableBeforeClass": "课前超级岛",
+  "logFieldLiveEnableDuringClass": "课中超级岛",
+  "logFieldLiveEnableBeforeEnd": "下课前超级岛",
+  "logFieldLivePromoteDuringClass": "课中提升通知",
+  "logFieldLiveShowDuringClassNotification": "课中状态栏通知",
+  "logFieldLiveShowCountdown": "显示倒计时",
+  "logFieldLiveShowStageText": "显示阶段文字",
+  "logFieldLiveShowCourseName": "显示课程名",
+  "logFieldLiveShowLocation": "显示地点",
+  "logFieldLiveUseShortName": "使用简称",
+  "logFieldLiveHidePrefixText": "隐藏前缀文字",
+  "logFieldLiveDuringClassTimeDisplayMode": "课中时间显示模式",
+  "logFieldLiveEnableMiuiIslandLabelImage": "岛标签图片",
+  "logFieldLiveMiuiIslandLabelStyle": "岛标签样式",
+  "logFieldLiveMiuiIslandLabelContent": "岛标签内容",
+  "logFieldLiveMiuiIslandLabelFontColor": "岛标签字体颜色",
+  "logFieldLiveMiuiIslandLabelFontWeight": "岛标签字重",
+  "logFieldLiveMiuiIslandLabelRenderQuality": "岛标签渲染质量",
+  "logFieldLiveMiuiIslandLabelFontSize": "岛标签字号",
+  "logFieldLiveMiuiIslandLabelOffsetX": "岛标签 X 偏移",
+  "logFieldLiveMiuiIslandLabelOffsetY": "岛标签 Y 偏移",
+  "logFieldLiveMiuiIslandExpandedIconMode": "展开图标模式",
+  "logFieldLiveShowBeforeClassMinutes": "课前显示分钟数",
+  "logFieldLiveClassReminderStartMinutes": "上课提醒开始分钟",
+  "logFieldLiveEndSecondsCountdownThreshold": "下课秒倒计时阈值",
+  "logFieldState": "状态",
+  "logFieldRoute": "路由",
+  "logFieldPreviousRoute": "先前路由",
+  "logFieldProfileId": "课表配置 ID",
+  "logFieldReason": "原因",
+  "logFieldClientIp": "客户端 IP",
+  "logFieldPort": "端口",
+  "logFieldCourseName": "课程名",
+  "logFieldStage": "阶段",
+  "logFieldFrom": "来源页面",
+  "logFieldCurrentWeek": "当前周次",
+  "logFieldWeekday": "星期",
+  "logFieldUntilMillis": "暂停截止时间",
+  "logFieldStartAtMillis": "开始时间",
+  "logFieldMergedCourseCount": "合并课程数",
+  "logFieldDeletedCount": "删除数量",
+  "logFieldRequested": "请求数量",
+  "logFieldTarget": "目标",
+  "logFieldCount": "数量",
+  "logFieldValue": "值",
+  "logFieldSnapshotLength": "快照长度",
+  "logFieldStoredSnapshotVersion": "存储快照版本",
+  "logFieldIntentIsNull": "Intent 为空",
+  "logFieldAction": "操作",
+  "logFieldStep": "步骤",
+  "logCatAppLoggerInitialized": "应用日志：初始化",
+  "logCatPrivacyConsentUpdated": "应用日志：隐私协议",
+  "logCatAppLogRecordingEnabled": "应用日志：记录开关",
+  "logCatStartupFlowStarted": "启动流程：开始",
+  "logCatStartupFlowCompleted": "启动流程：完成",
+  "logCatStartupFlowFailed": "启动流程：失败",
+  "logCatAppLifecycleStateChanged": "应用生命周期",
+  "logCatRoutePushed": "路由：入栈",
+  "logCatRoutePopped": "路由：出栈",
+  "logCatRouteReplaced": "路由：替换",
+  "logCatFlutterFrameworkError": "Flutter 框架错误",
+  "logCatFlutterPlatformError": "Flutter 平台错误",
+  "logCatFlutterZoneError": "Flutter Zone 错误",
+  "logCatAppLogsDefaultMigrated": "应用日志：迁移",
+  "logCatTimetableLoadSettingsFailed": "课表：加载设置失败",
+  "logCatTimetableLoadCoursesFailed": "课表：加载课程失败",
+  "logCatTimetableLoadCurrentWeekFailed": "课表：加载周次失败",
+  "logCatHomeWidgetPinSupportFailed": "桌面小组件：检查固定支持",
+  "logCatHomeWidgetPinRequestFailed": "桌面小组件：请求固定",
+  "logCatHomeWidgetSyncFailed": "桌面小组件：同步失败",
+  "logCatHomeWidgetClearFailed": "桌面小组件：清空失败",
+  "logCatHomeWidgetScheduleFailed": "桌面小组件：调度刷新",
+  "logCatMiuiLiveInitializeFailed": "超级岛：初始化失败",
+  "logCatMiuiLiveOpenPromotedSettingsFailed": "超级岛：打开权限设置",
+  "logCatMiuiLiveOpenNotificationSettingsFailed": "超级岛：打开通知设置",
+  "logCatMiuiLiveOpenAutostartSettingsFailed": "超级岛：打开自启动设置",
+  "logCatMiuiLiveOpenBatterySettingsFailed": "超级岛：打开电池优化",
+  "logCatMiuiLiveOpenAccessibilitySettingsFailed": "超级岛：打开无障碍设置",
+  "logCatMiuiLiveHideFromRecentsFailed": "超级岛：隐藏最近任务",
+  "logCatLiveUpdateFlutterInitializeFailed": "超级岛：Flutter 初始化失败",
+  "logCatLiveUpdateStartFailed": "超级岛：启动失败",
+  "logCatLiveUpdateStopFailed": "超级岛：停止失败",
+  "logCatLiveUpdateDebugStatusFailed": "超级岛：调试状态失败",
+  "logCatLiveUpdateSettingsSynced": "超级岛：设置已同步",
+  "logCatLiveUpdateSnapshotSyncFailed": "超级岛：快照同步失败",
+  "logCatLiveUpdateSnapshotClearFailed": "超级岛：快照清空失败",
+  "logCatLanEditAuthFailed": "局域网编辑：认证",
+  "logCatLanEditCourseCreated": "局域网编辑：创建课程",
+  "logCatLanEditCourseUpdated": "局域网编辑：更新课程",
+  "logCatLanEditCourseDeleted": "局域网编辑：删除课程",
+  "logCatLanEditCourseGroupSaved": "局域网编辑：保存课程组",
+  "logCatLanEditMergeImported": "局域网编辑：合并导入",
+  "logCatLanEditCoursesBatchDeleted": "局域网编辑：批量删除",
+  "logCatLanEditCurrentWeekSet": "局域网编辑：设置周次",
+  "logCatLanEditSpreadsheetImported": "局域网编辑：表格导入",
+  "logCatLanEditSessionStarted": "局域网编辑：会话启动",
+  "logCatLanEditSessionStopped": "局域网编辑：会话停止",
+  "logCatLiveUpdateTestRequested": "超级岛测试：请求",
+  "logCatLiveUpdateTestNoSelection": "超级岛测试：无课程",
+  "logCatLiveUpdateTestSelectionReady": "超级岛测试：已选课程",
+  "logCatLiveUpdateTestSuspendSync": "超级岛测试：暂停同步",
+  "logCatLiveUpdateTestStarting": "超级岛测试：启动中",
+  "logCatLiveUpdateTestStarted": "超级岛测试：已启动",
+  "logCatLiveUpdateTestFailed": "超级岛测试：失败",
+  "logCatLiveUpdateSnapshotSettings": "超级岛：快照设置",
+  "logCatLiveUpdateSnapshotSynced": "超级岛：快照已同步",
+  "logCatLiveUpdateSnapshotCleared": "超级岛：快照已清空",
+  "logCatLiveUpdateAlarmTriggered": "超级岛：闹钟触发",
+  "logCatLiveUpdateSchedulerResume": "超级岛：调度恢复",
+  "logCatLiveUpdateRescheduleHoliday": "超级岛：节假日跳过",
+  "logCatLiveUpdateRescheduleActive": "超级岛：立即启动",
+  "logCatLiveUpdateRescheduleScheduled": "超级岛：已调度",
+  "logCatLiveUpdateSnapshotParseFailed": "超级岛：快照解析失败",
+  "logCatLiveUpdateSnapshotInvalidatedAfterUpgrade": "超级岛：升级后快照失效",
+  "logCatLiveUpdatePayloadSelected": "超级岛：已选负载",
+  "logCatLiveUpdateSchedulerStartFailed": "超级岛：调度启动失败",
+  "logCatLiveUpdateStartRequested": "超级岛：请求启动",
+  "logCatLiveUpdateStopRequested": "超级岛：请求停止",
+  "logCatLiveUpdateServiceMissingPayload": "超级岛：服务缺少负载",
+  "logCatLiveUpdateServiceStarted": "超级岛：服务已启动",
+  "logCatLiveUpdateServiceStartFailed": "超级岛：服务启动失败",
+  "logCatLiveUpdateTaskRemoved": "超级岛：任务被移除",
+  "logCatLiveUpdateTaskRemovedResumed": "超级岛：任务移除后恢复",
+  "logCatLiveUpdateBeforeClassQuickAction": "超级岛：课前快捷操作",
+  "logCatLiveUpdateBeforeClassQuickActionRestored": "超级岛：课前快捷操作已恢复",
+  "logCatLiveUpdateStatusBarDismissed": "超级岛：状态栏通知已关闭",
+  "logCatLiveUpdateNotPromoted": "超级岛：未提升通知",
+  "logCatLiveUpdatePromotedNotShown": "超级岛：提升未显示",
+  "logCatLiveUpdateServiceStopped": "超级岛：服务已停止",
+  "logCatKeepAliveAccessibilityConnected": "保活：无障碍已连接",
+  "logCatDiagnosticsEnabled": "诊断：已开启",
+  "logCatDiagnosticsCleared": "诊断：已清空",
+  "logCatDiagnosticsBootstrap": "诊断：引导",
+  "logCatFlutterDiagnostic": "Flutter 诊断",
+  "logCatFlutterDiagnosticEvent": "Flutter 诊断事件",
+  "logCatRenderFailed": "渲染失败",
+  "logCatDebugSnapshot": "调试快照",
+  "logExportTitle": "轻屿课表 - 应用日志",
+  "appUpdateMirrorPresetGhfast": "默认镜像",
+  "appUpdateMirrorPresetGhproxyCn": "备用镜像 1",
+  "appUpdateMirrorPresetGhLlkk": "备用镜像 2",
+  "appUpdateMirrorPresetGhProxyCom": "备用镜像 3",
+  "appUpdateMirrorPresetGhproxyNet": "备用镜像 4",
+  "appUpdateMirrorPresetCustom": "自定义",
+  "appUpdateMirrorPresetCustomDescription": "填写自定义镜像地址前缀",
+  "cloudBackupRetentionTitle": "备份保留策略",
+  "cloudBackupMaxCountTitle": "最多保留份数",
+  "cloudBackupMaxCountSubtitle": "超过后自动删除最旧的备份",
+  "cloudBackupMaxCountOption": "{count} 份",
+  "@cloudBackupMaxCountOption": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "cloudBackupMaxAgeTitle": "最长保留天数",
+  "cloudBackupMaxAgeSubtitle": "超过后自动删除过期备份",
+  "cloudBackupMaxAgeOption": "{days} 天",
+  "@cloudBackupMaxAgeOption": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "statisticsShareText": "来自轻屿课表的学期统计",
+  "aboutUpdateAvailableHeadline": "有版本更新",
+  "aboutAlreadyLatestHeadline": "已是最新版本",
+  "aboutDownloadChannelSectionTitle": "下载渠道",
+  "aboutMirrorProbeFailedLabel": "失败",
+  "timeSchemeImportSupplementName": "{name}（导入补齐）",
+  "@timeSchemeImportSupplementName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "profileTimeSchemeName": "{profileName} 时间",
+  "@profileTimeSchemeName": {
+    "placeholders": {
+      "profileName": {
+        "type": "String"
+      }
+    }
+  },
+  "currentProfileTimeSchemeName": "当前课表时间",
+  "unnamedTimetableProfile": "未命名课表",
+  "cloudBackupManualProtectedTitle": "手动备份永不过期",
+  "cloudBackupManualProtectedSubtitle": "开启后，手动创建的备份不会被自动清理",
+  "courseImportPortalUrlMissingBody": "“{schoolName} / {adapterName}” 没有默认登录地址，请先输入学校教务系统网址。",
+  "@courseImportPortalUrlMissingBody": {
+    "placeholders": {
+      "schoolName": {
+        "type": "String"
+      },
+      "adapterName": {
+        "type": "String"
+      }
+    }
+  },
+  "guidePermissionsProgressLabel": "已就绪 {ready}/{total}",
+  "@guidePermissionsProgressLabel": {
+    "placeholders": {
+      "ready": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   }
 }

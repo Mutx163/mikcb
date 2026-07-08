@@ -6,7 +6,7 @@ import '../models/course.dart';
 class SemesterStats {
   final int totalCourses; // 总课程门数（去重）
   final int totalSections; // 总课时数（整个学期）
-  final int totalWeeks; // 上课周数
+  final int totalWeeks; // 学期总周数
   final int longestStreak; // 最长连续上课天数
   final List<DailyAverageStats> dailyAverages; // 每日平均课时
   final CourseNatureStats natureStats; // 必修/选修比例

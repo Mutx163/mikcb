@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import '../l10n/service_message_localizer.dart';
+
 import 'timetable_settings.dart';
 
 class TimeScheme {
@@ -84,7 +86,7 @@ class BreakOverrideRule {
 
 String? validateSectionTimes(List<SectionTime> sections) {
   if (sections.isEmpty) {
-    return '至少需要保留一节课的时间';
+    return 'at_least_one_section_required';
   }
 
   var previousEndMinutes = -1;
@@ -94,11 +96,17 @@ String? validateSectionTimes(List<SectionTime> sections) {
     final endMinutes = _clockMinutes(section.endTime);
 
     if (endMinutes <= startMinutes) {
-      return '第 ${index + 1} 节结束时间必须晚于开始时间，暂不支持跨 0 点课程';
+      return encodeServiceMessage(
+        'section_end_must_after_start',
+        {'sectionNumber': index + 1},
+      );
     }
 
     if (previousEndMinutes >= 0 && startMinutes < previousEndMinutes) {
-      return '第 ${index + 1} 节开始时间不能早于上一节的结束时间';
+      return encodeServiceMessage(
+        'section_start_before_previous_end',
+        {'sectionNumber': index + 1},
+      );
     }
 
     previousEndMinutes = endMinutes;
@@ -130,14 +138,19 @@ List<SectionTime> buildQuickSectionTimes({
       return;
     }
     if (startTime == null || startTime.isEmpty) {
-      throw const FormatException('请为有节次的时段设置第一节开始时间');
+      throw const FormatException('period_start_time_required');
     }
 
     var currentStartMinutes = _clockMinutes(startTime);
     for (var index = 0; index < count; index++) {
       final currentEndMinutes = currentStartMinutes + classDurationMinutes;
       if (currentEndMinutes > 24 * 60) {
-        throw FormatException('第 $sectionNumber 节会跨到次日，当前暂不支持跨 0 点课程');
+        throw FormatException(
+          encodeServiceMessage(
+            'section_crosses_midnight',
+            {'sectionNumber': sectionNumber},
+          ),
+        );
       }
       sections.add(
         SectionTime(
@@ -152,10 +165,10 @@ List<SectionTime> buildQuickSectionTimes({
   }
 
   if (classDurationMinutes <= 0) {
-    throw const FormatException('上课时长必须大于 0');
+    throw const FormatException('class_duration_must_positive');
   }
   if (breakDurationMinutes < 0) {
-    throw const FormatException('课间时长不能小于 0');
+    throw const FormatException('break_duration_must_non_negative');
   }
 
   appendPeriod(count: morningCount, startTime: morningStartTime);
@@ -163,7 +176,7 @@ List<SectionTime> buildQuickSectionTimes({
   appendPeriod(count: eveningCount, startTime: eveningStartTime);
 
   if (sections.isEmpty) {
-    throw const FormatException('至少需要设置一个时段的节次数');
+    throw const FormatException('at_least_one_period_section');
   }
 
   final validationMessage = validateSectionTimes(sections);
@@ -177,12 +190,12 @@ List<SectionTime> buildQuickSectionTimes({
 int _clockMinutes(String value) {
   final parts = value.split(':');
   if (parts.length != 2) {
-    throw const FormatException('时间格式不正确');
+    throw const FormatException('invalid_time_format');
   }
   final hour = int.tryParse(parts[0]);
   final minute = int.tryParse(parts[1]);
   if (hour == null || minute == null) {
-    throw const FormatException('时间格式不正确');
+    throw const FormatException('invalid_time_format');
   }
   return hour * 60 + minute;
 }

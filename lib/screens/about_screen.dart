@@ -8,6 +8,8 @@ import 'package:forui/forui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -425,9 +427,12 @@ class _AboutScreenState extends State<AboutScreen> {
             onClear: () async {
               final clearedAppLogs = await AppLogService.instance
                   .clearAppLogs();
+              if (defaultTargetPlatform != TargetPlatform.android) {
+                return clearedAppLogs;
+              }
               final clearedNativeLogs = await MiuiLiveActivitiesService()
                   .clearLiveDiagnostics();
-              return clearedAppLogs || clearedNativeLogs;
+              return clearedAppLogs && clearedNativeLogs;
             },
           ),
         ),
@@ -772,7 +777,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
             const SizedBox(height: 16),
             // 状态标题
             Text(
-              result.hasUpdate ? '有版本更新' : '已是最新版本',
+              result.hasUpdate
+                  ? l10n.aboutUpdateAvailableHeadline
+                  : l10n.aboutAlreadyLatestHeadline,
               style: result.hasUpdate
                   ? HyperosTypography.sectionLabel(context).copyWith(
                       fontSize: 20,
@@ -1104,9 +1111,11 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<bool> _clearLiveDiagnostics() async {
     final clearedAppLogs = await AppLogService.instance.clearAppLogs();
-    final clearedNativeLogs = await MiuiLiveActivitiesService()
-        .clearLiveDiagnostics();
-    final cleared = clearedAppLogs || clearedNativeLogs;
+    final clearedNativeLogs =
+        defaultTargetPlatform != TargetPlatform.android
+        ? true
+        : await MiuiLiveActivitiesService().clearLiveDiagnostics();
+    final cleared = clearedAppLogs && clearedNativeLogs;
     if (!mounted) {
       return cleared;
     }
@@ -1319,7 +1328,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (recommendedPreset == currentPreset) {
       showAppToast(
         context,
-        message: l10n.aboutProbeCurrentFastest(currentPreset.label),
+        message: l10n.aboutProbeCurrentFastest(
+          appUpdateMirrorPresetLabel(l10n, currentPreset),
+        ),
         kind: AppToastKind.success,
       );
       return;
@@ -1327,7 +1338,9 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
     showAppToastWithAction(
       context,
-      message: l10n.aboutProbeRecommendSwitch(recommendedPreset.label),
+      message: l10n.aboutProbeRecommendSwitch(
+        appUpdateMirrorPresetLabel(l10n, recommendedPreset),
+      ),
       actionLabel: l10n.switchAction,
       onAction: () => _updateMirrorPreset(recommendedPreset),
     );
@@ -1335,6 +1348,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   void _showDownloadFailureSnackBar(String error) {
     final l10n = AppLocalizations.of(context)!;
+    final localizedError = localizeServiceMessage(l10n, error);
     final settings = context.read<TimetableProvider>().settings;
     final source = AppUpdateDownloadSourceX.fromValue(
       settings.appUpdateDownloadSource,
@@ -1343,7 +1357,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (source == AppUpdateDownloadSource.original) {
       showAppToastWithAction(
         context,
-        message: l10n.aboutSwitchToMirrorAfterError(error),
+        message: l10n.aboutSwitchToMirrorAfterError(localizedError),
         actionLabel: l10n.switchAction,
         onAction: () => _updateDownloadSource(AppUpdateDownloadSource.mirror),
         kind: AppToastKind.error,
@@ -1371,7 +1385,10 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
     if (fallbackPreset != null) {
       showAppToastWithAction(
         context,
-        message: l10n.aboutSwitchPresetAfterError(error, fallbackPreset.label),
+        message: l10n.aboutSwitchPresetAfterError(
+          localizedError,
+          appUpdateMirrorPresetLabel(l10n, fallbackPreset),
+        ),
         actionLabel: l10n.switchAction,
         onAction: () => _updateMirrorPreset(fallbackPreset),
         kind: AppToastKind.error,
@@ -1379,27 +1396,23 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       return;
     }
 
-    showAppToast(context, message: error, kind: AppToastKind.error);
+    showAppToast(context, message: localizedError, kind: AppToastKind.error);
   }
 
   Future<void> _editMirrorUrlPrefix() async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
-    final controller = TextEditingController(
-      text: provider.settings.appUpdateMirrorUrlPrefix,
-    );
     final result = await showAppTextInputDialog(
       context,
       title: l10n.aboutSetMirrorSourceTitle,
-      body: HyperosTextField(
+      initialValue: provider.settings.appUpdateMirrorUrlPrefix,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.aboutMirrorPrefixLabel,
         hint: 'https://ghfast.top/',
         autofocus: true,
       ),
-      readValue: () => controller.text,
     );
-    controller.dispose();
 
     if (result == null || !mounted) {
       return;
@@ -1437,6 +1450,14 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
 
   Future<void> _downloadAndInstall(String url) async {
     final l10n = AppLocalizations.of(context)!;
+    final settings = context.read<TimetableProvider>().settings;
+    final mirrorPreset = AppUpdateMirrorPresetX.fromValue(
+      settings.appUpdateMirrorPreset,
+    );
+    final effectiveMirrorUrlPrefix = resolveAppUpdateMirrorUrlPrefix(
+      preset: mirrorPreset,
+      customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
+    );
     final controller = AppUpdateDownloadController();
     _analytics.logEventLater(name: 'update_download_started');
     setState(() {
@@ -1457,7 +1478,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
           _downloadTotalBytes = totalBytes;
         });
       }
-    }, controller);
+    }, controller, mirrorUrlPrefix: effectiveMirrorUrlPrefix);
 
     if (!mounted) {
       return;
@@ -1535,7 +1556,7 @@ class _AboutUpdateScreenState extends State<AboutUpdateScreen> {
       showAppToast(
         context,
         message: error.message?.trim().isNotEmpty == true
-            ? error.message!
+            ? localizeServiceMessage(l10n, error.message!)
             : l10n.aboutSystemDownloaderFailed,
         kind: AppToastKind.error,
       );
@@ -1780,6 +1801,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   }
 
   Widget _buildDownloadChannelGroup(TimetableSettings settings) {
+    final l10n = AppLocalizations.of(context)!;
     final downloadChannel = AppUpdateDownloadChannelX.fromValue(
       settings.appUpdateDownloadChannel,
     );
@@ -1788,13 +1810,15 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const HyperosSectionLabel(text: '下载渠道'),
+        HyperosSectionLabel(text: l10n.aboutDownloadChannelSectionTitle),
         HyperosChoiceGroup(
           children: [
             for (var i = 0; i < channels.length; i++)
               HyperosChoiceTile(
-                title: channels[i].label,
-                subtitle: Text(channels[i].description),
+                title: appUpdateDownloadChannelLabel(l10n, channels[i]),
+                subtitle: Text(
+                  appUpdateDownloadChannelDescription(l10n, channels[i]),
+                ),
                 selected: downloadChannel == channels[i],
                 showDivider: i < channels.length - 1,
                 onTap: () => _updateDownloadChannel(channels[i]),
@@ -1806,16 +1830,17 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   }
 
   Widget _buildDownloadMethodGroup() {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const HyperosSectionLabel(text: '下载安装包方式'),
+        HyperosSectionLabel(text: l10n.aboutDownloadPackageMethodTitle),
         HyperosChoiceGroup(
           children: [
             HyperosChoiceTile(
-              title: '应用内下载',
-              subtitle: const Text('下载完成后直接在应用内安装'),
+              title: l10n.aboutInAppDownloadTitle,
+              subtitle: Text(l10n.aboutInAppDownloadSubtitle),
               selected: !_useSystemDownloader,
               showDivider: true,
               onTap: () {
@@ -1824,8 +1849,8 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
               },
             ),
             HyperosChoiceTile(
-              title: '系统管理器',
-              subtitle: const Text('交给系统下载管理器处理'),
+              title: l10n.aboutSystemDownloaderTitle,
+              subtitle: Text(l10n.aboutSystemDownloaderChoiceSubtitle),
               selected: _useSystemDownloader,
               onTap: () {
                 setState(() => _useSystemDownloader = true);
@@ -1920,23 +1945,24 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
                   preset: preset,
                   customUrlPrefix: settings.appUpdateMirrorUrlPrefix,
                 )
-              : preset.description);
+              : appUpdateMirrorPresetDescription(l10n, preset));
 
     return HyperosChoiceTile(
       title: isRecommended
-          ? '${preset.label} · ${l10n.aboutRecommended}'
-          : preset.label,
+          ? '${appUpdateMirrorPresetLabel(l10n, preset)} · ${l10n.aboutRecommended}'
+          : appUpdateMirrorPresetLabel(l10n, preset),
       subtitle: Text(subtitleText),
       selected: isSelected,
       showDivider: showDivider,
       trailing: probeState == null
           ? null
-          : _buildMirrorProbeStatusChip(theme, probeState.result),
+          : _buildMirrorProbeStatusChip(l10n, theme, probeState.result),
       onTap: onTap,
     );
   }
 
   Widget _buildMirrorProbeStatusChip(
+    AppLocalizations l10n,
     ThemeData theme,
     AppUpdateDownloadProbeResult result,
   ) {
@@ -1948,7 +1974,7 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
         Colors.green,
       ),
       AppUpdateDownloadProbeResult(isSuccess: false) => (
-        '失败',
+        l10n.aboutMirrorProbeFailedLabel,
         colorScheme.errorContainer,
         colorScheme.onErrorContainer,
       ),
@@ -2121,21 +2147,17 @@ class _AdvancedOptionsScreenState extends State<_AdvancedOptionsScreen> {
   Future<void> _editMirrorUrlPrefix() async {
     final l10n = AppLocalizations.of(context)!;
     final settings = context.read<TimetableProvider>().settings;
-    final controller = TextEditingController(
-      text: settings.appUpdateMirrorUrlPrefix,
-    );
     final result = await showAppTextInputDialog(
       context,
       title: l10n.aboutSetMirrorSourceTitle,
-      body: HyperosTextField(
+      initialValue: settings.appUpdateMirrorUrlPrefix,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.aboutMirrorPrefixLabel,
         hint: 'https://ghfast.top/',
         autofocus: true,
       ),
-      readValue: () => controller.text,
     );
-    controller.dispose();
     if (result == null || !mounted) return;
     final provider = context.read<TimetableProvider>();
     await provider.updateTimetableSettings(

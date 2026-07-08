@@ -456,7 +456,7 @@ class CourseCard extends StatelessWidget {
       lines.add(
         _buildDetailRow(
           Icons.date_range_rounded,
-          _buildWeekText(),
+          _buildWeekText(context),
           detailColor,
         ),
       );
@@ -580,7 +580,7 @@ class CourseCard extends StatelessWidget {
     if (showWeeks) {
       lines.add(
         _CompactTextLine(
-          text: _buildWeekText(),
+          text: _buildWeekText(context),
           flex: 2,
           style: TextStyle(
             fontSize: compactSubtitleFontSize,
@@ -619,8 +619,9 @@ class CourseCard extends StatelessWidget {
         : lines;
   }
 
-  String _buildWeekText() {
-    return course.weekDescription;
+  String _buildWeekText(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    return course.weekDescription(l10n);
   }
 
   String _buildTimeText(BuildContext context, {required bool isCompact}) {

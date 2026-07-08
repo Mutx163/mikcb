@@ -49,6 +49,7 @@ class StatisticsService {
   static SemesterStats calculateSemester({
     required List<Course> allCourses,
     required int currentWeek,
+    required int semesterWeekCount,
   }) {
     if (allCourses.isEmpty || currentWeek < 1) {
       return const SemesterStats(
@@ -92,7 +93,7 @@ class StatisticsService {
     return SemesterStats(
       totalCourses: grouped.length,
       totalSections: totalSections,
-      totalWeeks: currentWeek,
+      totalWeeks: semesterWeekCount,
       longestStreak: longestStreak,
       dailyAverages: dailyAverages,
       natureStats: natureStats,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 
 import 'hyperos_controls.dart';
@@ -99,9 +100,16 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
         : HyperosMiuixLightColors.surfaceContainer;
     final screen = MediaQuery.sizeOf(context);
     const margin = 12.0;
-
-    final top = (anchorRect.bottom + HyperosMiuixDropdown.popupVerticalGap)
-        .clamp(MediaQuery.paddingOf(context).top + 8, screen.height * 0.75);
+    final safeTop = MediaQuery.paddingOf(context).top + margin;
+    final safeBottom = screen.height - MediaQuery.paddingOf(context).bottom - margin;
+    final estimatedHeight = hyperosSelectPopupEstimatedHeight(entries.length);
+    final layout = hyperosSelectPopupLayout(
+      anchorRect: anchorRect,
+      estimatedPopupHeight: estimatedHeight,
+      screenHeight: screen.height,
+      safeTop: safeTop,
+      safeBottom: safeBottom,
+    );
 
     // Right edge of popup aligns with anchor row (HyperOS anchored dropdown).
     final anchorRight = anchorRect.right.clamp(margin, screen.width - margin);
@@ -109,7 +117,7 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
     return Stack(
       children: [
         Positioned(
-          top: top,
+          top: layout.top,
           right: screen.width - anchorRight,
           child: ConstrainedBox(
             constraints: BoxConstraints(
@@ -121,6 +129,7 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
                     HyperosMiuixDropdown.checkIconSize +
                     28,
               ),
+              maxHeight: layout.maxHeight,
             ),
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -141,25 +150,27 @@ class _HyperosSelectPopupBody<T> extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                   HyperosMiuixDropdown.popupCornerRadius,
                 ),
-                child: IntrinsicWidth(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < entries.length; i++)
-                        HyperosChoiceTile(
-                          title: entries[i].key,
-                          selected: entries[i].value == currentValue,
-                          highlightSelectedText: true,
-                          variant: HyperosChoiceVariant.popup,
-                          isFirstInPopup: i == 0,
-                          isLastInPopup: i == entries.length - 1,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            Navigator.of(context).pop(entries[i].value);
-                          },
-                        ),
-                    ],
+                child: SingleChildScrollView(
+                  child: IntrinsicWidth(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var i = 0; i < entries.length; i++)
+                          HyperosChoiceTile(
+                            title: entries[i].key,
+                            selected: entries[i].value == currentValue,
+                            highlightSelectedText: true,
+                            variant: HyperosChoiceVariant.popup,
+                            isFirstInPopup: i == 0,
+                            isLastInPopup: i == entries.length - 1,
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              Navigator.of(context).pop(entries[i].value);
+                            },
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -178,10 +189,12 @@ Future<T?> showHyperosSelectSheet<T>({
   required Map<String, T> items,
   required T? currentValue,
   String? description,
-  String cancelLabel = '取消',
+  String? cancelLabel,
 }) {
   final entries = items.entries.toList(growable: false);
   final maxListHeight = MediaQuery.sizeOf(context).height * 0.55;
+  final resolvedCancelLabel =
+      cancelLabel ?? AppLocalizations.of(context)!.cancelAction;
 
   return showHyperosSheet<T>(
     context: context,
@@ -261,7 +274,7 @@ Future<T?> showHyperosSelectSheet<T>({
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: HyperosButton(
-                  label: cancelLabel,
+                  label: resolvedCancelLabel,
                   expand: true,
                   variant: HyperosButtonVariant.secondary,
                   onPressed: () => Navigator.of(sheetContext).pop(),
@@ -285,6 +298,54 @@ String? hyperosSelectLabelFor<T>(Map<String, T> items, T? value) {
     }
   }
   return null;
+}
+
+double hyperosSelectPopupEstimatedHeight(int itemCount) {
+  if (itemCount <= 0) {
+    return 0;
+  }
+  var height = 0.0;
+  for (var i = 0; i < itemCount; i++) {
+    final isEdge = i == 0 || i == itemCount - 1;
+    final verticalPadding = isEdge
+        ? HyperosMiuixDropdown.firstLastVerticalPadding * 2
+        : HyperosMiuixDropdown.middleVerticalPadding * 2;
+    height += verticalPadding + HyperosMiuixTypography.body1;
+  }
+  return height;
+}
+
+({double top, double maxHeight}) hyperosSelectPopupLayout({
+  required Rect anchorRect,
+  required double estimatedPopupHeight,
+  required double screenHeight,
+  required double safeTop,
+  required double safeBottom,
+  double verticalGap = HyperosMiuixDropdown.popupVerticalGap,
+}) {
+  final belowTop = anchorRect.bottom + verticalGap;
+  final aboveTop = anchorRect.top - verticalGap - estimatedPopupHeight;
+  final spaceBelow = safeBottom - belowTop;
+  final spaceAbove = anchorRect.top - verticalGap - safeTop;
+
+  double top;
+  if (spaceBelow >= estimatedPopupHeight || spaceBelow >= spaceAbove) {
+    top = belowTop;
+  } else if (spaceAbove >= estimatedPopupHeight) {
+    top = aboveTop;
+  } else if (spaceAbove > spaceBelow) {
+    top = safeTop;
+  } else {
+    top = belowTop;
+  }
+
+  top = top.clamp(safeTop, safeBottom);
+  final maxHeight = (safeBottom - top).clamp(
+    HyperosMiuixBasicComponent.minHeight,
+    estimatedPopupHeight,
+  );
+
+  return (top: top, maxHeight: maxHeight);
 }
 
 /// @deprecated Use [hyperosSelectPopupAnchorRect].

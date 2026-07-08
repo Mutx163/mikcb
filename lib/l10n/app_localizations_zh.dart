@@ -1490,6 +1490,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get appLogsClearFailed => '清空应用日志失败';
 
   @override
+  String get appLogsSourceApp => '应用';
+
+  @override
+  String get appLogsSourceNative => '超级岛';
+
+  @override
+  String get appLogsRecordingPausedHint => '记录已关闭。下方为历史日志，关闭后不再新增。';
+
+  @override
   String get aboutRepositorySubtitle => 'GitHub 仓库地址、源码、Release 和反馈入口';
 
   @override
@@ -2127,7 +2136,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get diagnosticsEmptyTitle => '暂无日志';
 
   @override
-  String get diagnosticsEmptySubtitle => '当前没有可显示的超级岛诊断日志。';
+  String get diagnosticsEmptySubtitle => '当前没有可显示的应用日志。';
 
   @override
   String get diagnosticsLogTitleFallback => '超级岛诊断日志';
@@ -2879,16 +2888,16 @@ class AppLocalizationsZh extends AppLocalizations {
       '友盟隐私政策：https://www.umeng.com/page/policy';
 
   @override
-  String get liveDiagnosticsUnavailable => '当前还没有可查看的超级岛诊断日志';
+  String get liveDiagnosticsUnavailable => '当前还没有可查看的应用日志';
 
   @override
-  String get liveDiagnosticsViewerTitle => '超级岛诊断日志';
+  String get liveDiagnosticsViewerTitle => '超级岛日志';
 
   @override
-  String get liveDiagnosticsShareText => '这是轻屿课表导出的超级岛诊断日志，可用于排查“超级岛没有弹出”等问题。';
+  String get liveDiagnosticsShareText => '这是轻屿课表导出的超级岛相关日志，可用于排查“超级岛没有弹出”等问题。';
 
   @override
-  String get liveDiagnosticsShareSubject => '轻屿课表 - 超级岛诊断日志';
+  String get liveDiagnosticsShareSubject => '轻屿课表 - 超级岛日志';
 
   @override
   String get liveDiagnosticsSnapshotShareText =>
@@ -2901,10 +2910,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get liveDiagnosticsNothingToExport => '当前没有可导出的日志文件，也没有可导出的状态快照';
 
   @override
-  String get liveDiagnosticsCleared => '已清空超级岛诊断日志，后续会重新开始收集';
+  String get liveDiagnosticsCleared => '已清空应用日志';
 
   @override
-  String get liveDiagnosticsClearFailed => '清空超级岛诊断日志失败';
+  String get liveDiagnosticsClearFailed => '清空应用日志失败';
 
   @override
   String get liveTestingNotRefreshed => '尚未刷新';
@@ -3196,6 +3205,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get layoutEnableHapticsSubtitle => '关闭后，页码切换等交互不再触发轻微震动。';
+
+  @override
+  String pageTransitionSpeedLabel(String speed) {
+    return '页面转场速度 $speed×';
+  }
+
+  @override
+  String get pageTransitionSpeedSubtitle =>
+      '调节进入和返回子页面时的滑动动画快慢。数值越大越快，越小越慢；会叠加系统「过渡动画缩放」设置。';
+
+  @override
+  String pageTransitionSpeedDurationHint(int milliseconds) {
+    return '约 $milliseconds 毫秒';
+  }
 
   @override
   String get layoutTimeColumnDisplayLabel => '首页时间列显示';
@@ -3539,7 +3562,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get aboutRecordDiagnosticsSubtitle =>
-      '打开后会在本地持续记录关键日志，仅用于排查“该弹不弹”等问题。';
+      '打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源。';
 
   @override
   String get aboutExportDiagnosticsAction => '导出应用日志';
@@ -3551,13 +3574,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get aboutClearAndRecollectAction => '清空并重新收集';
 
   @override
-  String get aboutLiveDiagnosticsEnabled => '已开启超级岛诊断日志';
+  String get aboutLiveDiagnosticsEnabled => '已开启应用日志记录';
 
   @override
-  String get aboutLiveDiagnosticsDisabled => '已关闭超级岛诊断日志';
+  String get aboutLiveDiagnosticsDisabled => '已关闭应用日志记录';
 
   @override
-  String get aboutNoDiagnosticsExportYet => '还没有可导出的超级岛诊断日志';
+  String get aboutNoDiagnosticsExportYet => '还没有可导出的应用日志';
 
   @override
   String get aboutProbeNoMirrorFound => '测速完成，但暂时没有发现可用镜像线路';
@@ -5570,6 +5593,2195 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String statisticsNatureLegendDetail(int count, int sections) {
     return '$count 门 · $sections 节';
+  }
+
+  @override
+  String get weekListSeparator => '、';
+
+  @override
+  String courseWeekListLabel(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeLabel(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String courseWeekSuspendedLabel(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get importSemesterStartDateTitle => '开学日期';
+
+  @override
+  String get importSemesterStartDateSubtitle => '按这一天所在周作为校历第 1 周';
+
+  @override
+  String get importFirstCourseWeekMappingLabel => '课表第 1 周对应校历第几周';
+
+  @override
+  String get importFirstCourseWeekMappingSubtitle =>
+      '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。';
+
+  @override
+  String get importSemesterMappingNoShiftHint => '导入后会直接把课表第 1 周当作校历第 1 周。';
+
+  @override
+  String importSemesterMappingShiftHint(int shiftedWeeks, int calendarWeek) {
+    return '导入后会把所有课程周次整体顺延 $shiftedWeeks 周，让课表第 1 周落在校历第 $calendarWeek 周。';
+  }
+
+  @override
+  String calendarWeekOption(int week) {
+    return '校历第 $week 周';
+  }
+
+  @override
+  String get aboutDownloadPackageMethodTitle => '下载安装包方式';
+
+  @override
+  String get aboutInAppDownloadTitle => '应用内下载';
+
+  @override
+  String get aboutInAppDownloadSubtitle => '下载完成后直接在应用内安装';
+
+  @override
+  String get aboutSystemDownloaderTitle => '系统管理器';
+
+  @override
+  String get aboutSystemDownloaderChoiceSubtitle => '交给系统下载管理器处理';
+
+  @override
+  String get syncErrorAuthFailed => '账号或密码错误';
+
+  @override
+  String get syncErrorAccessDenied => '没有访问权限';
+
+  @override
+  String get syncErrorCertificateError => '证书校验失败';
+
+  @override
+  String get syncErrorConnectionTimeout => '连接超时';
+
+  @override
+  String get syncErrorConnectionFailed => '无法连接服务器';
+
+  @override
+  String get syncErrorNetworkError => '网络异常';
+
+  @override
+  String get syncErrorInvalidResponse => '服务器响应无效';
+
+  @override
+  String get syncErrorLocalChangesPendingSync => '本地有未同步修改，已跳过自动覆盖';
+
+  @override
+  String get syncErrorMissingCredentials => '请先配置云同步账号';
+
+  @override
+  String get syncErrorBackupNotFound => '备份不存在';
+
+  @override
+  String get syncErrorMissingBackupSnapshot => '备份快照缺失';
+
+  @override
+  String get syncErrorCannotDeleteCurrentBackup => '不能删除当前备份';
+
+  @override
+  String get syncErrorProviderNotReady => '课表尚未就绪';
+
+  @override
+  String get syncErrorSyncFailed => '同步失败';
+
+  @override
+  String get sectionTimeDisplayHidden => '不显示';
+
+  @override
+  String get sectionTimeDisplayStartOnly => '仅显示上课时间';
+
+  @override
+  String get sectionTimeDisplayStartAndEnd => '显示上下课时间';
+
+  @override
+  String get examReminderNone => '不提醒';
+
+  @override
+  String get examReminderMin30 => '考前 30 分钟';
+
+  @override
+  String get examReminderHour1 => '考前 1 小时';
+
+  @override
+  String get examReminderHour1AndMin30 => '考前 1 小时 + 30 分钟';
+
+  @override
+  String get examReminderDay1 => '考前 1 天';
+
+  @override
+  String get examReminderDay1AndHour1 => '考前 1 天 + 1 小时';
+
+  @override
+  String get examReminderCustom => '自定义';
+
+  @override
+  String get debugCopiedJson => '已复制 JSON';
+
+  @override
+  String get liveDuringClassTimeNearest => '最近时间';
+
+  @override
+  String get liveDuringClassTimeTotal => '总时间';
+
+  @override
+  String get liveCountdownTextStyleSmart => '智能（中文）';
+
+  @override
+  String get liveCountdownTextStyleSmartMinS => '智能（英文）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondCn => '分秒（5分钟19秒）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondColon => 'mm:ss（05:19）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinS => 'min+s（5min19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinSlashS => 'min/s（5min/19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyCn => '纯分钟（5分钟）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyMin => 'min（5min）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlySlash => '/min（5/min）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyCn => '纯秒（5秒）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyShort => 's（5s）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlySlash => '/s（5/s）';
+
+  @override
+  String get miuiIslandLabelStyleTextOnly => '仅文字';
+
+  @override
+  String get miuiIslandLabelStyleIconAndText => '图标+文字';
+
+  @override
+  String get miuiIslandLabelContentCourseName => '课程名';
+
+  @override
+  String get miuiIslandLabelContentLocation => '教室';
+
+  @override
+  String get miuiIslandLabelContentCourseNameAndLocation => '课程名+教室';
+
+  @override
+  String get miuiIslandLabelFontWeightRegular => '常规';
+
+  @override
+  String get miuiIslandLabelFontWeightMedium => '中等';
+
+  @override
+  String get miuiIslandLabelFontWeightBold => '加粗';
+
+  @override
+  String get miuiIslandLabelRenderQualityStandard => '标准';
+
+  @override
+  String get miuiIslandLabelRenderQualityHigh => '高清';
+
+  @override
+  String get miuiIslandLabelRenderQualityUltra => '超高清';
+
+  @override
+  String get miuiIslandExpandedIconAppIcon => '应用图标';
+
+  @override
+  String get miuiIslandExpandedIconCustomImage => '自定义图片';
+
+  @override
+  String get miuiIslandExpandedIconHidden => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionNone => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionSilent => '打开静音';
+
+  @override
+  String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
+
+  @override
+  String get courseCardVerticalAlignTop => '顶部对齐';
+
+  @override
+  String get courseCardVerticalAlignCenter => '垂直居中';
+
+  @override
+  String get courseCardVerticalAlignBottom => '底部对齐';
+
+  @override
+  String get courseCardVerticalAlignSpaceEvenly => '上下均布';
+
+  @override
+  String get courseCardHorizontalAlignLeft => '居左';
+
+  @override
+  String get courseCardHorizontalAlignCenter => '居中';
+
+  @override
+  String get courseCardHorizontalAlignRight => '居右';
+
+  @override
+  String get timetableTimeColumnWidthNarrow => '窄';
+
+  @override
+  String get timetableTimeColumnWidthWide => '宽';
+
+  @override
+  String get timetableCourseSpacingNarrow => '窄';
+
+  @override
+  String get timetableCourseSpacingWide => '宽';
+
+  @override
+  String get appUpdateDownloadSourceOriginal => 'GitHub 原版';
+
+  @override
+  String get appUpdateDownloadSourceMirror => '国内镜像';
+
+  @override
+  String get appUpdateDownloadChannelPgyer => '蒲公英下载';
+
+  @override
+  String get appUpdateDownloadChannelGithub => 'GitHub 下载';
+
+  @override
+  String get appUpdateDownloadChannelPgyerDescription => '国内高速下载，推荐使用';
+
+  @override
+  String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 国内镜像';
+
+  @override
+  String get holidayStatutoryLabel => '法定节假日';
+
+  @override
+  String get serviceMsgImportFileUnrecognized => '导入失败，文件内容无法识别';
+
+  @override
+  String get serviceMsgImportUseOverwriteForFullBackup =>
+      '这是全部数据备份，请使用“覆盖当前课表”方式导入';
+
+  @override
+  String get serviceMsgImportNoProfilesInBackup => '备份文件中没有可恢复的课表';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbDataFile => '不是可识别的 mikcb 数据文件';
+
+  @override
+  String get serviceMsgMissingSettingsData => '缺少设置数据';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbFullBackup => '不是可识别的 mikcb 全量备份文件';
+
+  @override
+  String get serviceMsgMissingFullBackupData => '缺少完整备份数据';
+
+  @override
+  String get serviceMsgUseProfileBackupNotFull => '请使用课表档案备份 JSON，而非全部数据备份';
+
+  @override
+  String get serviceMsgUnrecognizedSyncSnapshot => '不是可识别的 mikcb 云同步快照';
+
+  @override
+  String get serviceMsgMissingSyncTimetableData => '缺少云同步课表数据';
+
+  @override
+  String get serviceMsgSyncSnapshotChecksumFailed => '云同步快照校验失败';
+
+  @override
+  String get serviceMsgSyncSnapshotNoProfiles => '云同步快照中没有可恢复的课表';
+
+  @override
+  String get serviceMsgSyncSnapshotUnrecognized => '云同步快照无法识别';
+
+  @override
+  String get serviceMsgTimeSchemeNotFound => '时间模板不存在';
+
+  @override
+  String get serviceMsgTimeSchemeConfigUnavailable => '当前课表时间配置不可用';
+
+  @override
+  String get serviceMsgTimeSchemeNotFoundSelected => '未找到所选时间模板';
+
+  @override
+  String serviceMsgTimeSchemeSectionsInsufficient(
+    int startSection,
+    int endSection,
+  ) {
+    return '所选时间模板节次数不足，无法覆盖第 $startSection-$endSection 节';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
+    return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsageDetail(
+    int requiredMaxSection,
+    String profileName,
+    String courseName,
+    int dayOfWeek,
+    int startSection,
+    int endSection,
+    String usageType,
+  ) {
+    return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）。正在使用：$profileName · $courseName（周$dayOfWeek $startSection-$endSection节，$usageType）';
+  }
+
+  @override
+  String get serviceMsgAtLeastOneSectionRequired => '至少需要保留一节课的时间';
+
+  @override
+  String serviceMsgSectionEndMustAfterStart(int sectionNumber) {
+    return '第 $sectionNumber 节结束时间必须晚于开始时间，暂不支持跨 0 点课程';
+  }
+
+  @override
+  String serviceMsgSectionStartBeforePreviousEnd(int sectionNumber) {
+    return '第 $sectionNumber 节开始时间不能早于上一节的结束时间';
+  }
+
+  @override
+  String get serviceMsgPeriodStartTimeRequired => '请为有节次的时段设置第一节开始时间';
+
+  @override
+  String serviceMsgSectionCrossesMidnight(int sectionNumber) {
+    return '第 $sectionNumber 节会跨到次日，当前暂不支持跨 0 点课程';
+  }
+
+  @override
+  String get serviceMsgClassDurationMustPositive => '上课时长必须大于 0';
+
+  @override
+  String get serviceMsgBreakDurationMustNonNegative => '课间时长不能小于 0';
+
+  @override
+  String get serviceMsgAtLeastOnePeriodSection => '至少需要设置一个时段的节次数';
+
+  @override
+  String get serviceMsgInvalidTimeFormat => '时间格式不正确';
+
+  @override
+  String get serviceMsgLinkedCourseNotFound => '关联的课程不存在';
+
+  @override
+  String get serviceMsgCourseNotFoundForDelete => '未找到要删除的课程';
+
+  @override
+  String serviceMsgCourseNotScheduledWeek(int sourceWeek) {
+    return '这门课在第 $sourceWeek 周没有排课';
+  }
+
+  @override
+  String get serviceMsgCourseNotFoundForReschedule => '未找到要调课的课程';
+
+  @override
+  String get serviceMsgTargetWeekOutOfRange => '目标周次超出当前学期范围';
+
+  @override
+  String get serviceMsgAtLeastOneScheduleSlot => '至少需要保留一个上课时间段';
+
+  @override
+  String get serviceMsgCourseNameRequired => '课程名称不能为空';
+
+  @override
+  String get serviceMsgBackupContentRequired => '备份内容不能为空';
+
+  @override
+  String get serviceMsgSpreadsheetFormatOrEncodingUnrecognized =>
+      '无法识别表格格式或编码，请将 CSV 另存为 UTF-8 后重试';
+
+  @override
+  String serviceMsgSpreadsheetXlsxParseFailed(String error) {
+    return 'XLSX 文件解析失败：$error';
+  }
+
+  @override
+  String serviceMsgSpreadsheetRowWarning(int rowNumber, String message) {
+    return '第 $rowNumber 行：$message';
+  }
+
+  @override
+  String serviceMsgSpreadsheetWakeupInsufficientColumns(
+    int rowNumber,
+    int columnCount,
+  ) {
+    return 'WakeUp 格式需要至少 7 列，但第 $rowNumber 行只有 $columnCount 列';
+  }
+
+  @override
+  String get serviceMsgWeekdayMustBe1To7 => '星期必须是 1-7';
+
+  @override
+  String get serviceMsgCustomWeeksRequired => '周数 不能为空';
+
+  @override
+  String get serviceMsgClassWeeksRequired => '上课周 不能为空';
+
+  @override
+  String get serviceMsgStartWeekMustBeAtLeast1 => '开始周 必须大于等于 1';
+
+  @override
+  String serviceMsgStartWeekExceedsSemester(
+    int startWeek,
+    int semesterWeekCount,
+  ) {
+    return '开始周 $startWeek 超过学期周数 $semesterWeekCount';
+  }
+
+  @override
+  String get serviceMsgEndWeekBeforeStartWeek => '结束周 不能小于开始周';
+
+  @override
+  String get serviceMsgWeeksRangeRequired => '上课周 或 开始周+结束周 必须填写';
+
+  @override
+  String serviceMsgFieldMustBeAtLeast1(String field) {
+    return '$field 必须大于等于 1';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeLessThan(String startField, String endField) {
+    return '$endField 不能小于$startField';
+  }
+
+  @override
+  String serviceMsgSectionOutOfRange(int section, int maxSection) {
+    return '节次 $section 超出时间模板范围（1-$maxSection）';
+  }
+
+  @override
+  String serviceMsgFieldMustBeInteger(String field) {
+    return '$field 必须是整数';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeEmpty(String field) {
+    return '$field 不能为空';
+  }
+
+  @override
+  String serviceMsgSpreadsheetEndWeekClamped(
+    int rowNumber,
+    int endWeek,
+    int semesterWeekCount,
+  ) {
+    return '第 $rowNumber 行：结束周 $endWeek 超过学期周数 $semesterWeekCount，已调整为 $semesterWeekCount';
+  }
+
+  @override
+  String serviceMsgSpreadsheetOddEvenBoth(int rowNumber) {
+    return '第 $rowNumber 行：单周与双周不能同时勾选，已按单周处理';
+  }
+
+  @override
+  String get serviceMsgFieldCourseName => '课程名称';
+
+  @override
+  String get serviceMsgFieldWeekday => '星期';
+
+  @override
+  String get serviceMsgFieldStartSection => '开始节数';
+
+  @override
+  String get serviceMsgFieldEndSection => '结束节数';
+
+  @override
+  String get serviceMsgFieldCustomWeeks => '周数';
+
+  @override
+  String get serviceMsgFieldClassWeeks => '上课周';
+
+  @override
+  String get serviceMsgFieldStartWeek => '开始周';
+
+  @override
+  String get serviceMsgFieldEndWeek => '结束周';
+
+  @override
+  String serviceMsgWeekStartInvalid(String itemName) {
+    return '$itemName 周次起始值不合法';
+  }
+
+  @override
+  String serviceMsgWeekRangeInvalid(String itemName) {
+    return '$itemName 周次范围不合法';
+  }
+
+  @override
+  String serviceMsgWeekRangeTooLarge(String itemName) {
+    return '$itemName 周次范围过大，请检查';
+  }
+
+  @override
+  String serviceMsgWeekTokenUnrecognized(String itemName, String token) {
+    return '$itemName 含有无法识别的周次：$token';
+  }
+
+  @override
+  String serviceMsgWeeksExceedSemesterClamped(
+    String itemName,
+    int semesterWeekCount,
+    String weeks,
+  ) {
+    return '$itemName 含有超过学期周数 $semesterWeekCount 的周次（$weeks），已忽略超出部分';
+  }
+
+  @override
+  String get serviceMsgAiResultNotObject => 'AI 结果不是合法对象，请重新复制完整 JSON';
+
+  @override
+  String serviceMsgAiSchemaMustBe(String schema) {
+    return 'schema 必须为 $schema';
+  }
+
+  @override
+  String get serviceMsgAiCoursesMustBeArray => 'courses 必须是数组';
+
+  @override
+  String get serviceMsgAiWarningsMustBeArray => 'warnings 必须是字符串数组';
+
+  @override
+  String get serviceMsgAiWarningItemMustBeString => 'warnings 中的每一项都必须是字符串';
+
+  @override
+  String serviceMsgAiCourseNotObject(int index) {
+    return 'courses[$index] 不是合法对象';
+  }
+
+  @override
+  String serviceMsgAiCourseNameEmpty(int index) {
+    return 'courses[$index].name 不能为空';
+  }
+
+  @override
+  String serviceMsgAiCourseDayOfWeekInvalid(int index) {
+    return 'courses[$index].dayOfWeek 必须是 1-7';
+  }
+
+  @override
+  String serviceMsgAiCourseStartSectionInvalid(int index) {
+    return 'courses[$index].startSection 必须大于等于 1';
+  }
+
+  @override
+  String serviceMsgAiCourseEndSectionInvalid(int index) {
+    return 'courses[$index].endSection 不能小于 startSection';
+  }
+
+  @override
+  String serviceMsgAiCourseCustomWeeksEmpty(int index) {
+    return 'courses[$index].customWeeks 不能为空';
+  }
+
+  @override
+  String serviceMsgAiCourseNatureInvalid(int index) {
+    return 'courses[$index].courseNature 只能是 required 或 elective';
+  }
+
+  @override
+  String serviceMsgAiUnknownFields(String targetName, String fields) {
+    return '$targetName 包含不支持的字段：$fields';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeString(String field) {
+    return '$field 必须是字符串';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeInteger(String field) {
+    return '$field 必须是整数';
+  }
+
+  @override
+  String serviceMsgAiWeekListInvalid(String itemName) {
+    return '$itemName 只能包含大于等于 1 的整数';
+  }
+
+  @override
+  String serviceMsgAiWeekListTypeInvalid(String field) {
+    return '$field 必须是整数数组或周次字符串';
+  }
+
+  @override
+  String get serviceMsgNoReleaseAvailable => '仓库还没有发布 Release。';
+
+  @override
+  String get serviceMsgNoReleaseWithPrerelease => '还没有可用的正式版或预发布版本。';
+
+  @override
+  String serviceMsgUpdateCheckHttpFailed(int statusCode) {
+    return '检查更新失败（HTTP $statusCode）。';
+  }
+
+  @override
+  String get serviceMsgUpdateCheckNetworkFailed => '网络异常，暂时无法检查更新。';
+
+  @override
+  String get serviceMsgUpdateDownloadUrlUntrusted => '更新下载地址未通过安全校验';
+
+  @override
+  String serviceMsgUpdateDownloadHttpFailed(int statusCode) {
+    return '下载失败（HTTP $statusCode）';
+  }
+
+  @override
+  String serviceMsgUpdateOpenInstallerFailed(String detail) {
+    return '打开安装包失败: $detail';
+  }
+
+  @override
+  String serviceMsgUpdateDownloadInstallError(String detail) {
+    return '下载或安装过程中出现错误: $detail';
+  }
+
+  @override
+  String get serviceMsgInvalidUrl => '地址无效';
+
+  @override
+  String get serviceMsgUpdateAvailablePrerelease => '发现新的预发布版本';
+
+  @override
+  String get serviceMsgUpdateAvailable => '发现新版本';
+
+  @override
+  String get serviceMsgAlreadyLatest => '当前已经是最新版本';
+
+  @override
+  String get serviceMsgShareBackupText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。';
+
+  @override
+  String get serviceMsgShareBackupSubject => '轻屿课表备份';
+
+  @override
+  String serviceMsgShareBackupSubjectNamed(String profileName) {
+    return '$profileName - 轻屿课表备份';
+  }
+
+  @override
+  String get serviceMsgShareFullBackupText =>
+      '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。';
+
+  @override
+  String get serviceMsgShareFullBackupSubject => '轻屿课表 - 全部数据备份';
+
+  @override
+  String get serviceMsgInvalidRepositoryUrl => '仓库地址格式不正确';
+
+  @override
+  String get serviceMsgIncompleteGithubRepoUrl => 'GitHub 仓库地址不完整';
+
+  @override
+  String get serviceMsgIncompleteRawGithubUrl =>
+      'raw.githubusercontent.com 地址不完整';
+
+  @override
+  String get serviceMsgGithubOnlySupported => '当前只支持 GitHub 仓库地址';
+
+  @override
+  String get serviceMsgWarehouseNoSchoolsIndex => '未读取到任何学校或工具索引';
+
+  @override
+  String serviceMsgWarehouseNoAdapters(String schoolName) {
+    return '未读取到 $schoolName 的适配器信息';
+  }
+
+  @override
+  String serviceMsgWarehouseFetchFailedMirror(int candidatesCount) {
+    return '暂时无法读取适配仓。已尝试 $candidatesCount 个镜像线路均失败。请检查网络，或到「版本更新」里切到其他镜像线路后重试。';
+  }
+
+  @override
+  String get serviceMsgWarehouseFetchFailedGithub =>
+      '暂时无法读取适配仓。当前正在使用 GitHub 原始线路，请检查网络，或在「版本更新」里切到国内镜像后重试。';
+
+  @override
+  String get serviceMsgManualInputCaptcha => '请手动输入验证码；完成后点击继续';
+
+  @override
+  String get serviceMsgManualInputPassword => '请手动输入密码；如已自动填充请直接继续';
+
+  @override
+  String get serviceMsgMacroNoSteps => '没有录制的步骤';
+
+  @override
+  String get serviceMsgMacroUserCancelled => '用户取消';
+
+  @override
+  String serviceMsgMacroStepFailed(
+    int stepIndex,
+    int totalSteps,
+    String detail,
+  ) {
+    return '第 $stepIndex/$totalSteps 步失败: $detail';
+  }
+
+  @override
+  String get serviceMsgMacroNavigateUrlEmpty => '导航 URL 为空';
+
+  @override
+  String serviceMsgMacroNavigateUrlInvalid(String url) {
+    return '无效的 URL: $url';
+  }
+
+  @override
+  String get serviceMsgMacroFillSelectorEmpty => '填充字段的选择器为空';
+
+  @override
+  String serviceMsgMacroElementNotFound(String selector) {
+    return '未找到元素: $selector';
+  }
+
+  @override
+  String get serviceMsgMacroClickSelectorEmpty => '点击元素的选择器为空';
+
+  @override
+  String get serviceMsgMacroUrlPatternEmpty => 'URL 模式为空';
+
+  @override
+  String get serviceMsgMacroWaitSelectorEmpty => '等待元素的选择器为空';
+
+  @override
+  String get serviceMsgMacroManualInputDefault => '需要手动操作';
+
+  @override
+  String serviceMsgMacroPollTimeout(
+    String stepLabel,
+    int timeoutSeconds,
+    String lastError,
+  ) {
+    return '$stepLabel 超时（$timeoutSeconds秒）$lastError';
+  }
+
+  @override
+  String get serviceMsgMacroReplayNavigate => '正在导航...';
+
+  @override
+  String get serviceMsgMacroReplayFillField => '正在填充表单...';
+
+  @override
+  String get serviceMsgMacroReplayClick => '正在点击...';
+
+  @override
+  String get serviceMsgMacroReplayWaitUrl => '等待页面跳转...';
+
+  @override
+  String get serviceMsgMacroReplayWaitSelector => '等待页面元素...';
+
+  @override
+  String get serviceMsgMacroReplayWaitManual => '等待用户操作';
+
+  @override
+  String get serviceMsgMacroReplayExecuteScript => '正在执行导入脚本...';
+
+  @override
+  String get serviceMsgMacroReplayDelay => '等待中...';
+
+  @override
+  String serviceMsgMacroReplayFailed(String detail) {
+    return '失败: $detail';
+  }
+
+  @override
+  String serviceMsgMacroReplayPaused(String reason) {
+    return '等待手动操作: $reason';
+  }
+
+  @override
+  String serviceMsgSupportDonorsLoadFailed(String detail) {
+    return '加载鸣谢名单失败：$detail';
+  }
+
+  @override
+  String serviceMsgStatisticsShareFailed(String detail) {
+    return '分享失败: $detail';
+  }
+
+  @override
+  String get serviceMsgAuthFailed => '账号或密码错误';
+
+  @override
+  String get serviceMsgAccessDenied => '没有访问权限';
+
+  @override
+  String get serviceMsgCertificateError => '证书校验失败';
+
+  @override
+  String get serviceMsgConnectionTimeout => '连接超时';
+
+  @override
+  String get serviceMsgConnectionFailed => '无法连接服务器';
+
+  @override
+  String get serviceMsgInvalidResponse => '服务器响应无效';
+
+  @override
+  String get serviceMsgSyncFailed => '同步失败';
+
+  @override
+  String get serviceMsgUsageTypeOverride => '副时间表';
+
+  @override
+  String get serviceMsgUsageTypeProfile => '课表主时间表';
+
+  @override
+  String get dataTransferProfileShareText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。';
+
+  @override
+  String get dataTransferProfileShareSubject => '轻屿课表备份';
+
+  @override
+  String dataTransferProfileShareSubjectNamed(String profileName) {
+    return '$profileName - 轻屿课表备份';
+  }
+
+  @override
+  String get dataTransferFullBackupShareText =>
+      '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。';
+
+  @override
+  String get dataTransferFullBackupShareSubject => '轻屿课表 - 全部数据备份';
+
+  @override
+  String courseWeekCustomDescription(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String get courseWeekOddModeSuffix => ' 单周';
+
+  @override
+  String get courseWeekEvenModeSuffix => ' 双周';
+
+  @override
+  String courseWeekSuspensionDescription(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get courseWeekListSeparator => '、';
+
+  @override
+  String holidayLogMemoryCacheHit(int year, int count) {
+    return '$year年：命中内存缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogLocalCacheHit(int year, int count) {
+    return '$year年：命中本地缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogNoCacheFetching(int year) {
+    return '$year年：无缓存，正在拉取远程数据…';
+  }
+
+  @override
+  String holidayLogRemoteSuccess(int year, int count) {
+    return '$year年：远程拉取成功（$count 条），已缓存';
+  }
+
+  @override
+  String holidayLogRemoteFailedBuiltin(int year) {
+    return '$year年：远程拉取失败，使用内置资产兜底';
+  }
+
+  @override
+  String holidayLogBuiltinLoaded(int year, int count) {
+    return '$year年：加载内置资产（$count 条）';
+  }
+
+  @override
+  String holidayLogBackgroundSuccess(int year, int count) {
+    return '$year年：后台更新成功（$count 条），已覆盖缓存';
+  }
+
+  @override
+  String holidayLogBackgroundNoData(int year) {
+    return '$year年：后台更新未获取到新数据';
+  }
+
+  @override
+  String get holidayLogPrimaryApiFailed => '主 API 失败，尝试备用 API…';
+
+  @override
+  String holidayLogRequesting(String uri) {
+    return '正在请求 $uri …';
+  }
+
+  @override
+  String holidayLogPrimaryApiStatus(int statusCode) {
+    return '主 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String holidayLogPrimaryApiError(String message) {
+    return '主 API 返回错误：$message';
+  }
+
+  @override
+  String holidayLogPrimaryApiException(String error) {
+    return '主 API 异常：$error';
+  }
+
+  @override
+  String holidayLogPrimaryApiParsing(int count) {
+    return '主 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String get holidayLogNoValidEntries => '解析后无有效条目，跳过';
+
+  @override
+  String holidayLogFallbackApiStatus(int statusCode) {
+    return '备用 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String get holidayLogFallbackApiError => '备用 API 返回错误';
+
+  @override
+  String holidayLogFallbackApiParsing(int count) {
+    return '备用 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String holidayLogFallbackApiException(String error) {
+    return '备用 API 异常：$error';
+  }
+
+  @override
+  String get holidayNameNewYear => '元旦';
+
+  @override
+  String get holidayNameLaborDay => '劳动节';
+
+  @override
+  String get holidayNameNationalDay => '国庆节';
+
+  @override
+  String get holidayNameSpringFestival => '春节';
+
+  @override
+  String get holidayNameQingming => '清明节';
+
+  @override
+  String get holidayNameDragonBoat => '端午节';
+
+  @override
+  String get holidayNameMidAutumn => '中秋节';
+
+  @override
+  String macroReplayStatusFailed(String error) {
+    return '失败: $error';
+  }
+
+  @override
+  String macroReplayStatusPaused(String reason) {
+    return '等待手动操作: $reason';
+  }
+
+  @override
+  String get macroReplayStepNavigating => '正在导航...';
+
+  @override
+  String get macroReplayStepFilling => '正在填充表单...';
+
+  @override
+  String get macroReplayStepClicking => '正在点击...';
+
+  @override
+  String get macroReplayStepWaitUrl => '等待页面跳转...';
+
+  @override
+  String get macroReplayStepWaitSelector => '等待页面元素...';
+
+  @override
+  String get macroReplayStepWaitManual => '等待用户操作';
+
+  @override
+  String get macroReplayStepExecuteScript => '正在执行导入脚本...';
+
+  @override
+  String get macroReplayStepDelay => '等待中...';
+
+  @override
+  String get macroReplayNoSteps => '没有录制的步骤';
+
+  @override
+  String get macroReplayUserCancelled => '用户取消';
+
+  @override
+  String macroReplayStepFailed(int current, int total, String error) {
+    return '第 $current/$total 步失败: $error';
+  }
+
+  @override
+  String get macroReplayEmptyNavigateUrl => '导航 URL 为空';
+
+  @override
+  String macroReplayInvalidUrl(String url) {
+    return '无效的 URL: $url';
+  }
+
+  @override
+  String get macroReplayEmptyFillSelector => '填充字段的选择器为空';
+
+  @override
+  String macroReplayFieldNotFound(String selector) {
+    return '未找到表单字段: $selector';
+  }
+
+  @override
+  String get macroReplayEmptyClickSelector => '点击元素的选择器为空';
+
+  @override
+  String macroReplayClickNotFound(String selector) {
+    return '未找到点击元素: $selector';
+  }
+
+  @override
+  String macroReplayWaitUrlPattern(String pattern) {
+    return '等待 URL 匹配: $pattern';
+  }
+
+  @override
+  String get macroReplayEmptyWaitSelector => '等待元素的选择器为空';
+
+  @override
+  String macroReplayWaitSelector(String selector) {
+    return '等待元素: $selector';
+  }
+
+  @override
+  String get macroReplayManualActionRequired => '需要手动操作';
+
+  @override
+  String macroReplayNavigateTo(String url) {
+    return '导航到 $url';
+  }
+
+  @override
+  String get macroReplayWaitPageLoad => '等待页面加载';
+
+  @override
+  String get macroReplayWaitDomReady => '等待 DOM 就绪';
+
+  @override
+  String get hyperosShowcaseTitle => '澎湃 UI 组件库';
+
+  @override
+  String get hyperosShowcaseSectionSummary => '概要卡片';
+
+  @override
+  String get hyperosShowcaseKitSubtitle => 'mikcb 澎湃风格组件一览';
+
+  @override
+  String get hyperosShowcaseSectionTags => '标签 / 手风琴 / 提示';
+
+  @override
+  String get hyperosShowcaseAccordionSection1 => '第一节';
+
+  @override
+  String get hyperosShowcaseAccordionSection1Body => '展开后显示的内容区域。';
+
+  @override
+  String get hyperosShowcaseAccordionSection2 => '第二节';
+
+  @override
+  String get hyperosShowcaseAccordionSection2Body => '可折叠分组，替代 FAccordion。';
+
+  @override
+  String get hyperosShowcaseSectionNavRows => '列表行 · 导航';
+
+  @override
+  String get hyperosShowcaseNavRowWithIcon => '带图标';
+
+  @override
+  String get hyperosShowcaseNavRowNoIconSubtitle => '无左侧彩图标';
+
+  @override
+  String get hyperosShowcaseNavRowDetails => '详情';
+
+  @override
+  String get hyperosShowcaseSectionSwitchRows => '列表行 · 开关 / 危险';
+
+  @override
+  String get hyperosShowcaseSwitchRowSubtitle => '带图标开关行';
+
+  @override
+  String get hyperosShowcaseSwitchRowPlain => '纯文字开关行';
+
+  @override
+  String get hyperosShowcaseSectionChoiceRows => '列表行 · 单选 / 选择 / 日期';
+
+  @override
+  String get hyperosShowcaseOptionA => '选项 A';
+
+  @override
+  String get hyperosShowcaseOptionB => '选项 B';
+
+  @override
+  String get hyperosShowcaseOptionC => '选项 C';
+
+  @override
+  String get hyperosShowcaseSelectSizeTitle => '选择尺寸';
+
+  @override
+  String get hyperosShowcaseSizeSmall => '小';
+
+  @override
+  String get hyperosShowcaseSizeMedium => '中';
+
+  @override
+  String get hyperosShowcaseSizeLarge => '大';
+
+  @override
+  String get hyperosShowcaseSectionControls => '控件卡片';
+
+  @override
+  String get hyperosShowcaseControlsSubtitle => '滑条、分段、按钮';
+
+  @override
+  String get hyperosShowcaseSegmentLeft => '左';
+
+  @override
+  String get hyperosShowcaseSegmentRight => '右';
+
+  @override
+  String get hyperosShowcaseSectionInput => '输入';
+
+  @override
+  String get hyperosShowcaseInputHint => '请输入内容';
+
+  @override
+  String get hyperosShowcaseInputCardLabel => '卡片内输入';
+
+  @override
+  String get hyperosShowcaseSectionPicker => '滚轮选择器';
+
+  @override
+  String hyperosShowcasePickerCurrentValue(int value) {
+    return '当前值：$value';
+  }
+
+  @override
+  String get hyperosShowcaseSectionInline => '基础控件 · 行内';
+
+  @override
+  String get hyperosShowcaseCheckboxSubtitle => '多选偏好行';
+
+  @override
+  String get hyperosShowcaseSectionNavActions => '导航与操作';
+
+  @override
+  String get hyperosShowcaseTooltipButton => '带 Tooltip 的按钮';
+
+  @override
+  String get hyperosShowcaseSectionProgress => '进度与刷新';
+
+  @override
+  String get hyperosShowcaseSectionColorChip => '颜色选择 · ColorChip';
+
+  @override
+  String get hyperosShowcaseSectionNavBar => '底部导航 · HyperosNavigationBar';
+
+  @override
+  String get hyperosShowcaseNavHome => '首页';
+
+  @override
+  String get hyperosShowcaseNavTimetable => '课表';
+
+  @override
+  String get hyperosShowcaseNavSettings => '设置';
+
+  @override
+  String get hyperosShowcaseSectionEmpty => '空态 / 分割线 / 装饰';
+
+  @override
+  String get hyperosShowcaseEmptySubtitle => '列表无数据时的占位';
+
+  @override
+  String get hyperosShowcaseActionButton => '操作按钮';
+
+  @override
+  String get hyperosShowcaseDividerRowTitle => '第二行（上方有缩进分割线）';
+
+  @override
+  String get hyperosShowcaseSectionPressable => '底层行 · HyperosPressableRow';
+
+  @override
+  String get hyperosShowcaseSectionShell => '页面壳层';
+
+  @override
+  String get hyperosShowcaseRootPageDetails => '无返回键根页';
+
+  @override
+  String get hyperosShowcaseSubpageSubtitle => '当前页即 Subpage + HyperosListView';
+
+  @override
+  String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
+
+  @override
+  String get hyperosShowcaseSectionFrosted => '模糊顶栏 · 滚动物理';
+
+  @override
+  String get hyperosShowcaseSectionFeedback => '反馈 · 弹层';
+
+  @override
+  String get hyperosShowcaseSectionIconColors => '主题色 · HyperosIconColors';
+
+  @override
+  String get hyperosShowcaseFooterNote => '此页仅在非 Release 构建设置首页可见，用于组件视觉验收。';
+
+  @override
+  String get hyperosShowcaseUndoAction => '撤销';
+
+  @override
+  String get hyperosShowcaseDialogMessage => '系统风格对话框示例。';
+
+  @override
+  String get hyperosShowcaseConfirmTitle => '确认操作';
+
+  @override
+  String get hyperosShowcaseConfirmed => '已确认';
+
+  @override
+  String get hyperosShowcaseToastDescription => '带图标与副标题，App Toast 同款';
+
+  @override
+  String get hyperosShowcaseMenuCopy => '复制';
+
+  @override
+  String get hyperosShowcaseMenuShare => '分享';
+
+  @override
+  String get hyperosShowcaseMenuDelete => '删除';
+
+  @override
+  String get hyperosShowcaseRefreshDone => '刷新完成';
+
+  @override
+  String get hyperosShowcaseSearchTooltip => '搜索';
+
+  @override
+  String get hyperosShowcaseRootShellLabel => '根页壳层';
+
+  @override
+  String get hyperosShowcasePushSubtitle => '通过 HyperosNavigation.push 进入';
+
+  @override
+  String get hyperosShowcaseSampleText => '示例文本';
+
+  @override
+  String courseImportQuickImportDescription(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '快捷导入 $schoolName $adapterName';
+  }
+
+  @override
+  String get courseImportScriptNoCourses => '导入脚本未返回课程数据';
+
+  @override
+  String get courseImportScriptFailed => '脚本执行失败';
+
+  @override
+  String get courseImportRecordingStatus => '录制中…点击停止完成录制';
+
+  @override
+  String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
+
+  @override
+  String get courseImportRecordingEmptyStatus => '未录制到任何操作';
+
+  @override
+  String get courseImportRecordingEmptyTip => '未录制到任何操作';
+
+  @override
+  String get courseImportSaveRecordingTitle => '保存录制';
+
+  @override
+  String courseImportSaveRecordingMessage(int count) {
+    return '录制了 $count 个操作步骤。是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportRecordingSavedStatus(int count) {
+    return '录制已保存（$count 步）';
+  }
+
+  @override
+  String get courseImportWeekNotProvided => '未提供周次';
+
+  @override
+  String get courseImportLocationNotFilled => '未填写地点';
+
+  @override
+  String courseImportPreviewLine(
+    String weekday,
+    int startSection,
+    int endSection,
+    String name,
+    String location,
+    String weekText,
+  ) {
+    return '周$weekday 第$startSection-$endSection节  $name  $location  周次：$weekText';
+  }
+
+  @override
+  String courseImportCalendarWeekLabel(int week) {
+    return '校历第 $week 周';
+  }
+
+  @override
+  String get courseImportTermStartDateTitle => '开学日期';
+
+  @override
+  String get courseImportFirstWeekMappingLabel => '课表第 1 周对应校历第几周';
+
+  @override
+  String get courseImportFirstWeekMappingSubtitle =>
+      '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。';
+
+  @override
+  String get courseImportFirstWeekNoShift => '导入后会直接把课表第 1 周当作校历第 1 周。';
+
+  @override
+  String courseImportFirstWeekShifted(int weeks, int targetWeek) {
+    return '导入后会把所有课程周次整体顺延 $weeks 周，让课表第 1 周落在校历第 $targetWeek 周。';
+  }
+
+  @override
+  String get courseImportContinueAction => '继续导入';
+
+  @override
+  String get courseImportUpdateRecommendedAction => '更新课表（推荐）';
+
+  @override
+  String get courseImportOverwriteAction => '覆盖导入';
+
+  @override
+  String get courseImportSectionCountInsufficientTitle => '时间模板节次不足';
+
+  @override
+  String courseImportSectionCountInsufficientMessage(
+    int current,
+    int required,
+  ) {
+    return '当前课表时间模板只有 $current 节，但导入数据需要到第 $required 节。是否自动补齐后继续导入？';
+  }
+
+  @override
+  String get courseImportAutoFillAndImportAction => '自动补齐并导入';
+
+  @override
+  String get courseImportPortalUrlTitle => '输入教务网址';
+
+  @override
+  String get courseImportPortalUrlSaveContinue => '保存并继续';
+
+  @override
+  String get courseImportPortalUrlLabel => '教务网址';
+
+  @override
+  String get courseImportPortalUrlHint => '保存后下次会直接使用，也可以在适配器信息页里修改。';
+
+  @override
+  String get courseImportPortalUrlInvalid => '登录地址格式不正确';
+
+  @override
+  String get logAppLoggerInitialized => '应用日志服务已初始化';
+
+  @override
+  String get logPrivacyConsentUpdated => '隐私协议同意状态已更新';
+
+  @override
+  String get logAppLogRecordingEnabled => '应用日志记录已开启';
+
+  @override
+  String get logAppLogRecordingRemainsEnabled => '应用日志记录保持开启';
+
+  @override
+  String get logStartupFlowStarted => '启动流程处理已开始';
+
+  @override
+  String get logStartupFlowCompletedNoOnboarding => '启动流程已完成（无需引导页）';
+
+  @override
+  String get logStartupFlowCompletedAfterGuide => '启动流程已完成（经过引导页）';
+
+  @override
+  String get logStartupFlowFailed => '启动流程失败，进入降级模式';
+
+  @override
+  String get logAppLifecycleChanged => '应用生命周期已变更';
+
+  @override
+  String get logNavigatorRouteReplaced => '导航路由已替换';
+
+  @override
+  String get logNavigatorRouteChanged => '导航路由已变更';
+
+  @override
+  String get logAppLogsDefaultMigrated => '迁移时已默认开启应用日志记录';
+
+  @override
+  String get logTimetableLoadSettingsFailed => '加载课表设置失败';
+
+  @override
+  String get logTimetableLoadCoursesFailed => '加载课程数据失败';
+
+  @override
+  String get logTimetableLoadCurrentWeekFailed => '加载当前周次失败';
+
+  @override
+  String get logHomeWidgetPinSupportFailed => '检查桌面小组件固定支持失败';
+
+  @override
+  String get logHomeWidgetPinRequestFailed => '请求固定桌面小组件失败';
+
+  @override
+  String get logHomeWidgetSyncFailed => '同步桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetClearFailed => '清空桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+
+  @override
+  String get logMiuiLiveInitializeFailed => '初始化 MIUI 超级岛通道失败';
+
+  @override
+  String get logMiuiLiveOpenPromotedSettingsFailed => '打开超级岛权限设置失败';
+
+  @override
+  String get logMiuiLiveOpenNotificationSettingsFailed => '打开通知设置失败';
+
+  @override
+  String get logMiuiLiveOpenAutostartSettingsFailed => '打开自启动设置失败';
+
+  @override
+  String get logMiuiLiveOpenBatterySettingsFailed => '打开电池优化设置失败';
+
+  @override
+  String get logMiuiLiveOpenAccessibilitySettingsFailed => '打开无障碍设置失败';
+
+  @override
+  String get logMiuiLiveHideFromRecentsFailed => '更新「从最近任务隐藏」失败';
+
+  @override
+  String get logLiveUpdateStartFailed => '从 Flutter 启动超级岛失败';
+
+  @override
+  String get logLiveUpdateStopFailed => '从 Flutter 停止超级岛失败';
+
+  @override
+  String get logLiveUpdateDebugStatusFailed => '获取原生超级岛调试状态失败';
+
+  @override
+  String get logLiveUpdateSnapshotSyncFailed => '同步超级岛课表快照失败';
+
+  @override
+  String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
+
+  @override
+  String get logLanEditAuthFailed => '局域网编辑：认证失败';
+
+  @override
+  String get logLanEditCourseCreated => '局域网编辑：已创建课程';
+
+  @override
+  String get logLanEditCourseUpdated => '局域网编辑：已更新课程';
+
+  @override
+  String get logLanEditCourseDeleted => '局域网编辑：已删除课程';
+
+  @override
+  String get logLanEditCourseGroupSaved => '局域网编辑：已保存课程组';
+
+  @override
+  String get logLanEditMergeImported => '局域网编辑：已导入合并备份';
+
+  @override
+  String get logLanEditCoursesBatchDeleted => '局域网编辑：已批量删除课程';
+
+  @override
+  String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
+
+  @override
+  String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';
+
+  @override
+  String get logLanEditSessionStarted => '局域网编辑：会话已启动';
+
+  @override
+  String get logLanEditSessionStopped => '局域网编辑：会话已停止';
+
+  @override
+  String get logLiveUpdateTestRequested => '用户请求手动超级岛测试通知';
+
+  @override
+  String get logLiveUpdateTestNoSelection => '手动超级岛测试：未找到可用课程';
+
+  @override
+  String get logLiveUpdateTestSelectionReady => '手动超级岛测试：已解析目标课程';
+
+  @override
+  String get logLiveUpdateTestSuspendSync => '手动超级岛测试：已临时暂停定时同步';
+
+  @override
+  String get logLiveUpdateTestStarting => '手动超级岛测试：正在启动原生超级岛';
+
+  @override
+  String get logLiveUpdateTestStarted => '手动超级岛测试：已成功请求原生超级岛';
+
+  @override
+  String get logLiveUpdateTestFailed => '手动超级岛测试：原生超级岛出现前失败';
+
+  @override
+  String logLiveUpdateSettingsSynced(
+    String beforeClass,
+    String duringClass,
+    String beforeEnd,
+    String promote,
+    String notification,
+    String countdown,
+    String courseName,
+    String location,
+  ) {
+    return 'Flutter 超级岛设置已同步：课前=$beforeClass，课中=$duringClass，下课前=$beforeEnd，提升=$promote，通知=$notification，倒计时=$countdown，课程名=$courseName，地点=$location';
+  }
+
+  @override
+  String get logFieldSource => '来源';
+
+  @override
+  String get logFieldPlatform => '平台';
+
+  @override
+  String get logFieldVersion => '版本';
+
+  @override
+  String get logFieldBuildNumber => '构建号';
+
+  @override
+  String get logFieldLoggingEnabled => '日志记录';
+
+  @override
+  String get logFieldPrivacyAccepted => '隐私协议';
+
+  @override
+  String get logFieldAccepted => '已同意';
+
+  @override
+  String get logFieldPrevious => '先前状态';
+
+  @override
+  String get logFieldTruncated => '已截断';
+
+  @override
+  String get logFieldTruncatedHint => '截断提示';
+
+  @override
+  String get logFieldThrowable => '异常';
+
+  @override
+  String get logFieldExtras => '附加信息';
+
+  @override
+  String get logFieldContext => '设备上下文';
+
+  @override
+  String get logFieldError => '错误';
+
+  @override
+  String get logFieldBrand => '品牌';
+
+  @override
+  String get logFieldManufacturer => '制造商';
+
+  @override
+  String get logFieldModel => '型号';
+
+  @override
+  String get logFieldSdkInt => 'SDK 版本';
+
+  @override
+  String get logFieldVersionName => '版本名';
+
+  @override
+  String get logFieldChannel => '渠道';
+
+  @override
+  String get logFieldHasNotificationPermission => '通知权限';
+
+  @override
+  String get logFieldHasPromotedPermissionDeclared => '已声明提升通知权限';
+
+  @override
+  String get logFieldCanPostPromotedNotifications => '可发布提升通知';
+
+  @override
+  String get logFieldIgnoringBatteryOptimizations => '忽略电池优化';
+
+  @override
+  String get logFieldKeepAliveAccessibilityEnabled => '无障碍保活已启用';
+
+  @override
+  String get logFieldHideFromRecentsEnabled => '从最近任务隐藏';
+
+  @override
+  String get logFieldTaskRemovedRecently => '近期任务被移除';
+
+  @override
+  String get logFieldLastTaskRemovedAt => '上次任务移除时间';
+
+  @override
+  String get logFieldProcessImportance => '进程重要性';
+
+  @override
+  String get logFieldAutoStartStatus => '自启动状态';
+
+  @override
+  String get logFieldLiveEnableBeforeClass => '课前超级岛';
+
+  @override
+  String get logFieldLiveEnableDuringClass => '课中超级岛';
+
+  @override
+  String get logFieldLiveEnableBeforeEnd => '下课前超级岛';
+
+  @override
+  String get logFieldLivePromoteDuringClass => '课中提升通知';
+
+  @override
+  String get logFieldLiveShowDuringClassNotification => '课中状态栏通知';
+
+  @override
+  String get logFieldLiveShowCountdown => '显示倒计时';
+
+  @override
+  String get logFieldLiveShowStageText => '显示阶段文字';
+
+  @override
+  String get logFieldLiveShowCourseName => '显示课程名';
+
+  @override
+  String get logFieldLiveShowLocation => '显示地点';
+
+  @override
+  String get logFieldLiveUseShortName => '使用简称';
+
+  @override
+  String get logFieldLiveHidePrefixText => '隐藏前缀文字';
+
+  @override
+  String get logFieldLiveDuringClassTimeDisplayMode => '课中时间显示模式';
+
+  @override
+  String get logFieldLiveEnableMiuiIslandLabelImage => '岛标签图片';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelStyle => '岛标签样式';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelContent => '岛标签内容';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontColor => '岛标签字体颜色';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontWeight => '岛标签字重';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelRenderQuality => '岛标签渲染质量';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontSize => '岛标签字号';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetX => '岛标签 X 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetY => '岛标签 Y 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandExpandedIconMode => '展开图标模式';
+
+  @override
+  String get logFieldLiveShowBeforeClassMinutes => '课前显示分钟数';
+
+  @override
+  String get logFieldLiveClassReminderStartMinutes => '上课提醒开始分钟';
+
+  @override
+  String get logFieldLiveEndSecondsCountdownThreshold => '下课秒倒计时阈值';
+
+  @override
+  String get logFieldState => '状态';
+
+  @override
+  String get logFieldRoute => '路由';
+
+  @override
+  String get logFieldPreviousRoute => '先前路由';
+
+  @override
+  String get logFieldProfileId => '课表配置 ID';
+
+  @override
+  String get logFieldReason => '原因';
+
+  @override
+  String get logFieldClientIp => '客户端 IP';
+
+  @override
+  String get logFieldPort => '端口';
+
+  @override
+  String get logFieldCourseName => '课程名';
+
+  @override
+  String get logFieldStage => '阶段';
+
+  @override
+  String get logFieldFrom => '来源页面';
+
+  @override
+  String get logFieldCurrentWeek => '当前周次';
+
+  @override
+  String get logFieldWeekday => '星期';
+
+  @override
+  String get logFieldUntilMillis => '暂停截止时间';
+
+  @override
+  String get logFieldStartAtMillis => '开始时间';
+
+  @override
+  String get logFieldMergedCourseCount => '合并课程数';
+
+  @override
+  String get logFieldDeletedCount => '删除数量';
+
+  @override
+  String get logFieldRequested => '请求数量';
+
+  @override
+  String get logFieldTarget => '目标';
+
+  @override
+  String get logFieldCount => '数量';
+
+  @override
+  String get logFieldValue => '值';
+
+  @override
+  String get logFieldSnapshotLength => '快照长度';
+
+  @override
+  String get logFieldStoredSnapshotVersion => '存储快照版本';
+
+  @override
+  String get logFieldIntentIsNull => 'Intent 为空';
+
+  @override
+  String get logFieldAction => '操作';
+
+  @override
+  String get logFieldStep => '步骤';
+
+  @override
+  String get logCatAppLoggerInitialized => '应用日志：初始化';
+
+  @override
+  String get logCatPrivacyConsentUpdated => '应用日志：隐私协议';
+
+  @override
+  String get logCatAppLogRecordingEnabled => '应用日志：记录开关';
+
+  @override
+  String get logCatStartupFlowStarted => '启动流程：开始';
+
+  @override
+  String get logCatStartupFlowCompleted => '启动流程：完成';
+
+  @override
+  String get logCatStartupFlowFailed => '启动流程：失败';
+
+  @override
+  String get logCatAppLifecycleStateChanged => '应用生命周期';
+
+  @override
+  String get logCatRoutePushed => '路由：入栈';
+
+  @override
+  String get logCatRoutePopped => '路由：出栈';
+
+  @override
+  String get logCatRouteReplaced => '路由：替换';
+
+  @override
+  String get logCatFlutterFrameworkError => 'Flutter 框架错误';
+
+  @override
+  String get logCatFlutterPlatformError => 'Flutter 平台错误';
+
+  @override
+  String get logCatFlutterZoneError => 'Flutter Zone 错误';
+
+  @override
+  String get logCatAppLogsDefaultMigrated => '应用日志：迁移';
+
+  @override
+  String get logCatTimetableLoadSettingsFailed => '课表：加载设置失败';
+
+  @override
+  String get logCatTimetableLoadCoursesFailed => '课表：加载课程失败';
+
+  @override
+  String get logCatTimetableLoadCurrentWeekFailed => '课表：加载周次失败';
+
+  @override
+  String get logCatHomeWidgetPinSupportFailed => '桌面小组件：检查固定支持';
+
+  @override
+  String get logCatHomeWidgetPinRequestFailed => '桌面小组件：请求固定';
+
+  @override
+  String get logCatHomeWidgetSyncFailed => '桌面小组件：同步失败';
+
+  @override
+  String get logCatHomeWidgetClearFailed => '桌面小组件：清空失败';
+
+  @override
+  String get logCatHomeWidgetScheduleFailed => '桌面小组件：调度刷新';
+
+  @override
+  String get logCatMiuiLiveInitializeFailed => '超级岛：初始化失败';
+
+  @override
+  String get logCatMiuiLiveOpenPromotedSettingsFailed => '超级岛：打开权限设置';
+
+  @override
+  String get logCatMiuiLiveOpenNotificationSettingsFailed => '超级岛：打开通知设置';
+
+  @override
+  String get logCatMiuiLiveOpenAutostartSettingsFailed => '超级岛：打开自启动设置';
+
+  @override
+  String get logCatMiuiLiveOpenBatterySettingsFailed => '超级岛：打开电池优化';
+
+  @override
+  String get logCatMiuiLiveOpenAccessibilitySettingsFailed => '超级岛：打开无障碍设置';
+
+  @override
+  String get logCatMiuiLiveHideFromRecentsFailed => '超级岛：隐藏最近任务';
+
+  @override
+  String get logCatLiveUpdateFlutterInitializeFailed => '超级岛：Flutter 初始化失败';
+
+  @override
+  String get logCatLiveUpdateStartFailed => '超级岛：启动失败';
+
+  @override
+  String get logCatLiveUpdateStopFailed => '超级岛：停止失败';
+
+  @override
+  String get logCatLiveUpdateDebugStatusFailed => '超级岛：调试状态失败';
+
+  @override
+  String get logCatLiveUpdateSettingsSynced => '超级岛：设置已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotSyncFailed => '超级岛：快照同步失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotClearFailed => '超级岛：快照清空失败';
+
+  @override
+  String get logCatLanEditAuthFailed => '局域网编辑：认证';
+
+  @override
+  String get logCatLanEditCourseCreated => '局域网编辑：创建课程';
+
+  @override
+  String get logCatLanEditCourseUpdated => '局域网编辑：更新课程';
+
+  @override
+  String get logCatLanEditCourseDeleted => '局域网编辑：删除课程';
+
+  @override
+  String get logCatLanEditCourseGroupSaved => '局域网编辑：保存课程组';
+
+  @override
+  String get logCatLanEditMergeImported => '局域网编辑：合并导入';
+
+  @override
+  String get logCatLanEditCoursesBatchDeleted => '局域网编辑：批量删除';
+
+  @override
+  String get logCatLanEditCurrentWeekSet => '局域网编辑：设置周次';
+
+  @override
+  String get logCatLanEditSpreadsheetImported => '局域网编辑：表格导入';
+
+  @override
+  String get logCatLanEditSessionStarted => '局域网编辑：会话启动';
+
+  @override
+  String get logCatLanEditSessionStopped => '局域网编辑：会话停止';
+
+  @override
+  String get logCatLiveUpdateTestRequested => '超级岛测试：请求';
+
+  @override
+  String get logCatLiveUpdateTestNoSelection => '超级岛测试：无课程';
+
+  @override
+  String get logCatLiveUpdateTestSelectionReady => '超级岛测试：已选课程';
+
+  @override
+  String get logCatLiveUpdateTestSuspendSync => '超级岛测试：暂停同步';
+
+  @override
+  String get logCatLiveUpdateTestStarting => '超级岛测试：启动中';
+
+  @override
+  String get logCatLiveUpdateTestStarted => '超级岛测试：已启动';
+
+  @override
+  String get logCatLiveUpdateTestFailed => '超级岛测试：失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotSettings => '超级岛：快照设置';
+
+  @override
+  String get logCatLiveUpdateSnapshotSynced => '超级岛：快照已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotCleared => '超级岛：快照已清空';
+
+  @override
+  String get logCatLiveUpdateAlarmTriggered => '超级岛：闹钟触发';
+
+  @override
+  String get logCatLiveUpdateSchedulerResume => '超级岛：调度恢复';
+
+  @override
+  String get logCatLiveUpdateRescheduleHoliday => '超级岛：节假日跳过';
+
+  @override
+  String get logCatLiveUpdateRescheduleActive => '超级岛：立即启动';
+
+  @override
+  String get logCatLiveUpdateRescheduleScheduled => '超级岛：已调度';
+
+  @override
+  String get logCatLiveUpdateSnapshotParseFailed => '超级岛：快照解析失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超级岛：升级后快照失效';
+
+  @override
+  String get logCatLiveUpdatePayloadSelected => '超级岛：已选负载';
+
+  @override
+  String get logCatLiveUpdateSchedulerStartFailed => '超级岛：调度启动失败';
+
+  @override
+  String get logCatLiveUpdateStartRequested => '超级岛：请求启动';
+
+  @override
+  String get logCatLiveUpdateStopRequested => '超级岛：请求停止';
+
+  @override
+  String get logCatLiveUpdateServiceMissingPayload => '超级岛：服务缺少负载';
+
+  @override
+  String get logCatLiveUpdateServiceStarted => '超级岛：服务已启动';
+
+  @override
+  String get logCatLiveUpdateServiceStartFailed => '超级岛：服务启动失败';
+
+  @override
+  String get logCatLiveUpdateTaskRemoved => '超级岛：任务被移除';
+
+  @override
+  String get logCatLiveUpdateTaskRemovedResumed => '超级岛：任务移除后恢复';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickAction => '超级岛：课前快捷操作';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickActionRestored => '超级岛：课前快捷操作已恢复';
+
+  @override
+  String get logCatLiveUpdateStatusBarDismissed => '超级岛：状态栏通知已关闭';
+
+  @override
+  String get logCatLiveUpdateNotPromoted => '超级岛：未提升通知';
+
+  @override
+  String get logCatLiveUpdatePromotedNotShown => '超级岛：提升未显示';
+
+  @override
+  String get logCatLiveUpdateServiceStopped => '超级岛：服务已停止';
+
+  @override
+  String get logCatKeepAliveAccessibilityConnected => '保活：无障碍已连接';
+
+  @override
+  String get logCatDiagnosticsEnabled => '诊断：已开启';
+
+  @override
+  String get logCatDiagnosticsCleared => '诊断：已清空';
+
+  @override
+  String get logCatDiagnosticsBootstrap => '诊断：引导';
+
+  @override
+  String get logCatFlutterDiagnostic => 'Flutter 诊断';
+
+  @override
+  String get logCatFlutterDiagnosticEvent => 'Flutter 诊断事件';
+
+  @override
+  String get logCatRenderFailed => '渲染失败';
+
+  @override
+  String get logCatDebugSnapshot => '调试快照';
+
+  @override
+  String get logExportTitle => '轻屿课表 - 应用日志';
+
+  @override
+  String get appUpdateMirrorPresetGhfast => '默认镜像';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyCn => '备用镜像 1';
+
+  @override
+  String get appUpdateMirrorPresetGhLlkk => '备用镜像 2';
+
+  @override
+  String get appUpdateMirrorPresetGhProxyCom => '备用镜像 3';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyNet => '备用镜像 4';
+
+  @override
+  String get appUpdateMirrorPresetCustom => '自定义';
+
+  @override
+  String get appUpdateMirrorPresetCustomDescription => '填写自定义镜像地址前缀';
+
+  @override
+  String get cloudBackupRetentionTitle => '备份保留策略';
+
+  @override
+  String get cloudBackupMaxCountTitle => '最多保留份数';
+
+  @override
+  String get cloudBackupMaxCountSubtitle => '超过后自动删除最旧的备份';
+
+  @override
+  String cloudBackupMaxCountOption(int count) {
+    return '$count 份';
+  }
+
+  @override
+  String get cloudBackupMaxAgeTitle => '最长保留天数';
+
+  @override
+  String get cloudBackupMaxAgeSubtitle => '超过后自动删除过期备份';
+
+  @override
+  String cloudBackupMaxAgeOption(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String get statisticsShareText => '来自轻屿课表的学期统计';
+
+  @override
+  String get aboutUpdateAvailableHeadline => '有版本更新';
+
+  @override
+  String get aboutAlreadyLatestHeadline => '已是最新版本';
+
+  @override
+  String get aboutDownloadChannelSectionTitle => '下载渠道';
+
+  @override
+  String get aboutMirrorProbeFailedLabel => '失败';
+
+  @override
+  String timeSchemeImportSupplementName(String name) {
+    return '$name（导入补齐）';
+  }
+
+  @override
+  String profileTimeSchemeName(String profileName) {
+    return '$profileName 时间';
+  }
+
+  @override
+  String get currentProfileTimeSchemeName => '当前课表时间';
+
+  @override
+  String get unnamedTimetableProfile => '未命名课表';
+
+  @override
+  String get cloudBackupManualProtectedTitle => '手动备份永不过期';
+
+  @override
+  String get cloudBackupManualProtectedSubtitle => '开启后，手动创建的备份不会被自动清理';
+
+  @override
+  String courseImportPortalUrlMissingBody(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。';
+  }
+
+  @override
+  String guidePermissionsProgressLabel(int ready, int total) {
+    return '已就绪 $ready/$total';
   }
 }
 
@@ -8656,6 +10868,20 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get layoutEnableHapticsSubtitle => '關閉後，頁码切换等交互不再触發輕微震動。';
 
   @override
+  String pageTransitionSpeedLabel(String speed) {
+    return '頁面轉場速度 $speed×';
+  }
+
+  @override
+  String get pageTransitionSpeedSubtitle =>
+      '調節進入和返回子頁面時的滑動動畫快慢。數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定。';
+
+  @override
+  String pageTransitionSpeedDurationHint(int milliseconds) {
+    return '約 $milliseconds 毫秒';
+  }
+
+  @override
   String get layoutTimeColumnDisplayLabel => '首頁時間列顯示';
 
   @override
@@ -11028,6 +13254,2239 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   @override
   String statisticsNatureLegendDetail(int count, int sections) {
     return '$count 門 · $sections 節';
+  }
+
+  @override
+  String get weekListSeparator => '、';
+
+  @override
+  String courseWeekListLabel(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeLabel(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String courseWeekSuspendedLabel(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get importSemesterStartDateTitle => '开学日期';
+
+  @override
+  String get importSemesterStartDateSubtitle => '按這一天所在週作為校曆第 1 週';
+
+  @override
+  String get importFirstCourseWeekMappingLabel => '課表第 1 週對應校曆第幾週';
+
+  @override
+  String get importFirstCourseWeekMappingSubtitle =>
+      '如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週。';
+
+  @override
+  String get importSemesterMappingNoShiftHint => '匯入後會直接把課表第 1 週當作校曆第 1 週。';
+
+  @override
+  String importSemesterMappingShiftHint(int shiftedWeeks, int calendarWeek) {
+    return '匯入後會把所有課程週次整體順延 $shiftedWeeks 週，讓課表第 1 週落在校曆第 $calendarWeek 週。';
+  }
+
+  @override
+  String calendarWeekOption(int week) {
+    return '校曆第 $week 週';
+  }
+
+  @override
+  String get aboutDownloadPackageMethodTitle => '下载安装包方式';
+
+  @override
+  String get aboutInAppDownloadTitle => '应用内下载';
+
+  @override
+  String get aboutInAppDownloadSubtitle => '下載完成後直接在應用內安裝';
+
+  @override
+  String get aboutSystemDownloaderTitle => '系统管理器';
+
+  @override
+  String get aboutSystemDownloaderChoiceSubtitle => '交給系統下載管理器處理';
+
+  @override
+  String get syncErrorAuthFailed => '帳號或密碼錯誤';
+
+  @override
+  String get syncErrorAccessDenied => '沒有存取權限';
+
+  @override
+  String get syncErrorCertificateError => '憑證校驗失敗';
+
+  @override
+  String get syncErrorConnectionTimeout => '連線逾時';
+
+  @override
+  String get syncErrorConnectionFailed => '無法連線伺服器';
+
+  @override
+  String get syncErrorNetworkError => '網路異常';
+
+  @override
+  String get syncErrorInvalidResponse => '伺服器回應無效';
+
+  @override
+  String get syncErrorLocalChangesPendingSync => '本機有未同步修改，已跳過自動覆蓋';
+
+  @override
+  String get syncErrorMissingCredentials => '請先設定雲同步帳號';
+
+  @override
+  String get syncErrorBackupNotFound => '備份不存在';
+
+  @override
+  String get syncErrorMissingBackupSnapshot => '備份快照缺失';
+
+  @override
+  String get syncErrorCannotDeleteCurrentBackup => '不能刪除目前備份';
+
+  @override
+  String get syncErrorProviderNotReady => '課表尚未就緒';
+
+  @override
+  String get syncErrorSyncFailed => '同步失敗';
+
+  @override
+  String get sectionTimeDisplayHidden => '不显示';
+
+  @override
+  String get sectionTimeDisplayStartOnly => '仅显示上课时间';
+
+  @override
+  String get sectionTimeDisplayStartAndEnd => '显示上下课时间';
+
+  @override
+  String get examReminderNone => '不提醒';
+
+  @override
+  String get examReminderMin30 => '考前 30 分钟';
+
+  @override
+  String get examReminderHour1 => '考前 1 小时';
+
+  @override
+  String get examReminderHour1AndMin30 => '考前 1 小时 + 30 分钟';
+
+  @override
+  String get examReminderDay1 => '考前 1 天';
+
+  @override
+  String get examReminderDay1AndHour1 => '考前 1 天 + 1 小时';
+
+  @override
+  String get examReminderCustom => '自定义';
+
+  @override
+  String get debugCopiedJson => '已複製 JSON';
+
+  @override
+  String get liveDuringClassTimeNearest => '最近时间';
+
+  @override
+  String get liveDuringClassTimeTotal => '总时间';
+
+  @override
+  String get liveCountdownTextStyleSmart => '智能（中文）';
+
+  @override
+  String get liveCountdownTextStyleSmartMinS => '智能（英文）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondCn => '分秒（5分钟19秒）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondColon => 'mm:ss（05:19）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinS => 'min+s（5min19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinSlashS => 'min/s（5min/19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyCn => '纯分钟（5分钟）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyMin => 'min（5min）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlySlash => '/min（5/min）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyCn => '纯秒（5秒）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyShort => 's（5s）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlySlash => '/s（5/s）';
+
+  @override
+  String get miuiIslandLabelStyleTextOnly => '仅文字';
+
+  @override
+  String get miuiIslandLabelStyleIconAndText => '图标+文字';
+
+  @override
+  String get miuiIslandLabelContentCourseName => '课程名';
+
+  @override
+  String get miuiIslandLabelContentLocation => '教室';
+
+  @override
+  String get miuiIslandLabelContentCourseNameAndLocation => '课程名+教室';
+
+  @override
+  String get miuiIslandLabelFontWeightRegular => '常规';
+
+  @override
+  String get miuiIslandLabelFontWeightMedium => '中等';
+
+  @override
+  String get miuiIslandLabelFontWeightBold => '加粗';
+
+  @override
+  String get miuiIslandLabelRenderQualityStandard => '标准';
+
+  @override
+  String get miuiIslandLabelRenderQualityHigh => '高清';
+
+  @override
+  String get miuiIslandLabelRenderQualityUltra => '超高清';
+
+  @override
+  String get miuiIslandExpandedIconAppIcon => '应用图标';
+
+  @override
+  String get miuiIslandExpandedIconCustomImage => '自定义图片';
+
+  @override
+  String get miuiIslandExpandedIconHidden => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionNone => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionSilent => '打开静音';
+
+  @override
+  String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
+
+  @override
+  String get courseCardVerticalAlignTop => '顶部对齐';
+
+  @override
+  String get courseCardVerticalAlignCenter => '垂直居中';
+
+  @override
+  String get courseCardVerticalAlignBottom => '底部对齐';
+
+  @override
+  String get courseCardVerticalAlignSpaceEvenly => '上下均布';
+
+  @override
+  String get courseCardHorizontalAlignLeft => '居左';
+
+  @override
+  String get courseCardHorizontalAlignCenter => '居中';
+
+  @override
+  String get courseCardHorizontalAlignRight => '居右';
+
+  @override
+  String get timetableTimeColumnWidthNarrow => '窄';
+
+  @override
+  String get timetableTimeColumnWidthWide => '宽';
+
+  @override
+  String get timetableCourseSpacingNarrow => '窄';
+
+  @override
+  String get timetableCourseSpacingWide => '宽';
+
+  @override
+  String get appUpdateDownloadSourceOriginal => 'GitHub 原版';
+
+  @override
+  String get appUpdateDownloadSourceMirror => '国内镜像';
+
+  @override
+  String get appUpdateDownloadChannelPgyer => '蒲公英下载';
+
+  @override
+  String get appUpdateDownloadChannelGithub => 'GitHub 下载';
+
+  @override
+  String get appUpdateDownloadChannelPgyerDescription => '国内高速下载，推荐使用';
+
+  @override
+  String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 国内镜像';
+
+  @override
+  String get holidayStatutoryLabel => '法定假日';
+
+  @override
+  String get serviceMsgImportFileUnrecognized =>
+      'Import failed. The file content could not be recognized.';
+
+  @override
+  String get serviceMsgImportUseOverwriteForFullBackup =>
+      'This is a full data backup. Please import using overwrite current timetable.';
+
+  @override
+  String get serviceMsgImportNoProfilesInBackup =>
+      'No recoverable timetables were found in the backup file.';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbDataFile =>
+      'Not a recognizable mikcb data file.';
+
+  @override
+  String get serviceMsgMissingSettingsData => 'Settings data is missing.';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbFullBackup =>
+      'Not a recognizable mikcb full backup file.';
+
+  @override
+  String get serviceMsgMissingFullBackupData =>
+      'Complete backup data is missing.';
+
+  @override
+  String get serviceMsgUseProfileBackupNotFull =>
+      'Use a timetable profile backup JSON, not a full data backup.';
+
+  @override
+  String get serviceMsgUnrecognizedSyncSnapshot =>
+      'Not a recognizable mikcb cloud sync snapshot.';
+
+  @override
+  String get serviceMsgMissingSyncTimetableData =>
+      'Cloud sync timetable data is missing.';
+
+  @override
+  String get serviceMsgSyncSnapshotChecksumFailed =>
+      'Cloud sync snapshot verification failed.';
+
+  @override
+  String get serviceMsgSyncSnapshotNoProfiles =>
+      'No recoverable timetables in the cloud sync snapshot.';
+
+  @override
+  String get serviceMsgSyncSnapshotUnrecognized =>
+      'Cloud sync snapshot could not be recognized.';
+
+  @override
+  String get serviceMsgTimeSchemeNotFound => 'Time scheme not found.';
+
+  @override
+  String get serviceMsgTimeSchemeConfigUnavailable =>
+      'Current timetable time configuration is unavailable.';
+
+  @override
+  String get serviceMsgTimeSchemeNotFoundSelected =>
+      'Selected time scheme was not found.';
+
+  @override
+  String serviceMsgTimeSchemeSectionsInsufficient(
+    int startSection,
+    int endSection,
+  ) {
+    return 'Selected time scheme does not have enough sections for sections $startSection-$endSection.';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
+    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection).';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsageDetail(
+    int requiredMaxSection,
+    String profileName,
+    String courseName,
+    int dayOfWeek,
+    int startSection,
+    int endSection,
+    String usageType,
+  ) {
+    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection). In use: $profileName · $courseName (weekday $dayOfWeek sections $startSection-$endSection, $usageType)';
+  }
+
+  @override
+  String get serviceMsgAtLeastOneSectionRequired =>
+      'At least one section time must be kept.';
+
+  @override
+  String serviceMsgSectionEndMustAfterStart(int sectionNumber) {
+    return 'Section $sectionNumber end time must be later than start time. Overnight classes are not supported.';
+  }
+
+  @override
+  String serviceMsgSectionStartBeforePreviousEnd(int sectionNumber) {
+    return 'Section $sectionNumber start time cannot be earlier than the previous section end time.';
+  }
+
+  @override
+  String get serviceMsgPeriodStartTimeRequired =>
+      'Set the first section start time for periods that have sections.';
+
+  @override
+  String serviceMsgSectionCrossesMidnight(int sectionNumber) {
+    return 'Section $sectionNumber would cross midnight. Overnight classes are not supported.';
+  }
+
+  @override
+  String get serviceMsgClassDurationMustPositive =>
+      'Class duration must be greater than 0.';
+
+  @override
+  String get serviceMsgBreakDurationMustNonNegative =>
+      'Break duration cannot be less than 0.';
+
+  @override
+  String get serviceMsgAtLeastOnePeriodSection =>
+      'At least one period must have sections.';
+
+  @override
+  String get serviceMsgInvalidTimeFormat => 'Time format is invalid.';
+
+  @override
+  String get serviceMsgLinkedCourseNotFound => 'Linked course was not found.';
+
+  @override
+  String get serviceMsgCourseNotFoundForDelete =>
+      'Course to delete was not found.';
+
+  @override
+  String serviceMsgCourseNotScheduledWeek(int sourceWeek) {
+    return 'This course is not scheduled in week $sourceWeek.';
+  }
+
+  @override
+  String get serviceMsgCourseNotFoundForReschedule =>
+      'Course to reschedule was not found.';
+
+  @override
+  String get serviceMsgTargetWeekOutOfRange =>
+      'Target week is outside the current semester range.';
+
+  @override
+  String get serviceMsgAtLeastOneScheduleSlot =>
+      'At least one class time slot must be kept.';
+
+  @override
+  String get serviceMsgCourseNameRequired => 'Course name cannot be empty.';
+
+  @override
+  String get serviceMsgBackupContentRequired =>
+      'Backup content cannot be empty.';
+
+  @override
+  String get serviceMsgSpreadsheetFormatOrEncodingUnrecognized =>
+      'Could not recognize spreadsheet format or encoding. Save CSV as UTF-8 and try again.';
+
+  @override
+  String serviceMsgSpreadsheetXlsxParseFailed(String error) {
+    return 'Failed to parse XLSX file: $error';
+  }
+
+  @override
+  String serviceMsgSpreadsheetRowWarning(int rowNumber, String message) {
+    return 'Row $rowNumber: $message';
+  }
+
+  @override
+  String serviceMsgSpreadsheetWakeupInsufficientColumns(
+    int rowNumber,
+    int columnCount,
+  ) {
+    return 'WakeUp format needs at least 7 columns, but row $rowNumber has only $columnCount.';
+  }
+
+  @override
+  String get serviceMsgWeekdayMustBe1To7 => 'Weekday must be between 1 and 7.';
+
+  @override
+  String get serviceMsgCustomWeeksRequired => 'Weeks cannot be empty.';
+
+  @override
+  String get serviceMsgClassWeeksRequired => 'Class weeks cannot be empty.';
+
+  @override
+  String get serviceMsgStartWeekMustBeAtLeast1 =>
+      'Start week must be at least 1.';
+
+  @override
+  String serviceMsgStartWeekExceedsSemester(
+    int startWeek,
+    int semesterWeekCount,
+  ) {
+    return 'Start week $startWeek exceeds semester week count $semesterWeekCount.';
+  }
+
+  @override
+  String get serviceMsgEndWeekBeforeStartWeek =>
+      'End week cannot be earlier than start week.';
+
+  @override
+  String get serviceMsgWeeksRangeRequired =>
+      'Class weeks or start week + end week must be provided.';
+
+  @override
+  String serviceMsgFieldMustBeAtLeast1(String field) {
+    return '$field must be at least 1.';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeLessThan(String startField, String endField) {
+    return '$endField cannot be less than $startField.';
+  }
+
+  @override
+  String serviceMsgSectionOutOfRange(int section, int maxSection) {
+    return 'Section $section is outside the time scheme range (1-$maxSection).';
+  }
+
+  @override
+  String serviceMsgFieldMustBeInteger(String field) {
+    return '$field must be an integer.';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeEmpty(String field) {
+    return '$field cannot be empty.';
+  }
+
+  @override
+  String serviceMsgSpreadsheetEndWeekClamped(
+    int rowNumber,
+    int endWeek,
+    int semesterWeekCount,
+  ) {
+    return 'Row $rowNumber: end week $endWeek exceeds semester week count $semesterWeekCount; adjusted to $semesterWeekCount.';
+  }
+
+  @override
+  String serviceMsgSpreadsheetOddEvenBoth(int rowNumber) {
+    return 'Row $rowNumber: odd and even weeks cannot both be selected; treated as odd weeks.';
+  }
+
+  @override
+  String get serviceMsgFieldCourseName => 'Course name';
+
+  @override
+  String get serviceMsgFieldWeekday => 'Weekday';
+
+  @override
+  String get serviceMsgFieldStartSection => 'Start section';
+
+  @override
+  String get serviceMsgFieldEndSection => 'End section';
+
+  @override
+  String get serviceMsgFieldCustomWeeks => 'Weeks';
+
+  @override
+  String get serviceMsgFieldClassWeeks => 'Class weeks';
+
+  @override
+  String get serviceMsgFieldStartWeek => 'Start week';
+
+  @override
+  String get serviceMsgFieldEndWeek => 'End week';
+
+  @override
+  String serviceMsgWeekStartInvalid(String itemName) {
+    return '$itemName: week range start is invalid.';
+  }
+
+  @override
+  String serviceMsgWeekRangeInvalid(String itemName) {
+    return '$itemName: week range is invalid.';
+  }
+
+  @override
+  String serviceMsgWeekRangeTooLarge(String itemName) {
+    return '$itemName: week range is too large. Please check.';
+  }
+
+  @override
+  String serviceMsgWeekTokenUnrecognized(String itemName, String token) {
+    return '$itemName: unrecognized week token: $token';
+  }
+
+  @override
+  String serviceMsgWeeksExceedSemesterClamped(
+    String itemName,
+    int semesterWeekCount,
+    String weeks,
+  ) {
+    return '$itemName contains weeks beyond semester week count $semesterWeekCount ($weeks); excess weeks were ignored.';
+  }
+
+  @override
+  String get serviceMsgAiResultNotObject =>
+      'AI result is not a valid JSON object. Copy the full JSON again.';
+
+  @override
+  String serviceMsgAiSchemaMustBe(String schema) {
+    return 'schema must be $schema';
+  }
+
+  @override
+  String get serviceMsgAiCoursesMustBeArray => 'courses must be an array.';
+
+  @override
+  String get serviceMsgAiWarningsMustBeArray =>
+      'warnings must be a string array.';
+
+  @override
+  String get serviceMsgAiWarningItemMustBeString =>
+      'Each warnings item must be a string.';
+
+  @override
+  String serviceMsgAiCourseNotObject(int index) {
+    return 'courses[$index] is not a valid object.';
+  }
+
+  @override
+  String serviceMsgAiCourseNameEmpty(int index) {
+    return 'courses[$index].name cannot be empty.';
+  }
+
+  @override
+  String serviceMsgAiCourseDayOfWeekInvalid(int index) {
+    return 'courses[$index].dayOfWeek must be between 1 and 7.';
+  }
+
+  @override
+  String serviceMsgAiCourseStartSectionInvalid(int index) {
+    return 'courses[$index].startSection must be at least 1.';
+  }
+
+  @override
+  String serviceMsgAiCourseEndSectionInvalid(int index) {
+    return 'courses[$index].endSection cannot be less than startSection.';
+  }
+
+  @override
+  String serviceMsgAiCourseCustomWeeksEmpty(int index) {
+    return 'courses[$index].customWeeks cannot be empty.';
+  }
+
+  @override
+  String serviceMsgAiCourseNatureInvalid(int index) {
+    return 'courses[$index].courseNature must be required or elective.';
+  }
+
+  @override
+  String serviceMsgAiUnknownFields(String targetName, String fields) {
+    return '$targetName contains unsupported fields: $fields';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeString(String field) {
+    return '$field must be a string.';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeInteger(String field) {
+    return '$field must be an integer.';
+  }
+
+  @override
+  String serviceMsgAiWeekListInvalid(String itemName) {
+    return '$itemName can only contain integers greater than or equal to 1.';
+  }
+
+  @override
+  String serviceMsgAiWeekListTypeInvalid(String field) {
+    return '$field must be an integer array or week string.';
+  }
+
+  @override
+  String get serviceMsgNoReleaseAvailable =>
+      'No release has been published yet.';
+
+  @override
+  String get serviceMsgNoReleaseWithPrerelease =>
+      'No stable or prerelease version is available yet.';
+
+  @override
+  String serviceMsgUpdateCheckHttpFailed(int statusCode) {
+    return 'Update check failed (HTTP $statusCode).';
+  }
+
+  @override
+  String get serviceMsgUpdateCheckNetworkFailed =>
+      'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadUrlUntrusted =>
+      'Update download URL failed security validation.';
+
+  @override
+  String serviceMsgUpdateDownloadHttpFailed(int statusCode) {
+    return 'Download failed (HTTP $statusCode).';
+  }
+
+  @override
+  String serviceMsgUpdateOpenInstallerFailed(String detail) {
+    return 'Failed to open installer: $detail';
+  }
+
+  @override
+  String serviceMsgUpdateDownloadInstallError(String detail) {
+    return 'Download or installation error: $detail';
+  }
+
+  @override
+  String get serviceMsgInvalidUrl => 'Invalid URL.';
+
+  @override
+  String get serviceMsgUpdateAvailablePrerelease =>
+      'A new prerelease version is available.';
+
+  @override
+  String get serviceMsgUpdateAvailable => 'A new version is available.';
+
+  @override
+  String get serviceMsgAlreadyLatest =>
+      'You are already on the latest version.';
+
+  @override
+  String get serviceMsgShareBackupText =>
+      'This is a full backup of the current timetable. Import it to restore courses and settings.';
+
+  @override
+  String get serviceMsgShareBackupSubject => 'Qingyu Timetable backup';
+
+  @override
+  String serviceMsgShareBackupSubjectNamed(String profileName) {
+    return '$profileName - Qingyu Timetable backup';
+  }
+
+  @override
+  String get serviceMsgShareFullBackupText =>
+      'This is a full data backup containing all timetables, the active timetable, and time schemes.';
+
+  @override
+  String get serviceMsgShareFullBackupSubject =>
+      'Qingyu Timetable - full data backup';
+
+  @override
+  String get serviceMsgInvalidRepositoryUrl =>
+      'Repository URL format is invalid.';
+
+  @override
+  String get serviceMsgIncompleteGithubRepoUrl =>
+      'GitHub repository URL is incomplete.';
+
+  @override
+  String get serviceMsgIncompleteRawGithubUrl =>
+      'raw.githubusercontent.com URL is incomplete.';
+
+  @override
+  String get serviceMsgGithubOnlySupported =>
+      'Only GitHub repository URLs are supported.';
+
+  @override
+  String get serviceMsgWarehouseNoSchoolsIndex =>
+      'No school or tool index was found.';
+
+  @override
+  String serviceMsgWarehouseNoAdapters(String schoolName) {
+    return 'No adapter information was found for $schoolName.';
+  }
+
+  @override
+  String serviceMsgWarehouseFetchFailedMirror(int candidatesCount) {
+    return 'Unable to read the adapter repository. Tried $candidatesCount mirror endpoints. Check your network or switch mirror in Version Update.';
+  }
+
+  @override
+  String get serviceMsgWarehouseFetchFailedGithub =>
+      'Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.';
+
+  @override
+  String get serviceMsgManualInputCaptcha =>
+      'Enter the captcha manually, then tap Continue.';
+
+  @override
+  String get serviceMsgManualInputPassword =>
+      'Enter the password manually. If it was auto-filled, tap Continue.';
+
+  @override
+  String get serviceMsgMacroNoSteps => 'No recorded steps.';
+
+  @override
+  String get serviceMsgMacroUserCancelled => 'Cancelled by user.';
+
+  @override
+  String serviceMsgMacroStepFailed(
+    int stepIndex,
+    int totalSteps,
+    String detail,
+  ) {
+    return 'Step $stepIndex/$totalSteps failed: $detail';
+  }
+
+  @override
+  String get serviceMsgMacroNavigateUrlEmpty => 'Navigation URL is empty.';
+
+  @override
+  String serviceMsgMacroNavigateUrlInvalid(String url) {
+    return 'Invalid URL: $url';
+  }
+
+  @override
+  String get serviceMsgMacroFillSelectorEmpty =>
+      'Fill-field selector is empty.';
+
+  @override
+  String serviceMsgMacroElementNotFound(String selector) {
+    return 'Element not found: $selector';
+  }
+
+  @override
+  String get serviceMsgMacroClickSelectorEmpty => 'Click selector is empty.';
+
+  @override
+  String get serviceMsgMacroUrlPatternEmpty => 'URL pattern is empty.';
+
+  @override
+  String get serviceMsgMacroWaitSelectorEmpty => 'Wait selector is empty.';
+
+  @override
+  String get serviceMsgMacroManualInputDefault => 'Manual action required.';
+
+  @override
+  String serviceMsgMacroPollTimeout(
+    String stepLabel,
+    int timeoutSeconds,
+    String lastError,
+  ) {
+    return '$stepLabel timed out (${timeoutSeconds}s)$lastError';
+  }
+
+  @override
+  String get serviceMsgMacroReplayNavigate => 'Navigating…';
+
+  @override
+  String get serviceMsgMacroReplayFillField => 'Filling form…';
+
+  @override
+  String get serviceMsgMacroReplayClick => 'Clicking…';
+
+  @override
+  String get serviceMsgMacroReplayWaitUrl => 'Waiting for navigation…';
+
+  @override
+  String get serviceMsgMacroReplayWaitSelector => 'Waiting for page element…';
+
+  @override
+  String get serviceMsgMacroReplayWaitManual => 'Waiting for user action…';
+
+  @override
+  String get serviceMsgMacroReplayExecuteScript => 'Running import script…';
+
+  @override
+  String get serviceMsgMacroReplayDelay => 'Waiting…';
+
+  @override
+  String serviceMsgMacroReplayFailed(String detail) {
+    return 'Failed: $detail';
+  }
+
+  @override
+  String serviceMsgMacroReplayPaused(String reason) {
+    return 'Waiting for manual action: $reason';
+  }
+
+  @override
+  String serviceMsgSupportDonorsLoadFailed(String detail) {
+    return 'Failed to load supporters list: $detail';
+  }
+
+  @override
+  String serviceMsgStatisticsShareFailed(String detail) {
+    return 'Share failed: $detail';
+  }
+
+  @override
+  String get serviceMsgAuthFailed => 'Invalid username or password.';
+
+  @override
+  String get serviceMsgAccessDenied => 'Access denied.';
+
+  @override
+  String get serviceMsgCertificateError => 'Certificate validation failed.';
+
+  @override
+  String get serviceMsgConnectionTimeout => 'Connection timed out.';
+
+  @override
+  String get serviceMsgConnectionFailed => 'Could not connect to the server.';
+
+  @override
+  String get serviceMsgInvalidResponse => 'Invalid server response.';
+
+  @override
+  String get serviceMsgSyncFailed => 'Sync failed.';
+
+  @override
+  String get serviceMsgUsageTypeOverride => 'override time scheme';
+
+  @override
+  String get serviceMsgUsageTypeProfile => 'profile main time scheme';
+
+  @override
+  String get dataTransferProfileShareText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。';
+
+  @override
+  String get dataTransferProfileShareSubject => '轻屿课表备份';
+
+  @override
+  String dataTransferProfileShareSubjectNamed(String profileName) {
+    return '$profileName - 轻屿课表备份';
+  }
+
+  @override
+  String get dataTransferFullBackupShareText =>
+      '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。';
+
+  @override
+  String get dataTransferFullBackupShareSubject => '轻屿课表 - 全部数据备份';
+
+  @override
+  String courseWeekCustomDescription(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String get courseWeekOddModeSuffix => ' 单周';
+
+  @override
+  String get courseWeekEvenModeSuffix => ' 双周';
+
+  @override
+  String courseWeekSuspensionDescription(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get courseWeekListSeparator => '、';
+
+  @override
+  String holidayLogMemoryCacheHit(int year, int count) {
+    return '$year年：命中内存缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogLocalCacheHit(int year, int count) {
+    return '$year年：命中本地缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogNoCacheFetching(int year) {
+    return '$year年：无缓存，正在拉取远程数据…';
+  }
+
+  @override
+  String holidayLogRemoteSuccess(int year, int count) {
+    return '$year年：远程拉取成功（$count 条），已缓存';
+  }
+
+  @override
+  String holidayLogRemoteFailedBuiltin(int year) {
+    return '$year年：远程拉取失败，使用内置资产兜底';
+  }
+
+  @override
+  String holidayLogBuiltinLoaded(int year, int count) {
+    return '$year年：加载内置资产（$count 条）';
+  }
+
+  @override
+  String holidayLogBackgroundSuccess(int year, int count) {
+    return '$year年：后台更新成功（$count 条），已覆盖缓存';
+  }
+
+  @override
+  String holidayLogBackgroundNoData(int year) {
+    return '$year年：后台更新未获取到新数据';
+  }
+
+  @override
+  String get holidayLogPrimaryApiFailed => '主 API 失败，尝试备用 API…';
+
+  @override
+  String holidayLogRequesting(String uri) {
+    return '正在请求 $uri …';
+  }
+
+  @override
+  String holidayLogPrimaryApiStatus(int statusCode) {
+    return '主 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String holidayLogPrimaryApiError(String message) {
+    return '主 API 返回错误：$message';
+  }
+
+  @override
+  String holidayLogPrimaryApiException(String error) {
+    return '主 API 异常：$error';
+  }
+
+  @override
+  String holidayLogPrimaryApiParsing(int count) {
+    return '主 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String get holidayLogNoValidEntries => '解析后无有效条目，跳过';
+
+  @override
+  String holidayLogFallbackApiStatus(int statusCode) {
+    return '备用 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String get holidayLogFallbackApiError => '备用 API 返回错误';
+
+  @override
+  String holidayLogFallbackApiParsing(int count) {
+    return '备用 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String holidayLogFallbackApiException(String error) {
+    return '备用 API 异常：$error';
+  }
+
+  @override
+  String get holidayNameNewYear => '元旦';
+
+  @override
+  String get holidayNameLaborDay => '劳动节';
+
+  @override
+  String get holidayNameNationalDay => '国庆节';
+
+  @override
+  String get holidayNameSpringFestival => '春节';
+
+  @override
+  String get holidayNameQingming => '清明节';
+
+  @override
+  String get holidayNameDragonBoat => '端午节';
+
+  @override
+  String get holidayNameMidAutumn => '中秋节';
+
+  @override
+  String macroReplayStatusFailed(String error) {
+    return '失败: $error';
+  }
+
+  @override
+  String macroReplayStatusPaused(String reason) {
+    return '等待手动操作: $reason';
+  }
+
+  @override
+  String get macroReplayStepNavigating => '正在导航...';
+
+  @override
+  String get macroReplayStepFilling => '正在填充表单...';
+
+  @override
+  String get macroReplayStepClicking => '正在点击...';
+
+  @override
+  String get macroReplayStepWaitUrl => '等待页面跳转...';
+
+  @override
+  String get macroReplayStepWaitSelector => '等待页面元素...';
+
+  @override
+  String get macroReplayStepWaitManual => '等待用户操作';
+
+  @override
+  String get macroReplayStepExecuteScript => '正在执行导入脚本...';
+
+  @override
+  String get macroReplayStepDelay => '等待中...';
+
+  @override
+  String get macroReplayNoSteps => '没有录制的步骤';
+
+  @override
+  String get macroReplayUserCancelled => '用户取消';
+
+  @override
+  String macroReplayStepFailed(int current, int total, String error) {
+    return '第 $current/$total 步失败: $error';
+  }
+
+  @override
+  String get macroReplayEmptyNavigateUrl => '导航 URL 为空';
+
+  @override
+  String macroReplayInvalidUrl(String url) {
+    return '无效的 URL: $url';
+  }
+
+  @override
+  String get macroReplayEmptyFillSelector => '填充字段的选择器为空';
+
+  @override
+  String macroReplayFieldNotFound(String selector) {
+    return '未找到表单字段: $selector';
+  }
+
+  @override
+  String get macroReplayEmptyClickSelector => '点击元素的选择器为空';
+
+  @override
+  String macroReplayClickNotFound(String selector) {
+    return '未找到点击元素: $selector';
+  }
+
+  @override
+  String macroReplayWaitUrlPattern(String pattern) {
+    return '等待 URL 匹配: $pattern';
+  }
+
+  @override
+  String get macroReplayEmptyWaitSelector => '等待元素的选择器为空';
+
+  @override
+  String macroReplayWaitSelector(String selector) {
+    return '等待元素: $selector';
+  }
+
+  @override
+  String get macroReplayManualActionRequired => '需要手动操作';
+
+  @override
+  String macroReplayNavigateTo(String url) {
+    return '导航到 $url';
+  }
+
+  @override
+  String get macroReplayWaitPageLoad => '等待页面加载';
+
+  @override
+  String get macroReplayWaitDomReady => '等待 DOM 就绪';
+
+  @override
+  String get hyperosShowcaseTitle => '澎湃 UI 组件库';
+
+  @override
+  String get hyperosShowcaseSectionSummary => '概要卡片';
+
+  @override
+  String get hyperosShowcaseKitSubtitle => 'mikcb 澎湃风格组件一览';
+
+  @override
+  String get hyperosShowcaseSectionTags => '标签 / 手风琴 / 提示';
+
+  @override
+  String get hyperosShowcaseAccordionSection1 => '第一节';
+
+  @override
+  String get hyperosShowcaseAccordionSection1Body => '展开后显示的内容区域。';
+
+  @override
+  String get hyperosShowcaseAccordionSection2 => '第二节';
+
+  @override
+  String get hyperosShowcaseAccordionSection2Body => '可折叠分组，替代 FAccordion。';
+
+  @override
+  String get hyperosShowcaseSectionNavRows => '列表行 · 导航';
+
+  @override
+  String get hyperosShowcaseNavRowWithIcon => '带图标';
+
+  @override
+  String get hyperosShowcaseNavRowNoIconSubtitle => '无左侧彩图标';
+
+  @override
+  String get hyperosShowcaseNavRowDetails => '详情';
+
+  @override
+  String get hyperosShowcaseSectionSwitchRows => '列表行 · 开关 / 危险';
+
+  @override
+  String get hyperosShowcaseSwitchRowSubtitle => '带图标开关行';
+
+  @override
+  String get hyperosShowcaseSwitchRowPlain => '纯文字开关行';
+
+  @override
+  String get hyperosShowcaseSectionChoiceRows => '列表行 · 单选 / 选择 / 日期';
+
+  @override
+  String get hyperosShowcaseOptionA => '选项 A';
+
+  @override
+  String get hyperosShowcaseOptionB => '选项 B';
+
+  @override
+  String get hyperosShowcaseOptionC => '选项 C';
+
+  @override
+  String get hyperosShowcaseSelectSizeTitle => '选择尺寸';
+
+  @override
+  String get hyperosShowcaseSizeSmall => '小';
+
+  @override
+  String get hyperosShowcaseSizeMedium => '中';
+
+  @override
+  String get hyperosShowcaseSizeLarge => '大';
+
+  @override
+  String get hyperosShowcaseSectionControls => '控件卡片';
+
+  @override
+  String get hyperosShowcaseControlsSubtitle => '滑条、分段、按钮';
+
+  @override
+  String get hyperosShowcaseSegmentLeft => '左';
+
+  @override
+  String get hyperosShowcaseSegmentRight => '右';
+
+  @override
+  String get hyperosShowcaseSectionInput => '输入';
+
+  @override
+  String get hyperosShowcaseInputHint => '请输入内容';
+
+  @override
+  String get hyperosShowcaseInputCardLabel => '卡片内输入';
+
+  @override
+  String get hyperosShowcaseSectionPicker => '滚轮选择器';
+
+  @override
+  String hyperosShowcasePickerCurrentValue(int value) {
+    return '当前值：$value';
+  }
+
+  @override
+  String get hyperosShowcaseSectionInline => '基础控件 · 行内';
+
+  @override
+  String get hyperosShowcaseCheckboxSubtitle => '多选偏好行';
+
+  @override
+  String get hyperosShowcaseSectionNavActions => '导航与操作';
+
+  @override
+  String get hyperosShowcaseTooltipButton => '带 Tooltip 的按钮';
+
+  @override
+  String get hyperosShowcaseSectionProgress => '进度与刷新';
+
+  @override
+  String get hyperosShowcaseSectionColorChip => '颜色选择 · ColorChip';
+
+  @override
+  String get hyperosShowcaseSectionNavBar => '底部导航 · HyperosNavigationBar';
+
+  @override
+  String get hyperosShowcaseNavHome => '首页';
+
+  @override
+  String get hyperosShowcaseNavTimetable => '课表';
+
+  @override
+  String get hyperosShowcaseNavSettings => '设置';
+
+  @override
+  String get hyperosShowcaseSectionEmpty => '空态 / 分割线 / 装饰';
+
+  @override
+  String get hyperosShowcaseEmptySubtitle => '列表无数据时的占位';
+
+  @override
+  String get hyperosShowcaseActionButton => '操作按钮';
+
+  @override
+  String get hyperosShowcaseDividerRowTitle => '第二行（上方有缩进分割线）';
+
+  @override
+  String get hyperosShowcaseSectionPressable => '底层行 · HyperosPressableRow';
+
+  @override
+  String get hyperosShowcaseSectionShell => '页面壳层';
+
+  @override
+  String get hyperosShowcaseRootPageDetails => '无返回键根页';
+
+  @override
+  String get hyperosShowcaseSubpageSubtitle => '当前页即 Subpage + HyperosListView';
+
+  @override
+  String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
+
+  @override
+  String get hyperosShowcaseSectionFrosted => '模糊顶栏 · 滚动物理';
+
+  @override
+  String get hyperosShowcaseSectionFeedback => '反馈 · 弹层';
+
+  @override
+  String get hyperosShowcaseSectionIconColors => '主题色 · HyperosIconColors';
+
+  @override
+  String get hyperosShowcaseFooterNote => '此页仅在非 Release 构建设置首页可见，用于组件视觉验收。';
+
+  @override
+  String get hyperosShowcaseUndoAction => '撤销';
+
+  @override
+  String get hyperosShowcaseDialogMessage => '系统风格对话框示例。';
+
+  @override
+  String get hyperosShowcaseConfirmTitle => '确认操作';
+
+  @override
+  String get hyperosShowcaseConfirmed => '已确认';
+
+  @override
+  String get hyperosShowcaseToastDescription => '带图标与副标题，App Toast 同款';
+
+  @override
+  String get hyperosShowcaseMenuCopy => '复制';
+
+  @override
+  String get hyperosShowcaseMenuShare => '分享';
+
+  @override
+  String get hyperosShowcaseMenuDelete => '删除';
+
+  @override
+  String get hyperosShowcaseRefreshDone => '刷新完成';
+
+  @override
+  String get hyperosShowcaseSearchTooltip => '搜索';
+
+  @override
+  String get hyperosShowcaseRootShellLabel => '根页壳层';
+
+  @override
+  String get hyperosShowcasePushSubtitle => '通过 HyperosNavigation.push 进入';
+
+  @override
+  String get hyperosShowcaseSampleText => '示例文本';
+
+  @override
+  String courseImportQuickImportDescription(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '快捷导入 $schoolName $adapterName';
+  }
+
+  @override
+  String get courseImportScriptNoCourses => '导入脚本未返回课程数据';
+
+  @override
+  String get courseImportScriptFailed => '脚本执行失败';
+
+  @override
+  String get courseImportRecordingStatus => '录制中…点击停止完成录制';
+
+  @override
+  String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
+
+  @override
+  String get courseImportRecordingEmptyStatus => '未录制到任何操作';
+
+  @override
+  String get courseImportRecordingEmptyTip => '未录制到任何操作';
+
+  @override
+  String get courseImportSaveRecordingTitle => '保存录制';
+
+  @override
+  String courseImportSaveRecordingMessage(int count) {
+    return '录制了 $count 个操作步骤。是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportRecordingSavedStatus(int count) {
+    return '录制已保存（$count 步）';
+  }
+
+  @override
+  String get courseImportWeekNotProvided => '未提供周次';
+
+  @override
+  String get courseImportLocationNotFilled => '未填写地点';
+
+  @override
+  String courseImportPreviewLine(
+    String weekday,
+    int startSection,
+    int endSection,
+    String name,
+    String location,
+    String weekText,
+  ) {
+    return '周$weekday 第$startSection-$endSection节  $name  $location  周次：$weekText';
+  }
+
+  @override
+  String courseImportCalendarWeekLabel(int week) {
+    return '校历第 $week 周';
+  }
+
+  @override
+  String get courseImportTermStartDateTitle => '开学日期';
+
+  @override
+  String get courseImportFirstWeekMappingLabel => '课表第 1 周对应校历第几周';
+
+  @override
+  String get courseImportFirstWeekMappingSubtitle =>
+      '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。';
+
+  @override
+  String get courseImportFirstWeekNoShift => '导入后会直接把课表第 1 周当作校历第 1 周。';
+
+  @override
+  String courseImportFirstWeekShifted(int weeks, int targetWeek) {
+    return '导入后会把所有课程周次整体顺延 $weeks 周，让课表第 1 周落在校历第 $targetWeek 周。';
+  }
+
+  @override
+  String get courseImportContinueAction => '继续导入';
+
+  @override
+  String get courseImportUpdateRecommendedAction => '更新课表（推荐）';
+
+  @override
+  String get courseImportOverwriteAction => '覆盖导入';
+
+  @override
+  String get courseImportSectionCountInsufficientTitle => '时间模板节次不足';
+
+  @override
+  String courseImportSectionCountInsufficientMessage(
+    int current,
+    int required,
+  ) {
+    return '当前课表时间模板只有 $current 节，但导入数据需要到第 $required 节。是否自动补齐后继续导入？';
+  }
+
+  @override
+  String get courseImportAutoFillAndImportAction => '自动补齐并导入';
+
+  @override
+  String get courseImportPortalUrlTitle => '输入教务网址';
+
+  @override
+  String get courseImportPortalUrlSaveContinue => '保存并继续';
+
+  @override
+  String get courseImportPortalUrlLabel => '教务网址';
+
+  @override
+  String get courseImportPortalUrlHint => '保存后下次会直接使用，也可以在适配器信息页里修改。';
+
+  @override
+  String get courseImportPortalUrlInvalid => '登录地址格式不正确';
+
+  @override
+  String get logAppLoggerInitialized => '应用日志服务已初始化';
+
+  @override
+  String get logPrivacyConsentUpdated => '隐私协议同意状态已更新';
+
+  @override
+  String get logAppLogRecordingEnabled => '应用日志记录已开启';
+
+  @override
+  String get logAppLogRecordingRemainsEnabled => '应用日志记录保持开启';
+
+  @override
+  String get logStartupFlowStarted => '启动流程处理已开始';
+
+  @override
+  String get logStartupFlowCompletedNoOnboarding => '启动流程已完成（无需引导页）';
+
+  @override
+  String get logStartupFlowCompletedAfterGuide => '启动流程已完成（经过引导页）';
+
+  @override
+  String get logStartupFlowFailed => '启动流程失败，进入降级模式';
+
+  @override
+  String get logAppLifecycleChanged => '应用生命周期已变更';
+
+  @override
+  String get logNavigatorRouteReplaced => '导航路由已替换';
+
+  @override
+  String get logNavigatorRouteChanged => '导航路由已变更';
+
+  @override
+  String get logAppLogsDefaultMigrated => '迁移时已默认开启应用日志记录';
+
+  @override
+  String get logTimetableLoadSettingsFailed => '加载课表设置失败';
+
+  @override
+  String get logTimetableLoadCoursesFailed => '加载课程数据失败';
+
+  @override
+  String get logTimetableLoadCurrentWeekFailed => '加载当前周次失败';
+
+  @override
+  String get logHomeWidgetPinSupportFailed => '检查桌面小组件固定支持失败';
+
+  @override
+  String get logHomeWidgetPinRequestFailed => '请求固定桌面小组件失败';
+
+  @override
+  String get logHomeWidgetSyncFailed => '同步桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetClearFailed => '清空桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+
+  @override
+  String get logMiuiLiveInitializeFailed => '初始化 MIUI 超级岛通道失败';
+
+  @override
+  String get logMiuiLiveOpenPromotedSettingsFailed => '打开超级岛权限设置失败';
+
+  @override
+  String get logMiuiLiveOpenNotificationSettingsFailed => '打开通知设置失败';
+
+  @override
+  String get logMiuiLiveOpenAutostartSettingsFailed => '打开自启动设置失败';
+
+  @override
+  String get logMiuiLiveOpenBatterySettingsFailed => '打开电池优化设置失败';
+
+  @override
+  String get logMiuiLiveOpenAccessibilitySettingsFailed => '打开无障碍设置失败';
+
+  @override
+  String get logMiuiLiveHideFromRecentsFailed => '更新「从最近任务隐藏」失败';
+
+  @override
+  String get logLiveUpdateStartFailed => '从 Flutter 启动超级岛失败';
+
+  @override
+  String get logLiveUpdateStopFailed => '从 Flutter 停止超级岛失败';
+
+  @override
+  String get logLiveUpdateDebugStatusFailed => '获取原生超级岛调试状态失败';
+
+  @override
+  String get logLiveUpdateSnapshotSyncFailed => '同步超级岛课表快照失败';
+
+  @override
+  String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
+
+  @override
+  String get logLanEditAuthFailed => '局域网编辑：认证失败';
+
+  @override
+  String get logLanEditCourseCreated => '局域网编辑：已创建课程';
+
+  @override
+  String get logLanEditCourseUpdated => '局域网编辑：已更新课程';
+
+  @override
+  String get logLanEditCourseDeleted => '局域网编辑：已删除课程';
+
+  @override
+  String get logLanEditCourseGroupSaved => '局域网编辑：已保存课程组';
+
+  @override
+  String get logLanEditMergeImported => '局域网编辑：已导入合并备份';
+
+  @override
+  String get logLanEditCoursesBatchDeleted => '局域网编辑：已批量删除课程';
+
+  @override
+  String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
+
+  @override
+  String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';
+
+  @override
+  String get logLanEditSessionStarted => '局域网编辑：会话已启动';
+
+  @override
+  String get logLanEditSessionStopped => '局域网编辑：会话已停止';
+
+  @override
+  String get logLiveUpdateTestRequested => '用户请求手动超级岛测试通知';
+
+  @override
+  String get logLiveUpdateTestNoSelection => '手动超级岛测试：未找到可用课程';
+
+  @override
+  String get logLiveUpdateTestSelectionReady => '手动超级岛测试：已解析目标课程';
+
+  @override
+  String get logLiveUpdateTestSuspendSync => '手动超级岛测试：已临时暂停定时同步';
+
+  @override
+  String get logLiveUpdateTestStarting => '手动超级岛测试：正在启动原生超级岛';
+
+  @override
+  String get logLiveUpdateTestStarted => '手动超级岛测试：已成功请求原生超级岛';
+
+  @override
+  String get logLiveUpdateTestFailed => '手动超级岛测试：原生超级岛出现前失败';
+
+  @override
+  String logLiveUpdateSettingsSynced(
+    String beforeClass,
+    String duringClass,
+    String beforeEnd,
+    String promote,
+    String notification,
+    String countdown,
+    String courseName,
+    String location,
+  ) {
+    return 'Flutter 超级岛设置已同步：课前=$beforeClass，课中=$duringClass，下课前=$beforeEnd，提升=$promote，通知=$notification，倒计时=$countdown，课程名=$courseName，地点=$location';
+  }
+
+  @override
+  String get logFieldSource => '来源';
+
+  @override
+  String get logFieldPlatform => '平台';
+
+  @override
+  String get logFieldVersion => '版本';
+
+  @override
+  String get logFieldBuildNumber => '构建号';
+
+  @override
+  String get logFieldLoggingEnabled => '日志记录';
+
+  @override
+  String get logFieldPrivacyAccepted => '隐私协议';
+
+  @override
+  String get logFieldAccepted => '已同意';
+
+  @override
+  String get logFieldPrevious => '先前状态';
+
+  @override
+  String get logFieldTruncated => '已截断';
+
+  @override
+  String get logFieldTruncatedHint => '截断提示';
+
+  @override
+  String get logFieldThrowable => '异常';
+
+  @override
+  String get logFieldExtras => '附加信息';
+
+  @override
+  String get logFieldContext => '设备上下文';
+
+  @override
+  String get logFieldError => '错误';
+
+  @override
+  String get logFieldBrand => '品牌';
+
+  @override
+  String get logFieldManufacturer => '制造商';
+
+  @override
+  String get logFieldModel => '型号';
+
+  @override
+  String get logFieldSdkInt => 'SDK 版本';
+
+  @override
+  String get logFieldVersionName => '版本名';
+
+  @override
+  String get logFieldChannel => '渠道';
+
+  @override
+  String get logFieldHasNotificationPermission => '通知权限';
+
+  @override
+  String get logFieldHasPromotedPermissionDeclared => '已声明提升通知权限';
+
+  @override
+  String get logFieldCanPostPromotedNotifications => '可发布提升通知';
+
+  @override
+  String get logFieldIgnoringBatteryOptimizations => '忽略电池优化';
+
+  @override
+  String get logFieldKeepAliveAccessibilityEnabled => '无障碍保活已启用';
+
+  @override
+  String get logFieldHideFromRecentsEnabled => '从最近任务隐藏';
+
+  @override
+  String get logFieldTaskRemovedRecently => '近期任务被移除';
+
+  @override
+  String get logFieldLastTaskRemovedAt => '上次任务移除时间';
+
+  @override
+  String get logFieldProcessImportance => '进程重要性';
+
+  @override
+  String get logFieldAutoStartStatus => '自启动状态';
+
+  @override
+  String get logFieldLiveEnableBeforeClass => '课前超级岛';
+
+  @override
+  String get logFieldLiveEnableDuringClass => '课中超级岛';
+
+  @override
+  String get logFieldLiveEnableBeforeEnd => '下课前超级岛';
+
+  @override
+  String get logFieldLivePromoteDuringClass => '课中提升通知';
+
+  @override
+  String get logFieldLiveShowDuringClassNotification => '课中状态栏通知';
+
+  @override
+  String get logFieldLiveShowCountdown => '显示倒计时';
+
+  @override
+  String get logFieldLiveShowStageText => '显示阶段文字';
+
+  @override
+  String get logFieldLiveShowCourseName => '显示课程名';
+
+  @override
+  String get logFieldLiveShowLocation => '显示地点';
+
+  @override
+  String get logFieldLiveUseShortName => '使用简称';
+
+  @override
+  String get logFieldLiveHidePrefixText => '隐藏前缀文字';
+
+  @override
+  String get logFieldLiveDuringClassTimeDisplayMode => '课中时间显示模式';
+
+  @override
+  String get logFieldLiveEnableMiuiIslandLabelImage => '岛标签图片';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelStyle => '岛标签样式';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelContent => '岛标签内容';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontColor => '岛标签字体颜色';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontWeight => '岛标签字重';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelRenderQuality => '岛标签渲染质量';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontSize => '岛标签字号';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetX => '岛标签 X 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetY => '岛标签 Y 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandExpandedIconMode => '展开图标模式';
+
+  @override
+  String get logFieldLiveShowBeforeClassMinutes => '课前显示分钟数';
+
+  @override
+  String get logFieldLiveClassReminderStartMinutes => '上课提醒开始分钟';
+
+  @override
+  String get logFieldLiveEndSecondsCountdownThreshold => '下课秒倒计时阈值';
+
+  @override
+  String get logFieldState => '状态';
+
+  @override
+  String get logFieldRoute => '路由';
+
+  @override
+  String get logFieldPreviousRoute => '先前路由';
+
+  @override
+  String get logFieldProfileId => '课表配置 ID';
+
+  @override
+  String get logFieldReason => '原因';
+
+  @override
+  String get logFieldClientIp => '客户端 IP';
+
+  @override
+  String get logFieldPort => '端口';
+
+  @override
+  String get logFieldCourseName => '课程名';
+
+  @override
+  String get logFieldStage => '阶段';
+
+  @override
+  String get logFieldFrom => '来源页面';
+
+  @override
+  String get logFieldCurrentWeek => '当前周次';
+
+  @override
+  String get logFieldWeekday => '星期';
+
+  @override
+  String get logFieldUntilMillis => '暂停截止时间';
+
+  @override
+  String get logFieldStartAtMillis => '开始时间';
+
+  @override
+  String get logFieldMergedCourseCount => '合并课程数';
+
+  @override
+  String get logFieldDeletedCount => '删除数量';
+
+  @override
+  String get logFieldRequested => '请求数量';
+
+  @override
+  String get logFieldTarget => '目标';
+
+  @override
+  String get logFieldCount => '数量';
+
+  @override
+  String get logFieldValue => '值';
+
+  @override
+  String get logFieldSnapshotLength => '快照长度';
+
+  @override
+  String get logFieldStoredSnapshotVersion => '存储快照版本';
+
+  @override
+  String get logFieldIntentIsNull => 'Intent 为空';
+
+  @override
+  String get logFieldAction => '操作';
+
+  @override
+  String get logFieldStep => '步骤';
+
+  @override
+  String get logCatAppLoggerInitialized => '应用日志：初始化';
+
+  @override
+  String get logCatPrivacyConsentUpdated => '应用日志：隐私协议';
+
+  @override
+  String get logCatAppLogRecordingEnabled => '应用日志：记录开关';
+
+  @override
+  String get logCatStartupFlowStarted => '启动流程：开始';
+
+  @override
+  String get logCatStartupFlowCompleted => '启动流程：完成';
+
+  @override
+  String get logCatStartupFlowFailed => '启动流程：失败';
+
+  @override
+  String get logCatAppLifecycleStateChanged => '应用生命周期';
+
+  @override
+  String get logCatRoutePushed => '路由：入栈';
+
+  @override
+  String get logCatRoutePopped => '路由：出栈';
+
+  @override
+  String get logCatRouteReplaced => '路由：替换';
+
+  @override
+  String get logCatFlutterFrameworkError => 'Flutter 框架错误';
+
+  @override
+  String get logCatFlutterPlatformError => 'Flutter 平台错误';
+
+  @override
+  String get logCatFlutterZoneError => 'Flutter Zone 错误';
+
+  @override
+  String get logCatAppLogsDefaultMigrated => '应用日志：迁移';
+
+  @override
+  String get logCatTimetableLoadSettingsFailed => '课表：加载设置失败';
+
+  @override
+  String get logCatTimetableLoadCoursesFailed => '课表：加载课程失败';
+
+  @override
+  String get logCatTimetableLoadCurrentWeekFailed => '课表：加载周次失败';
+
+  @override
+  String get logCatHomeWidgetPinSupportFailed => '桌面小组件：检查固定支持';
+
+  @override
+  String get logCatHomeWidgetPinRequestFailed => '桌面小组件：请求固定';
+
+  @override
+  String get logCatHomeWidgetSyncFailed => '桌面小组件：同步失败';
+
+  @override
+  String get logCatHomeWidgetClearFailed => '桌面小组件：清空失败';
+
+  @override
+  String get logCatHomeWidgetScheduleFailed => '桌面小组件：调度刷新';
+
+  @override
+  String get logCatMiuiLiveInitializeFailed => '超级岛：初始化失败';
+
+  @override
+  String get logCatMiuiLiveOpenPromotedSettingsFailed => '超级岛：打开权限设置';
+
+  @override
+  String get logCatMiuiLiveOpenNotificationSettingsFailed => '超级岛：打开通知设置';
+
+  @override
+  String get logCatMiuiLiveOpenAutostartSettingsFailed => '超级岛：打开自启动设置';
+
+  @override
+  String get logCatMiuiLiveOpenBatterySettingsFailed => '超级岛：打开电池优化';
+
+  @override
+  String get logCatMiuiLiveOpenAccessibilitySettingsFailed => '超级岛：打开无障碍设置';
+
+  @override
+  String get logCatMiuiLiveHideFromRecentsFailed => '超级岛：隐藏最近任务';
+
+  @override
+  String get logCatLiveUpdateFlutterInitializeFailed => '超级岛：Flutter 初始化失败';
+
+  @override
+  String get logCatLiveUpdateStartFailed => '超级岛：启动失败';
+
+  @override
+  String get logCatLiveUpdateStopFailed => '超级岛：停止失败';
+
+  @override
+  String get logCatLiveUpdateDebugStatusFailed => '超级岛：调试状态失败';
+
+  @override
+  String get logCatLiveUpdateSettingsSynced => '超级岛：设置已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotSyncFailed => '超级岛：快照同步失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotClearFailed => '超级岛：快照清空失败';
+
+  @override
+  String get logCatLanEditAuthFailed => '局域网编辑：认证';
+
+  @override
+  String get logCatLanEditCourseCreated => '局域网编辑：创建课程';
+
+  @override
+  String get logCatLanEditCourseUpdated => '局域网编辑：更新课程';
+
+  @override
+  String get logCatLanEditCourseDeleted => '局域网编辑：删除课程';
+
+  @override
+  String get logCatLanEditCourseGroupSaved => '局域网编辑：保存课程组';
+
+  @override
+  String get logCatLanEditMergeImported => '局域网编辑：合并导入';
+
+  @override
+  String get logCatLanEditCoursesBatchDeleted => '局域网编辑：批量删除';
+
+  @override
+  String get logCatLanEditCurrentWeekSet => '局域网编辑：设置周次';
+
+  @override
+  String get logCatLanEditSpreadsheetImported => '局域网编辑：表格导入';
+
+  @override
+  String get logCatLanEditSessionStarted => '局域网编辑：会话启动';
+
+  @override
+  String get logCatLanEditSessionStopped => '局域网编辑：会话停止';
+
+  @override
+  String get logCatLiveUpdateTestRequested => '超级岛测试：请求';
+
+  @override
+  String get logCatLiveUpdateTestNoSelection => '超级岛测试：无课程';
+
+  @override
+  String get logCatLiveUpdateTestSelectionReady => '超级岛测试：已选课程';
+
+  @override
+  String get logCatLiveUpdateTestSuspendSync => '超级岛测试：暂停同步';
+
+  @override
+  String get logCatLiveUpdateTestStarting => '超级岛测试：启动中';
+
+  @override
+  String get logCatLiveUpdateTestStarted => '超级岛测试：已启动';
+
+  @override
+  String get logCatLiveUpdateTestFailed => '超级岛测试：失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotSettings => '超级岛：快照设置';
+
+  @override
+  String get logCatLiveUpdateSnapshotSynced => '超级岛：快照已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotCleared => '超级岛：快照已清空';
+
+  @override
+  String get logCatLiveUpdateAlarmTriggered => '超级岛：闹钟触发';
+
+  @override
+  String get logCatLiveUpdateSchedulerResume => '超级岛：调度恢复';
+
+  @override
+  String get logCatLiveUpdateRescheduleHoliday => '超级岛：节假日跳过';
+
+  @override
+  String get logCatLiveUpdateRescheduleActive => '超级岛：立即启动';
+
+  @override
+  String get logCatLiveUpdateRescheduleScheduled => '超级岛：已调度';
+
+  @override
+  String get logCatLiveUpdateSnapshotParseFailed => '超级岛：快照解析失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超级岛：升级后快照失效';
+
+  @override
+  String get logCatLiveUpdatePayloadSelected => '超级岛：已选负载';
+
+  @override
+  String get logCatLiveUpdateSchedulerStartFailed => '超级岛：调度启动失败';
+
+  @override
+  String get logCatLiveUpdateStartRequested => '超级岛：请求启动';
+
+  @override
+  String get logCatLiveUpdateStopRequested => '超级岛：请求停止';
+
+  @override
+  String get logCatLiveUpdateServiceMissingPayload => '超级岛：服务缺少负载';
+
+  @override
+  String get logCatLiveUpdateServiceStarted => '超级岛：服务已启动';
+
+  @override
+  String get logCatLiveUpdateServiceStartFailed => '超级岛：服务启动失败';
+
+  @override
+  String get logCatLiveUpdateTaskRemoved => '超级岛：任务被移除';
+
+  @override
+  String get logCatLiveUpdateTaskRemovedResumed => '超级岛：任务移除后恢复';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickAction => '超级岛：课前快捷操作';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickActionRestored => '超级岛：课前快捷操作已恢复';
+
+  @override
+  String get logCatLiveUpdateStatusBarDismissed => '超级岛：状态栏通知已关闭';
+
+  @override
+  String get logCatLiveUpdateNotPromoted => '超级岛：未提升通知';
+
+  @override
+  String get logCatLiveUpdatePromotedNotShown => '超级岛：提升未显示';
+
+  @override
+  String get logCatLiveUpdateServiceStopped => '超级岛：服务已停止';
+
+  @override
+  String get logCatKeepAliveAccessibilityConnected => '保活：无障碍已连接';
+
+  @override
+  String get logCatDiagnosticsEnabled => '诊断：已开启';
+
+  @override
+  String get logCatDiagnosticsCleared => '诊断：已清空';
+
+  @override
+  String get logCatDiagnosticsBootstrap => '诊断：引导';
+
+  @override
+  String get logCatFlutterDiagnostic => 'Flutter 诊断';
+
+  @override
+  String get logCatFlutterDiagnosticEvent => 'Flutter 诊断事件';
+
+  @override
+  String get logCatRenderFailed => '渲染失败';
+
+  @override
+  String get logCatDebugSnapshot => '调试快照';
+
+  @override
+  String get logExportTitle => '轻屿课表 - 应用日志';
+
+  @override
+  String get appUpdateMirrorPresetGhfast => '默认镜像';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyCn => '备用镜像 1';
+
+  @override
+  String get appUpdateMirrorPresetGhLlkk => '备用镜像 2';
+
+  @override
+  String get appUpdateMirrorPresetGhProxyCom => '备用镜像 3';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyNet => '备用镜像 4';
+
+  @override
+  String get appUpdateMirrorPresetCustom => '自定义';
+
+  @override
+  String get appUpdateMirrorPresetCustomDescription => '填写自定义镜像地址前缀';
+
+  @override
+  String get cloudBackupRetentionTitle => '备份保留策略';
+
+  @override
+  String get cloudBackupMaxCountTitle => '最多保留份数';
+
+  @override
+  String get cloudBackupMaxCountSubtitle => '超过后自动删除最旧的备份';
+
+  @override
+  String cloudBackupMaxCountOption(int count) {
+    return '$count 份';
+  }
+
+  @override
+  String get cloudBackupMaxAgeTitle => '最长保留天数';
+
+  @override
+  String get cloudBackupMaxAgeSubtitle => '超过后自动删除过期备份';
+
+  @override
+  String cloudBackupMaxAgeOption(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String get statisticsShareText => '来自轻屿课表的学期统计';
+
+  @override
+  String get aboutUpdateAvailableHeadline => '有版本更新';
+
+  @override
+  String get aboutAlreadyLatestHeadline => '已是最新版本';
+
+  @override
+  String get aboutDownloadChannelSectionTitle => '下载渠道';
+
+  @override
+  String get aboutMirrorProbeFailedLabel => '失败';
+
+  @override
+  String timeSchemeImportSupplementName(String name) {
+    return '$name（导入补齐）';
+  }
+
+  @override
+  String profileTimeSchemeName(String profileName) {
+    return '$profileName 时间';
+  }
+
+  @override
+  String get currentProfileTimeSchemeName => '当前课表时间';
+
+  @override
+  String get unnamedTimetableProfile => '未命名课表';
+
+  @override
+  String get cloudBackupManualProtectedTitle => '手动备份永不过期';
+
+  @override
+  String get cloudBackupManualProtectedSubtitle => '开启后，手动创建的备份不会被自动清理';
+
+  @override
+  String courseImportPortalUrlMissingBody(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。';
+  }
+
+  @override
+  String guidePermissionsProgressLabel(int ready, int total) {
+    return '已就绪 $ready/$total';
   }
 }
 
@@ -14114,6 +18573,20 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get layoutEnableHapticsSubtitle => '關閉後，頁码切换等交互不再触發輕微震動。';
 
   @override
+  String pageTransitionSpeedLabel(String speed) {
+    return '頁面轉場速度 $speed×';
+  }
+
+  @override
+  String get pageTransitionSpeedSubtitle =>
+      '調節進入和返回子頁面時的滑動動畫快慢。數值越大越快，越小越慢；會疊加系統「過渡動畫縮放」設定。';
+
+  @override
+  String pageTransitionSpeedDurationHint(int milliseconds) {
+    return '約 $milliseconds 毫秒';
+  }
+
+  @override
   String get layoutTimeColumnDisplayLabel => '首頁時間列顯示';
 
   @override
@@ -16486,5 +20959,2238 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   @override
   String statisticsNatureLegendDetail(int count, int sections) {
     return '$count 門 · $sections 節';
+  }
+
+  @override
+  String get weekListSeparator => '、';
+
+  @override
+  String courseWeekListLabel(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeLabel(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String courseWeekSuspendedLabel(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get importSemesterStartDateTitle => '开学日期';
+
+  @override
+  String get importSemesterStartDateSubtitle => '按這一天所在週作為校曆第 1 週';
+
+  @override
+  String get importFirstCourseWeekMappingLabel => '課表第 1 週對應校曆第幾週';
+
+  @override
+  String get importFirstCourseWeekMappingSubtitle =>
+      '如果學校第一週沒課，就選第 2 週；前兩週都沒課就選第 3 週。';
+
+  @override
+  String get importSemesterMappingNoShiftHint => '匯入後會直接把課表第 1 週當作校曆第 1 週。';
+
+  @override
+  String importSemesterMappingShiftHint(int shiftedWeeks, int calendarWeek) {
+    return '匯入後會把所有課程週次整體順延 $shiftedWeeks 週，讓課表第 1 週落在校曆第 $calendarWeek 週。';
+  }
+
+  @override
+  String calendarWeekOption(int week) {
+    return '校曆第 $week 週';
+  }
+
+  @override
+  String get aboutDownloadPackageMethodTitle => '下载安装包方式';
+
+  @override
+  String get aboutInAppDownloadTitle => '应用内下载';
+
+  @override
+  String get aboutInAppDownloadSubtitle => '下載完成後直接在應用內安裝';
+
+  @override
+  String get aboutSystemDownloaderTitle => '系统管理器';
+
+  @override
+  String get aboutSystemDownloaderChoiceSubtitle => '交給系統下載管理器處理';
+
+  @override
+  String get syncErrorAuthFailed => '帳號或密碼錯誤';
+
+  @override
+  String get syncErrorAccessDenied => '沒有存取權限';
+
+  @override
+  String get syncErrorCertificateError => '憑證校驗失敗';
+
+  @override
+  String get syncErrorConnectionTimeout => '連線逾時';
+
+  @override
+  String get syncErrorConnectionFailed => '無法連線伺服器';
+
+  @override
+  String get syncErrorNetworkError => '網路異常';
+
+  @override
+  String get syncErrorInvalidResponse => '伺服器回應無效';
+
+  @override
+  String get syncErrorLocalChangesPendingSync => '本機有未同步修改，已跳過自動覆蓋';
+
+  @override
+  String get syncErrorMissingCredentials => '請先設定雲同步帳號';
+
+  @override
+  String get syncErrorBackupNotFound => '備份不存在';
+
+  @override
+  String get syncErrorMissingBackupSnapshot => '備份快照缺失';
+
+  @override
+  String get syncErrorCannotDeleteCurrentBackup => '不能刪除目前備份';
+
+  @override
+  String get syncErrorProviderNotReady => '課表尚未就緒';
+
+  @override
+  String get syncErrorSyncFailed => '同步失敗';
+
+  @override
+  String get sectionTimeDisplayHidden => '不显示';
+
+  @override
+  String get sectionTimeDisplayStartOnly => '仅显示上课时间';
+
+  @override
+  String get sectionTimeDisplayStartAndEnd => '显示上下课时间';
+
+  @override
+  String get examReminderNone => '不提醒';
+
+  @override
+  String get examReminderMin30 => '考前 30 分钟';
+
+  @override
+  String get examReminderHour1 => '考前 1 小时';
+
+  @override
+  String get examReminderHour1AndMin30 => '考前 1 小时 + 30 分钟';
+
+  @override
+  String get examReminderDay1 => '考前 1 天';
+
+  @override
+  String get examReminderDay1AndHour1 => '考前 1 天 + 1 小时';
+
+  @override
+  String get examReminderCustom => '自定义';
+
+  @override
+  String get debugCopiedJson => '已複製 JSON';
+
+  @override
+  String get liveDuringClassTimeNearest => '最近时间';
+
+  @override
+  String get liveDuringClassTimeTotal => '总时间';
+
+  @override
+  String get liveCountdownTextStyleSmart => '智能（中文）';
+
+  @override
+  String get liveCountdownTextStyleSmartMinS => '智能（英文）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondCn => '分秒（5分钟19秒）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondColon => 'mm:ss（05:19）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinS => 'min+s（5min19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteSecondMinSlashS => 'min/s（5min/19s）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyCn => '纯分钟（5分钟）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlyMin => 'min（5min）';
+
+  @override
+  String get liveCountdownTextStyleMinuteOnlySlash => '/min（5/min）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyCn => '纯秒（5秒）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlyShort => 's（5s）';
+
+  @override
+  String get liveCountdownTextStyleSecondOnlySlash => '/s（5/s）';
+
+  @override
+  String get miuiIslandLabelStyleTextOnly => '仅文字';
+
+  @override
+  String get miuiIslandLabelStyleIconAndText => '图标+文字';
+
+  @override
+  String get miuiIslandLabelContentCourseName => '课程名';
+
+  @override
+  String get miuiIslandLabelContentLocation => '教室';
+
+  @override
+  String get miuiIslandLabelContentCourseNameAndLocation => '课程名+教室';
+
+  @override
+  String get miuiIslandLabelFontWeightRegular => '常规';
+
+  @override
+  String get miuiIslandLabelFontWeightMedium => '中等';
+
+  @override
+  String get miuiIslandLabelFontWeightBold => '加粗';
+
+  @override
+  String get miuiIslandLabelRenderQualityStandard => '标准';
+
+  @override
+  String get miuiIslandLabelRenderQualityHigh => '高清';
+
+  @override
+  String get miuiIslandLabelRenderQualityUltra => '超高清';
+
+  @override
+  String get miuiIslandExpandedIconAppIcon => '应用图标';
+
+  @override
+  String get miuiIslandExpandedIconCustomImage => '自定义图片';
+
+  @override
+  String get miuiIslandExpandedIconHidden => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionNone => '不显示';
+
+  @override
+  String get liveBeforeClassQuickActionSilent => '打开静音';
+
+  @override
+  String get liveBeforeClassQuickActionDoNotDisturb => '打开免打扰';
+
+  @override
+  String get courseCardVerticalAlignTop => '顶部对齐';
+
+  @override
+  String get courseCardVerticalAlignCenter => '垂直居中';
+
+  @override
+  String get courseCardVerticalAlignBottom => '底部对齐';
+
+  @override
+  String get courseCardVerticalAlignSpaceEvenly => '上下均布';
+
+  @override
+  String get courseCardHorizontalAlignLeft => '居左';
+
+  @override
+  String get courseCardHorizontalAlignCenter => '居中';
+
+  @override
+  String get courseCardHorizontalAlignRight => '居右';
+
+  @override
+  String get timetableTimeColumnWidthNarrow => '窄';
+
+  @override
+  String get timetableTimeColumnWidthWide => '宽';
+
+  @override
+  String get timetableCourseSpacingNarrow => '窄';
+
+  @override
+  String get timetableCourseSpacingWide => '宽';
+
+  @override
+  String get appUpdateDownloadSourceOriginal => 'GitHub 原版';
+
+  @override
+  String get appUpdateDownloadSourceMirror => '国内镜像';
+
+  @override
+  String get appUpdateDownloadChannelPgyer => '蒲公英下载';
+
+  @override
+  String get appUpdateDownloadChannelGithub => 'GitHub 下载';
+
+  @override
+  String get appUpdateDownloadChannelPgyerDescription => '国内高速下载，推荐使用';
+
+  @override
+  String get appUpdateDownloadChannelGithubDescription => 'GitHub 原生 + 国内镜像';
+
+  @override
+  String get holidayStatutoryLabel => '法定假日';
+
+  @override
+  String get serviceMsgImportFileUnrecognized =>
+      'Import failed. The file content could not be recognized.';
+
+  @override
+  String get serviceMsgImportUseOverwriteForFullBackup =>
+      'This is a full data backup. Please import using overwrite current timetable.';
+
+  @override
+  String get serviceMsgImportNoProfilesInBackup =>
+      'No recoverable timetables were found in the backup file.';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbDataFile =>
+      'Not a recognizable mikcb data file.';
+
+  @override
+  String get serviceMsgMissingSettingsData => 'Settings data is missing.';
+
+  @override
+  String get serviceMsgUnrecognizedMikcbFullBackup =>
+      'Not a recognizable mikcb full backup file.';
+
+  @override
+  String get serviceMsgMissingFullBackupData =>
+      'Complete backup data is missing.';
+
+  @override
+  String get serviceMsgUseProfileBackupNotFull =>
+      'Use a timetable profile backup JSON, not a full data backup.';
+
+  @override
+  String get serviceMsgUnrecognizedSyncSnapshot =>
+      'Not a recognizable mikcb cloud sync snapshot.';
+
+  @override
+  String get serviceMsgMissingSyncTimetableData =>
+      'Cloud sync timetable data is missing.';
+
+  @override
+  String get serviceMsgSyncSnapshotChecksumFailed =>
+      'Cloud sync snapshot verification failed.';
+
+  @override
+  String get serviceMsgSyncSnapshotNoProfiles =>
+      'No recoverable timetables in the cloud sync snapshot.';
+
+  @override
+  String get serviceMsgSyncSnapshotUnrecognized =>
+      'Cloud sync snapshot could not be recognized.';
+
+  @override
+  String get serviceMsgTimeSchemeNotFound => 'Time scheme not found.';
+
+  @override
+  String get serviceMsgTimeSchemeConfigUnavailable =>
+      'Current timetable time configuration is unavailable.';
+
+  @override
+  String get serviceMsgTimeSchemeNotFoundSelected =>
+      'Selected time scheme was not found.';
+
+  @override
+  String serviceMsgTimeSchemeSectionsInsufficient(
+    int startSection,
+    int endSection,
+  ) {
+    return 'Selected time scheme does not have enough sections for sections $startSection-$endSection.';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsage(int requiredMaxSection) {
+    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection).';
+  }
+
+  @override
+  String serviceMsgSectionCountBelowUsageDetail(
+    int requiredMaxSection,
+    String profileName,
+    String courseName,
+    int dayOfWeek,
+    int startSection,
+    int endSection,
+    String usageType,
+  ) {
+    return 'Section count cannot be less than the maximum section in use (section $requiredMaxSection). In use: $profileName · $courseName (weekday $dayOfWeek sections $startSection-$endSection, $usageType)';
+  }
+
+  @override
+  String get serviceMsgAtLeastOneSectionRequired =>
+      'At least one section time must be kept.';
+
+  @override
+  String serviceMsgSectionEndMustAfterStart(int sectionNumber) {
+    return 'Section $sectionNumber end time must be later than start time. Overnight classes are not supported.';
+  }
+
+  @override
+  String serviceMsgSectionStartBeforePreviousEnd(int sectionNumber) {
+    return 'Section $sectionNumber start time cannot be earlier than the previous section end time.';
+  }
+
+  @override
+  String get serviceMsgPeriodStartTimeRequired =>
+      'Set the first section start time for periods that have sections.';
+
+  @override
+  String serviceMsgSectionCrossesMidnight(int sectionNumber) {
+    return 'Section $sectionNumber would cross midnight. Overnight classes are not supported.';
+  }
+
+  @override
+  String get serviceMsgClassDurationMustPositive =>
+      'Class duration must be greater than 0.';
+
+  @override
+  String get serviceMsgBreakDurationMustNonNegative =>
+      'Break duration cannot be less than 0.';
+
+  @override
+  String get serviceMsgAtLeastOnePeriodSection =>
+      'At least one period must have sections.';
+
+  @override
+  String get serviceMsgInvalidTimeFormat => 'Time format is invalid.';
+
+  @override
+  String get serviceMsgLinkedCourseNotFound => 'Linked course was not found.';
+
+  @override
+  String get serviceMsgCourseNotFoundForDelete =>
+      'Course to delete was not found.';
+
+  @override
+  String serviceMsgCourseNotScheduledWeek(int sourceWeek) {
+    return 'This course is not scheduled in week $sourceWeek.';
+  }
+
+  @override
+  String get serviceMsgCourseNotFoundForReschedule =>
+      'Course to reschedule was not found.';
+
+  @override
+  String get serviceMsgTargetWeekOutOfRange =>
+      'Target week is outside the current semester range.';
+
+  @override
+  String get serviceMsgAtLeastOneScheduleSlot =>
+      'At least one class time slot must be kept.';
+
+  @override
+  String get serviceMsgCourseNameRequired => 'Course name cannot be empty.';
+
+  @override
+  String get serviceMsgBackupContentRequired =>
+      'Backup content cannot be empty.';
+
+  @override
+  String get serviceMsgSpreadsheetFormatOrEncodingUnrecognized =>
+      'Could not recognize spreadsheet format or encoding. Save CSV as UTF-8 and try again.';
+
+  @override
+  String serviceMsgSpreadsheetXlsxParseFailed(String error) {
+    return 'Failed to parse XLSX file: $error';
+  }
+
+  @override
+  String serviceMsgSpreadsheetRowWarning(int rowNumber, String message) {
+    return 'Row $rowNumber: $message';
+  }
+
+  @override
+  String serviceMsgSpreadsheetWakeupInsufficientColumns(
+    int rowNumber,
+    int columnCount,
+  ) {
+    return 'WakeUp format needs at least 7 columns, but row $rowNumber has only $columnCount.';
+  }
+
+  @override
+  String get serviceMsgWeekdayMustBe1To7 => 'Weekday must be between 1 and 7.';
+
+  @override
+  String get serviceMsgCustomWeeksRequired => 'Weeks cannot be empty.';
+
+  @override
+  String get serviceMsgClassWeeksRequired => 'Class weeks cannot be empty.';
+
+  @override
+  String get serviceMsgStartWeekMustBeAtLeast1 =>
+      'Start week must be at least 1.';
+
+  @override
+  String serviceMsgStartWeekExceedsSemester(
+    int startWeek,
+    int semesterWeekCount,
+  ) {
+    return 'Start week $startWeek exceeds semester week count $semesterWeekCount.';
+  }
+
+  @override
+  String get serviceMsgEndWeekBeforeStartWeek =>
+      'End week cannot be earlier than start week.';
+
+  @override
+  String get serviceMsgWeeksRangeRequired =>
+      'Class weeks or start week + end week must be provided.';
+
+  @override
+  String serviceMsgFieldMustBeAtLeast1(String field) {
+    return '$field must be at least 1.';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeLessThan(String startField, String endField) {
+    return '$endField cannot be less than $startField.';
+  }
+
+  @override
+  String serviceMsgSectionOutOfRange(int section, int maxSection) {
+    return 'Section $section is outside the time scheme range (1-$maxSection).';
+  }
+
+  @override
+  String serviceMsgFieldMustBeInteger(String field) {
+    return '$field must be an integer.';
+  }
+
+  @override
+  String serviceMsgFieldCannotBeEmpty(String field) {
+    return '$field cannot be empty.';
+  }
+
+  @override
+  String serviceMsgSpreadsheetEndWeekClamped(
+    int rowNumber,
+    int endWeek,
+    int semesterWeekCount,
+  ) {
+    return 'Row $rowNumber: end week $endWeek exceeds semester week count $semesterWeekCount; adjusted to $semesterWeekCount.';
+  }
+
+  @override
+  String serviceMsgSpreadsheetOddEvenBoth(int rowNumber) {
+    return 'Row $rowNumber: odd and even weeks cannot both be selected; treated as odd weeks.';
+  }
+
+  @override
+  String get serviceMsgFieldCourseName => 'Course name';
+
+  @override
+  String get serviceMsgFieldWeekday => 'Weekday';
+
+  @override
+  String get serviceMsgFieldStartSection => 'Start section';
+
+  @override
+  String get serviceMsgFieldEndSection => 'End section';
+
+  @override
+  String get serviceMsgFieldCustomWeeks => 'Weeks';
+
+  @override
+  String get serviceMsgFieldClassWeeks => 'Class weeks';
+
+  @override
+  String get serviceMsgFieldStartWeek => 'Start week';
+
+  @override
+  String get serviceMsgFieldEndWeek => 'End week';
+
+  @override
+  String serviceMsgWeekStartInvalid(String itemName) {
+    return '$itemName: week range start is invalid.';
+  }
+
+  @override
+  String serviceMsgWeekRangeInvalid(String itemName) {
+    return '$itemName: week range is invalid.';
+  }
+
+  @override
+  String serviceMsgWeekRangeTooLarge(String itemName) {
+    return '$itemName: week range is too large. Please check.';
+  }
+
+  @override
+  String serviceMsgWeekTokenUnrecognized(String itemName, String token) {
+    return '$itemName: unrecognized week token: $token';
+  }
+
+  @override
+  String serviceMsgWeeksExceedSemesterClamped(
+    String itemName,
+    int semesterWeekCount,
+    String weeks,
+  ) {
+    return '$itemName contains weeks beyond semester week count $semesterWeekCount ($weeks); excess weeks were ignored.';
+  }
+
+  @override
+  String get serviceMsgAiResultNotObject =>
+      'AI result is not a valid JSON object. Copy the full JSON again.';
+
+  @override
+  String serviceMsgAiSchemaMustBe(String schema) {
+    return 'schema must be $schema';
+  }
+
+  @override
+  String get serviceMsgAiCoursesMustBeArray => 'courses must be an array.';
+
+  @override
+  String get serviceMsgAiWarningsMustBeArray =>
+      'warnings must be a string array.';
+
+  @override
+  String get serviceMsgAiWarningItemMustBeString =>
+      'Each warnings item must be a string.';
+
+  @override
+  String serviceMsgAiCourseNotObject(int index) {
+    return 'courses[$index] is not a valid object.';
+  }
+
+  @override
+  String serviceMsgAiCourseNameEmpty(int index) {
+    return 'courses[$index].name cannot be empty.';
+  }
+
+  @override
+  String serviceMsgAiCourseDayOfWeekInvalid(int index) {
+    return 'courses[$index].dayOfWeek must be between 1 and 7.';
+  }
+
+  @override
+  String serviceMsgAiCourseStartSectionInvalid(int index) {
+    return 'courses[$index].startSection must be at least 1.';
+  }
+
+  @override
+  String serviceMsgAiCourseEndSectionInvalid(int index) {
+    return 'courses[$index].endSection cannot be less than startSection.';
+  }
+
+  @override
+  String serviceMsgAiCourseCustomWeeksEmpty(int index) {
+    return 'courses[$index].customWeeks cannot be empty.';
+  }
+
+  @override
+  String serviceMsgAiCourseNatureInvalid(int index) {
+    return 'courses[$index].courseNature must be required or elective.';
+  }
+
+  @override
+  String serviceMsgAiUnknownFields(String targetName, String fields) {
+    return '$targetName contains unsupported fields: $fields';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeString(String field) {
+    return '$field must be a string.';
+  }
+
+  @override
+  String serviceMsgAiFieldMustBeInteger(String field) {
+    return '$field must be an integer.';
+  }
+
+  @override
+  String serviceMsgAiWeekListInvalid(String itemName) {
+    return '$itemName can only contain integers greater than or equal to 1.';
+  }
+
+  @override
+  String serviceMsgAiWeekListTypeInvalid(String field) {
+    return '$field must be an integer array or week string.';
+  }
+
+  @override
+  String get serviceMsgNoReleaseAvailable =>
+      'No release has been published yet.';
+
+  @override
+  String get serviceMsgNoReleaseWithPrerelease =>
+      'No stable or prerelease version is available yet.';
+
+  @override
+  String serviceMsgUpdateCheckHttpFailed(int statusCode) {
+    return 'Update check failed (HTTP $statusCode).';
+  }
+
+  @override
+  String get serviceMsgUpdateCheckNetworkFailed =>
+      'Network error. Unable to check for updates right now.';
+
+  @override
+  String get serviceMsgUpdateDownloadUrlUntrusted =>
+      'Update download URL failed security validation.';
+
+  @override
+  String serviceMsgUpdateDownloadHttpFailed(int statusCode) {
+    return 'Download failed (HTTP $statusCode).';
+  }
+
+  @override
+  String serviceMsgUpdateOpenInstallerFailed(String detail) {
+    return 'Failed to open installer: $detail';
+  }
+
+  @override
+  String serviceMsgUpdateDownloadInstallError(String detail) {
+    return 'Download or installation error: $detail';
+  }
+
+  @override
+  String get serviceMsgInvalidUrl => 'Invalid URL.';
+
+  @override
+  String get serviceMsgUpdateAvailablePrerelease =>
+      'A new prerelease version is available.';
+
+  @override
+  String get serviceMsgUpdateAvailable => 'A new version is available.';
+
+  @override
+  String get serviceMsgAlreadyLatest =>
+      'You are already on the latest version.';
+
+  @override
+  String get serviceMsgShareBackupText =>
+      'This is a full backup of the current timetable. Import it to restore courses and settings.';
+
+  @override
+  String get serviceMsgShareBackupSubject => 'Qingyu Timetable backup';
+
+  @override
+  String serviceMsgShareBackupSubjectNamed(String profileName) {
+    return '$profileName - Qingyu Timetable backup';
+  }
+
+  @override
+  String get serviceMsgShareFullBackupText =>
+      'This is a full data backup containing all timetables, the active timetable, and time schemes.';
+
+  @override
+  String get serviceMsgShareFullBackupSubject =>
+      'Qingyu Timetable - full data backup';
+
+  @override
+  String get serviceMsgInvalidRepositoryUrl =>
+      'Repository URL format is invalid.';
+
+  @override
+  String get serviceMsgIncompleteGithubRepoUrl =>
+      'GitHub repository URL is incomplete.';
+
+  @override
+  String get serviceMsgIncompleteRawGithubUrl =>
+      'raw.githubusercontent.com URL is incomplete.';
+
+  @override
+  String get serviceMsgGithubOnlySupported =>
+      'Only GitHub repository URLs are supported.';
+
+  @override
+  String get serviceMsgWarehouseNoSchoolsIndex =>
+      'No school or tool index was found.';
+
+  @override
+  String serviceMsgWarehouseNoAdapters(String schoolName) {
+    return 'No adapter information was found for $schoolName.';
+  }
+
+  @override
+  String serviceMsgWarehouseFetchFailedMirror(int candidatesCount) {
+    return 'Unable to read the adapter repository. Tried $candidatesCount mirror endpoints. Check your network or switch mirror in Version Update.';
+  }
+
+  @override
+  String get serviceMsgWarehouseFetchFailedGithub =>
+      'Unable to read the adapter repository on GitHub. Check your network or switch to a mirror in Version Update.';
+
+  @override
+  String get serviceMsgManualInputCaptcha =>
+      'Enter the captcha manually, then tap Continue.';
+
+  @override
+  String get serviceMsgManualInputPassword =>
+      'Enter the password manually. If it was auto-filled, tap Continue.';
+
+  @override
+  String get serviceMsgMacroNoSteps => 'No recorded steps.';
+
+  @override
+  String get serviceMsgMacroUserCancelled => 'Cancelled by user.';
+
+  @override
+  String serviceMsgMacroStepFailed(
+    int stepIndex,
+    int totalSteps,
+    String detail,
+  ) {
+    return 'Step $stepIndex/$totalSteps failed: $detail';
+  }
+
+  @override
+  String get serviceMsgMacroNavigateUrlEmpty => 'Navigation URL is empty.';
+
+  @override
+  String serviceMsgMacroNavigateUrlInvalid(String url) {
+    return 'Invalid URL: $url';
+  }
+
+  @override
+  String get serviceMsgMacroFillSelectorEmpty =>
+      'Fill-field selector is empty.';
+
+  @override
+  String serviceMsgMacroElementNotFound(String selector) {
+    return 'Element not found: $selector';
+  }
+
+  @override
+  String get serviceMsgMacroClickSelectorEmpty => 'Click selector is empty.';
+
+  @override
+  String get serviceMsgMacroUrlPatternEmpty => 'URL pattern is empty.';
+
+  @override
+  String get serviceMsgMacroWaitSelectorEmpty => 'Wait selector is empty.';
+
+  @override
+  String get serviceMsgMacroManualInputDefault => 'Manual action required.';
+
+  @override
+  String serviceMsgMacroPollTimeout(
+    String stepLabel,
+    int timeoutSeconds,
+    String lastError,
+  ) {
+    return '$stepLabel timed out (${timeoutSeconds}s)$lastError';
+  }
+
+  @override
+  String get serviceMsgMacroReplayNavigate => 'Navigating…';
+
+  @override
+  String get serviceMsgMacroReplayFillField => 'Filling form…';
+
+  @override
+  String get serviceMsgMacroReplayClick => 'Clicking…';
+
+  @override
+  String get serviceMsgMacroReplayWaitUrl => 'Waiting for navigation…';
+
+  @override
+  String get serviceMsgMacroReplayWaitSelector => 'Waiting for page element…';
+
+  @override
+  String get serviceMsgMacroReplayWaitManual => 'Waiting for user action…';
+
+  @override
+  String get serviceMsgMacroReplayExecuteScript => 'Running import script…';
+
+  @override
+  String get serviceMsgMacroReplayDelay => 'Waiting…';
+
+  @override
+  String serviceMsgMacroReplayFailed(String detail) {
+    return 'Failed: $detail';
+  }
+
+  @override
+  String serviceMsgMacroReplayPaused(String reason) {
+    return 'Waiting for manual action: $reason';
+  }
+
+  @override
+  String serviceMsgSupportDonorsLoadFailed(String detail) {
+    return 'Failed to load supporters list: $detail';
+  }
+
+  @override
+  String serviceMsgStatisticsShareFailed(String detail) {
+    return 'Share failed: $detail';
+  }
+
+  @override
+  String get serviceMsgAuthFailed => 'Invalid username or password.';
+
+  @override
+  String get serviceMsgAccessDenied => 'Access denied.';
+
+  @override
+  String get serviceMsgCertificateError => 'Certificate validation failed.';
+
+  @override
+  String get serviceMsgConnectionTimeout => 'Connection timed out.';
+
+  @override
+  String get serviceMsgConnectionFailed => 'Could not connect to the server.';
+
+  @override
+  String get serviceMsgInvalidResponse => 'Invalid server response.';
+
+  @override
+  String get serviceMsgSyncFailed => 'Sync failed.';
+
+  @override
+  String get serviceMsgUsageTypeOverride => 'override time scheme';
+
+  @override
+  String get serviceMsgUsageTypeProfile => 'profile main time scheme';
+
+  @override
+  String get dataTransferProfileShareText => '这是轻屿课表当前课表的完整备份文件，导入后可直接恢复课程和设置。';
+
+  @override
+  String get dataTransferProfileShareSubject => '轻屿课表备份';
+
+  @override
+  String dataTransferProfileShareSubjectNamed(String profileName) {
+    return '$profileName - 轻屿课表备份';
+  }
+
+  @override
+  String get dataTransferFullBackupShareText =>
+      '这是轻屿课表的全部数据备份文件，包含所有课表、当前选中课表和时间模板。';
+
+  @override
+  String get dataTransferFullBackupShareSubject => '轻屿课表 - 全部数据备份';
+
+  @override
+  String courseWeekCustomDescription(String weeks) {
+    return '第$weeks周';
+  }
+
+  @override
+  String courseWeekRangeDescription(int startWeek, int endWeek, String mode) {
+    return '第$startWeek-$endWeek周$mode';
+  }
+
+  @override
+  String get courseWeekOddModeSuffix => ' 单周';
+
+  @override
+  String get courseWeekEvenModeSuffix => ' 双周';
+
+  @override
+  String courseWeekSuspensionDescription(String weeks) {
+    return '第$weeks周停课';
+  }
+
+  @override
+  String get courseWeekListSeparator => '、';
+
+  @override
+  String holidayLogMemoryCacheHit(int year, int count) {
+    return '$year年：命中内存缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogLocalCacheHit(int year, int count) {
+    return '$year年：命中本地缓存（$count 条），后台刷新中…';
+  }
+
+  @override
+  String holidayLogNoCacheFetching(int year) {
+    return '$year年：无缓存，正在拉取远程数据…';
+  }
+
+  @override
+  String holidayLogRemoteSuccess(int year, int count) {
+    return '$year年：远程拉取成功（$count 条），已缓存';
+  }
+
+  @override
+  String holidayLogRemoteFailedBuiltin(int year) {
+    return '$year年：远程拉取失败，使用内置资产兜底';
+  }
+
+  @override
+  String holidayLogBuiltinLoaded(int year, int count) {
+    return '$year年：加载内置资产（$count 条）';
+  }
+
+  @override
+  String holidayLogBackgroundSuccess(int year, int count) {
+    return '$year年：后台更新成功（$count 条），已覆盖缓存';
+  }
+
+  @override
+  String holidayLogBackgroundNoData(int year) {
+    return '$year年：后台更新未获取到新数据';
+  }
+
+  @override
+  String get holidayLogPrimaryApiFailed => '主 API 失败，尝试备用 API…';
+
+  @override
+  String holidayLogRequesting(String uri) {
+    return '正在请求 $uri …';
+  }
+
+  @override
+  String holidayLogPrimaryApiStatus(int statusCode) {
+    return '主 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String holidayLogPrimaryApiError(String message) {
+    return '主 API 返回错误：$message';
+  }
+
+  @override
+  String holidayLogPrimaryApiException(String error) {
+    return '主 API 异常：$error';
+  }
+
+  @override
+  String holidayLogPrimaryApiParsing(int count) {
+    return '主 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String get holidayLogNoValidEntries => '解析后无有效条目，跳过';
+
+  @override
+  String holidayLogFallbackApiStatus(int statusCode) {
+    return '备用 API 响应 $statusCode，跳过';
+  }
+
+  @override
+  String get holidayLogFallbackApiError => '备用 API 返回错误';
+
+  @override
+  String holidayLogFallbackApiParsing(int count) {
+    return '备用 API 返回 $count 条原始数据，正在解析…';
+  }
+
+  @override
+  String holidayLogFallbackApiException(String error) {
+    return '备用 API 异常：$error';
+  }
+
+  @override
+  String get holidayNameNewYear => '元旦';
+
+  @override
+  String get holidayNameLaborDay => '劳动节';
+
+  @override
+  String get holidayNameNationalDay => '国庆节';
+
+  @override
+  String get holidayNameSpringFestival => '春节';
+
+  @override
+  String get holidayNameQingming => '清明节';
+
+  @override
+  String get holidayNameDragonBoat => '端午节';
+
+  @override
+  String get holidayNameMidAutumn => '中秋节';
+
+  @override
+  String macroReplayStatusFailed(String error) {
+    return '失败: $error';
+  }
+
+  @override
+  String macroReplayStatusPaused(String reason) {
+    return '等待手动操作: $reason';
+  }
+
+  @override
+  String get macroReplayStepNavigating => '正在导航...';
+
+  @override
+  String get macroReplayStepFilling => '正在填充表单...';
+
+  @override
+  String get macroReplayStepClicking => '正在点击...';
+
+  @override
+  String get macroReplayStepWaitUrl => '等待页面跳转...';
+
+  @override
+  String get macroReplayStepWaitSelector => '等待页面元素...';
+
+  @override
+  String get macroReplayStepWaitManual => '等待用户操作';
+
+  @override
+  String get macroReplayStepExecuteScript => '正在执行导入脚本...';
+
+  @override
+  String get macroReplayStepDelay => '等待中...';
+
+  @override
+  String get macroReplayNoSteps => '没有录制的步骤';
+
+  @override
+  String get macroReplayUserCancelled => '用户取消';
+
+  @override
+  String macroReplayStepFailed(int current, int total, String error) {
+    return '第 $current/$total 步失败: $error';
+  }
+
+  @override
+  String get macroReplayEmptyNavigateUrl => '导航 URL 为空';
+
+  @override
+  String macroReplayInvalidUrl(String url) {
+    return '无效的 URL: $url';
+  }
+
+  @override
+  String get macroReplayEmptyFillSelector => '填充字段的选择器为空';
+
+  @override
+  String macroReplayFieldNotFound(String selector) {
+    return '未找到表单字段: $selector';
+  }
+
+  @override
+  String get macroReplayEmptyClickSelector => '点击元素的选择器为空';
+
+  @override
+  String macroReplayClickNotFound(String selector) {
+    return '未找到点击元素: $selector';
+  }
+
+  @override
+  String macroReplayWaitUrlPattern(String pattern) {
+    return '等待 URL 匹配: $pattern';
+  }
+
+  @override
+  String get macroReplayEmptyWaitSelector => '等待元素的选择器为空';
+
+  @override
+  String macroReplayWaitSelector(String selector) {
+    return '等待元素: $selector';
+  }
+
+  @override
+  String get macroReplayManualActionRequired => '需要手动操作';
+
+  @override
+  String macroReplayNavigateTo(String url) {
+    return '导航到 $url';
+  }
+
+  @override
+  String get macroReplayWaitPageLoad => '等待页面加载';
+
+  @override
+  String get macroReplayWaitDomReady => '等待 DOM 就绪';
+
+  @override
+  String get hyperosShowcaseTitle => '澎湃 UI 组件库';
+
+  @override
+  String get hyperosShowcaseSectionSummary => '概要卡片';
+
+  @override
+  String get hyperosShowcaseKitSubtitle => 'mikcb 澎湃风格组件一览';
+
+  @override
+  String get hyperosShowcaseSectionTags => '标签 / 手风琴 / 提示';
+
+  @override
+  String get hyperosShowcaseAccordionSection1 => '第一节';
+
+  @override
+  String get hyperosShowcaseAccordionSection1Body => '展开后显示的内容区域。';
+
+  @override
+  String get hyperosShowcaseAccordionSection2 => '第二节';
+
+  @override
+  String get hyperosShowcaseAccordionSection2Body => '可折叠分组，替代 FAccordion。';
+
+  @override
+  String get hyperosShowcaseSectionNavRows => '列表行 · 导航';
+
+  @override
+  String get hyperosShowcaseNavRowWithIcon => '带图标';
+
+  @override
+  String get hyperosShowcaseNavRowNoIconSubtitle => '无左侧彩图标';
+
+  @override
+  String get hyperosShowcaseNavRowDetails => '详情';
+
+  @override
+  String get hyperosShowcaseSectionSwitchRows => '列表行 · 开关 / 危险';
+
+  @override
+  String get hyperosShowcaseSwitchRowSubtitle => '带图标开关行';
+
+  @override
+  String get hyperosShowcaseSwitchRowPlain => '纯文字开关行';
+
+  @override
+  String get hyperosShowcaseSectionChoiceRows => '列表行 · 单选 / 选择 / 日期';
+
+  @override
+  String get hyperosShowcaseOptionA => '选项 A';
+
+  @override
+  String get hyperosShowcaseOptionB => '选项 B';
+
+  @override
+  String get hyperosShowcaseOptionC => '选项 C';
+
+  @override
+  String get hyperosShowcaseSelectSizeTitle => '选择尺寸';
+
+  @override
+  String get hyperosShowcaseSizeSmall => '小';
+
+  @override
+  String get hyperosShowcaseSizeMedium => '中';
+
+  @override
+  String get hyperosShowcaseSizeLarge => '大';
+
+  @override
+  String get hyperosShowcaseSectionControls => '控件卡片';
+
+  @override
+  String get hyperosShowcaseControlsSubtitle => '滑条、分段、按钮';
+
+  @override
+  String get hyperosShowcaseSegmentLeft => '左';
+
+  @override
+  String get hyperosShowcaseSegmentRight => '右';
+
+  @override
+  String get hyperosShowcaseSectionInput => '输入';
+
+  @override
+  String get hyperosShowcaseInputHint => '请输入内容';
+
+  @override
+  String get hyperosShowcaseInputCardLabel => '卡片内输入';
+
+  @override
+  String get hyperosShowcaseSectionPicker => '滚轮选择器';
+
+  @override
+  String hyperosShowcasePickerCurrentValue(int value) {
+    return '当前值：$value';
+  }
+
+  @override
+  String get hyperosShowcaseSectionInline => '基础控件 · 行内';
+
+  @override
+  String get hyperosShowcaseCheckboxSubtitle => '多选偏好行';
+
+  @override
+  String get hyperosShowcaseSectionNavActions => '导航与操作';
+
+  @override
+  String get hyperosShowcaseTooltipButton => '带 Tooltip 的按钮';
+
+  @override
+  String get hyperosShowcaseSectionProgress => '进度与刷新';
+
+  @override
+  String get hyperosShowcaseSectionColorChip => '颜色选择 · ColorChip';
+
+  @override
+  String get hyperosShowcaseSectionNavBar => '底部导航 · HyperosNavigationBar';
+
+  @override
+  String get hyperosShowcaseNavHome => '首页';
+
+  @override
+  String get hyperosShowcaseNavTimetable => '课表';
+
+  @override
+  String get hyperosShowcaseNavSettings => '设置';
+
+  @override
+  String get hyperosShowcaseSectionEmpty => '空态 / 分割线 / 装饰';
+
+  @override
+  String get hyperosShowcaseEmptySubtitle => '列表无数据时的占位';
+
+  @override
+  String get hyperosShowcaseActionButton => '操作按钮';
+
+  @override
+  String get hyperosShowcaseDividerRowTitle => '第二行（上方有缩进分割线）';
+
+  @override
+  String get hyperosShowcaseSectionPressable => '底层行 · HyperosPressableRow';
+
+  @override
+  String get hyperosShowcaseSectionShell => '页面壳层';
+
+  @override
+  String get hyperosShowcaseRootPageDetails => '无返回键根页';
+
+  @override
+  String get hyperosShowcaseSubpageSubtitle => '当前页即 Subpage + HyperosListView';
+
+  @override
+  String get hyperosShowcaseAlreadyInSubpage => '已在 Subpage 中';
+
+  @override
+  String get hyperosShowcaseSectionFrosted => '模糊顶栏 · 滚动物理';
+
+  @override
+  String get hyperosShowcaseSectionFeedback => '反馈 · 弹层';
+
+  @override
+  String get hyperosShowcaseSectionIconColors => '主题色 · HyperosIconColors';
+
+  @override
+  String get hyperosShowcaseFooterNote => '此页仅在非 Release 构建设置首页可见，用于组件视觉验收。';
+
+  @override
+  String get hyperosShowcaseUndoAction => '撤销';
+
+  @override
+  String get hyperosShowcaseDialogMessage => '系统风格对话框示例。';
+
+  @override
+  String get hyperosShowcaseConfirmTitle => '确认操作';
+
+  @override
+  String get hyperosShowcaseConfirmed => '已确认';
+
+  @override
+  String get hyperosShowcaseToastDescription => '带图标与副标题，App Toast 同款';
+
+  @override
+  String get hyperosShowcaseMenuCopy => '复制';
+
+  @override
+  String get hyperosShowcaseMenuShare => '分享';
+
+  @override
+  String get hyperosShowcaseMenuDelete => '删除';
+
+  @override
+  String get hyperosShowcaseRefreshDone => '刷新完成';
+
+  @override
+  String get hyperosShowcaseSearchTooltip => '搜索';
+
+  @override
+  String get hyperosShowcaseRootShellLabel => '根页壳层';
+
+  @override
+  String get hyperosShowcasePushSubtitle => '通过 HyperosNavigation.push 进入';
+
+  @override
+  String get hyperosShowcaseSampleText => '示例文本';
+
+  @override
+  String courseImportQuickImportDescription(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '快捷导入 $schoolName $adapterName';
+  }
+
+  @override
+  String get courseImportScriptNoCourses => '导入脚本未返回课程数据';
+
+  @override
+  String get courseImportScriptFailed => '脚本执行失败';
+
+  @override
+  String get courseImportRecordingStatus => '录制中…点击停止完成录制';
+
+  @override
+  String get courseImportRecordingStartedTip => '录制已开始，请按正常流程操作教务网站';
+
+  @override
+  String get courseImportRecordingEmptyStatus => '未录制到任何操作';
+
+  @override
+  String get courseImportRecordingEmptyTip => '未录制到任何操作';
+
+  @override
+  String get courseImportSaveRecordingTitle => '保存录制';
+
+  @override
+  String courseImportSaveRecordingMessage(int count) {
+    return '录制了 $count 个操作步骤。是否保存为快捷导入？';
+  }
+
+  @override
+  String courseImportRecordingSavedStatus(int count) {
+    return '录制已保存（$count 步）';
+  }
+
+  @override
+  String get courseImportWeekNotProvided => '未提供周次';
+
+  @override
+  String get courseImportLocationNotFilled => '未填写地点';
+
+  @override
+  String courseImportPreviewLine(
+    String weekday,
+    int startSection,
+    int endSection,
+    String name,
+    String location,
+    String weekText,
+  ) {
+    return '周$weekday 第$startSection-$endSection节  $name  $location  周次：$weekText';
+  }
+
+  @override
+  String courseImportCalendarWeekLabel(int week) {
+    return '校历第 $week 周';
+  }
+
+  @override
+  String get courseImportTermStartDateTitle => '开学日期';
+
+  @override
+  String get courseImportFirstWeekMappingLabel => '课表第 1 周对应校历第几周';
+
+  @override
+  String get courseImportFirstWeekMappingSubtitle =>
+      '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。';
+
+  @override
+  String get courseImportFirstWeekNoShift => '导入后会直接把课表第 1 周当作校历第 1 周。';
+
+  @override
+  String courseImportFirstWeekShifted(int weeks, int targetWeek) {
+    return '导入后会把所有课程周次整体顺延 $weeks 周，让课表第 1 周落在校历第 $targetWeek 周。';
+  }
+
+  @override
+  String get courseImportContinueAction => '继续导入';
+
+  @override
+  String get courseImportUpdateRecommendedAction => '更新课表（推荐）';
+
+  @override
+  String get courseImportOverwriteAction => '覆盖导入';
+
+  @override
+  String get courseImportSectionCountInsufficientTitle => '时间模板节次不足';
+
+  @override
+  String courseImportSectionCountInsufficientMessage(
+    int current,
+    int required,
+  ) {
+    return '当前课表时间模板只有 $current 节，但导入数据需要到第 $required 节。是否自动补齐后继续导入？';
+  }
+
+  @override
+  String get courseImportAutoFillAndImportAction => '自动补齐并导入';
+
+  @override
+  String get courseImportPortalUrlTitle => '输入教务网址';
+
+  @override
+  String get courseImportPortalUrlSaveContinue => '保存并继续';
+
+  @override
+  String get courseImportPortalUrlLabel => '教务网址';
+
+  @override
+  String get courseImportPortalUrlHint => '保存后下次会直接使用，也可以在适配器信息页里修改。';
+
+  @override
+  String get courseImportPortalUrlInvalid => '登录地址格式不正确';
+
+  @override
+  String get logAppLoggerInitialized => '应用日志服务已初始化';
+
+  @override
+  String get logPrivacyConsentUpdated => '隐私协议同意状态已更新';
+
+  @override
+  String get logAppLogRecordingEnabled => '应用日志记录已开启';
+
+  @override
+  String get logAppLogRecordingRemainsEnabled => '应用日志记录保持开启';
+
+  @override
+  String get logStartupFlowStarted => '启动流程处理已开始';
+
+  @override
+  String get logStartupFlowCompletedNoOnboarding => '启动流程已完成（无需引导页）';
+
+  @override
+  String get logStartupFlowCompletedAfterGuide => '启动流程已完成（经过引导页）';
+
+  @override
+  String get logStartupFlowFailed => '启动流程失败，进入降级模式';
+
+  @override
+  String get logAppLifecycleChanged => '应用生命周期已变更';
+
+  @override
+  String get logNavigatorRouteReplaced => '导航路由已替换';
+
+  @override
+  String get logNavigatorRouteChanged => '导航路由已变更';
+
+  @override
+  String get logAppLogsDefaultMigrated => '迁移时已默认开启应用日志记录';
+
+  @override
+  String get logTimetableLoadSettingsFailed => '加载课表设置失败';
+
+  @override
+  String get logTimetableLoadCoursesFailed => '加载课程数据失败';
+
+  @override
+  String get logTimetableLoadCurrentWeekFailed => '加载当前周次失败';
+
+  @override
+  String get logHomeWidgetPinSupportFailed => '检查桌面小组件固定支持失败';
+
+  @override
+  String get logHomeWidgetPinRequestFailed => '请求固定桌面小组件失败';
+
+  @override
+  String get logHomeWidgetSyncFailed => '同步桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetClearFailed => '清空桌面小组件快照失败';
+
+  @override
+  String get logHomeWidgetScheduleFailed => '调度桌面小组件刷新失败';
+
+  @override
+  String get logMiuiLiveInitializeFailed => '初始化 MIUI 超级岛通道失败';
+
+  @override
+  String get logMiuiLiveOpenPromotedSettingsFailed => '打开超级岛权限设置失败';
+
+  @override
+  String get logMiuiLiveOpenNotificationSettingsFailed => '打开通知设置失败';
+
+  @override
+  String get logMiuiLiveOpenAutostartSettingsFailed => '打开自启动设置失败';
+
+  @override
+  String get logMiuiLiveOpenBatterySettingsFailed => '打开电池优化设置失败';
+
+  @override
+  String get logMiuiLiveOpenAccessibilitySettingsFailed => '打开无障碍设置失败';
+
+  @override
+  String get logMiuiLiveHideFromRecentsFailed => '更新「从最近任务隐藏」失败';
+
+  @override
+  String get logLiveUpdateStartFailed => '从 Flutter 启动超级岛失败';
+
+  @override
+  String get logLiveUpdateStopFailed => '从 Flutter 停止超级岛失败';
+
+  @override
+  String get logLiveUpdateDebugStatusFailed => '获取原生超级岛调试状态失败';
+
+  @override
+  String get logLiveUpdateSnapshotSyncFailed => '同步超级岛课表快照失败';
+
+  @override
+  String get logLiveUpdateSnapshotClearFailed => '清空超级岛课表快照失败';
+
+  @override
+  String get logLanEditAuthFailed => '局域网编辑：认证失败';
+
+  @override
+  String get logLanEditCourseCreated => '局域网编辑：已创建课程';
+
+  @override
+  String get logLanEditCourseUpdated => '局域网编辑：已更新课程';
+
+  @override
+  String get logLanEditCourseDeleted => '局域网编辑：已删除课程';
+
+  @override
+  String get logLanEditCourseGroupSaved => '局域网编辑：已保存课程组';
+
+  @override
+  String get logLanEditMergeImported => '局域网编辑：已导入合并备份';
+
+  @override
+  String get logLanEditCoursesBatchDeleted => '局域网编辑：已批量删除课程';
+
+  @override
+  String get logLanEditCurrentWeekSet => '局域网编辑：已设置当前周次';
+
+  @override
+  String get logLanEditSpreadsheetImported => '局域网编辑：已导入表格';
+
+  @override
+  String get logLanEditSessionStarted => '局域网编辑：会话已启动';
+
+  @override
+  String get logLanEditSessionStopped => '局域网编辑：会话已停止';
+
+  @override
+  String get logLiveUpdateTestRequested => '用户请求手动超级岛测试通知';
+
+  @override
+  String get logLiveUpdateTestNoSelection => '手动超级岛测试：未找到可用课程';
+
+  @override
+  String get logLiveUpdateTestSelectionReady => '手动超级岛测试：已解析目标课程';
+
+  @override
+  String get logLiveUpdateTestSuspendSync => '手动超级岛测试：已临时暂停定时同步';
+
+  @override
+  String get logLiveUpdateTestStarting => '手动超级岛测试：正在启动原生超级岛';
+
+  @override
+  String get logLiveUpdateTestStarted => '手动超级岛测试：已成功请求原生超级岛';
+
+  @override
+  String get logLiveUpdateTestFailed => '手动超级岛测试：原生超级岛出现前失败';
+
+  @override
+  String logLiveUpdateSettingsSynced(
+    String beforeClass,
+    String duringClass,
+    String beforeEnd,
+    String promote,
+    String notification,
+    String countdown,
+    String courseName,
+    String location,
+  ) {
+    return 'Flutter 超级岛设置已同步：课前=$beforeClass，课中=$duringClass，下课前=$beforeEnd，提升=$promote，通知=$notification，倒计时=$countdown，课程名=$courseName，地点=$location';
+  }
+
+  @override
+  String get logFieldSource => '来源';
+
+  @override
+  String get logFieldPlatform => '平台';
+
+  @override
+  String get logFieldVersion => '版本';
+
+  @override
+  String get logFieldBuildNumber => '构建号';
+
+  @override
+  String get logFieldLoggingEnabled => '日志记录';
+
+  @override
+  String get logFieldPrivacyAccepted => '隐私协议';
+
+  @override
+  String get logFieldAccepted => '已同意';
+
+  @override
+  String get logFieldPrevious => '先前状态';
+
+  @override
+  String get logFieldTruncated => '已截断';
+
+  @override
+  String get logFieldTruncatedHint => '截断提示';
+
+  @override
+  String get logFieldThrowable => '异常';
+
+  @override
+  String get logFieldExtras => '附加信息';
+
+  @override
+  String get logFieldContext => '设备上下文';
+
+  @override
+  String get logFieldError => '错误';
+
+  @override
+  String get logFieldBrand => '品牌';
+
+  @override
+  String get logFieldManufacturer => '制造商';
+
+  @override
+  String get logFieldModel => '型号';
+
+  @override
+  String get logFieldSdkInt => 'SDK 版本';
+
+  @override
+  String get logFieldVersionName => '版本名';
+
+  @override
+  String get logFieldChannel => '渠道';
+
+  @override
+  String get logFieldHasNotificationPermission => '通知权限';
+
+  @override
+  String get logFieldHasPromotedPermissionDeclared => '已声明提升通知权限';
+
+  @override
+  String get logFieldCanPostPromotedNotifications => '可发布提升通知';
+
+  @override
+  String get logFieldIgnoringBatteryOptimizations => '忽略电池优化';
+
+  @override
+  String get logFieldKeepAliveAccessibilityEnabled => '无障碍保活已启用';
+
+  @override
+  String get logFieldHideFromRecentsEnabled => '从最近任务隐藏';
+
+  @override
+  String get logFieldTaskRemovedRecently => '近期任务被移除';
+
+  @override
+  String get logFieldLastTaskRemovedAt => '上次任务移除时间';
+
+  @override
+  String get logFieldProcessImportance => '进程重要性';
+
+  @override
+  String get logFieldAutoStartStatus => '自启动状态';
+
+  @override
+  String get logFieldLiveEnableBeforeClass => '课前超级岛';
+
+  @override
+  String get logFieldLiveEnableDuringClass => '课中超级岛';
+
+  @override
+  String get logFieldLiveEnableBeforeEnd => '下课前超级岛';
+
+  @override
+  String get logFieldLivePromoteDuringClass => '课中提升通知';
+
+  @override
+  String get logFieldLiveShowDuringClassNotification => '课中状态栏通知';
+
+  @override
+  String get logFieldLiveShowCountdown => '显示倒计时';
+
+  @override
+  String get logFieldLiveShowStageText => '显示阶段文字';
+
+  @override
+  String get logFieldLiveShowCourseName => '显示课程名';
+
+  @override
+  String get logFieldLiveShowLocation => '显示地点';
+
+  @override
+  String get logFieldLiveUseShortName => '使用简称';
+
+  @override
+  String get logFieldLiveHidePrefixText => '隐藏前缀文字';
+
+  @override
+  String get logFieldLiveDuringClassTimeDisplayMode => '课中时间显示模式';
+
+  @override
+  String get logFieldLiveEnableMiuiIslandLabelImage => '岛标签图片';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelStyle => '岛标签样式';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelContent => '岛标签内容';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontColor => '岛标签字体颜色';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontWeight => '岛标签字重';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelRenderQuality => '岛标签渲染质量';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelFontSize => '岛标签字号';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetX => '岛标签 X 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandLabelOffsetY => '岛标签 Y 偏移';
+
+  @override
+  String get logFieldLiveMiuiIslandExpandedIconMode => '展开图标模式';
+
+  @override
+  String get logFieldLiveShowBeforeClassMinutes => '课前显示分钟数';
+
+  @override
+  String get logFieldLiveClassReminderStartMinutes => '上课提醒开始分钟';
+
+  @override
+  String get logFieldLiveEndSecondsCountdownThreshold => '下课秒倒计时阈值';
+
+  @override
+  String get logFieldState => '状态';
+
+  @override
+  String get logFieldRoute => '路由';
+
+  @override
+  String get logFieldPreviousRoute => '先前路由';
+
+  @override
+  String get logFieldProfileId => '课表配置 ID';
+
+  @override
+  String get logFieldReason => '原因';
+
+  @override
+  String get logFieldClientIp => '客户端 IP';
+
+  @override
+  String get logFieldPort => '端口';
+
+  @override
+  String get logFieldCourseName => '课程名';
+
+  @override
+  String get logFieldStage => '阶段';
+
+  @override
+  String get logFieldFrom => '来源页面';
+
+  @override
+  String get logFieldCurrentWeek => '当前周次';
+
+  @override
+  String get logFieldWeekday => '星期';
+
+  @override
+  String get logFieldUntilMillis => '暂停截止时间';
+
+  @override
+  String get logFieldStartAtMillis => '开始时间';
+
+  @override
+  String get logFieldMergedCourseCount => '合并课程数';
+
+  @override
+  String get logFieldDeletedCount => '删除数量';
+
+  @override
+  String get logFieldRequested => '请求数量';
+
+  @override
+  String get logFieldTarget => '目标';
+
+  @override
+  String get logFieldCount => '数量';
+
+  @override
+  String get logFieldValue => '值';
+
+  @override
+  String get logFieldSnapshotLength => '快照长度';
+
+  @override
+  String get logFieldStoredSnapshotVersion => '存储快照版本';
+
+  @override
+  String get logFieldIntentIsNull => 'Intent 为空';
+
+  @override
+  String get logFieldAction => '操作';
+
+  @override
+  String get logFieldStep => '步骤';
+
+  @override
+  String get logCatAppLoggerInitialized => '应用日志：初始化';
+
+  @override
+  String get logCatPrivacyConsentUpdated => '应用日志：隐私协议';
+
+  @override
+  String get logCatAppLogRecordingEnabled => '应用日志：记录开关';
+
+  @override
+  String get logCatStartupFlowStarted => '启动流程：开始';
+
+  @override
+  String get logCatStartupFlowCompleted => '启动流程：完成';
+
+  @override
+  String get logCatStartupFlowFailed => '启动流程：失败';
+
+  @override
+  String get logCatAppLifecycleStateChanged => '应用生命周期';
+
+  @override
+  String get logCatRoutePushed => '路由：入栈';
+
+  @override
+  String get logCatRoutePopped => '路由：出栈';
+
+  @override
+  String get logCatRouteReplaced => '路由：替换';
+
+  @override
+  String get logCatFlutterFrameworkError => 'Flutter 框架错误';
+
+  @override
+  String get logCatFlutterPlatformError => 'Flutter 平台错误';
+
+  @override
+  String get logCatFlutterZoneError => 'Flutter Zone 错误';
+
+  @override
+  String get logCatAppLogsDefaultMigrated => '应用日志：迁移';
+
+  @override
+  String get logCatTimetableLoadSettingsFailed => '课表：加载设置失败';
+
+  @override
+  String get logCatTimetableLoadCoursesFailed => '课表：加载课程失败';
+
+  @override
+  String get logCatTimetableLoadCurrentWeekFailed => '课表：加载周次失败';
+
+  @override
+  String get logCatHomeWidgetPinSupportFailed => '桌面小组件：检查固定支持';
+
+  @override
+  String get logCatHomeWidgetPinRequestFailed => '桌面小组件：请求固定';
+
+  @override
+  String get logCatHomeWidgetSyncFailed => '桌面小组件：同步失败';
+
+  @override
+  String get logCatHomeWidgetClearFailed => '桌面小组件：清空失败';
+
+  @override
+  String get logCatHomeWidgetScheduleFailed => '桌面小组件：调度刷新';
+
+  @override
+  String get logCatMiuiLiveInitializeFailed => '超级岛：初始化失败';
+
+  @override
+  String get logCatMiuiLiveOpenPromotedSettingsFailed => '超级岛：打开权限设置';
+
+  @override
+  String get logCatMiuiLiveOpenNotificationSettingsFailed => '超级岛：打开通知设置';
+
+  @override
+  String get logCatMiuiLiveOpenAutostartSettingsFailed => '超级岛：打开自启动设置';
+
+  @override
+  String get logCatMiuiLiveOpenBatterySettingsFailed => '超级岛：打开电池优化';
+
+  @override
+  String get logCatMiuiLiveOpenAccessibilitySettingsFailed => '超级岛：打开无障碍设置';
+
+  @override
+  String get logCatMiuiLiveHideFromRecentsFailed => '超级岛：隐藏最近任务';
+
+  @override
+  String get logCatLiveUpdateFlutterInitializeFailed => '超级岛：Flutter 初始化失败';
+
+  @override
+  String get logCatLiveUpdateStartFailed => '超级岛：启动失败';
+
+  @override
+  String get logCatLiveUpdateStopFailed => '超级岛：停止失败';
+
+  @override
+  String get logCatLiveUpdateDebugStatusFailed => '超级岛：调试状态失败';
+
+  @override
+  String get logCatLiveUpdateSettingsSynced => '超级岛：设置已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotSyncFailed => '超级岛：快照同步失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotClearFailed => '超级岛：快照清空失败';
+
+  @override
+  String get logCatLanEditAuthFailed => '局域网编辑：认证';
+
+  @override
+  String get logCatLanEditCourseCreated => '局域网编辑：创建课程';
+
+  @override
+  String get logCatLanEditCourseUpdated => '局域网编辑：更新课程';
+
+  @override
+  String get logCatLanEditCourseDeleted => '局域网编辑：删除课程';
+
+  @override
+  String get logCatLanEditCourseGroupSaved => '局域网编辑：保存课程组';
+
+  @override
+  String get logCatLanEditMergeImported => '局域网编辑：合并导入';
+
+  @override
+  String get logCatLanEditCoursesBatchDeleted => '局域网编辑：批量删除';
+
+  @override
+  String get logCatLanEditCurrentWeekSet => '局域网编辑：设置周次';
+
+  @override
+  String get logCatLanEditSpreadsheetImported => '局域网编辑：表格导入';
+
+  @override
+  String get logCatLanEditSessionStarted => '局域网编辑：会话启动';
+
+  @override
+  String get logCatLanEditSessionStopped => '局域网编辑：会话停止';
+
+  @override
+  String get logCatLiveUpdateTestRequested => '超级岛测试：请求';
+
+  @override
+  String get logCatLiveUpdateTestNoSelection => '超级岛测试：无课程';
+
+  @override
+  String get logCatLiveUpdateTestSelectionReady => '超级岛测试：已选课程';
+
+  @override
+  String get logCatLiveUpdateTestSuspendSync => '超级岛测试：暂停同步';
+
+  @override
+  String get logCatLiveUpdateTestStarting => '超级岛测试：启动中';
+
+  @override
+  String get logCatLiveUpdateTestStarted => '超级岛测试：已启动';
+
+  @override
+  String get logCatLiveUpdateTestFailed => '超级岛测试：失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotSettings => '超级岛：快照设置';
+
+  @override
+  String get logCatLiveUpdateSnapshotSynced => '超级岛：快照已同步';
+
+  @override
+  String get logCatLiveUpdateSnapshotCleared => '超级岛：快照已清空';
+
+  @override
+  String get logCatLiveUpdateAlarmTriggered => '超级岛：闹钟触发';
+
+  @override
+  String get logCatLiveUpdateSchedulerResume => '超级岛：调度恢复';
+
+  @override
+  String get logCatLiveUpdateRescheduleHoliday => '超级岛：节假日跳过';
+
+  @override
+  String get logCatLiveUpdateRescheduleActive => '超级岛：立即启动';
+
+  @override
+  String get logCatLiveUpdateRescheduleScheduled => '超级岛：已调度';
+
+  @override
+  String get logCatLiveUpdateSnapshotParseFailed => '超级岛：快照解析失败';
+
+  @override
+  String get logCatLiveUpdateSnapshotInvalidatedAfterUpgrade => '超级岛：升级后快照失效';
+
+  @override
+  String get logCatLiveUpdatePayloadSelected => '超级岛：已选负载';
+
+  @override
+  String get logCatLiveUpdateSchedulerStartFailed => '超级岛：调度启动失败';
+
+  @override
+  String get logCatLiveUpdateStartRequested => '超级岛：请求启动';
+
+  @override
+  String get logCatLiveUpdateStopRequested => '超级岛：请求停止';
+
+  @override
+  String get logCatLiveUpdateServiceMissingPayload => '超级岛：服务缺少负载';
+
+  @override
+  String get logCatLiveUpdateServiceStarted => '超级岛：服务已启动';
+
+  @override
+  String get logCatLiveUpdateServiceStartFailed => '超级岛：服务启动失败';
+
+  @override
+  String get logCatLiveUpdateTaskRemoved => '超级岛：任务被移除';
+
+  @override
+  String get logCatLiveUpdateTaskRemovedResumed => '超级岛：任务移除后恢复';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickAction => '超级岛：课前快捷操作';
+
+  @override
+  String get logCatLiveUpdateBeforeClassQuickActionRestored => '超级岛：课前快捷操作已恢复';
+
+  @override
+  String get logCatLiveUpdateStatusBarDismissed => '超级岛：状态栏通知已关闭';
+
+  @override
+  String get logCatLiveUpdateNotPromoted => '超级岛：未提升通知';
+
+  @override
+  String get logCatLiveUpdatePromotedNotShown => '超级岛：提升未显示';
+
+  @override
+  String get logCatLiveUpdateServiceStopped => '超级岛：服务已停止';
+
+  @override
+  String get logCatKeepAliveAccessibilityConnected => '保活：无障碍已连接';
+
+  @override
+  String get logCatDiagnosticsEnabled => '诊断：已开启';
+
+  @override
+  String get logCatDiagnosticsCleared => '诊断：已清空';
+
+  @override
+  String get logCatDiagnosticsBootstrap => '诊断：引导';
+
+  @override
+  String get logCatFlutterDiagnostic => 'Flutter 诊断';
+
+  @override
+  String get logCatFlutterDiagnosticEvent => 'Flutter 诊断事件';
+
+  @override
+  String get logCatRenderFailed => '渲染失败';
+
+  @override
+  String get logCatDebugSnapshot => '调试快照';
+
+  @override
+  String get logExportTitle => '轻屿课表 - 应用日志';
+
+  @override
+  String get appUpdateMirrorPresetGhfast => '默认镜像';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyCn => '备用镜像 1';
+
+  @override
+  String get appUpdateMirrorPresetGhLlkk => '备用镜像 2';
+
+  @override
+  String get appUpdateMirrorPresetGhProxyCom => '备用镜像 3';
+
+  @override
+  String get appUpdateMirrorPresetGhproxyNet => '备用镜像 4';
+
+  @override
+  String get appUpdateMirrorPresetCustom => '自定义';
+
+  @override
+  String get appUpdateMirrorPresetCustomDescription => '填写自定义镜像地址前缀';
+
+  @override
+  String get cloudBackupRetentionTitle => '备份保留策略';
+
+  @override
+  String get cloudBackupMaxCountTitle => '最多保留份数';
+
+  @override
+  String get cloudBackupMaxCountSubtitle => '超过后自动删除最旧的备份';
+
+  @override
+  String cloudBackupMaxCountOption(int count) {
+    return '$count 份';
+  }
+
+  @override
+  String get cloudBackupMaxAgeTitle => '最长保留天数';
+
+  @override
+  String get cloudBackupMaxAgeSubtitle => '超过后自动删除过期备份';
+
+  @override
+  String cloudBackupMaxAgeOption(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String get statisticsShareText => '来自轻屿课表的学期统计';
+
+  @override
+  String get aboutUpdateAvailableHeadline => '有版本更新';
+
+  @override
+  String get aboutAlreadyLatestHeadline => '已是最新版本';
+
+  @override
+  String get aboutDownloadChannelSectionTitle => '下载渠道';
+
+  @override
+  String get aboutMirrorProbeFailedLabel => '失败';
+
+  @override
+  String timeSchemeImportSupplementName(String name) {
+    return '$name（导入补齐）';
+  }
+
+  @override
+  String profileTimeSchemeName(String profileName) {
+    return '$profileName 时间';
+  }
+
+  @override
+  String get currentProfileTimeSchemeName => '当前课表时间';
+
+  @override
+  String get unnamedTimetableProfile => '未命名课表';
+
+  @override
+  String get cloudBackupManualProtectedTitle => '手动备份永不过期';
+
+  @override
+  String get cloudBackupManualProtectedSubtitle => '开启后，手动创建的备份不会被自动清理';
+
+  @override
+  String courseImportPortalUrlMissingBody(
+    String schoolName,
+    String adapterName,
+  ) {
+    return '“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。';
+  }
+
+  @override
+  String guidePermissionsProgressLabel(int ready, int total) {
+    return '已就绪 $ready/$total';
   }
 }

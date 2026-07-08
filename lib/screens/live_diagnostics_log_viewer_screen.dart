@@ -6,7 +6,7 @@ import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
-import '../logging/app_log_messages.dart';
+import '../logging/app_log_message_localizer.dart';
 import '../utils/app_toast.dart';
 
 enum DiagnosticsLogViewMode { structured, raw }
@@ -210,7 +210,7 @@ class _LiveDiagnosticsLogViewerScreenState
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          padding: HyperosTokens.listPadding.copyWith(top: 8, bottom: 0),
           child: _buildControlsSection(context, l10n, parsed),
         ),
         const SizedBox(height: 8),
@@ -226,6 +226,47 @@ class _LiveDiagnosticsLogViewerScreenState
     );
   }
 
+  Widget _buildRecordingSection(BuildContext context, AppLocalizations l10n) {
+    if (_recordingEnabled == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HyperosSectionLabel(text: l10n.aboutRecordDiagnosticsTitle),
+        HyperosListGroup(
+          children: [
+            HyperosSwitchTile(
+              title: l10n.aboutRecordDiagnosticsTitle,
+              subtitle: l10n.aboutRecordDiagnosticsSubtitle,
+              value: _recordingEnabled!,
+              onChanged: widget.onRecordingChanged == null
+                  ? null
+                  : (value) {
+                      widget.onRecordingChanged!(value);
+                      setState(() {
+                        _recordingEnabled = value;
+                      });
+                    },
+            ),
+          ],
+        ),
+        if (!_recordingEnabled! && _parsed.entries.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          HyperosControlCard(
+            strip: true,
+            child: Text(
+              l10n.appLogsRecordingPausedHint,
+              style: HyperosTypography.listDetail(context),
+            ),
+          ),
+        ],
+        const HyperosSectionGap(),
+      ],
+    );
+  }
+
   Widget _buildControlsSection(
     BuildContext context,
     AppLocalizations l10n,
@@ -233,106 +274,90 @@ class _LiveDiagnosticsLogViewerScreenState
   ) {
     final filteredEntries = _filterEntries(parsed.entries, _selectedLevel);
 
-    return HyperosControlCard(
-      subtitle: l10n.diagnosticsLogIntro,
-      child: HyperosControlCardInset(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (_recordingEnabled != null) ...[
-              HyperosListGroup(
-                children: [
-                  HyperosSwitchTile(
-                    title: l10n.aboutRecordDiagnosticsTitle,
-                    subtitle: _recordingEnabled!
-                        ? l10n.appLogsRecordingEnabled
-                        : l10n.appLogsRecordingDisabled,
-                    value: _recordingEnabled!,
-                    onChanged: widget.onRecordingChanged == null
-                        ? null
-                        : (value) {
-                            widget.onRecordingChanged!(value);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildRecordingSection(context, l10n),
+        HyperosControlCard(
+          subtitle: l10n.diagnosticsLogIntro,
+          child: HyperosControlCardInset(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: HyperosButton(
+                        label: l10n.diagnosticsStructuredTab,
+                        variant: _viewMode == DiagnosticsLogViewMode.structured
+                            ? HyperosButtonVariant.primary
+                            : HyperosButtonVariant.secondary,
+                        onPressed: () {
+                          setState(() {
+                            _viewMode = DiagnosticsLogViewMode.structured;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: HyperosButton(
+                        label: l10n.diagnosticsRawTab,
+                        variant: _viewMode == DiagnosticsLogViewMode.raw
+                            ? HyperosButtonVariant.primary
+                            : HyperosButtonVariant.secondary,
+                        onPressed: () {
+                          setState(() {
+                            _viewMode = DiagnosticsLogViewMode.raw;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      for (final level in DiagnosticsLogLevel.values) ...[
+                        _LevelFilterButton(
+                          label:
+                              '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
+                          selected: _selectedLevel == level,
+                          onPress: () {
                             setState(() {
-                              _recordingEnabled = value;
+                              _selectedLevel = level;
                             });
                           },
+                        ),
+                        if (level != DiagnosticsLogLevel.values.last)
+                          const SizedBox(width: 8),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  l10n.diagnosticsShowingCount(
+                    filteredEntries.length,
+                    parsed.entries.length,
+                  ),
+                  style: HyperosTypography.listDetail(context),
+                ),
+                if (_viewMode == DiagnosticsLogViewMode.raw &&
+                    _selectedLevel != DiagnosticsLogLevel.all) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.diagnosticsRawFilteredHint,
+                    style: HyperosTypography.listDetail(context),
                   ),
                 ],
-              ),
-              const SizedBox(height: 12),
-            ],
-            Row(
-              children: [
-                Expanded(
-                  child: HyperosButton(
-                    label: l10n.diagnosticsStructuredTab,
-                    variant: _viewMode == DiagnosticsLogViewMode.structured
-                        ? HyperosButtonVariant.primary
-                        : HyperosButtonVariant.secondary,
-                    onPressed: () {
-                      setState(() {
-                        _viewMode = DiagnosticsLogViewMode.structured;
-                      });
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: HyperosButton(
-                    label: l10n.diagnosticsRawTab,
-                    variant: _viewMode == DiagnosticsLogViewMode.raw
-                        ? HyperosButtonVariant.primary
-                        : HyperosButtonVariant.secondary,
-                    onPressed: () {
-                      setState(() {
-                        _viewMode = DiagnosticsLogViewMode.raw;
-                      });
-                    },
-                  ),
-                ),
               ],
             ),
-            const SizedBox(height: 12),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final level in DiagnosticsLogLevel.values) ...[
-                    _LevelFilterButton(
-                      label:
-                          '${_levelLabel(l10n, level)} ${_levelCount(parsed.entries, level)}',
-                      selected: _selectedLevel == level,
-                      onPress: () {
-                        setState(() {
-                          _selectedLevel = level;
-                        });
-                      },
-                    ),
-                    if (level != DiagnosticsLogLevel.values.last)
-                      const SizedBox(width: 8),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              l10n.diagnosticsShowingCount(
-                filteredEntries.length,
-                parsed.entries.length,
-              ),
-              style: HyperosTypography.listDetail(context),
-            ),
-            if (_viewMode == DiagnosticsLogViewMode.raw &&
-                _selectedLevel != DiagnosticsLogLevel.all) ...[
-              const SizedBox(height: 4),
-              Text(
-                l10n.diagnosticsRawFilteredHint,
-                style: HyperosTypography.listDetail(context),
-              ),
-            ],
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -523,12 +548,21 @@ class _LiveDiagnosticsLogViewerScreenState
     if (!mounted) {
       return;
     }
+    if (cleared) {
+      if (widget.loadRawLog != null) {
+        await _loadLogs();
+      } else {
+        setState(() {
+          _rawLog = '';
+          _refreshParsedCache();
+        });
+      }
+    }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _clearing = false;
-      if (cleared) {
-        _rawLog = '';
-        _refreshParsedCache();
-      }
     });
     showAppToast(
       context,
@@ -676,6 +710,10 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           HyperosTag(label: _levelLabel(l10n, entry.level)),
+                          HyperosTag(
+                            label: _sourceLabel(l10n, entry),
+                            outlined: true,
+                          ),
                           if (entry.isLevelInferred)
                             HyperosTag(
                               label: l10n.diagnosticsLevelInferred,
@@ -683,7 +721,10 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
                             ),
                           if (entry.category.isNotEmpty)
                             Text(
-                              categoryDisplayLabel(entry.category),
+                              AppLogMessageLocalizer.localizeCategory(
+                                l10n,
+                                entry.category,
+                              ),
                               style: typo.sm.copyWith(
                                 color: colors.mutedForeground,
                                 fontWeight: FontWeight.w600,
@@ -708,7 +749,7 @@ class _DiagnosticsLogEntryCard extends StatelessWidget {
             if (entry.message.isNotEmpty) ...[
               const SizedBox(height: 12),
               Text(
-                entry.message,
+                AppLogMessageLocalizer.localizeMessage(l10n, entry.message),
                 style: typo.sm.copyWith(
                   height: 1.45,
                   fontWeight: FontWeight.w600,
@@ -825,6 +866,22 @@ class _DiagnosticsLogEntry {
 
   String get message => fields['message']?.trim() ?? rawBlock.trim();
 
+  String get sourceKey {
+    final explicit = fields['source']?.trim();
+    if (explicit == 'app' || explicit == 'native') {
+      return explicit!;
+    }
+    final categoryLower = category.toLowerCase();
+    if (categoryLower.startsWith('live_update') ||
+        categoryLower.startsWith('miui_live') ||
+        categoryLower.startsWith('diagnostics_')) {
+      return 'native';
+    }
+    return 'app';
+  }
+
+  bool get isNativeSource => sourceKey == 'native';
+
   String? get formattedTime => _formatMillis(fields['time']);
 
   Iterable<MapEntry<String, String>> get detailEntries => fields.entries.where(
@@ -834,6 +891,7 @@ class _DiagnosticsLogEntry {
       'message',
       'level',
       'severity',
+      'source',
     }.contains(entry.key),
   );
 }
@@ -1054,6 +1112,10 @@ String _levelLabel(AppLocalizations l10n, DiagnosticsLogLevel level) {
   };
 }
 
+String _sourceLabel(AppLocalizations l10n, _DiagnosticsLogEntry entry) {
+  return entry.isNativeSource ? l10n.appLogsSourceNative : l10n.appLogsSourceApp;
+}
+
 IconData _levelIcon(DiagnosticsLogLevel level) {
   return switch (level) {
     DiagnosticsLogLevel.all => Icons.library_books_outlined,
@@ -1093,7 +1155,7 @@ String _prettyKey(String key, AppLocalizations l10n) {
     case 'severity':
       return l10n.diagnosticsLevelLabel;
     default:
-      return fieldDisplayLabel(key);
+      return AppLogMessageLocalizer.localizeField(l10n, key);
   }
 }
 

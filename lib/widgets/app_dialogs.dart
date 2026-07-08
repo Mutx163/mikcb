@@ -83,37 +83,92 @@ Future<bool?> showAppTripleActionDialog(
 Future<String?> showAppTextInputDialog(
   BuildContext context, {
   required String title,
-  required Widget body,
+  required Widget Function(TextEditingController controller) bodyBuilder,
   String? cancelLabel,
   String? confirmLabel,
-  required String Function() readValue,
+  String? initialValue,
   bool Function(String value)? validate,
   bool useRootNavigator = false,
 }) {
   final l10n = AppLocalizations.of(context)!;
-  return showHyperosDialog<String>(
+  final isDark = Theme.of(context).brightness == Brightness.dark;
+  final dimming = isDark
+      ? HyperosMiuixDarkColors.windowDimming
+      : HyperosMiuixLightColors.windowDimming;
+
+  return showDialog<String>(
     context: context,
-    title: title,
-    body: body,
     useRootNavigator: useRootNavigator,
-    actions: [
-      HyperosDialogAction(
-        label: cancelLabel ?? l10n.cancelAction,
-        onPressed: () => Navigator.pop(context),
-      ),
-      HyperosDialogAction(
-        label: confirmLabel ?? l10n.saveAction,
-        isPrimary: true,
-        onPressed: () {
-          final value = readValue().trim();
-          if (validate != null && !validate(value)) {
-            return;
-          }
-          Navigator.pop(context, value);
-        },
-      ),
-    ],
+    barrierColor: dimming,
+    builder: (ctx) => _AppTextInputDialog(
+      title: title,
+      initialValue: initialValue,
+      bodyBuilder: bodyBuilder,
+      cancelLabel: cancelLabel ?? l10n.cancelAction,
+      confirmLabel: confirmLabel ?? l10n.saveAction,
+      validate: validate,
+    ),
   );
+}
+
+class _AppTextInputDialog extends StatefulWidget {
+  const _AppTextInputDialog({
+    required this.title,
+    required this.bodyBuilder,
+    required this.cancelLabel,
+    required this.confirmLabel,
+    this.initialValue,
+    this.validate,
+  });
+
+  final String title;
+  final String? initialValue;
+  final Widget Function(TextEditingController controller) bodyBuilder;
+  final String cancelLabel;
+  final String confirmLabel;
+  final bool Function(String value)? validate;
+
+  @override
+  State<_AppTextInputDialog> createState() => _AppTextInputDialogState();
+}
+
+class _AppTextInputDialogState extends State<_AppTextInputDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initialValue,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (widget.validate != null && !widget.validate!(value)) {
+      return;
+    }
+    Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return HyperosDialog(
+      title: widget.title,
+      body: widget.bodyBuilder(_controller),
+      actions: [
+        HyperosDialogAction(
+          label: widget.cancelLabel,
+          onPressed: () => Navigator.pop(context),
+        ),
+        HyperosDialogAction(
+          label: widget.confirmLabel,
+          isPrimary: true,
+          onPressed: _submit,
+        ),
+      ],
+    );
+  }
 }
 
 Future<int?> showAppSingleChoiceDialog(

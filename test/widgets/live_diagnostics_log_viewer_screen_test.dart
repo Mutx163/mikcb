@@ -5,18 +5,20 @@ import 'package:university_timetable/screens/live_diagnostics_log_viewer_screen.
 import '../helpers_test_app.dart';
 
 void main() {
-  const sampleLog = '''轻屿课表 - 超级岛诊断日志
+  const sampleLog = '''轻屿课表 - 应用日志
 exportedAt=1744166400000
 brand=Xiaomi
 ----
 time=1744166400000
 level=error
+source=native
 category=render_failed
 message=渲染失败
 stackTrace=
   line 1
 
 time=1744166500000
+source=app
 category=debug_snapshot
 message=已捕获快照负载
 extras=
@@ -46,7 +48,11 @@ extras=
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('正在记录应用日志'), findsOneWidget);
+    expect(
+      find.text('打开后会在本地持续记录应用运行日志；超级岛相关日志会单独标注来源。'),
+      findsOneWidget,
+    );
+    expect(find.text('超级岛'), findsOneWidget);
     expect(find.text('渲染失败'), findsWidgets);
     await tester.scrollUntilVisible(
       find.text('已捕获快照负载'),
@@ -56,6 +62,7 @@ extras=
         matching: find.byType(Scrollable),
       ),
     );
+    expect(find.text('应用'), findsOneWidget);
     expect(find.text('已捕获快照负载'), findsOneWidget);
     expect(find.text('显示 2 / 2 条日志'), findsOneWidget);
 

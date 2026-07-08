@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
+import 'package:intl/intl.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:provider/provider.dart';
 
 import '../models/exam.dart';
@@ -257,7 +258,7 @@ class ExamListScreen extends StatelessWidget {
                             Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                '${course.teacher} · ${course.weekDescription}',
+                                '${course.teacher} · ${course.weekDescription(l10n)}',
                                 style: theme.typography.body.xs.copyWith(
                                   color: theme.colors.mutedForeground,
                                 ),
@@ -292,8 +293,7 @@ class ExamListScreen extends StatelessWidget {
       l10n.weekdaySun,
     ];
     final weekday = weekdays[date.weekday - 1];
-    final month = date.month.toString().padLeft(2, '0');
-    final day = date.day.toString().padLeft(2, '0');
+    final datePart = DateFormat.MMMd(l10n.localeName).format(date);
 
     var weekInfo = '';
     final semesterStart = provider.semesterStartDate;
@@ -304,7 +304,7 @@ class ExamListScreen extends StatelessWidget {
       }
     }
 
-    return '$weekInfo$month月$day日 $weekday ${exam.startTime}-${exam.endTime}';
+    return '$weekInfo$datePart $weekday ${exam.startTime}-${exam.endTime}';
   }
 
   Future<bool?> _confirmDelete(

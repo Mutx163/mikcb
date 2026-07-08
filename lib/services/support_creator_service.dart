@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import 'app_update_service.dart';
 import '../utils/async_utils.dart';
@@ -125,7 +126,12 @@ class SupportCreatorService {
 
     final lastError = result.errors.isNotEmpty ? result.errors.last : null;
     appDebugLog('SupportCreator', '全部失败，errors：${result.errors}');
-    throw Exception('加载鸣谢名单失败：$lastError');
+    throw Exception(
+      encodeServiceMessage(
+        'support_donors_load_failed',
+        {'detail': '$lastError'},
+      ),
+    );
   }
 
   Future<bool> saveAssetImageToGallery({

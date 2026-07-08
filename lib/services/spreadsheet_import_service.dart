@@ -1,8 +1,10 @@
 import 'dart:convert';
 
+import 'package:fast_gbk/fast_gbk.dart';
 import 'package:table_parser/table_parser.dart';
 import 'package:uuid/uuid.dart';
 
+import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import 'week_expression_parser.dart';
@@ -116,10 +118,7 @@ class SpreadsheetImportService {
 
     final detected = _detectFormat(rows);
     if (detected == null) {
-      throw FormatException(
-        '未识别表格格式。请使用轻屿课表模板（必填列：课程名、星期、开始节、结束节，'
-        '以及上课周或开始周+结束周）；也兼容 WakeUp 7 列格式。',
-      );
+      throw const FormatException('spreadsheet_format_unrecognized');
     }
 
     final courses = <Course>[];
@@ -155,7 +154,7 @@ class SpreadsheetImportService {
           courses.add(course);
         }
       } on FormatException catch (error) {
-        warnings.add('第 $rowNumber 行：${error.message}');
+        warnings.add(encodeServiceRowWarning(rowNumber, error.message));
       }
     }
 
@@ -210,9 +209,36 @@ class SpreadsheetImportService {
   }
 
   List<List<String>> _decodeCsvRows(List<int> bytes) {
-    final content = utf8.decode(bytes, allowMalformed: true);
-    final decoder = TableParser.decodeCsv(content);
-    return _tableToStringRows(decoder.tables.values.first);
+    final utf8Content = utf8.decode(bytes, allowMalformed: true);
+    final utf8Rows = _tryParseCsvContent(utf8Content);
+    if (utf8Rows != null && _detectFormat(utf8Rows) != null) {
+      return utf8Rows;
+    }
+
+    try {
+      final gbkContent = gbk.decode(bytes);
+      final gbkRows = _tryParseCsvContent(gbkContent);
+      if (gbkRows != null && _detectFormat(gbkRows) != null) {
+        return gbkRows;
+      }
+    } catch (_) {}
+
+    if (utf8Rows != null) {
+      return utf8Rows;
+    }
+    throw const FormatException('spreadsheet_format_or_encoding_unrecognized');
+  }
+
+  List<List<String>>? _tryParseCsvContent(String content) {
+    try {
+      final decoder = TableParser.decodeCsv(content);
+      if (decoder.tables.isEmpty) {
+        return null;
+      }
+      return _tableToStringRows(decoder.tables.values.first);
+    } catch (_) {
+      return null;
+    }
   }
 
   List<List<String>> _decodeXlsxRows(List<int> bytes) {
@@ -223,7 +249,12 @@ class SpreadsheetImportService {
       }
       return _tableToStringRows(decoder.tables.values.first);
     } catch (error) {
-      throw FormatException('XLSX 文件解析失败：$error');
+      throw FormatException(
+        encodeServiceMessage(
+          'spreadsheet_xlsx_parse_failed',
+          {'error': '$error'},
+        ),
+      );
     }
   }
 
@@ -273,18 +304,20 @@ class SpreadsheetImportService {
   }) {
     if (row.length < 7) {
       throw FormatException(
-        'WakeUp 格式需要至少 7 列（课程名称, 星期, 开始节数, 结束节数, 老师, 地点, 周数），'
-        '但第 $rowNumber 行只有 ${row.length} 列',
+        encodeServiceMessage(
+          'spreadsheet_wakeup_insufficient_columns',
+          {'rowNumber': rowNumber, 'columnCount': row.length},
+        ),
       );
     }
     final name = row[0].trim();
     if (name.isEmpty) {
-      throw FormatException('课程名称 不能为空');
+      throw const FormatException('course_name_required');
     }
 
     final dayOfWeek = _readRequiredInt(row[1], fieldName: '星期');
     if (dayOfWeek < 1 || dayOfWeek > 7) {
-      throw FormatException('星期必须是 1-7');
+      throw const FormatException('weekday_must_be_1_to_7');
     }
 
     final startSection = _readRequiredInt(row[2], fieldName: '开始节数');
@@ -301,7 +334,7 @@ class SpreadsheetImportService {
       warnings: warnings,
     );
     if (customWeeks.isEmpty) {
-      throw FormatException('周数 不能为空');
+      throw const FormatException('custom_weeks_required');
     }
 
     final startTime = _timeFromSection(settings, startSection, isStart: true);
@@ -333,7 +366,9 @@ class SpreadsheetImportService {
     final nameField = columns.indexOf('课程名', const []) != null ? '课程名' : '课程名称';
     final name = columns.cell(row, '课程名', _nameAliases).trim();
     if (name.isEmpty) {
-      throw FormatException('$nameField 不能为空');
+      throw FormatException(
+        encodeServiceMessage('field_cannot_be_empty', {'field': nameField}),
+      );
     }
 
     final dayOfWeek = _readRequiredInt(
@@ -341,7 +376,7 @@ class SpreadsheetImportService {
       fieldName: '星期',
     );
     if (dayOfWeek < 1 || dayOfWeek > 7) {
-      throw FormatException('星期必须是 1-7');
+      throw const FormatException('weekday_must_be_1_to_7');
     }
 
     final startSectionField = columns.hasColumn('开始节', const [])
@@ -389,7 +424,7 @@ class SpreadsheetImportService {
         warnings: warnings,
       );
       if (customWeeks.isEmpty) {
-        throw FormatException('上课周 不能为空');
+        throw const FormatException('class_weeks_required');
       }
       startWeek = customWeeks.first;
       endWeek = customWeeks.last;
@@ -403,23 +438,35 @@ class SpreadsheetImportService {
         fieldName: '结束周',
       );
       if (startWeek < 1) {
-        throw FormatException('开始周 必须大于等于 1');
+        throw const FormatException('start_week_must_be_at_least_1');
       }
       if (startWeek < 1) {
-        throw FormatException('开始周 必须大于等于 1');
+        throw const FormatException('start_week_must_be_at_least_1');
       }
       if (startWeek > settings.semesterWeekCount) {
         throw FormatException(
-          '开始周 $startWeek 超过学期周数 ${settings.semesterWeekCount}',
+          encodeServiceMessage(
+            'start_week_exceeds_semester',
+            {
+              'startWeek': startWeek,
+              'semesterWeekCount': settings.semesterWeekCount,
+            },
+          ),
         );
       }
       if (endWeek < startWeek) {
-        throw FormatException('结束周 不能小于开始周');
+        throw const FormatException('end_week_before_start_week');
       }
       if (endWeek > settings.semesterWeekCount) {
         warnings.add(
-          '第 $rowNumber 行：结束周 $endWeek 超过学期周数 '
-          '${settings.semesterWeekCount}，已调整为 ${settings.semesterWeekCount}',
+          encodeServiceMessage(
+            'spreadsheet_end_week_clamped',
+            {
+              'rowNumber': rowNumber,
+              'endWeek': endWeek,
+              'semesterWeekCount': settings.semesterWeekCount,
+            },
+          ),
         );
         endWeek = settings.semesterWeekCount;
       }
@@ -429,8 +476,17 @@ class SpreadsheetImportService {
       if (columns.hasColumn('双周', const [])) {
         isEvenWeek = _readOptionalBool(columns.cell(row, '双周', const []));
       }
+      if (isOddWeek && isEvenWeek) {
+        warnings.add(
+          encodeServiceMessage(
+            'spreadsheet_odd_even_both',
+            {'rowNumber': rowNumber},
+          ),
+        );
+        isEvenWeek = false;
+      }
     } else {
-      throw FormatException('上课周 或 开始周+结束周 必须填写');
+      throw const FormatException('weeks_range_required');
     }
 
     final startTime = columns.hasColumn('开始时间', const [])
@@ -514,10 +570,17 @@ class SpreadsheetImportService {
     String endField,
   ) {
     if (startSection < 1) {
-      throw FormatException('$startField 必须大于等于 1');
+      throw FormatException(
+        encodeServiceMessage('field_must_be_at_least_1', {'field': startField}),
+      );
     }
     if (endSection < startSection) {
-      throw FormatException('$endField 不能小于$startField');
+      throw FormatException(
+        encodeServiceMessage(
+          'field_cannot_be_less_than',
+          {'startField': startField, 'endField': endField},
+        ),
+      );
     }
   }
 
@@ -527,7 +590,15 @@ class SpreadsheetImportService {
     required bool isStart,
   }) {
     if (section < 1 || section > settings.sectionCount) {
-      throw FormatException('节次 $section 超出时间模板范围（1-${settings.sectionCount}）');
+      throw FormatException(
+        encodeServiceMessage(
+          'section_out_of_range',
+          {
+            'section': section,
+            'maxSection': settings.sectionCount,
+          },
+        ),
+      );
     }
     final sectionInfo = settings.sections[section - 1];
     return isStart ? sectionInfo.startTime : sectionInfo.endTime;
@@ -599,7 +670,9 @@ class SpreadsheetImportService {
   int _readRequiredInt(String raw, {required String fieldName}) {
     final parsed = _readInt(raw);
     if (parsed == null) {
-      throw FormatException('$fieldName 必须是整数');
+      throw FormatException(
+        encodeServiceMessage('field_must_be_integer', {'field': fieldName}),
+      );
     }
     return parsed;
   }

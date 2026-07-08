@@ -188,20 +188,20 @@ class AppSyncSnapshotService {
     final type = json['backupType'] as String?;
 
     if (app != 'mikcb' || version != schemaVersion || type != backupType) {
-      throw const FormatException('不是可识别的 mikcb 云同步快照');
+      throw const FormatException('unrecognized_sync_snapshot');
     }
 
     final rawProfiles = json['profiles'];
     final rawTimeSchemes = json['timeSchemes'];
     if (rawProfiles is! List || rawTimeSchemes is! List) {
-      throw const FormatException('缺少云同步课表数据');
+      throw const FormatException('missing_sync_timetable_data');
     }
 
     final payload = Map<String, dynamic>.from(json)..remove('contentSha256');
     final expectedHash = json['contentSha256'] as String? ?? '';
     final actualHash = computeContentSha256(payload);
     if (expectedHash.isNotEmpty && expectedHash != actualHash) {
-      throw const FormatException('云同步快照校验失败');
+      throw const FormatException('sync_snapshot_checksum_failed');
     }
 
     final warehouseRaw = json['warehouse'];
@@ -270,7 +270,7 @@ class AppSyncSnapshotService {
     required AppSyncSnapshot snapshot,
   }) async {
     if (snapshot.profiles.isEmpty) {
-      return '云同步快照中没有可恢复的课表';
+      return 'sync_snapshot_no_profiles';
     }
 
     final fullBackupJson = _dataTransferService.buildFullBackupJson(
@@ -305,7 +305,7 @@ class AppSyncSnapshotService {
     } on FormatException catch (error) {
       return error.message;
     } catch (_) {
-      return '云同步快照无法识别';
+      return 'sync_snapshot_unrecognized';
     }
   }
 

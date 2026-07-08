@@ -88,7 +88,7 @@ class LanEditProviderHost implements LanEditHost {
     required List<Course> slots,
   }) async {
     if (slots.isEmpty) {
-      throw ArgumentError('至少需要保留一个上课时间段');
+      throw ArgumentError('at_least_one_schedule_slot');
     }
     final trimmedOriginal = originalName?.trim();
     if (trimmedOriginal != null && trimmedOriginal.isNotEmpty) {
@@ -121,7 +121,7 @@ class LanEditProviderHost implements LanEditHost {
   @override
   Future<int> importMergeBackupJson(String content) async {
     if (_provider.dataTransferService.isFullBackupJson(content)) {
-      throw const FormatException('请使用课表档案备份 JSON，而非全部数据备份');
+      throw const FormatException('use_profile_backup_not_full');
     }
     final backup = _provider.dataTransferService.parseBackupJson(content);
     if (backup.courses.isEmpty) {

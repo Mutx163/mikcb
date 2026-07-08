@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
 import '../models/time_scheme.dart';
@@ -286,21 +287,18 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _createScheme(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
     final name = await showAppTextInputDialog(
       context,
       title: l10n.createTimeSchemeTitle,
-      body: HyperosTextField(
+      confirmLabel: l10n.createAction,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timeSchemeNameLabel,
         hint: l10n.timeSchemeNameHint,
         autofocus: true,
       ),
-      confirmLabel: l10n.createAction,
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
     );
-    controller.dispose();
 
     if (!context.mounted || name == null || name.isEmpty) {
       return;
@@ -317,19 +315,17 @@ class _TimeSchemeManagementScreenState
 
   Future<void> _renameScheme(BuildContext context, TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: scheme.name);
     final name = await showAppTextInputDialog(
       context,
       title: l10n.renameTimeSchemeTitle,
-      body: HyperosTextField(
+      initialValue: scheme.name,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timeSchemeNameLabel,
         autofocus: true,
       ),
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
     );
-    controller.dispose();
 
     if (!context.mounted ||
         name == null ||
@@ -759,6 +755,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   }
 
   Future<void> _editSectionTime(int index) async {
+    final l10n = AppLocalizations.of(context)!;
     final start = await showTimePicker(
       context: context,
       initialTime: _parseTimeOfDay(_sections[index].startTime),
@@ -782,7 +779,6 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     final startMinutes = _parseTimeMinutes(editedSection.startTime);
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
-      final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
         message: l10n.timeRangeValidationNoCrossDay,
@@ -797,7 +793,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
     if (validationMessage != null) {
       showAppToast(
         context,
-        message: validationMessage,
+        message: localizeServiceMessage(l10n, validationMessage),
         kind: AppToastKind.warning,
       );
       return;
@@ -895,6 +891,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
   }
 
   Future<void> _openQuickGenerate() async {
+    final l10n = AppLocalizations.of(context)!;
     final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
       builder: (ctx) =>
@@ -924,11 +921,16 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       if (!mounted) {
         return;
       }
-      showAppToast(context, message: error.message, kind: AppToastKind.error);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, error.message),
+        kind: AppToastKind.error,
+      );
     }
   }
 
   Future<void> _save() async {
+    final l10n = AppLocalizations.of(context)!;
     final message = await context.read<TimetableProvider>().updateTimeScheme(
       schemeId: widget.schemeId,
       name: _nameController.text.trim(),
@@ -938,7 +940,7 @@ class _TimeSchemeEditorScreenState extends State<_TimeSchemeEditorScreen> {
       return;
     }
     if (message != null) {
-      showAppToast(context, message: message);
+      showAppToast(context, message: localizeServiceMessage(l10n, message));
       return;
     }
     Navigator.pop(context);

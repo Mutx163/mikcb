@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
 
+import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
 import 'week_expression_parser.dart';
@@ -109,35 +110,37 @@ class AiCourseImportService {
     final normalized = _normalizeJsonPayload(content);
     final decoded = jsonDecode(normalized);
     if (decoded is! Map) {
-      throw const FormatException('AI 结果不是合法对象，请重新复制完整 JSON');
+      throw const FormatException('ai_result_not_object');
     }
 
     final json = Map<String, dynamic>.from(decoded);
     _rejectUnknownKeys(
       actualKeys: json.keys,
       allowedKeys: _rootKeys,
-      targetName: '根对象',
+      targetName: 'root_object',
     );
 
     final currentSchema = _readRequiredString(json, 'schema');
     if (currentSchema != schema) {
-      throw FormatException('schema 必须为 $schema');
+      throw FormatException(
+        encodeServiceMessage('ai_schema_must_be', {'schema': schema}),
+      );
     }
 
     final rawCourses = json['courses'];
     if (rawCourses is! List) {
-      throw const FormatException('courses 必须是数组');
+      throw const FormatException('ai_courses_must_be_array');
     }
 
     final rawWarnings = json['warnings'];
     if (rawWarnings != null && rawWarnings is! List) {
-      throw const FormatException('warnings 必须是字符串数组');
+      throw const FormatException('ai_warnings_must_be_array');
     }
 
     final warnings = (rawWarnings as List<dynamic>? ?? const [])
         .map((item) {
           if (item is! String) {
-            throw const FormatException('warnings 中的每一项都必须是字符串');
+            throw const FormatException('ai_warning_item_must_be_string');
           }
           return item.trim();
         })
@@ -148,7 +151,9 @@ class AiCourseImportService {
     for (var i = 0; i < rawCourses.length; i++) {
       final item = rawCourses[i];
       if (item is! Map) {
-        throw FormatException('courses[$i] 不是合法对象');
+        throw FormatException(
+          encodeServiceMessage('ai_course_not_object', {'index': i}),
+        );
       }
       courses.add(
         _parseCourse(
@@ -176,7 +181,9 @@ class AiCourseImportService {
     final rawName = _readRequiredString(json, 'name').trim();
     final name = _normalizeCourseName(rawName);
     if (name.isEmpty) {
-      throw FormatException('courses[$index].name 不能为空');
+      throw FormatException(
+        encodeServiceMessage('ai_course_name_empty', {'index': index}),
+      );
     }
 
     final teacher = _readOptionalString(json, 'teacher');
@@ -185,16 +192,22 @@ class AiCourseImportService {
 
     final dayOfWeek = _readRequiredInt(json, 'dayOfWeek');
     if (dayOfWeek < 1 || dayOfWeek > 7) {
-      throw FormatException('courses[$index].dayOfWeek 必须是 1-7');
+      throw FormatException(
+        encodeServiceMessage('ai_course_day_of_week_invalid', {'index': index}),
+      );
     }
 
     final startSection = _readRequiredInt(json, 'startSection');
     final endSection = _readRequiredInt(json, 'endSection');
     if (startSection < 1) {
-      throw FormatException('courses[$index].startSection 必须大于等于 1');
+      throw FormatException(
+        encodeServiceMessage('ai_course_start_section_invalid', {'index': index}),
+      );
     }
     if (endSection < startSection) {
-      throw FormatException('courses[$index].endSection 不能小于 startSection');
+      throw FormatException(
+        encodeServiceMessage('ai_course_end_section_invalid', {'index': index}),
+      );
     }
 
     final customWeeks = _readRequiredWeekList(
@@ -203,7 +216,9 @@ class AiCourseImportService {
       itemName: 'courses[$index].customWeeks',
     );
     if (customWeeks.isEmpty) {
-      throw FormatException('courses[$index].customWeeks 不能为空');
+      throw FormatException(
+        encodeServiceMessage('ai_course_custom_weeks_empty', {'index': index}),
+      );
     }
 
     final courseNatureValue = _readOptionalString(
@@ -274,14 +289,24 @@ class AiCourseImportService {
   }) {
     final unknownKeys = actualKeys.where((key) => !allowedKeys.contains(key));
     if (unknownKeys.isNotEmpty) {
-      throw FormatException('$targetName 包含不支持的字段：${unknownKeys.join('、')}');
+      throw FormatException(
+        encodeServiceMessage(
+          'ai_unknown_fields',
+          {
+            'targetName': targetName,
+            'fields': unknownKeys.join('、'),
+          },
+        ),
+      );
     }
   }
 
   String _readRequiredString(Map<String, dynamic> json, String key) {
     final value = json[key];
     if (value is! String) {
-      throw FormatException('$key 必须是字符串');
+      throw FormatException(
+        encodeServiceMessage('ai_field_must_be_string', {'field': key}),
+      );
     }
     return value;
   }
@@ -292,7 +317,9 @@ class AiCourseImportService {
       return '';
     }
     if (value is! String) {
-      throw FormatException('$key 必须是字符串');
+      throw FormatException(
+        encodeServiceMessage('ai_field_must_be_string', {'field': key}),
+      );
     }
     return value;
   }
@@ -301,7 +328,9 @@ class AiCourseImportService {
     final value = json[key];
     final parsed = _readInt(value);
     if (parsed == null) {
-      throw FormatException('$key 必须是整数');
+      throw FormatException(
+        encodeServiceMessage('ai_field_must_be_integer', {'field': key}),
+      );
     }
     return parsed;
   }
@@ -322,14 +351,18 @@ class AiCourseImportService {
         }
         final parsed = _readInt(item);
         if (parsed == null || parsed < 1) {
-          throw FormatException('$itemName 只能包含大于等于 1 的整数');
+          throw FormatException(
+            encodeServiceMessage('ai_week_list_invalid', {'itemName': itemName}),
+          );
         }
         weeks.add(parsed);
       }
     } else if (value is String) {
       weeks.addAll(WeekExpressionParser.parse(value, itemName: itemName));
     } else {
-      throw FormatException('$key 必须是整数数组或周次字符串');
+      throw FormatException(
+        encodeServiceMessage('ai_week_list_type_invalid', {'field': key}),
+      );
     }
 
     final sorted = weeks.toList()..sort();
@@ -356,7 +389,7 @@ class AiCourseImportService {
         return CourseNature.elective;
       default:
         throw FormatException(
-          'courses[$index].courseNature 只能是 required 或 elective',
+          encodeServiceMessage('ai_course_nature_invalid', {'index': index}),
         );
     }
   }

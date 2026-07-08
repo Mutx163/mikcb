@@ -3,9 +3,9 @@ package com.mutx163.qingyu
 /// Centralized Chinese log messages for native diagnostic logging.
 /// Categories remain English snake_case for level inference and grep.
 object DiagnosticLogMessages {
-    const val LIVE_DIAGNOSTICS_ENABLED = "超级岛诊断日志已开启"
+    const val LIVE_DIAGNOSTICS_ENABLED = "应用日志记录已开启"
     const val EXPORT_BEFORE_EVENTS = "导出时尚无显式诊断事件，已写入引导记录"
-    const val DIAGNOSTICS_CLEARED = "超级岛诊断日志已清空并重新开始收集"
+    const val DIAGNOSTICS_CLEARED = "应用日志已清空"
 
     const val LIVE_UPDATE_SNAPSHOT_SETTINGS = "已同步超级岛设置值"
     const val LIVE_UPDATE_SNAPSHOT_SYNCED = "超级岛课表快照已同步"

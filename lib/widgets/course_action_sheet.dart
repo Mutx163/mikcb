@@ -133,7 +133,7 @@ class _CourseActionSheetContent extends StatelessWidget {
     final description = (course.description ?? course.note)?.trim();
     final headerDetail = description?.isNotEmpty == true
         ? description!
-        : course.weekDescription;
+        : course.weekDescription(l10n);
     final sectionTitle =
         '${_weekdayLabel(l10n, course.dayOfWeek)} · ${l10n.sectionRangeLabel(course.startSection, course.endSection)}';
     final timeSubtitle = _formatTimeTileSubtitle(
@@ -143,15 +143,15 @@ class _CourseActionSheetContent extends StatelessWidget {
       settings: provider.settings,
     );
     final teacherSubtitle = description?.isNotEmpty == true
-        ? course.weekDescription
+        ? course.weekDescription(l10n)
         : (course.shortName?.trim().isNotEmpty == true
               ? l10n.shortNamePrefix(course.shortName!.trim())
-              : course.weekDescription);
+              : course.weekDescription(l10n));
     final locationSubtitle =
         course.shortName?.trim().isNotEmpty == true &&
             description?.isNotEmpty == true
         ? l10n.shortNamePrefix(course.shortName!.trim())
-        : course.weekDescription;
+        : course.weekDescription(l10n);
     final canReschedule = course.isInWeek(week);
     final isSuspended = course.isSuspendedInWeek(week);
     final muted = typo.xs2.copyWith(color: colors.mutedForeground);
@@ -420,11 +420,7 @@ String _formatTimeTileSubtitle(
 
   if (date != null) {
     final localeName = Localizations.localeOf(context).toString();
-    if (localeName.startsWith('zh')) {
-      parts.add('${date.month}月${date.day}日');
-    } else {
-      parts.add(DateFormat.MMMd(localeName).format(date));
-    }
+    parts.add(DateFormat.MMMd(localeName).format(date));
   }
 
   parts.add(l10n.weekLabel(week));

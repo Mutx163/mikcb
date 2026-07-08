@@ -21,6 +21,10 @@ class IcsImportService {
             .toList()
           ..sort();
 
+    if (startDates.isEmpty) {
+      return IcsImportResult(courses: const [], semesterStart: DateTime.now());
+    }
+
     final semesterStart = _startOfWeek(startDates.first);
     final rawCourses = <Course>[];
 
@@ -137,8 +141,11 @@ class IcsImportService {
       return null;
     }
 
-    final startSection = int.parse(sectionMatch.group(1)!);
-    final endSection = int.parse(sectionMatch.group(2)!);
+    final startSection = int.tryParse(sectionMatch.group(1)!);
+    final endSection = int.tryParse(sectionMatch.group(2)!);
+    if (startSection == null || endSection == null) {
+      return null;
+    }
     final hasStructuredLocation = descriptionLines.length >= 2;
 
     // ICS DESCRIPTION has two known formats after line[0] (section info):
@@ -322,12 +329,20 @@ class IcsImportService {
 
     final date = match.group(1)!;
     final time = match.group(2)!;
-    final year = int.parse(date.substring(0, 4));
-    final month = int.parse(date.substring(4, 6));
-    final day = int.parse(date.substring(6, 8));
-    final hour = int.parse(time.substring(0, 2));
-    final minute = int.parse(time.substring(2, 4));
-    final second = time.length >= 6 ? int.parse(time.substring(4, 6)) : 0;
+    final year = int.tryParse(date.substring(0, 4));
+    final month = int.tryParse(date.substring(4, 6));
+    final day = int.tryParse(date.substring(6, 8));
+    final hour = int.tryParse(time.substring(0, 2));
+    final minute = int.tryParse(time.substring(2, 4));
+    final second = time.length >= 6 ? int.tryParse(time.substring(4, 6)) : 0;
+    if (year == null ||
+        month == null ||
+        day == null ||
+        hour == null ||
+        minute == null ||
+        second == null) {
+      return null;
+    }
 
     return DateTime(year, month, day, hour, minute, second);
   }

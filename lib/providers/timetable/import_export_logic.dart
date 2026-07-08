@@ -281,7 +281,6 @@ List<Course> replaceImportedCoursesPreservingLocalFields({
   return replacedCourses;
 }
 
-@visibleForTesting
 ImportedCourseSyncResult syncImportedCourses({
   required List<Course> existingCourses,
   required List<Course> importedCourses,

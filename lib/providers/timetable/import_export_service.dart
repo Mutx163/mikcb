@@ -114,16 +114,16 @@ Future<int> _timetableImportParsedCourses(
     effectiveImportedCount = dedupedImportedCourses.length;
     syncResult = null;
   } else {
-    final replacedCourses = replaceImportedCoursesPreservingLocalFields(
+    final result = syncImportedCourses(
       existingCourses: host._courses,
       importedCourses: importedCourses,
     );
-    if (courseListsEqual(host._courses, replacedCourses)) {
+    if (courseListsEqual(host._courses, result.mergedCourses)) {
       return 0;
     }
-    syncResult = null;
-    mergedCourses = replacedCourses;
-    effectiveImportedCount = replacedCourses.length;
+    syncResult = result;
+    mergedCourses = result.mergedCourses;
+    effectiveImportedCount = result.addedCount + result.updatedCount;
   }
 
   host._courses = host._syncCoursesWithEffectiveTimeSchemes(
@@ -205,7 +205,7 @@ Future<String?> _timetableImportAppDataBackup(
   } on FormatException catch (e) {
     return e.message;
   } catch (_) {
-    return '导入失败，文件内容无法识别';
+    return 'import_file_unrecognized';
   }
 }
 
@@ -216,7 +216,7 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
 }) async {
   try {
     if (host._dataTransferService.isFullBackupJson(content)) {
-      return '这是全部数据备份，请使用“覆盖当前课表”方式导入';
+      return 'import_use_overwrite_for_full_backup';
     }
     final backup = host._dataTransferService.parseBackupJson(content);
     final nextName = (profileName ?? backup.profileName ?? '导入课表').trim();
@@ -262,7 +262,7 @@ Future<String?> _timetableImportAppDataBackupAsNewProfile(
   } on FormatException catch (e) {
     return e.message;
   } catch (_) {
-    return '导入失败，文件内容无法识别';
+    return 'import_file_unrecognized';
   }
 }
 
@@ -273,7 +273,7 @@ Future<String?> _timetableImportFullAppDataBackup(
   try {
     final backup = host._dataTransferService.parseFullBackupJson(content);
     if (backup.profiles.isEmpty) {
-      return '备份文件中没有可恢复的课表';
+      return 'import_no_profiles_in_backup';
     }
 
     host._timeSchemes = List<TimeScheme>.from(backup.timeSchemes);
@@ -320,6 +320,6 @@ Future<String?> _timetableImportFullAppDataBackup(
   } on FormatException catch (e) {
     return e.message;
   } catch (_) {
-    return '导入失败，文件内容无法识别';
+    return 'import_file_unrecognized';
   }
 }

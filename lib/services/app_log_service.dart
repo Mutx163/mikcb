@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -17,9 +18,11 @@ class AppLogService {
   static const String _acceptedPrivacyPolicyKey =
       'flutter.accepted_privacy_policy';
   static const String _timetableSettingsKey = 'flutter.timetable_settings';
+  static const String _profilesKey = 'flutter.timetable_profiles';
+  static const String _activeProfileIdKey = 'flutter.active_timetable_profile_id';
   static const int _maxLogBytes = 512 * 1024;
   static const String _logFileName = 'app_runtime.log';
-  static const String _logTitle = '轻屿课表 - 应用日志';
+  static const String _logTitleKey = AppLogMessages.logExportTitle;
 
   bool _initialized = false;
   bool _privacyAccepted = false;
@@ -40,28 +43,28 @@ class AppLogService {
       _packageInfo = null;
     }
     _initialized = true;
-    await info(
-      'app_logger_initialized',
-      AppLogMessages.appLoggerInitialized,
-      extras: {
-        'platform': defaultTargetPlatform.name,
-        'version': _packageInfo?.version ?? '',
-        'buildNumber': _packageInfo?.buildNumber ?? '',
-        'loggingEnabled': _loggingEnabled,
-        'privacyAccepted': _privacyAccepted,
-      },
-      force: true,
-    );
+    if (_loggingEnabled) {
+      await info(
+        'app_logger_initialized',
+        AppLogMessages.appLoggerInitialized,
+        extras: {
+          'platform': defaultTargetPlatform.name,
+          'version': _packageInfo?.version ?? '',
+          'buildNumber': _packageInfo?.buildNumber ?? '',
+          'loggingEnabled': _loggingEnabled,
+          'privacyAccepted': _privacyAccepted,
+        },
+      );
+    }
   }
 
   Future<void> updatePrivacyAccepted(bool value) async {
     _privacyAccepted = value;
-    if (value) {
+    if (value && _loggingEnabled) {
       await info(
         'privacy_consent_updated',
         AppLogMessages.privacyConsentUpdated,
         extras: {'accepted': value},
-        force: true,
       );
     }
   }
@@ -69,16 +72,16 @@ class AppLogService {
   Future<void> updateLoggingEnabled(bool value) async {
     final previous = _loggingEnabled;
     _loggingEnabled = value;
-    if (value) {
-      await info(
-        'app_log_recording_enabled',
-        previous
-            ? AppLogMessages.appLogRecordingRemainsEnabled
-            : AppLogMessages.appLogRecordingEnabled,
-        extras: {'previous': previous},
-        force: true,
-      );
+    if (!value) {
+      return;
     }
+    await info(
+      'app_log_recording_enabled',
+      previous
+          ? AppLogMessages.appLogRecordingRemainsEnabled
+          : AppLogMessages.appLogRecordingEnabled,
+      extras: {'previous': previous},
+    );
   }
 
   Future<void> verbose(
@@ -238,22 +241,44 @@ class AppLogService {
   }
 
   Future<bool> clearAppLogs() async {
-    try {
-      final file = await _resolveLogFile();
-      if (await file.exists()) {
-        await file.delete();
+    var cleared = false;
+    _writeQueue = _writeQueue.then((_) async {
+      try {
+        final file = await _resolveLogFile();
+        if (await file.exists()) {
+          await file.delete();
+        }
+        cleared = true;
+      } catch (_) {
+        cleared = false;
       }
-      return true;
-    } catch (_) {
-      return false;
-    }
+    });
+    await _writeQueue;
+    return cleared;
+  }
+
+  @visibleForTesting
+  void resetForTesting() {
+    _initialized = false;
+    _privacyAccepted = false;
+    _loggingEnabled = false;
+    _packageInfo = null;
+    _writeQueue = Future<void>.value();
   }
 
   bool _shouldRecord({required bool force}) {
-    return _privacyAccepted && (_loggingEnabled || force);
+    if (force && !_loggingEnabled) {
+      return false;
+    }
+    return _privacyAccepted && _loggingEnabled;
   }
 
   bool _readLoggingEnabledFromPrefs(SharedPreferences prefs) {
+    final fromProfiles = _readLoggingEnabledFromProfiles(prefs);
+    if (fromProfiles != null) {
+      return fromProfiles;
+    }
+
     final settingsJson = prefs.getString(_timetableSettingsKey);
     if (settingsJson == null || settingsJson.isEmpty) {
       return TimetableSettings.defaults().liveEnableLocalDiagnostics;
@@ -264,6 +289,40 @@ class AppLogService {
       ).liveEnableLocalDiagnostics;
     } catch (_) {
       return TimetableSettings.defaults().liveEnableLocalDiagnostics;
+    }
+  }
+
+  bool? _readLoggingEnabledFromProfiles(SharedPreferences prefs) {
+    final profilesJson = prefs.getString(_profilesKey);
+    if (profilesJson == null || profilesJson.isEmpty) {
+      return null;
+    }
+    try {
+      final profiles = jsonDecode(profilesJson) as List<dynamic>;
+      if (profiles.isEmpty) {
+        return null;
+      }
+      final activeProfileId = prefs.getString(_activeProfileIdKey);
+      Map<String, dynamic>? profile;
+      if (activeProfileId != null && activeProfileId.isNotEmpty) {
+        for (final item in profiles) {
+          final candidate = Map<String, dynamic>.from(item as Map);
+          if (candidate['id'] == activeProfileId) {
+            profile = candidate;
+            break;
+          }
+        }
+      }
+      profile ??= Map<String, dynamic>.from(profiles.first as Map);
+      final settings = profile['settings'];
+      if (settings is! Map) {
+        return null;
+      }
+      return Map<String, dynamic>.from(
+        settings,
+      )['liveEnableLocalDiagnostics'] as bool?;
+    } catch (_) {
+      return null;
     }
   }
 
@@ -293,7 +352,7 @@ class AppLogService {
         ? ''
         : '${_packageInfo!.version}+${_packageInfo!.buildNumber}';
     return [
-      _logTitle,
+      _logTitleKey,
       'exportedAt=${DateTime.now().millisecondsSinceEpoch}',
       'platform=${defaultTargetPlatform.name}',
       if (versionText.isNotEmpty) 'version=$versionText',

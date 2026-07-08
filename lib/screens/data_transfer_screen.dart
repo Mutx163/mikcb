@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
 import '../providers/timetable_provider.dart';
@@ -172,6 +173,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<void> _exportCurrentProfile() async {
     final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isExporting = true;
     });
@@ -182,6 +184,12 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         exams: provider.exams,
         settings: provider.settings,
         currentWeek: provider.currentWeek,
+        shareText: l10n.dataTransferProfileShareText,
+        shareSubject: provider.activeProfile?.name == null
+            ? l10n.dataTransferProfileShareSubject
+            : l10n.dataTransferProfileShareSubjectNamed(
+                provider.activeProfile!.name,
+              ),
       );
     } finally {
       if (mounted) {
@@ -194,6 +202,7 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
 
   Future<void> _exportFullData() async {
     final provider = context.read<TimetableProvider>();
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _isExporting = true;
     });
@@ -202,6 +211,8 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
         profiles: provider.profiles,
         activeProfileId: provider.activeProfileId,
         timeSchemes: provider.timeSchemes,
+        shareText: l10n.dataTransferFullBackupShareText,
+        shareSubject: l10n.dataTransferFullBackupShareSubject,
       );
     } finally {
       if (mounted) {
@@ -281,18 +292,22 @@ class _DataTransferScreenState extends State<DataTransferScreen> {
       }
       showAppToast(
         context,
-        message:
-            message ??
-            (importMode == _BackupImportMode.importAsNew
-                ? l10n.createdNewTimetableAfterImport
-                : l10n.backupRestoredSuccess),
-        kind: AppToastKind.success,
+        message: message != null
+            ? localizeServiceMessage(l10n, message)
+            : (importMode == _BackupImportMode.importAsNew
+                  ? l10n.createdNewTimetableAfterImport
+                  : l10n.backupRestoredSuccess),
+        kind: message != null ? AppToastKind.error : AppToastKind.success,
       );
     } on FormatException catch (e) {
       if (!mounted) {
         return;
       }
-      showAppToast(context, message: e.message, kind: AppToastKind.error);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, e.message),
+        kind: AppToastKind.error,
+      );
     } catch (_) {
       if (!mounted) {
         return;

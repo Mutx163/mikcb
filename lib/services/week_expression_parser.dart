@@ -1,6 +1,22 @@
+import '../l10n/service_message_localizer.dart';
+
 /// Parses week expressions from AI import JSON and WakeUp spreadsheet columns.
 class WeekExpressionParser {
   const WeekExpressionParser._();
+
+  static final RegExp _bracketSectionSuffixPattern = RegExp(
+    r'\[[^\]]*\u8282\]',
+  );
+  static final RegExp _fullWidthBracketSectionSuffixPattern = RegExp(
+    r'\u3010[^\u3011]*\u8282\u3011',
+  );
+  static final RegExp _parityModePattern = RegExp(
+    r'[\uff08(](\u5168\u90e8|\u5355|\u53cc)[\uff09)]',
+  );
+  static final RegExp _parentheticalPattern = RegExp(
+    r'[\uff08(][^\uff09)]*[\uff09)]',
+  );
+  static final RegExp _tokenSeparatorPattern = RegExp(r'[\uff0c,\u3001]');
 
   static List<int> parse(
     String raw, {
@@ -15,16 +31,14 @@ class WeekExpressionParser {
 
     normalized = normalized
         .replaceAll(' ', '')
-        .replaceAll(RegExp(r'\[[^\]]*节\]'), '')
-        .replaceAll(RegExp(r'【[^】]*节】'), '');
+        .replaceAll(_bracketSectionSuffixPattern, '')
+        .replaceAll(_fullWidthBracketSectionSuffixPattern, '');
 
-    final modeMatch = RegExp(
-      r'[（(](全部|单|双)[）)]',
-    ).firstMatch(normalized)?.group(1);
-    normalized = normalized.replaceAll(RegExp(r'[（(][^）)]*[）)]'), '');
+    final modeMatch = _parityModePattern.firstMatch(normalized)?.group(1);
+    normalized = normalized.replaceAll(_parentheticalPattern, '');
 
     final result = <int>{};
-    final parts = normalized.split(RegExp(r'[，,、]'));
+    final parts = normalized.split(_tokenSeparatorPattern);
     for (final part in parts) {
       var token = part.trim();
       if (token.isEmpty) {
@@ -32,11 +46,11 @@ class WeekExpressionParser {
       }
 
       String? tokenParity;
-      if (token.endsWith('单')) {
-        tokenParity = '单';
+      if (token.endsWith('\u5355')) {
+        tokenParity = '\u5355';
         token = token.substring(0, token.length - 1);
-      } else if (token.endsWith('双')) {
-        tokenParity = '双';
+      } else if (token.endsWith('\u53cc')) {
+        tokenParity = '\u53cc';
         token = token.substring(0, token.length - 1);
       }
 
@@ -45,13 +59,19 @@ class WeekExpressionParser {
         final start = int.parse(rangeMatch.group(1)!);
         final end = int.parse(rangeMatch.group(2)!);
         if (start < 1) {
-          throw FormatException('$itemName 周次起始值不合法');
+          throw FormatException(
+            encodeServiceMessage('week_start_invalid', {'itemName': itemName}),
+          );
         }
         if (start > end) {
-          throw FormatException('$itemName 周次范围不合法');
+          throw FormatException(
+            encodeServiceMessage('week_range_invalid', {'itemName': itemName}),
+          );
         }
         if (end > 30) {
-          throw FormatException('$itemName 周次范围过大，请检查');
+          throw FormatException(
+            encodeServiceMessage('week_range_too_large', {'itemName': itemName}),
+          );
         }
         var weeks = <int>[];
         for (var week = start; week <= end; week++) {
@@ -63,15 +83,20 @@ class WeekExpressionParser {
 
       final parsed = int.tryParse(token);
       if (parsed == null || parsed < 1) {
-        throw FormatException('$itemName 含有无法识别的周次：$token');
+        throw FormatException(
+          encodeServiceMessage(
+            'week_token_unrecognized',
+            {'itemName': itemName, 'token': token},
+          ),
+        );
       }
       result.addAll(_applyParity([parsed], tokenParity));
     }
 
     var weeks = result.toList()..sort();
-    if (modeMatch == '单') {
+    if (modeMatch == '\u5355') {
       weeks = weeks.where((week) => week.isOdd).toList();
-    } else if (modeMatch == '双') {
+    } else if (modeMatch == '\u53cc') {
       weeks = weeks.where((week) => week.isEven).toList();
     }
 
@@ -97,17 +122,23 @@ class WeekExpressionParser {
       return weeks;
     }
     warnings?.add(
-      '$itemName 含有超过学期周数 $semesterWeekCount 的周次（'
-      '${over.join('、')}），已忽略超出部分',
+      encodeServiceMessage(
+        'weeks_exceed_semester_clamped',
+        {
+          'itemName': itemName,
+          'semesterWeekCount': semesterWeekCount,
+          'weeks': over.join('\u3001'),
+        },
+      ),
     );
     return weeks.where((week) => week <= semesterWeekCount).toList();
   }
 
   static List<int> _applyParity(List<int> weeks, String? parity) {
-    if (parity == '单') {
+    if (parity == '\u5355') {
       return weeks.where((week) => week.isOdd).toList();
     }
-    if (parity == '双') {
+    if (parity == '\u53cc') {
       return weeks.where((week) => week.isEven).toList();
     }
     return weeks;

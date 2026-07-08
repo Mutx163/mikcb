@@ -112,17 +112,31 @@ Future<String?> _timetableUpdateTimeScheme(
   if (requiredMaxSection > 0 && sections.length < requiredMaxSection) {
     final usage = host.maxSectionUsageForTimeScheme(schemeId);
     if (usage != null) {
-      final usageType = usage.usesOverride ? '副时间表' : '课表主时间表';
-      return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）。'
-          '正在使用：${usage.profileName} · ${usage.course.name}'
-          '（周${usage.course.dayOfWeek} ${usage.course.startSection}-${usage.course.endSection}节，$usageType）';
+      final usageType = usage.usesOverride
+          ? 'usage_type_override'
+          : 'usage_type_profile';
+      return encodeServiceMessage(
+        'section_count_below_usage_detail',
+        {
+          'requiredMaxSection': requiredMaxSection,
+          'profileName': usage.profileName,
+          'courseName': usage.course.name,
+          'dayOfWeek': usage.course.dayOfWeek,
+          'startSection': usage.course.startSection,
+          'endSection': usage.course.endSection,
+          'usageType': usageType,
+        },
+      );
     }
-    return '节次数量不能小于当前已使用的最大节次（第$requiredMaxSection节）';
+    return encodeServiceMessage(
+      'section_count_below_usage',
+      {'requiredMaxSection': requiredMaxSection},
+    );
   }
 
   final index = host._timeSchemes.indexWhere((scheme) => scheme.id == schemeId);
   if (index == -1) {
-    return '时间模板不存在';
+    return 'time_scheme_not_found';
   }
 
   final updatedScheme = host._timeSchemes[index].copyWith(

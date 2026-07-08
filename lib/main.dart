@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -117,15 +118,15 @@ ThemeData _appThemeData(FThemeData forui, {String? fontFamily}) {
   );
 }
 
-String _bootSwitcherLabel(PackageInfo packageInfo) {
+String _bootSwitcherLabel(PackageInfo packageInfo, AppLocalizations l10n) {
   if (packageInfo.packageName.endsWith('.profile')) {
-    return '轻屿课表性能版';
+    return l10n.appTitleProfile;
   }
   if (packageInfo.packageName.endsWith('.debug')) {
-    return '轻屿课表调试版';
+    return l10n.appTitleDebug;
   }
   final label = packageInfo.appName.trim();
-  return label.isNotEmpty ? label : '轻屿课表';
+  return label.isNotEmpty ? label : l10n.appTitle;
 }
 
 String _windowTitleForPackage(PackageInfo packageInfo, AppLocalizations l10n) {
@@ -224,9 +225,10 @@ Future<void> _warmUpAfterFirstFrame(PackageInfo packageInfo) async {
       registerHyperosLayoutDebugTuning();
       await loadDebugTuningPreferencesIfNeeded();
     }
+    final l10n = lookupAppLocalizations(PlatformDispatcher.instance.locale);
     await SystemChrome.setApplicationSwitcherDescription(
       ApplicationSwitcherDescription(
-        label: _bootSwitcherLabel(packageInfo),
+        label: _bootSwitcherLabel(packageInfo, l10n),
         // Android 14+ rejects null primaryColor in the platform channel envelope.
         primaryColor: HyperosMiuixLightColors.primary.toARGB32(),
       ),
@@ -693,17 +695,21 @@ class _AppEntryScreenState extends State<AppEntryScreen>
       }
       showAppToast(
         context,
-        message:
-            message ??
-            (importMode == _BackupImportMode.importAsNew
-                ? l10n.createdNewTimetableAfterImport
-                : l10n.backupRestoredSuccess),
-        kind: AppToastKind.success,
+        message: message != null
+            ? localizeServiceMessage(l10n, message)
+            : (importMode == _BackupImportMode.importAsNew
+                  ? l10n.createdNewTimetableAfterImport
+                  : l10n.backupRestoredSuccess),
+        kind: message != null ? AppToastKind.error : AppToastKind.success,
       );
-      return true;
+      return message == null;
     } on FormatException catch (e) {
       if (mounted) {
-        showAppToast(context, message: e.message, kind: AppToastKind.error);
+        showAppToast(
+          context,
+          message: localizeServiceMessage(l10n, e.message),
+          kind: AppToastKind.error,
+        );
       }
     } catch (_) {
       if (mounted) {

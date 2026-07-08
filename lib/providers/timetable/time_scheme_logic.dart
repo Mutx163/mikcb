@@ -1,3 +1,4 @@
+import '../../l10n/service_message_localizer.dart';
 import '../../models/course.dart';
 import '../../models/time_scheme.dart';
 import '../../models/timetable_profile.dart';
@@ -125,10 +126,15 @@ class TimeSchemeLogic {
         : getSchemeById(schemes, timeSchemeId);
     final sectionCount = scheme?.sections.length ?? settings.sections.length;
     if (sectionCount <= 0) {
-      return timeSchemeId == null ? '当前课表时间配置不可用' : '未找到所选时间模板';
+      return timeSchemeId == null
+          ? 'time_scheme_config_unavailable'
+          : 'time_scheme_not_found_selected';
     }
     if (startSection < 1 || endSection > sectionCount) {
-      return '所选时间模板节次数不足，无法覆盖第 $startSection-$endSection 节';
+      return encodeServiceMessage(
+        'time_scheme_sections_insufficient',
+        {'startSection': startSection, 'endSection': endSection},
+      );
     }
     return null;
   }

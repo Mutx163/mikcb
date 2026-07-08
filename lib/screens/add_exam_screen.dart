@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
@@ -461,7 +462,8 @@ class _AddExamScreenState extends State<AddExamScreen> {
     return HyperosSelectTile<ExamReminderPreset>(
       label: l10n.examReminderLabel,
       items: {
-        for (final preset in ExamReminderPreset.values) preset.label: preset,
+        for (final preset in ExamReminderPreset.values)
+          examReminderPresetLabel(l10n, preset): preset,
       },
       value: _reminderPreset,
       onChanged: (value) => setState(() => _reminderPreset = value),

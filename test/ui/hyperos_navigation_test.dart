@@ -4,14 +4,29 @@ import 'package:university_timetable/ui/hyperos/hyperos_miuix_spec.dart';
 import 'package:university_timetable/ui/hyperos/hyperos_navigation.dart';
 
 void main() {
-  test('Hyperos navigation uses AOSP settings transition base duration', () {
-    expect(HyperosMiuixNavigation.transitionDurationMs, 450);
+  test('Hyperos navigation uses tuned transition base duration', () {
+    HyperosNavigation.applyUserTransitionSpeed(1.0);
+    expect(HyperosMiuixNavigation.transitionDurationMs, 300);
     expect(
       AndroidAnimationScaleService.scaledDuration(
         HyperosMiuixNavigation.transitionDurationMs,
       ).inMilliseconds,
-      450,
+      300,
     );
+  });
+
+  test('user transition speed scales page transition duration', () {
+    AndroidAnimationScaleService.setUserTransitionSpeed(2.0);
+    expect(
+      AndroidAnimationScaleService.scaledDuration(300).inMilliseconds,
+      150,
+    );
+    AndroidAnimationScaleService.setUserTransitionSpeed(0.5);
+    expect(
+      AndroidAnimationScaleService.scaledDuration(300).inMilliseconds,
+      600,
+    );
+    HyperosNavigation.applyUserTransitionSpeed(1.0);
   });
 
   test('transition shadow peaks mid-slide and rests at endpoints', () {

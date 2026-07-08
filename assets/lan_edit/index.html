@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>轻屿课表 · 局域网控制台</title>
+  <title data-i18n="pageTitle">轻屿课表 · 局域网控制台</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23206bc4' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='18' rx='2'/%3E%3Cline x1='16' y1='2' x2='16' y2='6'/%3E%3Cline x1='8' y1='2' x2='8' y2='6'/%3E%3Cline x1='3' y1='10' x2='21' y2='10'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="/assets/vendor/tabler.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
@@ -13,7 +13,7 @@
   <div id="toast-container" aria-live="polite"></div>
   <div id="loading-overlay" class="loading-overlay hidden">
     <div class="spinner-border text-white" role="status"></div>
-    <p class="text-white mt-2">加载课表数据…</p>
+    <p class="text-white mt-2" data-i18n="loadingData">加载课表数据…</p>
   </div>
 
   <!-- 登录页 -->
@@ -23,14 +23,14 @@
         <div class="avatar avatar-xl bg-primary-lt mb-3">
           <i class="ti ti-calendar-event" style="font-size:2rem"></i>
         </div>
-        <h1 class="h2">轻屿课表</h1>
-        <p class="text-secondary">局域网管理后台</p>
+        <h1 class="h2" data-i18n="appName">轻屿课表</h1>
+        <p class="text-secondary" data-i18n="lanConsole">局域网管理后台</p>
       </div>
       <div class="card card-md">
         <div class="card-body">
           <form id="login-form" autocomplete="off">
             <div class="mb-3">
-              <label class="form-label" for="pin-input">手机 App 显示的 6 位 PIN</label>
+              <label class="form-label" for="pin-input" data-i18n="pinLabel">手机 App 显示的 6 位 PIN</label>
               <input
                 id="pin-input"
                 class="form-control form-control-lg text-center"
@@ -44,14 +44,14 @@
             </div>
             <div class="form-footer">
               <button type="submit" class="btn btn-primary w-100">
-                <i class="ti ti-login me-1"></i>验证并进入
+                <i class="ti ti-login me-1"></i><span data-i18n="verifyEnter">验证并进入</span>
               </button>
             </div>
           </form>
           <p id="login-error" class="text-danger mt-3 hidden"></p>
         </div>
       </div>
-      <p class="text-secondary text-center mt-3 small">
+      <p class="text-secondary text-center mt-3 small" data-i18n="loginHint">
         电脑与手机需在同一 Wi‑Fi 或手机热点；PIN 失效请在 App 重新开启局域网编辑。
       </p>
     </div>
@@ -67,13 +67,13 @@
             <span class="navbar-toggler-icon"></span>
           </button>
           <h1 class="navbar-brand navbar-brand-autodark">
-            <span class="navbar-brand-text">轻屿课表</span>
-            <small class="d-block text-secondary" style="font-size:.65rem;font-weight:normal">局域网控制台</small>
+            <span class="navbar-brand-text" data-i18n="appName">轻屿课表</span>
+            <small class="d-block text-secondary" style="font-size:.65rem;font-weight:normal" data-i18n="lanConsole">局域网控制台</small>
           </h1>
           <div class="card card-sm mb-3">
             <div class="card-body py-2">
-              <div class="text-secondary small">当前课表</div>
-              <div id="profile-name" class="fw-bold text-truncate">加载中…</div>
+              <div class="text-secondary small" data-i18n="currentProfile">当前课表</div>
+              <div id="profile-name" class="fw-bold text-truncate" data-i18n="loading">加载中…</div>
             </div>
           </div>
           <div class="collapse navbar-collapse" id="sidebar-menu">
@@ -81,38 +81,38 @@
               <li class="nav-item">
                 <a class="nav-link active" href="#" data-tab="overview">
                   <span class="nav-link-icon"><i class="ti ti-dashboard"></i></span>
-                  <span class="nav-link-title">控制台概览</span>
+                  <span class="nav-link-title" data-i18n="tabOverview">控制台概览</span>
                 </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#" data-tab="timetable">
                   <span class="nav-link-icon"><i class="ti ti-calendar"></i></span>
-                  <span class="nav-link-title">课表网格</span>
+                  <span class="nav-link-title" data-i18n="tabTimetable">课表网格</span>
                 </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#" data-tab="courses">
                   <span class="nav-link-icon"><i class="ti ti-book"></i></span>
-                  <span class="nav-link-title">课程库</span>
+                  <span class="nav-link-title" data-i18n="tabCourses">课程库</span>
                 </a>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#" data-tab="backup">
                   <span class="nav-link-icon"><i class="ti ti-database"></i></span>
-                  <span class="nav-link-title">导入与备份</span>
+                  <span class="nav-link-title" data-i18n="tabBackup">导入与备份</span>
                 </a>
               </li>
             </ul>
             <div class="mt-auto pt-3 border-top border-secondary">
               <div class="px-2 mb-2">
-                <span id="session-badge" class="badge bg-success">连接正常</span>
+                <span id="session-badge" class="badge bg-success" data-i18n="connectionOk">连接正常</span>
                 <div id="session-countdown" class="text-secondary small mt-1">—</div>
               </div>
               <button id="refresh-btn" type="button" class="btn btn-outline-light btn-sm w-100 mb-1">
-                <i class="ti ti-refresh me-1"></i>刷新同步
+                <i class="ti ti-refresh me-1"></i><span data-i18n="refreshSync">刷新同步</span>
               </button>
               <button id="logout-btn" type="button" class="btn btn-outline-danger btn-sm w-100">
-                <i class="ti ti-logout me-1"></i>退出连接
+                <i class="ti ti-logout me-1"></i><span data-i18n="logout">退出连接</span>
               </button>
             </div>
           </div>
@@ -125,8 +125,8 @@
           <div class="container-xl">
             <div class="row g-2 align-items-center">
               <div class="col">
-                <h2 id="page-title" class="page-title">控制台概览</h2>
-                <div id="week-label" class="text-secondary">获取时间轴数据中…</div>
+                <h2 id="page-title" class="page-title" data-i18n="pageOverview">控制台概览</h2>
+                <div id="week-label" class="text-secondary" data-i18n="fetchingTimeline">获取时间轴数据中…</div>
               </div>
             </div>
           </div>
@@ -459,6 +459,7 @@
     </button>
   </nav>
 
+  <script src="/assets/i18n.js"></script>
   <script src="/assets/vendor/tabler.min.js"></script>
   <script src="/assets/app.js"></script>
 </body>

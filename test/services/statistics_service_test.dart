@@ -83,6 +83,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         expect(stats.totalCourses, 2);
@@ -97,6 +98,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: [],
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         expect(stats.totalCourses, 0);
@@ -129,6 +131,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         expect(stats.totalCourses, 1);
@@ -158,6 +161,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         expect(stats.totalCourses, 1);
@@ -178,6 +182,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         // 周一到周五连续5天
@@ -200,6 +205,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         expect(stats.longestStreak, 7);
@@ -216,6 +222,7 @@ void main() {
         final stats = StatisticsService.calculateSemester(
           allCourses: courses,
           currentWeek: 16,
+          semesterWeekCount: 16,
         );
 
         // 周六-周日-周一连续3天

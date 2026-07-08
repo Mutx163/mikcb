@@ -9,15 +9,14 @@ import 'app_log_service.dart';
 import 'home_widget_snapshot_service.dart';
 
 enum HomeWidgetPinTarget {
-  compact22('compact', '主卡 2×2'),
-  miniList22('mini_list', '迷你列表 2×2'),
-  medium24('medium', '概览 2×4'),
-  large44('large', '列表 4×4');
+  compact22('compact'),
+  miniList22('mini_list'),
+  medium24('medium'),
+  large44('large');
 
-  const HomeWidgetPinTarget(this.value, this.label);
+  const HomeWidgetPinTarget(this.value);
 
   final String value;
-  final String label;
 }
 
 enum HomeWidgetPinRequestResult {

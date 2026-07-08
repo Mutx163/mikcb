@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../logging/app_debug_log.dart';
+import '../l10n/service_message_localizer.dart';
 import '../utils/app_toast.dart';
 
 /// 统计分享服务
@@ -19,13 +21,14 @@ class StatisticsShareService {
     required GlobalKey repaintBoundaryKey,
     required String title,
   }) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       // 1. 找到 RenderRepaintBoundary
       final boundary =
           repaintBoundaryKey.currentContext?.findRenderObject()
               as RenderRepaintBoundary?;
       if (boundary == null) {
-        appDebugLog('StatisticsShare', '未找到 RepaintBoundary');
+        appDebugLog('StatisticsShare', 'RepaintBoundary not found');
         return;
       }
 
@@ -33,7 +36,7 @@ class StatisticsShareService {
       final image = await boundary.toImage(pixelRatio: 3.0);
       final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
       if (byteData == null) {
-        appDebugLog('StatisticsShare', '图片转字节失败');
+        appDebugLog('StatisticsShare', 'Failed to convert image to bytes');
         return;
       }
 
@@ -47,13 +50,23 @@ class StatisticsShareService {
         ShareParams(
           files: [XFile(file.path)],
           subject: title,
-          text: '来自轻屿课表的学期统计',
+          text: l10n.statisticsShareText,
         ),
       );
     } catch (e) {
-      appDebugLog('StatisticsShare', '分享失败：$e');
+      appDebugLog('StatisticsShare', 'Share failed: $e');
       if (context.mounted) {
-        showAppToast(context, message: '分享失败: $e', kind: AppToastKind.error);
+        showAppToast(
+          context,
+          message: localizeServiceMessage(
+            AppLocalizations.of(context)!,
+            encodeServiceMessage(
+              'statistics_share_failed',
+              {'detail': '$e'},
+            ),
+          ),
+          kind: AppToastKind.error,
+        );
       }
     }
   }

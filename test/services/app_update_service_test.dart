@@ -437,6 +437,16 @@ void main() {
     },
   );
 
+  test('download rejects untrusted remote url', () async {
+    final service = AppUpdateService();
+    final result = await service.downloadAndInstallUpdate(
+      'https://evil.example.com/app.apk',
+      (_, _) {},
+      null,
+    );
+    expect(result, 'update_download_url_untrusted');
+  });
+
   test('download can be cancelled and cleans up partial apk', () async {
     final tempDir = await Directory.systemTemp.createTemp('mikcb_update_test_');
     final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);

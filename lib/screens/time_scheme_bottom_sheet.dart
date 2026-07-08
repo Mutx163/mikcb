@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
 import '../models/time_scheme.dart';
@@ -408,22 +409,19 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   Future<void> _createScheme() async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
     final name = await showAppTextInputDialog(
       context,
       title: l10n.createTimeSchemeTitle,
-      body: HyperosTextField(
+      confirmLabel: l10n.createAction,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timeSchemeNameLabel,
         hint: l10n.timeSchemeNameHint,
         autofocus: true,
       ),
-      confirmLabel: l10n.createAction,
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
       useRootNavigator: true,
     );
-    controller.dispose();
 
     if (!mounted || name == null || name.isEmpty) {
       return;
@@ -440,20 +438,18 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
 
   Future<void> _renameScheme(TimeScheme scheme) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: scheme.name);
     final name = await showAppTextInputDialog(
       context,
       title: l10n.renameTimeSchemeTitle,
-      body: HyperosTextField(
+      initialValue: scheme.name,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timeSchemeNameLabel,
         autofocus: true,
       ),
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
       useRootNavigator: true,
     );
-    controller.dispose();
 
     if (!mounted || name == null || name.isEmpty || name == scheme.name) {
       return;
@@ -757,6 +753,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Future<void> _editSectionTime(int index) async {
+    final l10n = AppLocalizations.of(context)!;
     final start = await showTimePicker(
       context: context,
       useRootNavigator: true,
@@ -782,7 +779,6 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     final startMinutes = _parseTimeMinutes(editedSection.startTime);
     final endMinutes = _parseTimeMinutes(editedSection.endTime);
     if (endMinutes <= startMinutes) {
-      final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
         message: l10n.timeRangeValidationNoCrossDay,
@@ -797,7 +793,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
     if (validationMessage != null) {
       showAppToast(
         context,
-        message: validationMessage,
+        message: localizeServiceMessage(l10n, validationMessage),
         kind: AppToastKind.warning,
       );
       return;
@@ -831,6 +827,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Future<void> _openQuickGenerate() async {
+    final l10n = AppLocalizations.of(context)!;
     final preset = await showDialog<_QuickGeneratePreset>(
       context: context,
       useRootNavigator: true,
@@ -862,7 +859,11 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       if (!mounted) {
         return;
       }
-      showAppToast(context, message: error.message, kind: AppToastKind.error);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, error.message),
+        kind: AppToastKind.error,
+      );
     }
   }
 
@@ -881,6 +882,7 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
   }
 
   Future<void> _persistEditingScheme() async {
+    final l10n = AppLocalizations.of(context)!;
     final schemeId = _editingSchemeId;
     if (schemeId == null || _nameController == null) {
       return;
@@ -896,7 +898,6 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
         ..text = scheme.name
         ..selection = TextSelection.collapsed(offset: scheme.name.length)
         ..addListener(_scheduleAutoSave);
-      final l10n = AppLocalizations.of(context)!;
       showAppToast(
         context,
         message: l10n.timeSchemeNameEmptyValidation,
@@ -925,7 +926,10 @@ class _TimeSchemeBottomSheetState extends State<_TimeSchemeBottomSheet> {
       setState(() {
         _sections = List<SectionTime>.from(scheme.sections);
       });
-      showAppToast(context, message: message);
+      showAppToast(
+        context,
+        message: localizeServiceMessage(l10n, message),
+      );
       return;
     }
   }

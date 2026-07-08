@@ -145,4 +145,21 @@ END:VCALENDAR
       expect(course.teacher, '白玮玮(讲师)(主讲)');
     },
   );
+
+  test('parseWakeUpSchedule returns empty result when DTSTART is unparseable', () {
+    const content = '''
+BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:坏课
+DESCRIPTION:第1 - 2节\\nA101\\n张老师
+DTSTART:invalid
+DTEND:invalid
+END:VEVENT
+END:VCALENDAR
+''';
+
+    final result = IcsImportService().parseWakeUpSchedule(content);
+    expect(result.courses, isEmpty);
+  });
 }

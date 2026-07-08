@@ -5,6 +5,10 @@ import 'package:university_timetable/services/app_log_service.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  setUp(() {
+    AppLogService.instance.resetForTesting();
+  });
+
   test('initialize tolerates corrupted timetable settings json', () async {
     SharedPreferences.setMockInitialValues({
       'flutter.timetable_settings': '{bad-json',

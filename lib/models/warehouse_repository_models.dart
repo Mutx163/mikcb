@@ -24,7 +24,7 @@ class WarehouseRepositorySource {
   }) {
     final uri = Uri.tryParse(url.trim());
     if (uri == null || uri.host.isEmpty) {
-      throw const WarehouseRepositoryException('仓库地址格式不正确');
+      throw const WarehouseRepositoryException('invalid_repository_url');
     }
 
     if (uri.host == 'github.com') {
@@ -32,7 +32,7 @@ class WarehouseRepositorySource {
           .where((item) => item.isNotEmpty)
           .toList();
       if (segments.length < 2) {
-        throw const WarehouseRepositoryException('GitHub 仓库地址不完整');
+        throw const WarehouseRepositoryException('incomplete_github_repo_url');
       }
       return WarehouseRepositorySource(
         owner: segments[0],
@@ -46,9 +46,7 @@ class WarehouseRepositorySource {
           .where((item) => item.isNotEmpty)
           .toList();
       if (segments.length < 3) {
-        throw const WarehouseRepositoryException(
-          'raw.githubusercontent.com 地址不完整',
-        );
+        throw const WarehouseRepositoryException('incomplete_raw_github_url');
       }
       return WarehouseRepositorySource(
         owner: segments[0],
@@ -57,7 +55,7 @@ class WarehouseRepositorySource {
       );
     }
 
-    throw const WarehouseRepositoryException('当前只支持 GitHub 仓库地址');
+    throw const WarehouseRepositoryException('github_only_supported');
   }
 
   Uri buildRawFileUri(String relativePath) {

@@ -39,6 +39,7 @@ dependencies:
   qr_flutter: ^4.1.0
   fl_chart: ^1.2.0
   forui: ^0.23.0
+  fast_gbk: ^1.0.0
 
 dev_dependencies:
   flutter_test:

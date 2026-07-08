@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import 'debug_tuning_preferences.dart';
 
@@ -167,8 +168,12 @@ class _DebugTuningPanelState extends State<DebugTuningPanel> {
     if (export == null) return;
     await Clipboard.setData(ClipboardData(text: export().toString()));
     if (!mounted) return;
+    final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      const SnackBar(content: Text('已复制 JSON'), duration: Duration(seconds: 1)),
+      SnackBar(
+        content: Text(l10n.debugCopiedJson),
+        duration: const Duration(seconds: 1),
+      ),
     );
   }
 

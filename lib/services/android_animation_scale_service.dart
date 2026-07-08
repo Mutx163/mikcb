@@ -9,11 +9,21 @@ abstract final class AndroidAnimationScaleService {
   static const _channel = MethodChannel('com.mutx163.qingyu/system_ui');
 
   static double _transitionScale = 1.0;
+  static double _userTransitionSpeed = 1.0;
   static double _displayCornerRadiusDp =
       HyperosMiuixNavigation.pageCornerRadiusFallback;
   static bool _initialized = false;
 
   static double get transitionScale => _transitionScale;
+
+  /// App-level page transition speed multiplier (1.0 = default).
+  ///
+  /// Higher values shorten push/pop durations; lower values lengthen them.
+  static double get userTransitionSpeed => _userTransitionSpeed;
+
+  static void setUserTransitionSpeed(double speed) {
+    _userTransitionSpeed = speed.clamp(0.5, 2.5);
+  }
 
   /// Top-left display corner radius in logical pixels (matches screen corners).
   static double get displayCornerRadiusDp => _displayCornerRadiusDp;
@@ -58,11 +68,11 @@ abstract final class AndroidAnimationScaleService {
   }
 
   static Duration scaledDuration(int baseMilliseconds) {
-    if (_transitionScale <= 0) {
+    final speed = _userTransitionSpeed <= 0 ? 1.0 : _userTransitionSpeed;
+    final scale = _transitionScale / speed;
+    if (scale <= 0) {
       return Duration.zero;
     }
-    return Duration(
-      milliseconds: (baseMilliseconds * _transitionScale).round(),
-    );
+    return Duration(milliseconds: (baseMilliseconds * scale).round());
   }
 }

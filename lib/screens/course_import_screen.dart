@@ -1,3 +1,4 @@
+import '../l10n/service_message_localizer.dart';
 import '../logging/app_debug_log.dart';
 import 'dart:async';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
@@ -33,6 +34,7 @@ import '../services/warehouse_import_preferences_service.dart';
 import '../services/warehouse_macro_service.dart';
 import '../services/warehouse_repository_service.dart';
 import '../utils/app_toast.dart';
+import '../utils/import_result_message.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/warehouse_macro_recorder.dart';
 import '../widgets/warehouse_macro_replayer.dart';
@@ -353,6 +355,33 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
   Future<void> _executeIcsImport(String icsContent, String importLabel) async {
     final l10n = AppLocalizations.of(context)!;
     final provider = context.read<TimetableProvider>();
+    try {
+      await _executeIcsImportCore(icsContent, importLabel, provider, l10n);
+    } on FormatException catch (error) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: error.message.isNotEmpty
+            ? localizeServiceMessage(l10n, error.message)
+            : l10n.importNoCoursesRecognized,
+        kind: AppToastKind.error,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showAppToast(
+        context,
+        message: l10n.importNoCoursesRecognized,
+        kind: AppToastKind.error,
+      );
+    }
+  }
+
+  Future<void> _executeIcsImportCore(
+    String icsContent,
+    String importLabel,
+    TimetableProvider provider,
+    AppLocalizations l10n,
+  ) async {
     final replaceExisting = provider.courses.isEmpty
         ? true
         : await _askReplaceExisting(
@@ -415,11 +444,11 @@ class _IcsCourseImportScreenState extends State<IcsCourseImportScreen> {
     if (!mounted) return;
     showAppToast(
       context,
-      message: importedCount > 0
-          ? (replaceExisting
-                ? l10n.importOverwriteCount(importedCount)
-                : l10n.importUpdatedCount(importedCount))
-          : l10n.importNoCourseChanges,
+      message: buildImportResultMessage(
+        l10n: l10n,
+        importedCount: importedCount,
+        replaceExisting: replaceExisting,
+      ),
       kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
     );
     if (importedCount > 0) Navigator.of(context).pop(true);
@@ -635,9 +664,7 @@ class _SpreadsheetCourseImportScreenState
       if (!mounted) return;
       showAppToast(
         context,
-        message: error.message.contains('未识别')
-            ? l10n.spreadsheetFormatUnrecognized
-            : error.message,
+        message: localizeServiceMessage(l10n, error.message),
         kind: AppToastKind.error,
       );
       return;
@@ -714,7 +741,7 @@ Future<bool?> _showSpreadsheetWarnings(
             ...warnings.map(
               (warning) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
-                child: Text('• $warning'),
+                child: Text('• ${localizeServiceWarning(l10n, warning)}'),
               ),
             ),
           ],
@@ -755,16 +782,14 @@ Future<void> _completeParsedCourseImport({
   );
   if (!context.mounted) return;
 
-  final warningSuffix = warningCount == 0
-      ? ''
-      : l10n.aiWarningExtraSuffix(warningCount);
   showAppToast(
     context,
-    message: importedCount > 0
-        ? (replaceExisting
-              ? l10n.importOverwriteCount(importedCount) + warningSuffix
-              : l10n.importUpdatedCount(importedCount) + warningSuffix)
-        : l10n.importNoCourseChanges,
+    message: buildImportResultMessage(
+      l10n: l10n,
+      importedCount: importedCount,
+      replaceExisting: replaceExisting,
+      warningCount: warningCount,
+    ),
     kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
   );
   if (importedCount > 0) {
@@ -1285,12 +1310,12 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
       if (mounted) {
         setState(() {
           _aiParsedResult = null;
-          _aiParseError = error.message;
+          _aiParseError = localizeServiceMessage(l10n, error.message);
         });
         if (showError) {
           showAppToast(
             context,
-            message: error.message,
+            message: localizeServiceMessage(l10n, error.message),
             kind: AppToastKind.error,
           );
         }
@@ -1378,16 +1403,14 @@ class _AiImageCourseImportScreenState extends State<AiImageCourseImportScreen> {
         return;
       }
 
-      final warningSuffix = result.warnings.isEmpty
-          ? ''
-          : l10n.aiWarningExtraSuffix(result.warnings.length);
       showAppToast(
         context,
-        message: importedCount > 0
-            ? (replaceExisting
-                  ? l10n.importOverwriteCount(importedCount) + warningSuffix
-                  : l10n.importUpdatedCount(importedCount) + warningSuffix)
-            : l10n.importNoCourseChanges,
+        message: buildImportResultMessage(
+          l10n: l10n,
+          importedCount: importedCount,
+          replaceExisting: replaceExisting,
+          warningCount: result.warnings.length,
+        ),
         kind: importedCount > 0 ? AppToastKind.success : AppToastKind.info,
       );
       if (importedCount > 0) {
@@ -1589,7 +1612,11 @@ class _WarehouseCourseImportScreenState
                 : 'macro/${macro.adapterId}.js',
             importUrl: macro.importUrl,
             maintainer: 'macro',
-            description: '快捷导入 ${macro.schoolName} ${macro.adapterName}',
+            description: AppLocalizations.of(context)!
+                .courseImportQuickImportDescription(
+              macro.schoolName,
+              macro.adapterName,
+            ),
           ),
           fetchOptions: _currentFetchOptions(),
           macroRecord: macro,
@@ -1729,7 +1756,10 @@ class _WarehouseCourseImportScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _importListDetail(context, '${snapshot.error}'),
+                            _importListDetail(
+                              context,
+                              localizeServiceError(l10n, snapshot.error!),
+                            ),
                             const SizedBox(height: 12),
                             HyperosButton(
                               label: l10n.reloadAction,
@@ -2413,7 +2443,10 @@ class _WarehouseSchoolAdaptersScreenState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _importListDetail(context, '${snapshot.error}'),
+                            _importListDetail(
+                              context,
+                              localizeServiceError(l10n, snapshot.error!),
+                            ),
                             const SizedBox(height: 12),
                             HyperosButton(
                               label: l10n.reloadAction,
@@ -2881,7 +2914,7 @@ class _WarehouseAdapterDetailScreenState
                           else
                             Text(
                               snapshot.hasError
-                                  ? '${snapshot.error}'
+                                  ? localizeServiceError(l10n, snapshot.error!)
                                   : l10n.scriptEmpty,
                               style: HyperosTypography.listDetail(
                                 context,
@@ -3754,7 +3787,7 @@ class _WarehouseAdapterWebLoginScreenState
       final waitingForMacroCourses =
           _isMacroReplay && _playbackState == PlaybackUiState.executingImport;
       final message = waitingForMacroCourses
-          ? '导入脚本未返回课程数据'
+          ? AppLocalizations.of(context)!.courseImportScriptNoCourses
           : AppLocalizations.of(context)!.executeFailedWithError('timeout');
       _debugImportLog(
         'timeout -> mark import failed waitingForMacroCourses=$waitingForMacroCourses message="$message"',
@@ -4042,12 +4075,14 @@ class _WarehouseAdapterWebLoginScreenState
         break;
       case 'error':
         if (!mounted) return;
-        final errorMessage = (message['message'] as String?) ?? '脚本执行失败';
+        final l10n = AppLocalizations.of(context)!;
+        final errorMessage =
+            (message['message'] as String?) ?? l10n.courseImportScriptFailed;
         _debugImportLog('bridge error -> mark failed message="$errorMessage"');
         _cancelImportTimeout();
         setState(() {
           _isExecutingImport = false;
-          _lastScriptStatus = '脚本执行失败';
+          _lastScriptStatus = l10n.courseImportScriptFailed;
         });
         _showMacroReplayImportError(errorMessage);
         _showLightTip(context, errorMessage);
@@ -4132,15 +4167,12 @@ class _WarehouseAdapterWebLoginScreenState
       return;
     }
     final validatorName = (message['validatorName'] as String?) ?? '';
-    final controller = TextEditingController(
-      text: (message['defaultValue'] as String?) ?? '',
-    );
     final l10n = AppLocalizations.of(context)!;
     final result = await showAppTextInputDialog(
       context,
       title: (message['title'] as String?) ?? l10n.inputRequiredTitle,
       confirmLabel: l10n.saveAction,
-      readValue: () => controller.text,
+      initialValue: (message['defaultValue'] as String?) ?? '',
       validate: (text) {
         if (validatorName == 'validateYearInput' &&
             !RegExp(r'^[0-9]{4}$').hasMatch(text)) {
@@ -4149,7 +4181,7 @@ class _WarehouseAdapterWebLoginScreenState
         }
         return true;
       },
-      body: Column(
+      bodyBuilder: (controller) => Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -4776,14 +4808,15 @@ class _WarehouseAdapterWebLoginScreenState
   }
 
   void _startMacroRecording() {
+    final l10n = AppLocalizations.of(context)!;
     setState(() {
       _macroRecordingState = MacroRecordingState.recording;
       _macroRawEvents = [];
-      _lastScriptStatus = '录制中…点击停止完成录制';
+      _lastScriptStatus = l10n.courseImportRecordingStatus;
     });
     // 在当前页面注入录制 JS
     _injectMacroRecorderJs();
-    _showLightTip(context, '录制已开始，请按正常流程操作教务网站');
+    _showLightTip(context, l10n.courseImportRecordingStartedTip);
   }
 
   /// 导入成功时自动完成录制并返回
@@ -4865,17 +4898,17 @@ class _WarehouseAdapterWebLoginScreenState
       setState(() {
         _macroRecordingState = MacroRecordingState.idle;
         _macroRawEvents = [];
-        _lastScriptStatus = '未录制到任何操作';
+        _lastScriptStatus = l10n.courseImportRecordingEmptyStatus;
       });
-      _showLightTip(context, '未录制到任何操作');
+      _showLightTip(context, l10n.courseImportRecordingEmptyTip);
       return;
     }
 
     // 询问用户是否要保存
     final shouldSave = await showAppConfirmDialog(
       context,
-      title: '保存录制',
-      message: '录制了 ${steps.length} 个操作步骤。是否保存为快捷导入？',
+      title: l10n.courseImportSaveRecordingTitle,
+      message: l10n.courseImportSaveRecordingMessage(steps.length),
       confirmLabel: l10n.saveAction,
     );
 
@@ -4912,7 +4945,7 @@ class _WarehouseAdapterWebLoginScreenState
     setState(() {
       _macroRecordingState = MacroRecordingState.idle;
       _macroRawEvents = [];
-      _lastScriptStatus = '录制已保存（${steps.length} 步）';
+      _lastScriptStatus = l10n.courseImportRecordingSavedStatus(steps.length);
     });
     // 保存后自动返回适配器列表，用户即可看到快捷导入按钮
     if (mounted) {
@@ -4939,6 +4972,7 @@ class _WarehouseAdapterWebLoginScreenState
 
     final replayer = WarehouseMacroReplayer(
       controller: _controller,
+      l10n: AppLocalizations.of(context)!,
       callbacks: ReplayCallbacks(
         onProgress: (progress) {
           if (!mounted) return;
@@ -4948,7 +4982,11 @@ class _WarehouseAdapterWebLoginScreenState
         },
         onPauseForManualInput: (step, reason) async {
           if (!mounted) return false;
-          if (shouldUseRememberedPasswordForManualStep(step, reason)) {
+          if (shouldUseRememberedPasswordForManualStep(
+            step,
+            reason,
+            AppLocalizations.of(context)!,
+          )) {
             final remembered =
                 _rememberedLogin ??
                 await _preferencesService.getRememberedLogin(
@@ -5537,17 +5575,27 @@ class _AiPreviewCard extends StatelessWidget {
   }
 
   Widget _buildCoursePreviewLine(BuildContext context, Course course) {
+    final l10n = AppLocalizations.of(context)!;
     final weeks = course.customWeeks ?? const [];
     final weekText = weeks.isEmpty
-        ? '未提供周次'
+        ? l10n.courseImportWeekNotProvided
         : weeks.length <= 6
-        ? weeks.join('、')
+        ? weeks.join(l10n.weekListSeparator)
         : '${weeks.first}-${weeks.last}（共 ${weeks.length} 周）';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: _importListDetail(
         context,
-        '周${_weekdayLabel(course.dayOfWeek)} 第${course.startSection}-${course.endSection}节  ${course.name}  ${course.location.isEmpty ? "未填写地点" : course.location}  周次：$weekText',
+        l10n.courseImportPreviewLine(
+          _weekdayLabel(l10n, course.dayOfWeek),
+          course.startSection,
+          course.endSection,
+          course.name,
+          course.location.isEmpty
+              ? l10n.courseImportLocationNotFilled
+              : course.location,
+          weekText,
+        ),
       ),
     );
   }
@@ -5565,6 +5613,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
   return showHyperosSheet<_ImportSemesterConfig>(
     context: context,
     builder: (sheetContext) {
+      final l10n = AppLocalizations.of(sheetContext)!;
       var selectedSemesterStartDate = initialSemesterStartDate;
       var selectedFirstCourseWeek = initialFirstCourseWeek < 1
           ? 1
@@ -5573,7 +5622,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
           : initialFirstCourseWeek;
       var autoTrackWeekMapping = inferredFirstCourseDate != null;
       final weekItems = {
-        for (var i = 1; i <= 20; i++) '校历第 $i 周': i,
+        for (var i = 1; i <= 20; i++) l10n.calendarWeekOption(i): i,
       };
 
       return StatefulBuilder(
@@ -5622,9 +5671,9 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                   HyperosListGroup(
                     children: [
                       HyperosNavTile(
-                        title: '开学日期',
+                        title: l10n.importSemesterStartDateTitle,
                         subtitle:
-                            '${_formatDate(selectedSemesterStartDate)} · 按这一天所在周作为校历第 1 周',
+                            '${_formatDate(selectedSemesterStartDate)} · ${l10n.importSemesterStartDateSubtitle}',
                         onTap: pickStartDate,
                       ),
                     ],
@@ -5633,8 +5682,8 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                   HyperosControlCard(
                     edgeToEdge: true,
                     child: HyperosSelectTile<int>(
-                      label: '课表第 1 周对应校历第几周',
-                      subtitle: '如果学校第一周没课，就选第 2 周；前两周都没课就选第 3 周。',
+                      label: l10n.importFirstCourseWeekMappingLabel,
+                      subtitle: l10n.importFirstCourseWeekMappingSubtitle,
                       items: weekItems,
                       value: selectedFirstCourseWeek,
                       useSheetForPopup: true,
@@ -5651,8 +5700,11 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                     padding: const EdgeInsets.all(12),
                     child: Text(
                       shiftedWeeks <= 0
-                          ? '导入后会直接把课表第 1 周当作校历第 1 周。'
-                          : '导入后会把所有课程周次整体顺延 $shiftedWeeks 周，让课表第 1 周落在校历第 $selectedFirstCourseWeek 周。',
+                          ? l10n.importSemesterMappingNoShiftHint
+                          : l10n.importSemesterMappingShiftHint(
+                              shiftedWeeks,
+                              selectedFirstCourseWeek,
+                            ),
                       style: HyperosTypography.sectionDescription(context),
                     ),
                   ),
@@ -5661,7 +5713,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                     children: [
                       Expanded(
                         child: HyperosButton(
-                          label: '取消',
+                          label: l10n.cancelAction,
                           variant: HyperosButtonVariant.secondary,
                           expand: true,
                           onPressed: () => Navigator.pop(context),
@@ -5670,7 +5722,7 @@ Future<_ImportSemesterConfig?> _pickImportSemesterConfig(
                       const SizedBox(width: 12),
                       Expanded(
                         child: HyperosButton(
-                          label: '继续导入',
+                          label: l10n.spreadsheetImportWarningsContinue,
                           expand: true,
                           onPressed: () => Navigator.pop(
                             context,
@@ -5698,13 +5750,14 @@ Future<bool?> _askReplaceExisting(
   required String title,
   required String content,
 }) {
+  final l10n = AppLocalizations.of(context)!;
   return showAppTripleActionDialog(
     context,
     title: title,
-    message: '$content\n\n建议日常更新课表时优先使用“更新课表（保留本地信息）”。',
-    cancelLabel: '取消',
-    secondaryLabel: '更新课表（推荐）',
-    primaryLabel: '覆盖导入',
+    message: '$content\n\n建议日常更新课表时优先使用「更新课表」：会保留本地独有课程，并合并导入文件中的课程。',
+    cancelLabel: l10n.cancelAction,
+    secondaryLabel: l10n.courseImportUpdateRecommendedAction,
+    primaryLabel: l10n.courseImportOverwriteAction,
   );
 }
 
@@ -5717,12 +5770,15 @@ Future<bool> _ensureSectionCapacity(
     return true;
   }
 
+  final l10n = AppLocalizations.of(context)!;
   final shouldContinue = await showAppConfirmDialog(
     context,
-    title: '时间模板节次不足',
-    message:
-        '当前课表时间模板只有 ${provider.settings.sectionCount} 节，但导入数据需要到第 $requiredSectionCount 节。是否自动补齐后继续导入？',
-    confirmLabel: '自动补齐并导入',
+    title: l10n.courseImportSectionCountInsufficientTitle,
+    message: l10n.courseImportSectionCountInsufficientMessage(
+      provider.settings.sectionCount,
+      requiredSectionCount,
+    ),
+    confirmLabel: l10n.courseImportAutoFillAndImportAction,
   );
 
   if (shouldContinue != true || !context.mounted) {
@@ -5741,12 +5797,17 @@ Future<bool> _ensureSectionCapacity(
   return true;
 }
 
-String _weekdayLabel(int dayOfWeek) {
-  const labels = ['一', '二', '三', '四', '五', '六', '日'];
-  if (dayOfWeek < 1 || dayOfWeek > 7) {
-    return dayOfWeek.toString();
-  }
-  return labels[dayOfWeek - 1];
+String _weekdayLabel(AppLocalizations l10n, int dayOfWeek) {
+  return switch (dayOfWeek) {
+    1 => l10n.weekdayShortMonday,
+    2 => l10n.weekdayShortTuesday,
+    3 => l10n.weekdayShortWednesday,
+    4 => l10n.weekdayShortThursday,
+    5 => l10n.weekdayShortFriday,
+    6 => l10n.weekdayShortSaturday,
+    7 => l10n.weekdayShortSunday,
+    _ => dayOfWeek.toString(),
+  };
 }
 
 String _formatDate(DateTime date) {
@@ -5776,29 +5837,29 @@ Future<String?> _promptWarehouseImportUrl(
   required String adapterName,
   String initialValue = '',
 }) async {
-  final controller = TextEditingController(text: initialValue);
+  final l10n = AppLocalizations.of(context)!;
   final result = await showAppTextInputDialog(
     context,
-    title: '输入教务网址',
-    cancelLabel: '取消',
-    confirmLabel: '保存并继续',
-    readValue: () => controller.text,
-    body: Column(
+    title: l10n.courseImportPortalUrlTitle,
+    cancelLabel: l10n.cancelAction,
+    confirmLabel: l10n.courseImportPortalUrlSaveContinue,
+    initialValue: initialValue,
+    bodyBuilder: (controller) => Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('“$schoolName / $adapterName” 没有默认登录地址，请先输入学校教务系统网址。'),
+        Text(l10n.courseImportPortalUrlMissingBody(schoolName, adapterName)),
         const SizedBox(height: 12),
         HyperosTextField(
           controller: controller,
-          label: '教务网址',
+          label: l10n.courseImportPortalUrlLabel,
           hint: 'http(s)://...',
           autofocus: true,
           keyboardType: TextInputType.url,
         ),
         const SizedBox(height: 8),
         Text(
-          '保存后下次会直接使用，也可以在适配器信息页里修改。',
+          l10n.courseImportPortalUrlHint,
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
@@ -5812,7 +5873,7 @@ Future<String?> _promptWarehouseImportUrl(
     if (!context.mounted) {
       return null;
     }
-    _showLightTip(context, '登录地址格式不正确');
+    _showLightTip(context, l10n.courseImportPortalUrlInvalid);
     return null;
   }
   return result.trim();

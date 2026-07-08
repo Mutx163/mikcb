@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 
 import 'warehouse_macro_replayer.dart';
@@ -98,9 +99,9 @@ class PlaybackOverlay extends StatelessWidget {
               style: _onScrimBodyStyle(context),
             ),
           ),
-          if (progress.statusLabel.isNotEmpty)
+          if (progress.statusLabel(l10n).isNotEmpty)
             Text(
-              progress.statusLabel,
+              progress.statusLabel(l10n),
               style: _onScrimBodyStyle(context).copyWith(
                 fontStyle: FontStyle.italic,
               ),
@@ -146,7 +147,12 @@ class PlaybackOverlay extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        progress.pauseReason ?? l10n.quickImportManualInputHint,
+                        progress.pauseReason != null
+                            ? localizeServiceMessage(
+                                l10n,
+                                progress.pauseReason!,
+                              )
+                            : l10n.quickImportManualInputHint,
                         textAlign: TextAlign.center,
                         style: HyperosTypography.listDetail(context),
                       ),

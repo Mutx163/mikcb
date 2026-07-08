@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:fast_gbk/fast_gbk.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:university_timetable/models/course.dart';
 import 'package:university_timetable/models/timetable_settings.dart';
@@ -275,5 +276,43 @@ Course A,Teacher,1,1-2,Room,1-16
       ),
       throwsA(isA<FormatException>()),
     );
+  });
+
+  test('prefers odd week when both odd and even columns are true', () {
+    const csv = '''
+课程名,星期,开始节,结束节,开始周,结束周,单周,双周
+冲突课,2,1,2,1,16,是,是
+''';
+
+    final result = service.parseBytes(
+      utf8.encode(csv),
+      fileName: 'courses.csv',
+      settings: settings,
+    );
+
+    expect(result.courses, hasLength(1));
+    final course = result.courses.first;
+    expect(course.isOddWeek, isTrue);
+    expect(course.isEvenWeek, isFalse);
+    expect(course.activeWeeks, isNotEmpty);
+    expect(result.warnings, isNotEmpty);
+    expect(result.warnings.first, contains('单周与双周'));
+  });
+
+  test('parses GBK-encoded CSV exported from Chinese Windows Excel', () {
+    const csv = '''
+课程名,星期,开始节,结束节,上课周
+高等数学,1,1,2,1-16
+''';
+    final gbkBytes = gbk.encode(csv);
+
+    final result = service.parseBytes(
+      gbkBytes,
+      fileName: 'courses.csv',
+      settings: settings,
+    );
+
+    expect(result.courses, hasLength(1));
+    expect(result.courses.first.name, '高等数学');
   });
 }

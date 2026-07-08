@@ -158,12 +158,6 @@ extension SectionTimeDisplayModeX on SectionTimeDisplayMode {
     SectionTimeDisplayMode.startAndEnd => 'start_and_end',
   };
 
-  String get label => switch (this) {
-    SectionTimeDisplayMode.hidden => '不显示',
-    SectionTimeDisplayMode.startOnly => '仅显示上课时间',
-    SectionTimeDisplayMode.startAndEnd => '显示上下课时间',
-  };
-
   static SectionTimeDisplayMode fromValue(String? value) {
     return SectionTimeDisplayMode.values.firstWhere(
       (item) => item.value == value,
@@ -179,12 +173,6 @@ extension WidgetBackgroundStyleX on WidgetBackgroundStyle {
     WidgetBackgroundStyle.gradient => 'gradient',
   };
 
-  String get label => switch (this) {
-    WidgetBackgroundStyle.glass => '半透明玻璃感',
-    WidgetBackgroundStyle.solid => '纯色卡片',
-    WidgetBackgroundStyle.gradient => '渐变卡片',
-  };
-
   static WidgetBackgroundStyle fromValue(String? value) {
     return WidgetBackgroundStyle.values.firstWhere(
       (item) => item.value == value,
@@ -198,12 +186,6 @@ extension AppThemeModeX on AppThemeMode {
     AppThemeMode.system => 'system',
     AppThemeMode.light => 'light',
     AppThemeMode.dark => 'dark',
-  };
-
-  String get label => switch (this) {
-    AppThemeMode.system => '跟随系统',
-    AppThemeMode.light => '浅色模式',
-    AppThemeMode.dark => '深色模式',
   };
 
   static AppThemeMode fromValue(String? value) {
@@ -232,16 +214,6 @@ extension HomeTitleStyleX on HomeTitleStyle {
   String get value => switch (this) {
     HomeTitleStyle.classic => 'classic',
     HomeTitleStyle.brand => 'brand',
-  };
-
-  String get label => switch (this) {
-    HomeTitleStyle.classic => '经典文字',
-    HomeTitleStyle.brand => '大 Logo',
-  };
-
-  String get description => switch (this) {
-    HomeTitleStyle.classic => '保持原本标题样式，只显示文字，点击即可切换课表',
-    HomeTitleStyle.brand => '显示大 Logo 和小课表名称，更强调品牌感',
   };
 
   static HomeTitleStyle fromValue(String? value) {
@@ -286,11 +258,6 @@ extension LiveDuringClassTimeDisplayModeX on LiveDuringClassTimeDisplayMode {
     LiveDuringClassTimeDisplayMode.total => 'total',
   };
 
-  String get label => switch (this) {
-    LiveDuringClassTimeDisplayMode.nearest => '最近时间',
-    LiveDuringClassTimeDisplayMode.total => '总时间',
-  };
-
   static LiveDuringClassTimeDisplayMode fromValue(String? value) {
     return LiveDuringClassTimeDisplayMode.values.firstWhere(
       (item) => item.value == value,
@@ -313,21 +280,6 @@ extension LiveCountdownTextStyleX on LiveCountdownTextStyle {
     LiveCountdownTextStyle.secondOnlyCn => 'second_only_cn',
     LiveCountdownTextStyle.secondOnlyShort => 'second_only_short',
     LiveCountdownTextStyle.secondOnlySlash => 'second_only_slash',
-  };
-
-  String get label => switch (this) {
-    LiveCountdownTextStyle.smart => '智能（中文）',
-    LiveCountdownTextStyle.smartMinS => '智能（英文）',
-    LiveCountdownTextStyle.minuteSecondCn => '分秒（5分钟19秒）',
-    LiveCountdownTextStyle.minuteSecondColon => 'mm:ss（05:19）',
-    LiveCountdownTextStyle.minuteSecondMinS => 'min+s（5min19s）',
-    LiveCountdownTextStyle.minuteSecondMinSlashS => 'min/s（5min/19s）',
-    LiveCountdownTextStyle.minuteOnlyCn => '纯分钟（5分钟）',
-    LiveCountdownTextStyle.minuteOnlyMin => 'min（5min）',
-    LiveCountdownTextStyle.minuteOnlySlash => '/min（5/min）',
-    LiveCountdownTextStyle.secondOnlyCn => '纯秒（5秒）',
-    LiveCountdownTextStyle.secondOnlyShort => 's（5s）',
-    LiveCountdownTextStyle.secondOnlySlash => '/s（5/s）',
   };
 
   bool get alwaysShowsSeconds => switch (this) {
@@ -355,11 +307,6 @@ extension MiuiIslandLabelStyleX on MiuiIslandLabelStyle {
     MiuiIslandLabelStyle.iconAndText => 'icon_and_text',
   };
 
-  String get label => switch (this) {
-    MiuiIslandLabelStyle.textOnly => '仅文字',
-    MiuiIslandLabelStyle.iconAndText => '图标+文字',
-  };
-
   static MiuiIslandLabelStyle fromValue(String? value) {
     return MiuiIslandLabelStyle.values.firstWhere(
       (item) => item.value == value,
@@ -373,12 +320,6 @@ extension MiuiIslandLabelContentX on MiuiIslandLabelContent {
     MiuiIslandLabelContent.courseName => 'course_name',
     MiuiIslandLabelContent.location => 'location',
     MiuiIslandLabelContent.courseNameAndLocation => 'course_name_and_location',
-  };
-
-  String get label => switch (this) {
-    MiuiIslandLabelContent.courseName => '课程名',
-    MiuiIslandLabelContent.location => '教室',
-    MiuiIslandLabelContent.courseNameAndLocation => '课程名+教室',
   };
 
   static MiuiIslandLabelContent fromValue(String? value) {
@@ -396,12 +337,6 @@ extension MiuiIslandLabelFontWeightX on MiuiIslandLabelFontWeight {
     MiuiIslandLabelFontWeight.bold => 'bold',
   };
 
-  String get label => switch (this) {
-    MiuiIslandLabelFontWeight.regular => '常规',
-    MiuiIslandLabelFontWeight.medium => '中等',
-    MiuiIslandLabelFontWeight.bold => '加粗',
-  };
-
   static MiuiIslandLabelFontWeight fromValue(String? value) {
     return MiuiIslandLabelFontWeight.values.firstWhere(
       (item) => item.value == value,
@@ -415,12 +350,6 @@ extension MiuiIslandLabelRenderQualityX on MiuiIslandLabelRenderQuality {
     MiuiIslandLabelRenderQuality.standard => 'standard',
     MiuiIslandLabelRenderQuality.high => 'high',
     MiuiIslandLabelRenderQuality.ultra => 'ultra',
-  };
-
-  String get label => switch (this) {
-    MiuiIslandLabelRenderQuality.standard => '标准',
-    MiuiIslandLabelRenderQuality.high => '高清',
-    MiuiIslandLabelRenderQuality.ultra => '超高清',
   };
 
   static MiuiIslandLabelRenderQuality fromValue(String? value) {
@@ -438,12 +367,6 @@ extension MiuiIslandExpandedIconModeX on MiuiIslandExpandedIconMode {
     MiuiIslandExpandedIconMode.hidden => 'hidden',
   };
 
-  String get label => switch (this) {
-    MiuiIslandExpandedIconMode.appIcon => '应用图标',
-    MiuiIslandExpandedIconMode.customImage => '自定义图片',
-    MiuiIslandExpandedIconMode.hidden => '不显示',
-  };
-
   static MiuiIslandExpandedIconMode fromValue(String? value) {
     return MiuiIslandExpandedIconMode.values.firstWhere(
       (item) => item.value == value,
@@ -457,12 +380,6 @@ extension LiveBeforeClassQuickActionX on LiveBeforeClassQuickAction {
     LiveBeforeClassQuickAction.none => 'none',
     LiveBeforeClassQuickAction.silent => 'silent',
     LiveBeforeClassQuickAction.doNotDisturb => 'do_not_disturb',
-  };
-
-  String get label => switch (this) {
-    LiveBeforeClassQuickAction.none => '不显示',
-    LiveBeforeClassQuickAction.silent => '打开静音',
-    LiveBeforeClassQuickAction.doNotDisturb => '打开免打扰',
   };
 
   static LiveBeforeClassQuickAction fromValue(String? value) {
@@ -483,13 +400,6 @@ extension CourseCardVerticalAlignX on CourseCardVerticalAlign {
     CourseCardVerticalAlign.spaceEvenly => 'space_evenly',
   };
 
-  String get label => switch (this) {
-    CourseCardVerticalAlign.top => '顶部对齐',
-    CourseCardVerticalAlign.center => '垂直居中',
-    CourseCardVerticalAlign.bottom => '底部对齐',
-    CourseCardVerticalAlign.spaceEvenly => '上下均布',
-  };
-
   static CourseCardVerticalAlign fromValue(String? value) {
     return CourseCardVerticalAlign.values.firstWhere(
       (item) => item.value == value,
@@ -505,12 +415,6 @@ extension CourseCardHorizontalAlignX on CourseCardHorizontalAlign {
     CourseCardHorizontalAlign.left => 'left',
     CourseCardHorizontalAlign.center => 'center',
     CourseCardHorizontalAlign.right => 'right',
-  };
-
-  String get label => switch (this) {
-    CourseCardHorizontalAlign.left => '居左',
-    CourseCardHorizontalAlign.center => '居中',
-    CourseCardHorizontalAlign.right => '居右',
   };
 
   static CourseCardHorizontalAlign fromValue(String? value) {
@@ -529,11 +433,6 @@ extension TimetableTimeColumnWidthModeX on TimetableTimeColumnWidthMode {
     TimetableTimeColumnWidthMode.wide => 'wide',
   };
 
-  String get label => switch (this) {
-    TimetableTimeColumnWidthMode.narrow => '窄',
-    TimetableTimeColumnWidthMode.wide => '宽',
-  };
-
   static TimetableTimeColumnWidthMode fromValue(String? value) {
     return TimetableTimeColumnWidthMode.values.firstWhere(
       (item) => item.value == value,
@@ -550,11 +449,6 @@ extension TimetableCourseSpacingModeX on TimetableCourseSpacingMode {
     TimetableCourseSpacingMode.wide => 'wide',
   };
 
-  String get label => switch (this) {
-    TimetableCourseSpacingMode.narrow => '窄',
-    TimetableCourseSpacingMode.wide => '宽',
-  };
-
   static TimetableCourseSpacingMode fromValue(String? value) {
     return TimetableCourseSpacingMode.values.firstWhere(
       (item) => item.value == value,
@@ -569,11 +463,6 @@ extension AppUpdateDownloadSourceX on AppUpdateDownloadSource {
     AppUpdateDownloadSource.mirror => 'mirror',
   };
 
-  String get label => switch (this) {
-    AppUpdateDownloadSource.original => 'GitHub 原版',
-    AppUpdateDownloadSource.mirror => '国内镜像',
-  };
-
   static AppUpdateDownloadSource fromValue(String? value) {
     return AppUpdateDownloadSource.values.firstWhere(
       (item) => item.value == value,
@@ -586,16 +475,6 @@ extension AppUpdateDownloadChannelX on AppUpdateDownloadChannel {
   String get value => switch (this) {
     AppUpdateDownloadChannel.pgyer => 'pgyer',
     AppUpdateDownloadChannel.github => 'github',
-  };
-
-  String get label => switch (this) {
-    AppUpdateDownloadChannel.pgyer => '蒲公英下载',
-    AppUpdateDownloadChannel.github => 'GitHub 下载',
-  };
-
-  String get description => switch (this) {
-    AppUpdateDownloadChannel.pgyer => '国内高速下载，推荐使用',
-    AppUpdateDownloadChannel.github => 'GitHub 原生 + 国内镜像',
   };
 
   static AppUpdateDownloadChannel fromValue(String? value) {
@@ -614,24 +493,6 @@ extension AppUpdateMirrorPresetX on AppUpdateMirrorPreset {
     AppUpdateMirrorPreset.ghProxyCom => 'gh_proxy_com',
     AppUpdateMirrorPreset.ghproxyNet => 'ghproxy_net',
     AppUpdateMirrorPreset.custom => 'custom',
-  };
-
-  String get label => switch (this) {
-    AppUpdateMirrorPreset.ghfast => '默认镜像',
-    AppUpdateMirrorPreset.ghproxyCn => '备用镜像 1',
-    AppUpdateMirrorPreset.ghLlkk => '备用镜像 2',
-    AppUpdateMirrorPreset.ghProxyCom => '备用镜像 3',
-    AppUpdateMirrorPreset.ghproxyNet => '备用镜像 4',
-    AppUpdateMirrorPreset.custom => '自定义',
-  };
-
-  String get description => switch (this) {
-    AppUpdateMirrorPreset.ghfast => defaultAppUpdateMirrorUrlPrefix,
-    AppUpdateMirrorPreset.ghproxyCn => ghproxyCnMirrorUrlPrefix,
-    AppUpdateMirrorPreset.ghLlkk => ghLlkkMirrorUrlPrefix,
-    AppUpdateMirrorPreset.ghProxyCom => ghProxyComMirrorUrlPrefix,
-    AppUpdateMirrorPreset.ghproxyNet => ghproxyNetMirrorUrlPrefix,
-    AppUpdateMirrorPreset.custom => '使用你自己填写的镜像前缀',
   };
 
   bool get usesCustomUrl => this == AppUpdateMirrorPreset.custom;
@@ -1083,6 +944,9 @@ class TimetableSettings {
   static const double defaultFrostedSheetTintAlpha = 0.70;
   static const double defaultFrostedSheetBarrierAlpha = 0.20;
   static const bool defaultFrostedBlurEnabled = true;
+  static const double defaultPageTransitionSpeed = 1.0;
+  static const double minPageTransitionSpeed = 0.5;
+  static const double maxPageTransitionSpeed = 2.5;
 
   final List<SectionTime> sections;
   final String? activeTimeSchemeId;
@@ -1129,6 +993,7 @@ class TimetableSettings {
   final SectionTimeDisplayMode timetableSectionTimeDisplayMode;
   final bool timetableHideWeekends;
   final bool enableHaptics;
+  final double pageTransitionSpeed;
   final bool liveShowCourseName;
   final bool liveShowLocation;
   final bool liveShowCountdown;
@@ -1271,6 +1136,7 @@ class TimetableSettings {
     this.timetableSectionTimeDisplayMode = SectionTimeDisplayMode.startAndEnd,
     this.timetableHideWeekends = false,
     this.enableHaptics = true,
+    this.pageTransitionSpeed = defaultPageTransitionSpeed,
     this.liveShowCourseName = true,
     this.liveShowLocation = true,
     this.liveShowCountdown = true,
@@ -1430,6 +1296,7 @@ class TimetableSettings {
       timetableSectionTimeDisplayMode: SectionTimeDisplayMode.startAndEnd,
       timetableHideWeekends: false,
       enableHaptics: true,
+      pageTransitionSpeed: defaultPageTransitionSpeed,
       liveShowCourseName: true,
       liveShowLocation: true,
       liveShowCountdown: true,
@@ -1564,6 +1431,7 @@ class TimetableSettings {
       'timetableSectionTimeDisplayMode': timetableSectionTimeDisplayMode.value,
       'timetableHideWeekends': timetableHideWeekends,
       'enableHaptics': enableHaptics,
+      'pageTransitionSpeed': pageTransitionSpeed,
       'liveShowCourseName': liveShowCourseName,
       'liveShowLocation': liveShowLocation,
       'liveShowCountdown': liveShowCountdown,
@@ -1792,6 +1660,10 @@ class TimetableSettings {
       ),
       timetableHideWeekends: json['timetableHideWeekends'] as bool? ?? false,
       enableHaptics: json['enableHaptics'] as bool? ?? true,
+      pageTransitionSpeed:
+          ((json['pageTransitionSpeed'] as num?)?.toDouble() ??
+                  defaultPageTransitionSpeed)
+              .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       liveShowCourseName: json['liveShowCourseName'] as bool? ?? true,
       liveShowLocation: json['liveShowLocation'] as bool? ?? true,
       liveShowCountdown: json['liveShowCountdown'] as bool? ?? true,
@@ -2089,6 +1961,7 @@ class TimetableSettings {
     SectionTimeDisplayMode? timetableSectionTimeDisplayMode,
     bool? timetableHideWeekends,
     bool? enableHaptics,
+    double? pageTransitionSpeed,
     bool? liveShowCourseName,
     bool? liveShowLocation,
     bool? liveShowCountdown,
@@ -2270,6 +2143,8 @@ class TimetableSettings {
       timetableHideWeekends:
           timetableHideWeekends ?? this.timetableHideWeekends,
       enableHaptics: enableHaptics ?? this.enableHaptics,
+      pageTransitionSpeed: (pageTransitionSpeed ?? this.pageTransitionSpeed)
+          .clamp(minPageTransitionSpeed, maxPageTransitionSpeed),
       liveShowCourseName: liveShowCourseName ?? this.liveShowCourseName,
       liveShowLocation: liveShowLocation ?? this.liveShowLocation,
       liveShowCountdown: liveShowCountdown ?? this.liveShowCountdown,

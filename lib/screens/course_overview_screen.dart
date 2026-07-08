@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:university_timetable/ui/hyperos/hyperos.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import '../models/course.dart';
 import '../providers/timetable_provider.dart';
@@ -298,7 +299,7 @@ class _CourseGroupTile extends StatelessWidget {
             Text(
               hasConflict
                   ? l10n.conflictCountLabel(conflictCount)
-                  : group.courseNature.label,
+                  : courseNatureLabel(l10n, group.courseNature),
               style: HyperosTypography.listDetail(context).copyWith(
                 fontWeight: hasConflict ? FontWeight.w700 : FontWeight.w400,
                 color: hasConflict

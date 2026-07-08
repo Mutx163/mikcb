@@ -1,16 +1,14 @@
 import 'dart:convert';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/course_week_localizations.dart';
+
 enum CourseNature { required, elective }
 
 extension CourseNatureX on CourseNature {
   String get value => switch (this) {
     CourseNature.required => 'required',
     CourseNature.elective => 'elective',
-  };
-
-  String get label => switch (this) {
-    CourseNature.required => '必修',
-    CourseNature.elective => '选修',
   };
 
   static CourseNature fromValue(String? value) {
@@ -233,25 +231,11 @@ class Course {
     return weeks;
   }
 
-  String get weekDescription {
-    final custom = normalizedCustomWeeks;
-    if (custom != null) {
-      return '第${_formatWeekList(custom)}周';
-    }
+  String weekDescription(AppLocalizations l10n) =>
+      courseWeekDescription(l10n, this);
 
-    final mode = isOddWeek
-        ? ' 单周'
-        : isEvenWeek
-        ? ' 双周'
-        : '';
-    return '第$startWeek-$endWeek周$mode';
-  }
-
-  String? get suspensionDescription {
-    final suspended = normalizedSuspendedWeeks;
-    if (suspended == null || suspended.isEmpty) return null;
-    return '第${_formatWeekList(suspended)}周停课';
-  }
+  String? suspensionDescription(AppLocalizations l10n) =>
+      courseSuspensionDescription(l10n, this);
 
   bool isInWeek(int week) {
     final custom = normalizedCustomWeeks;
@@ -268,32 +252,5 @@ class Course {
   bool isActiveInWeek(int week) {
     if (suspendedWeeks?.contains(week) == true) return false;
     return isInWeek(week);
-  }
-
-  String _formatWeekList(List<int> weeks) {
-    if (weeks.isEmpty) {
-      return '';
-    }
-    final ranges = <String>[];
-    var rangeStart = weeks.first;
-    var previous = weeks.first;
-
-    for (var index = 1; index < weeks.length; index++) {
-      final current = weeks[index];
-      if (current == previous + 1) {
-        previous = current;
-        continue;
-      }
-      ranges.add(
-        rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
-      );
-      rangeStart = current;
-      previous = current;
-    }
-
-    ranges.add(
-      rangeStart == previous ? '$rangeStart' : '$rangeStart-$previous',
-    );
-    return ranges.join('、');
   }
 }

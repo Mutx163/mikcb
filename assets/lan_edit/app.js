@@ -1,3 +1,5 @@
+const t = (key, ...args) => window.LanEditI18n?.t(key, ...args) ?? key;
+
 const state = {
   token: sessionStorage.getItem('lanEditToken') || '',
   pin: sessionStorage.getItem('lanEditPin') || '',
@@ -92,7 +94,7 @@ function updateLibraryBatchDeleteUi() {
   }
   show(btnBatchDeleteCourses);
   btnBatchDeleteCourses.disabled = false;
-  btnBatchDeleteCourses.textContent = `批量删除选中 (${count})`;
+  btnBatchDeleteCourses.textContent = t('batchDeleteSelected', count);
 }
 
 function formatWeeksForExpression(weeks) {
@@ -177,7 +179,7 @@ function setError(el, message) {
   show(el);
 }
 
-function setLoading(isLoading, text = '加载课表数据…') {
+function setLoading(isLoading, text = t('loadingData')) {
   state.loading = isLoading;
   if (isLoading) {
     loadingText.textContent = text;
@@ -216,7 +218,7 @@ function renderActivityLog() {
   const listEl = document.getElementById('activity-log-list');
   if (!listEl) return;
   if (state.logs.length === 0) {
-    listEl.innerHTML = '<div class="log-empty-hint">暂无操作记录</div>';
+    listEl.innerHTML = `<div class="log-empty-hint">${t('noActivityLog')}</div>`;
     return;
   }
   listEl.innerHTML = state.logs.map(log => `
@@ -250,21 +252,17 @@ async function api(path, options = {}) {
   if (!response.ok) {
     const code = response.status;
     if (code === 502 || code === 504) {
-      throw new Error(
-        '无法连上手机上的编辑服务（HTTP ' +
-          code +
-          '）。请确认：① 手机 App 里「局域网编辑」仍为开启状态；② 电脑与手机在同一 WiFi 或手机热点；③ 浏览器地址为手机显示的 IP:端口（勿用 localhost）；④ 勿经 IDE/插件端口转发打开页面。'
-      );
+      throw new Error(t('connectionError', code));
     }
     if (code === 503) {
-      throw new Error('手机端编辑服务正在关闭或尚未就绪，请在 App 中重新开启局域网编辑。');
+      throw new Error(t('serviceUnavailable'));
     }
     if (code === 401) {
       const reason = data.error || data.message || '';
       if (reason === 'session_expired' || String(data.message || '').includes('expired')) {
-        throw new Error('会话已过期，请在手机端重新开启局域网编辑并重新登录。');
+        throw new Error(t('sessionExpired'));
       }
-      throw new Error(data.message || data.error || '未授权，请重新输入 PIN');
+      throw new Error(data.message || data.error || t('unauthorized'));
     }
     throw new Error(data.message || data.error || `HTTP ${code}`);
   }
@@ -323,7 +321,10 @@ function todayDayOfWeek() {
 }
 
 function getWeekdayCn(index) {
-  return ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'][index] || '';
+  return [
+    t('weekdayMon'), t('weekdayTue'), t('weekdayWed'), t('weekdayThu'),
+    t('weekdayFri'), t('weekdaySat'), t('weekdaySun'),
+  ][index] || '';
 }
 
 function weekdayHeaderText(label, index) {
@@ -365,7 +366,7 @@ function renderDashboard() {
   const today = todayDayOfWeek();
   const todayName = getWeekdayCn(today - 1);
   
-  overviewTodayDate.textContent = `第 ${phoneWeek} 周 · ${todayName}`;
+  overviewTodayDate.textContent = t('weekN', phoneWeek) + ` · ${todayName}`;
 
   // 今日课程 (从当前查看的周中读取今日的课程)
   const todayCourses = state.courses
@@ -374,25 +375,25 @@ function renderDashboard() {
 
   todayCourseList.innerHTML = '';
   if (todayCourses.length === 0) {
-    todayCourseList.innerHTML = '<li class="empty-list-hint"><i class="ti ti-mood-smile me-1"></i>今天放假啦，没有检测到今天的课程计划</li>';
+    todayCourseList.innerHTML = `<li class="empty-list-hint"><i class="ti ti-mood-smile me-1"></i>${t('noClassesToday')}</li>`;
   } else {
     todayCourses.forEach(course => {
       const item = document.createElement('li');
       item.className = 'list-card-item';
 
-      const sectionText = course.startSection === course.endSection 
-        ? `第 ${course.startSection} 节` 
-        : `第 ${course.startSection}-${course.endSection} 节`;
+      const sectionText = course.startSection === course.endSection
+        ? t('sectionSingle', course.startSection)
+        : t('sectionRange', course.startSection, course.endSection);
 
       const typeBadge = course.courseNature === 'elective'
-        ? '<span class="badge badge-success">选修</span>'
-        : '<span class="badge badge-danger">必修</span>';
+        ? `<span class="badge badge-success">${t('electiveBadge')}</span>`
+        : `<span class="badge badge-danger">${t('requiredBadge')}</span>`;
 
       item.innerHTML = `
         <div class="item-color-indicator" style="background-color: ${course.color || '#4f46e5'}"></div>
         <div class="item-info">
           <h4>${escapeHtml(course.name)}</h4>
-          <p><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher || '未填教师')} · <i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location || '未指定教室')}</p>
+          <p><i class="ti ti-user me-1"></i>${escapeHtml(course.teacher || t('noTeacher'))} · <i class="ti ti-map-pin me-1"></i>${escapeHtml(course.location || t('noRoom'))}</p>
         </div>
         <div class="item-meta">
           <div><strong>${sectionText}</strong></div>
@@ -413,13 +414,13 @@ function renderDashboard() {
   // 本地服务明细
   infoIp.textContent = window.location.hostname;
   infoPort.textContent = window.location.port || '80';
-  infoPin.textContent = state.pin || '通过 App 界面查看';
+  infoPin.textContent = state.pin || t('viewInApp');
   
   const connectedDevices = state.session?.connectedClientCount || 1;
-  infoClients.textContent = `${connectedDevices} 台设备`;
+  infoClients.textContent = t('devicesCount', connectedDevices);
 
   // 备份的课表档案名字
-  backupProfileName.textContent = state.session?.profileName || state.meta.profileName || '当前课表';
+  backupProfileName.textContent = state.session?.profileName || state.meta.profileName || t('currentProfileFallback');
 
   renderActivityLog();
 }
@@ -435,8 +436,8 @@ function buildCourseBlock(course) {
 
   const nature =
     course.courseNature === 'elective'
-      ? '<span class="course-nature elective">选修</span>'
-      : '<span class="course-nature">必修</span>';
+      ? `<span class="course-nature elective">${t('electiveBadge')}</span>`
+      : `<span class="course-nature">${t('requiredBadge')}</span>`;
 
   const teacher = course.teacher?.trim()
     ? `<span class="course-teacher">${escapeHtml(course.teacher)}</span>`
@@ -479,8 +480,8 @@ function renderGrid() {
     th.dataset.day = String(day);
     if (day === today) {
       th.classList.add('today-col');
-      th.title = '今日';
-      th.innerHTML = `<span class="day-label">${escapeHtml(label)}</span><span class="today-badge">今日</span>`;
+      th.title = t('todayBadge');
+      th.innerHTML = `<span class="day-label">${escapeHtml(label)}</span><span class="today-badge">${t('todayBadge')}</span>`;
     } else {
       th.textContent = label;
     }
@@ -636,7 +637,7 @@ function renderCoursesTable() {
     card.querySelector('.action-copy-btn').addEventListener('click', () => {
       openEditor(group);
       state.editingGroupName = null; // 变成新建模式
-      document.getElementById('modal-title').textContent = '复制并新建课程';
+      document.getElementById('modal-title').textContent = t('copyNewCourse');
       courseForm.name.value = `${group.name} (副本)`;
       // 重置 slots 里的 id 以便生成全新课程记录
       const slotInputs = scheduleSlotsContainer.querySelectorAll('.slot-card');
@@ -946,7 +947,7 @@ function fillWeekPicker() {
   for (let week = 1; week <= total; week += 1) {
     const option = document.createElement('option');
     option.value = String(week);
-    option.textContent = `第 ${week} 周`;
+    option.textContent = t('weekN', week);
     if (week === state.viewWeek) {
       option.selected = true;
     }
@@ -959,9 +960,9 @@ function updateWeekLabel() {
   const total = state.meta.semesterWeekCount;
   const viewing = state.viewWeek;
   if (viewing === phoneWeek) {
-    weekLabel.textContent = `第 ${viewing} 周（与手机同步中）/ 共 ${total} 周`;
+    weekLabel.textContent = t('weekSyncedLabel', viewing, total);
   } else {
-    weekLabel.textContent = `查看第 ${viewing} 周 · 手机当前第 ${phoneWeek} 周 / 共 ${total} 周`;
+    weekLabel.textContent = t('weekViewingLabel', viewing, phoneWeek, total);
   }
 }
 
@@ -1008,7 +1009,7 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
   
   if (courseGroup) {
     state.editingGroupName = courseGroup.name;
-    document.getElementById('modal-title').textContent = '编辑课程';
+    document.getElementById('modal-title').textContent = t('editCourse');
     courseForm.name.value = courseGroup.name || '';
     courseForm.shortName.value = courseGroup.shortName || '';
     courseForm.courseNature.value = courseGroup.courseNature || 'required';
@@ -1024,7 +1025,7 @@ function openEditor(courseGroup, defaultDay, defaultSection) {
     show(duplicateCourseBtn);
   } else {
     state.editingGroupName = null;
-    document.getElementById('modal-title').textContent = '新建课程';
+    document.getElementById('modal-title').textContent = t('newCourse');
     courseForm.name.value = '';
     courseForm.shortName.value = '';
     courseForm.courseNature.value = 'required';
@@ -1056,28 +1057,30 @@ function closeEditor() {
 function updateSessionBadge() {
   const expiresAt = state.session?.expiresAt;
   if (!expiresAt) {
-    sessionBadge.textContent = '连接正常';
-    sessionCountdown.textContent = '无过期上限';
+    sessionBadge.textContent = t('connectionOk');
+    sessionCountdown.textContent = t('noExpiry');
     return;
   }
   const remainingMs = new Date(expiresAt).getTime() - Date.now();
   if (remainingMs <= 0) {
-    sessionBadge.textContent = '连接已过期';
+    sessionBadge.textContent = t('connectionExpired');
     sessionBadge.className = 'badge bg-danger';
-    sessionCountdown.textContent = '请安全退出并在手机端重新开启';
+    sessionCountdown.textContent = t('reconnectHint');
     return;
   }
   const minutes = Math.floor(remainingMs / 60000);
   const seconds = Math.floor((remainingMs % 60000) / 1000);
 
   if (minutes < 5) {
-    sessionBadge.textContent = '连接即将断开';
+    sessionBadge.textContent = t('connectionEnding');
     sessionBadge.className = 'badge bg-warning';
   } else {
-    sessionBadge.textContent = '安全连接中';
+    sessionBadge.textContent = t('secureConnection');
     sessionBadge.className = 'badge bg-success';
   }
-  sessionCountdown.textContent = minutes > 0 ? `倒计时 ${minutes} 分 ${seconds} 秒` : `倒计时 ${seconds} 秒`;
+  sessionCountdown.textContent = minutes > 0
+    ? t('countdownMinSec', minutes, seconds)
+    : t('countdownSec', seconds);
 }
 
 function startSessionCountdown() {
@@ -1092,7 +1095,7 @@ function startSessionCountdown() {
 async function loadEditorData(options = {}) {
   const { silent = false, notifyRefresh = false } = options;
   if (!silent) {
-    setLoading(true, '同步手机端数据中…');
+    setLoading(true, t('syncingPhone'));
   }
   try {
     const [meta, coursePayload, session] = await Promise.all([
@@ -1109,7 +1112,7 @@ async function loadEditorData(options = {}) {
     }
     state.viewWeek = Math.min(state.viewWeek, meta.semesterWeekCount);
 
-    profileName.textContent = session.profileName || meta.profileName || '当前课表';
+    profileName.textContent = session.profileName || meta.profileName || t('currentProfileFallback');
     fillWeekPicker();
     updateWeekLabel();
     renderGrid();
@@ -1119,11 +1122,11 @@ async function loadEditorData(options = {}) {
     startSessionCountdown();
 
     if (notifyRefresh) {
-      showToast('数据刷新成功，已与手机端同步', 'success');
+      showToast(t('refreshSuccess'), 'success');
       addActivityLog('数据刷新', '拉取并同步了手机端最新数据');
     }
   } catch (error) {
-    showToast('同步手机数据失败: ' + error.message, 'error');
+    showToast(t('syncFailed') + error.message, 'error');
     throw error;
   } finally {
     if (!silent) {
@@ -1193,12 +1196,12 @@ function syncTabsUI() {
   });
 
   const titles = {
-    overview: '控制台概览',
-    timetable: '课表网格',
-    courses: '课程库管理',
-    backup: '导入与备份',
+    overview: t('tabOverview'),
+    timetable: t('tabTimetable'),
+    courses: t('courseLibrary'),
+    backup: t('tabBackup'),
   };
-  pageTitle.textContent = titles[state.activeTab] || '局域网控制台';
+  pageTitle.textContent = titles[state.activeTab] || t('lanConsoleTitle');
 }
 
 // 事件侦听器
@@ -1226,7 +1229,7 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   }
   hide(editorView);
   show(loginView);
-  showToast('已退出局域网编辑', 'info');
+  showToast(t('loggedOut'), 'info');
 });
 
 document.getElementById('refresh-btn').addEventListener('click', () => {
@@ -1721,11 +1724,11 @@ async function bootstrap() {
   }
 
   if (urlPin) {
-    setLoading(true, '正在自动进行 PIN 码验证连接…');
+    setLoading(true, t('autoPinLogin'));
     try {
       await verifyPinAndEnter(urlPin.trim());
       stripPinFromUrl();
-      showToast('登录成功', 'success');
+      showToast(t('loginSuccess'), 'success');
       return;
     } catch (error) {
       setError(loginError, error.message);

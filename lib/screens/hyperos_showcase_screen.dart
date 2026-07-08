@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../ui/hyperos/hyperos.dart';
 import '../utils/hex_color.dart';
@@ -30,13 +31,13 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   String _selectedHexColor = '#3482FF';
   final _popupAnchorKey = GlobalKey();
   final _selectPopupAnchorKey = GlobalKey();
-  final _textController = TextEditingController(text: '示例文本');
+  final _textController = TextEditingController();
   final _searchController = TextEditingController();
 
-  static const _selectItems = <String, String>{
-    '小': 'small',
-    '中': 'medium',
-    '大': 'large',
+  Map<String, String> _selectItemMap(AppLocalizations l10n) => {
+    l10n.hyperosShowcaseSizeSmall: 'small',
+    l10n.hyperosShowcaseSizeMedium: 'medium',
+    l10n.hyperosShowcaseSizeLarge: 'large',
   };
 
   static const _chipColors = <Color>[
@@ -56,6 +57,15 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _textController.text = AppLocalizations.of(context)!.hyperosShowcaseSampleText;
+    });
+  }
+
+  @override
   void dispose() {
     _textController.dispose();
     _searchController.dispose();
@@ -64,12 +74,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final selectItems = _selectItemMap(l10n);
     return HyperosSubpage(
       onBack: () => Navigator.pop(context),
-      title: const Text('澎湃 UI 组件库'),
+      title: Text(l10n.hyperosShowcaseTitle),
       child: HyperosListView(
         children: [
-          _section('概要卡片'),
+          _section(l10n.hyperosShowcaseSectionSummary),
           HyperosSummaryCard(
             leading: Container(
               width: HyperosSummaryCard.leadingSize,
@@ -84,11 +96,11 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
               child: const Icon(Icons.widgets_outlined, color: Colors.white),
             ),
             title: 'HyperOS UI Kit',
-            subtitle: 'mikcb 澎湃风格组件一览',
+            subtitle: l10n.hyperosShowcaseKitSubtitle,
           ),
           const HyperosSectionGap(),
 
-          _section('标签 / 手风琴 / 提示'),
+          _section(l10n.hyperosShowcaseSectionTags),
           HyperosCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -116,21 +128,21 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 items: [
                   HyperosAccordionItem(
                     title: Text(
-                      '第一节',
+                      l10n.hyperosShowcaseAccordionSection1,
                       style: HyperosTypography.listTitle(context),
                     ),
                     child: Text(
-                      '展开后显示的内容区域。',
+                      l10n.hyperosShowcaseAccordionSection1Body,
                       style: HyperosTypography.listDetail(context),
                     ),
                   ),
                   HyperosAccordionItem(
                     title: Text(
-                      '第二节',
+                      l10n.hyperosShowcaseAccordionSection2,
                       style: HyperosTypography.listTitle(context),
                     ),
                     child: Text(
-                      '可折叠分组，替代 FAccordion。',
+                      l10n.hyperosShowcaseAccordionSection2Body,
                       style: HyperosTypography.listDetail(context),
                     ),
                   ),
@@ -140,20 +152,20 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('列表行 · 导航'),
+          _section(l10n.hyperosShowcaseSectionNavRows),
           HyperosListGroup(
             children: [
               HyperosListTile(
                 icon: Icons.palette_outlined,
                 iconAccent: HyperosIconColors.blue,
                 title: 'HyperosListTile',
-                details: '带图标',
+                details: l10n.hyperosShowcaseNavRowWithIcon,
                 onTap: () {},
               ),
               HyperosNavTile(
                 title: 'HyperosNavTile',
-                subtitle: '无左侧彩图标',
-                details: '详情',
+                subtitle: l10n.hyperosShowcaseNavRowNoIconSubtitle,
+                details: l10n.hyperosShowcaseNavRowDetails,
                 onTap: () {},
               ),
               HyperosActionTile(
@@ -165,19 +177,19 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('列表行 · 开关 / 危险'),
+          _section(l10n.hyperosShowcaseSectionSwitchRows),
           HyperosSwitchListGroup(
             children: [
               HyperosSwitchTile(
                 icon: Icons.dark_mode_outlined,
                 iconAccent: HyperosIconColors.purple,
                 title: 'HyperosSwitchTile',
-                subtitle: '带图标开关行',
+                subtitle: l10n.hyperosShowcaseSwitchRowSubtitle,
                 value: _switchOn,
                 onChanged: (v) => setState(() => _switchOn = v),
               ),
               HyperosSwitchTile(
-                title: '纯文字开关行',
+                title: l10n.hyperosShowcaseSwitchRowPlain,
                 value: !_switchOn,
                 onChanged: (v) => setState(() => _switchOn = !v),
               ),
@@ -191,18 +203,18 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('列表行 · 单选 / 选择 / 日期'),
+          _section(l10n.hyperosShowcaseSectionChoiceRows),
           HyperosChoiceGroup(
             children: [
               HyperosChoiceTile(
-                title: '选项 A',
+                title: l10n.hyperosShowcaseOptionA,
                 prefix: const HyperosColorDot(color: HyperosIconColors.blue),
                 selected: _choiceIndex == 0,
                 highlightSelectedText: true,
                 onTap: () => setState(() => _choiceIndex = 0),
               ),
               HyperosChoiceTile(
-                title: '选项 B',
+                title: l10n.hyperosShowcaseOptionB,
                 prefix: const HyperosColorDot(color: HyperosIconColors.green),
                 selected: _choiceIndex == 1,
                 highlightSelectedText: true,
@@ -210,7 +222,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 onTap: () => setState(() => _choiceIndex = 1),
               ),
               HyperosChoiceTile(
-                title: '选项 C',
+                title: l10n.hyperosShowcaseOptionC,
                 prefix: const HyperosColorDot(color: HyperosIconColors.orange),
                 selected: _choiceIndex == 2,
                 highlightSelectedText: true,
@@ -223,9 +235,9 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
             children: [
               HyperosSelectTile<String>(
                 label: 'HyperosSelectTile',
-                items: _selectItems,
+                items: selectItems,
                 value: _selectValue,
-                sheetTitle: '选择尺寸',
+                sheetTitle: l10n.hyperosShowcaseSelectSizeTitle,
                 onChanged: (v) => setState(() => _selectValue = v),
               ),
               HyperosDateTile(
@@ -237,10 +249,10 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('控件卡片'),
+          _section(l10n.hyperosShowcaseSectionControls),
           HyperosControlCard(
             title: 'HyperosControlCard',
-            subtitle: '滑条、分段、按钮',
+            subtitle: l10n.hyperosShowcaseControlsSubtitle,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -263,7 +275,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 ),
                 const SizedBox(height: 8),
                 HyperosTabRow(
-                  tabs: const ['左', '右'],
+                  tabs: [l10n.hyperosShowcaseSegmentLeft, l10n.hyperosShowcaseSegmentRight],
                   selectedIndex: _tabIndex.isEven ? 0 : 1,
                   onChanged: (i) => setState(() => _tabIndex = i),
                   style: HyperosTabRowStyle.bordered,
@@ -312,14 +324,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('输入'),
+          _section(l10n.hyperosShowcaseSectionInput),
           HyperosCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: HyperosTextField(
                 controller: _textController,
                 label: 'HyperosTextField',
-                hint: '请输入内容',
+                hint: l10n.hyperosShowcaseInputHint,
               ),
             ),
           ),
@@ -330,8 +342,8 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 cardTitle: 'HyperosTextFieldTile',
                 field: HyperosTextField(
                   controller: _textController,
-                  label: '卡片内输入',
-                  hint: '请输入内容',
+                  label: l10n.hyperosShowcaseInputCardLabel,
+                  hint: l10n.hyperosShowcaseInputHint,
                 ),
               ),
             ],
@@ -349,12 +361,12 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('滚轮选择器'),
+          _section(l10n.hyperosShowcaseSectionPicker),
           HyperosControlCard(
             title: 'HyperosNumberPicker',
             child: HyperosNumberPickerTile(
               title: 'HyperosNumberPickerTile',
-              subtitle: '当前值：$_pickerValue',
+              subtitle: l10n.hyperosShowcasePickerCurrentValue(_pickerValue),
               picker: HyperosNumberPicker(
                 min: 1,
                 max: 20,
@@ -365,7 +377,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('基础控件 · 行内'),
+          _section(l10n.hyperosShowcaseSectionInline),
           HyperosCard(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -405,7 +417,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
             children: [
               HyperosCheckboxTile(
                 title: 'HyperosCheckboxTile',
-                subtitle: '多选偏好行',
+                subtitle: l10n.hyperosShowcaseCheckboxSubtitle,
                 value: _checkboxOn,
                 onChanged: (v) => setState(() => _checkboxOn = v),
               ),
@@ -425,7 +437,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('导航与操作'),
+          _section(l10n.hyperosShowcaseSectionNavActions),
           HyperosControlCard(
             title: 'IconButton / Fab / Badge / Tooltip',
             child: Column(
@@ -472,7 +484,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 HyperosTooltip(
                   message: 'HyperosTooltip · 长按查看',
                   child: HyperosButton(
-                    label: '带 Tooltip 的按钮',
+                    label: l10n.hyperosShowcaseTooltipButton,
                     onPressed: () {},
                   ),
                 ),
@@ -500,7 +512,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('进度与刷新'),
+          _section(l10n.hyperosShowcaseSectionProgress),
           HyperosControlCard(
             title: 'HyperosCircularProgress / HyperosLinearProgress',
             child: Column(
@@ -542,7 +554,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('颜色选择 · ColorChip'),
+          _section(l10n.hyperosShowcaseSectionColorChip),
           HyperosControlCard(
             title: 'HyperosColorChip',
             child: HyperosControlCardInset(
@@ -588,38 +600,38 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('底部导航 · HyperosNavigationBar'),
+          _section(l10n.hyperosShowcaseSectionNavBar),
           HyperosCard(
             child: HyperosNavigationBar(
               selectedIndex: _navBarIndex,
               onDestinationSelected: (i) => setState(() => _navBarIndex = i),
-              destinations: const [
+              destinations: [
                 HyperosNavigationDestination(
                   icon: Icons.home_outlined,
                   selectedIcon: Icons.home,
-                  label: '首页',
+                  label: l10n.hyperosShowcaseNavHome,
                 ),
                 HyperosNavigationDestination(
                   icon: Icons.calendar_today_outlined,
                   selectedIcon: Icons.calendar_today,
-                  label: '课表',
+                  label: l10n.hyperosShowcaseNavTimetable,
                 ),
                 HyperosNavigationDestination(
                   icon: Icons.settings_outlined,
                   selectedIcon: Icons.settings,
-                  label: '设置',
+                  label: l10n.hyperosShowcaseNavSettings,
                 ),
               ],
             ),
           ),
           const HyperosSectionGap(),
 
-          _section('空态 / 分割线 / 装饰'),
+          _section(l10n.hyperosShowcaseSectionEmpty),
           HyperosCard(
             child: HyperosEmptyState(
               title: 'HyperosEmptyState',
-              subtitle: '列表无数据时的占位',
-              action: HyperosButton(label: '操作按钮', onPressed: () {}),
+              subtitle: l10n.hyperosShowcaseEmptySubtitle,
+              action: HyperosButton(label: l10n.hyperosShowcaseActionButton, onPressed: () {}),
             ),
           ),
           const SizedBox(height: 8),
@@ -658,7 +670,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 ),
                 HyperosActionTile(
                   icon: Icons.folder_open_outlined,
-                  title: '第二行（上方有缩进分割线）',
+                  title: l10n.hyperosShowcaseDividerRowTitle,
                   onTap: () {},
                 ),
               ],
@@ -666,7 +678,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('底层行 · HyperosPressableRow'),
+          _section(l10n.hyperosShowcaseSectionPressable),
           HyperosCard(
             child: HyperosPressableRow(
               onTap: () => _demoSnackBar('HyperosPressableRow tapped'),
@@ -688,27 +700,27 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('页面壳层'),
+          _section(l10n.hyperosShowcaseSectionShell),
           HyperosListGroup(
             children: [
               HyperosListTile(
                 icon: Icons.home_outlined,
                 iconAccent: HyperosIconColors.blue,
                 title: 'HyperosRootPage',
-                details: '无返回键根页',
+                details: l10n.hyperosShowcaseRootPageDetails,
                 onTap: _demoRootPage,
               ),
               HyperosNavTile(
                 title: 'HyperosSubpage',
-                subtitle: '当前页即 Subpage + HyperosListView',
+                subtitle: l10n.hyperosShowcaseSubpageSubtitle,
                 details: '—',
-                onTap: () => _demoSnackBar('已在 Subpage 中'),
+                onTap: () => _demoSnackBar(l10n.hyperosShowcaseAlreadyInSubpage),
               ),
             ],
           ),
           const HyperosSectionGap(),
 
-          _section('模糊顶栏 · 滚动物理'),
+          _section(l10n.hyperosShowcaseSectionFrosted),
           HyperosCard(
             child: ClipRRect(
               borderRadius: HyperosTheme.cardBorderRadius,
@@ -783,7 +795,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('反馈 · 弹层'),
+          _section(l10n.hyperosShowcaseSectionFeedback),
           HyperosListGroup(
             children: [
               HyperosListTile(
@@ -838,7 +850,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
                 title: 'showHyperosSelectPopup',
                 details: _selectValue == null
                     ? null
-                    : _selectItems.entries
+                    : selectItems.entries
                           .firstWhere((e) => e.value == _selectValue)
                           .key,
                 onTap: _demoSelectPopup,
@@ -854,7 +866,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           const HyperosSectionGap(),
 
-          _section('主题色 · HyperosIconColors'),
+          _section(l10n.hyperosShowcaseSectionIconColors),
           HyperosCard(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -870,8 +882,8 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
           ),
           if (!kReleaseMode) ...[
             const HyperosSectionGap(),
-            const HyperosSectionDescription(
-              text: '此页仅在非 Release 构建设置首页可见，用于组件视觉验收。',
+            HyperosSectionDescription(
+              text: l10n.hyperosShowcaseFooterNote,
             ),
           ],
           const HyperosSectionGap(),
@@ -883,26 +895,28 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   Widget _section(String label) => HyperosSectionLabel(text: label);
 
   void _demoSnackBar(String message) {
+    final l10n = AppLocalizations.of(context)!;
     showHyperosSnackBar(
       context,
       message: message,
-      actionLabel: '撤销',
+      actionLabel: l10n.hyperosShowcaseUndoAction,
       onAction: () {},
     );
   }
 
   Future<void> _demoDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     await showHyperosDialog<void>(
       context: context,
       title: 'HyperosDialog',
-      message: '系统风格对话框示例。',
+      message: l10n.hyperosShowcaseDialogMessage,
       actions: [
         HyperosDialogAction(
-          label: '取消',
+          label: l10n.cancelAction,
           onPressed: () => Navigator.pop(context),
         ),
         HyperosDialogAction(
-          label: '确定',
+          label: l10n.confirmAction,
           onPressed: () => Navigator.pop(context),
         ),
       ],
@@ -910,25 +924,27 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   Future<void> _demoConfirmDialog() async {
+    final l10n = AppLocalizations.of(context)!;
     final ok = await showHyperosConfirmDialog(
       context: context,
-      title: '确认操作',
+      title: l10n.hyperosShowcaseConfirmTitle,
       message: 'HyperosConfirmDialog 返回 bool?',
-      cancelLabel: '取消',
-      confirmLabel: '确认',
+      cancelLabel: l10n.cancelAction,
+      confirmLabel: l10n.confirmAction,
     );
     if (!mounted || ok != true) return;
-    _demoSnackBar('已确认');
+    _demoSnackBar(l10n.hyperosShowcaseConfirmed);
   }
 
   void _demoRichSnackBar() {
+    final l10n = AppLocalizations.of(context)!;
     showHyperosRichSnackBar(
       context,
       message: 'showHyperosRichSnackBar',
-      description: '带图标与副标题，App Toast 同款',
+      description: l10n.hyperosShowcaseToastDescription,
       icon: Icons.check_circle_outline,
       iconColor: HyperosIconColors.green,
-      actionLabel: '撤销',
+      actionLabel: l10n.hyperosShowcaseUndoAction,
       onAction: () {},
     );
   }
@@ -947,11 +963,12 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   Future<void> _demoSelectSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     final picked = await showHyperosSelectSheet<String>(
       context: context,
       title: 'showHyperosSelectSheet',
       description: 'HyperosSheet + HyperosChoiceGroup',
-      items: _selectItems,
+      items: _selectItemMap(l10n),
       currentValue: _selectValue,
     );
     if (!mounted || picked == null) return;
@@ -959,13 +976,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   Future<void> _demoGenericSheet() async {
+    final l10n = AppLocalizations.of(context)!;
     await showHyperosSheet<void>(
       context: context,
       builder: (sheetContext) => HyperosSheet(
         title: 'showHyperosSheet',
         description: 'HyperosSheetFrame 灰底圆角容器',
         child: HyperosButton(
-          label: '关闭',
+          label: l10n.closeAction,
           expand: true,
           onPressed: () => Navigator.pop(sheetContext),
         ),
@@ -974,10 +992,11 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   Future<void> _demoSelectPopup() async {
+    final l10n = AppLocalizations.of(context)!;
     final picked = await showHyperosSelectPopup<String>(
       context: context,
       anchorRect: hyperosSelectPopupAnchorRect(context, _selectPopupAnchorKey),
-      items: _selectItems,
+      items: _selectItemMap(l10n),
       currentValue: _selectValue,
     );
     if (!mounted || picked == null) return;
@@ -985,13 +1004,14 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   }
 
   Future<void> _demoListPopup() async {
+    final l10n = AppLocalizations.of(context)!;
     final picked = await showHyperosListPopup<String>(
       context: context,
       position: hyperosPopupPositionBelow(context, _popupAnchorKey),
-      items: const [
-        HyperosPopupMenuItem(label: '复制', value: 'copy'),
-        HyperosPopupMenuItem(label: '分享', value: 'share'),
-        HyperosPopupMenuItem(label: '删除', value: 'delete', destructive: true),
+      items: [
+        HyperosPopupMenuItem(label: l10n.hyperosShowcaseMenuCopy, value: 'copy'),
+        HyperosPopupMenuItem(label: l10n.hyperosShowcaseMenuShare, value: 'share'),
+        HyperosPopupMenuItem(label: l10n.hyperosShowcaseMenuDelete, value: 'delete', destructive: true),
       ],
     );
     if (!mounted || picked == null) return;
@@ -1001,7 +1021,7 @@ class _HyperosShowcaseScreenState extends State<HyperosShowcaseScreen> {
   Future<void> _demoRefresh() async {
     await Future<void>.delayed(const Duration(milliseconds: 800));
     if (!mounted) return;
-    _demoSnackBar('刷新完成');
+    _demoSnackBar(AppLocalizations.of(context)!.hyperosShowcaseRefreshDone);
   }
 
   Future<void> _toggleButtonLoading() async {
@@ -1018,19 +1038,20 @@ class _HyperosRootPageDemo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return HyperosRootPage(
       title: const Text('HyperosRootPage'),
       suffixes: [
-        HyperosIconButton(icon: Icons.search, tooltip: '搜索', onPressed: () {}),
+        HyperosIconButton(icon: Icons.search, tooltip: l10n.hyperosShowcaseSearchTooltip, onPressed: () {}),
       ],
       child: HyperosListView(
         children: [
-          const HyperosSectionLabel(text: '根页壳层'),
+          HyperosSectionLabel(text: l10n.hyperosShowcaseRootShellLabel),
           HyperosListGroup(
             children: [
               HyperosNavTile(
                 title: 'HyperosPageRoute',
-                subtitle: '通过 HyperosNavigation.push 进入',
+                subtitle: l10n.hyperosShowcasePushSubtitle,
                 onTap: () => Navigator.pop(context),
               ),
             ],

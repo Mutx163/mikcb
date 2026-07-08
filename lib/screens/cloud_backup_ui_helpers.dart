@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/sync_error_localizer.dart'
+    as sync_error_localizer;
 
 import '../services/cloud_backup_index_service.dart';
 import '../ui/hyperos/hyperos.dart';
@@ -29,6 +31,16 @@ class CloudBackupUiHelpers {
     return AppLocalizations.of(context)!.cloudBackupDefaultDeviceLabel;
   }
 
+  static String resolveBackupSourceLabel(
+    AppLocalizations l10n,
+    CloudBackupSource source,
+  ) {
+    return switch (source) {
+      CloudBackupSource.auto => l10n.cloudBackupSourceAuto,
+      CloudBackupSource.manual => l10n.cloudBackupSourceManual,
+    };
+  }
+
   static String buildBackupSubtitle(
     BuildContext context,
     CloudBackupEntry entry,
@@ -39,6 +51,10 @@ class CloudBackupUiHelpers {
         ? l10n.cloudBackupSummary(entry.profileCount!, entry.courseCount!)
         : null;
     return summary == null ? device : '$device · $summary';
+  }
+
+  static String localizeSyncError(AppLocalizations l10n, String? code) {
+    return sync_error_localizer.localizeSyncError(l10n, code);
   }
 }
 
@@ -88,6 +104,11 @@ Future<CloudBackupDetailAction?> showCloudBackupDetailSheet({
             const SizedBox(height: 12),
             Text(
               '${l10n.cloudBackupDetailDevice}: $deviceLabel',
+              style: HyperosTypography.listDetail(context),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${l10n.cloudBackupDetailSource}: ${CloudBackupUiHelpers.resolveBackupSourceLabel(l10n, entry.source)}',
               style: HyperosTypography.listDetail(context),
             ),
             if (summary != null) ...[

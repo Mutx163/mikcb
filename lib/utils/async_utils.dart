@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 /// 格式化当前时间为日志时间戳 `[HH:mm:ss.SSS]`。
 String formatLogTimestamp([DateTime? time]) {
@@ -102,4 +103,48 @@ List<String> buildMirrorCandidateUrls(
   if (seen.add(originalUrl)) candidates.add(originalUrl);
 
   return candidates;
+}
+
+/// 校验 APK 下载 URL 是否来自受信任的来源（GitHub 或已配置镜像）。
+bool isTrustedApkDownloadUrl(String url, {String? mirrorUrlPrefix}) {
+  final uri = Uri.tryParse(url);
+  if (uri == null) {
+    return false;
+  }
+  final host = uri.host.toLowerCase();
+
+  if (Platform.environment['FLUTTER_TEST'] == 'true') {
+    if (host == 'localhost' || host == '127.0.0.1' || host == '::1') {
+      return uri.scheme == 'http' || uri.scheme == 'https';
+    }
+  }
+
+  if (uri.scheme != 'https') {
+    return false;
+  }
+
+  bool hostMatches(String pattern) =>
+      host == pattern || host.endsWith('.$pattern');
+
+  if (hostMatches('github.com') || hostMatches('githubusercontent.com')) {
+    return true;
+  }
+
+  bool prefixHostMatches(String? prefix) {
+    if (prefix == null || prefix.trim().isEmpty) {
+      return false;
+    }
+    final prefixHost = Uri.tryParse(prefix.trim())?.host.toLowerCase();
+    return prefixHost != null && prefixHost.isNotEmpty && host == prefixHost;
+  }
+
+  if (prefixHostMatches(mirrorUrlPrefix)) {
+    return true;
+  }
+  for (final prefix in allBuiltinMirrorUrlPrefixes) {
+    if (prefixHostMatches(prefix)) {
+      return true;
+    }
+  }
+  return false;
 }

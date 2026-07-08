@@ -495,7 +495,10 @@ class _UserGuideScreenState extends State<UserGuideScreen>
                 children: [
                   Expanded(
                     child: Text(
-                      '$readyCount / ${countableItems.length} 已完成',
+                      l10n.guidePermissionsProgressLabel(
+                        readyCount,
+                        countableItems.length,
+                      ),
                       style: context.theme.typography.body.sm.copyWith(
                         fontWeight: FontWeight.w700,
                       ),

@@ -99,9 +99,10 @@ object FrostedBlur {
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun tryRenderEffectBlur(source: Bitmap, radius: Float): Bitmap? {
+        var output: Bitmap? = null
         return try {
             val effect = RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP)
-            val output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
+            output = Bitmap.createBitmap(source.width, source.height, Bitmap.Config.ARGB_8888)
             val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
             // Paint.setRenderEffect is API 31+; invoke reflectively for older compile SDK stubs.
             Paint::class.java
@@ -110,6 +111,7 @@ object FrostedBlur {
             Canvas(output).drawBitmap(source, 0f, 0f, paint)
             output
         } catch (_: Throwable) {
+            output?.recycle()
             null
         }
     }

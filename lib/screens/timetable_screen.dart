@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -2211,9 +2212,6 @@ class _TimetableScreenState extends State<TimetableScreen>
     required int dayOfWeek,
     required String localeName,
   }) {
-    if (localeName.startsWith('zh')) {
-      return '${date.month}月${date.day}日 ${_weekdayLabel(context, dayOfWeek)}';
-    }
     final formattedDate = DateFormat.MMMd(localeName).format(date);
     return '$formattedDate ${_weekdayLabel(context, dayOfWeek)}';
   }
@@ -4240,7 +4238,7 @@ class _TimetableScreenState extends State<TimetableScreen>
       message: l10n.deleteScheduleConfirmMessage(
         course.name,
         l10n.courseWeekdaySectionSummary(
-          course.weekDescription,
+          course.weekDescription(l10n),
           _weekdayLabel(context, course.dayOfWeek),
           course.startSection,
           course.endSection,
@@ -4305,9 +4303,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
       showAppToast(
         context,
-        message:
-            error.message?.toString() ??
-            AppLocalizations.of(context)!.deleteFailed,
+        message: error.message != null
+            ? localizeServiceMessage(l10n, error.message!)
+            : AppLocalizations.of(context)!.deleteFailed,
         kind: AppToastKind.error,
       );
     }
@@ -4369,9 +4367,9 @@ class _TimetableScreenState extends State<TimetableScreen>
       }
       showAppToast(
         context,
-        message:
-            error.message?.toString() ??
-            AppLocalizations.of(context)!.rescheduleFailed,
+        message: error.message != null
+            ? localizeServiceMessage(l10n, error.message!)
+            : AppLocalizations.of(context)!.rescheduleFailed,
         kind: AppToastKind.error,
       );
     }

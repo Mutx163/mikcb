@@ -298,19 +298,17 @@ Future<void> showThemeNameDialog(
   required void Function(String name) onSubmit,
 }) async {
   final l10n = AppLocalizations.of(context)!;
-  final controller = TextEditingController(text: initialName);
   final name = await showAppTextInputDialog(
     context,
     title: title,
-    body: HyperosTextField(
+    initialValue: initialName,
+    bodyBuilder: (controller) => HyperosTextField(
       controller: controller,
       hint: l10n.themeNameHint,
       autofocus: true,
     ),
-    readValue: () => controller.text,
     validate: (value) => value.isNotEmpty,
   );
-  controller.dispose();
   if (name != null) {
     onSubmit(name);
   }

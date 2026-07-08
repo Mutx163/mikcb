@@ -7,6 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../logging/app_debug_log.dart';
+import '../l10n/service_message_localizer.dart';
 import '../models/timetable_settings.dart';
 import '../utils/async_utils.dart';
 
@@ -124,7 +125,7 @@ class AppUpdateService {
       'https://api.github.com/repos/Mutx163/mikcb/releases';
   static const String releasesPageUrl = '$repositoryUrl/releases';
   static const String defaultMirrorUrlPrefix = defaultAppUpdateMirrorUrlPrefix;
-  static const String downloadCancelledMessage = '下载已取消';
+  static const String downloadCancelledMessage = 'download_cancelled';
   static const Duration _releaseRequestTimeout = Duration(seconds: 4);
   static const Duration _releasesPageRequestTimeout = Duration(seconds: 6);
 
@@ -248,7 +249,9 @@ class AppUpdateService {
         hasRelease: false,
         hasUpdate: false,
         currentVersion: currentVersion,
-        message: includePrerelease ? '还没有可用的正式版或预发布版本。' : '仓库还没有发布 Release。',
+        message: includePrerelease
+            ? 'no_release_with_prerelease'
+            : 'no_release_available',
       );
     }
 
@@ -258,7 +261,10 @@ class AppUpdateService {
         hasRelease: false,
         hasUpdate: false,
         currentVersion: currentVersion,
-        message: '检查更新失败（HTTP $lastStatusCode）。',
+        message: encodeServiceMessage(
+          'update_check_http_failed',
+          {'statusCode': lastStatusCode},
+        ),
       );
     }
 
@@ -267,7 +273,7 @@ class AppUpdateService {
       hasRelease: false,
       hasUpdate: false,
       currentVersion: currentVersion,
-      message: '网络异常，暂时无法检查更新。',
+      message: 'update_check_network_failed',
     );
   }
 
@@ -280,8 +286,13 @@ class AppUpdateService {
   Future<String?> downloadAndInstallUpdate(
     String url,
     void Function(int downloadedBytes, int? totalBytes) onProgress,
-    AppUpdateDownloadController? controller,
-  ) async {
+    AppUpdateDownloadController? controller, {
+    String? mirrorUrlPrefix,
+  }) async {
+    if (!isTrustedApkDownloadUrl(url, mirrorUrlPrefix: mirrorUrlPrefix)) {
+      _log('拒绝不受信任的更新下载地址：$url');
+      return 'update_download_url_untrusted';
+    }
     _log('开始下载更新：$url');
     HttpClient? client;
     IOSink? sink;
@@ -299,7 +310,10 @@ class AppUpdateService {
 
       if (response.statusCode != 200) {
         _log('下载失败，HTTP ${response.statusCode}');
-        return '下载失败（HTTP ${response.statusCode}）';
+        return encodeServiceMessage(
+          'update_download_http_failed',
+          {'statusCode': response.statusCode},
+        );
       }
 
       final total = response.contentLength;
@@ -331,7 +345,10 @@ class AppUpdateService {
       final result = await _openInstaller(savePath);
       if (result.type != ResultType.done) {
         _log('打开安装包失败: ${result.message}');
-        return '打开安装包失败: ${result.message}';
+        return encodeServiceMessage(
+          'update_open_installer_failed',
+          {'detail': result.message},
+        );
       }
       _log('安装包已打开');
       return null;
@@ -341,7 +358,10 @@ class AppUpdateService {
         return downloadCancelledMessage;
       }
       _log('下载或安装异常：$e');
-      return '下载或安装过程中出现错误: $e';
+      return encodeServiceMessage(
+        'update_download_install_error',
+        {'detail': '$e'},
+      );
     } finally {
       try {
         await sink?.close();
@@ -383,7 +403,7 @@ class AppUpdateService {
       return const AppUpdateDownloadProbeResult(
         isSuccess: false,
         elapsed: Duration.zero,
-        message: '地址无效',
+        message: 'invalid_url',
       );
     }
 
@@ -650,8 +670,10 @@ class AppUpdateService {
       currentVersion: currentVersion,
       latestRelease: release,
       message: hasUpdate
-          ? (release.isPrerelease ? '发现新的预发布版本' : '发现新版本')
-          : '当前已经是最新版本',
+          ? (release.isPrerelease
+                ? 'update_available_prerelease'
+                : 'update_available')
+          : 'already_latest',
     );
   }
 

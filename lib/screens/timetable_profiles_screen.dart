@@ -102,21 +102,18 @@ class TimetableProfilesScreen extends StatelessWidget {
 
   Future<void> _createBlankProfile(BuildContext context) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController();
     final name = await showAppTextInputDialog(
       context,
       title: l10n.createTimetableTitle,
-      body: HyperosTextField(
+      confirmLabel: l10n.createAction,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timetableNameLabel,
         hint: l10n.timetableNameHint,
         autofocus: true,
       ),
-      confirmLabel: l10n.createAction,
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
     );
-    controller.dispose();
 
     if (!context.mounted || name == null || name.isEmpty) {
       return;
@@ -139,19 +136,17 @@ class TimetableProfilesScreen extends StatelessWidget {
     String currentName,
   ) async {
     final l10n = AppLocalizations.of(context)!;
-    final controller = TextEditingController(text: currentName);
     final name = await showAppTextInputDialog(
       context,
       title: l10n.renameTimetableTitle,
-      body: HyperosTextField(
+      initialValue: currentName,
+      bodyBuilder: (controller) => HyperosTextField(
         controller: controller,
         label: l10n.timetableNameLabel,
         autofocus: true,
       ),
-      readValue: () => controller.text,
       validate: (value) => value.isNotEmpty,
     );
-    controller.dispose();
 
     if (!context.mounted ||
         name == null ||

@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import '../l10n/service_message_localizer.dart';
 import '../models/course.dart';
 import '../models/exam.dart';
 import '../models/holiday_entry.dart';
@@ -12,6 +13,7 @@ import '../models/schedule_item.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import '../ui/hyperos/hyperos_navigation.dart';
 import '../services/app_analytics.dart';
 import '../logging/app_debug_log.dart';
 import '../logging/app_log_messages.dart';
@@ -139,8 +141,8 @@ class TimetableProvider with ChangeNotifier {
   List<Exam> get exams => List.unmodifiable(_exams);
   TimetableSettings get settings => _settings;
 
-  // 主题撤销状态
-  TimetableSettings? _undoSettings;
+  // 主题撤销状态（仅保存主题相关字段，避免误回滚其他设置）
+  ThemeConfig? _undoThemeConfig;
   String? _undoThemeName;
   Timer? _undoTimer;
 
@@ -148,7 +150,7 @@ class TimetableProvider with ChangeNotifier {
   int _writeEpoch = 0;
 
   /// 是否有待撤销的主题变更
-  bool get hasPendingUndo => _undoSettings != null;
+  bool get hasPendingUndo => _undoThemeConfig != null;
 
   /// 撤销主题名称
   String? get undoThemeName => _undoThemeName;
@@ -158,11 +160,11 @@ class TimetableProvider with ChangeNotifier {
     TimetableSettings newSettings, {
     String? themeName,
   }) async {
-    _undoSettings = _settings;
+    _undoThemeConfig = ThemeConfig.fromSettings(_settings);
     _undoThemeName = themeName;
     _undoTimer?.cancel();
     _undoTimer = Timer(const Duration(seconds: 8), () {
-      _undoSettings = null;
+      _undoThemeConfig = null;
       _undoThemeName = null;
       notifyListeners();
     });
@@ -171,12 +173,12 @@ class TimetableProvider with ChangeNotifier {
 
   /// 撤销主题变更
   Future<void> undoThemeChange() async {
-    if (_undoSettings == null) return;
-    final oldSettings = _undoSettings!;
-    _undoSettings = null;
+    if (_undoThemeConfig == null) return;
+    final restored = _undoThemeConfig!.applyToSettings(_settings);
+    _undoThemeConfig = null;
     _undoThemeName = null;
     _undoTimer?.cancel();
-    await updateSettings(oldSettings);
+    await updateSettings(restored);
   }
 
   /// 批量更新设置（用于主题导入）
@@ -416,12 +418,12 @@ class TimetableProvider with ChangeNotifier {
       _settings = _settings.copyWith(liveEnableLocalDiagnostics: true);
       await _persistActiveProfileState();
       await _storageService.setMigratedAppLogsDefault(true);
+      await AppLogService.instance.updateLoggingEnabled(true);
       unawaited(
         AppLogService.instance.info(
           'app_logs_default_migrated',
           AppLogMessages.appLogsDefaultMigrated,
           extras: {'profileId': activeProfile.id},
-          force: true,
         ),
       );
     } else if (!didMigrateAppLogsDefault) {
@@ -498,6 +500,9 @@ class TimetableProvider with ChangeNotifier {
   }
 
   Future<void> _syncNativeRuntimePreferences() async {
+    HyperosNavigation.applyUserTransitionSpeed(
+      _settings.pageTransitionSpeed,
+    );
     await AppLogService.instance.updateLoggingEnabled(
       _settings.liveEnableLocalDiagnostics,
     );
@@ -1341,7 +1346,7 @@ class TimetableProvider with ChangeNotifier {
   Future<void> addExam(Exam exam) async {
     await initialize();
     if (getCourseForExam(exam) == null) {
-      throw ArgumentError('关联的课程不存在');
+      throw ArgumentError('linked_course_not_found');
     }
     _exams.add(exam);
     await _persistActiveProfileState();
@@ -1476,12 +1481,17 @@ class TimetableProvider with ChangeNotifier {
     await initialize();
     final index = _courses.indexWhere((course) => course.id == courseId);
     if (index == -1) {
-      throw ArgumentError('未找到要删除的课程');
+      throw ArgumentError('course_not_found_for_delete');
     }
 
     final originalCourse = _courses[index];
     if (!originalCourse.isInWeek(sourceWeek)) {
-      throw ArgumentError('这门课在第 $sourceWeek 周没有排课');
+      throw ArgumentError(
+        encodeServiceMessage(
+          'course_not_scheduled_week',
+          {'sourceWeek': sourceWeek},
+        ),
+      );
     }
 
     final remainingWeeks =
@@ -1531,15 +1541,20 @@ class TimetableProvider with ChangeNotifier {
     await initialize();
     final index = _courses.indexWhere((course) => course.id == courseId);
     if (index == -1) {
-      throw ArgumentError('未找到要调课的课程');
+      throw ArgumentError('course_not_found_for_reschedule');
     }
 
     final originalCourse = _courses[index];
     if (!originalCourse.isInWeek(sourceWeek)) {
-      throw ArgumentError('这门课在第 $sourceWeek 周没有排课');
+      throw ArgumentError(
+        encodeServiceMessage(
+          'course_not_scheduled_week',
+          {'sourceWeek': sourceWeek},
+        ),
+      );
     }
     if (targetWeek < 1 || targetWeek > _settings.semesterWeekCount) {
-      throw ArgumentError('目标周次超出当前学期范围');
+      throw ArgumentError('target_week_out_of_range');
     }
 
     final validationMessage = validateCourseTimeSchemeOverride(
@@ -1648,7 +1663,10 @@ class TimetableProvider with ChangeNotifier {
         settings.activeTimeSchemeId != _settings.activeTimeSchemeId;
 
     if (sectionConfigChanged && settings.sectionCount < maxUsedSection) {
-      return '节次数量不能小于当前已使用的最大节次（第$maxUsedSection节）';
+      return encodeServiceMessage(
+        'section_count_below_usage',
+        {'requiredMaxSection': maxUsedSection},
+      );
     }
 
     final previousBackdropPath = resolveHomePageBackdropImagePath(_settings);

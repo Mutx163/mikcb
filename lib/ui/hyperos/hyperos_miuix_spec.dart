@@ -585,8 +585,9 @@ abstract final class HyperosMiuixFloatingToolbar {
 // =============================================================================
 
 abstract final class HyperosMiuixNavigation {
-  /// [SettingsTransitionHelper.DURATION]
-  static const transitionDurationMs = 450;
+  /// Base page transition duration. Tuned to match the previous default at 1.5×
+  /// user speed (450ms ÷ 1.5 = 300ms).
+  static const transitionDurationMs = 300;
 
   /// [SettingsTransitionHelper.FADE_THROUGH_THRESHOLD]
   static const fadeThroughThreshold = 0.22;

@@ -21,6 +21,12 @@ abstract final class HyperosNavigation {
         HyperosMiuixNavigation.transitionDurationMs,
       );
 
+  /// Persists user speed preference and refreshes active route controllers.
+  static void applyUserTransitionSpeed(double speed) {
+    AndroidAnimationScaleService.setUserTransitionSpeed(speed);
+    HyperosPageRoute.syncTransitionDurations();
+  }
+
   /// Theme hook for apps that still construct [MaterialPageRoute] somewhere.
   ///
   /// Duration still comes from [HyperosPageRoute]; prefer [route] directly.
@@ -244,26 +250,22 @@ class _HyperosTransitionPageShell extends StatelessWidget {
 }
 
 /// Standard sub-page route for mikcb (settings, import, about, etc.).
-class HyperosPageRoute<T> extends PageRouteBuilder<T> {
+class HyperosPageRoute<T> extends PageRoute<T> {
+  static final Set<HyperosPageRoute<dynamic>> _activeRoutes = {};
+
   HyperosPageRoute({
     required this.builder,
     super.settings,
     super.fullscreenDialog,
-  }) : super(
-         transitionDuration: HyperosNavigation.transitionDuration,
-         reverseTransitionDuration: HyperosNavigation.transitionDuration,
-         pageBuilder: (context, animation, secondaryAnimation) =>
-             builder(context),
-         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-           return HyperosNavigation.buildSharedAxisTransition(
-             animation: animation,
-             secondaryAnimation: secondaryAnimation,
-             child: child,
-           );
-         },
-       );
+  });
 
   final WidgetBuilder builder;
+
+  @override
+  Duration get transitionDuration => HyperosNavigation.transitionDuration;
+
+  @override
+  Duration get reverseTransitionDuration => HyperosNavigation.transitionDuration;
 
   @override
   bool get maintainState => true;
@@ -276,6 +278,55 @@ class HyperosPageRoute<T> extends PageRouteBuilder<T> {
 
   @override
   String? get barrierLabel => null;
+
+  @override
+  void install() {
+    super.install();
+    _activeRoutes.add(this);
+  }
+
+  @override
+  void dispose() {
+    _activeRoutes.remove(this);
+    super.dispose();
+  }
+
+  /// Re-applies the current user/system transition speed to routes still on
+  /// the navigator stack (their controllers are created once in [install]).
+  static void syncTransitionDurations() {
+    final duration = HyperosNavigation.transitionDuration;
+    for (final route in _activeRoutes) {
+      final controller = route.controller;
+      if (controller == null) {
+        continue;
+      }
+      controller.duration = duration;
+      controller.reverseDuration = duration;
+    }
+  }
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return builder(context);
+  }
+
+  @override
+  Widget buildTransitions(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    return HyperosNavigation.buildSharedAxisTransition(
+      animation: animation,
+      secondaryAnimation: secondaryAnimation,
+      child: child,
+    );
+  }
 }
 
 /// [PageTransitionsTheme] adapter sharing [HyperosNavigation.buildSharedAxisTransition].

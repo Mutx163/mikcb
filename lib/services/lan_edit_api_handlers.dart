@@ -198,7 +198,7 @@ class LanEditApiHandlers {
         semesterWeekCount: context.semesterWeekCount,
       );
       if (draft.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        await _writeError(request, 400, 'invalid_request', 'course_name_required');
         return;
       }
       final created = await host.createCourse(draft);
@@ -247,7 +247,7 @@ class LanEditApiHandlers {
         semesterWeekCount: context.semesterWeekCount,
       );
       if (updated.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        await _writeError(request, 400, 'invalid_request', 'course_name_required');
         return;
       }
       await host.updateCourse(updated);
@@ -303,7 +303,7 @@ class LanEditApiHandlers {
       final originalName = body['originalName']?.toString();
       final rawSlots = body['slots'];
       if (rawSlots is! List || rawSlots.isEmpty) {
-        await _writeError(request, 400, 'invalid_request', '至少需要保留一个上课时间段');
+        await _writeError(request, 400, 'invalid_request', 'at_least_one_schedule_slot');
         return;
       }
 
@@ -340,7 +340,7 @@ class LanEditApiHandlers {
       }
 
       if (slots.first.name.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', '课程名称不能为空');
+        await _writeError(request, 400, 'invalid_request', 'course_name_required');
         return;
       }
 
@@ -384,7 +384,7 @@ class LanEditApiHandlers {
       await host.ensureInitialized();
       final body = await _readBody(request);
       if (body.trim().isEmpty) {
-        await _writeError(request, 400, 'invalid_request', '备份内容不能为空');
+        await _writeError(request, 400, 'invalid_request', 'backup_content_required');
         return;
       }
       final count = await host.importMergeBackupJson(body);

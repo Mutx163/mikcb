@@ -269,6 +269,58 @@ void main() {
   );
 
   test(
+    'syncImportedCourses keeps local-only courses and merges imported updates',
+    () {
+      final existing = [
+        _course(
+          id: 'a',
+          name: '高等数学',
+          day: 1,
+          start: 1,
+          end: 2,
+          weeks: [1, 2, 3, 4, 5, 6],
+          teacher: '张老师',
+          location: 'A101',
+          shortName: '高数',
+        ),
+        _course(
+          id: 'stale',
+          name: '线性代数',
+          day: 5,
+          start: 3,
+          end: 4,
+          weeks: [1, 2, 3, 4],
+        ),
+      ];
+      final imported = [
+        _course(
+          id: 'new-a',
+          name: '高等数学',
+          day: 3,
+          start: 3,
+          end: 4,
+          weeks: [1, 2, 3, 4, 5, 6],
+          teacher: '张老师',
+          location: 'B202',
+        ),
+      ];
+
+      final result = syncImportedCourses(
+        existingCourses: existing,
+        importedCourses: imported,
+      );
+
+      expect(result.mergedCourses, hasLength(2));
+      expect(result.addedCount, 0);
+      expect(result.updatedCount, 1);
+      expect(
+        result.mergedCourses.any((course) => course.name == '线性代数'),
+        isTrue,
+      );
+    },
+  );
+
+  test(
     'replaceImportedCoursesPreservingLocalFields removes stale courses and keeps local metadata',
     () {
       final existing = [

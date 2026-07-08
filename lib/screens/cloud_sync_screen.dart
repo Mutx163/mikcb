@@ -31,6 +31,9 @@ class CloudSyncScreen extends StatefulWidget {
 }
 
 class _CloudSyncScreenState extends State<CloudSyncScreen> {
+  static const _maxBackupCountOptions = [5, 10, 15, 20, 30];
+  static const _maxBackupAgeOptions = [7, 14, 30, 60, 90];
+
   final _baseUrlController = TextEditingController();
   final _remoteFolderController = TextEditingController();
   final _deviceLabelController = TextEditingController();
@@ -39,15 +42,15 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   WebdavSyncConfig _config = const WebdavSyncConfig();
   bool _loading = true;
   bool _syncing = false;
+  bool _creatingBackup = false;
   bool _loadingBackups = false;
-  String? _storedPassword;
+  bool _hasStoredPassword = false;
   List<CloudBackupEntry> _backupEntries = const [];
 
   WebdavSyncCoordinator get _coordinator => WebdavSyncCoordinator.instance();
 
   bool get _isAccountConnected =>
-      _config.username.trim().isNotEmpty &&
-      (_storedPassword?.isNotEmpty ?? false);
+      _config.username.trim().isNotEmpty && _hasStoredPassword;
 
   @override
   void initState() {
@@ -71,12 +74,23 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     setState(() {
       _loadingBackups = true;
     });
-    final entries = await _coordinator.fetchBackupList();
+    final result = await _coordinator.fetchBackupList();
     if (!mounted) {
       return;
     }
+    if (result.hasError) {
+      final l10n = AppLocalizations.of(context)!;
+      showAppToast(
+        context,
+        message: CloudBackupUiHelpers.localizeSyncError(
+          l10n,
+          result.errorMessage,
+        ),
+        kind: AppToastKind.error,
+      );
+    }
     setState(() {
-      _backupEntries = entries;
+      _backupEntries = result.entries;
       _loadingBackups = false;
     });
   }
@@ -103,7 +117,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     }
     setState(() {
       _config = config;
-      _storedPassword = password;
+      _hasStoredPassword = password?.trim().isNotEmpty ?? false;
       _baseUrlController.text = config.baseUrl;
       _remoteFolderController.text = config.remoteFolder;
       _deviceLabelController.text = deviceLabel ?? '';
@@ -180,7 +194,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     );
     await _saveConfig(nextConfig);
     setState(() {
-      _storedPassword = result.password;
+      _hasStoredPassword = true;
       _deviceLabelController.text = deviceLabel;
     });
     if (!mounted) {
@@ -220,7 +234,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       return;
     }
     setState(() {
-      _storedPassword = null;
+      _hasStoredPassword = false;
       _deviceLabelController.clear();
       _backupEntries = const [];
     });
@@ -278,7 +292,12 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           context,
           message: result.kind == WebdavSyncResultKind.backupRestored
               ? l10n.cloudBackupRestoreSuccess
-              : l10n.cloudBackupRestoreFailed(result.message ?? ''),
+              : l10n.cloudBackupRestoreFailed(
+                  CloudBackupUiHelpers.localizeSyncError(
+                    l10n,
+                    result.message,
+                  ),
+                ),
           kind: result.kind == WebdavSyncResultKind.backupRestored
               ? AppToastKind.success
               : AppToastKind.error,
@@ -307,7 +326,12 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
           context,
           message: result.kind == WebdavSyncResultKind.backupDeleted
               ? l10n.cloudBackupDeleteSuccess
-              : l10n.cloudBackupDeleteFailed(result.message ?? ''),
+              : l10n.cloudBackupDeleteFailed(
+                  CloudBackupUiHelpers.localizeSyncError(
+                    l10n,
+                    result.message,
+                  ),
+                ),
           kind: result.kind == WebdavSyncResultKind.backupDeleted
               ? AppToastKind.success
               : AppToastKind.error,
@@ -315,6 +339,43 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         if (result.kind == WebdavSyncResultKind.backupDeleted) {
           await _loadBackups();
         }
+    }
+  }
+
+  Future<void> _createManualBackup() async {
+    if (!_isAccountConnected || !_config.enabled) {
+      return;
+    }
+    setState(() {
+      _creatingBackup = true;
+    });
+    try {
+      final result = await _coordinator.createManualBackup();
+      if (!mounted) {
+        return;
+      }
+      final l10n = AppLocalizations.of(context)!;
+      final succeeded =
+          result.kind == WebdavSyncResultKind.backupCreated ||
+          result.kind == WebdavSyncResultKind.uploaded;
+      showAppToast(
+        context,
+        message: succeeded
+            ? l10n.cloudBackupCreateSuccess
+            : l10n.cloudBackupCreateFailed(
+                CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
+              ),
+        kind: succeeded ? AppToastKind.success : AppToastKind.error,
+      );
+      if (succeeded) {
+        await _loadBackups();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _creatingBackup = false;
+        });
+      }
     }
   }
 
@@ -346,7 +407,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
         WebdavSyncResultKind.upToDate => l10n.cloudSyncResultUpToDate,
         WebdavSyncResultKind.cancelled => l10n.cloudSyncResultCancelled,
         WebdavSyncResultKind.failed => l10n.cloudSyncResultFailed(
-          result.message ?? '',
+          CloudBackupUiHelpers.localizeSyncError(l10n, result.message),
         ),
         _ => l10n.cloudSyncResultUpToDate,
       };
@@ -445,6 +506,7 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
 
   Widget _buildAdvancedSection(AppLocalizations l10n) {
     return HyperosControlCard(
+      edgeToEdge: true,
       child: HyperosAccordion(
         items: [
           HyperosAccordionItem(
@@ -549,21 +611,35 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         HyperosSectionLabel(text: l10n.cloudBackupSectionTitle),
+        HyperosControlCard(
+          subtitle: l10n.cloudBackupSectionSubtitle,
+          child: HyperosControlCardInset(
+            child: HyperosButton(
+              label: l10n.cloudBackupCreateNow,
+              loading: _creatingBackup,
+              onPressed: _creatingBackup || _syncing
+                  ? null
+                  : _createManualBackup,
+            ),
+          ),
+        ),
+        const HyperosSectionGap(),
         if (_loadingBackups)
           const HyperosControlCard(
+            edgeToEdge: true,
             child: Padding(
-              padding: EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(child: HyperosCircularProgress()),
             ),
           )
         else if (previewEntries.isEmpty)
-          HyperosControlCard(
-            child: HyperosControlCardInset(
-              child: Text(
-                l10n.cloudBackupEmpty,
-                style: HyperosTypography.listDetail(context),
+          HyperosListGroup(
+            children: [
+              HyperosNavTile(
+                title: l10n.cloudBackupEmpty,
+                enabled: false,
               ),
-            ),
+            ],
           )
         else
           HyperosListGroup(
@@ -588,23 +664,79 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
     );
   }
 
-  Widget _buildSyncNowSection(AppLocalizations l10n) {
-    return HyperosControlCard(
-      child: HyperosControlCardInset(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildRetentionSection(AppLocalizations l10n) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        HyperosSectionLabel(text: l10n.cloudBackupRetentionTitle),
+        HyperosControlCard(
+          edgeToEdge: true,
+          child: HyperosControlCardRows(
+            children: [
+              HyperosSelectTile<int>(
+                label: l10n.cloudBackupMaxCountTitle,
+                subtitle: l10n.cloudBackupMaxCountSubtitle,
+                items: {
+                  for (final count in _maxBackupCountOptions)
+                    l10n.cloudBackupMaxCountOption(count): count,
+                },
+                value: _config.maxBackupCount,
+                onChanged: (value) {
+                  if (value == _config.maxBackupCount) {
+                    return;
+                  }
+                  unawaited(
+                    _saveConfig(_config.copyWith(maxBackupCount: value)),
+                  );
+                },
+              ),
+              HyperosSelectTile<int>(
+                label: l10n.cloudBackupMaxAgeTitle,
+                subtitle: l10n.cloudBackupMaxAgeSubtitle,
+                items: {
+                  for (final days in _maxBackupAgeOptions)
+                    l10n.cloudBackupMaxAgeOption(days): days,
+                },
+                value: _config.maxBackupAgeDays,
+                onChanged: (value) {
+                  if (value == _config.maxBackupAgeDays) {
+                    return;
+                  }
+                  unawaited(
+                    _saveConfig(_config.copyWith(maxBackupAgeDays: value)),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+        const HyperosSectionGap(),
+        HyperosListGroup(
           children: [
-            Text(
-              l10n.cloudSyncSyncNowSubtitle,
-              style: HyperosTypography.listDetail(context),
-            ),
-            const SizedBox(height: 12),
-            HyperosButton(
-              label: l10n.cloudSyncSyncNow,
-              loading: _syncing,
-              onPressed: _syncing || !_config.enabled ? null : _syncNow,
+            HyperosSwitchTile(
+              title: l10n.cloudBackupManualProtectedTitle,
+              subtitle: l10n.cloudBackupManualProtectedSubtitle,
+              value: _config.manualBackupProtected,
+              onChanged: (value) {
+                unawaited(
+                  _saveConfig(_config.copyWith(manualBackupProtected: value)),
+                );
+              },
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSyncNowSection(AppLocalizations l10n) {
+    return HyperosControlCard(
+      subtitle: l10n.cloudSyncSyncNowSubtitle,
+      child: HyperosControlCardInset(
+        child: HyperosButton(
+          label: l10n.cloudSyncSyncNow,
+          loading: _syncing,
+          onPressed: _syncing || !_config.enabled ? null : _syncNow,
         ),
       ),
     );
@@ -621,19 +753,20 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
             _CloudSyncInfoRow(
               label: l10n.cloudSyncLastSyncedLabel,
               value: _formatDateTime(status.lastSyncedAt),
+              isLast: !status.isSyncing && status.lastError == null,
             ),
             if (status.isSyncing)
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: EdgeInsets.only(
+                  bottom: status.lastError == null ? 0 : 8,
+                ),
                 child: Row(
                   children: [
                     _buttonLoadingPrefix(),
                     const SizedBox(width: 8),
                     Text(
                       l10n.cloudSyncSyncing,
-                      style: HyperosTypography.listTitle(
-                        context,
-                      ).copyWith(fontWeight: FontWeight.w600),
+                      style: HyperosTypography.listTitle(context),
                     ),
                   ],
                 ),
@@ -641,8 +774,12 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
             if (status.lastError != null)
               _CloudSyncInfoRow(
                 label: l10n.cloudSyncLastErrorLabel,
-                value: status.lastError!,
+                value: CloudBackupUiHelpers.localizeSyncError(
+                  l10n,
+                  status.lastError,
+                ),
                 valueColor: HyperosTokens.error,
+                isLast: true,
               ),
           ],
         ),
@@ -695,48 +832,52 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 const HyperosSectionGap(),
                 HyperosControlCard(
                   edgeToEdge: true,
-                  child: HyperosSelectTile<WebdavSyncProvider>(
-                    label: l10n.cloudSyncProviderTitle,
-                    items: {
-                      l10n.cloudSyncProviderJianguoyun:
-                          WebdavSyncProvider.jianguoyun,
-                      l10n.cloudSyncProviderCustom: WebdavSyncProvider.custom,
-                    },
-                    value: _config.provider,
-                    onChanged: (value) {
-                      if (value == _config.provider) {
-                        return;
-                      }
-                      var baseUrl = _baseUrlController.text.trim();
-                      if (value == WebdavSyncProvider.jianguoyun) {
-                        baseUrl = WebdavSyncConfig.defaultJianguoyunBaseUrl;
-                        _baseUrlController.text = baseUrl;
-                      }
-                      unawaited(
-                        _saveConfig(
-                          _config.copyWith(provider: value, baseUrl: baseUrl),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const HyperosSectionGap(),
-                HyperosControlCard(
-                  edgeToEdge: true,
-                  child: HyperosSelectTile<WebdavSyncMode>(
-                    label: l10n.cloudSyncModeTitle,
-                    subtitle: l10n.cloudSyncSettingsSectionSubtitle,
-                    items: {
-                      l10n.cloudSyncModeAuto: WebdavSyncMode.auto,
-                      l10n.cloudSyncModeManual: WebdavSyncMode.manual,
-                    },
-                    value: _config.syncMode,
-                    onChanged: (value) {
-                      if (value == _config.syncMode) {
-                        return;
-                      }
-                      unawaited(_saveConfig(_config.copyWith(syncMode: value)));
-                    },
+                  child: HyperosControlCardRows(
+                    children: [
+                      HyperosSelectTile<WebdavSyncProvider>(
+                        label: l10n.cloudSyncProviderTitle,
+                        items: {
+                          l10n.cloudSyncProviderJianguoyun:
+                              WebdavSyncProvider.jianguoyun,
+                          l10n.cloudSyncProviderCustom:
+                              WebdavSyncProvider.custom,
+                        },
+                        value: _config.provider,
+                        onChanged: (value) {
+                          if (value == _config.provider) {
+                            return;
+                          }
+                          var baseUrl = _baseUrlController.text.trim();
+                          if (value == WebdavSyncProvider.jianguoyun) {
+                            baseUrl =
+                                WebdavSyncConfig.defaultJianguoyunBaseUrl;
+                            _baseUrlController.text = baseUrl;
+                          }
+                          unawaited(
+                            _saveConfig(
+                              _config.copyWith(provider: value, baseUrl: baseUrl),
+                            ),
+                          );
+                        },
+                      ),
+                      HyperosSelectTile<WebdavSyncMode>(
+                        label: l10n.cloudSyncModeTitle,
+                        subtitle: l10n.cloudSyncSettingsSectionSubtitle,
+                        items: {
+                          l10n.cloudSyncModeAuto: WebdavSyncMode.auto,
+                          l10n.cloudSyncModeManual: WebdavSyncMode.manual,
+                        },
+                        value: _config.syncMode,
+                        onChanged: (value) {
+                          if (value == _config.syncMode) {
+                            return;
+                          }
+                          unawaited(
+                            _saveConfig(_config.copyWith(syncMode: value)),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ),
                 const HyperosSectionGap(),
@@ -747,6 +888,8 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
                 if (_config.enabled) _buildSyncNowSection(l10n),
                 if (_config.enabled) const HyperosSectionGap(),
                 if (_config.enabled) _buildBackupSection(l10n),
+                if (_config.enabled) const HyperosSectionGap(),
+                if (_config.enabled) _buildRetentionSection(l10n),
               ],
               const HyperosSectionGap(),
               _buildHelpBanner(l10n),
@@ -763,16 +906,18 @@ class _CloudSyncInfoRow extends StatelessWidget {
     required this.label,
     required this.value,
     this.valueColor,
+    this.isLast = false,
   });
 
   final String label;
   final String value;
   final Color? valueColor;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: EdgeInsets.only(bottom: isLast ? 0 : 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

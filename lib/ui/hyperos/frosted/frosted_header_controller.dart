@@ -1,4 +1,6 @@
 import '../../../logging/app_debug_log.dart';
+// 受控毛玻璃截屏管线：当前生产页面仍走 BackdropFilter 直连路径；
+// 本控制器为后续接线预留，接入时需确保 dispose 顺序正确。
 import 'dart:async';
 import 'dart:ui' as ui;
 

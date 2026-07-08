@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/service_message_localizer.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/course.dart';
@@ -472,7 +474,10 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
             _buildShortNameField(l10n),
             HyperosSelectTile<CourseNature>(
               label: l10n.courseNatureLabel,
-              items: {for (final item in CourseNature.values) item.label: item},
+              items: {
+                for (final item in CourseNature.values)
+                  courseNatureLabel(l10n, item): item,
+              },
               value: _courseNature,
               onChanged: (value) => setState(() => _courseNature = value),
             ),
@@ -1734,7 +1739,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       if (validationMessage != null) {
         showAppToast(
           context,
-          message: '${l10n.scheduleEntryTitle(i + 1)}: $validationMessage',
+          message:
+              '${l10n.scheduleEntryTitle(i + 1)}: ${localizeServiceMessage(l10n, validationMessage)}',
           kind: AppToastKind.warning,
         );
         return;
@@ -1796,7 +1802,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       if (!mounted) return;
       showAppToast(
         context,
-        message: error.message?.toString() ?? l10n.saveFailed,
+        message: error.message != null
+            ? localizeServiceMessage(l10n, error.message!)
+            : l10n.saveFailed,
         kind: AppToastKind.error,
       );
       return;

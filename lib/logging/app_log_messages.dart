@@ -1,47 +1,59 @@
-/// Centralized Chinese log messages for persisted app diagnostics.
+/// Centralized English log message keys for persisted app diagnostics.
 /// Categories remain English snake_case for level inference and grep.
+/// UI display is localized via [AppLogMessageLocalizer].
 abstract final class AppLogMessages {
-  // App log service
-  static const appLoggerInitialized = '应用日志服务已初始化';
-  static const privacyConsentUpdated = '隐私协议同意状态已更新';
-  static const appLogRecordingEnabled = '应用日志记录已开启';
-  static const appLogRecordingRemainsEnabled = '应用日志记录保持开启';
-
-  // Startup & lifecycle
-  static const startupFlowStarted = '启动流程处理已开始';
-  static const startupFlowCompletedNoOnboarding = '启动流程已完成（无需引导页）';
-  static const startupFlowCompletedAfterGuide = '启动流程已完成（经过引导页）';
-  static const startupFlowFailed = '启动流程失败，进入降级模式';
-  static const appLifecycleChanged = '应用生命周期已变更';
-  static const navigatorRouteReplaced = '导航路由已替换';
-  static const navigatorRouteChanged = '导航路由已变更';
-
-  // Timetable provider
-  static const appLogsDefaultMigrated = '迁移时已默认开启应用日志记录';
-  static const timetableLoadSettingsFailed = '加载课表设置失败';
-  static const timetableLoadCoursesFailed = '加载课程数据失败';
-  static const timetableLoadCurrentWeekFailed = '加载当前周次失败';
-
-  // Home widget
-  static const homeWidgetPinSupportFailed = '检查桌面小组件固定支持失败';
-  static const homeWidgetPinRequestFailed = '请求固定桌面小组件失败';
-  static const homeWidgetSyncFailed = '同步桌面小组件快照失败';
-  static const homeWidgetClearFailed = '清空桌面小组件快照失败';
-  static const homeWidgetScheduleFailed = '调度桌面小组件刷新失败';
-
-  // MIUI live activities
-  static const miuiLiveInitializeFailed = '初始化 MIUI 超级岛通道失败';
-  static const miuiLiveOpenPromotedSettingsFailed = '打开超级岛权限设置失败';
-  static const miuiLiveOpenNotificationSettingsFailed = '打开通知设置失败';
-  static const miuiLiveOpenAutostartSettingsFailed = '打开自启动设置失败';
-  static const miuiLiveOpenBatterySettingsFailed = '打开电池优化设置失败';
-  static const miuiLiveOpenAccessibilitySettingsFailed = '打开无障碍设置失败';
-  static const miuiLiveHideFromRecentsFailed = '更新「从最近任务隐藏」失败';
-  static const liveUpdateStartFailed = '从 Flutter 启动超级岛失败';
-  static const liveUpdateStopFailed = '从 Flutter 停止超级岛失败';
-  static const liveUpdateDebugStatusFailed = '获取原生超级岛调试状态失败';
-  static const liveUpdateSnapshotSyncFailed = '同步超级岛课表快照失败';
-  static const liveUpdateSnapshotClearFailed = '清空超级岛课表快照失败';
+  static const appLoggerInitialized = 'log_app_logger_initialized';
+  static const privacyConsentUpdated = 'log_privacy_consent_updated';
+  static const appLogRecordingEnabled = 'log_app_log_recording_enabled';
+  static const appLogRecordingRemainsEnabled = 'log_app_log_recording_remains_enabled';
+  static const startupFlowStarted = 'log_startup_flow_started';
+  static const startupFlowCompletedNoOnboarding = 'log_startup_flow_completed_no_onboarding';
+  static const startupFlowCompletedAfterGuide = 'log_startup_flow_completed_after_guide';
+  static const startupFlowFailed = 'log_startup_flow_failed';
+  static const appLifecycleChanged = 'log_app_lifecycle_changed';
+  static const navigatorRouteReplaced = 'log_navigator_route_replaced';
+  static const navigatorRouteChanged = 'log_navigator_route_changed';
+  static const appLogsDefaultMigrated = 'log_app_logs_default_migrated';
+  static const timetableLoadSettingsFailed = 'log_timetable_load_settings_failed';
+  static const timetableLoadCoursesFailed = 'log_timetable_load_courses_failed';
+  static const timetableLoadCurrentWeekFailed = 'log_timetable_load_current_week_failed';
+  static const homeWidgetPinSupportFailed = 'log_home_widget_pin_support_failed';
+  static const homeWidgetPinRequestFailed = 'log_home_widget_pin_request_failed';
+  static const homeWidgetSyncFailed = 'log_home_widget_sync_failed';
+  static const homeWidgetClearFailed = 'log_home_widget_clear_failed';
+  static const homeWidgetScheduleFailed = 'log_home_widget_schedule_failed';
+  static const miuiLiveInitializeFailed = 'log_miui_live_initialize_failed';
+  static const miuiLiveOpenPromotedSettingsFailed = 'log_miui_live_open_promoted_settings_failed';
+  static const miuiLiveOpenNotificationSettingsFailed = 'log_miui_live_open_notification_settings_failed';
+  static const miuiLiveOpenAutostartSettingsFailed = 'log_miui_live_open_autostart_settings_failed';
+  static const miuiLiveOpenBatterySettingsFailed = 'log_miui_live_open_battery_settings_failed';
+  static const miuiLiveOpenAccessibilitySettingsFailed = 'log_miui_live_open_accessibility_settings_failed';
+  static const miuiLiveHideFromRecentsFailed = 'log_miui_live_hide_from_recents_failed';
+  static const liveUpdateStartFailed = 'log_live_update_start_failed';
+  static const liveUpdateStopFailed = 'log_live_update_stop_failed';
+  static const liveUpdateDebugStatusFailed = 'log_live_update_debug_status_failed';
+  static const liveUpdateSnapshotSyncFailed = 'log_live_update_snapshot_sync_failed';
+  static const liveUpdateSnapshotClearFailed = 'log_live_update_snapshot_clear_failed';
+  static const lanEditAuthFailed = 'log_lan_edit_auth_failed';
+  static const lanEditCourseCreated = 'log_lan_edit_course_created';
+  static const lanEditCourseUpdated = 'log_lan_edit_course_updated';
+  static const lanEditCourseDeleted = 'log_lan_edit_course_deleted';
+  static const lanEditCourseGroupSaved = 'log_lan_edit_course_group_saved';
+  static const lanEditMergeImported = 'log_lan_edit_merge_imported';
+  static const lanEditCoursesBatchDeleted = 'log_lan_edit_courses_batch_deleted';
+  static const lanEditCurrentWeekSet = 'log_lan_edit_current_week_set';
+  static const lanEditSpreadsheetImported = 'log_lan_edit_spreadsheet_imported';
+  static const lanEditSessionStarted = 'log_lan_edit_session_started';
+  static const lanEditSessionStopped = 'log_lan_edit_session_stopped';
+  static const liveUpdateTestRequested = 'log_live_update_test_requested';
+  static const liveUpdateTestNoSelection = 'log_live_update_test_no_selection';
+  static const liveUpdateTestSelectionReady = 'log_live_update_test_selection_ready';
+  static const liveUpdateTestSuspendSync = 'log_live_update_test_suspend_sync';
+  static const liveUpdateTestStarting = 'log_live_update_test_starting';
+  static const liveUpdateTestStarted = 'log_live_update_test_started';
+  static const liveUpdateTestFailed = 'log_live_update_test_failed';
+  static const logExportTitle = 'log_export_title';
+  static const liveUpdateSettingsSyncedKey = 'log_live_update_settings_synced';
 
   static String liveUpdateSettingsSynced({
     required bool beforeClass,
@@ -53,219 +65,189 @@ abstract final class AppLogMessages {
     required bool courseName,
     required bool location,
   }) =>
-      'Flutter 超级岛设置已同步：'
-      '课前=$beforeClass，'
-      '课中=$duringClass，'
-      '下课前=$beforeEnd，'
-      '提升=$promote，'
-      '通知=$notification，'
-      '倒计时=$countdown，'
-      '课程名=$courseName，'
-      '地点=$location';
-
-  // LAN edit audit
-  static const lanEditAuthFailed = '局域网编辑：认证失败';
-  static const lanEditCourseCreated = '局域网编辑：已创建课程';
-  static const lanEditCourseUpdated = '局域网编辑：已更新课程';
-  static const lanEditCourseDeleted = '局域网编辑：已删除课程';
-  static const lanEditCourseGroupSaved = '局域网编辑：已保存课程组';
-  static const lanEditMergeImported = '局域网编辑：已导入合并备份';
-  static const lanEditCoursesBatchDeleted = '局域网编辑：已批量删除课程';
-  static const lanEditCurrentWeekSet = '局域网编辑：已设置当前周次';
-  static const lanEditSpreadsheetImported = '局域网编辑：已导入表格';
-  static const lanEditSessionStarted = '局域网编辑：会话已启动';
-  static const lanEditSessionStopped = '局域网编辑：会话已停止';
-
-  // Live update manual test (settings screen)
-  static const liveUpdateTestRequested = '用户请求手动超级岛测试通知';
-  static const liveUpdateTestNoSelection = '手动超级岛测试：未找到可用课程';
-  static const liveUpdateTestSelectionReady = '手动超级岛测试：已解析目标课程';
-  static const liveUpdateTestSuspendSync = '手动超级岛测试：已临时暂停定时同步';
-  static const liveUpdateTestStarting = '手动超级岛测试：正在启动原生超级岛';
-  static const liveUpdateTestStarted = '手动超级岛测试：已成功请求原生超级岛';
-  static const liveUpdateTestFailed = '手动超级岛测试：原生超级岛出现前失败';
+      '$liveUpdateSettingsSyncedKey|'
+      'beforeClass=$beforeClass|'
+      'duringClass=$duringClass|'
+      'beforeEnd=$beforeEnd|'
+      'promote=$promote|'
+      'notification=$notification|'
+      'countdown=$countdown|'
+      'courseName=$courseName|'
+      'location=$location';
 }
 
-/// Chinese display labels for log field keys in the structured viewer.
+/// English field keys for structured log viewer display.
 const Map<String, String> appLogFieldLabels = {
-  // Header / meta
-  'source': '来源',
-  'platform': '平台',
-  'version': '版本',
-  'buildNumber': '构建号',
-  'loggingEnabled': '日志记录',
-  'privacyAccepted': '隐私协议',
-  'accepted': '已同意',
-  'previous': '先前状态',
-  'truncated': '已截断',
-  'truncatedHint': '截断提示',
-  'throwable': '异常',
-  'extras': '附加信息',
-  'context': '设备上下文',
-  'error': '错误',
-  // Device context
-  'brand': '品牌',
-  'manufacturer': '制造商',
-  'model': '型号',
-  'sdkInt': 'SDK 版本',
-  'versionName': '版本名',
-  'channel': '渠道',
-  'hasNotificationPermission': '通知权限',
-  'hasPromotedPermissionDeclared': '已声明提升通知权限',
-  'canPostPromotedNotifications': '可发布提升通知',
-  'ignoringBatteryOptimizations': '忽略电池优化',
-  'keepAliveAccessibilityEnabled': '无障碍保活已启用',
-  'hideFromRecentsEnabled': '从最近任务隐藏',
-  'taskRemovedRecently': '近期任务被移除',
-  'lastTaskRemovedAt': '上次任务移除时间',
-  'processImportance': '进程重要性',
-  'autoStartStatus': '自启动状态',
-  // Live update settings
-  'liveEnableBeforeClass': '课前超级岛',
-  'liveEnableDuringClass': '课中超级岛',
-  'liveEnableBeforeEnd': '下课前超级岛',
-  'livePromoteDuringClass': '课中提升通知',
-  'liveShowDuringClassNotification': '课中状态栏通知',
-  'liveShowCountdown': '显示倒计时',
-  'liveShowStageText': '显示阶段文字',
-  'liveShowCourseName': '显示课程名',
-  'liveShowLocation': '显示地点',
-  'liveUseShortName': '使用简称',
-  'liveHidePrefixText': '隐藏前缀文字',
-  'liveDuringClassTimeDisplayMode': '课中时间显示模式',
-  'liveEnableMiuiIslandLabelImage': '岛标签图片',
-  'liveMiuiIslandLabelStyle': '岛标签样式',
-  'liveMiuiIslandLabelContent': '岛标签内容',
-  'liveMiuiIslandLabelFontColor': '岛标签字体颜色',
-  'liveMiuiIslandLabelFontWeight': '岛标签字重',
-  'liveMiuiIslandLabelRenderQuality': '岛标签渲染质量',
-  'liveMiuiIslandLabelFontSize': '岛标签字号',
-  'liveMiuiIslandLabelOffsetX': '岛标签 X 偏移',
-  'liveMiuiIslandLabelOffsetY': '岛标签 Y 偏移',
-  'liveMiuiIslandExpandedIconMode': '展开图标模式',
-  'liveShowBeforeClassMinutes': '课前显示分钟数',
-  'liveClassReminderStartMinutes': '上课提醒开始分钟',
-  'liveEndSecondsCountdownThreshold': '下课秒倒计时阈值',
-  // Common extras
-  'state': '状态',
-  'route': '路由',
-  'previousRoute': '先前路由',
-  'profileId': '课表配置 ID',
-  'reason': '原因',
-  'clientIp': '客户端 IP',
-  'port': '端口',
-  'courseName': '课程名',
-  'stage': '阶段',
-  'from': '来源页面',
-  'currentWeek': '当前周次',
-  'weekday': '星期',
-  'untilMillis': '暂停截止时间',
-  'startAtMillis': '开始时间',
-  'mergedCourseCount': '合并课程数',
-  'deletedCount': '删除数量',
-  'requested': '请求数量',
-  'target': '目标',
-  'count': '数量',
-  'value': '值',
-  'snapshotLength': '快照长度',
-  'storedSnapshotVersion': '存储快照版本',
-  'intentIsNull': 'Intent 为空',
-  'action': '操作',
-  'step': '步骤',
+
+  'source': 'log_field_source',
+  'platform': 'log_field_platform',
+  'version': 'log_field_version',
+  'buildNumber': 'log_field_build_number',
+  'loggingEnabled': 'log_field_logging_enabled',
+  'privacyAccepted': 'log_field_privacy_accepted',
+  'accepted': 'log_field_accepted',
+  'previous': 'log_field_previous',
+  'truncated': 'log_field_truncated',
+  'truncatedHint': 'log_field_truncated_hint',
+  'throwable': 'log_field_throwable',
+  'extras': 'log_field_extras',
+  'context': 'log_field_context',
+  'error': 'log_field_error',
+  'brand': 'log_field_brand',
+  'manufacturer': 'log_field_manufacturer',
+  'model': 'log_field_model',
+  'sdkInt': 'log_field_sdk_int',
+  'versionName': 'log_field_version_name',
+  'channel': 'log_field_channel',
+  'hasNotificationPermission': 'log_field_has_notification_permission',
+  'hasPromotedPermissionDeclared': 'log_field_has_promoted_permission_declared',
+  'canPostPromotedNotifications': 'log_field_can_post_promoted_notifications',
+  'ignoringBatteryOptimizations': 'log_field_ignoring_battery_optimizations',
+  'keepAliveAccessibilityEnabled': 'log_field_keep_alive_accessibility_enabled',
+  'hideFromRecentsEnabled': 'log_field_hide_from_recents_enabled',
+  'taskRemovedRecently': 'log_field_task_removed_recently',
+  'lastTaskRemovedAt': 'log_field_last_task_removed_at',
+  'processImportance': 'log_field_process_importance',
+  'autoStartStatus': 'log_field_auto_start_status',
+  'liveEnableBeforeClass': 'log_field_live_enable_before_class',
+  'liveEnableDuringClass': 'log_field_live_enable_during_class',
+  'liveEnableBeforeEnd': 'log_field_live_enable_before_end',
+  'livePromoteDuringClass': 'log_field_live_promote_during_class',
+  'liveShowDuringClassNotification': 'log_field_live_show_during_class_notification',
+  'liveShowCountdown': 'log_field_live_show_countdown',
+  'liveShowStageText': 'log_field_live_show_stage_text',
+  'liveShowCourseName': 'log_field_live_show_course_name',
+  'liveShowLocation': 'log_field_live_show_location',
+  'liveUseShortName': 'log_field_live_use_short_name',
+  'liveHidePrefixText': 'log_field_live_hide_prefix_text',
+  'liveDuringClassTimeDisplayMode': 'log_field_live_during_class_time_display_mode',
+  'liveEnableMiuiIslandLabelImage': 'log_field_live_enable_miui_island_label_image',
+  'liveMiuiIslandLabelStyle': 'log_field_live_miui_island_label_style',
+  'liveMiuiIslandLabelContent': 'log_field_live_miui_island_label_content',
+  'liveMiuiIslandLabelFontColor': 'log_field_live_miui_island_label_font_color',
+  'liveMiuiIslandLabelFontWeight': 'log_field_live_miui_island_label_font_weight',
+  'liveMiuiIslandLabelRenderQuality': 'log_field_live_miui_island_label_render_quality',
+  'liveMiuiIslandLabelFontSize': 'log_field_live_miui_island_label_font_size',
+  'liveMiuiIslandLabelOffsetX': 'log_field_live_miui_island_label_offset_x',
+  'liveMiuiIslandLabelOffsetY': 'log_field_live_miui_island_label_offset_y',
+  'liveMiuiIslandExpandedIconMode': 'log_field_live_miui_island_expanded_icon_mode',
+  'liveShowBeforeClassMinutes': 'log_field_live_show_before_class_minutes',
+  'liveClassReminderStartMinutes': 'log_field_live_class_reminder_start_minutes',
+  'liveEndSecondsCountdownThreshold': 'log_field_live_end_seconds_countdown_threshold',
+  'state': 'log_field_state',
+  'route': 'log_field_route',
+  'previousRoute': 'log_field_previous_route',
+  'profileId': 'log_field_profile_id',
+  'reason': 'log_field_reason',
+  'clientIp': 'log_field_client_ip',
+  'port': 'log_field_port',
+  'courseName': 'log_field_course_name',
+  'stage': 'log_field_stage',
+  'from': 'log_field_from',
+  'currentWeek': 'log_field_current_week',
+  'weekday': 'log_field_weekday',
+  'untilMillis': 'log_field_until_millis',
+  'startAtMillis': 'log_field_start_at_millis',
+  'mergedCourseCount': 'log_field_merged_course_count',
+  'deletedCount': 'log_field_deleted_count',
+  'requested': 'log_field_requested',
+  'target': 'log_field_target',
+  'count': 'log_field_count',
+  'value': 'log_field_value',
+  'snapshotLength': 'log_field_snapshot_length',
+  'storedSnapshotVersion': 'log_field_stored_snapshot_version',
+  'intentIsNull': 'log_field_intent_is_null',
+  'action': 'log_field_action',
+  'step': 'log_field_step',
 };
 
-String categoryDisplayLabel(String category) =>
-    appLogCategoryLabels[category] ?? category;
-
-String fieldDisplayLabel(String key) => appLogFieldLabels[key] ?? key;
-
-/// Chinese display labels for log categories in the structured viewer.
 const Map<String, String> appLogCategoryLabels = {
-  'app_logger_initialized': '应用日志：初始化',
-  'privacy_consent_updated': '应用日志：隐私协议',
-  'app_log_recording_enabled': '应用日志：记录开关',
-  'startup_flow_started': '启动流程：开始',
-  'startup_flow_completed': '启动流程：完成',
-  'startup_flow_failed': '启动流程：失败',
-  'app_lifecycle_state_changed': '应用生命周期',
-  'route_pushed': '路由：入栈',
-  'route_popped': '路由：出栈',
-  'route_replaced': '路由：替换',
-  'flutter_framework_error': 'Flutter 框架错误',
-  'flutter_platform_error': 'Flutter 平台错误',
-  'flutter_zone_error': 'Flutter Zone 错误',
-  'app_logs_default_migrated': '应用日志：迁移',
-  'timetable_load_settings_failed': '课表：加载设置失败',
-  'timetable_load_courses_failed': '课表：加载课程失败',
-  'timetable_load_current_week_failed': '课表：加载周次失败',
-  'home_widget_pin_support_failed': '桌面小组件：检查固定支持',
-  'home_widget_pin_request_failed': '桌面小组件：请求固定',
-  'home_widget_sync_failed': '桌面小组件：同步失败',
-  'home_widget_clear_failed': '桌面小组件：清空失败',
-  'home_widget_schedule_failed': '桌面小组件：调度刷新',
-  'miui_live_initialize_failed': '超级岛：初始化失败',
-  'miui_live_open_promoted_settings_failed': '超级岛：打开权限设置',
-  'miui_live_open_notification_settings_failed': '超级岛：打开通知设置',
-  'miui_live_open_autostart_settings_failed': '超级岛：打开自启动设置',
-  'miui_live_open_battery_settings_failed': '超级岛：打开电池优化',
-  'miui_live_open_accessibility_settings_failed': '超级岛：打开无障碍设置',
-  'miui_live_hide_from_recents_failed': '超级岛：隐藏最近任务',
-  'live_update_flutter_initialize_failed': '超级岛：Flutter 初始化失败',
-  'live_update_start_failed': '超级岛：启动失败',
-  'live_update_stop_failed': '超级岛：停止失败',
-  'live_update_debug_status_failed': '超级岛：调试状态失败',
-  'live_update_settings_synced': '超级岛：设置已同步',
-  'live_update_snapshot_sync_failed': '超级岛：快照同步失败',
-  'live_update_snapshot_clear_failed': '超级岛：快照清空失败',
-  'lan_edit_auth_failed': '局域网编辑：认证',
-  'lan_edit_course_created': '局域网编辑：创建课程',
-  'lan_edit_course_updated': '局域网编辑：更新课程',
-  'lan_edit_course_deleted': '局域网编辑：删除课程',
-  'lan_edit_course_group_saved': '局域网编辑：保存课程组',
-  'lan_edit_merge_imported': '局域网编辑：合并导入',
-  'lan_edit_courses_batch_deleted': '局域网编辑：批量删除',
-  'lan_edit_current_week_set': '局域网编辑：设置周次',
-  'lan_edit_spreadsheet_imported': '局域网编辑：表格导入',
-  'lan_edit_session_started': '局域网编辑：会话启动',
-  'lan_edit_session_stopped': '局域网编辑：会话停止',
-  'live_update_test_requested': '超级岛测试：请求',
-  'live_update_test_no_selection': '超级岛测试：无课程',
-  'live_update_test_selection_ready': '超级岛测试：已选课程',
-  'live_update_test_suspend_sync': '超级岛测试：暂停同步',
-  'live_update_test_starting': '超级岛测试：启动中',
-  'live_update_test_started': '超级岛测试：已启动',
-  'live_update_test_failed': '超级岛测试：失败',
-  'live_update_snapshot_settings': '超级岛：快照设置',
-  'live_update_snapshot_synced': '超级岛：快照已同步',
-  'live_update_snapshot_cleared': '超级岛：快照已清空',
-  'live_update_alarm_triggered': '超级岛：闹钟触发',
-  'live_update_scheduler_resume': '超级岛：调度恢复',
-  'live_update_reschedule_holiday': '超级岛：节假日跳过',
-  'live_update_reschedule_active': '超级岛：立即启动',
-  'live_update_reschedule_scheduled': '超级岛：已调度',
-  'live_update_snapshot_parse_failed': '超级岛：快照解析失败',
-  'live_update_snapshot_invalidated_after_upgrade': '超级岛：升级后快照失效',
-  'live_update_payload_selected': '超级岛：已选负载',
-  'live_update_scheduler_start_failed': '超级岛：调度启动失败',
-  'live_update_start_requested': '超级岛：请求启动',
-  'live_update_stop_requested': '超级岛：请求停止',
-  'live_update_service_missing_payload': '超级岛：服务缺少负载',
-  'live_update_service_started': '超级岛：服务已启动',
-  'live_update_service_start_failed': '超级岛：服务启动失败',
-  'live_update_task_removed': '超级岛：任务被移除',
-  'live_update_task_removed_resumed': '超级岛：任务移除后恢复',
-  'live_update_before_class_quick_action': '超级岛：课前快捷操作',
-  'live_update_before_class_quick_action_restored': '超级岛：课前快捷操作已恢复',
-  'live_update_status_bar_dismissed': '超级岛：状态栏通知已关闭',
-  'live_update_not_promoted': '超级岛：未提升通知',
-  'live_update_promoted_not_shown': '超级岛：提升未显示',
-  'live_update_service_stopped': '超级岛：服务已停止',
-  'keep_alive_accessibility_connected': '保活：无障碍已连接',
-  'diagnostics_enabled': '诊断：已开启',
-  'diagnostics_cleared': '诊断：已清空',
-  'diagnostics_bootstrap': '诊断：引导',
-  'flutter_diagnostic': 'Flutter 诊断',
-  'flutter_diagnostic_event': 'Flutter 诊断事件',
-  'render_failed': '渲染失败',
-  'debug_snapshot': '调试快照',
+
+  'app_logger_initialized': 'log_cat_app_logger_initialized',
+  'privacy_consent_updated': 'log_cat_privacy_consent_updated',
+  'app_log_recording_enabled': 'log_cat_app_log_recording_enabled',
+  'startup_flow_started': 'log_cat_startup_flow_started',
+  'startup_flow_completed': 'log_cat_startup_flow_completed',
+  'startup_flow_failed': 'log_cat_startup_flow_failed',
+  'app_lifecycle_state_changed': 'log_cat_app_lifecycle_state_changed',
+  'route_pushed': 'log_cat_route_pushed',
+  'route_popped': 'log_cat_route_popped',
+  'route_replaced': 'log_cat_route_replaced',
+  'flutter_framework_error': 'log_cat_flutter_framework_error',
+  'flutter_platform_error': 'log_cat_flutter_platform_error',
+  'flutter_zone_error': 'log_cat_flutter_zone_error',
+  'app_logs_default_migrated': 'log_cat_app_logs_default_migrated',
+  'timetable_load_settings_failed': 'log_cat_timetable_load_settings_failed',
+  'timetable_load_courses_failed': 'log_cat_timetable_load_courses_failed',
+  'timetable_load_current_week_failed': 'log_cat_timetable_load_current_week_failed',
+  'home_widget_pin_support_failed': 'log_cat_home_widget_pin_support_failed',
+  'home_widget_pin_request_failed': 'log_cat_home_widget_pin_request_failed',
+  'home_widget_sync_failed': 'log_cat_home_widget_sync_failed',
+  'home_widget_clear_failed': 'log_cat_home_widget_clear_failed',
+  'home_widget_schedule_failed': 'log_cat_home_widget_schedule_failed',
+  'miui_live_initialize_failed': 'log_cat_miui_live_initialize_failed',
+  'miui_live_open_promoted_settings_failed': 'log_cat_miui_live_open_promoted_settings_failed',
+  'miui_live_open_notification_settings_failed': 'log_cat_miui_live_open_notification_settings_failed',
+  'miui_live_open_autostart_settings_failed': 'log_cat_miui_live_open_autostart_settings_failed',
+  'miui_live_open_battery_settings_failed': 'log_cat_miui_live_open_battery_settings_failed',
+  'miui_live_open_accessibility_settings_failed': 'log_cat_miui_live_open_accessibility_settings_failed',
+  'miui_live_hide_from_recents_failed': 'log_cat_miui_live_hide_from_recents_failed',
+  'live_update_flutter_initialize_failed': 'log_cat_live_update_flutter_initialize_failed',
+  'live_update_start_failed': 'log_cat_live_update_start_failed',
+  'live_update_stop_failed': 'log_cat_live_update_stop_failed',
+  'live_update_debug_status_failed': 'log_cat_live_update_debug_status_failed',
+  'live_update_settings_synced': 'log_cat_live_update_settings_synced',
+  'live_update_snapshot_sync_failed': 'log_cat_live_update_snapshot_sync_failed',
+  'live_update_snapshot_clear_failed': 'log_cat_live_update_snapshot_clear_failed',
+  'lan_edit_auth_failed': 'log_cat_lan_edit_auth_failed',
+  'lan_edit_course_created': 'log_cat_lan_edit_course_created',
+  'lan_edit_course_updated': 'log_cat_lan_edit_course_updated',
+  'lan_edit_course_deleted': 'log_cat_lan_edit_course_deleted',
+  'lan_edit_course_group_saved': 'log_cat_lan_edit_course_group_saved',
+  'lan_edit_merge_imported': 'log_cat_lan_edit_merge_imported',
+  'lan_edit_courses_batch_deleted': 'log_cat_lan_edit_courses_batch_deleted',
+  'lan_edit_current_week_set': 'log_cat_lan_edit_current_week_set',
+  'lan_edit_spreadsheet_imported': 'log_cat_lan_edit_spreadsheet_imported',
+  'lan_edit_session_started': 'log_cat_lan_edit_session_started',
+  'lan_edit_session_stopped': 'log_cat_lan_edit_session_stopped',
+  'live_update_test_requested': 'log_cat_live_update_test_requested',
+  'live_update_test_no_selection': 'log_cat_live_update_test_no_selection',
+  'live_update_test_selection_ready': 'log_cat_live_update_test_selection_ready',
+  'live_update_test_suspend_sync': 'log_cat_live_update_test_suspend_sync',
+  'live_update_test_starting': 'log_cat_live_update_test_starting',
+  'live_update_test_started': 'log_cat_live_update_test_started',
+  'live_update_test_failed': 'log_cat_live_update_test_failed',
+  'live_update_snapshot_settings': 'log_cat_live_update_snapshot_settings',
+  'live_update_snapshot_synced': 'log_cat_live_update_snapshot_synced',
+  'live_update_snapshot_cleared': 'log_cat_live_update_snapshot_cleared',
+  'live_update_alarm_triggered': 'log_cat_live_update_alarm_triggered',
+  'live_update_scheduler_resume': 'log_cat_live_update_scheduler_resume',
+  'live_update_reschedule_holiday': 'log_cat_live_update_reschedule_holiday',
+  'live_update_reschedule_active': 'log_cat_live_update_reschedule_active',
+  'live_update_reschedule_scheduled': 'log_cat_live_update_reschedule_scheduled',
+  'live_update_snapshot_parse_failed': 'log_cat_live_update_snapshot_parse_failed',
+  'live_update_snapshot_invalidated_after_upgrade': 'log_cat_live_update_snapshot_invalidated_after_upgrade',
+  'live_update_payload_selected': 'log_cat_live_update_payload_selected',
+  'live_update_scheduler_start_failed': 'log_cat_live_update_scheduler_start_failed',
+  'live_update_start_requested': 'log_cat_live_update_start_requested',
+  'live_update_stop_requested': 'log_cat_live_update_stop_requested',
+  'live_update_service_missing_payload': 'log_cat_live_update_service_missing_payload',
+  'live_update_service_started': 'log_cat_live_update_service_started',
+  'live_update_service_start_failed': 'log_cat_live_update_service_start_failed',
+  'live_update_task_removed': 'log_cat_live_update_task_removed',
+  'live_update_task_removed_resumed': 'log_cat_live_update_task_removed_resumed',
+  'live_update_before_class_quick_action': 'log_cat_live_update_before_class_quick_action',
+  'live_update_before_class_quick_action_restored': 'log_cat_live_update_before_class_quick_action_restored',
+  'live_update_status_bar_dismissed': 'log_cat_live_update_status_bar_dismissed',
+  'live_update_not_promoted': 'log_cat_live_update_not_promoted',
+  'live_update_promoted_not_shown': 'log_cat_live_update_promoted_not_shown',
+  'live_update_service_stopped': 'log_cat_live_update_service_stopped',
+  'keep_alive_accessibility_connected': 'log_cat_keep_alive_accessibility_connected',
+  'diagnostics_enabled': 'log_cat_diagnostics_enabled',
+  'diagnostics_cleared': 'log_cat_diagnostics_cleared',
+  'diagnostics_bootstrap': 'log_cat_diagnostics_bootstrap',
+  'flutter_diagnostic': 'log_cat_flutter_diagnostic',
+  'flutter_diagnostic_event': 'log_cat_flutter_diagnostic_event',
+  'render_failed': 'log_cat_render_failed',
+  'debug_snapshot': 'log_cat_debug_snapshot',
 };

@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:forui/forui.dart';
 import 'package:university_timetable/l10n/app_localizations.dart';
+import 'package:university_timetable/l10n/enum_localizations.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -257,7 +258,7 @@ class _LiveReminderTimingScreenState extends State<LiveReminderTimingScreen> {
                   label: l10n.duringEndTimeDisplayLabel,
                   items: {
                     for (final value in LiveDuringClassTimeDisplayMode.values)
-                      value.label: value,
+                      liveDuringClassTimeDisplayModeLabel(l10n, value): value,
                   },
                   value: _draft.liveDuringEndTimeDisplayMode,
                   onChanged: (value) => _updateDraft(
@@ -421,7 +422,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 label: l10n.countdownFormatLabel,
                 items: {
                   for (final value in LiveCountdownTextStyle.values)
-                    value.label: value,
+                    liveCountdownTextStyleLabel(l10n, value): value,
                 },
                 value: display.countdownTextStyle,
                 onChanged: (value) =>
@@ -453,7 +454,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
             label: l10n.beforeClassQuickActionTitle,
             items: {
               for (final value in LiveBeforeClassQuickAction.values)
-                value.label: value,
+                liveBeforeClassQuickActionLabel(l10n, value): value,
             },
             value: _draft.liveBeforeClassQuickAction,
             onChanged: (value) => _updateDraft(
@@ -487,7 +488,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 label: l10n.liveMiuiLabelContentLabel,
                 items: {
                   for (final value in MiuiIslandLabelContent.values)
-                    value.label: value,
+                    miuiIslandLabelContentLabel(l10n, value): value,
                 },
                 value: display.miuiIslandLabelContent,
                 onChanged: (value) => _updateDisplay(
@@ -499,7 +500,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 label: l10n.liveMiuiLabelStyleLabel,
                 items: {
                   for (final value in MiuiIslandLabelStyle.values)
-                    value.label: value,
+                    miuiIslandLabelStyleLabel(l10n, value): value,
                 },
                 value: display.miuiIslandLabelStyle,
                 onChanged: (value) => _updateDisplay(
@@ -627,7 +628,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 label: l10n.liveMiuiLabelFontWeightLabel,
                 items: {
                   for (final value in MiuiIslandLabelFontWeight.values)
-                    value.label: value,
+                    miuiIslandLabelFontWeightLabel(l10n, value): value,
                 },
                 value: display.miuiIslandLabelFontWeight,
                 onChanged: (value) => _updateDisplay(
@@ -639,7 +640,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
                 label: l10n.liveMiuiLabelRenderQualityLabel,
                 items: {
                   for (final value in MiuiIslandLabelRenderQuality.values)
-                    value.label: value,
+                    miuiIslandLabelRenderQualityLabel(l10n, value): value,
                 },
                 value: display.miuiIslandLabelRenderQuality,
                 onChanged: (value) => _updateDisplay(
@@ -675,7 +676,7 @@ class _LiveDisplaySettingsScreenState extends State<LiveDisplaySettingsScreen> {
               label: l10n.liveMiuiExpandedIconLabel,
               items: {
                 for (final value in MiuiIslandExpandedIconMode.values)
-                  value.label: value,
+                  miuiIslandExpandedIconModeLabel(l10n, value): value,
               },
               value: display.miuiIslandExpandedIconMode,
               onChanged: (value) {
