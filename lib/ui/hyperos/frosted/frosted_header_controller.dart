@@ -1,16 +1,13 @@
-import '../../../logging/app_debug_log.dart';
 // 受控毛玻璃截屏管线：当前生产页面仍走 BackdropFilter 直连路径；
 // 本控制器为后续接线预留，接入时需确保 dispose 顺序正确。
 import 'dart:async';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 
 import '../../../models/timetable_settings.dart';
 import '../../../services/frosted_blur_service.dart';
-import '../hyperos_header_diag.dart';
 import '../hyperos_theme.dart';
 import 'frosted_capture.dart';
 
@@ -116,7 +113,6 @@ class FrostedHeaderController extends ChangeNotifier {
       _isUserScrolling = false;
       _blurGeneration++;
       _disposeCaches();
-      _logDisplayMode();
     } else {
       scheduleFullRefresh(source: 'capture_enabled');
     }
@@ -211,7 +207,6 @@ class FrostedHeaderController extends ChangeNotifier {
       return;
     }
     _isUserScrolling = scrolling;
-    _logDisplayMode();
     notifyListeners();
   }
 
@@ -364,11 +359,6 @@ class FrostedHeaderController extends ChangeNotifier {
             return;
           }
           if (snapshot == null) {
-            HyperosHeaderDiag.log('frosted_capture', {
-              'ok': false,
-              'source': source,
-              'reason': 'snapshot_null',
-            });
             return;
           }
           final previousRaw = _rawFull;
@@ -507,11 +497,6 @@ class FrostedHeaderController extends ChangeNotifier {
     _releaseImage(stripWithBleed);
 
     if (blurredFull == null) {
-      HyperosHeaderDiag.log('frosted_capture', {
-        'ok': false,
-        'source': source,
-        'reason': 'blur_null',
-      });
       notifyListeners();
       _flushPendingIfScrolling();
       return;
@@ -546,17 +531,6 @@ class FrostedHeaderController extends ChangeNotifier {
         !identical(_blurredImage, previewStrip)) {
       _releaseImage(previewStrip);
     }
-    HyperosHeaderDiag.log('frosted_capture', {
-      'ok': true,
-      'source': source,
-      'width': blurred.width,
-      'height': blurred.height,
-      'scrollPixels': _lastScrollPixels,
-      'captureScroll': _captureScrollPixels,
-      'fullCapture': fullCapture,
-      'blurEngine': FrostedBlurService.lastBlurEngine,
-      'preview': false,
-    });
     notifyListeners();
 
     if (_pendingUpdate && _captureEnabled) {
@@ -579,14 +553,6 @@ class FrostedHeaderController extends ChangeNotifier {
       preferFullCapture: _needsFullRecaptureForScrollDelta(),
       allowBlur: true,
     );
-  }
-
-  void _logDisplayMode() {
-    if (!kDebugMode) {
-      return;
-    }
-    final mode = _isUserScrolling ? 'scroll_blur' : 'idle_blur';
-    appDebugLog('FrostedHeader', '模式=$mode');
   }
 
   /// Drop [ui.Image] after the current frame so [RawImage] is not painting it.

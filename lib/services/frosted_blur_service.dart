@@ -1,8 +1,7 @@
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
 
-import '../../logging/app_debug_log.dart';
-import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 
 /// Android-native RGBA blur (RenderEffect API 31+) with Dart Gaussian fallback.
@@ -74,7 +73,6 @@ abstract final class FrostedBlurService {
               source.dispose();
             }
             _setBlurEngine('native');
-            _logBlurPath('native-rgba', radiusPx);
             return _imageFromRgba(result, width, height);
           }
         } on PlatformException {
@@ -84,18 +82,11 @@ abstract final class FrostedBlurService {
     }
 
     _setBlurEngine('dart');
-    _logBlurPath('dart', radiusPx);
     return _blurInDart(source, radiusPx, disposeSource: disposeSource);
   }
 
   static void _setBlurEngine(String engine) {
     lastBlurEngine = engine;
-  }
-
-  static void _logBlurPath(String path, double sigma) {
-    if (kDebugMode) {
-      appDebugLog('FrostedBlur', '路径=$path sigma=$sigma');
-    }
   }
 
   static Future<ui.Image?> _imageFromRgba(

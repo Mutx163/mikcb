@@ -580,10 +580,6 @@ class MainActivity : FlutterActivity() {
         }
 
         pendingExternalImport = pending
-        Log.d(
-            "MainActivity",
-            "${DiagnosticLogMessages.LOG_EXTERNAL_IMPORT_QUEUED} kind=$kind file=$fileName bytes=${bytes.size}",
-        )
         notifyExternalImportReceived()
     }
 

@@ -4,7 +4,6 @@ import 'package:flutter/scheduler.dart';
 import 'package:forui/forui.dart';
 
 import 'hyperos_blurred_header.dart';
-import 'hyperos_header_diag.dart';
 import 'hyperos_navigation.dart';
 import 'hyperos_overscroll.dart';
 import 'hyperos_overlay_header.dart';
@@ -154,8 +153,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   Animation<double>? _secondaryRouteAnimation;
   VoidCallback? _routeAnimationListener;
   AnimationStatusListener? _routeAnimationStatusListener;
-  bool? _diagLastTransitioning;
-  bool? _diagLastIsCurrent;
   final GlobalKey _overlayHeaderKey = GlobalKey();
   double _measuredOverlayHeaderHeight = 0;
   bool _overlayHeaderMeasurePending = false;
@@ -213,8 +210,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     _detachRouteListeners();
     _routeAnimation = animation;
     _secondaryRouteAnimation = secondary;
-    _diagLastTransitioning = null;
-    _diagLastIsCurrent = null;
 
     void sync() => _syncRouteTransitioning();
     _routeAnimationListener = sync;
@@ -281,10 +276,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     if (_blurSettled || !mounted) {
       return;
     }
-    HyperosHeaderDiag.log('blur_settle', {
-      'blurSettled': true,
-      'source': ?source,
-    });
     setState(() => _blurSettled = true);
     _scheduleResyncHeaderFrostAfterLayout();
   }
@@ -329,6 +320,7 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   }
 
   bool _handleBodyScrollForBlur(ScrollNotification notification) {
+    hyperosHandleOverscrollSnapBack(notification);
     if (notification is ScrollStartNotification ||
         notification is ScrollUpdateNotification ||
         notification is ScrollEndNotification) {
@@ -399,34 +391,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
     );
   }
 
-  void _maybeLogRouteTransition({
-    required bool transitioning,
-    required bool isCurrent,
-  }) {
-    if (_diagLastTransitioning == transitioning &&
-        _diagLastIsCurrent == isCurrent) {
-      return;
-    }
-    _diagLastTransitioning = transitioning;
-    _diagLastIsCurrent = isCurrent;
-
-    // Background routes only matter when transition edges change.
-    if (!isCurrent && transitioning) {
-      return;
-    }
-
-    HyperosHeaderDiag.log('route_transition', {
-      'isRouteTransitioning': transitioning,
-      'isRouteCurrent': isCurrent,
-      if (isCurrent) ...{
-        'liveBlurActive': _liveBlurActive,
-        'useOverlayLayout': _useOverlayLayout,
-      },
-      'animationValue': _animationValue,
-      'secondaryAnimationValue': _secondaryAnimationValue,
-    });
-  }
-
   void _syncRouteTransitioning() {
     final transitioning = _isRouteTransitioning;
     final isCurrent = _isRouteCurrent;
@@ -439,23 +403,18 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
         _blurSettled = false;
       }
       if (isCurrent && mounted) {
-        _maybeLogRouteTransition(transitioning: true, isCurrent: true);
         setState(() {});
-      } else {
-        _maybeLogRouteTransition(transitioning: true, isCurrent: false);
       }
       return;
     }
 
     if (!isCurrent) {
-      _maybeLogRouteTransition(transitioning: false, isCurrent: false);
       if (!_blurSettled) {
         _scheduleBlurSettle();
       }
       return;
     }
 
-    _maybeLogRouteTransition(transitioning: false, isCurrent: true);
     _scheduleBlurSettle();
     if (mounted) {
       setState(() {});
@@ -631,10 +590,6 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
                 builder: (context, constraints) {
                   final width = constraints.maxWidth;
                   if (!width.isFinite || width <= 0) {
-                    HyperosHeaderDiag.log('header_skipped', {
-                      'reason': 'invalid_width',
-                      'maxWidth': width,
-                    });
                     return const SizedBox.shrink();
                   }
                   return SizedBox(
@@ -757,14 +712,22 @@ class _HyperosListViewState extends State<HyperosListView> {
     final listKey = widget.pageStorageKey ?? _pageStorageKeyFromRoute(context);
 
     return _HyperosListScrollHost(
-      child: ListView.builder(
-        key: listKey,
-        physics: const HyperosOverscrollPhysics(
-          parent: AlwaysScrollableScrollPhysics(),
+      child: hyperosBlockStretchOverscroll(
+        child: ScrollConfiguration(
+          behavior: const HyperosScrollBehavior(),
+          child: ListView.builder(
+            key: listKey,
+            physics: HyperosOverscrollPhysics(
+              parent: const AlwaysScrollableScrollPhysics(),
+              topInset: widget.includeHeaderInset
+                  ? HyperosBlurredHeaderScope.insetOf(context)
+                  : 0,
+            ),
+            padding: _resolveListPadding(context),
+            itemCount: resolvedItemCount,
+            itemBuilder: resolvedItemBuilder,
+          ),
         ),
-        padding: _resolveListPadding(context),
-        itemCount: resolvedItemCount,
-        itemBuilder: resolvedItemBuilder,
       ),
     );
   }
@@ -811,6 +774,7 @@ class _HyperosListScrollHostState extends State<_HyperosListScrollHost> {
   }
 
   bool _handleScroll(ScrollNotification notification) {
+    hyperosHandleOverscrollSnapBack(notification);
     if (notification is ScrollStartNotification) {
       _setScrollState(() => _pressHighlightGeneration++);
     }
@@ -820,8 +784,10 @@ class _HyperosListScrollHostState extends State<_HyperosListScrollHost> {
         _setScrollState(() => _isUserScrolling = scrolling);
       }
     }
-    if (notification is ScrollEndNotification && _isUserScrolling) {
-      _setScrollState(() => _isUserScrolling = false);
+    if (notification is ScrollEndNotification) {
+      if (_isUserScrolling) {
+        _setScrollState(() => _isUserScrolling = false);
+      }
     }
     return false;
   }

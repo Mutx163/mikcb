@@ -9,7 +9,6 @@ class KeepAliveAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         KeepAliveAccessibilityStatus.markServiceConnected(true)
-        Log.i("KeepAliveAccessibility", DiagnosticLogMessages.LOG_KEEP_ALIVE_CONNECTED)
         UmengDiagnosticReporter.record(
             context = applicationContext,
             category = "keep_alive_accessibility_connected",
@@ -32,7 +31,6 @@ class KeepAliveAccessibilityService : AccessibilityService() {
     }
 
     override fun onInterrupt() {
-        Log.i("KeepAliveAccessibility", DiagnosticLogMessages.LOG_KEEP_ALIVE_INTERRUPTED)
     }
 
     override fun onUnbind(intent: Intent?): Boolean {

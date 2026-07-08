@@ -622,4 +622,13 @@ abstract final class HyperosMiuixAnim {
 
   /// Max rubber-band blank gap at top/bottom, as a fraction of viewport height.
   static const maxOverscrollFraction = 0.5;
+
+  /// Pixels of overscroll that follow the finger 1:1 before resistance ramps up.
+  static const overscrollDragFreeZonePx = 16.0;
+
+  /// Resistance curve exponent after the free zone (higher = faster falloff).
+  static const overscrollDragFalloffExponent = 4.0;
+
+  /// Minimum finger-to-content transfer ratio near the overscroll cap.
+  static const overscrollDragMinTransfer = 0.03;
 }

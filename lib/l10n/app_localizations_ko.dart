@@ -279,6 +279,80 @@ class AppLocalizationsKo extends AppLocalizations {
   String get partnerImportRequiresSingleProfile => '请导入单课表备份文件，不支持全量备份';
 
   @override
+  String get coupleWebdavTitle => '坚果云拉取';
+
+  @override
+  String get coupleWebdavSubtitle =>
+      '登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件。与「云同步」账号独立，互不影响。';
+
+  @override
+  String get coupleWebdavNotConnected => '尚未连接坚果云';
+
+  @override
+  String coupleWebdavConnectedAs(String username) {
+    return '已连接：$username';
+  }
+
+  @override
+  String coupleWebdavRemotePathHint(String path) {
+    return '远程文件路径：$path';
+  }
+
+  @override
+  String coupleWebdavLastPulledAt(String time) {
+    return '上次拉取：$time';
+  }
+
+  @override
+  String get coupleWebdavConnect => '连接坚果云';
+
+  @override
+  String get coupleWebdavDisconnect => '断开连接';
+
+  @override
+  String get coupleWebdavPullNow => '立即拉取对方课表';
+
+  @override
+  String get coupleWebdavUploadForPartner => '上传我的课表到坚果云';
+
+  @override
+  String get coupleWebdavLoginSheetTitle => '连接坚果云（情侣课表）';
+
+  @override
+  String get coupleWebdavLoginSheetSubtitle =>
+      '请使用应用专用密码。对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传。';
+
+  @override
+  String get coupleWebdavConfirmConnect => '连接并拉取';
+
+  @override
+  String get coupleWebdavTestSuccess => '坚果云连接成功';
+
+  @override
+  String get coupleWebdavTestFailed => '连接失败，请检查账号、应用专用密码与网络';
+
+  @override
+  String get coupleWebdavPullImported => '已从坚果云导入对方课表';
+
+  @override
+  String get coupleWebdavPullUpdated => '已从坚果云更新对方课表';
+
+  @override
+  String get coupleWebdavPullUnchanged => '对方课表无变化';
+
+  @override
+  String get coupleWebdavUploadSuccess => '已上传课表，对方可拉取';
+
+  @override
+  String get coupleWebdavPartnerFileMissing => '未找到对方课表文件，请让对方先上传';
+
+  @override
+  String get coupleWebdavPullFailed => '拉取对方课表失败，请稍后重试';
+
+  @override
+  String get coupleWebdavNotConnectedError => '请先连接坚果云';
+
+  @override
   String get cloudSyncEntryTitle => '클라우드 동기화 (WEBDAV)';
 
   @override

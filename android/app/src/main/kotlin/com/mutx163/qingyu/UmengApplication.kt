@@ -2,7 +2,6 @@ package com.mutx163.qingyu
 
 import android.app.Application
 import android.content.Context
-import android.util.Log
 import com.umeng.commonsdk.UMConfigure
 
 class UmengApplication : Application() {
@@ -11,7 +10,8 @@ class UmengApplication : Application() {
 
         BeforeClassQuickActionRestore.restoreIfClassEnded(applicationContext)
 
-        UMConfigure.setLogEnabled(BuildConfig.DEBUG)
+        // 友盟 SDK 的 UMLog/MobclickAgent 在 debug 下会大量刷屏；诊断走应用内日志文件。
+        UMConfigure.setLogEnabled(false)
         UMConfigure.preInit(
             this,
             BuildConfig.UMENG_APP_KEY,
@@ -35,7 +35,6 @@ class UmengApplication : Application() {
                     return false
                 }
 
-                Log.i("UmengApplication", DiagnosticLogMessages.LOG_INIT_UMENG_ANALYTICS)
                 UMConfigure.init(
                     context.applicationContext,
                     BuildConfig.UMENG_APP_KEY,
