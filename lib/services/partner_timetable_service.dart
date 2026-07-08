@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
+import '../providers/timetable/couple_timetable_logic.dart';
 import 'data_transfer_service.dart';
 import 'storage_service.dart';
 
@@ -90,6 +91,13 @@ class PartnerTimetableService {
       linkedAt: existingBinding?.linkedAt ?? now,
       lastImportedAt: now,
       sourceFileHash: computeContentHash(content),
+      weekOffset: existingBinding?.weekOffset ?? 0,
+      mineColorHex: existingBinding?.mineColorHex ??
+          CoupleTimetableLogic.mineColorHexDefault,
+      partnerColorHex: existingBinding?.partnerColorHex ??
+          CoupleTimetableLogic.partnerColorHexDefault,
+      togetherColorHex: existingBinding?.togetherColorHex ??
+          CoupleTimetableLogic.togetherColorHexDefault,
     );
 
     await _storageService.saveProfiles(nextProfiles);

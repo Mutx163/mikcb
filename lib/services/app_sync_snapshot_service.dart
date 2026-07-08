@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import '../models/holiday_entry.dart';
+import '../models/partner_timetable_binding.dart';
 import '../models/time_scheme.dart';
 import '../models/timetable_profile.dart';
 import '../models/warehouse_macro_models.dart';
@@ -25,6 +26,8 @@ class AppSyncSnapshot {
   final DateTime exportedAt;
   final String deviceId;
   final String contentSha256;
+  final PartnerTimetableBinding? partnerTimetableBinding;
+  final bool includesPartnerTimetableBinding;
 
   const AppSyncSnapshot({
     required this.profiles,
@@ -38,6 +41,8 @@ class AppSyncSnapshot {
     required this.exportedAt,
     required this.deviceId,
     required this.contentSha256,
+    this.partnerTimetableBinding,
+    this.includesPartnerTimetableBinding = false,
   });
 }
 
@@ -108,6 +113,8 @@ class AppSyncSnapshotService {
     final customHolidays = await _holidayService.loadCustomHolidays();
     final teacherRecords = await _storageService.getTeacherRecords();
     final locationRecords = await _storageService.getLocationRecords();
+    final partnerTimetableBinding =
+        await _storageService.getPartnerTimetableBinding();
     final timestamp = exportedAt ?? DateTime.now();
 
     final payload = _buildPayloadMap(
@@ -121,6 +128,7 @@ class AppSyncSnapshotService {
       customHolidays: customHolidays,
       exportedAt: timestamp,
       deviceId: deviceId,
+      partnerTimetableBinding: partnerTimetableBinding,
     );
     final contentSha256 = computeContentSha256(payload);
 
@@ -136,6 +144,8 @@ class AppSyncSnapshotService {
       exportedAt: timestamp,
       deviceId: deviceId,
       contentSha256: contentSha256,
+      partnerTimetableBinding: partnerTimetableBinding,
+      includesPartnerTimetableBinding: true,
     );
   }
 
@@ -164,6 +174,7 @@ class AppSyncSnapshotService {
       customHolidays: snapshot.customHolidays,
       exportedAt: snapshot.exportedAt,
       deviceId: snapshot.deviceId,
+      partnerTimetableBinding: snapshot.partnerTimetableBinding,
     );
     payload['contentSha256'] = snapshot.contentSha256;
     return const JsonEncoder.withIndent('  ').convert(payload);
@@ -209,6 +220,17 @@ class AppSyncSnapshotService {
         ? WarehouseSyncBundle.fromJson(Map<String, dynamic>.from(warehouseRaw))
         : const WarehouseSyncBundle();
 
+    final includesPartnerTimetableBinding = json.containsKey(
+      'partnerTimetableBinding',
+    );
+    PartnerTimetableBinding? partnerTimetableBinding;
+    final rawPartnerBinding = json['partnerTimetableBinding'];
+    if (includesPartnerTimetableBinding && rawPartnerBinding is Map) {
+      partnerTimetableBinding = PartnerTimetableBinding.fromJson(
+        Map<String, dynamic>.from(rawPartnerBinding),
+      );
+    }
+
     return AppSyncSnapshot(
       profiles: rawProfiles
           .map(
@@ -253,6 +275,8 @@ class AppSyncSnapshotService {
           DateTime.now(),
       deviceId: json['deviceId'] as String? ?? '',
       contentSha256: expectedHash.isEmpty ? actualHash : expectedHash,
+      partnerTimetableBinding: partnerTimetableBinding,
+      includesPartnerTimetableBinding: includesPartnerTimetableBinding,
     );
   }
 
@@ -291,6 +315,12 @@ class AppSyncSnapshotService {
     await _warehouseMacroService.importAllMacros(snapshot.macros);
     await _holidayService.saveCustomHolidays(snapshot.customHolidays);
 
+    if (snapshot.includesPartnerTimetableBinding) {
+      await _storageService.savePartnerTimetableBinding(
+        snapshot.partnerTimetableBinding,
+      );
+    }
+
     await provider.initialize();
     return null;
   }
@@ -325,6 +355,7 @@ class AppSyncSnapshotService {
     required List<HolidayEntry> customHolidays,
     required DateTime exportedAt,
     required String deviceId,
+    PartnerTimetableBinding? partnerTimetableBinding,
   }) {
     return {
       'app': 'mikcb',
@@ -342,6 +373,7 @@ class AppSyncSnapshotService {
         'macros': macros.map((macro) => macro.toJson()).toList(),
       },
       'customHolidays': customHolidays.map((entry) => entry.toJson()).toList(),
+      'partnerTimetableBinding': partnerTimetableBinding?.toJson(),
     };
   }
 

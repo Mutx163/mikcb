@@ -124,4 +124,32 @@ void main() {
     expect(intersection.single.startMinutes, 120);
     expect(intersection.single.endMinutes, 180);
   });
+
+  test('maps partner week with offset when detecting together class', () {
+    final mine = _course(id: 'mine', name: '高等数学').copyWith(
+      startWeek: 5,
+      endWeek: 16,
+    );
+    final partner = _course(id: 'partner', name: '高等数学').copyWith(
+      startWeek: 6,
+      endWeek: 16,
+    );
+
+    expect(
+      CoupleTimetableLogic.isTogetherClass(mine, partner, week: 5),
+      isFalse,
+    );
+    expect(
+      CoupleTimetableLogic.isTogetherClass(
+        mine,
+        partner,
+        week: 5,
+        partnerWeekOffset: 1,
+      ),
+      isTrue,
+    );
+    expect(CoupleTimetableLogic.partnerWeekForMyWeek(5, 1), 6);
+    expect(CoupleTimetableLogic.clampWeekOffset(99), 15);
+    expect(CoupleTimetableLogic.clampWeekOffset(-99), -15);
+  });
 }

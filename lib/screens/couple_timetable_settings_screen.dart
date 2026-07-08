@@ -6,10 +6,13 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/l10n/service_message_localizer.dart';
 import 'package:provider/provider.dart';
 
+import '../models/partner_timetable_binding.dart';
+import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../services/partner_timetable_service.dart';
 import '../ui/hyperos/hyperos.dart';
 import '../utils/app_toast.dart';
+import '../utils/hex_color.dart';
 
 class CoupleTimetableSettingsScreen extends StatefulWidget {
   const CoupleTimetableSettingsScreen({super.key});
@@ -21,6 +24,20 @@ class CoupleTimetableSettingsScreen extends StatefulWidget {
 
 class _CoupleTimetableSettingsScreenState
     extends State<CoupleTimetableSettingsScreen> {
+  static const _coupleColorChoices = [
+    '#2196F3',
+    '#2563EB',
+    '#4CAF50',
+    '#FF9800',
+    '#E91E63',
+    '#9C27B0',
+    '#00BCD4',
+    '#FF5722',
+    '#795548',
+    '#607D8B',
+    '#F44336',
+  ];
+
   bool _isExporting = false;
   bool _isImporting = false;
   bool _isUnlinking = false;
@@ -107,8 +124,150 @@ class _CoupleTimetableSettingsScreenState
               ),
             ),
           ),
+          if (binding != null) ...[
+            const HyperosSectionGap(),
+            HyperosControlCard(
+              title: l10n.coupleTimetableWeekOffsetTitle,
+              subtitle: l10n.coupleTimetableWeekOffsetSubtitle,
+              child: HyperosControlCardInset(
+                child: _buildWeekOffsetControl(context, provider, binding.weekOffset),
+              ),
+            ),
+            const HyperosSectionGap(),
+            HyperosControlCard(
+              title: l10n.coupleTimetableColorsTitle,
+              subtitle: l10n.coupleTimetableColorsSubtitle,
+              child: HyperosControlCardInset(
+                child: _buildCoupleColorsControl(context, provider, binding),
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCoupleColorsControl(
+    BuildContext context,
+    TimetableProvider provider,
+    PartnerTimetableBinding binding,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildCoupleColorRow(
+          context,
+          label: l10n.coupleTimetableLegendMine,
+          selectedHex: binding.mineColorHex,
+          onSelected: (color) =>
+              provider.updatePartnerCoupleColors(mineColorHex: color),
+        ),
+        const SizedBox(height: 14),
+        _buildCoupleColorRow(
+          context,
+          label: l10n.coupleTimetableLegendPartner,
+          selectedHex: binding.partnerColorHex,
+          onSelected: (color) =>
+              provider.updatePartnerCoupleColors(partnerColorHex: color),
+        ),
+        const SizedBox(height: 14),
+        _buildCoupleColorRow(
+          context,
+          label: l10n.coupleTimetableLegendTogether,
+          selectedHex: binding.togetherColorHex,
+          onSelected: (color) =>
+              provider.updatePartnerCoupleColors(togetherColorHex: color),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCoupleColorRow(
+    BuildContext context, {
+    required String label,
+    required String selectedHex,
+    required ValueChanged<String> onSelected,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: HyperosTypography.listTitle(context)),
+        const SizedBox(height: 8),
+        HyperosHexColorChipGroup(
+          colorHexes: _paletteIncluding(selectedHex),
+          selectedHex: selectedHex,
+          colorParser: _colorFromHex,
+          distributeHorizontally: false,
+          onSelectedHex: onSelected,
+        ),
+      ],
+    );
+  }
+
+  List<String> _paletteIncluding(String selectedHex) {
+    final normalized = selectedHex.toUpperCase();
+    if (_coupleColorChoices.any((hex) => hex.toUpperCase() == normalized)) {
+      return _coupleColorChoices;
+    }
+    return [selectedHex, ..._coupleColorChoices];
+  }
+
+  Color _colorFromHex(String hex) =>
+      parseHexColorOrFallback(hex, fallback: Colors.blue);
+
+  Widget _buildWeekOffsetControl(
+    BuildContext context,
+    TimetableProvider provider,
+    int weekOffset,
+  ) {
+    final l10n = AppLocalizations.of(context)!;
+    final previewWeek = provider.currentWeek;
+    final partnerWeek = provider.partnerWeekFor(previewWeek);
+    final canDecrement = weekOffset > CoupleTimetableLogic.minWeekOffset;
+    final canIncrement = weekOffset < CoupleTimetableLogic.maxWeekOffset;
+    final offsetLabel = weekOffset == 0
+        ? l10n.coupleTimetableWeekOffsetZero
+        : l10n.coupleTimetableWeekOffsetSigned(
+            weekOffset > 0 ? '+$weekOffset' : '$weekOffset',
+          );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _WeekOffsetStepButton(
+              icon: Icons.remove_rounded,
+              enabled: canDecrement,
+              onPressed: canDecrement
+                  ? () => provider.updatePartnerWeekOffset(weekOffset - 1)
+                  : null,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                offsetLabel,
+                textAlign: TextAlign.center,
+                style: HyperosTypography.listTitle(context),
+              ),
+            ),
+            const SizedBox(width: 12),
+            _WeekOffsetStepButton(
+              icon: Icons.add_rounded,
+              enabled: canIncrement,
+              onPressed: canIncrement
+                  ? () => provider.updatePartnerWeekOffset(weekOffset + 1)
+                  : null,
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          l10n.coupleTimetableWeekOffsetPreview(previewWeek, partnerWeek),
+          style: HyperosTypography.listDetail(context),
+        ),
+      ],
     );
   }
 
@@ -254,5 +413,43 @@ class _CoupleTimetableSettingsScreenState
         setState(() => _isUnlinking = false);
       }
     }
+  }
+}
+
+class _WeekOffsetStepButton extends StatelessWidget {
+  const _WeekOffsetStepButton({
+    required this.icon,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final bool enabled;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return HyperosFrostedSurface(
+      borderRadius: BorderRadius.circular(12),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(12),
+          child: SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(
+              icon,
+              size: 20,
+              color: enabled
+                  ? colors.primary
+                  : colors.onSurface.withValues(alpha: 0.35),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

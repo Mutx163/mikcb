@@ -6,18 +6,38 @@ import 'package:university_timetable/l10n/app_localizations.dart';
 
 import '../models/course.dart';
 import '../models/timetable_settings.dart';
+import '../providers/timetable/couple_timetable_logic.dart';
 import '../providers/timetable_provider.dart';
 import '../utils/hex_color.dart';
 import '../ui/hyperos/hyperos.dart';
 
 typedef CourseActionHandler = void Function(Course course);
 
+class CourseActionPreviewItem {
+  const CourseActionPreviewItem({
+    required this.course,
+    this.isPartnerCourse = false,
+    this.coupleKind,
+    this.isConflict = false,
+  });
+
+  final Course course;
+  final bool isPartnerCourse;
+  final CoupleCourseKind? coupleKind;
+  final bool isConflict;
+
+  bool get isReadOnly => isPartnerCourse;
+
+  bool get isCoupleRelated =>
+      coupleKind == CoupleCourseKind.together ||
+      coupleKind == CoupleCourseKind.partner;
+}
+
 /// Shows the home timetable course action sheet with Forui styling.
 Future<void> showCourseActionSheet(
   BuildContext context, {
-  required List<Course> previewCourses,
+  required List<CourseActionPreviewItem> previewItems,
   required int week,
-  required bool hasConflicts,
   required CourseActionHandler onEdit,
   required CourseActionHandler onReschedule,
   required CourseActionHandler onDelete,
@@ -26,9 +46,8 @@ Future<void> showCourseActionSheet(
   return showHomeHyperosSheet<void>(
     context: context,
     builder: (sheetContext) => CourseActionSheetBody(
-      previewCourses: previewCourses,
+      previewItems: previewItems,
       week: week,
-      hasConflicts: hasConflicts,
       onEdit: onEdit,
       onReschedule: onReschedule,
       onDelete: onDelete,
@@ -40,18 +59,16 @@ Future<void> showCourseActionSheet(
 class CourseActionSheetBody extends StatefulWidget {
   const CourseActionSheetBody({
     super.key,
-    required this.previewCourses,
+    required this.previewItems,
     required this.week,
-    required this.hasConflicts,
     required this.onEdit,
     required this.onReschedule,
     required this.onDelete,
     required this.onSuspend,
   });
 
-  final List<Course> previewCourses;
+  final List<CourseActionPreviewItem> previewItems;
   final int week;
-  final bool hasConflicts;
   final CourseActionHandler onEdit;
   final CourseActionHandler onReschedule;
   final CourseActionHandler onDelete;
@@ -64,7 +81,7 @@ class CourseActionSheetBody extends StatefulWidget {
 class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
   final _scrollController = ScrollController();
   int _selectedIndex = 0;
-  bool _conflictsExpanded = false;
+  bool _relatedExpanded = false;
 
   @override
   void dispose() {
@@ -78,7 +95,7 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
     }
     setState(() {
       _selectedIndex = index;
-      _conflictsExpanded = false;
+      _relatedExpanded = false;
     });
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
@@ -91,9 +108,9 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedCourse = widget.previewCourses[_selectedIndex];
-    final otherConflictIndexes = <int>[
-      for (var index = 0; index < widget.previewCourses.length; index++)
+    final selectedItem = widget.previewItems[_selectedIndex];
+    final otherIndexes = <int>[
+      for (var index = 0; index < widget.previewItems.length; index++)
         if (index != _selectedIndex) index,
     ];
 
@@ -115,25 +132,24 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
                 children: [
                   _CourseActionSheetContent(
                     key: ValueKey(
-                      'course-action-selected-${selectedCourse.id}',
+                      'course-action-selected-${selectedItem.course.id}',
                     ),
-                    course: selectedCourse,
+                    previewItem: selectedItem,
                     week: widget.week,
-                    hasConflict: widget.hasConflicts,
                     onEdit: widget.onEdit,
                     onReschedule: widget.onReschedule,
                     onDelete: widget.onDelete,
                     onSuspend: widget.onSuspend,
                   ),
-                  if (otherConflictIndexes.isNotEmpty) ...[
+                  if (otherIndexes.isNotEmpty) ...[
                     const SizedBox(height: 12),
-                    _ConflictCoursesPanel(
-                      courses: widget.previewCourses,
-                      otherIndexes: otherConflictIndexes,
+                    _RelatedCoursesPanel(
+                      previewItems: widget.previewItems,
+                      otherIndexes: otherIndexes,
                       week: widget.week,
-                      expanded: _conflictsExpanded,
+                      expanded: _relatedExpanded,
                       onToggleExpanded: () {
-                        setState(() => _conflictsExpanded = !_conflictsExpanded);
+                        setState(() => _relatedExpanded = !_relatedExpanded);
                       },
                       onSelect: _selectCourse,
                     ),
@@ -148,9 +164,9 @@ class _CourseActionSheetBodyState extends State<CourseActionSheetBody> {
   }
 }
 
-class _ConflictCoursesPanel extends StatelessWidget {
-  const _ConflictCoursesPanel({
-    required this.courses,
+class _RelatedCoursesPanel extends StatelessWidget {
+  const _RelatedCoursesPanel({
+    required this.previewItems,
     required this.otherIndexes,
     required this.week,
     required this.expanded,
@@ -158,7 +174,7 @@ class _ConflictCoursesPanel extends StatelessWidget {
     required this.onSelect,
   });
 
-  final List<Course> courses;
+  final List<CourseActionPreviewItem> previewItems;
   final List<int> otherIndexes;
   final int week;
   final bool expanded;
@@ -171,15 +187,40 @@ class _ConflictCoursesPanel extends StatelessWidget {
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
     final muted = typo.xs2.copyWith(color: colors.mutedForeground);
-    final accent = colors.destructive;
+    final conflictCount = otherIndexes
+        .where((index) => previewItems[index].isConflict)
+        .length;
+    final coupleCount = otherIndexes.length - conflictCount;
+    final accent = coupleCount > 0 && conflictCount == 0
+        ? parseHexColorOrFallback(
+            context.read<TimetableProvider>().coupleColorForKind(
+              CoupleCourseKind.together,
+            ),
+            fallback: colors.primary,
+          )
+        : colors.destructive;
+    final panelIcon = coupleCount > 0 && conflictCount == 0
+        ? Icons.favorite_rounded
+        : Icons.warning_amber_rounded;
     final previewNames = otherIndexes
-        .map((index) => courses[index].name.trim())
+        .map((index) => previewItems[index].course.name.trim())
         .where((name) => name.isNotEmpty)
         .toList();
     final previewLine = _conflictPreviewLine(previewNames);
+    final title = _relatedPanelTitle(
+      l10n,
+      conflictCount: conflictCount,
+      coupleCount: coupleCount,
+      totalCount: otherIndexes.length,
+    );
     final subtitle = expanded
-        ? l10n.courseActionConflictCollapseHint
-        : (previewLine ?? l10n.courseActionConflictExpandHint);
+        ? (coupleCount > 0 && conflictCount == 0
+              ? l10n.courseActionCoupleCollapseHint
+              : l10n.courseActionConflictCollapseHint)
+        : (previewLine ??
+              (coupleCount > 0 && conflictCount == 0
+                  ? l10n.courseActionCoupleExpandHint
+                  : l10n.courseActionConflictExpandHint));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +245,7 @@ class _ConflictCoursesPanel extends StatelessWidget {
                       ),
                       alignment: Alignment.center,
                       child: Icon(
-                        Icons.warning_amber_rounded,
+                        panelIcon,
                         size: 17,
                         color: accent,
                       ),
@@ -215,7 +256,7 @@ class _ConflictCoursesPanel extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            l10n.conflictCountLabel(otherIndexes.length),
+                            title,
                             style: typo.sm.copyWith(
                               fontWeight: FontWeight.w600,
                               height: 1.25,
@@ -249,8 +290,8 @@ class _ConflictCoursesPanel extends StatelessWidget {
           const SizedBox(height: 8),
           for (var itemIndex = 0; itemIndex < otherIndexes.length; itemIndex++) ...[
             if (itemIndex > 0) const SizedBox(height: 8),
-            _ConflictCourseCompactRow(
-              course: courses[otherIndexes[itemIndex]],
+            _RelatedCourseCompactRow(
+              previewItem: previewItems[otherIndexes[itemIndex]],
               week: week,
               onTap: () => onSelect(otherIndexes[itemIndex]),
             ),
@@ -259,6 +300,21 @@ class _ConflictCoursesPanel extends StatelessWidget {
       ],
     );
   }
+}
+
+String _relatedPanelTitle(
+  AppLocalizations l10n, {
+  required int conflictCount,
+  required int coupleCount,
+  required int totalCount,
+}) {
+  if (coupleCount > 0 && conflictCount == 0) {
+    return l10n.courseActionCoupleRelatedCount(coupleCount);
+  }
+  if (conflictCount > 0 && coupleCount == 0) {
+    return l10n.conflictCountLabel(conflictCount);
+  }
+  return l10n.courseActionMixedRelatedCount(totalCount);
 }
 
 String? _conflictPreviewLine(List<String> names) {
@@ -274,14 +330,14 @@ String? _conflictPreviewLine(List<String> names) {
   return '${names[0]} · ${names[1]}…';
 }
 
-class _ConflictCourseCompactRow extends StatelessWidget {
-  const _ConflictCourseCompactRow({
-    required this.course,
+class _RelatedCourseCompactRow extends StatelessWidget {
+  const _RelatedCourseCompactRow({
+    required this.previewItem,
     required this.week,
     required this.onTap,
   });
 
-  final Course course;
+  final CourseActionPreviewItem previewItem;
   final int week;
   final VoidCallback onTap;
 
@@ -290,13 +346,12 @@ class _ConflictCourseCompactRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
-    final courseColor = parseHexColorOrFallback(
-      course.color,
-      fallback: colors.primary,
-    );
+    final course = previewItem.course;
+    final courseColor = _previewItemColor(context, previewItem, colors);
     final scheduleLine =
         '${_weekdayLabel(l10n, course.dayOfWeek)} · ${l10n.sectionRangeLabel(course.startSection, course.endSection)} · ${course.startTime}-${course.endTime}';
     final muted = typo.xs2.copyWith(color: colors.mutedForeground);
+    final badgeLabel = _previewItemBadgeLabel(l10n, previewItem);
 
     return HyperosFrostedSurface(
       borderRadius: BorderRadius.circular(12),
@@ -322,14 +377,30 @@ class _ConflictCourseCompactRow extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        course.name,
-                        style: typo.sm.copyWith(
-                          fontWeight: FontWeight.w600,
-                          height: 1.25,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              course.name,
+                              style: typo.sm.copyWith(
+                                fontWeight: FontWeight.w600,
+                                height: 1.25,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (badgeLabel != null) ...[
+                            const SizedBox(width: 6),
+                            Text(
+                              badgeLabel,
+                              style: typo.xs2.copyWith(
+                                color: courseColor,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -367,25 +438,60 @@ class _ConflictCourseCompactRow extends StatelessWidget {
   }
 }
 
+Color _previewItemColor(
+  BuildContext context,
+  CourseActionPreviewItem item,
+  FColors colors,
+) {
+  if (item.coupleKind != null) {
+    return parseHexColorOrFallback(
+      context.read<TimetableProvider>().coupleColorForKind(item.coupleKind!),
+      fallback: colors.primary,
+    );
+  }
+  if (item.isConflict) {
+    return colors.destructive;
+  }
+  return parseHexColorOrFallback(
+    item.course.color,
+    fallback: colors.primary,
+  );
+}
+
+String? _previewItemBadgeLabel(
+  AppLocalizations l10n,
+  CourseActionPreviewItem item,
+) {
+  if (item.isConflict) {
+    return l10n.conflictLabel;
+  }
+  return switch (item.coupleKind) {
+    CoupleCourseKind.together => l10n.coupleTimetableLegendTogether,
+    CoupleCourseKind.partner => l10n.coupleTimetableLegendPartner,
+    CoupleCourseKind.mine => l10n.coupleTimetableLegendMine,
+    null => null,
+  };
+}
+
 class _CourseActionSheetContent extends StatelessWidget {
   const _CourseActionSheetContent({
     super.key,
-    required this.course,
+    required this.previewItem,
     required this.week,
-    required this.hasConflict,
     required this.onEdit,
     required this.onReschedule,
     required this.onDelete,
     required this.onSuspend,
   });
 
-  final Course course;
+  final CourseActionPreviewItem previewItem;
   final int week;
-  final bool hasConflict;
   final CourseActionHandler onEdit;
   final CourseActionHandler onReschedule;
   final CourseActionHandler onDelete;
   final CourseActionHandler onSuspend;
+
+  Course get course => previewItem.course;
 
   void _closeSheetThen(BuildContext context, VoidCallback action) {
     Navigator.of(context).pop();
@@ -398,10 +504,8 @@ class _CourseActionSheetContent extends StatelessWidget {
     final colors = context.theme.colors;
     final typo = context.theme.typography.body;
     final provider = context.read<TimetableProvider>();
-    final courseColor = parseHexColorOrFallback(
-      course.color,
-      fallback: colors.primary,
-    );
+    final courseColor = _previewItemColor(context, previewItem, colors);
+    final coupleBadge = _previewItemBadgeLabel(l10n, previewItem);
     final natureLabel = course.courseNature == CourseNature.elective
         ? l10n.courseNatureElective
         : l10n.courseNatureRequired;
@@ -429,9 +533,14 @@ class _CourseActionSheetContent extends StatelessWidget {
             description?.isNotEmpty == true
         ? l10n.shortNamePrefix(course.shortName!.trim())
         : course.weekDescription(l10n);
-    final canReschedule = course.isInWeek(week);
+    final canReschedule = !previewItem.isReadOnly && course.isInWeek(week);
     final isSuspended = course.isSuspendedInWeek(week);
     final muted = typo.xs2.copyWith(color: colors.mutedForeground);
+    final headerIcon = previewItem.coupleKind == CoupleCourseKind.together
+        ? Icons.favorite_rounded
+        : previewItem.isPartnerCourse
+        ? Icons.person_outline_rounded
+        : Icons.menu_book_rounded;
 
     return Column(
       key: ValueKey('course-action-content-${course.id}'),
@@ -449,7 +558,7 @@ class _CourseActionSheetContent extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Icon(
-                Icons.menu_book_rounded,
+                headerIcon,
                 color: courseColor,
                 size: 24,
               ),
@@ -471,15 +580,24 @@ class _CourseActionSheetContent extends StatelessWidget {
                           height: 1.2,
                         ),
                       ),
-                      Text(
-                        natureLabel,
-                        style: muted.copyWith(fontWeight: FontWeight.w600),
-                      ),
-                      if (hasConflict)
+                      if (!previewItem.isPartnerCourse)
+                        Text(
+                          natureLabel,
+                          style: muted.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                      if (previewItem.isConflict)
                         Text(
                           l10n.conflictLabel,
                           style: typo.xs2.copyWith(
                             color: colors.destructive,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      if (coupleBadge != null)
+                        Text(
+                          coupleBadge,
+                          style: typo.xs2.copyWith(
+                            color: courseColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -522,57 +640,70 @@ class _CourseActionSheetContent extends StatelessWidget {
         const SizedBox(height: 12),
         _CourseDetailTile(
           icon: Icons.info_outline_rounded,
-          titleWidget: Expanded(child: _CourseActionNoticeText(week: week)),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: HyperosButton(
-            label: l10n.courseActionEditPrimary,
-            expand: true,
-            onPressed: () => _closeSheetThen(context, () => onEdit(course)),
+          titleWidget: Expanded(
+            child: previewItem.isReadOnly
+                ? Text(
+                    l10n.courseActionPartnerReadOnlyNotice,
+                    style: typo.xs2.copyWith(
+                      color: colors.mutedForeground,
+                      height: 1.45,
+                    ),
+                  )
+                : _CourseActionNoticeText(week: week),
           ),
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: HyperosFrostedSheetButton(
-                key: ValueKey('course-action-reschedule-${course.id}'),
-                label: l10n.courseActionRescheduleSecondary,
-                bordered: true,
-                expand: true,
-                onPressed: canReschedule
-                    ? () => _closeSheetThen(context, () => onReschedule(course))
-                    : null,
-              ),
+        if (!previewItem.isReadOnly) ...[
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: HyperosButton(
+              label: l10n.courseActionEditPrimary,
+              expand: true,
+              onPressed: () => _closeSheetThen(context, () => onEdit(course)),
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: HyperosFrostedSheetButton(
-                key: ValueKey('course-action-suspend-${course.id}'),
-                label: isSuspended
-                    ? l10n.courseActionUnsuspend
-                    : l10n.courseActionSuspendSecondary,
-                bordered: true,
-                expand: true,
-                onPressed: () =>
-                    _closeSheetThen(context, () => onSuspend(course)),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: HyperosFrostedSheetButton(
+                  key: ValueKey('course-action-reschedule-${course.id}'),
+                  label: l10n.courseActionRescheduleSecondary,
+                  bordered: true,
+                  expand: true,
+                  onPressed: canReschedule
+                      ? () =>
+                            _closeSheetThen(context, () => onReschedule(course))
+                      : null,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: HyperosButton(
-                key: ValueKey('course-action-delete-${course.id}'),
-                label: l10n.courseActionDeleteSecondary,
-                variant: HyperosButtonVariant.destructive,
-                expand: true,
-                onPressed: () =>
-                    _closeSheetThen(context, () => onDelete(course)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: HyperosFrostedSheetButton(
+                  key: ValueKey('course-action-suspend-${course.id}'),
+                  label: isSuspended
+                      ? l10n.courseActionUnsuspend
+                      : l10n.courseActionSuspendSecondary,
+                  bordered: true,
+                  expand: true,
+                  onPressed: () =>
+                      _closeSheetThen(context, () => onSuspend(course)),
+                ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: HyperosButton(
+                  key: ValueKey('course-action-delete-${course.id}'),
+                  label: l10n.courseActionDeleteSecondary,
+                  variant: HyperosButtonVariant.destructive,
+                  expand: true,
+                  onPressed: () =>
+                      _closeSheetThen(context, () => onDelete(course)),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

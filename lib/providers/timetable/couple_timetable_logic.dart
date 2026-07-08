@@ -22,10 +22,43 @@ class MinuteInterval {
 }
 
 class CoupleTimetableLogic {
-  static const String mineColorHex = '#2196F3';
-  static const String partnerColorHex = '#E91E63';
-  static const String togetherColorHex = '#9C27B0';
+  static const String mineColorHexDefault = '#2196F3';
+  static const String partnerColorHexDefault = '#E91E63';
+  static const String togetherColorHexDefault = '#9C27B0';
   static const String freeSlotColorHex = '#4CAF50';
+  static const int minWeekOffset = -15;
+  static const int maxWeekOffset = 15;
+
+  static int clampWeekOffset(int offset) {
+    if (offset < minWeekOffset) {
+      return minWeekOffset;
+    }
+    if (offset > maxWeekOffset) {
+      return maxWeekOffset;
+    }
+    return offset;
+  }
+
+  static int partnerWeekForMyWeek(int myWeek, int weekOffset) {
+    return myWeek + clampWeekOffset(weekOffset);
+  }
+
+  static bool coursesOverlapForCoupleView(
+    Course mine,
+    Course partner, {
+    required int myWeek,
+    int partnerWeekOffset = 0,
+  }) {
+    if (mine.dayOfWeek != partner.dayOfWeek) {
+      return false;
+    }
+    if (mine.endSection < partner.startSection ||
+        partner.endSection < mine.startSection) {
+      return false;
+    }
+    final partnerWeek = partnerWeekForMyWeek(myWeek, partnerWeekOffset);
+    return mine.isInWeek(myWeek) && partner.isInWeek(partnerWeek);
+  }
 
   static bool coursesOverlapInWeek(Course left, Course right, {int? week}) {
     if (left.dayOfWeek != right.dayOfWeek) {
@@ -61,8 +94,18 @@ class CoupleTimetableLogic {
     return false;
   }
 
-  static bool isTogetherClass(Course mine, Course partner, {required int week}) {
-    if (!coursesOverlapInWeek(mine, partner, week: week)) {
+  static bool isTogetherClass(
+    Course mine,
+    Course partner, {
+    required int week,
+    int partnerWeekOffset = 0,
+  }) {
+    if (!coursesOverlapForCoupleView(
+      mine,
+      partner,
+      myWeek: week,
+      partnerWeekOffset: partnerWeekOffset,
+    )) {
       return false;
     }
     return mine.name.trim().toLowerCase() ==
@@ -73,9 +116,15 @@ class CoupleTimetableLogic {
     Course course,
     List<Course> partnerCourses, {
     required int week,
+    int partnerWeekOffset = 0,
   }) {
     for (final partner in partnerCourses) {
-      if (isTogetherClass(course, partner, week: week)) {
+      if (isTogetherClass(
+        course,
+        partner,
+        week: week,
+        partnerWeekOffset: partnerWeekOffset,
+      )) {
         return CoupleCourseKind.together;
       }
     }
@@ -86,22 +135,37 @@ class CoupleTimetableLogic {
     Course course,
     List<Course> myCourses, {
     required int week,
+    int partnerWeekOffset = 0,
   }) {
     for (final mine in myCourses) {
-      if (isTogetherClass(mine, course, week: week)) {
+      if (isTogetherClass(
+        mine,
+        course,
+        week: week,
+        partnerWeekOffset: partnerWeekOffset,
+      )) {
         return CoupleCourseKind.together;
       }
     }
     return CoupleCourseKind.partner;
   }
 
-  static String colorHexForKind(CoupleCourseKind kind) {
+  static String colorHexForKind(
+    CoupleCourseKind kind, {
+    String? mineColorHex,
+    String? partnerColorHex,
+    String? togetherColorHex,
+  }) {
     return switch (kind) {
-      CoupleCourseKind.mine => mineColorHex,
-      CoupleCourseKind.partner => partnerColorHex,
-      CoupleCourseKind.together => togetherColorHex,
+      CoupleCourseKind.mine => mineColorHex ?? mineColorHexDefault,
+      CoupleCourseKind.partner => partnerColorHex ?? partnerColorHexDefault,
+      CoupleCourseKind.together => togetherColorHex ?? togetherColorHexDefault,
     };
   }
+
+  static const String mineColorHex = mineColorHexDefault;
+  static const String partnerColorHex = partnerColorHexDefault;
+  static const String togetherColorHex = togetherColorHexDefault;
 
   static List<Course> coursesForDay(
     List<Course> courses,

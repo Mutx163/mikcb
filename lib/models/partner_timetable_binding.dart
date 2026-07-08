@@ -4,6 +4,10 @@ class PartnerTimetableBinding {
   final DateTime linkedAt;
   final DateTime? lastImportedAt;
   final String? sourceFileHash;
+  final int weekOffset;
+  final String mineColorHex;
+  final String partnerColorHex;
+  final String togetherColorHex;
 
   const PartnerTimetableBinding({
     required this.partnerProfileId,
@@ -11,6 +15,10 @@ class PartnerTimetableBinding {
     required this.linkedAt,
     this.lastImportedAt,
     this.sourceFileHash,
+    this.weekOffset = 0,
+    this.mineColorHex = '#2196F3',
+    this.partnerColorHex = '#E91E63',
+    this.togetherColorHex = '#9C27B0',
   });
 
   Map<String, dynamic> toJson() => {
@@ -20,6 +28,10 @@ class PartnerTimetableBinding {
     if (lastImportedAt != null)
       'lastImportedAt': lastImportedAt!.toIso8601String(),
     if (sourceFileHash != null) 'sourceFileHash': sourceFileHash,
+    'weekOffset': weekOffset,
+    'mineColorHex': mineColorHex,
+    'partnerColorHex': partnerColorHex,
+    'togetherColorHex': togetherColorHex,
   };
 
   factory PartnerTimetableBinding.fromJson(Map<String, dynamic> json) {
@@ -33,6 +45,10 @@ class PartnerTimetableBinding {
           ? null
           : DateTime.tryParse(json['lastImportedAt'] as String),
       sourceFileHash: json['sourceFileHash'] as String?,
+      weekOffset: (json['weekOffset'] as num?)?.toInt() ?? 0,
+      mineColorHex: json['mineColorHex'] as String? ?? '#2196F3',
+      partnerColorHex: json['partnerColorHex'] as String? ?? '#E91E63',
+      togetherColorHex: json['togetherColorHex'] as String? ?? '#9C27B0',
     );
   }
 
@@ -42,6 +58,10 @@ class PartnerTimetableBinding {
     DateTime? linkedAt,
     DateTime? lastImportedAt,
     String? sourceFileHash,
+    int? weekOffset,
+    String? mineColorHex,
+    String? partnerColorHex,
+    String? togetherColorHex,
   }) {
     return PartnerTimetableBinding(
       partnerProfileId: partnerProfileId ?? this.partnerProfileId,
@@ -49,6 +69,10 @@ class PartnerTimetableBinding {
       linkedAt: linkedAt ?? this.linkedAt,
       lastImportedAt: lastImportedAt ?? this.lastImportedAt,
       sourceFileHash: sourceFileHash ?? this.sourceFileHash,
+      weekOffset: weekOffset ?? this.weekOffset,
+      mineColorHex: mineColorHex ?? this.mineColorHex,
+      partnerColorHex: partnerColorHex ?? this.partnerColorHex,
+      togetherColorHex: togetherColorHex ?? this.togetherColorHex,
     );
   }
 }

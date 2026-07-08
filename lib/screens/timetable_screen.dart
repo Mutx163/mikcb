@@ -1348,7 +1348,6 @@ class _TimetableScreenState extends State<TimetableScreen>
                   provider,
                   dayIndex: dayIndex,
                   dayCount: visibleDays.length,
-                  coupleOverlayActive: _isCoupleOverlayActive(provider),
                 ),
               );
             }).toList(),
@@ -2381,6 +2380,28 @@ class _TimetableScreenState extends State<TimetableScreen>
           textColor: Colors.white,
           backgroundColor: colorScheme.error,
         ),
+      if (courseItem.coupleKind == CoupleCourseKind.together)
+        _buildDayAgendaStatusBadge(
+          text: l10n.coupleTimetableLegendTogether,
+          textColor: Colors.white,
+          backgroundColor: _colorFromHex(
+            context.read<TimetableProvider>().coupleColorForKind(
+              CoupleCourseKind.together,
+            ),
+            Colors.purple,
+          ),
+        ),
+      if (courseItem.coupleKind == CoupleCourseKind.partner)
+        _buildDayAgendaStatusBadge(
+          text: l10n.coupleTimetableLegendPartner,
+          textColor: Colors.white,
+          backgroundColor: _colorFromHex(
+            context.read<TimetableProvider>().coupleColorForKind(
+              CoupleCourseKind.partner,
+            ),
+            Colors.pink,
+          ),
+        ),
       if (!courseItem.isCurrentWeekCourse)
         _buildDayAgendaStatusBadge(
           text: l10n.nonCurrentWeekLabel,
@@ -2431,6 +2452,39 @@ class _TimetableScreenState extends State<TimetableScreen>
 
     final isSuspended = courseItem.course.isSuspendedInWeek(week);
     final effectiveOpacity = isSuspended ? 0.4 : courseItem.opacity;
+
+    if (courseItem.isPartnerCourse) {
+      void openCoursePreview() {
+        _showCourseActions(
+          courseItem.course,
+          week,
+          displayItem: courseItem,
+        );
+      }
+
+      final partnerCard = progressInfo != null
+          ? _buildCurrentDayAgendaCard(
+              item: courseItem,
+              progressInfo: progressInfo,
+              l10n: l10n,
+              colorScheme: colorScheme,
+              openContainer: openCoursePreview,
+            )
+          : _buildDefaultDayAgendaCard(
+              item: courseItem,
+              settings: settings,
+              l10n: l10n,
+              palette: palette,
+              statusBadges: statusBadges,
+              cardDecoration: cardDecoration,
+              openContainer: openCoursePreview,
+            );
+
+      return Opacity(
+        opacity: effectiveOpacity,
+        child: Material(color: Colors.transparent, child: partnerCard),
+      );
+    }
 
     return Opacity(
       opacity: effectiveOpacity,
@@ -3416,31 +3470,12 @@ class _TimetableScreenState extends State<TimetableScreen>
     TimetableProvider provider, {
     required int dayIndex,
     required int dayCount,
-    bool coupleOverlayActive = false,
   }) {
     final courseCards = <Widget>[];
     final gridLines = <Widget>[];
 
     final date = _dateForWeekDay(settings, week, dayOfWeek);
     final isDayHoliday = date != null && provider.isHoliday(date);
-    final sharedFreeIntervals = coupleOverlayActive
-        ? CoupleTimetableLogic.sharedFreeIntervalsForDay(
-            myCourses: provider.courses,
-            partnerCourses: provider.partnerCourses,
-            dayOfWeek: dayOfWeek,
-            week: week,
-            sections: settings.sections,
-          )
-        : const <MinuteInterval>[];
-    final occupiedSections = <int>{
-      for (final item in displayItems)
-        for (
-          var section = item.course.startSection;
-          section <= item.course.endSection;
-          section++
-        )
-          section,
-    };
 
     for (
       var sectionIndex = 0;
@@ -3462,29 +3497,6 @@ class _TimetableScreenState extends State<TimetableScreen>
           child: const SizedBox.expand(),
         ),
       );
-
-      if (coupleOverlayActive &&
-          !occupiedSections.contains(section) &&
-          CoupleTimetableLogic.isSectionInFreeSlot(
-            section,
-            sharedFreeIntervals,
-            settings.sections,
-          )) {
-        courseCards.add(
-          Positioned(
-            top: sectionIndex * sectionHeight,
-            left: 1,
-            right: 1,
-            height: sectionHeight,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFF4CAF50).withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
-              ),
-            ),
-          ),
-        );
-      }
 
       for (final item in startingCourses) {
         courseCards.add(
@@ -3522,9 +3534,11 @@ class _TimetableScreenState extends State<TimetableScreen>
                 showDescription: settings.courseCardShowDescription,
                 verticalAlign: settings.courseCardVerticalAlign,
                 horizontalAlign: settings.courseCardHorizontalAlign,
-                onTap: item.isPartnerCourse
-                    ? null
-                    : () => _showCourseActions(item.course, week),
+                onTap: () => _showCourseActions(
+                  item.course,
+                  week,
+                  displayItem: item,
+                ),
                 compactTitleFontSize: settings.courseCardFontSize,
                 compactSubtitleFontSize: (settings.courseCardFontSize - 1)
                     .clamp(7.0, 14.0),
@@ -3599,9 +3613,10 @@ class _TimetableScreenState extends State<TimetableScreen>
       );
     }
 
+    final partnerWeek = provider.partnerWeekFor(week);
     final partnerCourses = _getCoursesForDay(
       provider.partnerCourses,
-      week,
+      partnerWeek,
       dayOfWeek,
       settings,
     );
@@ -3609,6 +3624,8 @@ class _TimetableScreenState extends State<TimetableScreen>
       myCourses: myCourses,
       partnerCourses: partnerCourses,
       week: week,
+      partnerWeek: partnerWeek,
+      partnerWeekOffset: provider.partnerWeekOffset,
       settings: settings,
       conflictMap: conflictMap,
       currentCourseIds: currentCourseIds,
@@ -3619,6 +3636,8 @@ class _TimetableScreenState extends State<TimetableScreen>
     required List<Course> myCourses,
     required List<Course> partnerCourses,
     required int week,
+    required int partnerWeek,
+    required int partnerWeekOffset,
     required TimetableSettings settings,
     required Map<String, List<Course>> conflictMap,
     Set<String> currentCourseIds = const <String>{},
@@ -3643,6 +3662,7 @@ class _TimetableScreenState extends State<TimetableScreen>
           course,
           partner,
           week: week,
+          partnerWeekOffset: partnerWeekOffset,
         )) {
           kind = CoupleCourseKind.together;
           usedPartnerIds.add(partner.id);
@@ -3670,13 +3690,13 @@ class _TimetableScreenState extends State<TimetableScreen>
       if (usedPartnerIds.contains(course.id)) {
         continue;
       }
-      final isCurrentWeekCourse = course.isInWeek(week);
+      final isCurrentWeekCourse = course.isInWeek(partnerWeek);
       if (!isCurrentWeekCourse &&
-          _hasCurrentWeekOverlap(partnerCourses, course, week)) {
+          _hasCurrentWeekOverlap(partnerCourses, course, partnerWeek)) {
         continue;
       }
       if (!isCurrentWeekCourse &&
-          !_isPreferredNonCurrentCourse(partnerCourses, course, week)) {
+          !_isPreferredNonCurrentCourse(partnerCourses, course, partnerWeek)) {
         continue;
       }
 
@@ -3774,7 +3794,9 @@ class _TimetableScreenState extends State<TimetableScreen>
     required TimetableSettings settings,
   }) {
     if (item.coupleKind != null) {
-      return CoupleTimetableLogic.colorHexForKind(item.coupleKind!);
+      return context.read<TimetableProvider>().coupleColorForKind(
+        item.coupleKind!,
+      );
     }
     if (!item.isCurrentWeekCourse) {
       return '#94A3B8';
@@ -4357,19 +4379,192 @@ class _TimetableScreenState extends State<TimetableScreen>
     );
   }
 
-  Future<void> _showCourseActions(Course course, int week) async {
-    final conflicts = _conflictsForCourseInWeek(course, week);
-    final previewCourses = <Course>[course, ...conflicts];
+  Future<void> _showCourseActions(
+    Course course,
+    int week, {
+    _DayCourseDisplayItem? displayItem,
+  }) async {
+    final previewItems = _buildCourseActionPreviewItems(
+      course,
+      week,
+      displayItem: displayItem,
+    );
     await showCourseActionSheet(
       context,
-      previewCourses: previewCourses,
+      previewItems: previewItems,
       week: week,
-      hasConflicts: conflicts.isNotEmpty,
       onEdit: _editCourse,
       onReschedule: (target) => _showRescheduleSheet(target, sourceWeek: week),
       onDelete: (target) => _showDeleteCourseOptions(target, week),
       onSuspend: (target) => _showSuspendSheet(target, week),
     );
+  }
+
+  List<CourseActionPreviewItem> _buildCourseActionPreviewItems(
+    Course course,
+    int week, {
+    _DayCourseDisplayItem? displayItem,
+  }) {
+    final provider = context.read<TimetableProvider>();
+    final isPartner = displayItem?.isPartnerCourse ?? false;
+    final partnerWeekOffset = provider.partnerWeekOffset;
+    var coupleKind = displayItem?.coupleKind;
+    if (coupleKind == null &&
+        !isPartner &&
+        _isCoupleOverlayActive(provider) &&
+        _findTogetherPartnerCourse(
+          course,
+          week,
+          partnerWeekOffset: partnerWeekOffset,
+        ) !=
+            null) {
+      coupleKind = CoupleCourseKind.together;
+    }
+    if (coupleKind == null &&
+        isPartner &&
+        _isCoupleOverlayActive(provider) &&
+        provider.courses.any(
+          (mine) => CoupleTimetableLogic.isTogetherClass(
+            mine,
+            course,
+            week: week,
+            partnerWeekOffset: partnerWeekOffset,
+          ),
+        )) {
+      coupleKind = CoupleCourseKind.together;
+    }
+    if (coupleKind == null &&
+        isPartner &&
+        _isCoupleOverlayActive(provider)) {
+      coupleKind = CoupleCourseKind.partner;
+    }
+    final items = <CourseActionPreviewItem>[
+      CourseActionPreviewItem(
+        course: course,
+        isPartnerCourse: isPartner,
+        coupleKind: coupleKind,
+      ),
+    ];
+
+    if (!isPartner) {
+      for (final conflict in _conflictsForCourseInWeek(course, week)) {
+        if (items.any((item) => item.course.id == conflict.id)) {
+          continue;
+        }
+        items.add(
+          CourseActionPreviewItem(
+            course: conflict,
+            isConflict: true,
+          ),
+        );
+      }
+    }
+
+    if (!_isCoupleOverlayActive(provider)) {
+      return items;
+    }
+
+    if (coupleKind == CoupleCourseKind.together) {
+      final partner = _findTogetherPartnerCourse(
+        course,
+        week,
+        partnerWeekOffset: partnerWeekOffset,
+      );
+      if (partner != null &&
+          !items.any((item) => item.course.id == partner.id)) {
+        items.add(
+          CourseActionPreviewItem(
+            course: partner,
+            isPartnerCourse: true,
+            coupleKind: CoupleCourseKind.together,
+          ),
+        );
+      }
+      return items;
+    }
+
+    if (isPartner) {
+      for (final mine in provider.courses) {
+        if (CoupleTimetableLogic.isTogetherClass(
+              mine,
+              course,
+              week: week,
+              partnerWeekOffset: partnerWeekOffset,
+            ) &&
+            !items.any((item) => item.course.id == mine.id)) {
+          items.add(
+            CourseActionPreviewItem(
+              course: mine,
+              coupleKind: CoupleCourseKind.together,
+            ),
+          );
+          break;
+        }
+      }
+      return items;
+    }
+
+    for (final partner in _overlappingPartnerCourses(
+      course,
+      week,
+      partnerWeekOffset: partnerWeekOffset,
+    )) {
+      if (items.any((item) => item.course.id == partner.id)) {
+        continue;
+      }
+      items.add(
+        CourseActionPreviewItem(
+          course: partner,
+          isPartnerCourse: true,
+          coupleKind: CoupleCourseKind.partner,
+        ),
+      );
+    }
+    return items;
+  }
+
+  Course? _findTogetherPartnerCourse(
+    Course mine,
+    int week, {
+    required int partnerWeekOffset,
+  }) {
+    final provider = context.read<TimetableProvider>();
+    for (final partner in provider.partnerCourses) {
+      if (CoupleTimetableLogic.isTogetherClass(
+        mine,
+        partner,
+        week: week,
+        partnerWeekOffset: partnerWeekOffset,
+      )) {
+        return partner;
+      }
+    }
+    return null;
+  }
+
+  List<Course> _overlappingPartnerCourses(
+    Course mine,
+    int week, {
+    required int partnerWeekOffset,
+  }) {
+    final provider = context.read<TimetableProvider>();
+    return provider.partnerCourses
+        .where(
+          (partner) =>
+              CoupleTimetableLogic.coursesOverlapForCoupleView(
+                mine,
+                partner,
+                myWeek: week,
+                partnerWeekOffset: partnerWeekOffset,
+              ) &&
+              !CoupleTimetableLogic.isTogetherClass(
+                mine,
+                partner,
+                week: week,
+                partnerWeekOffset: partnerWeekOffset,
+              ),
+        )
+        .toList();
   }
 
   List<Course> _conflictsForCourseInWeek(Course course, int week) {

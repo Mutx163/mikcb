@@ -92,6 +92,30 @@
   "coupleTimetableNotBoundMessage": "请先导入对方课表后再查看叠加视图。",
   "coupleTimetableShareText": "这是我的课表，导入到轻屿课表的情侣课表即可一起查看。",
   "coupleTimetableShareSubject": "轻屿课表 · 情侣课表分享",
+  "coupleTimetableWeekOffsetTitle": "周次偏移",
+  "coupleTimetableWeekOffsetSubtitle": "查看你的第 N 周时，读取对方课表的第 N+偏移 周。例如 +1 表示对方学期进度比你快一周。",
+  "coupleTimetableWeekOffsetZero": "无偏移",
+  "coupleTimetableWeekOffsetSigned": "{offset} 周",
+  "@coupleTimetableWeekOffsetSigned": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleTimetableWeekOffsetPreview": "查看你的第 {myWeek} 周时，显示对方第 {partnerWeek} 周的课",
+  "@coupleTimetableWeekOffsetPreview": {
+    "placeholders": {
+      "myWeek": {
+        "type": "int"
+      },
+      "partnerWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableColorsTitle": "叠加颜色",
+  "coupleTimetableColorsSubtitle": "自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配。",
   "partnerImportRequiresSingleProfile": "请导入单课表备份文件，不支持全量备份",
   "cloudSyncEntryTitle": "云同步",
   "cloudSyncEntrySubtitle": "通过坚果云等多设备同步课表与导入数据",
@@ -3069,6 +3093,25 @@
   "courseActionConflictExpandHint": "展开查看其他冲突课程，点击可切换操作对象",
   "courseActionConflictCollapseHint": "点击收起冲突课程列表",
   "courseActionConflictSwitchAction": "切换",
+  "courseActionCoupleRelatedCount": "还有 {count} 节情侣课表课程",
+  "@courseActionCoupleRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionCoupleExpandHint": "展开查看 TA 的课或一起上课，点击可切换预览",
+  "courseActionCoupleCollapseHint": "点击收起情侣课表课程列表",
+  "courseActionMixedRelatedCount": "还有 {count} 节相关课程",
+  "@courseActionMixedRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionPartnerReadOnlyNotice": "这是对方课表中的课程，仅供查看，无法编辑或调课。",
   "suspendSheetTitle": "停课",
   "suspendSheetSubtitle": "选择停课范围",
   "suspendThisWeek": "停本周",

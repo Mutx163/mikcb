@@ -92,6 +92,30 @@
   "coupleTimetableNotBoundMessage": "Import a partner timetable before opening the overlay view.",
   "coupleTimetableShareText": "Here is my timetable. Import it in Qingyu Timetable > Couple Timetable to view together.",
   "coupleTimetableShareSubject": "Qingyu Timetable · Couple share",
+  "coupleTimetableWeekOffsetTitle": "Week offset",
+  "coupleTimetableWeekOffsetSubtitle": "When you view week N, partner courses are read from week N + offset. For example, +1 means their semester is one week ahead.",
+  "coupleTimetableWeekOffsetZero": "No offset",
+  "coupleTimetableWeekOffsetSigned": "{offset} wk",
+  "@coupleTimetableWeekOffsetSigned": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleTimetableWeekOffsetPreview": "Viewing your week {myWeek} shows partner week {partnerWeek}",
+  "@coupleTimetableWeekOffsetPreview": {
+    "placeholders": {
+      "myWeek": {
+        "type": "int"
+      },
+      "partnerWeek": {
+        "type": "int"
+      }
+    }
+  },
+  "coupleTimetableColorsTitle": "Overlay colors",
+  "coupleTimetableColorsSubtitle": "Choose colors for your courses, partner courses, and shared classes in overlay view.",
   "partnerImportRequiresSingleProfile": "Please import a single-profile backup, not a full backup",
   "cloudSyncEntryTitle": "Cloud Sync (WEBDAV)",
   "cloudSyncEntrySubtitle": "Sync timetables and import data across devices via Jianguoyun",
@@ -3069,6 +3093,25 @@
   "courseActionConflictExpandHint": "Expand to see other conflicting courses and switch actions",
   "courseActionConflictCollapseHint": "Tap to collapse the conflict list",
   "courseActionConflictSwitchAction": "Switch",
+  "courseActionCoupleRelatedCount": "{count} more couple timetable course(s)",
+  "@courseActionCoupleRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionCoupleExpandHint": "Expand to preview partner or shared classes. Tap to switch.",
+  "courseActionCoupleCollapseHint": "Tap to collapse couple timetable courses",
+  "courseActionMixedRelatedCount": "{count} more related course(s)",
+  "@courseActionMixedRelatedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "courseActionPartnerReadOnlyNotice": "This course is from your partner's timetable and is read-only.",
   "suspendSheetTitle": "Suspend",
   "suspendSheetSubtitle": "Choose suspension scope",
   "suspendThisWeek": "This week",

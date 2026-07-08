@@ -14,6 +14,7 @@ import '../models/time_scheme.dart';
 import '../models/partner_timetable_binding.dart';
 import '../models/timetable_profile.dart';
 import '../models/timetable_settings.dart';
+import '../providers/timetable/couple_timetable_logic.dart';
 import '../ui/hyperos/hyperos_navigation.dart';
 import '../services/app_analytics.dart';
 import '../logging/app_debug_log.dart';
@@ -310,6 +311,19 @@ class TimetableProvider with ChangeNotifier {
   DataTransferService get dataTransferService => _dataTransferService;
   PartnerTimetableBinding? get partnerBinding => _partnerBinding;
   bool get hasPartnerBinding => _partnerBinding != null;
+  int get partnerWeekOffset => _partnerBinding?.weekOffset ?? 0;
+  int partnerWeekFor(int myWeek) =>
+      CoupleTimetableLogic.partnerWeekForMyWeek(myWeek, partnerWeekOffset);
+
+  String coupleColorForKind(CoupleCourseKind kind) {
+    final binding = _partnerBinding;
+    return CoupleTimetableLogic.colorHexForKind(
+      kind,
+      mineColorHex: binding?.mineColorHex,
+      partnerColorHex: binding?.partnerColorHex,
+      togetherColorHex: binding?.togetherColorHex,
+    );
+  }
   TimetableProfile? get partnerProfile =>
       _getProfileById(PartnerTimetableService.partnerProfileId);
   List<Course> get partnerCourses =>
@@ -2218,6 +2232,42 @@ class TimetableProvider with ChangeNotifier {
     notifyUserDataChangedForSync();
     notifyListeners();
     return result;
+  }
+
+  Future<void> updatePartnerWeekOffset(int offset) async {
+    await initialize();
+    final binding = _partnerBinding;
+    if (binding == null) {
+      return;
+    }
+    final clamped = CoupleTimetableLogic.clampWeekOffset(offset);
+    if (clamped == binding.weekOffset) {
+      return;
+    }
+    _partnerBinding = binding.copyWith(weekOffset: clamped);
+    await _storageService.savePartnerTimetableBinding(_partnerBinding);
+    notifyUserDataChangedForSync();
+    notifyListeners();
+  }
+
+  Future<void> updatePartnerCoupleColors({
+    String? mineColorHex,
+    String? partnerColorHex,
+    String? togetherColorHex,
+  }) async {
+    await initialize();
+    final binding = _partnerBinding;
+    if (binding == null) {
+      return;
+    }
+    _partnerBinding = binding.copyWith(
+      mineColorHex: mineColorHex,
+      partnerColorHex: partnerColorHex,
+      togetherColorHex: togetherColorHex,
+    );
+    await _storageService.savePartnerTimetableBinding(_partnerBinding);
+    notifyUserDataChangedForSync();
+    notifyListeners();
   }
 
   Future<void> unlinkPartner() async {

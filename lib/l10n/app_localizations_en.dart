@@ -263,6 +263,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get coupleTimetableShareSubject => 'Qingyu Timetable · Couple share';
 
   @override
+  String get coupleTimetableWeekOffsetTitle => 'Week offset';
+
+  @override
+  String get coupleTimetableWeekOffsetSubtitle =>
+      'When you view week N, partner courses are read from week N + offset. For example, +1 means their semester is one week ahead.';
+
+  @override
+  String get coupleTimetableWeekOffsetZero => 'No offset';
+
+  @override
+  String coupleTimetableWeekOffsetSigned(String offset) {
+    return '$offset wk';
+  }
+
+  @override
+  String coupleTimetableWeekOffsetPreview(int myWeek, int partnerWeek) {
+    return 'Viewing your week $myWeek shows partner week $partnerWeek';
+  }
+
+  @override
+  String get coupleTimetableColorsTitle => 'Overlay colors';
+
+  @override
+  String get coupleTimetableColorsSubtitle =>
+      'Choose colors for your courses, partner courses, and shared classes in overlay view.';
+
+  @override
   String get partnerImportRequiresSingleProfile =>
       'Please import a single-profile backup, not a full backup';
 
@@ -5528,6 +5555,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get courseActionConflictSwitchAction => 'Switch';
+
+  @override
+  String courseActionCoupleRelatedCount(int count) {
+    return '$count more couple timetable course(s)';
+  }
+
+  @override
+  String get courseActionCoupleExpandHint =>
+      'Expand to preview partner or shared classes. Tap to switch.';
+
+  @override
+  String get courseActionCoupleCollapseHint =>
+      'Tap to collapse couple timetable courses';
+
+  @override
+  String courseActionMixedRelatedCount(int count) {
+    return '$count more related course(s)';
+  }
+
+  @override
+  String get courseActionPartnerReadOnlyNotice =>
+      'This course is from your partner\'s timetable and is read-only.';
 
   @override
   String get suspendSheetTitle => 'Suspend';

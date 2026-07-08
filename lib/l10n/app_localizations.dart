@@ -572,6 +572,48 @@ abstract class AppLocalizations {
   /// **'轻屿课表 · 情侣课表分享'**
   String get coupleTimetableShareSubject;
 
+  /// No description provided for @coupleTimetableWeekOffsetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'周次偏移'**
+  String get coupleTimetableWeekOffsetTitle;
+
+  /// No description provided for @coupleTimetableWeekOffsetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看你的第 N 周时，读取对方课表的第 N+偏移 周。例如 +1 表示对方学期进度比你快一周。'**
+  String get coupleTimetableWeekOffsetSubtitle;
+
+  /// No description provided for @coupleTimetableWeekOffsetZero.
+  ///
+  /// In zh, this message translates to:
+  /// **'无偏移'**
+  String get coupleTimetableWeekOffsetZero;
+
+  /// No description provided for @coupleTimetableWeekOffsetSigned.
+  ///
+  /// In zh, this message translates to:
+  /// **'{offset} 周'**
+  String coupleTimetableWeekOffsetSigned(String offset);
+
+  /// No description provided for @coupleTimetableWeekOffsetPreview.
+  ///
+  /// In zh, this message translates to:
+  /// **'查看你的第 {myWeek} 周时，显示对方第 {partnerWeek} 周的课'**
+  String coupleTimetableWeekOffsetPreview(int myWeek, int partnerWeek);
+
+  /// No description provided for @coupleTimetableColorsTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'叠加颜色'**
+  String get coupleTimetableColorsTitle;
+
+  /// No description provided for @coupleTimetableColorsSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配。'**
+  String get coupleTimetableColorsSubtitle;
+
   /// No description provided for @partnerImportRequiresSingleProfile.
   ///
   /// In zh, this message translates to:
@@ -9520,6 +9562,36 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'切换'**
   String get courseActionConflictSwitchAction;
+
+  /// No description provided for @courseActionCoupleRelatedCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 节情侣课表课程'**
+  String courseActionCoupleRelatedCount(int count);
+
+  /// No description provided for @courseActionCoupleExpandHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'展开查看 TA 的课或一起上课，点击可切换预览'**
+  String get courseActionCoupleExpandHint;
+
+  /// No description provided for @courseActionCoupleCollapseHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'点击收起情侣课表课程列表'**
+  String get courseActionCoupleCollapseHint;
+
+  /// No description provided for @courseActionMixedRelatedCount.
+  ///
+  /// In zh, this message translates to:
+  /// **'还有 {count} 节相关课程'**
+  String courseActionMixedRelatedCount(int count);
+
+  /// No description provided for @courseActionPartnerReadOnlyNotice.
+  ///
+  /// In zh, this message translates to:
+  /// **'这是对方课表中的课程，仅供查看，无法编辑或调课。'**
+  String get courseActionPartnerReadOnlyNotice;
 
   /// No description provided for @suspendSheetTitle.
   ///

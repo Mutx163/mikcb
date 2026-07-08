@@ -31,6 +31,13 @@
     "coupleTimetableNotBoundMessage",
     "coupleTimetableShareText",
     "coupleTimetableShareSubject",
+    "coupleTimetableWeekOffsetTitle",
+    "coupleTimetableWeekOffsetSubtitle",
+    "coupleTimetableWeekOffsetZero",
+    "coupleTimetableWeekOffsetSigned",
+    "coupleTimetableWeekOffsetPreview",
+    "coupleTimetableColorsTitle",
+    "coupleTimetableColorsSubtitle",
     "partnerImportRequiresSingleProfile",
     "appLogsSourceApp",
     "appLogsSourceNative",
@@ -70,7 +77,12 @@
     "homePageClearImageAction",
     "homePageImageNotSelected",
     "appearanceTextColorsSectionTitle",
-    "appearanceTextColorsSectionSubtitle"
+    "appearanceTextColorsSectionSubtitle",
+    "courseActionCoupleRelatedCount",
+    "courseActionCoupleExpandHint",
+    "courseActionCoupleCollapseHint",
+    "courseActionMixedRelatedCount",
+    "courseActionPartnerReadOnlyNotice"
   ],
 
   "ko": [
@@ -105,6 +117,13 @@
     "coupleTimetableNotBoundMessage",
     "coupleTimetableShareText",
     "coupleTimetableShareSubject",
+    "coupleTimetableWeekOffsetTitle",
+    "coupleTimetableWeekOffsetSubtitle",
+    "coupleTimetableWeekOffsetZero",
+    "coupleTimetableWeekOffsetSigned",
+    "coupleTimetableWeekOffsetPreview",
+    "coupleTimetableColorsTitle",
+    "coupleTimetableColorsSubtitle",
     "partnerImportRequiresSingleProfile",
     "appLogsSourceApp",
     "appLogsSourceNative",
@@ -144,7 +163,12 @@
     "homePageClearImageAction",
     "homePageImageNotSelected",
     "appearanceTextColorsSectionTitle",
-    "appearanceTextColorsSectionSubtitle"
+    "appearanceTextColorsSectionSubtitle",
+    "courseActionCoupleRelatedCount",
+    "courseActionCoupleExpandHint",
+    "courseActionCoupleCollapseHint",
+    "courseActionMixedRelatedCount",
+    "courseActionPartnerReadOnlyNotice"
   ],
 
   "zh_HK": [
@@ -179,6 +203,13 @@
     "coupleTimetableNotBoundMessage",
     "coupleTimetableShareText",
     "coupleTimetableShareSubject",
+    "coupleTimetableWeekOffsetTitle",
+    "coupleTimetableWeekOffsetSubtitle",
+    "coupleTimetableWeekOffsetZero",
+    "coupleTimetableWeekOffsetSigned",
+    "coupleTimetableWeekOffsetPreview",
+    "coupleTimetableColorsTitle",
+    "coupleTimetableColorsSubtitle",
     "partnerImportRequiresSingleProfile",
     "appLogsSourceApp",
     "appLogsSourceNative",
@@ -218,7 +249,12 @@
     "homePageClearImageAction",
     "homePageImageNotSelected",
     "appearanceTextColorsSectionTitle",
-    "appearanceTextColorsSectionSubtitle"
+    "appearanceTextColorsSectionSubtitle",
+    "courseActionCoupleRelatedCount",
+    "courseActionCoupleExpandHint",
+    "courseActionCoupleCollapseHint",
+    "courseActionMixedRelatedCount",
+    "courseActionPartnerReadOnlyNotice"
   ],
 
   "zh_TW": [
@@ -253,6 +289,13 @@
     "coupleTimetableNotBoundMessage",
     "coupleTimetableShareText",
     "coupleTimetableShareSubject",
+    "coupleTimetableWeekOffsetTitle",
+    "coupleTimetableWeekOffsetSubtitle",
+    "coupleTimetableWeekOffsetZero",
+    "coupleTimetableWeekOffsetSigned",
+    "coupleTimetableWeekOffsetPreview",
+    "coupleTimetableColorsTitle",
+    "coupleTimetableColorsSubtitle",
     "partnerImportRequiresSingleProfile",
     "appLogsSourceApp",
     "appLogsSourceNative",
@@ -292,6 +335,11 @@
     "homePageClearImageAction",
     "homePageImageNotSelected",
     "appearanceTextColorsSectionTitle",
-    "appearanceTextColorsSectionSubtitle"
+    "appearanceTextColorsSectionSubtitle",
+    "courseActionCoupleRelatedCount",
+    "courseActionCoupleExpandHint",
+    "courseActionCoupleCollapseHint",
+    "courseActionMixedRelatedCount",
+    "courseActionPartnerReadOnlyNotice"
   ]
 }

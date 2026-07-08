@@ -119,6 +119,49 @@ void main() {
     expect(result.profile.currentWeek, 2);
   });
 
+  test('re-import preserves partner week offset', () async {
+    final content = dataTransferService.buildBackupJson(
+      profileName: 'TA',
+      courses: const [],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    await partnerService.importFromContent(content);
+    final binding = await storageService.getPartnerTimetableBinding();
+    expect(binding, isNotNull);
+    await storageService.savePartnerTimetableBinding(
+      binding!.copyWith(weekOffset: 2),
+    );
+
+    await partnerService.importFromContent(content);
+    final updated = await storageService.getPartnerTimetableBinding();
+    expect(updated?.weekOffset, 2);
+  });
+
+  test('re-import preserves partner couple colors', () async {
+    final content = dataTransferService.buildBackupJson(
+      profileName: 'TA',
+      courses: const [],
+      settings: TimetableSettings.defaults(),
+      currentWeek: 1,
+    );
+    await partnerService.importFromContent(content);
+    final binding = await storageService.getPartnerTimetableBinding();
+    await storageService.savePartnerTimetableBinding(
+      binding!.copyWith(
+        mineColorHex: '#FF5722',
+        partnerColorHex: '#4CAF50',
+        togetherColorHex: '#00BCD4',
+      ),
+    );
+
+    await partnerService.importFromContent(content);
+    final updated = await storageService.getPartnerTimetableBinding();
+    expect(updated?.mineColorHex, '#FF5722');
+    expect(updated?.partnerColorHex, '#4CAF50');
+    expect(updated?.togetherColorHex, '#00BCD4');
+  });
+
   test('unlink removes partner profile and binding', () async {
     final content = dataTransferService.buildBackupJson(
       profileName: 'TA',
