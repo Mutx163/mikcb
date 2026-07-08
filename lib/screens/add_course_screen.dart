@@ -1744,6 +1744,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
     final trimmedName = _nameController.text.trim();
     if (trimmedName.isEmpty) {
       _formKey.currentState?.validate();
+      if (!mounted) return;
       showAppToast(
         context,
         message: l10n.pleaseEnterCourseName,

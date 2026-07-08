@@ -26,7 +26,6 @@ void main() {
     final scrollable = find.byType(Scrollable);
     final state = tester.state<ScrollableState>(scrollable);
     final viewport = state.position.viewportDimension;
-    final maxOverscroll = viewport * 0.5;
 
     final gesture = await tester.startGesture(tester.getCenter(scrollable));
     await gesture.moveBy(Offset(0, viewport * 0.8));

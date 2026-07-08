@@ -1,8 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/warehouse_macro_models.dart';
 import 'package:university_timetable/widgets/warehouse_macro_replayer.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('zh'));
+
   group('ensureMacroElementFound', () {
     test('throws when JavaScript reports missing element', () {
       expect(
@@ -43,7 +47,7 @@ void main() {
       );
 
       expect(
-        shouldUseRememberedPasswordForManualStep(step, step.value!),
+        shouldUseRememberedPasswordForManualStep(step, step.value!, l10n),
         isTrue,
       );
     });
@@ -51,7 +55,14 @@ void main() {
     test('uses remembered password for legacy generic manual steps', () {
       const step = MacroStep(type: MacroStepType.waitForManualInput);
 
-      expect(shouldUseRememberedPasswordForManualStep(step, '需要手动操作'), isTrue);
+      expect(
+        shouldUseRememberedPasswordForManualStep(
+          step,
+          l10n.macroReplayManualActionRequired,
+          l10n,
+        ),
+        isTrue,
+      );
     });
 
     test('does not use remembered password for captcha steps', () {
@@ -68,6 +79,7 @@ void main() {
         shouldUseRememberedPasswordForManualStep(
           explicitCaptcha,
           explicitCaptcha.value!,
+          l10n,
         ),
         isFalse,
       );
@@ -75,6 +87,7 @@ void main() {
         shouldUseRememberedPasswordForManualStep(
           legacyCaptcha,
           legacyCaptcha.value!,
+          l10n,
         ),
         isFalse,
       );

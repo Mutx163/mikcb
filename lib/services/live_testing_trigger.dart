@@ -44,6 +44,8 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
   }
   liveTestingTriggerInFlight = true;
 
+  final locale = Localizations.localeOf(context);
+  final l10n = AppLocalizations.of(context)!;
   final now = DateTime.now();
   final start = now.add(beforeClassLead);
   final end = start.add(totalCourseDuration);
@@ -154,11 +156,9 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
       },
     );
 
-    final locale = Localizations.localeOf(context);
     final homeHint = locale.languageCode == 'zh'
         ? '请按 Home 键回到桌面查看超级岛（停留在应用内时系统通常不会弹出）。'
         : 'Press Home and watch the island; it usually will not pop while the app stays open.';
-    final l10n = AppLocalizations.of(context)!;
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.success,
       message: '${l10n.liveTestingNotificationSent}\n$homeHint',
@@ -173,7 +173,7 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTest({
     );
     return LiveTestingTriggerResult(
       status: LiveTestingTriggerStatus.error,
-      message: AppLocalizations.of(context)!.sendFailedWithError('$e'),
+      message: l10n.sendFailedWithError('$e'),
     );
   } finally {
     unawaited(
@@ -198,6 +198,12 @@ Future<LiveTestingTriggerResult> triggerLiveUpdateTestForHourSlot({
     now: now,
     lead: lead,
   );
+  if (!context.mounted) {
+    return const LiveTestingTriggerResult(
+      status: LiveTestingTriggerStatus.error,
+      message: null,
+    );
+  }
   final nextHour = LiveTestingFixtureService.nextHourSlotFor(now);
   final nextTemplate =
       LiveTestingFixtureService.findFixtureForHour(provider, nextHour);

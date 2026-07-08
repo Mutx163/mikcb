@@ -85,7 +85,6 @@ void main() {
 
   for (final entry in fieldEntries.entries) {
     final logKey = 'log_field_${entry.key.replaceAllMapped(RegExp(r'([A-Z])'), (m) => '_${m[1]!.toLowerCase()}')}';
-    final normalizedKey = entry.key[0].toLowerCase() + entry.key.substring(1);
     final arbKeyName = 'logField${entry.key[0].toUpperCase()}${entry.key.substring(1)}';
     arb[arbKeyName] = entry.value;
     keyToArb[logKey] = arbKeyName;

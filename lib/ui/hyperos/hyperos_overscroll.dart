@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
@@ -147,8 +146,8 @@ class HyperosOverscrollPhysics extends ScrollPhysics {
       0,
     );
 
-    double finish(String _phase, double applied, {double? overscrollPast}) {
-      final _ = overscrollPast;
+    double finish(String phase, double applied, {double? overscrollPast}) {
+      final _ = (phase, overscrollPast);
       return applied;
     }
 
