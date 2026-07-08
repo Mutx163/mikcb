@@ -380,8 +380,10 @@ class _CloudSyncScreenState extends State<CloudSyncScreen> {
   }
 
   Future<void> _openAllBackups() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const CloudBackupListScreen()),
+    await HyperosNavigation.push(
+      context,
+      settings: const RouteSettings(name: '/settings/cloud-sync/backups'),
+      builder: (_) => const CloudBackupListScreen(),
     );
     if (mounted) {
       await _loadBackups();
