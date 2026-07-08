@@ -627,8 +627,8 @@ abstract final class HyperosMiuixAnim {
   static const overscrollDragFreeZonePx = 16.0;
 
   /// Resistance curve exponent after the free zone (higher = faster falloff).
-  static const overscrollDragFalloffExponent = 4.0;
+  static const overscrollDragFalloffExponent = 3.4;
 
   /// Minimum finger-to-content transfer ratio near the overscroll cap.
-  static const overscrollDragMinTransfer = 0.03;
+  static const overscrollDragMinTransfer = 0.05;
 }
