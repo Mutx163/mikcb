@@ -112,6 +112,19 @@ jobs:
             return "优化";
           }
 
+          // 从条目文本自身的开头类型词推断类型（如「新增…」「修复…」）。
+          // 只匹配行首，避免命中正文中间出现的「新增」等词。
+          function detectLeadingChangeType(text) {
+            const normalized = String(text || "").trimStart();
+            if (/^新增/.test(normalized)) return "新增";
+            if (/^(修复|修正)/.test(normalized)) return "修复";
+            if (/^测试/.test(normalized)) return "测试";
+            if (/^(移除|删除)/.test(normalized)) return "移除";
+            if (/^调整/.test(normalized)) return "调整";
+            if (/^优化/.test(normalized)) return "优化";
+            return null;
+          }
+
           function extractHighlights(body) {
             const latestSection = extractLatestVersionSection(body);
             const lines = latestSection.split(/\r?\n/);
@@ -133,8 +146,11 @@ jobs:
               if (/^[-*+]\s+/.test(line)) {
                 const text = cleanReleaseLine(line);
                 if (text) {
+                  // 优先看条目文本开头的类型词；无标题的正文才不会
+                  // 全部误落到默认「优化」，产生「[优化] 新增…」这类错配。
+                  const leadingType = detectLeadingChangeType(text);
                   highlights.push({
-                    type: normalizeChangeType(currentType),
+                    type: leadingType || normalizeChangeType(currentType),
                     text,
                   });
                 }
