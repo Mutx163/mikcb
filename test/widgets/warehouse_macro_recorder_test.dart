@@ -77,10 +77,10 @@ void main() {
       expect(steps.any((step) => step.value == '1234'), isFalse);
       expect(steps.first.fieldType, 'password');
       expect(steps.first.selector, '#password');
-      expect(steps.first.value, contains('密码'));
+      expect(steps.first.value, contains('manual_input_password'));
       expect(steps.last.fieldType, 'captcha');
       expect(steps.last.selector, '#captcha');
-      expect(steps.last.value, contains('验证码'));
+      expect(steps.last.value, contains('manual_input_captcha'));
     });
 
     test('creates one manual-input step per sensitive selector', () {
@@ -122,11 +122,11 @@ void main() {
         hasLength(2),
       );
       expect(
-        steps.where((step) => step.value?.contains('密码') ?? false),
+        steps.where((step) => step.value?.contains('manual_input_password') ?? false),
         hasLength(1),
       );
       expect(
-        steps.where((step) => step.value?.contains('验证码') ?? false),
+        steps.where((step) => step.value?.contains('manual_input_captcha') ?? false),
         hasLength(1),
       );
     });
@@ -255,7 +255,7 @@ void main() {
 
     test('manual password input keeps reason but not secret values', () {
       final json = MacroStep.waitForManualInput(
-        '请手动输入密码；如已自动填充请直接继续',
+        'manual_input_password',
         selector: '#password',
         fieldType: 'password',
       ).toJson();
@@ -263,7 +263,7 @@ void main() {
       expect(json['type'], 'waitForManualInput');
       expect(json['fieldType'], 'password');
       expect(json['selector'], '#password');
-      expect(json['value'], contains('密码'));
+      expect(json['value'], contains('manual_input_password'));
       expect(json.toString(), isNot(contains('secret-password')));
     });
 
@@ -278,7 +278,7 @@ void main() {
       expect(step.type, MacroStepType.waitForManualInput);
       expect(step.fieldType, 'password');
       expect(step.selector, '#password');
-      expect(step.value, contains('密码'));
+      expect(step.value, contains('manual_input_password'));
       expect(step.toJson().toString(), isNot(contains('legacy-secret')));
     });
   });

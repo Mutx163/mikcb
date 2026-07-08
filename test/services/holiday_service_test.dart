@@ -106,10 +106,13 @@ void main() {
         entries.where((e) => e.type == HolidayType.adjustedWorkday),
         hasLength(1),
       );
-      expect(entries.firstWhere((e) => e.date.day == 1).name, '国庆节');
+      expect(
+        entries.firstWhere((e) => e.date.day == 1).name,
+        'holiday_name:national_day',
+      );
       expect(
         entries.firstWhere((e) => e.type == HolidayType.adjustedWorkday).name,
-        '调休上班',
+        HolidayService.holidayNameMakeupWorkdayKey,
       );
     });
 
@@ -151,7 +154,7 @@ void main() {
         entries.where((e) => e.type == HolidayType.vacation),
         hasLength(7),
       );
-      expect(entries.first.name, '国庆节');
+      expect(entries.first.name, 'holiday_name:national_day');
     });
 
     test('makeup workday links to nearest holiday group', () {
@@ -195,7 +198,7 @@ void main() {
 
       final entries = service.convertApiEntriesForTest(raw, 2026);
 
-      expect(entries.first.name, '春节');
+      expect(entries.first.name, 'holiday_name:spring_festival');
     });
 
     test('correctly identifies Dragon Boat Festival', () {
@@ -209,7 +212,7 @@ void main() {
 
       final entries = service.convertApiEntriesForTest(raw, 2026);
 
-      expect(entries.first.name, '端午节');
+      expect(entries.first.name, 'holiday_name:dragon_boat');
     });
   });
 
@@ -248,10 +251,10 @@ void main() {
 
       expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
       expect(
-        service.logs.any((e) => e.message.contains('主 API 响应 500')),
+        service.logs.any((e) => e.message.contains('holiday_log_primary_api_status|statusCode=500')),
         isTrue,
       );
-      expect(service.logs.any((e) => e.message.contains('备用 API 返回')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_fallback_api')), isTrue);
     });
 
     test('falls back to ailcc when primary throws exception', () async {
@@ -283,7 +286,7 @@ void main() {
 
       // Should have loaded builtin asset
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('远程拉取失败')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
     });
 
     test('falls back when primary returns invalid JSON', () async {
@@ -363,7 +366,7 @@ void main() {
       await service.getDataForYear(2026);
 
       // Background refresh may fire, but the main path uses cache
-      expect(service.logs.any((e) => e.message.contains('命中内存缓存')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_memory_cache_hit')), isTrue);
     });
 
     test('SharedPreferences cache is used on cold start', () async {
@@ -392,7 +395,7 @@ void main() {
       final data = await service.getDataForYear(2026);
 
       expect(data.entries.single.name, '缓存假期');
-      expect(service.logs.any((e) => e.message.contains('命中本地缓存')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_local_cache_hit')), isTrue);
     });
 
     test('clearCache removes both memory and local cache', () async {
@@ -450,7 +453,7 @@ void main() {
 
       // 应该返回内置资产
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('远程拉取失败')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
     }, timeout: const Timeout(Duration(seconds: 25)));
 
     test('主 API 超时后应立即尝试备用 API', () async {
@@ -470,7 +473,7 @@ void main() {
 
       expect(data.isHoliday(DateTime(2026, 10, 1)), isTrue);
       expect(
-        service.logs.any((e) => e.message.contains('主 API 响应 408')),
+        service.logs.any((e) => e.message.contains('holiday_log_primary_api_status|statusCode=408')),
         isTrue,
       );
     });
@@ -522,7 +525,7 @@ void main() {
       // 后台刷新会发起额外请求，所以请求次数会增加
       // 但主路径应该使用缓存
       expect(
-        service.logs.any((e) => e.message.contains('命中内存缓存')),
+        service.logs.any((e) => e.message.contains('holiday_log_memory_cache_hit')),
         isTrue,
         reason: '第二次调用应该命中内存缓存',
       );
@@ -547,7 +550,7 @@ void main() {
 
       // 应该被识别为一组春节
       expect(entries, hasLength(7));
-      expect(entries.first.name, '春节');
+      expect(entries.first.name, 'holiday_name:spring_festival');
       expect(entries.first.groupId, entries.last.groupId);
     });
 
@@ -565,7 +568,7 @@ void main() {
       final entries = service.convertApiEntriesForTest(raw, 2026);
 
       expect(entries, hasLength(3));
-      expect(entries.every((e) => e.name == '元旦'), isTrue);
+      expect(entries.every((e) => e.name == 'holiday_name:new_year'), isTrue);
     });
   });
 
@@ -643,7 +646,7 @@ void main() {
 
       // 应该使用内置资产
       expect(data.entries, isNotEmpty);
-      expect(service.logs.any((e) => e.message.contains('远程拉取失败')), isTrue);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_remote_failed_builtin')), isTrue);
     });
   });
 
@@ -668,7 +671,7 @@ void main() {
 
       // 应该 fallback 到远程数据
       expect(data.isHoliday(DateTime(2026, 1, 1)), isTrue);
-      expect(service.logs.any((e) => e.message.contains('命中本地缓存')), isFalse);
+      expect(service.logs.any((e) => e.message.contains('holiday_log_local_cache_hit')), isFalse);
     });
 
     test('SharedPreferences entries 为空应 fallback', () async {

@@ -182,7 +182,7 @@ void main() {
           startSection: 1,
           endSection: 5,
         ),
-        contains('节次数不足'),
+        contains('time_scheme_sections_insufficient'),
       );
     });
   });

@@ -100,7 +100,7 @@ void main() {
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('不支持的字段'),
+          contains('ai_unknown_fields'),
         ),
       ),
     );

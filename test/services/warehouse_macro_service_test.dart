@@ -48,7 +48,7 @@ void main() {
     expect(restored, isNotNull);
     expect(restored!.steps, hasLength(1));
     expect(restored.steps.first.type, MacroStepType.waitForManualInput);
-    expect(restored.steps.first.value, contains('密码'));
+    expect(restored.steps.first.value, contains('manual_input_password'));
     expect(persistedRaw, isNotNull);
     expect(persistedRaw, isNot(contains('legacy-secret')));
   });

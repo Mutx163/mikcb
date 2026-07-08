@@ -118,6 +118,11 @@ void main() {
     await tester.tap(find.text('测试与诊断'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.textContaining('自动刷新'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(find.textContaining('每 1 秒自动拉取一次诊断状态'), findsOneWidget);
     expect(find.textContaining('上次刷新：'), findsOneWidget);
   });

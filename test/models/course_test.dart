@@ -1,7 +1,11 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:university_timetable/l10n/app_localizations.dart';
 import 'package:university_timetable/models/course.dart';
 
 void main() {
+  final l10n = lookupAppLocalizations(const Locale('zh'));
+
   test('copyWith can clear nullable fields', () {
     final course = Course(
       id: 'course-1',
@@ -54,7 +58,7 @@ void main() {
     expect(restored.normalizedCustomWeeks, [2, 4, 6]);
     expect(restored.isInWeek(2), isTrue);
     expect(restored.isInWeek(3), isFalse);
-    expect(restored.weekDescription, '第2、4、6周');
+    expect(restored.weekDescription(l10n), '第2、4、6周');
   });
 
   test('custom week description compresses continuous ranges', () {
@@ -71,7 +75,7 @@ void main() {
       customWeeks: [1, 2, 3, 5, 7, 8, 9],
     );
 
-    expect(course.weekDescription, '第1-3、5、7-9周');
+    expect(course.weekDescription(l10n), '第1-3、5、7-9周');
   });
 
   test('empty custom weeks fall back to range week description', () {
@@ -90,6 +94,6 @@ void main() {
       customWeeks: const [],
     );
 
-    expect(course.weekDescription, '第2-6周');
+    expect(course.weekDescription(l10n), '第2-6周');
   });
 }

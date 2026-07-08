@@ -259,7 +259,7 @@ void main() {
     expect(result.courses, hasLength(1));
     expect(result.courses.first.name, '有效课程');
     expect(result.warnings, hasLength(1));
-    expect(result.warnings.first, contains('第 3 行'));
+    expect(result.warnings.first, contains('spreadsheet_row_warning|rowNumber=3'));
   });
 
   test('rejects unknown header format', () {
@@ -296,7 +296,7 @@ Course A,Teacher,1,1-2,Room,1-16
     expect(course.isEvenWeek, isFalse);
     expect(course.activeWeeks, isNotEmpty);
     expect(result.warnings, isNotEmpty);
-    expect(result.warnings.first, contains('单周与双周'));
+    expect(result.warnings.first, contains('spreadsheet_odd_even_both'));
   });
 
   test('parses GBK-encoded CSV exported from Chinese Windows Excel', () {

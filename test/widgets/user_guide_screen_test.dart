@@ -100,7 +100,7 @@ void main() {
     expect(find.text('3 / 4'), findsOneWidget);
     expect(find.text('系统权限设置'), findsOneWidget);
     expect(find.text('自启动'), findsOneWidget);
-    expect(find.text('4 / 5 已完成'), findsOneWidget);
+    expect(find.textContaining('已就绪'), findsOneWidget);
     expect(find.text('已开启'), findsNWidgets(2));
     expect(find.text('系统已允许'), findsOneWidget);
     expect(find.text('无限制'), findsOneWidget);

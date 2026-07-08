@@ -84,7 +84,7 @@ void main() {
         isA<FormatException>().having(
           (error) => error.message,
           'message',
-          contains('跨 0 点课程'),
+          contains('section_crosses_midnight'),
         ),
       ),
     );
@@ -95,7 +95,7 @@ void main() {
       validateSectionTimes(const [
         SectionTime(startTime: '23:30', endTime: '00:15'),
       ]),
-      contains('跨 0 点课程'),
+      contains('section_end_must_after_start'),
     );
   });
 }

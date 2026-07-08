@@ -146,6 +146,8 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
   static const scrollFrostThreshold = 0.5;
 
   bool _blurSettled = false;
+  /// True while post-frame settle callbacks are outstanding (not yet settled).
+  bool _blurSettlePending = false;
   bool _contentUnderHeader = false;
   int _blurSettleGeneration = 0;
   ModalRoute<void>? _subscribedRoute;
@@ -222,8 +224,9 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
       }
       if (status == AnimationStatus.completed ||
           status == AnimationStatus.dismissed) {
+        // Sync schedules settle when needed; do not call _scheduleBlurSettle
+        // again here — that cancels the in-flight post-frame budget.
         _syncRouteTransitioning();
-        _scheduleBlurSettle();
       }
     }
 
@@ -270,19 +273,21 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
 
   void _cancelBlurSettle() {
     _blurSettleGeneration++;
+    _blurSettlePending = false;
   }
 
   void _markBlurSettled({String? source}) {
     if (_blurSettled || !mounted) {
       return;
     }
+    _blurSettlePending = false;
     setState(() => _blurSettled = true);
     _scheduleResyncHeaderFrostAfterLayout();
   }
 
   void _scheduleBlurSettle() {
-    _cancelBlurSettle();
     if (_isRouteTransitioning) {
+      _cancelBlurSettle();
       if (_blurSettled && mounted) {
         setState(() => _blurSettled = false);
       } else {
@@ -290,7 +295,14 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
       }
       return;
     }
+    // Skip if already settled OR a settle frame budget is already running —
+    // rescheduling would bump generation and cancel the in-flight settle.
+    if (_blurSettled || _blurSettlePending) {
+      return;
+    }
+    _cancelBlurSettle();
     final generation = _blurSettleGeneration;
+    _blurSettlePending = true;
     void afterFrames(int remaining) {
       if (!mounted ||
           generation != _blurSettleGeneration ||
@@ -415,7 +427,11 @@ class _HyperosBlurredPageState extends State<_HyperosBlurredPage>
       return;
     }
 
-    _scheduleBlurSettle();
+    // Already settled: do not cancel/restart the frame budget (that left blur
+    // stuck off when sync fired again from animation status / rebuilds).
+    if (!_blurSettled) {
+      _scheduleBlurSettle();
+    }
     if (mounted) {
       setState(() {});
     }

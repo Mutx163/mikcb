@@ -20,8 +20,10 @@ Future<void> tapListTileBelowOverlayHeader(
 
 /// Waits for post-route blur settle frames on overlay-header pages.
 Future<void> pumpBlurSettleFrames(WidgetTester tester) async {
-  await tester.pump();
-  await tester.pump();
+  // Route settle + _blurSettleFrameCount post-frame callbacks + rebuild.
+  for (var i = 0; i < 8; i++) {
+    await tester.pump();
+  }
 }
 
 void main() {

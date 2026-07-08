@@ -441,7 +441,7 @@ void main() {
       sections: const [SectionTime(startTime: '23:30', endTime: '00:15')],
     );
 
-    expect(message, contains('跨 0 点课程'));
+    expect(message, contains('section_end_must_after_start'));
     expect(provider.settings.sectionAt(1).displayText, '20:00-20:45');
   });
 

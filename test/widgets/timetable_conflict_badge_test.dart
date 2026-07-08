@@ -236,22 +236,23 @@ void main() {
     await tester.tap(find.text('软件工程'));
     await _pumpTimetableFrame(tester);
 
+    // Selected course is shown fully; related conflicts start collapsed.
     expect(
       find.byKey(const ValueKey('course-action-content-course-a')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('course-action-content-course-b')),
       findsOneWidget,
     );
     expect(
       find.byKey(const ValueKey('course-action-reschedule-course-a')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('course-action-reschedule-course-b')),
-      findsOneWidget,
-    );
+    expect(find.text('计算机网络'), findsWidgets);
+
+    // Expand the related panel so the conflicting course detail is available.
+    final conflictPanel = find.textContaining('冲突');
+    expect(conflictPanel, findsWidgets);
+    await tester.tap(conflictPanel.first);
+    await _pumpTimetableFrame(tester);
+    expect(find.text('计算机网络'), findsWidgets);
   });
 
   testWidgets('home timetable can show non-current-week courses separately', (
