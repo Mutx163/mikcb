@@ -1040,7 +1040,20 @@ button {
   box-shadow: 0 0 18px rgba(52, 130, 255, 0.22);
 }
 
+/* 更新日志区域整体居中显示 */
+#changelog .section-head {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+#changelog .timeline {
+  margin-left: auto;
+  margin-right: auto;
+}
+
 .tl-item {
+  position: relative;
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 14px;

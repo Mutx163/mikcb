@@ -5,13 +5,20 @@
     "(prefers-reduced-motion: reduce)"
   ).matches;
 
-  /* ---------- 卡片鼠标跟随光斑 ---------- */
-  document.querySelectorAll("[data-spotlight]").forEach((card) => {
-    card.addEventListener("pointermove", (event) => {
-      const rect = card.getBoundingClientRect();
-      card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-      card.style.setProperty("--my", `${event.clientY - rect.top}px`);
-    });
+  /* ---------- 卡片鼠标跟随光斑 ----------
+     用事件委托而非逐元素绑定：更新日志时间线是 script.js 读取
+     feed.json 后异步重建的，加载时的一次性绑定会漏掉这些卡片，
+     导致只有初始静态卡片有跟随效果。 */
+  document.addEventListener("pointermove", (event) => {
+    const target = event.target;
+    const card =
+      target instanceof Element ? target.closest("[data-spotlight]") : null;
+    if (!card) {
+      return;
+    }
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+    card.style.setProperty("--my", `${event.clientY - rect.top}px`);
   });
 
   /* ---------- Hero 手机 3D 跟随 ---------- */
