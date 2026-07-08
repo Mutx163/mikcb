@@ -294,6 +294,87 @@ class AppLocalizationsEn extends AppLocalizations {
       'Please import a single-profile backup, not a full backup';
 
   @override
+  String get coupleWebdavTitle => 'Nutstore pull';
+
+  @override
+  String get coupleWebdavSubtitle =>
+      'Sign in to your partner\'s (or shared) Nutstore account to download their uploaded timetable. Separate from Cloud Sync credentials.';
+
+  @override
+  String get coupleWebdavNotConnected => 'Not connected to Nutstore';
+
+  @override
+  String coupleWebdavConnectedAs(String username) {
+    return 'Connected as $username';
+  }
+
+  @override
+  String coupleWebdavRemotePathHint(String path) {
+    return 'Remote file: $path';
+  }
+
+  @override
+  String coupleWebdavLastPulledAt(String time) {
+    return 'Last pulled: $time';
+  }
+
+  @override
+  String get coupleWebdavConnect => 'Connect Nutstore';
+
+  @override
+  String get coupleWebdavDisconnect => 'Disconnect';
+
+  @override
+  String get coupleWebdavPullNow => 'Pull partner timetable';
+
+  @override
+  String get coupleWebdavUploadForPartner => 'Upload my timetable to Nutstore';
+
+  @override
+  String get coupleWebdavLoginSheetTitle =>
+      'Connect Nutstore (couple timetable)';
+
+  @override
+  String get coupleWebdavLoginSheetSubtitle =>
+      'Use an app-specific password. Your partner must upload their timetable to the agreed path first, or upload from their device on the same account.';
+
+  @override
+  String get coupleWebdavConfirmConnect => 'Connect and pull';
+
+  @override
+  String get coupleWebdavTestSuccess => 'Nutstore connection successful';
+
+  @override
+  String get coupleWebdavTestFailed =>
+      'Connection failed. Check account, app password, and network.';
+
+  @override
+  String get coupleWebdavPullImported =>
+      'Partner timetable imported from Nutstore';
+
+  @override
+  String get coupleWebdavPullUpdated =>
+      'Partner timetable updated from Nutstore';
+
+  @override
+  String get coupleWebdavPullUnchanged => 'Partner timetable is up to date';
+
+  @override
+  String get coupleWebdavUploadSuccess =>
+      'Timetable uploaded for your partner to pull';
+
+  @override
+  String get coupleWebdavPartnerFileMissing =>
+      'Partner timetable file not found. Ask them to upload first.';
+
+  @override
+  String get coupleWebdavPullFailed =>
+      'Failed to pull partner timetable. Try again later.';
+
+  @override
+  String get coupleWebdavNotConnectedError => 'Connect Nutstore first';
+
+  @override
   String get cloudSyncEntryTitle => 'Cloud Sync (WEBDAV)';
 
   @override

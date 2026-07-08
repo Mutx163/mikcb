@@ -117,6 +117,49 @@
   "coupleTimetableColorsTitle": "Overlay colors",
   "coupleTimetableColorsSubtitle": "Choose colors for your courses, partner courses, and shared classes in overlay view.",
   "partnerImportRequiresSingleProfile": "Please import a single-profile backup, not a full backup",
+  "coupleWebdavTitle": "Nutstore pull",
+  "coupleWebdavSubtitle": "Sign in to your partner's (or shared) Nutstore account to download their uploaded timetable. Separate from Cloud Sync credentials.",
+  "coupleWebdavNotConnected": "Not connected to Nutstore",
+  "coupleWebdavConnectedAs": "Connected as {username}",
+  "@coupleWebdavConnectedAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavRemotePathHint": "Remote file: {path}",
+  "@coupleWebdavRemotePathHint": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavLastPulledAt": "Last pulled: {time}",
+  "@coupleWebdavLastPulledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavConnect": "Connect Nutstore",
+  "coupleWebdavDisconnect": "Disconnect",
+  "coupleWebdavPullNow": "Pull partner timetable",
+  "coupleWebdavUploadForPartner": "Upload my timetable to Nutstore",
+  "coupleWebdavLoginSheetTitle": "Connect Nutstore (couple timetable)",
+  "coupleWebdavLoginSheetSubtitle": "Use an app-specific password. Your partner must upload their timetable to the agreed path first, or upload from their device on the same account.",
+  "coupleWebdavConfirmConnect": "Connect and pull",
+  "coupleWebdavTestSuccess": "Nutstore connection successful",
+  "coupleWebdavTestFailed": "Connection failed. Check account, app password, and network.",
+  "coupleWebdavPullImported": "Partner timetable imported from Nutstore",
+  "coupleWebdavPullUpdated": "Partner timetable updated from Nutstore",
+  "coupleWebdavPullUnchanged": "Partner timetable is up to date",
+  "coupleWebdavUploadSuccess": "Timetable uploaded for your partner to pull",
+  "coupleWebdavPartnerFileMissing": "Partner timetable file not found. Ask them to upload first.",
+  "coupleWebdavPullFailed": "Failed to pull partner timetable. Try again later.",
+  "coupleWebdavNotConnectedError": "Connect Nutstore first",
   "cloudSyncEntryTitle": "Cloud Sync (WEBDAV)",
   "cloudSyncEntrySubtitle": "Sync timetables and import data across devices via Jianguoyun",
   "cloudSyncTitle": "Cloud Sync",

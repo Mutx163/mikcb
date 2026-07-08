@@ -117,6 +117,49 @@
   "coupleTimetableColorsTitle": "叠加颜色",
   "coupleTimetableColorsSubtitle": "自定义「我的课」「TA的课」「一起上课」在叠加视图中的显示颜色，可按喜好自由搭配。",
   "partnerImportRequiresSingleProfile": "请导入单课表备份文件，不支持全量备份",
+  "coupleWebdavTitle": "坚果云拉取",
+  "coupleWebdavSubtitle": "登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件。与「云同步」账号独立，互不影响。",
+  "coupleWebdavNotConnected": "尚未连接坚果云",
+  "coupleWebdavConnectedAs": "已连接：{username}",
+  "@coupleWebdavConnectedAs": {
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavRemotePathHint": "远程文件路径：{path}",
+  "@coupleWebdavRemotePathHint": {
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavLastPulledAt": "上次拉取：{time}",
+  "@coupleWebdavLastPulledAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "coupleWebdavConnect": "连接坚果云",
+  "coupleWebdavDisconnect": "断开连接",
+  "coupleWebdavPullNow": "立即拉取对方课表",
+  "coupleWebdavUploadForPartner": "上传我的课表到坚果云",
+  "coupleWebdavLoginSheetTitle": "连接坚果云（情侣课表）",
+  "coupleWebdavLoginSheetSubtitle": "请使用应用专用密码。对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传。",
+  "coupleWebdavConfirmConnect": "连接并拉取",
+  "coupleWebdavTestSuccess": "坚果云连接成功",
+  "coupleWebdavTestFailed": "连接失败，请检查账号、应用专用密码与网络",
+  "coupleWebdavPullImported": "已从坚果云导入对方课表",
+  "coupleWebdavPullUpdated": "已从坚果云更新对方课表",
+  "coupleWebdavPullUnchanged": "对方课表无变化",
+  "coupleWebdavUploadSuccess": "已上传课表，对方可拉取",
+  "coupleWebdavPartnerFileMissing": "未找到对方课表文件，请让对方先上传",
+  "coupleWebdavPullFailed": "拉取对方课表失败，请稍后重试",
+  "coupleWebdavNotConnectedError": "请先连接坚果云",
   "cloudSyncEntryTitle": "云同步",
   "cloudSyncEntrySubtitle": "通过坚果云等多设备同步课表与导入数据",
   "cloudSyncTitle": "云同步",

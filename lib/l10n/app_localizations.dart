@@ -620,6 +620,138 @@ abstract class AppLocalizations {
   /// **'请导入单课表备份文件，不支持全量备份'**
   String get partnerImportRequiresSingleProfile;
 
+  /// No description provided for @coupleWebdavTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'坚果云拉取'**
+  String get coupleWebdavTitle;
+
+  /// No description provided for @coupleWebdavSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'登录对方（或你们共用的）坚果云账号，自动下载对方上传的课表文件。与「云同步」账号独立，互不影响。'**
+  String get coupleWebdavSubtitle;
+
+  /// No description provided for @coupleWebdavNotConnected.
+  ///
+  /// In zh, this message translates to:
+  /// **'尚未连接坚果云'**
+  String get coupleWebdavNotConnected;
+
+  /// No description provided for @coupleWebdavConnectedAs.
+  ///
+  /// In zh, this message translates to:
+  /// **'已连接：{username}'**
+  String coupleWebdavConnectedAs(String username);
+
+  /// No description provided for @coupleWebdavRemotePathHint.
+  ///
+  /// In zh, this message translates to:
+  /// **'远程文件路径：{path}'**
+  String coupleWebdavRemotePathHint(String path);
+
+  /// No description provided for @coupleWebdavLastPulledAt.
+  ///
+  /// In zh, this message translates to:
+  /// **'上次拉取：{time}'**
+  String coupleWebdavLastPulledAt(String time);
+
+  /// No description provided for @coupleWebdavConnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接坚果云'**
+  String get coupleWebdavConnect;
+
+  /// No description provided for @coupleWebdavDisconnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'断开连接'**
+  String get coupleWebdavDisconnect;
+
+  /// No description provided for @coupleWebdavPullNow.
+  ///
+  /// In zh, this message translates to:
+  /// **'立即拉取对方课表'**
+  String get coupleWebdavPullNow;
+
+  /// No description provided for @coupleWebdavUploadForPartner.
+  ///
+  /// In zh, this message translates to:
+  /// **'上传我的课表到坚果云'**
+  String get coupleWebdavUploadForPartner;
+
+  /// No description provided for @coupleWebdavLoginSheetTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接坚果云（情侣课表）'**
+  String get coupleWebdavLoginSheetTitle;
+
+  /// No description provided for @coupleWebdavLoginSheetSubtitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'请使用应用专用密码。对方需先将课表上传到约定路径，或由你在对方设备上登录同一账号并上传。'**
+  String get coupleWebdavLoginSheetSubtitle;
+
+  /// No description provided for @coupleWebdavConfirmConnect.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接并拉取'**
+  String get coupleWebdavConfirmConnect;
+
+  /// No description provided for @coupleWebdavTestSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'坚果云连接成功'**
+  String get coupleWebdavTestSuccess;
+
+  /// No description provided for @coupleWebdavTestFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'连接失败，请检查账号、应用专用密码与网络'**
+  String get coupleWebdavTestFailed;
+
+  /// No description provided for @coupleWebdavPullImported.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从坚果云导入对方课表'**
+  String get coupleWebdavPullImported;
+
+  /// No description provided for @coupleWebdavPullUpdated.
+  ///
+  /// In zh, this message translates to:
+  /// **'已从坚果云更新对方课表'**
+  String get coupleWebdavPullUpdated;
+
+  /// No description provided for @coupleWebdavPullUnchanged.
+  ///
+  /// In zh, this message translates to:
+  /// **'对方课表无变化'**
+  String get coupleWebdavPullUnchanged;
+
+  /// No description provided for @coupleWebdavUploadSuccess.
+  ///
+  /// In zh, this message translates to:
+  /// **'已上传课表，对方可拉取'**
+  String get coupleWebdavUploadSuccess;
+
+  /// No description provided for @coupleWebdavPartnerFileMissing.
+  ///
+  /// In zh, this message translates to:
+  /// **'未找到对方课表文件，请让对方先上传'**
+  String get coupleWebdavPartnerFileMissing;
+
+  /// No description provided for @coupleWebdavPullFailed.
+  ///
+  /// In zh, this message translates to:
+  /// **'拉取对方课表失败，请稍后重试'**
+  String get coupleWebdavPullFailed;
+
+  /// No description provided for @coupleWebdavNotConnectedError.
+  ///
+  /// In zh, this message translates to:
+  /// **'请先连接坚果云'**
+  String get coupleWebdavNotConnectedError;
+
   /// No description provided for @cloudSyncEntryTitle.
   ///
   /// In zh, this message translates to:
