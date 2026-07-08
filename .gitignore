@@ -71,6 +71,8 @@ app.*.map.json
 nul
 pi.ico
 stderr.txt
+layout_dump.json
+package-lock.json
 
 # 审查输出
 reviews/
