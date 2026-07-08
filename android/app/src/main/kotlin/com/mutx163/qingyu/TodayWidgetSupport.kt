@@ -138,7 +138,7 @@ object TodayWidgetSupport {
         val payload = HomeWidgetStorage.getSnapshotJson(context)
         if (payload != null) {
             try {
-                return parseSnapshot(JSONObject(payload))
+                return parseSnapshot(context, JSONObject(payload))
             } catch (_: Exception) {
                 // fall through
             }
@@ -325,7 +325,7 @@ object TodayWidgetSupport {
         }
 
         return TodayWidgetSnapshotInfo(
-            profileName = profileJson.optString("name", "轻屿课表"),
+            profileName = profileJson.optString("name", context.getString(R.string.widget_app_name)),
             currentWeek = currentWeek,
             state = state,
             backgroundStyle = settingsJson.optString("widgetBackgroundStyle", "solid"),
@@ -497,13 +497,13 @@ object TodayWidgetSupport {
         }
     }
 
-    fun statusText(state: String): String {
+    fun statusText(context: Context, state: String): String {
         return when (state) {
-            "ongoing" -> "正在上课"
-            "upcoming" -> "下一节课"
-            "completed" -> "今日已结束"
-            "holiday" -> "今日假期"
-            else -> "今日无课"
+            "ongoing" -> context.getString(R.string.widget_status_ongoing)
+            "upcoming" -> context.getString(R.string.widget_status_upcoming)
+            "completed" -> context.getString(R.string.widget_status_completed)
+            "holiday" -> context.getString(R.string.widget_status_holiday)
+            else -> context.getString(R.string.widget_status_no_course)
         }
     }
 
@@ -513,11 +513,11 @@ object TodayWidgetSupport {
             && snapshot.tomorrowCourses.isNotEmpty()
     }
 
-    fun headingText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun headingText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         return if (isShowingTomorrowCourses(snapshot)) {
-            "明日课程"
+            context.getString(R.string.widget_tomorrow_courses)
         } else {
-            "今日课程"
+            context.getString(R.string.widget_today_courses)
         }
     }
 
@@ -540,20 +540,21 @@ object TodayWidgetSupport {
         }
     }
 
-    fun heroCourseName(snapshot: TodayWidgetSnapshotInfo): String {
+    fun heroCourseName(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         return when {
-            snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
+            snapshot.state == "holiday" ->
+                snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
             snapshot.highlightedCourse != null -> snapshot.highlightedCourse.name
             isShowingTomorrowCourses(snapshot) ->
                 snapshot.tomorrowCourses.first().name
-            snapshot.state == "completed" -> "今天课程已结束"
-            else -> "今天没有课程"
+            snapshot.state == "completed" -> context.getString(R.string.widget_today_ended)
+            else -> context.getString(R.string.widget_no_courses_today)
         }
     }
 
-    fun heroTimeText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun heroTimeText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         if (snapshot.state == "holiday") {
-            return "好好休息"
+            return context.getString(R.string.widget_rest_well)
         }
         val highlighted = snapshot.highlightedCourse
         return when {
@@ -566,46 +567,52 @@ object TodayWidgetSupport {
                 val first = snapshot.tomorrowCourses.first()
                 "${first.startTime} - ${first.endTime}"
             }
-            snapshot.state == "completed" -> "接下来没有课程"
-            else -> "留一点时间给自己"
+            snapshot.state == "completed" -> context.getString(R.string.widget_no_more_courses)
+            else -> context.getString(R.string.widget_take_a_break)
         }
     }
 
-    fun heroMetaText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun heroMetaText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         if (snapshot.state == "holiday") {
-            return "第${snapshot.currentWeek}周"
+            return context.getString(R.string.widget_week_number, snapshot.currentWeek)
         }
         if (isShowingTomorrowCourses(snapshot)) {
             val first = snapshot.tomorrowCourses.first()
             return if (snapshot.showLocation && first.location.isNotBlank()) {
                 first.location
             } else {
-                "第${snapshot.tomorrowWeek}周"
+                context.getString(R.string.widget_week_number, snapshot.tomorrowWeek)
             }
         }
         val highlighted = snapshot.highlightedCourse
         return when {
-            !snapshot.showLocation -> "第${snapshot.currentWeek}周"
+            !snapshot.showLocation -> context.getString(R.string.widget_week_number, snapshot.currentWeek)
             highlighted != null && highlighted.location.isNotBlank() -> highlighted.location
-            snapshot.totalTodayCourseCount > 0 -> "第${snapshot.currentWeek}周 · 共${snapshot.totalTodayCourseCount}节"
-            else -> "第${snapshot.currentWeek}周"
+            snapshot.totalTodayCourseCount > 0 ->
+                context.getString(
+                    R.string.widget_week_with_count,
+                    snapshot.currentWeek,
+                    snapshot.totalTodayCourseCount,
+                )
+            else -> context.getString(R.string.widget_week_number, snapshot.currentWeek)
         }
     }
 
-    fun compactMetaText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun compactMetaText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         if (snapshot.state == "holiday") {
-            return "好好休息"
+            return context.getString(R.string.widget_rest_well)
         }
         val highlighted = snapshot.highlightedCourse
         return when {
-            highlighted == null -> heroTimeText(snapshot)
+            highlighted == null -> heroTimeText(context, snapshot)
             snapshot.showLocation && highlighted.location.isNotBlank() ->
-                "${heroTimeText(snapshot)}\n${highlighted.location}"
-            else -> heroTimeText(snapshot)
+                "${heroTimeText(context, snapshot)}\n${highlighted.location}"
+            else -> heroTimeText(context, snapshot)
         }
     }
 
     fun countdownText(
+        context: Context,
         snapshot: TodayWidgetSnapshotInfo,
         nowMillis: Long = System.currentTimeMillis(),
     ): String? {
@@ -617,19 +624,25 @@ object TodayWidgetSupport {
                 val endMillis = buildCourseDateTimeMillis(nowMillis, course.endTime) ?: return null
                 val durationMillis = endMillis - nowMillis
                 if (durationMillis <= 0) return null
-                "还有 ${CountdownFormat.formatDuration(durationMillis, style)} 下课"
+                context.getString(
+                    R.string.widget_countdown_until_end,
+                    CountdownFormat.formatDuration(durationMillis, style),
+                )
             }
             "upcoming" -> {
                 val startMillis = buildCourseDateTimeMillis(nowMillis, course.startTime) ?: return null
                 val durationMillis = startMillis - nowMillis
                 if (durationMillis <= 0) return null
-                "还有 ${CountdownFormat.formatDuration(durationMillis, style)} 上课"
+                context.getString(
+                    R.string.widget_countdown_until_start,
+                    CountdownFormat.formatDuration(durationMillis, style),
+                )
             }
             else -> null
         }
     }
 
-    fun examCountdownText(snapshot: TodayWidgetSnapshotInfo): String? {
+    fun examCountdownText(context: Context, snapshot: TodayWidgetSnapshotInfo): String? {
         val name = snapshot.nextExamName ?: return null
         val daysUntil = snapshot.nextExamDaysUntil ?: return null
         val timeRange = if (!snapshot.nextExamStartTime.isNullOrBlank() && !snapshot.nextExamEndTime.isNullOrBlank()) {
@@ -644,47 +657,82 @@ object TodayWidgetSupport {
             ""
         }
         return when {
-            daysUntil == 0 -> "考试日 ${name}${timeRange}${location}"
-            daysUntil <= 7 -> "距${name}还有${daysUntil}天${timeRange}${location}"
+            daysUntil == 0 -> context.getString(R.string.widget_exam_day, name, timeRange, location)
+            daysUntil <= 7 -> context.getString(
+                R.string.widget_exam_countdown,
+                name,
+                daysUntil,
+                timeRange,
+                location,
+            )
             else -> null
         }
     }
 
-    fun rightInfoText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun rightInfoText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         val cal = Calendar.getInstance()
         val month = cal.get(Calendar.MONTH) + 1
         val day = cal.get(Calendar.DAY_OF_MONTH)
-        val dayNames = arrayOf("日", "一", "二", "三", "四", "五", "六")
+        val dayNames = arrayOf(
+            context.getString(R.string.widget_day_sun),
+            context.getString(R.string.widget_day_mon),
+            context.getString(R.string.widget_day_tue),
+            context.getString(R.string.widget_day_wed),
+            context.getString(R.string.widget_day_thu),
+            context.getString(R.string.widget_day_fri),
+            context.getString(R.string.widget_day_sat),
+        )
         val dow = dayNames[cal.get(Calendar.DAY_OF_WEEK) - 1]
-        val datePart = "${month}/${day} ${dow}"
+        val datePart = "${month}/${day} $dow"
 
         val isShowingTomorrow = isShowingTomorrowCourses(snapshot)
         val week = if (isShowingTomorrow) snapshot.tomorrowWeek else snapshot.currentWeek
 
         return when {
             snapshot.state == "holiday" ->
-                "第${week}周 · 假期中"
+                context.getString(R.string.widget_week_holiday, week)
             isShowingTomorrow ->
-                "第${week}周 · 明日${snapshot.tomorrowCourses.size}节"
+                context.getString(R.string.widget_week_tomorrow_count, week, snapshot.tomorrowCourses.size)
             snapshot.totalTodayCourseCount == 0 ->
-                "第${week}周 · ${datePart}"
+                context.getString(R.string.widget_week_date, week, datePart)
             snapshot.state == "completed" ->
-                "第${week}周 · ${datePart}"
+                context.getString(R.string.widget_week_date, week, datePart)
             else ->
-                "第${week}周 · ${datePart} · ${snapshot.totalTodayCourseCount}节"
+                context.getString(
+                    R.string.widget_week_date_count,
+                    week,
+                    datePart,
+                    snapshot.totalTodayCourseCount,
+                )
         }
     }
 
-    fun footerText(snapshot: TodayWidgetSnapshotInfo): String {
+    fun footerText(context: Context, snapshot: TodayWidgetSnapshotInfo): String {
         return when {
             snapshot.state == "holiday" ->
-                "${snapshot.profileName} · ${snapshot.holidayName ?: "假期中"}"
+                context.getString(
+                    R.string.widget_footer_holiday,
+                    snapshot.profileName,
+                    snapshot.holidayName ?: context.getString(R.string.widget_on_holiday),
+                )
             isShowingTomorrowCourses(snapshot) ->
-                "${snapshot.profileName} · 明日 ${snapshot.tomorrowCourses.size} 节"
+                context.getString(
+                    R.string.widget_footer_tomorrow,
+                    snapshot.profileName,
+                    snapshot.tomorrowCourses.size,
+                )
             snapshot.totalTodayCourseCount > 0 ->
-                "${snapshot.profileName} · 今日 ${snapshot.totalTodayCourseCount} 节"
+                context.getString(
+                    R.string.widget_footer_today,
+                    snapshot.profileName,
+                    snapshot.totalTodayCourseCount,
+                )
             else ->
-                "${snapshot.profileName} · 第${snapshot.currentWeek}周"
+                context.getString(
+                    R.string.widget_footer_week,
+                    snapshot.profileName,
+                    snapshot.currentWeek,
+                )
         }
     }
 
@@ -712,12 +760,12 @@ object TodayWidgetSupport {
         )
     }
 
-    private fun parseSnapshot(json: JSONObject): TodayWidgetSnapshotInfo {
+    private fun parseSnapshot(context: Context, json: JSONObject): TodayWidgetSnapshotInfo {
         val allCourses = parseCourses(json.optJSONArray("todayCourses"))
         val visibleCourses = json.optJSONArray("visibleTodayCourses")?.let(::parseCourses)
             ?: allCourses
         return TodayWidgetSnapshotInfo(
-            profileName = json.optString("profileName", "轻屿课表"),
+            profileName = json.optString("profileName", context.getString(R.string.widget_app_name)),
             currentWeek = json.optInt("currentWeek", 1),
             state = json.optString("state", "no_course"),
             backgroundStyle = json.optString("backgroundStyle", "solid"),

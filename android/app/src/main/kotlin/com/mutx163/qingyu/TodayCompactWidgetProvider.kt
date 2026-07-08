@@ -84,37 +84,42 @@ class TodayCompactWidgetProvider : AppWidgetProvider() {
             val isShowingTomorrow = (state == "completed" || state == "no_course") && (snapshot?.tomorrowCourses?.isNotEmpty() == true)
             views.setTextViewText(
                 R.id.widget_status,
-                if (isShowingTomorrow) "明日课程" else TodayWidgetSupport.statusText(state)
+                if (isShowingTomorrow) {
+                    context.getString(R.string.widget_tomorrow_courses)
+                } else {
+                    TodayWidgetSupport.statusText(context, state)
+                }
             )
             views.setTextViewText(
                 R.id.widget_course_name,
                 when {
-                    snapshot == null -> "今日无课"
-                    state == "holiday" -> snapshot.holidayName ?: "假期中"
+                    snapshot == null -> context.getString(R.string.widget_no_course_today)
+                    state == "holiday" ->
+                        snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
                     isShowingTomorrow -> snapshot.tomorrowCourses.first().name
-                    state == "completed" -> "今天课程"
-                    else -> TodayWidgetSupport.heroCourseName(snapshot)
+                    state == "completed" -> context.getString(R.string.widget_today_courses)
+                    else -> TodayWidgetSupport.heroCourseName(context, snapshot)
                 }
             )
             views.setTextViewText(
                 R.id.widget_meta,
                 when {
-                    snapshot == null -> "点击打开首页"
-                    state == "holiday" -> "好好休息"
+                    snapshot == null -> context.getString(R.string.widget_tap_to_open)
+                    state == "holiday" -> context.getString(R.string.widget_rest_well)
                     isShowingTomorrow -> {
                         val first = snapshot.tomorrowCourses.first()
                         val time = "${first.startTime} - ${first.endTime}"
                         if (snapshot.showLocation && first.location.isNotBlank()) "$time\n${first.location}" else time
                     }
-                    state == "no_course" -> "留一点时间给自己"
-                    state == "completed" -> "今天课程已经结束"
+                    state == "no_course" -> context.getString(R.string.widget_take_a_break)
+                    state == "completed" -> context.getString(R.string.widget_today_ended_short)
                     else -> {
-                    val cd = TodayWidgetSupport.countdownText(snapshot)
+                    val cd = TodayWidgetSupport.countdownText(context, snapshot)
                     if (cd != null) {
                         val loc = snapshot.highlightedCourse?.location.orEmpty()
                         if (snapshot.showLocation && loc.isNotBlank()) "$cd\n$loc" else cd
                     } else {
-                        TodayWidgetSupport.compactMetaText(snapshot)
+                        TodayWidgetSupport.compactMetaText(context, snapshot)
                     }
                 }
                 }

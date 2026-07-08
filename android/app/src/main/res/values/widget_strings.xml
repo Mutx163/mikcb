@@ -4,4 +4,58 @@
     <string name="widget_today_mini_list_name">今日课程迷你列表 2×2</string>
     <string name="widget_today_medium_name">今日课程概览 2×4</string>
     <string name="widget_today_large_name">今日课程列表 4×4</string>
+
+    <string name="widget_today_courses">今日课程</string>
+    <string name="widget_tomorrow_courses">明日课程</string>
+    <string name="widget_no_course_today">今日无课</string>
+    <string name="widget_sync_later">稍后打开应用同步</string>
+    <string name="widget_app_name">轻屿课表</string>
+    <string name="widget_tap_to_open">点击打开首页</string>
+    <string name="widget_open_app_sync">打开应用后同步</string>
+
+    <string name="widget_status_ongoing">正在上课</string>
+    <string name="widget_status_upcoming">下一节课</string>
+    <string name="widget_status_completed">今日已结束</string>
+    <string name="widget_status_holiday">今日假期</string>
+    <string name="widget_status_no_course">今日无课</string>
+
+    <string name="widget_on_holiday">假期中</string>
+    <string name="widget_today_ended">今天课程已结束</string>
+    <string name="widget_no_courses_today">今天没有课程</string>
+    <string name="widget_rest_well">好好休息</string>
+    <string name="widget_no_more_courses">接下来没有课程</string>
+    <string name="widget_take_a_break">留一点时间给自己</string>
+
+    <string name="widget_week_number">第%1$d周</string>
+    <string name="widget_week_with_count">第%1$d周 · 共%2$d节</string>
+    <string name="widget_week_holiday">第%1$d周 · 假期中</string>
+    <string name="widget_week_tomorrow_count">第%1$d周 · 明日%2$d节</string>
+    <string name="widget_week_date">第%1$d周 · %2$s</string>
+    <string name="widget_week_date_count">第%1$d周 · %2$s · %3$d节</string>
+
+    <string name="widget_countdown_until_end">还有 %1$s 下课</string>
+    <string name="widget_countdown_until_start">还有 %1$s 上课</string>
+
+    <string name="widget_exam_day">考试日 %1$s%2$s%3$s</string>
+    <string name="widget_exam_countdown">距%1$s还有%2$d天%3$s%4$s</string>
+
+    <string name="widget_day_sun">日</string>
+    <string name="widget_day_mon">一</string>
+    <string name="widget_day_tue">二</string>
+    <string name="widget_day_wed">三</string>
+    <string name="widget_day_thu">四</string>
+    <string name="widget_day_fri">五</string>
+    <string name="widget_day_sat">六</string>
+
+    <string name="widget_footer_holiday">%1$s · %2$s</string>
+    <string name="widget_footer_tomorrow">%1$s · 明日 %2$d 节</string>
+    <string name="widget_footer_today">%1$s · 今日 %2$d 节</string>
+    <string name="widget_footer_week">%1$s · 第%2$d周</string>
+
+    <string name="widget_more_courses">还有 %1$d 节</string>
+    <string name="widget_today_list_title">今日课程列表</string>
+    <string name="widget_tomorrow_list_title">明日课程列表</string>
+    <string name="widget_snapshot_hint">打开应用后会生成今天的课程快照</string>
+    <string name="widget_no_schedule_today">今天没有课程安排</string>
+    <string name="widget_today_ended_short">今天课程已经结束</string>
 </resources>

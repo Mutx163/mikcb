@@ -86,44 +86,46 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
             )
 
             if (snapshot == null) {
-                views.setTextViewText(R.id.widget_large_heading, "今日课程")
-                views.setTextViewText(R.id.widget_large_week, "轻屿课表")
-                views.setTextViewText(R.id.widget_large_title, "今日课程列表")
-                views.setTextViewText(R.id.widget_large_subtitle, "打开应用后会生成今天的课程快照")
+                views.setTextViewText(R.id.widget_large_heading, context.getString(R.string.widget_today_courses))
+                views.setTextViewText(R.id.widget_large_week, context.getString(R.string.widget_app_name))
+                views.setTextViewText(R.id.widget_large_title, context.getString(R.string.widget_today_list_title))
+                views.setTextViewText(R.id.widget_large_subtitle, context.getString(R.string.widget_snapshot_hint))
                 views.setViewVisibility(R.id.widget_large_empty, View.VISIBLE)
-                views.setTextViewText(R.id.widget_large_empty, "点击打开首页")
+                views.setTextViewText(R.id.widget_large_empty, context.getString(R.string.widget_tap_to_open))
                 views.setViewVisibility(R.id.widget_large_exam, View.GONE)
                 setCourseRows(views, emptyList(), primaryColor, secondaryColor)
             } else {
                 val isShowingTomorrow = (snapshot.state == "completed" || snapshot.state == "no_course") && snapshot.tomorrowCourses.isNotEmpty()
-                views.setTextViewText(R.id.widget_large_heading, TodayWidgetSupport.headingText(snapshot))
+                views.setTextViewText(R.id.widget_large_heading, TodayWidgetSupport.headingText(context, snapshot))
                 views.setTextViewText(
                     R.id.widget_large_week,
-                    TodayWidgetSupport.rightInfoText(snapshot)
+                    TodayWidgetSupport.rightInfoText(context, snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_large_title,
                     when {
-                        snapshot.state == "holiday" -> snapshot.holidayName ?: "假期中"
-                        isShowingTomorrow -> "明日课程列表"
-                        else -> "今日课程列表"
+                        snapshot.state == "holiday" ->
+                            snapshot.holidayName ?: context.getString(R.string.widget_on_holiday)
+                        isShowingTomorrow -> context.getString(R.string.widget_tomorrow_list_title)
+                        else -> context.getString(R.string.widget_today_list_title)
                     }
                 )
                 views.setTextViewText(
                     R.id.widget_large_subtitle,
                     when {
-                        snapshot.state == "holiday" -> "好好休息"
-                        isShowingTomorrow -> TodayWidgetSupport.footerText(snapshot)
-                        snapshot.state == "no_course" -> "今天没有课程安排"
-                        snapshot.state == "completed" -> TodayWidgetSupport.footerText(snapshot)
-                        else -> TodayWidgetSupport.countdownText(snapshot)
-                            ?: TodayWidgetSupport.footerText(snapshot)
+                        snapshot.state == "holiday" -> context.getString(R.string.widget_rest_well)
+                        isShowingTomorrow -> TodayWidgetSupport.footerText(context, snapshot)
+                        snapshot.state == "no_course" -> context.getString(R.string.widget_no_schedule_today)
+                        snapshot.state == "completed" -> TodayWidgetSupport.footerText(context, snapshot)
+                        else -> TodayWidgetSupport.countdownText(context, snapshot)
+                            ?: TodayWidgetSupport.footerText(context, snapshot)
                     }
                 )
                 val emptyText = when {
                     isShowingTomorrow -> ""
-                    snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() -> "今天课程已结束"
-                    snapshot.state == "no_course" -> "今日无课"
+                    snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
+                        context.getString(R.string.widget_today_ended)
+                    snapshot.state == "no_course" -> context.getString(R.string.widget_no_course_today)
                     else -> ""
                 }
                 views.setViewVisibility(
@@ -131,7 +133,7 @@ class TodayLargeWidgetProvider : AppWidgetProvider() {
                     if (emptyText.isBlank()) View.GONE else View.VISIBLE
                 )
                 views.setTextViewText(R.id.widget_large_empty, emptyText)
-                val examText = TodayWidgetSupport.examCountdownText(snapshot)
+                val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
                 if (examText != null) {
                     views.setViewVisibility(R.id.widget_large_exam, View.VISIBLE)
                     views.setTextViewText(R.id.widget_large_exam, examText)

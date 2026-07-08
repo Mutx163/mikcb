@@ -87,22 +87,30 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                 && (snapshot.state == "completed" || snapshot.state == "no_course")
                 && snapshot.tomorrowCourses.isNotEmpty()
             if (snapshot == null) {
-                views.setTextViewText(R.id.widget_mini_heading, "今日课程")
-                views.setTextViewText(R.id.widget_mini_week, "轻屿课表")
+                views.setTextViewText(R.id.widget_mini_heading, context.getString(R.string.widget_today_courses))
+                views.setTextViewText(R.id.widget_mini_week, context.getString(R.string.widget_app_name))
                 views.setViewVisibility(R.id.widget_mini_empty, View.VISIBLE)
                 views.setViewVisibility(R.id.widget_mini_more, View.GONE)
-                views.setTextViewText(R.id.widget_mini_empty, "打开应用后同步")
+                views.setTextViewText(R.id.widget_mini_empty, context.getString(R.string.widget_open_app_sync))
                 bindRow(views, 0, null, primaryColor, secondaryColor, false, style)
                 bindRow(views, 1, null, primaryColor, secondaryColor, false, style)
                 bindRow(views, 2, null, primaryColor, secondaryColor, false, style)
             } else {
                 views.setTextViewText(
                     R.id.widget_mini_heading,
-                    if (isShowingTomorrow) "明日课程" else "今日课程"
+                    if (isShowingTomorrow) {
+                        context.getString(R.string.widget_tomorrow_courses)
+                    } else {
+                        context.getString(R.string.widget_today_courses)
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_mini_week,
-                    if (isShowingTomorrow) "第${snapshot.tomorrowWeek}周" else "第${snapshot.currentWeek}周"
+                    if (isShowingTomorrow) {
+                        context.getString(R.string.widget_week_number, snapshot.tomorrowWeek)
+                    } else {
+                        context.getString(R.string.widget_week_number, snapshot.currentWeek)
+                    }
                 )
                 val maxRows = TodayWidgetSupport.miniListVisibleRows(profile)
                 val rows = if (isShowingTomorrow) {
@@ -124,8 +132,9 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                 }
                 val emptyText = when {
                     rows.isNotEmpty() -> ""
-                    snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() -> "今天课程已结束"
-                    snapshot.state == "no_course" -> "今日无课"
+                    snapshot.state == "completed" && snapshot.tomorrowCourses.isEmpty() ->
+                        context.getString(R.string.widget_today_ended)
+                    snapshot.state == "no_course" -> context.getString(R.string.widget_no_course_today)
                     else -> ""
                 }
                 views.setViewVisibility(
@@ -142,7 +151,10 @@ class TodayMiniListWidgetProvider : AppWidgetProvider() {
                     R.id.widget_mini_more,
                     if (remainingCount > 0) View.VISIBLE else View.GONE
                 )
-                views.setTextViewText(R.id.widget_mini_more, "还有 $remainingCount 节")
+                views.setTextViewText(
+                    R.id.widget_mini_more,
+                    context.getString(R.string.widget_more_courses, remainingCount),
+                )
                 bindRow(
                     views,
                     0,

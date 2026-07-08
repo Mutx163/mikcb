@@ -86,38 +86,42 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
             )
 
             if (snapshot == null) {
-                views.setTextViewText(R.id.widget_medium_label, "今日课程")
-                views.setTextViewText(R.id.widget_medium_title, "今日无课")
-                views.setTextViewText(R.id.widget_medium_time, "稍后打开应用同步")
-                views.setTextViewText(R.id.widget_medium_meta, "轻屿课表")
-                views.setTextViewText(R.id.widget_medium_footer, "点击打开首页")
+                views.setTextViewText(R.id.widget_medium_label, context.getString(R.string.widget_today_courses))
+                views.setTextViewText(R.id.widget_medium_title, context.getString(R.string.widget_no_course_today))
+                views.setTextViewText(R.id.widget_medium_time, context.getString(R.string.widget_sync_later))
+                views.setTextViewText(R.id.widget_medium_meta, context.getString(R.string.widget_app_name))
+                views.setTextViewText(R.id.widget_medium_footer, context.getString(R.string.widget_tap_to_open))
                 views.setViewVisibility(R.id.widget_medium_exam, View.GONE)
                 setRowVisibility(views, false, false, false)
             } else {
                 val isShowingTomorrow = (snapshot.state == "completed" || snapshot.state == "no_course") && snapshot.tomorrowCourses.isNotEmpty()
                 views.setTextViewText(
                     R.id.widget_medium_label,
-                    if (isShowingTomorrow) "明日课程" else TodayWidgetSupport.statusText(snapshot.state)
+                    if (isShowingTomorrow) {
+                        context.getString(R.string.widget_tomorrow_courses)
+                    } else {
+                        TodayWidgetSupport.statusText(context, snapshot.state)
+                    }
                 )
                 views.setTextViewText(
                     R.id.widget_medium_title,
-                    TodayWidgetSupport.heroCourseName(snapshot)
+                    TodayWidgetSupport.heroCourseName(context, snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_time,
-                    if (isShowingTomorrow) TodayWidgetSupport.heroTimeText(snapshot)
-                    else TodayWidgetSupport.countdownText(snapshot)
-                        ?: TodayWidgetSupport.heroTimeText(snapshot)
+                    if (isShowingTomorrow) TodayWidgetSupport.heroTimeText(context, snapshot)
+                    else TodayWidgetSupport.countdownText(context, snapshot)
+                        ?: TodayWidgetSupport.heroTimeText(context, snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_meta,
-                    TodayWidgetSupport.heroMetaText(snapshot)
+                    TodayWidgetSupport.heroMetaText(context, snapshot)
                 )
                 views.setTextViewText(
                     R.id.widget_medium_footer,
-                    TodayWidgetSupport.footerText(snapshot)
+                    TodayWidgetSupport.footerText(context, snapshot)
                 )
-                val examText = TodayWidgetSupport.examCountdownText(snapshot)
+                val examText = TodayWidgetSupport.examCountdownText(context, snapshot)
                 if (examText != null) {
                     views.setViewVisibility(R.id.widget_medium_exam, View.VISIBLE)
                     views.setTextViewText(R.id.widget_medium_exam, examText)
@@ -147,7 +151,7 @@ class TodayMediumWidgetProvider : AppWidgetProvider() {
             TodayWidgetSupport.setTextSizeSp(
                 views,
                 R.id.widget_medium_time,
-                if (snapshot != null && TodayWidgetSupport.countdownText(snapshot) != null) {
+                if (snapshot != null && TodayWidgetSupport.countdownText(context, snapshot) != null) {
                     if (profile.isShort) 13f else 14f
                 } else if (profile.isShort) 13f else 14f
             )
